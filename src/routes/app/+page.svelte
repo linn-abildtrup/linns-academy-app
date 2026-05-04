@@ -1,9 +1,5 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { signOut } from 'firebase/auth';
-	import { auth } from '$lib/firebase';
-	import { goto } from '$app/navigation';
-	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import { getGreetingWithName } from '$lib/utils/greeting';
@@ -14,10 +10,8 @@
 		getCurrentDay
 	} from '$lib/content/forlob';
 
-	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 
-	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
 
 	const greeting = $derived(getGreetingWithName(userDoc?.firstName ?? ''));
@@ -94,11 +88,6 @@
 			dim: 'rgba(111,158,126,.10)'
 		}
 	];
-
-	async function handleSignOut() {
-		await signOut(auth);
-		goto('/login');
-	}
 
 	function getActionAccent(modul: 'kost' | 'traening' | 'vaner'): string {
 		if (modul === 'kost') return 'var(--sage)';
@@ -211,11 +200,6 @@
 					</div>
 				</section>
 			{/if}
-
-			<section class="signout-section">
-				<button class="signout-button" onclick={handleSignOut}>Log ud</button>
-				<div class="signout-meta">{user?.email}</div>
-			</section>
 		</div>
 	</div>
 {:else if userDoc?.state === 'modulbruger'}
@@ -300,11 +284,6 @@
 					<Icon name="play" size={11} color="#fff" filled />
 				</button>
 			</section>
-
-			<section class="signout-section">
-				<button class="signout-button" onclick={handleSignOut}>Log ud</button>
-				<div class="signout-meta">{user?.email}</div>
-			</section>
 		</div>
 	</div>
 {:else if userDoc?.state === 'udlobet'}
@@ -361,11 +340,6 @@
 			</section>
 
 			<div class="c1-disclaimer">Ingen forpligtelse — du bestemmer selv tempoet.</div>
-
-			<section class="signout-section">
-				<button class="signout-button" onclick={handleSignOut}>Log ud</button>
-				<div class="signout-meta">{user?.email}</div>
-			</section>
 		</div>
 	</div>
 {:else}
@@ -1042,37 +1016,6 @@
 		font-style: italic;
 		text-align: center;
 		padding: 4px 0;
-	}
-
-	/* ── Sign out ──────────────────────────────────────────────── */
-
-	.signout-section {
-		margin-top: 8px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 6px;
-		padding-top: 12px;
-		border-top: 1px solid var(--border);
-	}
-
-	.signout-button {
-		padding: 8px 18px;
-		border-radius: 99px;
-		background: transparent;
-		border: 1px solid var(--border2);
-		color: var(--text2);
-		font-family: var(--ff-b);
-		font-size: 12px;
-		font-weight: 500;
-		cursor: pointer;
-	}
-
-	.signout-meta {
-		font-size: 10px;
-		color: var(--text3);
-		font-family: var(--ff-d);
-		font-style: italic;
 	}
 
 	/* ── Placeholder ───────────────────────────────────────────── */
