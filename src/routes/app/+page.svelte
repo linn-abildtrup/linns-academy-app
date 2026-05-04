@@ -28,6 +28,45 @@
 	);
 	const totalActions = $derived(dagensIndhold.actions.length);
 
+	type ModulGenvej = {
+		navn: string;
+		meta: string;
+		ikon: 'check' | 'flame' | 'leaf' | 'book';
+		accent: string;
+		dim: string;
+	};
+
+	const moduler: ModulGenvej[] = [
+		{
+			navn: 'Vaner',
+			meta: '14 dages flow',
+			ikon: 'check',
+			accent: '#6F9E7E',
+			dim: 'rgba(111,158,126,.10)'
+		},
+		{
+			navn: 'Træning',
+			meta: '3 nye øvelser',
+			ikon: 'flame',
+			accent: 'var(--terra)',
+			dim: 'var(--tdim)'
+		},
+		{
+			navn: 'Kost',
+			meta: '30-30-3 i dag',
+			ikon: 'leaf',
+			accent: 'var(--sage)',
+			dim: 'var(--sdim)'
+		},
+		{
+			navn: 'Bibliotek',
+			meta: '3 nye podcasts',
+			ikon: 'book',
+			accent: '#5C7A8C',
+			dim: 'rgba(92,122,140,.10)'
+		}
+	];
+
 	async function handleSignOut() {
 		await signOut(auth);
 		goto('/login');
@@ -152,11 +191,93 @@
 		</div>
 	</div>
 {:else if userDoc?.state === 'modulbruger'}
-	<div class="placeholder-page">
-		<div class="placeholder-eyebrow">Modulbruger</div>
-		<h1 class="placeholder-title">Velkommen, {userDoc.firstName || ''}</h1>
-		<p class="placeholder-text">Forsiden for modulbrugere kommer i næste trin.</p>
-		<button class="signout-button" onclick={handleSignOut}>Log ud</button>
+	<div class="forside-b1">
+		<header class="b1-header">
+			<div class="b1-brand">Linn's Academy</div>
+			<button class="bell-button" aria-label="Notifikationer">
+				<Icon name="bell" size={13} color="var(--text2)" />
+			</button>
+		</header>
+
+		<div class="forside-body">
+			<section class="b1-greeting">
+				<div class="date-label">{today}</div>
+				<h1 class="greeting">{greeting}</h1>
+			</section>
+
+			<section class="actions-section">
+				<div class="eyebrow eyebrow-terra">Dagens action</div>
+				<div class="actions-list">
+					{#each dagensIndhold.actions as action (action.id)}
+						<button class="action-card" class:action-done={action.done}>
+							<div
+								class="action-icon"
+								style="background: {getActionAccentDim(action.modul)}"
+							>
+								<Icon
+									name={getActionIcon(action.modul)}
+									size={15}
+									color={getActionAccent(action.modul)}
+								/>
+								{#if action.done}
+									<span class="action-check">
+										<Icon name="check" size={8} color="#fff" />
+									</span>
+								{/if}
+							</div>
+							<div class="action-text">
+								<div
+									class="action-eyebrow"
+									style="color: {getActionAccent(action.modul)}"
+								>
+									{action.eyebrow}
+								</div>
+								<div class="action-title">{action.titel}</div>
+								<div class="action-meta">{action.meta}</div>
+							</div>
+							<Icon name="chevron-r" size={14} color="var(--text3)" />
+						</button>
+					{/each}
+				</div>
+			</section>
+
+			<section class="moduler-section">
+				<div class="moduler-header">
+					<div class="eyebrow eyebrow-muted">Mine moduler</div>
+					<div class="moduler-title">Hurtig adgang</div>
+				</div>
+				<div class="moduler-grid">
+					{#each moduler as modul (modul.navn)}
+						<button class="modul-card">
+							<div class="modul-icon" style="background: {modul.dim}">
+								<Icon name={modul.ikon} size={15} color={modul.accent} />
+							</div>
+							<div class="modul-name">{modul.navn}</div>
+							<div class="modul-meta">{modul.meta}</div>
+						</button>
+					{/each}
+				</div>
+			</section>
+
+			<section class="featured-card">
+				<div class="featured-icon" style="background: rgba(92,122,140,.15)">
+					<Icon name="mic" size={17} color="#5C7A8C" />
+				</div>
+				<div class="featured-text">
+					<div class="featured-eyebrow">Ny podcast</div>
+					<div class="featured-title">Når kroppen siger fra</div>
+					<div class="featured-meta">32 min · samtale med Linn</div>
+				</div>
+				<button class="featured-play" aria-label="Afspil">
+					<Icon name="play" size={11} color="#fff" filled />
+				</button>
+			</section>
+
+			<section class="signout-section">
+				<button class="signout-button" onclick={handleSignOut}>Log ud</button>
+				<div class="signout-meta">{user?.email}</div>
+			</section>
+		</div>
 	</div>
 {:else if userDoc?.state === 'udlobet'}
 	<div class="placeholder-page">
@@ -172,13 +293,24 @@
 {/if}
 
 <style>
-	/* ── A1 forside ─────────────────────────────────────────────── */
+	/* ── Fælles forside-body ───────────────────────────────────── */
 
-	.forside-a1 {
+	.forside-a1,
+	.forside-b1 {
 		min-height: 100%;
 		display: flex;
 		flex-direction: column;
 	}
+
+	.forside-body {
+		flex: 1;
+		padding: 14px 20px 18px;
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+
+	/* ── A1 header ─────────────────────────────────────────────── */
 
 	.forside-header {
 		padding: 8px 20px 14px;
@@ -261,12 +393,33 @@
 		background: var(--terra);
 	}
 
-	.forside-body {
-		flex: 1;
-		padding: 14px 20px 18px;
+	/* ── B1 header (lille brand-linje + bell) ──────────────────── */
+
+	.b1-header {
+		padding: 10px 20px 0;
 		display: flex;
-		flex-direction: column;
-		gap: 14px;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.b1-brand {
+		font-family: var(--ff-d);
+		font-style: italic;
+		font-size: 12px;
+		color: var(--text2);
+	}
+
+	.b1-header .bell-button {
+		width: 32px;
+		height: 32px;
+	}
+
+	.b1-greeting {
+		margin-bottom: 2px;
+	}
+
+	.b1-greeting .greeting {
+		font-size: 26px;
 	}
 
 	/* ── Eyebrow-labels ────────────────────────────────────────── */
@@ -515,6 +668,127 @@
 		line-height: 1.45;
 	}
 
+	/* ── Mine moduler (B1) ─────────────────────────────────────── */
+
+	.moduler-header {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		margin-bottom: 8px;
+	}
+
+	.moduler-title {
+		font-family: var(--ff-d);
+		font-size: 14px;
+		font-weight: 700;
+		font-style: italic;
+		color: var(--text);
+	}
+
+	.moduler-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+	}
+
+	.modul-card {
+		padding: 13px;
+		border-radius: 13px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		min-height: 80px;
+		text-align: left;
+		font-family: var(--ff-b);
+		cursor: pointer;
+	}
+
+	.modul-icon {
+		width: 30px;
+		height: 30px;
+		border-radius: 9px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.modul-name {
+		font-family: var(--ff-d);
+		font-size: 13px;
+		font-weight: 700;
+		line-height: 1.1;
+		color: var(--text);
+	}
+
+	.modul-meta {
+		font-size: 10px;
+		color: var(--text3);
+	}
+
+	/* ── Featured card (B1 podcast) ────────────────────────────── */
+
+	.featured-card {
+		padding: 13px;
+		border-radius: 12px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		display: flex;
+		align-items: center;
+		gap: 11px;
+	}
+
+	.featured-icon {
+		width: 42px;
+		height: 42px;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.featured-text {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.featured-eyebrow {
+		font-size: 9px;
+		font-weight: 700;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: #5c7a8c;
+	}
+
+	.featured-title {
+		font-family: var(--ff-d);
+		font-size: 13px;
+		font-weight: 700;
+		margin-top: 2px;
+		line-height: 1.2;
+		color: var(--text);
+	}
+
+	.featured-meta {
+		font-size: 10px;
+		color: var(--text3);
+	}
+
+	.featured-play {
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		background: #5c7a8c;
+		border: none;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		cursor: pointer;
+	}
+
 	/* ── Sign out ──────────────────────────────────────────────── */
 
 	.signout-section {
@@ -546,7 +820,7 @@
 		font-style: italic;
 	}
 
-	/* ── Placeholder for ikke-forløbs-tilstande ────────────────── */
+	/* ── Placeholder for ikke-implementerede tilstande ─────────── */
 
 	.placeholder-page {
 		padding: 40px 24px;
