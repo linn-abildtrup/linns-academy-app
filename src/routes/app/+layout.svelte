@@ -54,13 +54,15 @@
 		<main class="content">
 			{@render children()}
 		</main>
-		<TabBar />
+		<div class="tabbar-wrap">
+			<TabBar />
+		</div>
 	</div>
 {/if}
 
 <style>
 	.loading-screen {
-		min-height: 100vh;
+		min-height: 100dvh;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -71,14 +73,21 @@
 	}
 
 	.app-shell {
-		min-height: 100vh;
+		height: 100dvh;
 		display: flex;
 		flex-direction: column;
 		background: var(--bg);
+		overflow: hidden;
 	}
 
 	.content {
-		flex: 1;
+		flex: 1 1 auto;
+		min-height: 0;
 		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.tabbar-wrap {
+		flex: 0 0 auto;
 	}
 </style>
