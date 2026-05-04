@@ -1,0 +1,127 @@
+import { describe, it, expect } from 'vitest';
+import { getModulerForUser } from './moduler';
+
+describe('getModulerForUser', () => {
+	describe('forløbskunde', () => {
+		const moduler = getModulerForUser('forlobskunde');
+
+		it('returnerer 5 moduler', () => {
+			expect(moduler).toHaveLength(5);
+		});
+
+		it('har alle moduler aktive', () => {
+			const aktive = moduler.filter((m) => m.status === 'aktiv');
+			expect(aktive).toHaveLength(5);
+		});
+
+		it('har Mit forløb med progress over nul', () => {
+			const forlob = moduler.find((m) => m.id === 'forlob');
+			expect(forlob).toBeDefined();
+			expect(forlob?.progress).toBeGreaterThan(0);
+		});
+
+		it('har Bibliotek uden progress (null)', () => {
+			const bibliotek = moduler.find((m) => m.id === 'bibliotek');
+			expect(bibliotek?.progress).toBeNull();
+		});
+
+		it('har subTekst på alle moduler', () => {
+			moduler.forEach((m) => {
+				expect(m.subTekst).toBeTruthy();
+				expect(m.subTekst.length).toBeGreaterThan(0);
+			});
+		});
+
+		it('har ingen låseTekst', () => {
+			moduler.forEach((m) => {
+				expect(m.laasTekst).toBeNull();
+			});
+		});
+	});
+
+	describe('modulbruger', () => {
+		const moduler = getModulerForUser('modulbruger');
+
+		it('returnerer 5 moduler', () => {
+			expect(moduler).toHaveLength(5);
+		});
+
+		it('har Mit forløb låst', () => {
+			const forlob = moduler.find((m) => m.id === 'forlob');
+			expect(forlob?.status).toBe('laast');
+			expect(forlob?.laasTekst).toBe('Få adgang via Kickstart');
+		});
+
+		it('har Træning, Kost, Vaner og Bibliotek aktive', () => {
+			const aktive = moduler.filter((m) => m.status === 'aktiv').map((m) => m.id);
+			expect(aktive).toContain('traening');
+			expect(aktive).toContain('kost');
+			expect(aktive).toContain('vaner');
+			expect(aktive).toContain('bibliotek');
+		});
+
+		it('har korrekt status-tekst på aktive moduler', () => {
+			const traening = moduler.find((m) => m.id === 'traening');
+			expect(traening?.statusTekst).toBe('Løbende');
+		});
+
+		it('viser Kickstart-laasebeskrivelse på låste moduler', () => {
+			const laaste = moduler.filter((m) => m.status === 'laast');
+			laaste.forEach((m) => {
+				expect(m.laasTekst).toContain('Kickstart');
+			});
+		});
+	});
+
+	describe('udlobet', () => {
+		const moduler = getModulerForUser('udlobet');
+
+		it('returnerer 5 moduler', () => {
+			expect(moduler).toHaveLength(5);
+		});
+
+		it('har alle moduler på læseadgang', () => {
+			moduler.forEach((m) => {
+				expect(m.status).toBe('laeseadgang');
+			});
+		});
+
+		it('har ingen progress på nogen moduler', () => {
+			moduler.forEach((m) => {
+				expect(m.progress).toBeNull();
+			});
+		});
+
+		it('har "Læseadgang" som statusTekst overalt', () => {
+			moduler.forEach((m) => {
+				expect(m.statusTekst).toBe('Læseadgang');
+			});
+		});
+
+		it('har ingen låseTekst', () => {
+			moduler.forEach((m) => {
+				expect(m.laasTekst).toBeNull();
+			});
+		});
+	});
+
+	describe('sortering og struktur', () => {
+		it('returnerer Mit forløb som første modul', () => {
+			const moduler = getModulerForUser('forlobskunde');
+			expect(moduler[0].id).toBe('forlob');
+		});
+
+		it('returnerer Bibliotek som sidste modul', () => {
+			const moduler = getModulerForUser('forlobskunde');
+			expect(moduler[moduler.length - 1].id).toBe('bibliotek');
+		});
+
+		it('returnerer samme rækkefølge på tværs af brugertilstande', () => {
+			const a = getModulerForUser('forlobskunde').map((m) => m.id);
+			const b = getModulerForUser('modulbruger').map((m) => m.id);
+			const c = getModulerForUser('udlobet').map((m) => m.id);
+			expect(a).toEqual(b);
+			expect(b).toEqual(c);
+		});
+	});
+});
