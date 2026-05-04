@@ -8,6 +8,7 @@
 		type User
 	} from 'firebase/auth';
 	import { auth } from '$lib/firebase';
+	import { createUserDoc } from '$lib/userDoc';
 	import Button from '$lib/components/Button.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 
@@ -31,7 +32,8 @@
 			if (view === 'login') {
 				await signInWithEmailAndPassword(auth, email, password);
 			} else if (view === 'signup') {
-				await createUserWithEmailAndPassword(auth, email, password);
+				const cred = await createUserWithEmailAndPassword(auth, email, password);
+				await createUserDoc(cred.user.uid, cred.user.email ?? email);
 			}
 			await goto('/');
 		} catch (e) {
