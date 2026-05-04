@@ -1,140 +1,585 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { signOut } from 'firebase/auth';
 	import { auth } from '$lib/firebase';
-	import type { UserDoc } from '$lib/types';
+	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
-	import Button from '$lib/components/Button.svelte';
+	import type { UserDoc } from '$lib/types';
+	import Icon from '$lib/components/Icon.svelte';
+	import { getGreetingWithName } from '$lib/utils/greeting';
+	import {
+		aktivtForlob,
+		dagensIndhold,
+		formatDato,
+		getCurrentDay
+	} from '$lib/content/forlob';
 
-	const userDoc = getContext<() => UserDoc | null>('userDoc');
-	const user = getContext<() => User | null>('user');
+	const getUser = getContext<() => User | null>('user');
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 
-	const stateLabels: Record<string, string> = {
-		modulbruger: 'Modulbruger',
-		forlobskunde: 'Forløbskunde',
-		udlobet: 'Udløbet adgang'
-	};
+	const user = $derived(getUser());
+	const userDoc = $derived(getUserDoc());
 
-	async function handleLogout() {
+	const greeting = $derived(getGreetingWithName(userDoc?.firstName ?? ''));
+	const today = $derived(formatDato(new Date()));
+	const dayNumber = $derived(getCurrentDay(aktivtForlob) ?? dagensIndhold.dag);
+	const completedActions = $derived(
+		dagensIndhold.actions.filter((a) => a.done).length
+	);
+	const totalActions = $derived(dagensIndhold.actions.length);
+
+	async function handleSignOut() {
 		await signOut(auth);
-		await goto('/login');
+		goto('/login');
+	}
+
+	function getActionAccent(modul: 'kost' | 'traening' | 'vaner'): string {
+		if (modul === 'kost') return 'var(--sage)';
+		if (modul === 'traening') return 'var(--terra)';
+		return '#6F9E7E';
+	}
+
+	function getActionAccentDim(modul: 'kost' | 'traening' | 'vaner'): string {
+		if (modul === 'kost') return 'var(--sdim)';
+		if (modul === 'traening') return 'var(--tdim)';
+		return 'rgba(111,158,126,.10)';
+	}
+
+	function getActionIcon(modul: 'kost' | 'traening' | 'vaner') {
+		if (modul === 'kost') return 'leaf';
+		if (modul === 'traening') return 'flame';
+		return 'check';
 	}
 </script>
 
-<div class="page">
-	<div class="container">
-		<header class="brand">
-			<h1>Linn's Academy</h1>
-			<p class="badge-text">App-område · beskyttet</p>
+{#if userDoc?.state === 'forlobskunde'}
+	<div class="forside-a1">
+		<header class="forside-header">
+			<div class="header-content">
+				<div class="header-text">
+					<div class="date-label">{today}</div>
+					<h1 class="greeting">{greeting}</h1>
+					<div class="forlob-badge">
+						<span class="badge-dot"></span>
+						{aktivtForlob.kortNavn} · dag {dayNumber} af {aktivtForlob.antalDage}
+					</div>
+				</div>
+				<button class="bell-button" aria-label="Notifikationer">
+					<Icon name="bell" size={15} color="var(--text2)" />
+					<span class="bell-dot"></span>
+				</button>
+			</div>
 		</header>
 
-		<div class="card">
-			<p class="hello">Du er logget ind som</p>
-			<p class="email">{user()?.email ?? '...'}</p>
-
-			{#if userDoc()}
-				<div class="state-row">
-					<span class="state-label">Tilstand</span>
-					<span class="state-value">{stateLabels[userDoc()!.state]}</span>
-				</div>
-				{#if userDoc()!.firstName}
-					<div class="state-row">
-						<span class="state-label">Fornavn</span>
-						<span class="state-value">{userDoc()!.firstName}</span>
+		<div class="forside-body">
+			{#each dagensIndhold.lektioner as lektion (lektion.id)}
+				<section class="lektion-section">
+					<div class="eyebrow eyebrow-terra">Dagens lektion</div>
+					<div class="lektion-card">
+						<div class="lektion-decoration lektion-decoration-1"></div>
+						<div class="lektion-decoration lektion-decoration-2"></div>
+						<div class="lektion-content">
+							<div class="lektion-meta">Dag {lektion.dag} · uge {lektion.uge}</div>
+							<div class="lektion-title">{lektion.titel}</div>
+							<div class="lektion-description">{lektion.beskrivelse}</div>
+							<div class="lektion-actions">
+								<button class="lektion-button">
+									<Icon name="play" size={12} color="var(--terra)" filled />
+									Begynd
+								</button>
+								<span class="lektion-duration">
+									{lektion.varighedMin} min · {lektion.format}
+								</span>
+							</div>
+						</div>
 					</div>
-				{/if}
-			{/if}
-		</div>
+				</section>
+			{/each}
 
-		<div class="actions">
-			<Button variant="ghost" full onclick={handleLogout}>Log ud</Button>
+			<section class="actions-section">
+				<div class="actions-header">
+					<div class="eyebrow eyebrow-muted">Dagens action</div>
+					<div class="actions-counter">{completedActions} af {totalActions} i dag</div>
+				</div>
+				<div class="actions-list">
+					{#each dagensIndhold.actions as action (action.id)}
+						<button class="action-card" class:action-done={action.done}>
+							<div
+								class="action-icon"
+								style="background: {getActionAccentDim(action.modul)}"
+							>
+								<Icon
+									name={getActionIcon(action.modul)}
+									size={15}
+									color={getActionAccent(action.modul)}
+								/>
+								{#if action.done}
+									<span class="action-check">
+										<Icon name="check" size={8} color="#fff" />
+									</span>
+								{/if}
+							</div>
+							<div class="action-text">
+								<div
+									class="action-eyebrow"
+									style="color: {getActionAccent(action.modul)}"
+								>
+									{action.eyebrow}
+								</div>
+								<div class="action-title">{action.titel}</div>
+								<div class="action-meta">{action.meta}</div>
+							</div>
+							<Icon name="chevron-r" size={14} color="var(--text3)" />
+						</button>
+					{/each}
+				</div>
+			</section>
+
+			{#if dagensIndhold.noteFraLinn}
+				<section class="note-section">
+					<div class="note-badge">L</div>
+					<div class="note-content">
+						<div class="note-eyebrow">Note fra Linn</div>
+						<div class="note-text">{dagensIndhold.noteFraLinn}</div>
+					</div>
+				</section>
+			{/if}
+
+			<section class="signout-section">
+				<button class="signout-button" onclick={handleSignOut}>Log ud</button>
+				<div class="signout-meta">{user?.email}</div>
+			</section>
 		</div>
 	</div>
-</div>
+{:else if userDoc?.state === 'modulbruger'}
+	<div class="placeholder-page">
+		<div class="placeholder-eyebrow">Modulbruger</div>
+		<h1 class="placeholder-title">Velkommen, {userDoc.firstName || ''}</h1>
+		<p class="placeholder-text">Forsiden for modulbrugere kommer i næste trin.</p>
+		<button class="signout-button" onclick={handleSignOut}>Log ud</button>
+	</div>
+{:else if userDoc?.state === 'udlobet'}
+	<div class="placeholder-page">
+		<div class="placeholder-eyebrow">Adgang udløbet</div>
+		<h1 class="placeholder-title">Velkommen tilbage, {userDoc.firstName || ''}</h1>
+		<p class="placeholder-text">Forsiden for udløbet adgang kommer i næste trin.</p>
+		<button class="signout-button" onclick={handleSignOut}>Log ud</button>
+	</div>
+{:else}
+	<div class="placeholder-page">
+		<p class="placeholder-text">Et øjeblik...</p>
+	</div>
+{/if}
 
 <style>
-	.page {
-		min-height: 100vh;
-		background: var(--bg);
+	/* ── A1 forside ─────────────────────────────────────────────── */
+
+	.forside-a1 {
+		min-height: 100%;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.forside-header {
+		padding: 8px 20px 14px;
+		background: var(--header);
+		border-bottom: 1px solid var(--border);
+	}
+
+	.header-content {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 12px;
+	}
+
+	.header-text {
+		min-width: 0;
+		flex: 1;
+	}
+
+	.date-label {
+		font-size: 9.5px;
+		font-weight: 600;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.greeting {
+		font-family: var(--ff-d);
+		font-size: 22px;
+		font-weight: 700;
+		color: var(--text);
+		letter-spacing: -0.02em;
+		margin: 3px 0 0;
+		line-height: 1.05;
+	}
+
+	.forlob-badge {
+		margin-top: 6px;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 3px 10px;
+		border-radius: 99px;
+		background: var(--tdim);
+		color: var(--terra);
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+	}
+
+	.badge-dot {
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+		background: var(--terra);
+	}
+
+	.bell-button {
+		width: 34px;
+		height: 34px;
+		border-radius: 50%;
+		background: var(--white);
+		border: 1px solid var(--border);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 40px 28px;
+		position: relative;
+		flex-shrink: 0;
+		cursor: pointer;
 	}
 
-	.container {
-		width: 100%;
-		max-width: 420px;
+	.bell-dot {
+		position: absolute;
+		top: 7px;
+		right: 8px;
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--terra);
 	}
 
-	.brand {
-		text-align: center;
-		margin-bottom: 28px;
+	.forside-body {
+		flex: 1;
+		padding: 14px 20px 18px;
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
 	}
 
-	.brand h1 {
-		font-family: var(--ff-d);
-		font-size: 28px;
+	/* ── Eyebrow-labels ────────────────────────────────────────── */
+
+	.eyebrow {
+		font-size: 9px;
 		font-weight: 700;
-		color: var(--text);
-		letter-spacing: -0.01em;
-		margin: 0;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		margin-bottom: 8px;
 	}
 
-	.badge-text {
-		margin: 6px 0 0;
-		font-family: var(--ff-b);
-		font-size: 11px;
+	.eyebrow-terra {
+		color: var(--terra);
+	}
+
+	.eyebrow-muted {
+		color: var(--text3);
+	}
+
+	/* ── Lektion-card ──────────────────────────────────────────── */
+
+	.lektion-card {
+		border-radius: 16px;
+		overflow: hidden;
+		background: linear-gradient(160deg, #c99587 0%, #b87b6e 60%, #9d6358 100%);
+		color: #fff;
+		padding: 18px;
+		position: relative;
+		min-height: 170px;
+	}
+
+	.lektion-decoration {
+		position: absolute;
+		border-radius: 50%;
+	}
+
+	.lektion-decoration-1 {
+		right: -30px;
+		top: -30px;
+		width: 140px;
+		height: 140px;
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.lektion-decoration-2 {
+		right: 30px;
+		bottom: -50px;
+		width: 110px;
+		height: 110px;
+		background: rgba(255, 255, 255, 0.05);
+	}
+
+	.lektion-content {
+		position: relative;
+	}
+
+	.lektion-meta {
+		font-size: 9px;
 		font-weight: 600;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		opacity: 0.85;
+	}
+
+	.lektion-title {
+		font-family: var(--ff-d);
+		font-size: 22px;
+		font-weight: 700;
+		margin-top: 6px;
+		line-height: 1.1;
+	}
+
+	.lektion-description {
+		font-size: 11.5px;
+		opacity: 0.85;
+		margin-top: 4px;
+		line-height: 1.45;
+	}
+
+	.lektion-actions {
+		display: flex;
+		gap: 8px;
+		margin-top: 14px;
+		align-items: center;
+	}
+
+	.lektion-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 9px 16px;
+		border-radius: 99px;
+		background: #fff;
+		color: var(--terra);
+		border: none;
+		font-size: 12px;
+		font-weight: 600;
+		font-family: var(--ff-b);
+		cursor: pointer;
+	}
+
+	.lektion-duration {
+		font-size: 10.5px;
+		opacity: 0.85;
+	}
+
+	/* ── Actions ───────────────────────────────────────────────── */
+
+	.actions-header {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		margin-bottom: 8px;
+	}
+
+	.actions-counter {
+		font-size: 10px;
+		color: var(--text3);
+		font-family: var(--ff-d);
+		font-style: italic;
+	}
+
+	.actions-list {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.action-card {
+		padding: 12px;
+		border-radius: 12px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		display: flex;
+		align-items: center;
+		gap: 11px;
+		width: 100%;
+		text-align: left;
+		font-family: var(--ff-b);
+		cursor: pointer;
+	}
+
+	.action-icon {
+		width: 34px;
+		height: 34px;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		position: relative;
+	}
+
+	.action-check {
+		position: absolute;
+		bottom: -2px;
+		right: -2px;
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		background: var(--sage);
+		border: 2px solid var(--white);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.action-text {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.action-eyebrow {
+		font-size: 9px;
+		font-weight: 700;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+	}
+
+	.action-title {
+		font-family: var(--ff-d);
+		font-size: 13px;
+		font-weight: 700;
+		margin-top: 2px;
+		line-height: 1.2;
+	}
+
+	.action-meta {
+		font-size: 10px;
+		color: var(--text3);
+		margin-top: 2px;
+	}
+
+	.action-done .action-title {
+		text-decoration: line-through;
+		text-decoration-color: var(--text3);
+		opacity: 0.55;
+	}
+
+	/* ── Note fra Linn ─────────────────────────────────────────── */
+
+	.note-section {
+		padding: 14px;
+		border-radius: 12px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		display: flex;
+		gap: 11px;
+	}
+
+	.note-badge {
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		background: var(--ic-rose);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		font-family: var(--ff-d);
+		font-weight: 700;
+		font-size: 13px;
+		color: var(--terra);
+	}
+
+	.note-content {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.note-eyebrow {
+		font-size: 9px;
+		font-weight: 700;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.note-text {
+		font-family: var(--ff-d);
+		font-size: 12.5px;
+		font-style: italic;
+		color: var(--text2);
+		margin-top: 3px;
+		line-height: 1.45;
+	}
+
+	/* ── Sign out ──────────────────────────────────────────────── */
+
+	.signout-section {
+		margin-top: 8px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		padding-top: 12px;
+		border-top: 1px solid var(--border);
+	}
+
+	.signout-button {
+		padding: 8px 18px;
+		border-radius: 99px;
+		background: transparent;
+		border: 1px solid var(--border2);
+		color: var(--text2);
+		font-family: var(--ff-b);
+		font-size: 12px;
+		font-weight: 500;
+		cursor: pointer;
+	}
+
+	.signout-meta {
+		font-size: 10px;
+		color: var(--text3);
+		font-family: var(--ff-d);
+		font-style: italic;
+	}
+
+	/* ── Placeholder for ikke-forløbs-tilstande ────────────────── */
+
+	.placeholder-page {
+		padding: 40px 24px;
+		min-height: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 12px;
+		text-align: center;
+	}
+
+	.placeholder-eyebrow {
+		font-size: 10px;
+		font-weight: 700;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
 		color: var(--terra);
 	}
 
-	.card {
-		background: var(--white);
-		border: 1px solid var(--border);
-		border-radius: var(--rl);
-		padding: var(--card-pad);
-		text-align: center;
+	.placeholder-title {
+		font-family: var(--ff-d);
+		font-size: 24px;
+		font-weight: 700;
+		color: var(--text);
+		margin: 0;
 	}
 
-	.hello {
-		margin: 0 0 4px;
-		font-family: var(--ff-b);
+	.placeholder-text {
+		font-family: var(--ff-d);
+		font-style: italic;
 		font-size: 13px;
-		color: var(--text3);
-	}
-
-	.email {
-		margin: 0 0 20px;
-		font-family: var(--ff-b);
-		font-size: 16px;
-		font-weight: 500;
-		color: var(--text);
-	}
-
-	.state-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 10px 0;
-		border-top: 1px solid var(--border);
-		font-family: var(--ff-b);
-		font-size: 14px;
-	}
-
-	.state-label {
-		color: var(--text3);
-	}
-
-	.state-value {
-		color: var(--text);
-		font-weight: 500;
-	}
-
-	.actions {
-		margin-top: 16px;
+		color: var(--text2);
+		margin: 0;
 	}
 </style>
