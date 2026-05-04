@@ -9,8 +9,11 @@
 	} from 'firebase/auth';
 	import { auth } from '$lib/firebase';
 	import Button from '$lib/components/Button.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
-	let mode = $state<'login' | 'signup'>('login');
+	type View = 'welcome' | 'login' | 'signup';
+
+	let view = $state<View>('welcome');
 	let email = $state('');
 	let password = $state('');
 	let error = $state('');
@@ -25,9 +28,9 @@
 		error = '';
 		loading = true;
 		try {
-			if (mode === 'login') {
+			if (view === 'login') {
 				await signInWithEmailAndPassword(auth, email, password);
-			} else {
+			} else if (view === 'signup') {
 				await createUserWithEmailAndPassword(auth, email, password);
 			}
 			await goto('/');
@@ -43,156 +46,257 @@
 		email = '';
 		password = '';
 	}
+
+	function goBack() {
+		view = 'welcome';
+		error = '';
+		email = '';
+		password = '';
+	}
 </script>
 
-<div class="page">
-	<div class="container">
-		<header class="brand">
-			<h1>Linn's Academy</h1>
-		</header>
-
-		{#if user}
-			<div class="logged-in">
+<div class="surface">
+	{#if user}
+		<div class="logged-in-screen">
+			<div class="logged-in-card">
 				<p class="hello">Du er logget ind som</p>
 				<p class="email">{user.email}</p>
 				<div class="actions">
-					<Button variant="primary" full onclick={() => goto('/')}>
+					<Button variant="primary" size="lg" full onclick={() => goto('/')}>
 						Gå til forsiden
 					</Button>
-					<Button variant="ghost" full onclick={handleLogout}>
+					<Button variant="ghost" size="lg" full onclick={handleLogout}>
 						Log ud
 					</Button>
 				</div>
 			</div>
-		{:else}
-			<div class="tabs">
-				<button
-					class="tab"
-					class:active={mode === 'login'}
-					onclick={() => {
-						mode = 'login';
-						error = '';
-					}}
-				>
+		</div>
+	{:else if view === 'welcome'}
+		<div class="welcome">
+			<div class="welcome-top">
+				<div class="badge">
+					<Icon name="flower" size={36} color="var(--terra)" filled />
+				</div>
+				<div class="title-block">
+					<h1 class="title">Linn's<br />Academy</h1>
+					<p class="tagline">
+						Et roligt rum til mikrotræning, refleksion og kvinders sundhed.
+					</p>
+				</div>
+			</div>
+
+			<div class="welcome-actions">
+				<Button variant="primary" size="lg" full onclick={() => (view = 'login')}>
 					Log ind
-				</button>
-				<button
-					class="tab"
-					class:active={mode === 'signup'}
-					onclick={() => {
-						mode = 'signup';
-						error = '';
-					}}
-				>
-					Opret konto
-				</button>
-			</div>
-
-			<div class="form">
-				<label class="field">
-					<span class="label">Email</span>
-					<input
-						type="email"
-						bind:value={email}
-						placeholder="dig@eksempel.dk"
-						autocomplete="email"
-					/>
-				</label>
-
-				<label class="field">
-					<span class="label">Adgangskode</span>
-					<input
-						type="password"
-						bind:value={password}
-						placeholder="Mindst 6 tegn"
-						autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
-					/>
-				</label>
-
-				{#if error}
-					<p class="error">{error}</p>
-				{/if}
-
-				<Button
-					variant="primary"
-					size="lg"
-					full
-					onclick={handleSubmit}
-				>
-					{loading ? 'Vent...' : mode === 'login' ? 'Log ind' : 'Opret konto'}
 				</Button>
+				<Button variant="outline" size="lg" full onclick={() => (view = 'signup')}>
+					Opret konto
+				</Button>
+				<p class="resume">
+					Allerede medlem? <span class="resume-link">Genoptag rejse</span>
+				</p>
 			</div>
-		{/if}
-	</div>
+		</div>
+	{:else}
+		<div class="form-screen">
+			<button class="back-btn" onclick={goBack} aria-label="Tilbage">
+				<Icon name="arrow-l" size={20} color="var(--text)" />
+			</button>
+
+			<div class="form-content">
+				<div class="form-header">
+					<h2 class="form-title">
+						{view === 'login' ? 'Log ind' : 'Opret konto'}
+					</h2>
+					<p class="form-sub">
+						{view === 'login'
+							? 'Velkommen tilbage'
+							: 'Begynd din rejse her'}
+					</p>
+				</div>
+
+				<div class="form">
+					<label class="field">
+						<span class="label">Email</span>
+						<input
+							type="email"
+							bind:value={email}
+							placeholder="dig@eksempel.dk"
+							autocomplete="email"
+						/>
+					</label>
+
+					<label class="field">
+						<span class="label">Adgangskode</span>
+						<input
+							type="password"
+							bind:value={password}
+							placeholder="Mindst 6 tegn"
+							autocomplete={view === 'login' ? 'current-password' : 'new-password'}
+						/>
+					</label>
+
+					{#if error}
+						<p class="error">{error}</p>
+					{/if}
+
+					<Button variant="primary" size="lg" full onclick={handleSubmit}>
+						{loading
+							? 'Vent...'
+							: view === 'login'
+								? 'Log ind'
+								: 'Opret konto'}
+					</Button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style>
-	.page {
+	.surface {
 		min-height: 100vh;
 		background: var(--bg);
 		display: flex;
+		flex-direction: column;
+	}
+
+	/* === Velkomst === */
+	.welcome {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		padding: 40px 28px 28px;
+		max-width: 480px;
+		margin: 0 auto;
+		width: 100%;
+		min-height: 100vh;
+		box-sizing: border-box;
+	}
+
+	.welcome-top {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+		gap: 18px;
+	}
+
+	.badge {
+		width: 72px;
+		height: 72px;
+		border-radius: 50%;
+		background: var(--white);
+		border: 1px solid var(--border);
+		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 24px 16px;
 	}
 
-	.container {
-		width: 100%;
-		max-width: 420px;
-	}
-
-	.brand {
-		text-align: center;
-		margin-bottom: 32px;
-	}
-
-	.brand h1 {
-		font-family: var(--ff-d);
-		font-size: 36px;
-		font-weight: 600;
-		color: var(--text);
-		margin: 0;
-		letter-spacing: -0.01em;
-	}
-
-	.tabs {
+	.title-block {
 		display: flex;
-		gap: 4px;
-		background: var(--bg2);
-		padding: 4px;
-		border-radius: var(--r);
-		margin-bottom: 20px;
+		flex-direction: column;
+		align-items: center;
 	}
 
-	.tab {
+	.title {
+		font-family: var(--ff-d);
+		font-size: 34px;
+		font-weight: 700;
+		color: var(--text);
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+		margin: 0;
+	}
+
+	.tagline {
+		margin: 10px 0 0;
+		font-size: 13px;
+		color: var(--text2);
+		max-width: 260px;
+		line-height: 1.55;
+	}
+
+	.welcome-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.resume {
+		text-align: center;
+		font-size: 11px;
+		color: var(--text3);
+		margin: 6px 0 0;
+	}
+
+	.resume-link {
+		color: var(--terra);
+	}
+
+	/* === Formular-skærm === */
+	.form-screen {
 		flex: 1;
-		padding: 10px 16px;
+		display: flex;
+		flex-direction: column;
+		padding: 16px 28px 28px;
+		max-width: 480px;
+		margin: 0 auto;
+		width: 100%;
+		min-height: 100vh;
+		box-sizing: border-box;
+	}
+
+	.back-btn {
+		width: 40px;
+		height: 40px;
 		border: none;
 		background: transparent;
-		font-family: var(--ff-b);
-		font-size: 15px;
-		font-weight: 500;
-		color: var(--text3);
-		border-radius: calc(var(--r) - 4px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		border-radius: 50%;
+		margin-left: -8px;
+		transition: background 0.15s ease;
 	}
 
-	.tab:hover {
-		color: var(--text);
+	.back-btn:hover {
+		background: var(--bg2);
 	}
 
-	.tab.active {
-		background: var(--white);
+	.form-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding-bottom: 40px;
+	}
+
+	.form-header {
+		text-align: center;
+		margin-bottom: 28px;
+	}
+
+	.form-title {
+		font-family: var(--ff-d);
+		font-size: 28px;
+		font-weight: 700;
 		color: var(--text);
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+		letter-spacing: -0.01em;
+		margin: 0;
+	}
+
+	.form-sub {
+		margin: 6px 0 0;
+		font-size: 13px;
+		color: var(--text2);
 	}
 
 	.form {
-		background: var(--white);
-		border: 1px solid var(--border);
-		border-radius: var(--rl);
-		padding: var(--card-pad);
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
@@ -216,7 +320,7 @@
 		padding: 12px 14px;
 		border: 1px solid var(--border);
 		border-radius: var(--r);
-		background: var(--bg);
+		background: var(--white);
 		font-family: var(--ff-b);
 		font-size: 15px;
 		color: var(--text);
@@ -243,7 +347,20 @@
 		font-size: 13px;
 	}
 
-	.logged-in {
+	/* === Logget ind === */
+	.logged-in-screen {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 40px 28px;
+		max-width: 480px;
+		margin: 0 auto;
+		width: 100%;
+	}
+
+	.logged-in-card {
+		width: 100%;
 		background: var(--white);
 		border: 1px solid var(--border);
 		border-radius: var(--rl);
