@@ -1,3 +1,10 @@
+<script lang="ts">
+	import Button from '$lib/components/Button.svelte';
+	import Pill from '$lib/components/Pill.svelte';
+	import Card from '$lib/components/Card.svelte';
+	import Icon from '$lib/components/Icon.svelte';
+</script>
+
 <div class="page">
 	<h1>Linn's Academy — brand-test</h1>
 	<p class="lede">Hvis du kan se Playfair Display i overskriften og DM Sans her, virker fonts.</p>
@@ -74,6 +81,87 @@
 		<p style="color: var(--text);">--text — primær tekstfarve</p>
 		<p style="color: var(--text2);">--text2 — sekundær</p>
 		<p style="color: var(--text3);">--text3 — tertiær (labels, dæmpet)</p>
+	</div>
+
+	<h2>Knapper</h2>
+	<div class="row">
+		<Button variant="primary">Begynd lektion</Button>
+		<Button variant="primary" icon="play">Begynd</Button>
+		<Button variant="outline">Annuller</Button>
+		<Button variant="ghost">Spring over</Button>
+	</div>
+	<div class="row">
+		<Button variant="soft" icon="check">Markeret</Button>
+		<Button variant="sage" icon="leaf">Sage-variant</Button>
+	</div>
+	<div class="row">
+		<Button variant="primary" size="sm">Lille</Button>
+		<Button variant="primary" size="md">Medium</Button>
+		<Button variant="primary" size="lg">Stor</Button>
+	</div>
+	<div class="row">
+		<Button variant="primary" full icon="play">Fuld bredde</Button>
+	</div>
+
+	<h2>Pills</h2>
+	<div class="row">
+		<Pill tone="terra">Kickstart · dag 8 af 21</Pill>
+		<Pill tone="sage" icon="leaf">Kost</Pill>
+		<Pill tone="gold">Premium</Pill>
+		<Pill tone="neutral">14 min</Pill>
+	</div>
+
+	<h2>Cards</h2>
+	<div class="cards">
+		<Card>
+			<div class="eyebrow" style="color: var(--terra); margin-bottom: 8px;">Dagens lektion</div>
+			<h3 style="margin: 0 0 6px;">Hormoner og søvn</h3>
+			<p style="margin: 0; color: var(--text2); font-size: 13px;">
+				Hvorfor du vågner kl. 3 — og hvad du kan gøre ved det.
+			</p>
+		</Card>
+
+		<Card onclick={() => alert('Klikket!')}>
+			<div style="display: flex; align-items: center; gap: 12px;">
+				<div class="ic-bubble" style="background: var(--sdim); color: var(--sage);">
+					<Icon name="leaf" size={16} />
+				</div>
+				<div style="flex: 1;">
+					<div class="eyebrow" style="color: var(--sage);">Kost</div>
+					<div style="font-family: var(--ff-d); font-weight: 700; margin-top: 2px;">
+						Log dit protein
+					</div>
+				</div>
+				<Icon name="chevron-r" size={16} color="var(--text3)" />
+			</div>
+		</Card>
+
+		<Card>
+			<div style="display: flex; gap: 12px;">
+				<div class="ic-bubble" style="background: var(--ic-rose); color: var(--terra);">
+					<span style="font-family: var(--ff-d); font-weight: 700; font-size: 14px;">L</span>
+				</div>
+				<div style="flex: 1;">
+					<div class="eyebrow" style="color: var(--text3);">Note fra Linn</div>
+					<p
+						style="font-family: var(--ff-d); font-style: italic; color: var(--text2); margin: 4px 0 0; font-size: 13px;"
+					>
+						Husk — uge 2 handler om søvnen. Vær blid med dig selv hvis det stadig tager
+						tid.
+					</p>
+				</div>
+			</div>
+		</Card>
+	</div>
+
+	<h2>Ikoner</h2>
+	<div class="icons">
+		{#each ['home', 'grid', 'mail', 'community', 'user', 'play', 'pause', 'check', 'lock', 'unlock', 'flame', 'leaf', 'moon', 'flower', 'sparkle', 'bell', 'cal', 'search', 'settings', 'plus', 'star', 'arrow', 'chevron-r', 'book', 'video', 'mic'] as iconName}
+			<div class="icon-tile">
+				<Icon name={iconName as any} size={20} color="var(--text)" />
+				<small>{iconName}</small>
+			</div>
+		{/each}
 	</div>
 </div>
 
@@ -152,5 +240,51 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
+	}
+
+	.row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-bottom: 10px;
+	}
+
+	.cards {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.ic-bubble {
+		width: 36px;
+		height: 36px;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.icons {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 10px;
+	}
+
+	.icon-tile {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		padding: 14px 8px;
+		border: 1px solid var(--border);
+		border-radius: var(--r);
+		background: var(--white);
+	}
+
+	.icon-tile small {
+		font-size: 10px;
+		color: var(--text3);
+		font-family: ui-monospace, 'SF Mono', monospace;
 	}
 </style>
