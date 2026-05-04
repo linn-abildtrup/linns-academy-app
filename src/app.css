@@ -1,0 +1,89 @@
+/* ============================================================
+   Linn's Academy — globale brand-tokens
+   ------------------------------------------------------------
+   Oversat 1:1 fra design-system.jsx
+   Palette: Terra & Sage  ·  Typografi: Classic  ·  Tæthed: Cozy
+   ============================================================ */
+
+:root {
+	/* Baggrunde og overflader */
+	--bg: #faf6f1;
+	--header: #f2ebe3;
+	--white: #ffffff;
+	--bg2: #f5efe8;
+
+	/* Streger og kanter */
+	--border: #e8ded4;
+	--border2: #ddd1c5;
+
+	/* Primær — terracotta */
+	--terra: #b87b6e;
+	--terra2: #cc9080;
+	--tdim: rgba(184, 123, 110, 0.1);
+	--tdim2: rgba(184, 123, 110, 0.2);
+
+	/* Accent — sage-grøn */
+	--sage: #6f9e7e;
+	--sdim: rgba(111, 158, 126, 0.12);
+
+	/* Guld — til premium og købsstatus */
+	--gold: #b8956a;
+	--gdim: rgba(184, 149, 106, 0.12);
+
+	/* Tekst — fire trin */
+	--text: #352318;
+	--text2: #6b4e42;
+	--text3: #a08878;
+	--text4: rgba(160, 136, 120, 0.45);
+
+	/* Ikon-baggrunde */
+	--ic-rose: #f0ddd7;
+	--ic-sage: #e2efe6;
+
+	/* Typografi */
+	--ff-d: 'Playfair Display', Georgia, serif;
+	--ff-b: 'DM Sans', system-ui, sans-serif;
+
+	/* Tæthed (Cozy) */
+	--card-pad: 18px;
+	--gap: 14px;
+	--r: 14px;
+	--rl: 20px;
+}
+
+/* ------------------------------------------------------------
+   Grundlæggende reset
+   Sætter alle sider til at bruge Linns brand som default
+   ------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: var(--bg);
+	color: var(--text);
+	font-family: var(--ff-b);
+	font-size: 16px;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	font-family: var(--ff-d);
+	font-weight: 700;
+	letter-spacing: -0.01em;
+	margin: 0;
+}
