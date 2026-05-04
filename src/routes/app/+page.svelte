@@ -67,6 +67,34 @@
 		}
 	];
 
+	type TidligereKob = {
+		navn: string;
+		meta: string;
+		expires: string;
+		ikon: 'path' | 'check';
+		accent: string;
+		dim: string;
+	};
+
+	const tidligereKob: TidligereKob[] = [
+		{
+			navn: 'Kickstart en sund overgangsalder',
+			meta: 'Forløb · købt okt. 2025',
+			expires: 'Adgang til 15. nov. 2026',
+			ikon: 'path',
+			accent: '#9D6358',
+			dim: 'rgba(157,99,88,.10)'
+		},
+		{
+			navn: 'Vanetracker',
+			meta: 'Modul · købt jan. 2026',
+			expires: 'Læseadgang · ingen tracking',
+			ikon: 'check',
+			accent: '#6F9E7E',
+			dim: 'rgba(111,158,126,.10)'
+		}
+	];
+
 	async function handleSignOut() {
 		await signOut(auth);
 		goto('/login');
@@ -280,11 +308,65 @@
 		</div>
 	</div>
 {:else if userDoc?.state === 'udlobet'}
-	<div class="placeholder-page">
-		<div class="placeholder-eyebrow">Adgang udløbet</div>
-		<h1 class="placeholder-title">Velkommen tilbage, {userDoc.firstName || ''}</h1>
-		<p class="placeholder-text">Forsiden for udløbet adgang kommer i næste trin.</p>
-		<button class="signout-button" onclick={handleSignOut}>Log ud</button>
+	<div class="forside-c1">
+		<header class="b1-header">
+			<div class="b1-brand">Linn's Academy</div>
+			<button class="bell-button" aria-label="Notifikationer">
+				<Icon name="bell" size={13} color="var(--text2)" />
+			</button>
+		</header>
+
+		<div class="forside-body">
+			<section class="c1-greeting">
+				<div class="date-label">Velkommen tilbage</div>
+				<h1 class="greeting greeting-large">{greeting}</h1>
+				<p class="c1-tagline">Det er længe siden — godt at se dig igen.</p>
+			</section>
+
+			<section class="tilbud-card">
+				<div class="tilbud-decoration"></div>
+				<div class="tilbud-content">
+					<div class="tilbud-eyebrow">
+						<Icon name="sparkle" size={10} color="#fff" />
+						KUN FOR DIG
+					</div>
+					<div class="tilbud-title">−30% den første måned</div>
+					<div class="tilbud-description">
+						Fortsæt hvor du slap — alle moduler, fri adgang.
+					</div>
+					<button class="tilbud-button">Se mit tilbud</button>
+				</div>
+			</section>
+
+			<section class="kob-section">
+				<div class="kob-header">
+					<div class="eyebrow eyebrow-muted">Mine køb</div>
+					<div class="kob-title">Stadig dine — i 2 måneder til</div>
+				</div>
+				<div class="kob-list">
+					{#each tidligereKob as kob (kob.navn)}
+						<button class="kob-card">
+							<div class="kob-icon" style="background: {kob.dim}">
+								<Icon name={kob.ikon} size={16} color={kob.accent} />
+							</div>
+							<div class="kob-text">
+								<div class="kob-name">{kob.navn}</div>
+								<div class="kob-meta">{kob.meta}</div>
+								<div class="kob-expires">{kob.expires}</div>
+							</div>
+							<Icon name="chevron-r" size={14} color="var(--text3)" />
+						</button>
+					{/each}
+				</div>
+			</section>
+
+			<div class="c1-disclaimer">Ingen forpligtelse — du bestemmer selv tempoet.</div>
+
+			<section class="signout-section">
+				<button class="signout-button" onclick={handleSignOut}>Log ud</button>
+				<div class="signout-meta">{user?.email}</div>
+			</section>
+		</div>
 	</div>
 {:else}
 	<div class="placeholder-page">
@@ -296,7 +378,8 @@
 	/* ── Fælles forside-body ───────────────────────────────────── */
 
 	.forside-a1,
-	.forside-b1 {
+	.forside-b1,
+	.forside-c1 {
 		min-height: 100%;
 		display: flex;
 		flex-direction: column;
@@ -348,6 +431,11 @@
 		line-height: 1.05;
 	}
 
+	.greeting-large {
+		font-size: 26px;
+		margin: 4px 0 6px;
+	}
+
 	.forlob-badge {
 		margin-top: 6px;
 		display: inline-flex;
@@ -393,7 +481,7 @@
 		background: var(--terra);
 	}
 
-	/* ── B1 header (lille brand-linje + bell) ──────────────────── */
+	/* ── B1 og C1 header ───────────────────────────────────────── */
 
 	.b1-header {
 		padding: 10px 20px 0;
@@ -420,6 +508,21 @@
 
 	.b1-greeting .greeting {
 		font-size: 26px;
+	}
+
+	/* ── C1 hilsen ─────────────────────────────────────────────── */
+
+	.c1-greeting {
+		max-width: 320px;
+	}
+
+	.c1-tagline {
+		font-family: var(--ff-d);
+		font-style: italic;
+		font-size: 13px;
+		color: var(--text2);
+		margin: 0;
+		line-height: 1.45;
 	}
 
 	/* ── Eyebrow-labels ────────────────────────────────────────── */
@@ -789,6 +892,158 @@
 		cursor: pointer;
 	}
 
+	/* ── C1 tilbuds-card ───────────────────────────────────────── */
+
+	.tilbud-card {
+		border-radius: 16px;
+		overflow: hidden;
+		background: linear-gradient(160deg, #c99587 0%, #b87b6e 60%, #9d6358 100%);
+		color: #fff;
+		padding: 18px;
+		position: relative;
+	}
+
+	.tilbud-decoration {
+		position: absolute;
+		right: -30px;
+		top: -30px;
+		width: 130px;
+		height: 130px;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.tilbud-content {
+		position: relative;
+	}
+
+	.tilbud-eyebrow {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		padding: 3px 9px;
+		border-radius: 99px;
+		background: rgba(255, 255, 255, 0.22);
+		font-size: 9px;
+		font-weight: 700;
+		letter-spacing: 0.14em;
+		margin-bottom: 10px;
+	}
+
+	.tilbud-title {
+		font-family: var(--ff-d);
+		font-size: 22px;
+		font-weight: 700;
+		line-height: 1.1;
+		letter-spacing: -0.01em;
+	}
+
+	.tilbud-description {
+		font-size: 11.5px;
+		opacity: 0.9;
+		margin-top: 6px;
+		line-height: 1.45;
+	}
+
+	.tilbud-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 10px 18px;
+		border-radius: 99px;
+		background: #fff;
+		color: var(--terra);
+		border: none;
+		font-size: 12px;
+		font-weight: 600;
+		font-family: var(--ff-b);
+		margin-top: 14px;
+		cursor: pointer;
+	}
+
+	/* ── C1 mine køb ───────────────────────────────────────────── */
+
+	.kob-header {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		margin-bottom: 8px;
+	}
+
+	.kob-title {
+		font-family: var(--ff-d);
+		font-size: 14px;
+		font-weight: 700;
+		font-style: italic;
+		color: var(--text);
+	}
+
+	.kob-list {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.kob-card {
+		padding: 13px;
+		border-radius: 12px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		display: flex;
+		align-items: center;
+		gap: 11px;
+		width: 100%;
+		text-align: left;
+		font-family: var(--ff-b);
+		cursor: pointer;
+	}
+
+	.kob-icon {
+		width: 38px;
+		height: 38px;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.kob-text {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.kob-name {
+		font-family: var(--ff-d);
+		font-size: 13px;
+		font-weight: 700;
+		line-height: 1.2;
+		color: var(--text);
+	}
+
+	.kob-meta {
+		font-size: 10px;
+		color: var(--text3);
+		margin-top: 2px;
+	}
+
+	.kob-expires {
+		font-size: 9.5px;
+		color: var(--terra);
+		margin-top: 2px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+	}
+
+	.c1-disclaimer {
+		font-size: 10px;
+		color: var(--text3);
+		font-family: var(--ff-d);
+		font-style: italic;
+		text-align: center;
+		padding: 4px 0;
+	}
+
 	/* ── Sign out ──────────────────────────────────────────────── */
 
 	.signout-section {
@@ -820,7 +1075,7 @@
 		font-style: italic;
 	}
 
-	/* ── Placeholder for ikke-implementerede tilstande ─────────── */
+	/* ── Placeholder ───────────────────────────────────────────── */
 
 	.placeholder-page {
 		padding: 40px 24px;
@@ -831,22 +1086,6 @@
 		justify-content: center;
 		gap: 12px;
 		text-align: center;
-	}
-
-	.placeholder-eyebrow {
-		font-size: 10px;
-		font-weight: 700;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: var(--terra);
-	}
-
-	.placeholder-title {
-		font-family: var(--ff-d);
-		font-size: 24px;
-		font-weight: 700;
-		color: var(--text);
-		margin: 0;
 	}
 
 	.placeholder-text {
