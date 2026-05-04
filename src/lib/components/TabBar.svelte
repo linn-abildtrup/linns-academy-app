@@ -1,6 +1,10 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
 	import { page } from '$app/state';
 	import Icon, { type IconName } from '$lib/components/Icon.svelte';
+	import type { UserDoc } from '$lib/types';
+
+	type UserState = 'forlobskunde' | 'modulbruger' | 'udlobet';
 
 	type NavItem = {
 		id: string;
@@ -8,15 +12,32 @@
 		icon: IconName;
 		href: string;
 		dot?: boolean;
+		lockedFor?: UserState[];
 	};
 
 	const NAV_ITEMS: NavItem[] = [
 		{ id: 'home', label: 'Forside', icon: 'home', href: '/app' },
 		{ id: 'moduler', label: 'Moduler', icon: 'grid', href: '/app/moduler' },
-		{ id: 'beskeder', label: 'Beskeder', icon: 'mail', href: '/app/beskeder', dot: true },
-		{ id: 'faellesskab', label: 'Fællesskab', icon: 'community', href: '/app/faellesskab' },
+		{
+			id: 'beskeder',
+			label: 'Beskeder',
+			icon: 'mail',
+			href: '/app/beskeder',
+			dot: true,
+			lockedFor: ['udlobet']
+		},
+		{
+			id: 'faellesskab',
+			label: 'Fællesskab',
+			icon: 'community',
+			href: '/app/faellesskab',
+			lockedFor: ['udlobet']
+		},
 		{ id: 'profil', label: 'Profil', icon: 'user', href: '/app/profil' }
 	];
+
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const userDoc = $derived(getUserDoc?.());
 
 	function isActive(item: NavItem, pathname: string): boolean {
 		if (item.href === '/app') {
@@ -25,33 +46,55 @@
 		return pathname === item.href || pathname.startsWith(item.href + '/');
 	}
 
+	function isLocked(item: NavItem, state: UserState | undefined): boolean {
+		if (!state || !item.lockedFor) return false;
+		return item.lockedFor.includes(state);
+	}
+
 	const items = $derived(
 		NAV_ITEMS.map((item) => ({
 			...item,
-			active: isActive(item, page.url.pathname)
+			active: isActive(item, page.url.pathname),
+			locked: isLocked(item, userDoc?.state as UserState | undefined)
 		}))
 	);
 </script>
 
 <nav class="tabbar" aria-label="Hovednavigation">
 	{#each items as item (item.id)}
-		<a
-			href={item.href}
-			class="tab"
-			class:active={item.active}
-			aria-current={item.active ? 'page' : undefined}
-		>
-			<span class="icon-wrap">
-				<Icon name={item.icon} size={20} />
-				{#if item.dot}
-					<span class="dot" aria-hidden="true"></span>
-				{/if}
+		{#if item.locked}
+			<span
+				class="tab tab-locked"
+				aria-disabled="true"
+				title="Kræver aktivt abonnement"
+			>
+				<span class="icon-wrap">
+					<Icon name={item.icon} size={20} color="var(--text4)" />
+					<span class="lock-badge" aria-hidden="true">
+						<Icon name="lock" size={8} color="var(--text3)" />
+					</span>
+				</span>
+				<span class="label">{item.label}</span>
 			</span>
-			<span class="label">{item.label}</span>
-			{#if item.active}
-				<span class="active-marker" aria-hidden="true"></span>
-			{/if}
-		</a>
+		{:else}
+			<a
+				href={item.href}
+				class="tab"
+				class:active={item.active}
+				aria-current={item.active ? 'page' : undefined}
+			>
+				<span class="icon-wrap">
+					<Icon name={item.icon} size={20} />
+					{#if item.dot}
+						<span class="dot" aria-hidden="true"></span>
+					{/if}
+				</span>
+				<span class="label">{item.label}</span>
+				{#if item.active}
+					<span class="active-marker" aria-hidden="true"></span>
+				{/if}
+			</a>
+		{/if}
 	{/each}
 </nav>
 
@@ -82,6 +125,11 @@
 		color: var(--terra);
 	}
 
+	.tab-locked {
+		color: var(--text4);
+		cursor: not-allowed;
+	}
+
 	.icon-wrap {
 		position: relative;
 		display: inline-flex;
@@ -96,6 +144,20 @@
 		border-radius: 50%;
 		background: var(--terra);
 		border: 1.5px solid var(--white);
+	}
+
+	.lock-badge {
+		position: absolute;
+		bottom: -3px;
+		right: -4px;
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		background: var(--bg2);
+		border: 1.5px solid var(--white);
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.label {
