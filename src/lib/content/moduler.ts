@@ -1,4 +1,5 @@
 import type { UserState } from '$lib/types';
+import type { IconName } from '$lib/components/Icon.svelte';
 
 export type ModulStatus = 'aktiv' | 'laast' | 'laeseadgang';
 
@@ -7,7 +8,7 @@ export interface Modul {
 	navn: string;
 	beskrivelse: string;
 	accent: string;
-	icon: string;
+	icon: IconName;
 	status: ModulStatus;
 	progress: number | null;
 	statusTekst: string;
@@ -20,7 +21,7 @@ interface ModulBase {
 	navn: string;
 	beskrivelse: string;
 	accent: string;
-	icon: string;
+	icon: IconName;
 }
 
 const MODULER_BASE: ModulBase[] = [

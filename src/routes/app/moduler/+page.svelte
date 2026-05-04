@@ -1,24 +1,207 @@
-<div class="placeholder">
-  <h1>Kommer snart</h1>
-  <p>Denne side er under udvikling.</p>
+<script lang="ts">
+	import { getContext } from 'svelte';
+	import type { UserDoc } from '$lib/types';
+	import { getModulerForUser, type Modul } from '$lib/content/moduler';
+	import Icon from '$lib/components/Icon.svelte';
+
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const userDoc = $derived(getUserDoc());
+
+	const moduler = $derived.by<Modul[]>(() => {
+		if (!userDoc) return [];
+		return getModulerForUser(userDoc.state);
+	});
+
+	const undertekst = $derived.by(() => {
+		if (!userDoc) return '';
+		if (userDoc.state === 'forlobskunde') {
+			return 'Dit forløb og dine moduler samlet ét sted.';
+		}
+		if (userDoc.state === 'modulbruger') {
+			return 'Dine moduler samlet ét sted.';
+		}
+		return 'Dit indhold med læseadgang.';
+	});
+</script>
+
+<div class="page">
+	<header class="page-header">
+		<div class="eyebrow">Bibliotek</div>
+		<h1>Moduler</h1>
+		<p class="page-sub">{undertekst}</p>
+	</header>
+
+	<div class="search">
+		<Icon name="search" size={14} color="var(--text3)" />
+		<span>Søg i moduler</span>
+	</div>
+
+	<div class="modul-liste">
+		{#each moduler as modul (modul.id)}
+			<article class="modul-row" class:laast={modul.status === 'laast'} class:laeseadgang={modul.status === 'laeseadgang'}>
+				<div class="modul-icon" style="background: {modul.accent};">
+					<Icon name={modul.icon} size={18} color="#fff" />
+				</div>
+
+				<div class="modul-tekst">
+					<div class="modul-navn">{modul.navn}</div>
+					<div class="modul-sub">{modul.subTekst}</div>
+					{#if modul.laasTekst}
+						<div class="modul-laas-tekst">{modul.laasTekst}</div>
+					{/if}
+				</div>
+
+				<div class="modul-status">
+					{#if modul.status === 'aktiv'}
+						<span class="badge badge-aktiv">{modul.statusTekst}</span>
+					{:else if modul.status === 'laast'}
+						<Icon name="lock" size={14} color="var(--text3)" />
+					{:else if modul.status === 'laeseadgang'}
+						<span class="badge badge-laeseadgang">{modul.statusTekst}</span>
+					{/if}
+				</div>
+			</article>
+		{/each}
+	</div>
 </div>
 
 <style>
-  .placeholder {
-    padding: 32px 18px;
-    text-align: center;
-  }
-  h1 {
-    font-family: var(--ff-d);
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text);
-    margin: 0 0 8px;
-  }
-  p {
-    font-family: var(--ff-b);
-    font-size: 14px;
-    color: var(--text3);
-    margin: 0;
-  }
+	.page {
+		padding: 18px 18px 100px;
+		max-width: 520px;
+		margin: 0 auto;
+	}
+
+	.page-header {
+		margin-bottom: 14px;
+	}
+
+	.eyebrow {
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	h1 {
+		font-family: var(--ff-d);
+		font-size: 28px;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+		margin: 4px 0 0;
+		line-height: 1.05;
+		color: var(--text);
+	}
+
+	.page-sub {
+		font-size: 13px;
+		color: var(--text2);
+		margin: 6px 0 0;
+		line-height: 1.4;
+	}
+
+	.search {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 12px;
+		border-radius: 12px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		margin-bottom: 18px;
+	}
+
+	.search span {
+		font-size: 13px;
+		color: var(--text3);
+	}
+
+	.modul-liste {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		overflow: hidden;
+	}
+
+	.modul-row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 14px 14px;
+		border-top: 1px solid var(--border);
+	}
+
+	.modul-row:first-child {
+		border-top: none;
+	}
+
+	.modul-row.laast {
+		opacity: 0.65;
+	}
+
+	.modul-row.laeseadgang {
+		opacity: 0.85;
+	}
+
+	.modul-icon {
+		width: 40px;
+		height: 40px;
+		border-radius: 11px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.modul-tekst {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.modul-navn {
+		font-size: 14px;
+		font-weight: 600;
+		letter-spacing: -0.005em;
+		color: var(--text);
+	}
+
+	.modul-sub {
+		font-size: 11.5px;
+		color: var(--text3);
+		margin-top: 2px;
+		line-height: 1.35;
+	}
+
+	.modul-laas-tekst {
+		font-size: 11px;
+		color: var(--terra);
+		margin-top: 4px;
+		font-weight: 500;
+	}
+
+	.modul-status {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+	}
+
+	.badge {
+		font-size: 9.5px;
+		font-weight: 600;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		padding: 4px 9px;
+		border-radius: 99px;
+	}
+
+	.badge-aktiv {
+		background: var(--bg2);
+		color: var(--text2);
+	}
+
+	.badge-laeseadgang {
+		background: #f1ede8;
+		color: #8a7480;
+	}
 </style>
