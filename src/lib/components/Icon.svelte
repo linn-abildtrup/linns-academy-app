@@ -1,5 +1,5 @@
-<script lang="ts">
-	type IconName =
+<script lang="ts" module>
+	export type IconName =
 		| 'home'
 		| 'path'
 		| 'book'
@@ -35,7 +35,9 @@
 		| 'leaf'
 		| 'lightning'
 		| 'unlock';
+</script>
 
+<script lang="ts">
 	let {
 		name,
 		size = 20,

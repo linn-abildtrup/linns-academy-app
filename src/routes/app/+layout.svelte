@@ -5,6 +5,7 @@
 	import { auth } from '$lib/firebase';
 	import { getUserDoc, createUserDoc } from '$lib/userDoc';
 	import type { UserDoc } from '$lib/types';
+	import TabBar from '$lib/components/TabBar.svelte';
 
 	let { children } = $props();
 
@@ -49,7 +50,12 @@
 		<p>Et øjeblik...</p>
 	</div>
 {:else}
-	{@render children()}
+	<div class="app-shell">
+		<main class="content">
+			{@render children()}
+		</main>
+		<TabBar />
+	</div>
 {/if}
 
 <style>
@@ -62,5 +68,17 @@
 		font-family: var(--ff-b);
 		color: var(--text3);
 		font-size: 14px;
+	}
+
+	.app-shell {
+		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+		background: var(--bg);
+	}
+
+	.content {
+		flex: 1;
+		overflow-y: auto;
 	}
 </style>
