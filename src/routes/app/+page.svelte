@@ -3,12 +3,7 @@
 	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import { getGreetingWithName } from '$lib/utils/greeting';
-	import {
-		aktivtForlob,
-		dagensIndhold,
-		formatDato,
-		getCurrentDay
-	} from '$lib/content/forlob';
+	import { aktivtForlob, dagensIndhold, formatDato, getCurrentDay } from '$lib/content/forlob';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 
@@ -17,9 +12,7 @@
 	const greeting = $derived(getGreetingWithName(userDoc?.firstName ?? ''));
 	const today = $derived(formatDato(new Date()));
 	const dayNumber = $derived(getCurrentDay(aktivtForlob) ?? dagensIndhold.dag);
-	const completedActions = $derived(
-		dagensIndhold.actions.filter((a) => a.done).length
-	);
+	const completedActions = $derived(dagensIndhold.actions.filter((a) => a.done).length);
 	const totalActions = $derived(dagensIndhold.actions.length);
 
 	type ModulGenvej = {
@@ -160,10 +153,7 @@
 				<div class="actions-list">
 					{#each dagensIndhold.actions as action (action.id)}
 						<button class="action-card" class:action-done={action.done}>
-							<div
-								class="action-icon"
-								style="background: {getActionAccentDim(action.modul)}"
-							>
+							<div class="action-icon" style="background: {getActionAccentDim(action.modul)}">
 								<Icon
 									name={getActionIcon(action.modul)}
 									size={15}
@@ -176,10 +166,7 @@
 								{/if}
 							</div>
 							<div class="action-text">
-								<div
-									class="action-eyebrow"
-									style="color: {getActionAccent(action.modul)}"
-								>
+								<div class="action-eyebrow" style="color: {getActionAccent(action.modul)}">
 									{action.eyebrow}
 								</div>
 								<div class="action-title">{action.titel}</div>
@@ -222,10 +209,7 @@
 				<div class="actions-list">
 					{#each dagensIndhold.actions as action (action.id)}
 						<button class="action-card" class:action-done={action.done}>
-							<div
-								class="action-icon"
-								style="background: {getActionAccentDim(action.modul)}"
-							>
+							<div class="action-icon" style="background: {getActionAccentDim(action.modul)}">
 								<Icon
 									name={getActionIcon(action.modul)}
 									size={15}
@@ -238,10 +222,7 @@
 								{/if}
 							</div>
 							<div class="action-text">
-								<div
-									class="action-eyebrow"
-									style="color: {getActionAccent(action.modul)}"
-								>
+								<div class="action-eyebrow" style="color: {getActionAccent(action.modul)}">
 									{action.eyebrow}
 								</div>
 								<div class="action-title">{action.titel}</div>
@@ -310,9 +291,7 @@
 						KUN FOR DIG
 					</div>
 					<div class="tilbud-title">−30% den første måned</div>
-					<div class="tilbud-description">
-						Fortsæt hvor du slap — alle moduler, fri adgang.
-					</div>
+					<div class="tilbud-description">Fortsæt hvor du slap — alle moduler, fri adgang.</div>
 					<button class="tilbud-button">Se mit tilbud</button>
 				</div>
 			</section>

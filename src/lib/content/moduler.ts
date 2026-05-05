@@ -76,7 +76,7 @@ export function getModulerForUser(state: UserState): Modul[] {
 
 function forlobskundeStatus(base: ModulBase): Modul {
 	const progressMap: Record<string, number> = {
-		forlob: 0.30,
+		forlob: 0.3,
 		traening: 0.42,
 		kost: 0.65,
 		vaner: 0.18,

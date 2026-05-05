@@ -66,8 +66,8 @@
 		<div>
 			<div class="type-label">body — DM Sans 400</div>
 			<p style="margin: 0;">
-				Du er på dag 8 af forløbet. I dag handler det om hvorfor du vågner kl. 3 om
-				natten — og hvad du kan gøre ved det.
+				Du er på dag 8 af forløbet. I dag handler det om hvorfor du vågner kl. 3 om natten — og hvad
+				du kan gøre ved det.
 			</p>
 		</div>
 		<div>
@@ -146,8 +146,7 @@
 					<p
 						style="font-family: var(--ff-d); font-style: italic; color: var(--text2); margin: 4px 0 0; font-size: 13px;"
 					>
-						Husk — uge 2 handler om søvnen. Vær blid med dig selv hvis det stadig tager
-						tid.
+						Husk — uge 2 handler om søvnen. Vær blid med dig selv hvis det stadig tager tid.
 					</p>
 				</div>
 			</div>

@@ -38,7 +38,11 @@
 
 	<div class="modul-liste">
 		{#each moduler as modul (modul.id)}
-			<article class="modul-row" class:laast={modul.status === 'laast'} class:laeseadgang={modul.status === 'laeseadgang'}>
+			<article
+				class="modul-row"
+				class:laast={modul.status === 'laast'}
+				class:laeseadgang={modul.status === 'laeseadgang'}
+			>
 				<div class="modul-icon" style="background: {modul.accent};">
 					<Icon name={modul.icon} size={18} color="#fff" />
 				</div>

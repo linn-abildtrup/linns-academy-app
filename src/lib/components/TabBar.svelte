@@ -63,11 +63,7 @@
 <nav class="tabbar" aria-label="Hovednavigation">
 	{#each items as item (item.id)}
 		{#if item.locked}
-			<span
-				class="tab tab-locked"
-				aria-disabled="true"
-				title="Kræver aktivt abonnement"
-			>
+			<span class="tab tab-locked" aria-disabled="true" title="Kræver aktivt abonnement">
 				<span class="icon-wrap">
 					<Icon name={item.icon} size={20} color="var(--text4)" />
 					<span class="lock-badge" aria-hidden="true">

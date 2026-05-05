@@ -67,9 +67,7 @@
 					<Button variant="primary" size="lg" full onclick={() => goto('/')}>
 						Gå til forsiden
 					</Button>
-					<Button variant="ghost" size="lg" full onclick={handleLogout}>
-						Log ud
-					</Button>
+					<Button variant="ghost" size="lg" full onclick={handleLogout}>Log ud</Button>
 				</div>
 			</div>
 		</div>
@@ -81,16 +79,12 @@
 				</div>
 				<div class="title-block">
 					<h1 class="title">Linn's<br />Academy</h1>
-					<p class="tagline">
-						Et roligt rum til mikrotræning, refleksion og kvinders sundhed.
-					</p>
+					<p class="tagline">Et roligt rum til mikrotræning, refleksion og kvinders sundhed.</p>
 				</div>
 			</div>
 
 			<div class="welcome-actions">
-				<Button variant="primary" size="lg" full onclick={() => (view = 'login')}>
-					Log ind
-				</Button>
+				<Button variant="primary" size="lg" full onclick={() => (view = 'login')}>Log ind</Button>
 				<Button variant="outline" size="lg" full onclick={() => (view = 'signup')}>
 					Opret konto
 				</Button>
@@ -111,9 +105,7 @@
 						{view === 'login' ? 'Log ind' : 'Opret konto'}
 					</h2>
 					<p class="form-sub">
-						{view === 'login'
-							? 'Velkommen tilbage'
-							: 'Begynd din rejse her'}
+						{view === 'login' ? 'Velkommen tilbage' : 'Begynd din rejse her'}
 					</p>
 				</div>
 
@@ -143,11 +135,7 @@
 					{/if}
 
 					<Button variant="primary" size="lg" full onclick={handleSubmit}>
-						{loading
-							? 'Vent...'
-							: view === 'login'
-								? 'Log ind'
-								: 'Opret konto'}
+						{loading ? 'Vent...' : view === 'login' ? 'Log ind' : 'Opret konto'}
 					</Button>
 				</div>
 			</div>
