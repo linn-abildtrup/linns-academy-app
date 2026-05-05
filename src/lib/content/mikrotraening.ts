@@ -156,10 +156,7 @@ export function harGennemfortDag(fremgang: MikrotraeningFremgang, dag: number): 
 /**
  * Beregner procentvis fremgang i et program (0-100).
  */
-export function beregnProgramFremgang(
-	fremgang: MikrotraeningFremgang,
-	antalDage: number
-): number {
+export function beregnProgramFremgang(fremgang: MikrotraeningFremgang, antalDage: number): number {
 	if (antalDage <= 0) return 0;
 	const gennemforte = fremgang.gennemforte.length;
 	return Math.round((gennemforte / antalDage) * 100);
@@ -169,10 +166,7 @@ export function beregnProgramFremgang(
  * Finder næste dag brugeren skal lave.
  * Returnerer den laveste dag der ikke er gennemført, eller null hvis alle er færdige.
  */
-export function naesteDag(
-	fremgang: MikrotraeningFremgang,
-	antalDage: number
-): number | null {
+export function naesteDag(fremgang: MikrotraeningFremgang, antalDage: number): number | null {
 	for (let dag = 1; dag <= antalDage; dag++) {
 		if (!fremgang.gennemforte.includes(dag)) {
 			return dag;

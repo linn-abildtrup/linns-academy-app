@@ -28,7 +28,10 @@ describe('getVideoUrl', () => {
 
 	it('builds a path under /exercises/', async () => {
 		await getVideoUrl('incline_pushup.mp4');
-		expect(refMock).toHaveBeenCalledWith({ mock: 'storage-instance' }, 'exercises/incline_pushup.mp4');
+		expect(refMock).toHaveBeenCalledWith(
+			{ mock: 'storage-instance' },
+			'exercises/incline_pushup.mp4'
+		);
 	});
 
 	it('returns the download URL from Firebase', async () => {
