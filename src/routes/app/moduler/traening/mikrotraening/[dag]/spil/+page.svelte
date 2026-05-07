@@ -62,6 +62,9 @@
 	let sidsteCountdownNoegle = $state<string | null>(null);
 	let unduckTimer: ReturnType<typeof setTimeout> | null = null;
 
+	let wakeSlaaetTil = $state(true);
+	let wakeLockSentinel = $state<WakeLockSentinel | null>(null);
+
 	const dag = $derived<TrainingDay | null>(
 		programData?.dage.find((d) => d.dagNummer === dagNummer) ?? null
 	);
@@ -179,6 +182,7 @@
 			nedtaellingGoUrl = goLyd;
 			nedtaellingPauseUrl = pauseLyd;
 
+			document.addEventListener('visibilitychange', onVisibilityChange);
 			startTimer();
 		} catch (e) {
 			console.error(e);
@@ -202,6 +206,8 @@
 				// ignorer — elementet kan være rent dødt
 			}
 		}
+		document.removeEventListener('visibilitychange', onVisibilityChange);
+		releaseWakeLock();
 	});
 
 	$effect(() => {
@@ -213,6 +219,15 @@
 			} catch {
 				// ignorer
 			}
+		}
+	});
+
+	$effect(() => {
+		const skalHaveWake = wakeSlaaetTil && !loading && !fejl && phase !== 'done';
+		if (skalHaveWake && !wakeLockSentinel) {
+			requestWakeLock();
+		} else if (!skalHaveWake && wakeLockSentinel) {
+			releaseWakeLock();
 		}
 	});
 
@@ -305,6 +320,49 @@
 		if (unduckTimer !== null) {
 			clearTimeout(unduckTimer);
 			unduckTimer = null;
+		}
+	}
+
+	async function requestWakeLock() {
+		if (!('wakeLock' in navigator)) return;
+		if (wakeLockSentinel) return;
+		try {
+			const sentinel = await navigator.wakeLock.request('screen');
+			sentinel.addEventListener('release', () => {
+				if (wakeLockSentinel === sentinel) wakeLockSentinel = null;
+			});
+			wakeLockSentinel = sentinel;
+		} catch (e) {
+			console.warn('Kunne ikke aktivere wake lock:', e);
+			wakeLockSentinel = null;
+		}
+	}
+
+	async function releaseWakeLock() {
+		const sentinel = wakeLockSentinel;
+		if (!sentinel) return;
+		wakeLockSentinel = null;
+		try {
+			await sentinel.release();
+		} catch {
+			// ignorer — release må gerne fejle silent
+		}
+	}
+
+	function toggleWake() {
+		wakeSlaaetTil = !wakeSlaaetTil;
+	}
+
+	function onVisibilityChange() {
+		if (
+			document.visibilityState === 'visible' &&
+			wakeSlaaetTil &&
+			!wakeLockSentinel &&
+			phase !== 'done' &&
+			!loading &&
+			!fejl
+		) {
+			requestWakeLock();
 		}
 	}
 
@@ -551,47 +609,89 @@
 
 			<div class="fase-badge">{faseLabel}</div>
 
-			<button
-				class="lyd-knap"
-				type="button"
-				onclick={toggleLyd}
-				aria-label={lydSlaaetTil ? 'Slå lyd fra' : 'Slå lyd til'}
-				aria-pressed={lydSlaaetTil}
-			>
-				{#if lydSlaaetTil}
-					<svg
-						viewBox="0 0 24 24"
-						width="18"
-						height="18"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-						<path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-						<path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-					</svg>
-				{:else}
-					<svg
-						viewBox="0 0 24 24"
-						width="18"
-						height="18"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-						<line x1="23" y1="9" x2="17" y2="15"></line>
-						<line x1="17" y1="9" x2="23" y2="15"></line>
-					</svg>
-				{/if}
-			</button>
+			<div class="toggle-stak">
+				<button
+					class="rund-knap"
+					type="button"
+					onclick={toggleLyd}
+					aria-label={lydSlaaetTil ? 'Slå lyd fra' : 'Slå lyd til'}
+					aria-pressed={lydSlaaetTil}
+				>
+					{#if lydSlaaetTil}
+						<svg
+							viewBox="0 0 24 24"
+							width="18"
+							height="18"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+							<path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+							<path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+						</svg>
+					{:else}
+						<svg
+							viewBox="0 0 24 24"
+							width="18"
+							height="18"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+							<line x1="23" y1="9" x2="17" y2="15"></line>
+							<line x1="17" y1="9" x2="23" y2="15"></line>
+						</svg>
+					{/if}
+				</button>
+				<button
+					class="rund-knap"
+					type="button"
+					onclick={toggleWake}
+					aria-label={wakeSlaaetTil ? 'Tillad skærmen at slukke' : 'Hold skærmen tændt'}
+					aria-pressed={wakeSlaaetTil}
+				>
+					{#if wakeSlaaetTil}
+						<svg
+							viewBox="0 0 24 24"
+							width="18"
+							height="18"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<circle cx="12" cy="12" r="4"></circle>
+							<path
+								d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+							></path>
+						</svg>
+					{:else}
+						<svg
+							viewBox="0 0 24 24"
+							width="18"
+							height="18"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+						</svg>
+					{/if}
+				</button>
+			</div>
 
 			<div class="timer-badge">
 				<svg viewBox="0 0 120 120">
@@ -763,10 +863,17 @@
 		z-index: 4;
 	}
 
-	.lyd-knap {
+	.toggle-stak {
 		position: absolute;
 		bottom: 14px;
 		left: 14px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		z-index: 4;
+	}
+
+	.rund-knap {
 		width: 40px;
 		height: 40px;
 		border-radius: 50%;
@@ -778,16 +885,15 @@
 		align-items: center;
 		justify-content: center;
 		cursor: pointer;
-		z-index: 4;
 		padding: 0;
 	}
 
-	.lyd-knap[aria-pressed='false'] {
+	.rund-knap[aria-pressed='false'] {
 		background: rgba(0, 0, 0, 0.65);
 		color: rgba(255, 255, 255, 0.55);
 	}
 
-	.lyd-knap:active {
+	.rund-knap:active {
 		transform: scale(0.94);
 	}
 
