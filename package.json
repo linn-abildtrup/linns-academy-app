@@ -18,6 +18,7 @@
 		"seed:forlob": "tsx scripts/seed-forlob.ts",
 		"seed:vaneprogram": "tsx scripts/seed-vaneprogram.ts",
 		"seed:fodevarer": "tsx scripts/seed-fodevarer.ts",
+		"migrate:recipes": "tsx scripts/migrate-recipes.ts",
 		"cleanup:vaneprogrammer": "tsx scripts/cleanup-vaneprogrammer.ts",
 		"list:forlob": "tsx scripts/list-forlob.ts",
 		"upload:videos": "tsx scripts/upload-videos.ts",
