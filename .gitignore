@@ -25,3 +25,7 @@ vite.config.ts.timestamp-*
 # Firebase service account keys (NEVER commit)
 scripts/*.json
 scripts/service-account-key.json
+
+# Lokale arbejdsfiler (uploades ikke til repo)
+/reference
+/videos-to-upload
