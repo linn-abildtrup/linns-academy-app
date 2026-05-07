@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import { page } from '$app/state';
+	import type { User } from 'firebase/auth';
 	import Icon, { type IconName } from '$lib/components/Icon.svelte';
 	import type { UserDoc } from '$lib/types';
+	import { isAdmin } from '$lib/admin';
 
 	type UserState = 'forlobskunde' | 'modulbruger' | 'udlobet';
 
@@ -15,7 +17,27 @@
 		lockedFor?: UserState[];
 	};
 
-	const NAV_ITEMS: NavItem[] = [
+	const ADMIN_ITEM: NavItem = {
+		id: 'admin',
+		label: 'Admin',
+		icon: 'settings',
+		href: '/app/admin'
+	};
+
+	const FAELLESSKAB_ITEM: NavItem = {
+		id: 'faellesskab',
+		label: 'Fællesskab',
+		icon: 'community',
+		href: '/app/faellesskab',
+		lockedFor: ['udlobet']
+	};
+
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const getUser = getContext<() => User | null>('user');
+	const userDoc = $derived(getUserDoc?.());
+	const user = $derived(getUser?.());
+
+	const NAV_ITEMS = $derived<NavItem[]>([
 		{ id: 'home', label: 'Forside', icon: 'home', href: '/app' },
 		{ id: 'moduler', label: 'Moduler', icon: 'grid', href: '/app/moduler' },
 		{
@@ -26,18 +48,9 @@
 			dot: true,
 			lockedFor: ['udlobet']
 		},
-		{
-			id: 'faellesskab',
-			label: 'Fællesskab',
-			icon: 'community',
-			href: '/app/faellesskab',
-			lockedFor: ['udlobet']
-		},
+		isAdmin(user ?? null) ? ADMIN_ITEM : FAELLESSKAB_ITEM,
 		{ id: 'profil', label: 'Profil', icon: 'user', href: '/app/profil' }
-	];
-
-	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
-	const userDoc = $derived(getUserDoc?.());
+	]);
 
 	function isActive(item: NavItem, pathname: string): boolean {
 		if (item.href === '/app') {
