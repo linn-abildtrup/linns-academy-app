@@ -48,5 +48,27 @@ service cloud.firestore {
 			allow read: if request.auth != null;
 			allow write: if isAdmin();
 		}
+
+		// Forløb (kohorter med startdato + whitelist): alle autentificerede kan læse,
+		// kun admin kan skrive. Klienten har brug for at læse for at vise startdato.
+		match /forlob/{forlobId} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
+		// AllowedEmails (whitelist fra CSV-import):
+		//   - Brugeren kan læse SIN egen email-record (til login-flow check)
+		//   - Admin kan læse alle og skrive frit (CSV-upload, status-update)
+		//   - login-flow har brug for at kunne sætte status='registered' for sin egen
+		match /allowedEmails/{email} {
+			allow read: if request.auth != null
+				&& (isAdmin() || request.auth.token.email.lower() == email);
+			allow update: if request.auth != null
+				&& request.auth.token.email.lower() == email
+				&& request.resource.data.diff(resource.data).affectedKeys()
+					.hasOnly(['status', 'registreret']);
+			allow create, delete: if isAdmin();
+			allow write: if isAdmin();
+		}
 	}
 }
