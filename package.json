@@ -15,6 +15,7 @@
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run",
 		"seed:mikrotraening": "tsx scripts/seed-mikrotraening.ts",
+		"seed:forlob": "tsx scripts/seed-forlob.ts",
 		"upload:videos": "tsx scripts/upload-videos.ts",
 		"upload:audio": "tsx scripts/upload-audio.ts",
 		"reset:mikrotraening": "tsx scripts/reset-mikrotraening.ts",
