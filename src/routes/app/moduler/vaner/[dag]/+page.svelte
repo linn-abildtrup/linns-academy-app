@@ -1,0 +1,656 @@
+<script lang="ts">
+	import { getContext, onMount } from 'svelte';
+	import { page } from '$app/state';
+	import type { User } from 'firebase/auth';
+	import type { UserProduct } from '$lib/content/mikrotraening';
+	import type { Forlob } from '$lib/content/forlobAdgang';
+	import { dagDato, unlockedDays } from '$lib/content/forlobAdgang';
+	import {
+		beregnDagsStatus,
+		CHECKIN_SPORGSMAAL,
+		type BonusSvar,
+		type CheckinSvar,
+		type VaneProgramDag,
+		type VaneSvar,
+		type VanedagEntry
+	} from '$lib/content/vaner';
+	import { hentUserProduct } from '$lib/firestore/mikrotraening';
+	import { hentForlob } from '$lib/firestore/forlob';
+	import { gemVanedag, hentVanedag, hentVaneProgram } from '$lib/firestore/vaner';
+	import Icon from '$lib/components/Icon.svelte';
+
+	const getUser = getContext<() => User | null>('user');
+	const user = $derived(getUser());
+
+	const dagNummer = $derived(parseInt(page.params.dag ?? '', 10));
+
+	let userProduct = $state<UserProduct | null>(null);
+	let forlob = $state<Forlob | null>(null);
+	let prog = $state<VaneProgramDag | null>(null);
+
+	let checks = $state<Record<string, VaneSvar>>({});
+	let bonus = $state<Record<string, BonusSvar>>({});
+	let checkin = $state<CheckinSvar>({});
+	let note = $state('');
+	let oprindeligEntry = $state<VanedagEntry | null>(null);
+
+	let loading = $state(true);
+	let fejl = $state<string | null>(null);
+	let gemmer = $state(false);
+	let gemFejl = $state<string | null>(null);
+	let editMode = $state(false);
+
+	const harGemt = $derived(oprindeligEntry !== null);
+	const disabled = $derived(harGemt && !editMode);
+
+	const dagDatoLabel = $derived(() => {
+		if (!forlob || !Number.isFinite(dagNummer)) return '';
+		const d = dagDato(forlob.startDato.toDate(), dagNummer);
+		return `${d.getDate()}/${d.getMonth() + 1}`;
+	});
+
+	const ugeLabel = $derived(() => {
+		if (!prog) return '';
+		if (prog.isBaseline) return 'Før du går i gang';
+		return `Uge ${prog.uge}`;
+	});
+
+	const dagTitelLabel = $derived(() => {
+		if (!prog) return '';
+		const datoSuffix = forlob ? ` · ${dagDatoLabel()}` : '';
+		if (prog.isBaseline) return `Baseline${datoSuffix}`;
+		return `Dag ${prog.dagNummer}${datoSuffix}`;
+	});
+
+	const erLaast = $derived.by(() => {
+		if (!forlob) return true;
+		const u = unlockedDays(forlob.startDato.toDate(), forlob.antalDage);
+		return u < 0 || dagNummer > u;
+	});
+
+	const aktuelStatus = $derived(
+		prog
+			? beregnDagsStatus(prog, {
+					dagNummer,
+					checks,
+					bonus,
+					checkin,
+					note
+				})
+			: 'empty'
+	);
+
+	const fremgangPct = $derived.by(() => {
+		if (!prog || prog.checks.length === 0) return 0;
+		const score = prog.checks.reduce((s, c) => {
+			const v = checks[c.id];
+			return s + (v === 'ja' ? 1 : v === 'delvist' ? 0.5 : 0);
+		}, 0);
+		const bonusScore = prog.bonus && bonus[prog.bonus.id] === 'ja' ? 1 : 0;
+		const total = prog.checks.length + (prog.bonus ? 1 : 0);
+		return total > 0 ? Math.round(((score + bonusScore) / total) * 100) : 0;
+	});
+
+	const fremgangAntal = $derived.by(() => {
+		if (!prog) return { ja: 0, total: 0 };
+		const ja = prog.checks.filter((c) => checks[c.id] === 'ja').length;
+		const bonusJa = prog.bonus && bonus[prog.bonus.id] === 'ja' ? 1 : 0;
+		const total = prog.checks.length + (prog.bonus ? 1 : 0);
+		return { ja: ja + bonusJa, total };
+	});
+
+	onMount(async () => {
+		const u = user;
+		if (!u) {
+			fejl = 'Du skal være logget ind.';
+			loading = false;
+			return;
+		}
+		if (!Number.isFinite(dagNummer) || dagNummer < 0 || dagNummer > 21) {
+			fejl = 'Ugyldigt dag-nummer.';
+			loading = false;
+			return;
+		}
+
+		try {
+			const up = await hentUserProduct(u.uid, 'kickstart');
+			if (!up) {
+				fejl = 'Du har ikke adgang til vanetracker endnu.';
+				loading = false;
+				return;
+			}
+			userProduct = up;
+
+			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+			if (!forlobId) {
+				fejl = 'Du er ikke tilknyttet et forløb endnu.';
+				loading = false;
+				return;
+			}
+
+			const f = await hentForlob(forlobId);
+			if (!f || !f.vaneProgramId) {
+				fejl = 'Forløbet er ikke fuldt sat op endnu.';
+				loading = false;
+				return;
+			}
+			forlob = f;
+
+			const data = await hentVaneProgram(f.vaneProgramId);
+			if (!data) {
+				fejl = 'Vaneprogrammet kunne ikke findes.';
+				loading = false;
+				return;
+			}
+			const dagData = data.dage.find((d) => d.dagNummer === dagNummer);
+			if (!dagData) {
+				fejl = `Dag ${dagNummer} findes ikke i programmet.`;
+				loading = false;
+				return;
+			}
+			prog = dagData;
+
+			const entry = await hentVanedag(u.uid, dagNummer, 'kickstart');
+			if (entry) {
+				oprindeligEntry = entry;
+				checks = { ...(entry.checks ?? {}) };
+				bonus = { ...(entry.bonus ?? {}) };
+				checkin = { ...(entry.checkin ?? {}) };
+				note = entry.note ?? '';
+				editMode = false;
+			} else {
+				editMode = true;
+			}
+		} catch (e) {
+			console.error(e);
+			fejl = 'Kunne ikke hente data. Prøv igen.';
+		} finally {
+			loading = false;
+		}
+	});
+
+	function setCheck(id: string, val: VaneSvar) {
+		checks = { ...checks, [id]: val };
+	}
+
+	function toggleBonus(id: string, val: BonusSvar) {
+		const ny = { ...bonus };
+		if (ny[id] === val) {
+			delete ny[id];
+		} else {
+			ny[id] = val;
+		}
+		bonus = ny;
+	}
+
+	function startEdit() {
+		editMode = true;
+		gemFejl = null;
+	}
+
+	async function gem() {
+		const u = user;
+		if (!u || gemmer) return;
+		gemFejl = null;
+		gemmer = true;
+		try {
+			await gemVanedag(
+				u.uid,
+				{
+					dagNummer,
+					checks,
+					bonus,
+					checkin,
+					note
+				},
+				'kickstart'
+			);
+			oprindeligEntry = { dagNummer, checks, bonus, checkin, note };
+			editMode = false;
+		} catch (e) {
+			console.error(e);
+			gemFejl = 'Kunne ikke gemme. Prøv igen.';
+		} finally {
+			gemmer = false;
+		}
+	}
+</script>
+
+<div class="page">
+	<header class="page-header">
+		<a class="back" href="/app/moduler/vaner">
+			<Icon name="arrow-l" size={14} color="var(--text2)" />
+			<span>Oversigt</span>
+		</a>
+		{#if prog}
+			<div class="eyebrow">{dagTitelLabel()} · {ugeLabel()}</div>
+			<h1>{prog.isBaseline ? 'Baseline' : 'Dagens vaner'}</h1>
+			{#if !prog.isBaseline && harGemt && !editMode}
+				<span class="status-badge gemt">✓ Gemt</span>
+			{:else if !prog.isBaseline && editMode && harGemt}
+				<span class="status-badge editing">✏️ Redigerer</span>
+			{/if}
+		{/if}
+	</header>
+
+	{#if loading}
+		<div class="status-besked">Henter dagen...</div>
+	{:else if fejl}
+		<div class="status-besked fejl">{fejl}</div>
+	{:else if erLaast}
+		<div class="status-besked">🔒 Denne dag er endnu ikke låst op.</div>
+	{:else if prog}
+		{#if !prog.isBaseline}
+			<section class="card">
+				<div class="section-label">Refleksion</div>
+				<p class="reflection">{prog.reflection}</p>
+				<textarea
+					class="textarea"
+					placeholder="Skriv dit svar her..."
+					bind:value={note}
+					{disabled}
+					rows="4"
+				></textarea>
+			</section>
+
+			{#if prog.checks.length > 0}
+				<section class="card">
+					<div class="section-label">Dagens vaner</div>
+					{#each prog.checks as c (c.id)}
+						{@const val = checks[c.id]}
+						<div class="check-row">
+							<div class="check-label">{c.label}</div>
+							<div class="check-knapper">
+								<button
+									class="ja-knap"
+									class:aktiv={val === 'ja'}
+									type="button"
+									onclick={() => setCheck(c.id, 'ja')}
+									{disabled}
+								>
+									Ja
+								</button>
+								<button
+									class="delvist-knap"
+									class:aktiv={val === 'delvist'}
+									type="button"
+									onclick={() => setCheck(c.id, 'delvist')}
+									{disabled}
+								>
+									Delvist
+								</button>
+								<button
+									class="nej-knap"
+									class:aktiv={val === 'nej'}
+									type="button"
+									onclick={() => setCheck(c.id, 'nej')}
+									{disabled}
+								>
+									Nej
+								</button>
+							</div>
+						</div>
+					{/each}
+
+					{#if prog.bonus}
+						{@const bVal = bonus[prog.bonus.id]}
+						<div class="check-row bonus-row">
+							<div class="check-label">
+								<span class="bonus-tag">Bonus</span>
+								{prog.bonus.label}
+							</div>
+							<div class="check-knapper bonus-knapper">
+								<button
+									class="ja-knap"
+									class:aktiv={bVal === 'ja'}
+									type="button"
+									onclick={() => toggleBonus(prog!.bonus!.id, 'ja')}
+									{disabled}
+								>
+									Ja
+								</button>
+								<button
+									class="nej-knap"
+									class:aktiv={bVal === 'nej'}
+									type="button"
+									onclick={() => toggleBonus(prog!.bonus!.id, 'nej')}
+									{disabled}
+								>
+									Nej
+								</button>
+							</div>
+						</div>
+					{/if}
+
+					<div class="prog-bar" style="margin-top: 14px;">
+						<div class="prog-fill" style="width: {fremgangPct}%"></div>
+					</div>
+					<div class="prog-tael">{fremgangAntal.ja} af {fremgangAntal.total} vaner gennemført</div>
+				</section>
+			{/if}
+		{/if}
+
+		{#if prog.isCheckin || prog.isBaseline}
+			<section class="card">
+				<div class="section-label">{prog.isBaseline ? 'Baseline-check-in' : 'Check-in'}</div>
+				<p class="reflection">
+					{prog.isBaseline
+						? 'Dine baseline-målinger. Mærk efter på en skala 1-10.'
+						: 'Fem spørgsmål om din uge. Mærk efter på en skala 1-10.'}
+				</p>
+				<div class="checkin-info">
+					Sliders bygges i næste fase — kommer snart.
+				</div>
+			</section>
+		{/if}
+
+		{#if gemFejl}
+			<div class="fejl-besked">{gemFejl}</div>
+		{/if}
+
+		<div class="bund-knapper">
+			{#if editMode}
+				<button class="primary-knap" type="button" onclick={gem} disabled={gemmer}>
+					{gemmer ? 'Gemmer...' : `Gem ${dagTitelLabel()} ✓`}
+				</button>
+			{:else}
+				<button class="ghost-knap" type="button" onclick={startEdit}>
+					✏️ Rediger svar
+				</button>
+			{/if}
+		</div>
+	{/if}
+</div>
+
+<style>
+	.page {
+		padding: 18px 18px 100px;
+		max-width: 520px;
+		margin: 0 auto;
+	}
+
+	.page-header {
+		margin-bottom: 18px;
+	}
+
+	.back {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		color: var(--text2);
+		text-decoration: none;
+		margin-bottom: 12px;
+	}
+
+	.back:hover {
+		color: var(--text);
+	}
+
+	.eyebrow {
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	h1 {
+		font-family: var(--ff-d);
+		font-size: 28px;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+		margin: 4px 0 0;
+		line-height: 1.05;
+		color: var(--text);
+	}
+
+	.status-badge {
+		display: inline-block;
+		font-size: 10px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		padding: 4px 10px;
+		border-radius: 99px;
+		margin-top: 8px;
+		font-weight: 600;
+	}
+
+	.status-badge.gemt {
+		background: var(--sdim);
+		color: var(--sage);
+	}
+
+	.status-badge.editing {
+		background: var(--tdim);
+		color: var(--terra);
+	}
+
+	.status-besked {
+		padding: 14px 16px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		color: var(--text2);
+		font-size: 13px;
+		text-align: center;
+	}
+
+	.status-besked.fejl {
+		color: #8a4a3e;
+		background: #fbeeea;
+		border-color: #f0d6cf;
+	}
+
+	.card {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		padding: 16px;
+		margin-bottom: 14px;
+	}
+
+	.section-label {
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-bottom: 12px;
+	}
+
+	.reflection {
+		font-size: 14px;
+		color: var(--text);
+		line-height: 1.5;
+		margin: 0 0 12px;
+	}
+
+	.textarea {
+		width: 100%;
+		padding: 10px 12px;
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: var(--bg2);
+		color: var(--text);
+		font-family: var(--ff-b);
+		font-size: 13px;
+		line-height: 1.5;
+		outline: none;
+		resize: vertical;
+	}
+
+	.textarea:focus {
+		border-color: var(--terra);
+	}
+
+	.textarea:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+
+	.check-row {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: 12px 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.check-row:first-of-type {
+		border-top: none;
+		padding-top: 0;
+	}
+
+	.check-row.bonus-row {
+		background: var(--bg2);
+		margin: 8px -16px -8px;
+		padding: 12px 16px;
+		border-radius: 0 0 14px 14px;
+		border-top-color: var(--border);
+	}
+
+	.check-label {
+		font-size: 13.5px;
+		color: var(--text);
+		font-weight: 500;
+	}
+
+	.bonus-tag {
+		display: inline-block;
+		font-size: 9px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		background: var(--terra2);
+		color: #fff;
+		padding: 2px 7px;
+		border-radius: 99px;
+		font-weight: 600;
+		margin-right: 6px;
+		vertical-align: middle;
+	}
+
+	.check-knapper {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 6px;
+	}
+
+	.bonus-knapper {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.check-knapper button {
+		padding: 9px 10px;
+		font-size: 12.5px;
+		font-weight: 600;
+		border-radius: 8px;
+		border: 1px solid var(--border);
+		background: var(--white);
+		color: var(--text2);
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.check-knapper button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.ja-knap.aktiv {
+		background: var(--sage);
+		color: #fff;
+		border-color: var(--sage);
+	}
+
+	.delvist-knap.aktiv {
+		background: var(--gold);
+		color: #fff;
+		border-color: var(--gold);
+	}
+
+	.nej-knap.aktiv {
+		background: var(--text3);
+		color: #fff;
+		border-color: var(--text3);
+	}
+
+	.prog-bar {
+		height: 5px;
+		background: var(--bg2);
+		border-radius: 3px;
+		overflow: hidden;
+	}
+
+	.prog-fill {
+		height: 100%;
+		background: linear-gradient(90deg, var(--terra2), var(--terra));
+		transition: width 0.3s ease;
+	}
+
+	.prog-tael {
+		font-size: 11.5px;
+		color: var(--text3);
+		margin-top: 6px;
+	}
+
+	.checkin-info {
+		font-size: 12px;
+		color: var(--text4);
+		font-style: italic;
+		text-align: center;
+		padding: 14px;
+		background: var(--bg2);
+		border-radius: 10px;
+	}
+
+	.fejl-besked {
+		padding: 10px 12px;
+		background: #fbeeea;
+		border: 1px solid #f0d6cf;
+		border-radius: 8px;
+		font-size: 12px;
+		color: #8a4a3e;
+		margin-bottom: 12px;
+	}
+
+	.bund-knapper {
+		margin-top: 14px;
+	}
+
+	.primary-knap,
+	.ghost-knap {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		padding: 14px;
+		font-size: 14px;
+		font-weight: 600;
+		border-radius: 12px;
+		border: none;
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.primary-knap {
+		background: var(--terra);
+		color: #fff;
+	}
+
+	.primary-knap:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.ghost-knap {
+		background: var(--white);
+		border: 1px solid var(--border);
+		color: var(--text2);
+	}
+
+	.ghost-knap:hover {
+		background: var(--bg2);
+	}
+</style>
