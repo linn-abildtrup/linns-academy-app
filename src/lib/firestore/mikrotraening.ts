@@ -2,13 +2,14 @@
 // Holdt adskilt fra src/lib/content/mikrotraening.ts (typer + pure funktioner) så
 // unit tests for sidstnævnte ikke trækker firebase/firestore-runtime ind.
 
-import { doc, getDoc, getDocs, collection, setDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type {
 	TrainingProgram,
 	TrainingDay,
 	UserProduct,
-	Exercise
+	Exercise,
+	MikrotraeningFremgang
 } from '$lib/content/mikrotraening';
 
 export interface ProgramMedDage {
@@ -86,6 +87,23 @@ export async function hentUserProduct(uid: string, productId: string): Promise<U
 	const snap = await getDoc(ref);
 	if (!snap.exists()) return null;
 	return snap.data() as UserProduct;
+}
+
+/**
+ * Skriver opdateret mikrotræning-fremgang til brugerens userProduct-dokument.
+ * Bruges af workout-spilleren når en dag er gennemført eller feedback registreres.
+ *
+ * Opdaterer kun feltet fremgang.mikrotraening — andre fremgang-felter (fx vaner,
+ * kost) røres ikke. Dot-path-update på et nestet felt overskriver hele
+ * mikrotraening-objektet, så kald-stedet skal sende det fulde opdaterede objekt.
+ */
+export async function gemMikrotraeningFremgang(
+	uid: string,
+	productId: string,
+	fremgang: MikrotraeningFremgang
+): Promise<void> {
+	const ref = doc(db, 'users', uid, 'products', productId);
+	await updateDoc(ref, { 'fremgang.mikrotraening': fremgang });
 }
 
 /**

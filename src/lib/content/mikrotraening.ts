@@ -191,6 +191,37 @@ export function filtrerOvelserTilProgram(
 }
 
 /**
+ * Markerer en dag som gennemført i fremgang-objektet.
+ * Idempotent: tilføjer kun dagen hvis den ikke allerede står i listen.
+ * Holder gennemforte sorteret stigende så UI'et viser rigtig rækkefølge.
+ */
+export function markerDagSomGennemfort(
+	fremgang: MikrotraeningFremgang,
+	dag: number
+): MikrotraeningFremgang {
+	if (fremgang.gennemforte.includes(dag)) return fremgang;
+	return {
+		...fremgang,
+		gennemforte: [...fremgang.gennemforte, dag].sort((a, b) => a - b)
+	};
+}
+
+/**
+ * Registrerer feedback for en specifik dag.
+ * Overskriver eksisterende feedback hvis brugeren ændrer mening.
+ */
+export function registrerFeedback(
+	fremgang: MikrotraeningFremgang,
+	dag: number,
+	feedback: Feedback
+): MikrotraeningFremgang {
+	return {
+		...fremgang,
+		feedback: { ...fremgang.feedback, [dag]: feedback }
+	};
+}
+
+/**
  * Genererer et standardprogram med 1 ben-, 1 overkrop- og 1 core/stabilitet-øvelse pr dag.
  * Cycler deterministisk gennem øvelserne så hver bliver brugt så jævnt som muligt.
  * Default: 3 sæt × 30s arbejde × 10s hvile, ingen bonus.

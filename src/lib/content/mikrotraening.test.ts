@@ -7,6 +7,8 @@ import {
 	naesteDag,
 	filtrerOvelserTilProgram,
 	genererStandardProgram,
+	markerDagSomGennemfort,
+	registrerFeedback,
 	type Exercise,
 	type TrainingDay,
 	type MikrotraeningFremgang
@@ -206,6 +208,58 @@ describe('filtrerOvelserTilProgram', () => {
 		];
 		const filtreret = filtrerOvelserTilProgram(kunKettlebell, ['ingen']);
 		expect(filtreret.length).toBe(0);
+	});
+});
+
+describe('markerDagSomGennemfort', () => {
+	it('tilføjer en ny dag til en tom liste', () => {
+		const fremgang: MikrotraeningFremgang = { gennemforte: [], feedback: {} };
+		const opdateret = markerDagSomGennemfort(fremgang, 1);
+		expect(opdateret.gennemforte).toEqual([1]);
+	});
+
+	it('er idempotent — tilføjer ikke en dag der allerede står på listen', () => {
+		const fremgang: MikrotraeningFremgang = { gennemforte: [1, 2], feedback: {} };
+		const opdateret = markerDagSomGennemfort(fremgang, 2);
+		expect(opdateret.gennemforte).toEqual([1, 2]);
+	});
+
+	it('returnerer en sorteret liste når dage tilføjes ude af rækkefølge', () => {
+		const fremgang: MikrotraeningFremgang = { gennemforte: [3, 1], feedback: {} };
+		const opdateret = markerDagSomGennemfort(fremgang, 2);
+		expect(opdateret.gennemforte).toEqual([1, 2, 3]);
+	});
+
+	it('bevarer feedback uændret', () => {
+		const fremgang: MikrotraeningFremgang = { gennemforte: [], feedback: { 1: 'let' } };
+		const opdateret = markerDagSomGennemfort(fremgang, 2);
+		expect(opdateret.feedback).toEqual({ 1: 'let' });
+	});
+});
+
+describe('registrerFeedback', () => {
+	it('tilføjer feedback for en ny dag', () => {
+		const fremgang: MikrotraeningFremgang = { gennemforte: [1], feedback: {} };
+		const opdateret = registrerFeedback(fremgang, 1, 'tilpas');
+		expect(opdateret.feedback).toEqual({ 1: 'tilpas' });
+	});
+
+	it('overskriver eksisterende feedback for samme dag', () => {
+		const fremgang: MikrotraeningFremgang = { gennemforte: [1], feedback: { 1: 'let' } };
+		const opdateret = registrerFeedback(fremgang, 1, 'udfordrende');
+		expect(opdateret.feedback).toEqual({ 1: 'udfordrende' });
+	});
+
+	it('bevarer feedback fra andre dage', () => {
+		const fremgang: MikrotraeningFremgang = { gennemforte: [1, 2], feedback: { 1: 'let' } };
+		const opdateret = registrerFeedback(fremgang, 2, 'tilpas');
+		expect(opdateret.feedback).toEqual({ 1: 'let', 2: 'tilpas' });
+	});
+
+	it('bevarer gennemforte uændret', () => {
+		const fremgang: MikrotraeningFremgang = { gennemforte: [1, 2, 3], feedback: {} };
+		const opdateret = registrerFeedback(fremgang, 1, 'let');
+		expect(opdateret.gennemforte).toEqual([1, 2, 3]);
 	});
 });
 
