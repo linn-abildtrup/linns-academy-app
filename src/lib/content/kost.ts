@@ -190,3 +190,95 @@ export function sorterFodevarer(foods: Fodevare[], mode: SortMode): Fodevare[] {
 	}
 	return kopi;
 }
+
+// ==============================================
+// Match opskrift-ingredienser mod fødevaredatabase
+// ==============================================
+
+export interface OpskriftsIngrediens {
+	navn: string;
+	maengde: number;
+	enhed: string;
+}
+
+/**
+ * Finder den bedst matchende fødevare for en ingrediens-streng.
+ *
+ * Strategi (i prioritet):
+ *   1. Eksakt match på lower-cased navn
+ *   2. Fødevare-navn starter med ingrediens-navnet (efter lower-case)
+ *   3. Ingrediens-navnet er indeholdt i fødevare-navnet
+ *
+ * Hvis flere matches, foretrækkes den med det korteste navn (mest generel).
+ */
+export function findFodevareForIngrediens(
+	ingrediensNavn: string,
+	foods: Fodevare[]
+): Fodevare | null {
+	const q = ingrediensNavn.toLowerCase().trim();
+	if (!q) return null;
+
+	const eksakt = foods.find((f) => f.name.toLowerCase() === q);
+	if (eksakt) return eksakt;
+
+	const starter = foods
+		.filter((f) => f.name.toLowerCase().startsWith(q))
+		.sort((a, b) => a.name.length - b.name.length);
+	if (starter.length > 0) return starter[0];
+
+	const indeholder = foods
+		.filter((f) => f.name.toLowerCase().includes(q))
+		.sort((a, b) => a.name.length - b.name.length);
+	if (indeholder.length > 0) return indeholder[0];
+
+	return null;
+}
+
+/**
+ * Forsøger at vælge den bedste enhed på fødevaren ud fra ingrediens-enhedens
+ * navn (fx 'spsk', 'g', 'dl'). Falder tilbage til ingen enhed (= gram-portion).
+ */
+function vaelgEnhed(food: Fodevare, ingrediensEnhed: string): string | undefined {
+	const e = ingrediensEnhed.toLowerCase().trim();
+	if (!e || e === 'g') return undefined;
+	const match = food.units?.find((u) => u.u.toLowerCase() === e);
+	return match?.u;
+}
+
+/**
+ * Matcher en liste af opskrift-ingredienser mod fødevaredatabasen og
+ * returnerer hvilke der kunne tilføjes som måltidsitems og hvilke der
+ * ikke kunne findes.
+ *
+ * Hvis ingrediens-enhed er 'g' (eller tom), bruges portion=mængde direkte.
+ * Hvis enheden findes på fødevaren (fx 'spsk', 'dl'), bruges den.
+ * Ellers falder vi tilbage til gram-portion (selv om enhed-strengen var fx 'stk',
+ * hvor mængden så fortolkes som gram — bedre end at droppe ingrediensen).
+ */
+export function matchIngredienserMaltid(
+	ingredienser: OpskriftsIngrediens[],
+	foods: Fodevare[]
+): { matchede: MaaltidsItem[]; ikkeMatchede: OpskriftsIngrediens[] } {
+	const matchede: MaaltidsItem[] = [];
+	const ikkeMatchede: OpskriftsIngrediens[] = [];
+
+	for (const ing of ingredienser) {
+		if (!ing.navn || ing.maengde <= 0) {
+			if (ing.navn) ikkeMatchede.push(ing);
+			continue;
+		}
+		const food = findFodevareForIngrediens(ing.navn, foods);
+		if (!food) {
+			ikkeMatchede.push(ing);
+			continue;
+		}
+		const enhedId = vaelgEnhed(food, ing.enhed);
+		matchede.push({
+			foodId: food.id,
+			portion: ing.maengde,
+			enhedId
+		});
+	}
+
+	return { matchede, ikkeMatchede };
+}

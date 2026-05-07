@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
 	import {
 		beregnItem,
 		beregnMaaltid,
@@ -33,7 +35,24 @@
 
 	type Tab = 'opslag' | 'maaltid' | 'opskrifter';
 
-	let aktivTab = $state<Tab>('opslag');
+	function tabFraQuery(): Tab {
+		const t = page.url.searchParams.get('tab');
+		if (t === 'maaltid' || t === 'opskrifter' || t === 'opslag') return t;
+		return 'opslag';
+	}
+
+	let aktivTab = $state<Tab>(tabFraQuery());
+
+	function skiftTab(ny: Tab) {
+		aktivTab = ny;
+		const url = new URL(page.url);
+		if (ny === 'opslag') {
+			url.searchParams.delete('tab');
+		} else {
+			url.searchParams.set('tab', ny);
+		}
+		replaceState(url, page.state);
+	}
 
 	let foods = $state<Fodevare[]>([]);
 	let foodMap = $state<Map<string, Fodevare>>(new Map());
@@ -130,7 +149,7 @@
 		];
 		viserPicker = false;
 		pickerSoeg = '';
-		aktivTab = 'maaltid';
+		skiftTab('maaltid');
 	}
 
 	function fjernItem(index: number) {
@@ -202,7 +221,7 @@
 				class="tab-knap"
 				class:aktiv={aktivTab === 'opslag'}
 				type="button"
-				onclick={() => (aktivTab = 'opslag')}
+				onclick={() => skiftTab('opslag')}
 			>
 				Slå op
 			</button>
@@ -210,7 +229,7 @@
 				class="tab-knap"
 				class:aktiv={aktivTab === 'maaltid'}
 				type="button"
-				onclick={() => (aktivTab = 'maaltid')}
+				onclick={() => skiftTab('maaltid')}
 			>
 				Byg måltid {maaltid.length > 0 ? `(${maaltid.length})` : ''}
 			</button>
@@ -218,7 +237,7 @@
 				class="tab-knap"
 				class:aktiv={aktivTab === 'opskrifter'}
 				type="button"
-				onclick={() => (aktivTab = 'opskrifter')}
+				onclick={() => skiftTab('opskrifter')}
 			>
 				Opskrifter
 			</button>

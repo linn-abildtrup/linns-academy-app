@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import {
 		DIET_LABELS,
@@ -9,24 +10,40 @@
 		type Opskrift
 	} from '$lib/content/opskrifter';
 	import { hentOpskrift } from '$lib/firestore/opskrifter';
+	import { hentAlleFodevarer } from '$lib/firestore/kost';
+	import {
+		matchIngredienserMaltid,
+		type Fodevare,
+		type MaaltidsItem
+	} from '$lib/content/kost';
 	import Icon from '$lib/components/Icon.svelte';
+
+	const STORAGE_KEY = 'la_30303_maaltid_v1';
 
 	const opskriftId = $derived(page.params.id ?? '');
 
 	let opskrift = $state<Opskrift | null>(null);
+	let foods = $state<Fodevare[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let portioner = $state(0);
 
+	let tilfoejer = $state(false);
+	let tilfoejBesked = $state<{ tekst: string; type: 'ok' | 'advarsel' } | null>(null);
+
 	onMount(async () => {
 		try {
-			const o = await hentOpskrift(opskriftId);
+			const [o, allFoods] = await Promise.all([
+				hentOpskrift(opskriftId),
+				hentAlleFodevarer()
+			]);
 			if (!o) {
 				fejl = 'Opskriften blev ikke fundet.';
 				loading = false;
 				return;
 			}
 			opskrift = o;
+			foods = allFoods;
 			portioner = o.defaultPortioner || 4;
 		} catch (e) {
 			console.error(e);
@@ -40,11 +57,56 @@
 		const ny = Math.max(1, Math.min(20, portioner + delta));
 		portioner = ny;
 	}
+
+	async function tilfoejTilMaaltid() {
+		if (!opskrift || tilfoejer) return;
+		tilfoejer = true;
+		tilfoejBesked = null;
+		try {
+			const skaleredeIngredienser = opskrift.ingredienser.map((ing) => ({
+				...ing,
+				maengde: skalerMaengde(ing.maengde, opskrift!.defaultPortioner, portioner)
+			}));
+			const { matchede, ikkeMatchede } = matchIngredienserMaltid(skaleredeIngredienser, foods);
+
+			let nuvaerende: MaaltidsItem[] = [];
+			try {
+				const raw = localStorage.getItem(STORAGE_KEY);
+				if (raw) {
+					const parsed = JSON.parse(raw);
+					if (Array.isArray(parsed)) nuvaerende = parsed;
+				}
+			} catch {
+				// ignorer fejl ved læsning
+			}
+			const opdateret = [...nuvaerende, ...matchede];
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(opdateret));
+
+			if (ikkeMatchede.length === 0) {
+				tilfoejBesked = {
+					tekst: `${matchede.length} ingredienser tilføjet til dit måltid.`,
+					type: 'ok'
+				};
+			} else {
+				tilfoejBesked = {
+					tekst:
+						`${matchede.length} af ${matchede.length + ikkeMatchede.length} ingredienser blev tilføjet. ` +
+						`Disse blev ikke fundet i fødevaredatabasen og må tilføjes manuelt: ${ikkeMatchede.map((i) => i.navn).join(', ')}.`,
+					type: 'advarsel'
+				};
+			}
+			setTimeout(() => goto('/app/moduler/30-30-3?tab=maaltid'), 1500);
+		} catch (e) {
+			console.error(e);
+			tilfoejBesked = { tekst: 'Kunne ikke tilføje til måltid. Prøv igen.', type: 'advarsel' };
+			tilfoejer = false;
+		}
+	}
 </script>
 
 <div class="page">
 	<header class="page-header">
-		<a class="back" href="/app/moduler/30-30-3/opskrifter">
+		<a class="back" href="/app/moduler/30-30-3?tab=opskrifter">
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Opskrifter</span>
 		</a>
@@ -125,6 +187,20 @@
 				<div class="section-label">Fremgangsmåde</div>
 				<div class="instruktioner">{opskrift.instruktioner}</div>
 			</section>
+		{/if}
+
+		{#if opskrift.ingredienser.length > 0}
+			{#if tilfoejBesked}
+				<div class="tilfoej-besked {tilfoejBesked.type}">{tilfoejBesked.tekst}</div>
+			{/if}
+			<button
+				class="primary-knap"
+				type="button"
+				onclick={tilfoejTilMaaltid}
+				disabled={tilfoejer}
+			>
+				{tilfoejer ? 'Tilføjer...' : `+ Tilføj til byg-måltid (${portioner} portion${portioner === 1 ? '' : 'er'})`}
+			</button>
 		{/if}
 	{/if}
 </div>
@@ -319,5 +395,44 @@
 		line-height: 1.6;
 		color: var(--text);
 		white-space: pre-wrap;
+	}
+
+	.primary-knap {
+		display: block;
+		width: 100%;
+		padding: 14px;
+		background: var(--terra);
+		color: #fff;
+		font-size: 14px;
+		font-weight: 600;
+		border-radius: 12px;
+		border: none;
+		cursor: pointer;
+		font-family: var(--ff-b);
+		margin-top: 8px;
+	}
+
+	.primary-knap:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.tilfoej-besked {
+		padding: 12px 14px;
+		border-radius: 10px;
+		font-size: 12.5px;
+		line-height: 1.5;
+		margin-bottom: 10px;
+	}
+
+	.tilfoej-besked.ok {
+		background: var(--sdim);
+		color: var(--sage);
+	}
+
+	.tilfoej-besked.advarsel {
+		background: #fdf3e7;
+		color: #8a6a3c;
+		border: 1px solid #ecd9b8;
 	}
 </style>

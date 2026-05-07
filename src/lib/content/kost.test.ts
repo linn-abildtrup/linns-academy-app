@@ -7,6 +7,8 @@ import {
 	formatGram,
 	filtrerFodevarer,
 	sorterFodevarer,
+	findFodevareForIngrediens,
+	matchIngredienserMaltid,
 	type Fodevare,
 	type MaaltidsItem
 } from './kost';
@@ -199,5 +201,85 @@ describe('sorterFodevarer', () => {
 		const oprindelig = original.map((f) => f.id);
 		sorterFodevarer(original, 'alpha');
 		expect(original.map((f) => f.id)).toEqual(oprindelig);
+	});
+});
+
+describe('findFodevareForIngrediens', () => {
+	const liste = [skyr, havre, broccoli];
+
+	it('finder eksakt match (case-insensitiv)', () => {
+		expect(findFodevareForIngrediens('Skyr, naturel', liste)).toEqual(skyr);
+		expect(findFodevareForIngrediens('skyr, naturel', liste)).toEqual(skyr);
+	});
+
+	it('finder match hvor fødevare-navn starter med ingrediens', () => {
+		expect(findFodevareForIngrediens('skyr', liste)).toEqual(skyr);
+	});
+
+	it('finder match hvor ingrediens er indeholdt i navn', () => {
+		expect(findFodevareForIngrediens('havre', liste)).toEqual(havre);
+	});
+
+	it('returnerer null når intet matcher', () => {
+		expect(findFodevareForIngrediens('xyz123', liste)).toBeNull();
+	});
+
+	it('returnerer null for tom streng', () => {
+		expect(findFodevareForIngrediens('', liste)).toBeNull();
+	});
+});
+
+describe('matchIngredienserMaltid', () => {
+	const liste = [skyr, havre, broccoli];
+
+	it('matcher ingredienser til fødevarer og bevarer mængde', () => {
+		const r = matchIngredienserMaltid(
+			[
+				{ navn: 'skyr', maengde: 200, enhed: 'g' },
+				{ navn: 'havre', maengde: 1, enhed: 'dl' }
+			],
+			liste
+		);
+		expect(r.matchede).toHaveLength(2);
+		expect(r.matchede[0].foodId).toBe('skyr');
+		expect(r.matchede[0].portion).toBe(200);
+		expect(r.matchede[1].foodId).toBe('havre');
+		expect(r.matchede[1].enhedId).toBe('dl');
+		expect(r.ikkeMatchede).toHaveLength(0);
+	});
+
+	it('rapporterer ikke-matchede ingredienser separat', () => {
+		const r = matchIngredienserMaltid(
+			[
+				{ navn: 'skyr', maengde: 100, enhed: 'g' },
+				{ navn: 'eksotisk_ingrediens', maengde: 50, enhed: 'g' }
+			],
+			liste
+		);
+		expect(r.matchede).toHaveLength(1);
+		expect(r.ikkeMatchede).toHaveLength(1);
+		expect(r.ikkeMatchede[0].navn).toBe('eksotisk_ingrediens');
+	});
+
+	it('springer ingredienser med 0 mængde over (uden navn) men inkluderer dem ved navn', () => {
+		const r = matchIngredienserMaltid(
+			[
+				{ navn: 'salt og peber', maengde: 0, enhed: 'stk' },
+				{ navn: '', maengde: 0, enhed: '' }
+			],
+			liste
+		);
+		expect(r.matchede).toHaveLength(0);
+		expect(r.ikkeMatchede).toHaveLength(1);
+		expect(r.ikkeMatchede[0].navn).toBe('salt og peber');
+	});
+
+	it('falder tilbage til gram-portion hvis enhed ikke findes på fødevaren', () => {
+		const r = matchIngredienserMaltid(
+			[{ navn: 'broccoli', maengde: 100, enhed: 'stk' }],
+			liste
+		);
+		expect(r.matchede).toHaveLength(1);
+		expect(r.matchede[0].enhedId).toBeUndefined();
 	});
 });
