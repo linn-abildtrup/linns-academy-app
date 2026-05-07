@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { MikrotraeningFremgang, UserProduct } from '$lib/content/mikrotraening';
@@ -48,8 +49,7 @@
 
 			const programId = up.programValg?.mikrotraening;
 			if (!programId) {
-				fejl = 'Vælg dit mikrotræningsprogram først.';
-				loading = false;
+				goto('/app/moduler/traening/mikrotraening/onboarding');
 				return;
 			}
 

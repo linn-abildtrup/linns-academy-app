@@ -135,8 +135,7 @@
 
 			const valgtProgramId = up.programValg?.mikrotraening;
 			if (!valgtProgramId) {
-				fejl = 'Vælg dit mikrotræningsprogram først.';
-				loading = false;
+				goto('/app/moduler/traening/mikrotraening/onboarding');
 				return;
 			}
 			programId = valgtProgramId;
