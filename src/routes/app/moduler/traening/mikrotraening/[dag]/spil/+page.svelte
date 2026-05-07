@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount, onDestroy } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import type {
@@ -14,9 +14,12 @@
 	import { markerDagSomGennemfort, registrerFeedback } from '$lib/content/mikrotraening';
 	import {
 		gemMikrotraeningFremgang,
+		gemPause,
 		hentExercises,
+		hentPause,
 		hentProgram,
 		hentUserProduct,
+		sletPause,
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
 	import { getAudioUrl, getVideoUrl } from '$lib/utils/storage';
@@ -64,6 +67,10 @@
 
 	let wakeSlaaetTil = $state(true);
 	let wakeLockSentinel = $state<WakeLockSentinel | null>(null);
+
+	let programId = $state<string | null>(null);
+	let resumet = $state(false);
+	let traeningGennemfort = $state(false);
 
 	const dag = $derived<TrainingDay | null>(
 		programData?.dage.find((d) => d.dagNummer === dagNummer) ?? null
@@ -126,14 +133,15 @@
 			}
 			userProduct = up;
 
-			const programId = up.programValg?.mikrotraening;
-			if (!programId) {
+			const valgtProgramId = up.programValg?.mikrotraening;
+			if (!valgtProgramId) {
 				fejl = 'Vælg dit mikrotræningsprogram først.';
 				loading = false;
 				return;
 			}
+			programId = valgtProgramId;
 
-			const data = await hentProgram(programId);
+			const data = await hentProgram(valgtProgramId);
 			if (!data) {
 				fejl = 'Programmet kunne ikke findes.';
 				loading = false;
@@ -141,9 +149,8 @@
 			}
 			programData = data;
 
-			const exerciseIds = (data.dage.find((d) => d.dagNummer === dagNummer)?.exercises ?? []).map(
-				(e) => e.exerciseId
-			);
+			const dagData = data.dage.find((d) => d.dagNummer === dagNummer);
+			const exerciseIds = (dagData?.exercises ?? []).map((e) => e.exerciseId);
 			if (exerciseIds.length === 0) {
 				fejl = 'Der er ikke lagt øvelser ind for denne dag endnu.';
 				loading = false;
@@ -181,6 +188,20 @@
 			musikUrl = musik;
 			nedtaellingGoUrl = goLyd;
 			nedtaellingPauseUrl = pauseLyd;
+
+			try {
+				const gemt = await hentPause(u.uid, valgtProgramId, dagNummer);
+				if (gemt && erGyldigPause(gemt, dagData?.exercises.length ?? 0)) {
+					ei = gemt.currentEx;
+					si = gemt.currentSet;
+					phase = gemt.phase;
+					rem = gemt.rem;
+					phaseTotal = phaseTotalForPause(gemt, dagData?.exercises ?? []);
+					resumet = true;
+				}
+			} catch (e) {
+				console.warn('Kunne ikke hente gemt pause:', e);
+			}
 
 			document.addEventListener('visibilitychange', onVisibilityChange);
 			startTimer();
@@ -231,6 +252,10 @@
 		}
 	});
 
+	beforeNavigate(() => {
+		gemAktivPause();
+	});
+
 	$effect(() => {
 		const el = musikEl;
 		if (!el || !musikUrl) return;
@@ -267,6 +292,28 @@
 		phase = ny;
 		rem = sek;
 		phaseTotal = sek;
+	}
+
+	function erGyldigPause(
+		gemt: { currentEx: number; currentSet: number; phase: Phase; rem: number },
+		antalOvelser: number
+	): boolean {
+		if (gemt.currentEx < 0 || gemt.currentEx >= antalOvelser) return false;
+		if (gemt.currentSet < 1) return false;
+		if (gemt.rem < 0) return false;
+		return ['prep', 'work', 'rest', 'switch'].includes(gemt.phase);
+	}
+
+	function phaseTotalForPause(
+		gemt: { phase: Phase; currentEx: number },
+		exs: DayExercise[]
+	): number {
+		const ex = exs[gemt.currentEx];
+		if (gemt.phase === 'prep') return PREP_SEC;
+		if (gemt.phase === 'switch') return SWITCH_SEC;
+		if (gemt.phase === 'work') return ex?.workSec ?? 30;
+		if (gemt.phase === 'rest') return ex?.restSec ?? 10;
+		return PREP_SEC;
 	}
 
 	function afspilNedtaellingHvisRelevant() {
@@ -413,9 +460,60 @@
 		lydSlaaetTil = !lydSlaaetTil;
 	}
 
-	function stopOgForlad() {
+	function gemAktivPause() {
+		const u = user;
+		if (!u || !programId) return;
+		if (phase === 'done' || traeningGennemfort) return;
+		if (loading || fejl) return;
+		void gemPause(u.uid, {
+			productId: 'kickstart',
+			elementAlias: 'mikrotraening',
+			programId,
+			dag: dagNummer,
+			currentEx: ei,
+			currentSet: si,
+			phase,
+			rem: Math.max(0, rem)
+		}).catch((e) => console.warn('Kunne ikke gemme pause:', e));
+	}
+
+	async function stopOgForlad() {
 		stopTimer();
+		const u = user;
+		if (u && programId && phase !== 'done' && !traeningGennemfort) {
+			try {
+				await gemPause(u.uid, {
+					productId: 'kickstart',
+					elementAlias: 'mikrotraening',
+					programId,
+					dag: dagNummer,
+					currentEx: ei,
+					currentSet: si,
+					phase,
+					rem: Math.max(0, rem)
+				});
+			} catch (e) {
+				console.warn('Kunne ikke gemme pause ved stop:', e);
+			}
+		}
 		goto(`/app/moduler/traening/mikrotraening/${dagNummer}`);
+	}
+
+	async function startForfra() {
+		const u = user;
+		if (u && programId) {
+			try {
+				await sletPause(u.uid, programId, dagNummer);
+			} catch (e) {
+				console.warn('Kunne ikke slette gemt pause:', e);
+			}
+		}
+		ei = 0;
+		si = 1;
+		setPhase('prep', PREP_SEC);
+		paused = false;
+		resumet = false;
+		sidsteCountdownNoegle = null;
 	}
 
 	function huidigFremgang(): MikrotraeningFremgang {
@@ -440,6 +538,14 @@
 					...userProduct,
 					fremgang: { ...userProduct.fremgang, mikrotraening: opdateret }
 				};
+			}
+			traeningGennemfort = true;
+			if (programId) {
+				try {
+					await sletPause(u.uid, programId, dagNummer);
+				} catch (e) {
+					console.warn('Kunne ikke slette pause efter gennemførsel:', e);
+				}
 			}
 			viserFeedback = true;
 		} catch (e) {
@@ -568,6 +674,12 @@
 			</div>
 		{/if}
 	{:else if dag && aktuelOvelse && aktuelExercise}
+		{#if resumet}
+			<div class="resume-banner">
+				<span>Du fortsætter hvor du slap.</span>
+				<button class="resume-link" type="button" onclick={startForfra}>Start forfra</button>
+			</div>
+		{/if}
 		<div class="video-omraade" class:hviler={phase === 'rest'}>
 			{#if aktuelOvelse.bonus}
 				<div class="bonus-ribbon">Bonus</div>
@@ -786,6 +898,34 @@
 		font-size: 13px;
 		color: var(--text2);
 		cursor: pointer;
+	}
+
+	.resume-banner {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		padding: 10px 14px;
+		background: var(--tdim);
+		border: 1px solid var(--tdim2);
+		border-radius: 12px;
+		font-size: 12.5px;
+		color: var(--text2);
+	}
+
+	.resume-link {
+		background: none;
+		border: none;
+		font-size: 12.5px;
+		font-weight: 600;
+		color: var(--terra);
+		cursor: pointer;
+		padding: 4px 8px;
+		font-family: var(--ff-b);
+	}
+
+	.resume-link:hover {
+		text-decoration: underline;
 	}
 
 	.video-omraade {

@@ -2,14 +2,24 @@
 // Holdt adskilt fra src/lib/content/mikrotraening.ts (typer + pure funktioner) så
 // unit tests for sidstnævnte ikke trækker firebase/firestore-runtime ind.
 
-import { doc, getDoc, getDocs, collection, setDoc, updateDoc } from 'firebase/firestore';
+import {
+	doc,
+	getDoc,
+	getDocs,
+	collection,
+	deleteDoc,
+	serverTimestamp,
+	setDoc,
+	updateDoc
+} from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type {
 	TrainingProgram,
 	TrainingDay,
 	UserProduct,
 	Exercise,
-	MikrotraeningFremgang
+	MikrotraeningFremgang,
+	PauseDoc
 } from '$lib/content/mikrotraening';
 
 export interface ProgramMedDage {
@@ -104,6 +114,54 @@ export async function gemMikrotraeningFremgang(
 ): Promise<void> {
 	const ref = doc(db, 'users', uid, 'products', productId);
 	await updateDoc(ref, { 'fremgang.mikrotraening': fremgang });
+}
+
+/**
+ * Bygger pauseId-strengen ud fra programId og dag-nummer.
+ * Format: {programId}_{dagNummer} — sikrer én pause pr program-dag.
+ */
+function pauseId(programId: string, dag: number): string {
+	return `${programId}_${dag}`;
+}
+
+/**
+ * Henter en gemt pause for et program + dag, hvis brugeren har en aktiv session.
+ * Returnerer null hvis ingen pause er gemt.
+ */
+export async function hentPause(
+	uid: string,
+	programId: string,
+	dag: number
+): Promise<PauseDoc | null> {
+	const ref = doc(db, 'users', uid, 'pauses', pauseId(programId, dag));
+	const snap = await getDoc(ref);
+	if (!snap.exists()) return null;
+	return snap.data() as PauseDoc;
+}
+
+/**
+ * Gemmer en pause-state så brugeren kan fortsætte træningen senere.
+ * savedAt sættes med serverTimestamp på Firestore-siden.
+ */
+export async function gemPause(
+	uid: string,
+	pause: Omit<PauseDoc, 'savedAt'>
+): Promise<void> {
+	const ref = doc(db, 'users', uid, 'pauses', pauseId(pause.programId, pause.dag));
+	await setDoc(ref, { ...pause, savedAt: serverTimestamp() });
+}
+
+/**
+ * Sletter en gemt pause. Bruges når dagen er gennemført eller
+ * brugeren vil starte forfra.
+ */
+export async function sletPause(
+	uid: string,
+	programId: string,
+	dag: number
+): Promise<void> {
+	const ref = doc(db, 'users', uid, 'pauses', pauseId(programId, dag));
+	await deleteDoc(ref);
 }
 
 /**
