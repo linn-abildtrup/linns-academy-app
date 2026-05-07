@@ -150,11 +150,10 @@
 			</div>
 		{/if}
 
-		<button class="start-knap" type="button" disabled>
-			Start træning
+		<a class="start-knap" href="/app/moduler/traening/mikrotraening/{dagNummer}/spil">
+			{erGennemfort ? 'Kør træningen igen' : 'Start træning'}
 			<Icon name="arrow" size={14} color="#fff" />
-		</button>
-		<p class="player-hint">Workout-spilleren bygges i næste fase</p>
+		</a>
 	{/if}
 </div>
 
@@ -323,20 +322,12 @@
 		font-weight: 600;
 		border-radius: 12px;
 		border: none;
+		text-decoration: none;
 		cursor: pointer;
 		font-family: var(--ff-b);
 	}
 
-	.start-knap:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.player-hint {
-		font-size: 11px;
-		color: var(--text4);
-		text-align: center;
-		margin: 8px 0 0;
-		font-style: italic;
+	.start-knap:hover {
+		filter: brightness(0.95);
 	}
 </style>
