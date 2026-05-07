@@ -423,7 +423,15 @@
 		}
 
 		if (phase === 'switch') {
-			setPhase('work', ex.workSec);
+			const ny = exercises[ei + 1];
+			if (!ny) {
+				phase = 'done';
+				stopTimer();
+				return;
+			}
+			ei += 1;
+			si = 1;
+			setPhase('work', ny.workSec);
 			return;
 		}
 
@@ -436,8 +444,6 @@
 				return;
 			}
 			if (sidsteSet) {
-				ei += 1;
-				si = 1;
 				setPhase('switch', SWITCH_SEC);
 			} else {
 				setPhase('rest', ex.restSec);
