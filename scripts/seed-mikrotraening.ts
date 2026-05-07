@@ -539,9 +539,29 @@ const exercises = [
 	}
 ];
 
+// Hjælpe-funktion: opretter tomme 21-dages skelet til et program.
+// Hver dag har tomt exercises-array — Linn fylder dem ud via admin-siden.
+function tommeDageSkelet(antal: number) {
+	return Array.from({ length: antal }, (_, i) => ({
+		id: `dag${i + 1}`,
+		data: {
+			dagNummer: i + 1,
+			titel: '',
+			indledning: '',
+			exercises: [] as Array<{
+				exerciseId: string;
+				sets: number;
+				workSec: number;
+				restSec: number;
+				bonus: boolean;
+			}>
+		}
+	}));
+}
+
 const trainingPrograms = [
 	{
-		id: 'mikrotraening_kettlebell_21',
+		id: 'mikrotraening_kettlebell',
 		data: {
 			navn: 'Mikrotræning med kettlebell',
 			beskrivelse: 'Tre minutters daglig styrketræning i 21 dage. Kræver én kettlebell.',
@@ -552,21 +572,21 @@ const trainingPrograms = [
 			udstyr: ['kettlebell'],
 			aktiv: true
 		},
-		days: [
-			{
-				id: 'dag1',
-				data: {
-					dagNummer: 1,
-					titel: 'overkrop',
-					indledning: 'I dag arbejder vi med overkrop',
-					exercises: [
-						{ exerciseId: 'incline_pushup', sets: 3, workSec: 30, restSec: 10, bonus: false },
-						{ exerciseId: 'incline_pushup', sets: 3, workSec: 30, restSec: 10, bonus: false },
-						{ exerciseId: 'incline_pushup', sets: 3, workSec: 30, restSec: 10, bonus: false }
-					]
-				}
-			}
-		]
+		days: tommeDageSkelet(21)
+	},
+	{
+		id: 'mikrotraening_no_kettlebell',
+		data: {
+			navn: 'Mikrotræning uden udstyr',
+			beskrivelse: 'Tre minutters daglig styrketræning i 21 dage. Kræver intet udstyr.',
+			treaningsform: 'mikrotraening',
+			antalDage: 21,
+			dagligTid: 180,
+			niveau: 'begynder',
+			udstyr: ['ingen'],
+			aktiv: true
+		},
+		days: tommeDageSkelet(21)
 	}
 ];
 
@@ -583,7 +603,7 @@ const products = [
 			indhold: [
 				{
 					type: 'trainingProgram',
-					ref: 'mikrotraening_kettlebell_21',
+					ref: 'mikrotraening_kettlebell',
 					alias: 'mikrotraening'
 				}
 			],
@@ -602,7 +622,7 @@ const userProductAccess = [
 			startDato: FieldValue.serverTimestamp(),
 			udloberDato: null,
 			programValg: {
-				mikrotraening: 'mikrotraening_kettlebell_21'
+				mikrotraening: 'mikrotraening_kettlebell'
 			},
 			fremgang: {
 				mikrotraening: {
