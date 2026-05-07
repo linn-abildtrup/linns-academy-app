@@ -2,7 +2,7 @@
 // Holdt adskilt fra src/lib/content/mikrotraening.ts (typer + pure funktioner) så
 // unit tests for sidstnævnte ikke trækker firebase/firestore-runtime ind.
 
-import { doc, getDoc, getDocs, collection } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, setDoc } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type {
 	TrainingProgram,
@@ -15,6 +15,46 @@ export interface ProgramMedDage {
 	id: string;
 	program: TrainingProgram;
 	dage: TrainingDay[];
+}
+
+/**
+ * Henter alle træningsprogrammer (uden dage).
+ * Bruges af admin-oversigten.
+ */
+export async function hentAlleProgrammer(): Promise<TrainingProgram[]> {
+	const snap = await getDocs(collection(db, 'trainingPrograms'));
+	return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TrainingProgram);
+}
+
+/**
+ * Henter alle øvelser fra biblioteket.
+ * Bruges af admin-editoren når øvelser skal vælges.
+ */
+export async function hentAlleExercises(): Promise<Exercise[]> {
+	const snap = await getDocs(collection(db, 'exercises'));
+	return snap.docs
+		.map((d) => ({ id: d.id, ...d.data() }) as Exercise)
+		.sort((a, b) => a.name.localeCompare(b.name, 'da'));
+}
+
+/**
+ * Gemmer en træningsdag til Firestore.
+ * Overskriver eksisterende dag hvis den findes.
+ */
+export async function gemDag(
+	programId: string,
+	dagNummer: number,
+	dag: TrainingDay
+): Promise<void> {
+	const ref = doc(db, 'trainingPrograms', programId, 'days', `dag${dagNummer}`);
+	await setDoc(ref, dag);
+}
+
+/**
+ * Gemmer flere dage på én gang. Bruges af auto-generér-funktionen.
+ */
+export async function gemDage(programId: string, dage: TrainingDay[]): Promise<void> {
+	await Promise.all(dage.map((d) => gemDag(programId, d.dagNummer, d)));
 }
 
 /**

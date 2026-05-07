@@ -5,9 +5,67 @@ import {
 	harGennemfortDag,
 	beregnProgramFremgang,
 	naesteDag,
+	filtrerOvelserTilProgram,
+	genererStandardProgram,
+	type Exercise,
 	type TrainingDay,
 	type MikrotraeningFremgang
 } from './mikrotraening';
+
+const eksempelExercises: Exercise[] = [
+	{
+		id: 'squat',
+		name: 'Squat',
+		desc: '',
+		how: [],
+		cat: 'ben',
+		catLabel: 'Ben',
+		tags: [],
+		videoPath: 'squat.mp4',
+		treaningsformer: ['mikrotraening'],
+		udstyr: ['ingen'],
+		aktiv: true
+	},
+	{
+		id: 'goblet',
+		name: 'Goblet squat',
+		desc: '',
+		how: [],
+		cat: 'ben',
+		catLabel: 'Ben',
+		tags: [],
+		videoPath: 'goblet.mp4',
+		treaningsformer: ['mikrotraening'],
+		udstyr: ['kettlebell'],
+		aktiv: true
+	},
+	{
+		id: 'pushup',
+		name: 'Push-up',
+		desc: '',
+		how: [],
+		cat: 'overkrop',
+		catLabel: 'Overkrop',
+		tags: [],
+		videoPath: 'pushup.mp4',
+		treaningsformer: ['mikrotraening'],
+		udstyr: ['ingen'],
+		aktiv: true
+	},
+	{
+		id: 'planke',
+		name: 'Planke',
+		desc: '',
+		how: [],
+		cat: 'core',
+		catLabel: 'Core',
+		tags: [],
+		videoPath: 'planke.mp4',
+		treaningsformer: ['mikrotraening'],
+		udstyr: ['ingen'],
+		aktiv: true
+	}
+];
 
 const eksempelDag: TrainingDay = {
 	dagNummer: 1,
@@ -127,5 +185,73 @@ describe('naesteDag', () => {
 	it('springer over gennemførte dage i tilfældig rækkefølge', () => {
 		const fremgang: MikrotraeningFremgang = { gennemforte: [3, 1, 5], feedback: {} };
 		expect(naesteDag(fremgang, 21)).toBe(2);
+	});
+});
+
+describe('filtrerOvelserTilProgram', () => {
+	it('beholder alle øvelser når programmet bruger kettlebell', () => {
+		const filtreret = filtrerOvelserTilProgram(eksempelExercises, ['kettlebell']);
+		expect(filtreret.length).toBe(eksempelExercises.length);
+	});
+
+	it('fjerner kettlebell-øvelser når programmet er uden kettlebell', () => {
+		const filtreret = filtrerOvelserTilProgram(eksempelExercises, ['ingen']);
+		expect(filtreret.length).toBe(3);
+		expect(filtreret.find((e) => e.id === 'goblet')).toBeUndefined();
+	});
+
+	it('returnerer tom liste hvis intet matcher', () => {
+		const kunKettlebell: Exercise[] = [
+			{ ...eksempelExercises[1] } // goblet med kettlebell
+		];
+		const filtreret = filtrerOvelserTilProgram(kunKettlebell, ['ingen']);
+		expect(filtreret.length).toBe(0);
+	});
+});
+
+describe('genererStandardProgram', () => {
+	it('genererer det rigtige antal dage', () => {
+		const dage = genererStandardProgram(21, eksempelExercises);
+		expect(dage.length).toBe(21);
+	});
+
+	it('giver hver dag tre øvelser: ben, overkrop og core/stabilitet', () => {
+		const dage = genererStandardProgram(3, eksempelExercises);
+		dage.forEach((dag) => {
+			expect(dag.exercises.length).toBe(3);
+			const cats = dag.exercises.map((e) => {
+				const ex = eksempelExercises.find((x) => x.id === e.exerciseId);
+				return ex?.cat;
+			});
+			expect(cats[0]).toBe('ben');
+			expect(cats[1]).toBe('overkrop');
+			expect(cats[2]).toMatch(/core|stabilitet/);
+		});
+	});
+
+	it('default-værdier er 3 sæt × 30s × 10s, ingen bonus', () => {
+		const dage = genererStandardProgram(1, eksempelExercises);
+		const ex = dage[0].exercises[0];
+		expect(ex.sets).toBe(3);
+		expect(ex.workSec).toBe(30);
+		expect(ex.restSec).toBe(10);
+		expect(ex.bonus).toBe(false);
+	});
+
+	it('cycler øvelser deterministisk', () => {
+		const dage = genererStandardProgram(4, eksempelExercises);
+		expect(dage[0].exercises[0].exerciseId).toBe(dage[2].exercises[0].exerciseId);
+		expect(dage[1].exercises[0].exerciseId).toBe(dage[3].exercises[0].exerciseId);
+	});
+
+	it('kaster fejl hvis en kategori er tom', () => {
+		const kunBen = eksempelExercises.filter((e) => e.cat === 'ben');
+		expect(() => genererStandardProgram(21, kunBen)).toThrow();
+	});
+
+	it('numererer dage fra 1', () => {
+		const dage = genererStandardProgram(3, eksempelExercises);
+		expect(dage[0].dagNummer).toBe(1);
+		expect(dage[2].dagNummer).toBe(3);
 	});
 });

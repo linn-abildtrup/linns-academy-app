@@ -174,3 +174,64 @@ export function naesteDag(fremgang: MikrotraeningFremgang, antalDage: number): n
 	}
 	return null;
 }
+
+/**
+ * Filtrerer øvelser så kun dem der passer til programmets udstyr beholdes.
+ * Hvis programmet bruger kettlebell, er alle øvelser tilladt.
+ * Hvis programmet er uden kettlebell, fjernes alle øvelser der kræver kettlebell.
+ */
+export function filtrerOvelserTilProgram(
+	exercises: Exercise[],
+	programUdstyr: Udstyr[]
+): Exercise[] {
+	if (programUdstyr.includes('kettlebell')) {
+		return exercises;
+	}
+	return exercises.filter((e) => !e.udstyr.includes('kettlebell'));
+}
+
+/**
+ * Genererer et standardprogram med 1 ben-, 1 overkrop- og 1 core/stabilitet-øvelse pr dag.
+ * Cycler deterministisk gennem øvelserne så hver bliver brugt så jævnt som muligt.
+ * Default: 3 sæt × 30s arbejde × 10s hvile, ingen bonus.
+ */
+export function genererStandardProgram(antalDage: number, exercises: Exercise[]): TrainingDay[] {
+	const ben = exercises.filter((e) => e.cat === 'ben').map((e) => e.id);
+	const overkrop = exercises.filter((e) => e.cat === 'overkrop').map((e) => e.id);
+	const coreStab = exercises
+		.filter((e) => e.cat === 'core' || e.cat === 'stabilitet')
+		.map((e) => e.id);
+
+	if (ben.length === 0 || overkrop.length === 0 || coreStab.length === 0) {
+		throw new Error('Mangler øvelser i en eller flere kategorier — kan ikke generere program.');
+	}
+
+	return Array.from({ length: antalDage }, (_, i) => ({
+		dagNummer: i + 1,
+		titel: '',
+		indledning: '',
+		exercises: [
+			{
+				exerciseId: ben[i % ben.length],
+				sets: 3,
+				workSec: 30,
+				restSec: 10,
+				bonus: false
+			},
+			{
+				exerciseId: overkrop[i % overkrop.length],
+				sets: 3,
+				workSec: 30,
+				restSec: 10,
+				bonus: false
+			},
+			{
+				exerciseId: coreStab[i % coreStab.length],
+				sets: 3,
+				workSec: 30,
+				restSec: 10,
+				bonus: false
+			}
+		]
+	}));
+}
