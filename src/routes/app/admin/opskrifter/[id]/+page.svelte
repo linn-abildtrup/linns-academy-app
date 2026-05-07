@@ -3,8 +3,11 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import {
+		ALLE_DIET_TAGS,
 		ALLE_KATEGORIER,
+		DIET_LABELS,
 		KATEGORI_LABELS,
+		type DietTag,
 		type Ingrediens,
 		type Opskrift,
 		type OpskriftKategori
@@ -24,6 +27,7 @@
 	let formBeskrivelse = $state('');
 	let formBilledeUrl = $state('');
 	let formKategorier = $state<OpskriftKategori[]>([]);
+	let formDietTags = $state<DietTag[]>([]);
 	let formDefaultPortioner = $state(4);
 	let formIngredienser = $state<Ingrediens[]>([]);
 	let formInstruktioner = $state('');
@@ -50,6 +54,7 @@
 			formBeskrivelse = o.beskrivelse;
 			formBilledeUrl = o.billedeUrl ?? '';
 			formKategorier = [...o.kategorier];
+			formDietTags = [...(o.dietTags ?? [])];
 			formDefaultPortioner = o.defaultPortioner;
 			formIngredienser = o.ingredienser.map((i) => ({ ...i }));
 			formInstruktioner = o.instruktioner;
@@ -67,6 +72,14 @@
 			formKategorier = formKategorier.filter((x) => x !== k);
 		} else {
 			formKategorier = [...formKategorier, k];
+		}
+	}
+
+	function toggleDietTag(t: DietTag) {
+		if (formDietTags.includes(t)) {
+			formDietTags = formDietTags.filter((x) => x !== t);
+		} else {
+			formDietTags = [...formDietTags, t];
 		}
 	}
 
@@ -116,6 +129,7 @@
 				beskrivelse: formBeskrivelse.trim(),
 				billedeUrl: formBilledeUrl.trim() || null,
 				kategorier: formKategorier,
+				dietTags: formDietTags,
 				defaultPortioner: formDefaultPortioner,
 				ingredienser: renseIngredienser,
 				instruktioner: formInstruktioner.trim(),
@@ -207,6 +221,23 @@
 							disabled={gemmer}
 						>
 							{KATEGORI_LABELS[k]}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			<div class="felt">
+				<span class="felt-label">Diæt-tags</span>
+				<div class="chip-rad">
+					{#each ALLE_DIET_TAGS as t (t)}
+						<button
+							type="button"
+							class="chip"
+							class:aktiv={formDietTags.includes(t)}
+							onclick={() => toggleDietTag(t)}
+							disabled={gemmer}
+						>
+							{DIET_LABELS[t]}
 						</button>
 					{/each}
 				</div>

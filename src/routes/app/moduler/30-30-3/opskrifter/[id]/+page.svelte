@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import {
+		DIET_LABELS,
 		formatMaengde,
 		KATEGORI_LABELS,
 		skalerMaengde,
@@ -63,10 +64,13 @@
 		</div>
 
 		<h1>{opskrift.titel}</h1>
-		{#if opskrift.kategorier.length > 0}
+		{#if opskrift.kategorier.length > 0 || (opskrift.dietTags && opskrift.dietTags.length > 0)}
 			<div class="kategorier">
 				{#each opskrift.kategorier as k (k)}
 					<span class="kategori-badge">{KATEGORI_LABELS[k]}</span>
+				{/each}
+				{#each opskrift.dietTags ?? [] as t (t)}
+					<span class="kategori-badge diet">{DIET_LABELS[t]}</span>
 				{/each}
 			</div>
 		{/if}
@@ -208,6 +212,11 @@
 		padding: 3px 9px;
 		border-radius: 99px;
 		font-weight: 500;
+	}
+
+	.kategori-badge.diet {
+		color: var(--sage);
+		background: var(--sdim);
 	}
 
 	.beskrivelse {

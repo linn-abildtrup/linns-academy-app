@@ -35,6 +35,7 @@
 				beskrivelse: '',
 				billedeUrl: null,
 				kategorier: [],
+				dietTags: [],
 				defaultPortioner: 4,
 				ingredienser: [],
 				instruktioner: '',

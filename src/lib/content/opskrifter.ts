@@ -26,12 +26,15 @@ export interface Ingrediens {
 	enhed: string;
 }
 
+export type DietTag = 'vegetar' | 'glutenfri';
+
 export interface Opskrift {
 	id: string;
 	titel: string;
 	beskrivelse: string;
 	billedeUrl: string | null;
 	kategorier: OpskriftKategori[];
+	dietTags: DietTag[];
 	defaultPortioner: number;
 	ingredienser: Ingrediens[];
 	instruktioner: string;
@@ -64,6 +67,13 @@ export const ALLE_KATEGORIER: OpskriftKategori[] = [
 	'tilbehor'
 ];
 
+export const DIET_LABELS: Record<DietTag, string> = {
+	vegetar: 'Vegetar',
+	glutenfri: 'Glutenfri'
+};
+
+export const ALLE_DIET_TAGS: DietTag[] = ['vegetar', 'glutenfri'];
+
 // ==============================================
 // Beregninger
 // ==============================================
@@ -95,21 +105,27 @@ export function formatMaengde(m: number): string {
 }
 
 /**
- * Filtrerer opskrifter ud fra søgeord og valgte kategorier.
+ * Filtrerer opskrifter ud fra søgeord, kategorier og dietTags.
  * Søgeord matcher mod titel og beskrivelse (case-insensitiv).
  * Kategorier er OR-logik: opskriften vises hvis den matcher mindst én af de valgte.
- * Hvis ingen kategorier er valgt, vises alle.
+ * DietTags er AND-logik: alle valgte tags skal være på opskriften.
+ * Hvis ingen kategorier eller dietTags er valgt, vises alle.
  */
 export function filtrerOpskrifter(
 	opskrifter: Opskrift[],
 	soegeord: string,
-	valgteKategorier: OpskriftKategori[]
+	valgteKategorier: OpskriftKategori[],
+	valgteDietTags: DietTag[] = []
 ): Opskrift[] {
 	const q = soegeord.trim().toLowerCase();
 	return opskrifter.filter((o) => {
 		if (valgteKategorier.length > 0) {
 			const matcher = o.kategorier.some((k) => valgteKategorier.includes(k));
 			if (!matcher) return false;
+		}
+		if (valgteDietTags.length > 0) {
+			const harAlle = valgteDietTags.every((t) => (o.dietTags ?? []).includes(t));
+			if (!harAlle) return false;
 		}
 		if (q) {
 			const tekst = (o.titel + ' ' + o.beskrivelse).toLowerCase();

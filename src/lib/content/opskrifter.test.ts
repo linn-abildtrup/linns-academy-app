@@ -18,6 +18,7 @@ const havregroed: Opskrift = {
 		{ navn: 'mælk', maengde: 4, enhed: 'dl' }
 	],
 	instruktioner: 'Kog havregryn i mælk.',
+	dietTags: ['vegetar'],
 	aktiv: true
 };
 
@@ -30,6 +31,7 @@ const salat: Opskrift = {
 	defaultPortioner: 4,
 	ingredienser: [{ navn: 'kylling', maengde: 400, enhed: 'g' }],
 	instruktioner: 'Skær og bland.',
+	dietTags: ['glutenfri'],
 	aktiv: true
 };
 
@@ -97,5 +99,14 @@ describe('filtrerOpskrifter', () => {
 
 	it('kombinerer søgeord og kategori', () => {
 		expect(filtrerOpskrifter(liste, 'kylling', ['morgenmad'])).toEqual([]);
+	});
+
+	it('filtrerer på dietTags (AND-logik)', () => {
+		expect(filtrerOpskrifter(liste, '', [], ['vegetar'])).toEqual([havregroed]);
+		expect(filtrerOpskrifter(liste, '', [], ['glutenfri'])).toEqual([salat]);
+	});
+
+	it('AND-logik mellem flere dietTags kræver alle', () => {
+		expect(filtrerOpskrifter(liste, '', [], ['vegetar', 'glutenfri'])).toEqual([]);
 	});
 });

@@ -70,6 +70,21 @@ interface GammelOpskrift {
 	dietTags?: string[];
 	ingredients?: GammelIngrediens[];
 	instructions?: string;
+	status?: string;
+}
+
+const KENDTE_DIET_TAGS = new Set(['vegetar', 'glutenfri']);
+
+function mapDietTags(input: string[] | undefined): string[] {
+	if (!Array.isArray(input)) return [];
+	const ud: string[] = [];
+	for (const t of input) {
+		const lower = String(t).toLowerCase().trim();
+		if (KENDTE_DIET_TAGS.has(lower) && !ud.includes(lower)) {
+			ud.push(lower);
+		}
+	}
+	return ud;
 }
 
 function mapKategori(rå: string): string | null {
@@ -120,7 +135,7 @@ function mapIngredienser(input: GammelIngrediens[] | undefined) {
 
 function mapOpskrift(id: string, gammel: GammelOpskrift) {
 	const { kategorier, droppede } = mapKategorier(gammel.categories);
-	const droppedDietTags = (gammel.dietTags ?? []).length;
+	const dietTags = mapDietTags(gammel.dietTags);
 
 	return {
 		ny: {
@@ -129,13 +144,13 @@ function mapOpskrift(id: string, gammel: GammelOpskrift) {
 			beskrivelse: (gammel.description || '').trim(),
 			billedeUrl: gammel.imageUrl?.trim() || null,
 			kategorier,
+			dietTags,
 			defaultPortioner: gammel.defaultServings || 4,
 			ingredienser: mapIngredienser(gammel.ingredients),
 			instruktioner: (gammel.instructions || '').trim(),
 			aktiv: false
 		},
-		ukendteKats: droppede,
-		droppedDietTags
+		ukendteKats: droppede
 	};
 }
 
@@ -151,8 +166,8 @@ async function main() {
 
 	let okay = 0;
 	let utenIngredienser = 0;
+	let sletKildeStatus = 0;
 	const ukendteKategorier = new Set<string>();
-	let totalDroppedDietTags = 0;
 
 	const batchSize = 400;
 	const docs = snap.docs;
@@ -160,40 +175,49 @@ async function main() {
 	for (let start = 0; start < docs.length; start += batchSize) {
 		const chunk = docs.slice(start, start + batchSize);
 		const batch = targetDb.batch();
+		const sletBatch = targetDb.batch();
+		let harSletteringerIBatch = false;
 		for (const d of chunk) {
-			const { ny, ukendteKats, droppedDietTags } = mapOpskrift(
-				d.id,
-				d.data() as GammelOpskrift
-			);
+			const data = d.data() as GammelOpskrift;
+			if (data.status === 'deleted') {
+				sletKildeStatus++;
+				const ref = targetDb.collection('opskrifter').doc(d.id);
+				sletBatch.delete(ref);
+				harSletteringerIBatch = true;
+				continue;
+			}
+			const { ny, ukendteKats } = mapOpskrift(d.id, data);
 			ukendteKats.forEach((k) => ukendteKategorier.add(k));
-			totalDroppedDietTags += droppedDietTags;
 			if (ny.ingredienser.length === 0) utenIngredienser++;
+			const dietTagsTekst = ny.dietTags.length > 0 ? ` (${ny.dietTags.join(', ')})` : '';
 			console.log(
 				`   ${ny.titel}` +
 					(ny.kategorier.length > 0 ? ` [${ny.kategorier.join(', ')}]` : '') +
+					dietTagsTekst +
 					` · ${ny.ingredienser.length} ingredienser`
 			);
 			if (!dryRun) {
-				const { id, ...data } = ny;
+				const { id, ...rest } = ny;
 				const ref = targetDb.collection('opskrifter').doc(id);
-				batch.set(ref, data, { merge: true });
+				batch.set(ref, rest, { merge: true });
 			}
 			okay++;
 		}
 		if (!dryRun) {
 			await batch.commit();
+			if (harSletteringerIBatch) await sletBatch.commit();
 		}
 	}
 
 	console.log(`\n✅ ${dryRun ? 'Ville migrere' : 'Migrerede'} ${okay} opskrifter`);
+	if (sletKildeStatus > 0) {
+		console.log(`   🗑️  ${sletKildeStatus} opskrifter med status='deleted' blev sprunget over (og ryddet i mål hvis de fandtes)`);
+	}
 	if (utenIngredienser > 0) {
 		console.log(`   ⚠️  ${utenIngredienser} opskrifter havde ingen ingredienser`);
 	}
 	if (ukendteKategorier.size > 0) {
 		console.log(`   ⚠️  Ukendte kategorier sprunget over: ${[...ukendteKategorier].join(', ')}`);
-	}
-	if (totalDroppedDietTags > 0) {
-		console.log(`   ℹ️  ${totalDroppedDietTags} dietTags droppet (ikke understøttet i ny model)`);
 	}
 	console.log(
 		`\n   Alle opskrifter blev sat til aktiv=false. Gå til /app/admin/opskrifter for at gennemse og aktivere.`

@@ -16,9 +16,12 @@
 		type SortMode
 	} from '$lib/content/kost';
 	import {
+		ALLE_DIET_TAGS,
 		ALLE_KATEGORIER as OPSKRIFT_KATEGORIER,
+		DIET_LABELS,
 		filtrerOpskrifter,
 		KATEGORI_LABELS as OPSKRIFT_LABELS,
+		type DietTag,
 		type Opskrift,
 		type OpskriftKategori
 	} from '$lib/content/opskrifter';
@@ -52,6 +55,7 @@
 	// Opskrifter-state
 	let opskriftSoeg = $state('');
 	let valgteOpskriftKategorier = $state<OpskriftKategori[]>([]);
+	let valgteDietTags = $state<DietTag[]>([]);
 
 	const filtreret = $derived(
 		sorterFodevarer(filtrerFodevarer(foods, soegeord, aktivKategori), sortMode)
@@ -60,7 +64,7 @@
 		sorterFodevarer(filtrerFodevarer(foods, pickerSoeg, pickerKategori), 'alpha')
 	);
 	const filtreredeOpskrifter = $derived(
-		filtrerOpskrifter(opskrifter, opskriftSoeg, valgteOpskriftKategorier)
+		filtrerOpskrifter(opskrifter, opskriftSoeg, valgteOpskriftKategorier, valgteDietTags)
 	);
 
 	const totaler = $derived(beregnMaaltid(maaltid, foodMap));
@@ -166,6 +170,14 @@
 			valgteOpskriftKategorier = valgteOpskriftKategorier.filter((x) => x !== k);
 		} else {
 			valgteOpskriftKategorier = [...valgteOpskriftKategorier, k];
+		}
+	}
+
+	function toggleDietTag(t: DietTag) {
+		if (valgteDietTags.includes(t)) {
+			valgteDietTags = valgteDietTags.filter((x) => x !== t);
+		} else {
+			valgteDietTags = [...valgteDietTags, t];
 		}
 	}
 </script>
@@ -379,6 +391,19 @@
 						onclick={() => toggleOpskriftKategori(k)}
 					>
 						{OPSKRIFT_LABELS[k]}
+					</button>
+				{/each}
+			</div>
+
+			<div class="chips diet-chips">
+				{#each ALLE_DIET_TAGS as t (t)}
+					<button
+						type="button"
+						class="chip diet"
+						class:aktiv={valgteDietTags.includes(t)}
+						onclick={() => toggleDietTag(t)}
+					>
+						{DIET_LABELS[t]}
 					</button>
 				{/each}
 			</div>
@@ -608,6 +633,16 @@
 		gap: 6px;
 		flex-wrap: wrap;
 		margin-bottom: 12px;
+	}
+
+	.diet-chips {
+		margin-top: -6px;
+		margin-bottom: 12px;
+	}
+
+	.chip.diet.aktiv {
+		background: var(--sage);
+		border-color: var(--sage);
 	}
 
 	.liste {
