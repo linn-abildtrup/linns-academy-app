@@ -33,6 +33,7 @@
 	let checkin = $state<CheckinSvar>({});
 	let note = $state('');
 	let oprindeligEntry = $state<VanedagEntry | null>(null);
+	let baselineEntry = $state<VanedagEntry | null>(null);
 
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
@@ -161,6 +162,11 @@
 			} else {
 				editMode = true;
 			}
+
+			// Hent baseline-svar separat hvis vi er på dag 21 og har brug for sammenligning
+			if (dagNummer === 21) {
+				baselineEntry = await hentVanedag(u.uid, 0, 'kickstart');
+			}
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente data. Prøv igen.';
@@ -171,6 +177,21 @@
 
 	function setCheck(id: string, val: VaneSvar) {
 		checks = { ...checks, [id]: val };
+	}
+
+	function setSlider(id: keyof CheckinSvar, val: string | number) {
+		const n = typeof val === 'string' ? parseInt(val, 10) : val;
+		if (Number.isFinite(n)) {
+			checkin = { ...checkin, [id]: n };
+		}
+	}
+
+	function setGenerelTekst(val: string) {
+		checkin = { ...checkin, generelTekst: val };
+	}
+
+	function harSliderSvar(id: keyof CheckinSvar): boolean {
+		return typeof checkin[id] === 'number';
 	}
 
 	function toggleBonus(id: string, val: BonusSvar) {
@@ -335,12 +356,62 @@
 				<div class="section-label">{prog.isBaseline ? 'Baseline-check-in' : 'Check-in'}</div>
 				<p class="reflection">
 					{prog.isBaseline
-						? 'Dine baseline-målinger. Mærk efter på en skala 1-10.'
-						: 'Fem spørgsmål om din uge. Mærk efter på en skala 1-10.'}
+						? 'Dine baseline-målinger. Mærk efter på en skala 1-10, hvor 1 er meget dårligt og 10 er rigtig godt. Du sammenligner med disse tal gennem hele forløbet.'
+						: 'Fem spørgsmål om din uge. Mærk efter på en skala 1-10, hvor 1 er meget dårligt og 10 er rigtig godt.'}
 				</p>
-				<div class="checkin-info">
-					Sliders bygges i næste fase — kommer snart.
-				</div>
+
+				{#each CHECKIN_SPORGSMAAL as q (q.id)}
+					{@const id = q.id as keyof CheckinSvar}
+					{@const val = harSliderSvar(id) ? (checkin[id] as number) : 5}
+					<div class="slider-row">
+						<div class="slider-head">
+							<div class="slider-label">{q.label}</div>
+							<div class="slider-val">{harSliderSvar(id) ? val : '–'}</div>
+						</div>
+						<input
+							type="range"
+							min="1"
+							max="10"
+							step="1"
+							value={val}
+							{disabled}
+							oninput={(e) => setSlider(id, (e.target as HTMLInputElement).value)}
+						/>
+						<div class="slider-skala"><span>1</span><span>5</span><span>10</span></div>
+					</div>
+				{/each}
+
+				{#if prog.isBaseline || prog.dagNummer === 21}
+					<div class="generel-felt">
+						<div class="generel-label">Hvordan har jeg det generelt lige nu?</div>
+						<div class="generel-sub">
+							Et samlet billede af hvordan du har det i din krop og dit humør.
+						</div>
+						<textarea
+							class="textarea"
+							placeholder="Skriv dit svar her..."
+							value={checkin.generelTekst ?? ''}
+							oninput={(e) => setGenerelTekst((e.target as HTMLTextAreaElement).value)}
+							{disabled}
+							rows="4"
+						></textarea>
+
+						{#if prog.dagNummer === 21 && baselineEntry?.checkin?.generelTekst}
+							<div class="baseline-compare">
+								<div class="baseline-compare-label">Dit svar fra dag 0 (baseline)</div>
+								<div class="baseline-compare-tekst">
+									{baselineEntry.checkin.generelTekst}
+								</div>
+							</div>
+						{:else if prog.dagNummer === 21}
+							<div class="baseline-compare baseline-compare-tom">
+								<div class="baseline-compare-tekst">
+									Du har ikke noteret et baseline-svar på dag 0, så der er ikke noget at sammenligne med.
+								</div>
+							</div>
+						{/if}
+					</div>
+				{/if}
 			</section>
 		{/if}
 
@@ -594,14 +665,113 @@
 		margin-top: 6px;
 	}
 
-	.checkin-info {
+	.slider-row {
+		padding: 14px 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.slider-row:first-of-type {
+		border-top: none;
+		padding-top: 4px;
+	}
+
+	.slider-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 8px;
+	}
+
+	.slider-label {
+		font-size: 13px;
+		color: var(--text);
+		font-weight: 500;
+		flex: 1;
+		min-width: 0;
+		padding-right: 12px;
+	}
+
+	.slider-val {
+		font-family: var(--ff-d);
+		font-size: 22px;
+		font-weight: 600;
+		color: var(--terra);
+		flex-shrink: 0;
+		line-height: 1;
+	}
+
+	.slider-row input[type='range'] {
+		width: 100%;
+		accent-color: var(--terra);
+		cursor: pointer;
+	}
+
+	.slider-row input[type='range']:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.slider-skala {
+		display: flex;
+		justify-content: space-between;
+		font-size: 10px;
+		color: var(--text3);
+		margin-top: 2px;
+		padding: 0 2px;
+	}
+
+	.generel-felt {
+		margin-top: 16px;
+		padding-top: 16px;
+		border-top: 1px solid var(--border);
+	}
+
+	.generel-label {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--text);
+		margin-bottom: 4px;
+	}
+
+	.generel-sub {
 		font-size: 12px;
-		color: var(--text4);
-		font-style: italic;
-		text-align: center;
+		color: var(--text3);
+		line-height: 1.45;
+		margin-bottom: 10px;
+	}
+
+	.baseline-compare {
+		margin-top: 14px;
 		padding: 14px;
+		background: var(--tdim);
+		border-left: 3px solid var(--terra);
+		border-radius: 6px;
+	}
+
+	.baseline-compare-tom {
 		background: var(--bg2);
-		border-radius: 10px;
+		border-left-color: var(--border);
+	}
+
+	.baseline-compare-label {
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--terra);
+		margin-bottom: 8px;
+	}
+
+	.baseline-compare-tekst {
+		font-size: 13px;
+		line-height: 1.55;
+		color: var(--text2);
+		white-space: pre-wrap;
+	}
+
+	.baseline-compare-tom .baseline-compare-tekst {
+		font-style: italic;
+		color: var(--text4);
 	}
 
 	.fejl-besked {
