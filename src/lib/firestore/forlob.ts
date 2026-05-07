@@ -90,6 +90,30 @@ export async function sletForlob(forlobId: string): Promise<void> {
 	await deleteDoc(doc(db, 'forlob', forlobId));
 }
 
+/**
+ * Kopierer alt indhold (vaneprogram-dage osv.) fra et eksisterende forløb
+ * til et nyt. Senere udvides funktionen til også at kopiere FAQ, guides
+ * og andet forløbs-specifikt indhold når de moduler bygges.
+ *
+ * Bruges når et nyt forløb oprettes baseret på et tidligere — fx Linn
+ * laver "Kickstart august 2026" med samme spørgsmål som maj-forløbet.
+ *
+ * Idempotent: hvis det nye forløb allerede har dage, overskrives de.
+ */
+export async function kopierForlobIndhold(
+	fraForlobId: string,
+	tilForlobId: string
+): Promise<{ vaneprogramDage: number }> {
+	const fraVane = await getDocs(collection(db, 'forlob', fraForlobId, 'vaneprogram'));
+	const batch = writeBatch(db);
+	for (const d of fraVane.docs) {
+		const dest = doc(db, 'forlob', tilForlobId, 'vaneprogram', d.id);
+		batch.set(dest, d.data());
+	}
+	await batch.commit();
+	return { vaneprogramDage: fraVane.size };
+}
+
 // ==============================================
 // AllowedEmail-helpers
 // ==============================================

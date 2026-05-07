@@ -3,7 +3,11 @@
 	import { goto } from '$app/navigation';
 	import { Timestamp } from 'firebase/firestore';
 	import type { Forlob } from '$lib/content/forlobAdgang';
-	import { hentAlleForlob, opretForlob } from '$lib/firestore/forlob';
+	import {
+		hentAlleForlob,
+		kopierForlobIndhold,
+		opretForlob
+	} from '$lib/firestore/forlob';
 	import Icon from '$lib/components/Icon.svelte';
 
 	let forlob = $state<Forlob[]>([]);
@@ -16,6 +20,7 @@
 	let formAntalDage = $state(21);
 	let formId = $state('');
 	let formAktiv = $state(true);
+	let formKopierFra = $state<string>('');
 	let opretterFejl = $state<string | null>(null);
 	let opretter = $state(false);
 
@@ -49,6 +54,7 @@
 		formAntalDage = 21;
 		formId = '';
 		formAktiv = true;
+		formKopierFra = '';
 		opretterFejl = null;
 	}
 
@@ -89,6 +95,20 @@
 				vaneProgramId: null,
 				aktiv: formAktiv
 			});
+
+			if (formKopierFra) {
+				try {
+					await kopierForlobIndhold(formKopierFra, id);
+				} catch (e) {
+					console.error('Kopi fejlede:', e);
+					opretterFejl =
+						'Forløbet er oprettet, men kopiering af indhold fejlede. Du kan kopiere manuelt fra forløb-siden.';
+					opretter = false;
+					forlob = await hentAlleForlob();
+					return;
+				}
+			}
+
 			goto(`/app/admin/forlob/${id}`);
 		} catch (e) {
 			console.error(e);
@@ -164,6 +184,21 @@
 			<label class="checkbox-rad">
 				<input type="checkbox" bind:checked={formAktiv} disabled={opretter} />
 				<span>Aktivt forløb (nye køb tilknyttes automatisk)</span>
+			</label>
+
+			<label class="felt">
+				<span class="felt-label">Indhold</span>
+				<select class="select" bind:value={formKopierFra} disabled={opretter}>
+					<option value="">Tomt forløb (ingen vaneprogram)</option>
+					{#each forlob as f (f.id)}
+						<option value={f.id}>Kopier alt fra: {f.navn}</option>
+					{/each}
+				</select>
+				<span class="felt-hint">
+					{formKopierFra
+						? 'Vaneprogrammet kopieres ind. Du kan rette det bagefter uden at påvirke det oprindelige forløb.'
+						: 'Du kan altid kopiere fra et andet forløb senere.'}
+				</span>
 			</label>
 
 			{#if opretterFejl}
@@ -335,6 +370,27 @@
 	}
 
 	.felt input:focus {
+		border-color: var(--terra);
+	}
+
+	.select {
+		padding: 10px 12px;
+		font-size: 14px;
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: var(--bg2);
+		color: var(--text);
+		font-family: var(--ff-b);
+		outline: none;
+		cursor: pointer;
+		appearance: none;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b4e42' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 14px center;
+		padding-right: 32px;
+	}
+
+	.select:focus {
 		border-color: var(--terra);
 	}
 
