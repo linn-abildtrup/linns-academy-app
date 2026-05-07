@@ -2,6 +2,15 @@ rules_version = '2';
 
 service cloud.firestore {
 	match /databases/{database}/documents {
+		// Admin-emails. Skal matche listen i src/lib/admin.ts.
+		// Tilføj her hvis flere skal kunne redigere indhold fra UI'et.
+		function isAdmin() {
+			return request.auth != null
+				&& request.auth.token.email in [
+					'linnabildtrup00@gmail.com'
+				];
+		}
+
 		// Bruger-dokument: kun egen bruger kan læse og skrive
 		match /users/{uid} {
 			allow read, write: if request.auth != null && request.auth.uid == uid;
@@ -17,27 +26,27 @@ service cloud.firestore {
 			}
 		}
 
-		// Øvelsesbibliotek: alle autentificerede kan læse, ingen kan skrive fra klienten
+		// Øvelsesbibliotek: alle autentificerede kan læse, kun admin kan skrive
 		match /exercises/{exerciseId} {
 			allow read: if request.auth != null;
-			allow write: if false;
+			allow write: if isAdmin();
 		}
 
-		// Træningsprogrammer + deres dage: alle autentificerede kan læse, ingen kan skrive fra klienten
+		// Træningsprogrammer + deres dage: alle autentificerede kan læse, kun admin kan skrive
 		match /trainingPrograms/{programId} {
 			allow read: if request.auth != null;
-			allow write: if false;
+			allow write: if isAdmin();
 
 			match /days/{dayId} {
 				allow read: if request.auth != null;
-				allow write: if false;
+				allow write: if isAdmin();
 			}
 		}
 
-		// Produkter (Kickstart osv.): alle autentificerede kan læse, ingen kan skrive fra klienten
+		// Produkter (Kickstart osv.): alle autentificerede kan læse, kun admin kan skrive
 		match /products/{productId} {
 			allow read: if request.auth != null;
-			allow write: if false;
+			allow write: if isAdmin();
 		}
 	}
 }
