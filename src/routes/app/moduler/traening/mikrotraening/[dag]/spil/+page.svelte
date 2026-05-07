@@ -19,7 +19,7 @@
 		hentUserProduct,
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
-	import { getVideoUrl } from '$lib/utils/storage';
+	import { getAudioUrl, getVideoUrl } from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const PREP_SEC = 10;
@@ -50,6 +50,10 @@
 	let gemmer = $state(false);
 	let gemFejl = $state<string | null>(null);
 	let viserFeedback = $state(false);
+
+	let musikEl = $state<HTMLAudioElement | null>(null);
+	let musikUrl = $state<string | null>(null);
+	let musikSlaaetTil = $state(true);
 
 	const dag = $derived<TrainingDay | null>(
 		programData?.dage.find((d) => d.dagNummer === dagNummer) ?? null
@@ -150,6 +154,12 @@
 			);
 			videoUrls = new Map(urlPar.filter(([, u]) => u));
 
+			try {
+				musikUrl = await getAudioUrl('baggrundsmusik.mp3');
+			} catch (e) {
+				console.warn('Kunne ikke hente baggrundsmusik:', e);
+			}
+
 			startTimer();
 		} catch (e) {
 			console.error(e);
@@ -161,6 +171,27 @@
 
 	onDestroy(() => {
 		stopTimer();
+		if (musikEl) {
+			try {
+				musikEl.pause();
+			} catch {
+				// ignorer — elementet kan være rent dødt
+			}
+		}
+	});
+
+	$effect(() => {
+		const el = musikEl;
+		if (!el || !musikUrl) return;
+		const skalSpille = musikSlaaetTil && !paused && phase !== 'done' && !loading && !fejl;
+		if (skalSpille && el.paused) {
+			const p = el.play();
+			if (p && p.catch) {
+				p.catch((e) => console.warn('Kunne ikke afspille baggrundsmusik:', e));
+			}
+		} else if (!skalSpille && !el.paused) {
+			el.pause();
+		}
 	});
 
 	function startTimer() {
@@ -229,6 +260,10 @@
 		paused = !paused;
 	}
 
+	function toggleMusik() {
+		musikSlaaetTil = !musikSlaaetTil;
+	}
+
 	function stopOgForlad() {
 		stopTimer();
 		goto(`/app/moduler/traening/mikrotraening/${dagNummer}`);
@@ -288,6 +323,10 @@
 </script>
 
 <div class="player">
+	{#if musikUrl}
+		<audio bind:this={musikEl} src={musikUrl} loop preload="auto"></audio>
+	{/if}
+
 	{#if loading}
 		<div class="status-besked">Henter dagens træning...</div>
 	{:else if fejl}
@@ -414,6 +453,48 @@
 			{/if}
 
 			<div class="fase-badge">{faseLabel}</div>
+
+			<button
+				class="lyd-knap"
+				type="button"
+				onclick={toggleMusik}
+				aria-label={musikSlaaetTil ? 'Slå lyd fra' : 'Slå lyd til'}
+				aria-pressed={musikSlaaetTil}
+			>
+				{#if musikSlaaetTil}
+					<svg
+						viewBox="0 0 24 24"
+						width="18"
+						height="18"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+						<path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+						<path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+					</svg>
+				{:else}
+					<svg
+						viewBox="0 0 24 24"
+						width="18"
+						height="18"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+						<line x1="23" y1="9" x2="17" y2="15"></line>
+						<line x1="17" y1="9" x2="23" y2="15"></line>
+					</svg>
+				{/if}
+			</button>
 
 			<div class="timer-badge">
 				<svg viewBox="0 0 120 120">
@@ -583,6 +664,34 @@
 		border-radius: 99px;
 		backdrop-filter: blur(6px);
 		z-index: 4;
+	}
+
+	.lyd-knap {
+		position: absolute;
+		bottom: 14px;
+		left: 14px;
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		background: rgba(0, 0, 0, 0.45);
+		backdrop-filter: blur(6px);
+		border: none;
+		color: #fff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		z-index: 4;
+		padding: 0;
+	}
+
+	.lyd-knap[aria-pressed='false'] {
+		background: rgba(0, 0, 0, 0.65);
+		color: rgba(255, 255, 255, 0.55);
+	}
+
+	.lyd-knap:active {
+		transform: scale(0.94);
 	}
 
 	.timer-badge {
