@@ -1,11 +1,12 @@
-// Seed-script til vaneprogrammet kickstart_v1
-// Opretter vaneProgrammer/kickstart_v1 + 22 dage (baseline + dag 1-21)
-// porteret 1:1 fra reference/index.html (VT_PROGRAM-arrayet).
-// Sætter også vaneProgramId på forlob/kickstart_maj_2026.
+// Seed-script til Kickstart-vaneprogrammet
+// Skriver de 22 dage (baseline + dag 1-21) direkte under hvert aktivt forløb
+// på stien forlob/{forlobId}/vaneprogram/dagN. Indholdet er porteret 1:1 fra
+// reference/index.html (VT_PROGRAM-arrayet).
 //
-// Kør med: npm run seed:vaneprogram
+// Kør med: npm run seed:vaneprogram                  (alle aktive forløb)
+//   eller: npm run seed:vaneprogram -- <forlobId>    (specifikt forløb)
 //
-// Idempotent: kører du det igen, opdaterer det blot eksisterende docs.
+// Idempotent: kører du det igen, overskriver det eksisterende dage.
 
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -21,8 +22,8 @@ const serviceAccount = JSON.parse(
 initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
-const PROGRAM_ID = 'kickstart_v1';
-const FORLOB_ID = 'kickstart_maj_2026';
+// Intet hardcoded forløb længere — seed kører på alle aktive forløb
+// medmindre der gives et specifikt forlobId som CLI-argument.
 
 const PM = { id: 'pm', label: 'Protein til morgenmad' };
 const FI = { id: 'fi', label: '30g fiber i dag' };
@@ -268,40 +269,40 @@ const DAGE: DagSeed[] = [
 	}
 ];
 
-async function seed() {
-	console.log(`🌱 Seeder vaneprogram '${PROGRAM_ID}' (${DAGE.length} dage)...`);
-
-	const programRef = db.collection('vaneProgrammer').doc(PROGRAM_ID);
-	await programRef.set(
-		{
-			navn: 'Kickstart 21 dage — version 1',
-			beskrivelse: '30-30-3-vaner: protein, fiber og mikrotræning gennem 21 dage.',
-			antalDage: 21,
-			aktiv: true
-		},
-		{ merge: true }
-	);
-	console.log(`   ✓ Program-doc opdateret`);
-
+async function seedForlob(forlobId: string, navn: string) {
+	console.log(`\n🌱 Seeder vaneprogram til '${forlobId}' (${navn})...`);
+	const forlobRef = db.collection('forlob').doc(forlobId);
 	const batch = db.batch();
 	for (const dag of DAGE) {
-		const ref = programRef.collection('days').doc(`dag${dag.dagNummer}`);
+		const ref = forlobRef.collection('vaneprogram').doc(`dag${dag.dagNummer}`);
 		batch.set(ref, dag);
 	}
 	await batch.commit();
-	console.log(`   ✓ ${DAGE.length} dage skrevet`);
+	console.log(`   ✓ ${DAGE.length} dage skrevet til forlob/${forlobId}/vaneprogram/`);
+}
 
-	console.log(`\n🔗 Sætter vaneProgramId på forlob/${FORLOB_ID}...`);
-	const forlobRef = db.collection('forlob').doc(FORLOB_ID);
-	const forlobSnap = await forlobRef.get();
-	if (forlobSnap.exists) {
-		await forlobRef.update({ vaneProgramId: PROGRAM_ID });
-		console.log(`   ✓ vaneProgramId = ${PROGRAM_ID}`);
+async function seed() {
+	const argForlobId = process.argv[2];
+	if (argForlobId) {
+		const ref = db.collection('forlob').doc(argForlobId);
+		const snap = await ref.get();
+		if (!snap.exists) {
+			console.error(`❌ Forløbet '${argForlobId}' findes ikke.`);
+			process.exit(1);
+		}
+		await seedForlob(argForlobId, snap.data()?.navn ?? argForlobId);
 	} else {
-		console.log(`   ⚠️  Forløbet '${FORLOB_ID}' findes ikke — kør npm run seed:forlob først`);
+		const snap = await db.collection('forlob').where('aktiv', '==', true).get();
+		if (snap.empty) {
+			console.error('❌ Ingen aktive forløb fundet. Kør npm run seed:forlob først.');
+			process.exit(1);
+		}
+		console.log(`📋 Fandt ${snap.size} aktive forløb`);
+		for (const d of snap.docs) {
+			await seedForlob(d.id, d.data().navn ?? d.id);
+		}
 	}
-
-	console.log(`\n✅ Seed færdig.`);
+	console.log('\n✅ Seed færdig.');
 }
 
 seed().then(() => process.exit(0));

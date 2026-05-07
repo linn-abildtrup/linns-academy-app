@@ -14,7 +14,7 @@
 	import { unlockedDays } from '$lib/content/forlobAdgang';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import { hentForlob } from '$lib/firestore/forlob';
-	import { hentAlleVanedage, hentVaneProgram } from '$lib/firestore/vaner';
+	import { hentAlleVanedage, hentVaneprogramForForlob } from '$lib/firestore/vaner';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const getUser = getContext<() => User | null>('user');
@@ -69,19 +69,13 @@
 			}
 			forlob = f;
 
-			if (!f.vaneProgramId) {
+			const programDage = await hentVaneprogramForForlob(forlobId);
+			if (programDage.length === 0) {
 				fejl = 'Vaneprogrammet er ikke sat op for dette forløb endnu.';
 				loading = false;
 				return;
 			}
-
-			const data = await hentVaneProgram(f.vaneProgramId);
-			if (!data) {
-				fejl = 'Vaneprogrammet kunne ikke findes.';
-				loading = false;
-				return;
-			}
-			dage = data.dage;
+			dage = programDage;
 
 			entries = await hentAlleVanedage(u.uid, 'kickstart');
 		} catch (e) {

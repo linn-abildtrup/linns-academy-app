@@ -1,30 +1,32 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import type { VaneProgram, VaneProgramDag } from '$lib/content/vaner';
-	import { hentVaneProgram } from '$lib/firestore/vaner';
+	import type { VaneProgramDag } from '$lib/content/vaner';
+	import type { Forlob } from '$lib/content/forlobAdgang';
+	import { hentForlob } from '$lib/firestore/forlob';
+	import { hentVaneprogramForForlob } from '$lib/firestore/vaner';
 	import Icon from '$lib/components/Icon.svelte';
 
-	const programId = $derived(page.params.programId ?? '');
+	const forlobId = $derived(page.params.id ?? '');
 
-	let program = $state<VaneProgram | null>(null);
+	let forlob = $state<Forlob | null>(null);
 	let dage = $state<VaneProgramDag[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
 	onMount(async () => {
 		try {
-			const data = await hentVaneProgram(programId);
-			if (!data) {
-				fejl = 'Programmet findes ikke.';
+			const f = await hentForlob(forlobId);
+			if (!f) {
+				fejl = 'Forløbet findes ikke.';
 				loading = false;
 				return;
 			}
-			program = data.program;
-			dage = data.dage;
+			forlob = f;
+			dage = await hentVaneprogramForForlob(forlobId);
 		} catch (e) {
 			console.error(e);
-			fejl = 'Kunne ikke hente programmet.';
+			fejl = 'Kunne ikke hente data.';
 		} finally {
 			loading = false;
 		}
@@ -40,29 +42,32 @@
 
 <div class="page">
 	<header class="page-header">
-		<a class="back" href="/app/admin/vaner">
+		<a class="back" href="/app/admin/forlob/{forlobId}">
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>Programmer</span>
+			<span>{forlob?.navn ?? 'Forløb'}</span>
 		</a>
-		<div class="eyebrow">Admin · Vaner</div>
-		<h1>{program?.navn ?? programId}</h1>
-		{#if program?.beskrivelse}
-			<p class="page-sub">{program.beskrivelse}</p>
-		{/if}
+		<div class="eyebrow">Admin · {forlob?.navn ?? forlobId} · Vaner</div>
+		<h1>Vaneprogram</h1>
+		<p class="page-sub">
+			Rediger refleksioner, faste vaner og bonus-skridt pr dag for dette forløb.
+		</p>
 	</header>
 
 	{#if loading}
 		<div class="status-besked">Henter program...</div>
 	{:else if fejl}
 		<div class="status-besked fejl">{fejl}</div>
+	{:else if dage.length === 0}
+		<div class="status-besked">
+			Vaneprogrammet er ikke sat op for dette forløb endnu. Kør
+			<code>npm run seed:vaneprogram -- {forlobId}</code> for at få standardindholdet.
+		</div>
 	{:else}
 		<div class="dag-liste">
 			{#each dage as dag (dag.dagNummer)}
 				{@const badge = badgeFor(dag)}
-				<a class="dag-row" href="/app/admin/vaner/{programId}/{dag.dagNummer}">
-					<div class="dag-num">
-						{dag.dagNummer}
-					</div>
+				<a class="dag-row" href="/app/admin/forlob/{forlobId}/vaner/{dag.dagNummer}">
+					<div class="dag-num">{dag.dagNummer}</div>
 					<div class="dag-tekst">
 						<div class="dag-titel">
 							{dag.isBaseline ? 'Baseline' : `Dag ${dag.dagNummer}`}
@@ -151,6 +156,13 @@
 		color: #8a4a3e;
 		background: #fbeeea;
 		border-color: #f0d6cf;
+	}
+
+	.status-besked code {
+		background: var(--bg2);
+		padding: 1px 6px;
+		border-radius: 4px;
+		font-size: 11.5px;
 	}
 
 	.dag-liste {

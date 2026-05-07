@@ -5,25 +5,17 @@
 		{
 			id: 'forlob',
 			navn: 'Forløb',
-			beskrivelse: 'Opret nye runder og upload Simplero-whitelist',
+			beskrivelse: 'Opret runder, upload whitelist og rediger forløbets vaneprogram',
 			rute: '/app/admin/forlob',
 			accent: '#B87B6E',
 			icon: 'cal' as const
-		},
-		{
-			id: 'vaner',
-			navn: 'Vaner',
-			beskrivelse: 'Rediger refleksioner, vaner og bonus pr dag',
-			rute: '/app/admin/vaner',
-			accent: '#6F9E7E',
-			icon: 'leaf' as const
 		},
 		{
 			id: 'mikrotraening',
 			navn: 'Mikrotræning',
 			beskrivelse: 'Rediger træningsprogrammer og dage',
 			rute: '/app/admin/mikrotraening',
-			accent: '#C9A07A',
+			accent: '#6F9E7E',
 			icon: 'flame' as const
 		}
 	];

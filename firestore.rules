@@ -52,18 +52,6 @@ service cloud.firestore {
 			}
 		}
 
-		// Vaneprogrammer + deres dage: alle autentificerede kan læse,
-		// kun admin kan skrive. Klienten skal læse for at vise spørgsmål.
-		match /vaneProgrammer/{programId} {
-			allow read: if request.auth != null;
-			allow write: if isAdmin();
-
-			match /days/{dayId} {
-				allow read: if request.auth != null;
-				allow write: if isAdmin();
-			}
-		}
-
 		// Produkter (Kickstart osv.): alle autentificerede kan læse, kun admin kan skrive
 		match /products/{productId} {
 			allow read: if request.auth != null;
@@ -75,6 +63,13 @@ service cloud.firestore {
 		match /forlob/{forlobId} {
 			allow read: if request.auth != null;
 			allow write: if isAdmin();
+
+			// Vaneprogram pr forløb: alle autentificerede kan læse (klienten skal
+			// se spørgsmålene), kun admin kan skrive.
+			match /vaneprogram/{dagId} {
+				allow read: if request.auth != null;
+				allow write: if isAdmin();
+			}
 		}
 
 		// AllowedEmails (whitelist fra CSV-import):

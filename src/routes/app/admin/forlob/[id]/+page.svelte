@@ -212,6 +212,17 @@
 			</button>
 		</div>
 
+		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/vaner">
+			<div class="indhold-icon">
+				<Icon name="leaf" size={16} color="#fff" />
+			</div>
+			<div class="indhold-tekst">
+				<div class="indhold-navn">Vaneprogram</div>
+				<div class="indhold-sub">Rediger refleksioner, vaner og bonus pr dag</div>
+			</div>
+			<Icon name="chevron-r" size={14} color="var(--text3)" />
+		</a>
+
 		<div class="form-card">
 			<div class="form-titel">Importér emails fra Simplero</div>
 			<p class="csv-hint">
@@ -522,6 +533,51 @@
 		border-radius: 8px;
 		font-size: 12px;
 		color: #8a4a3e;
+	}
+
+	.indhold-row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 14px 16px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		text-decoration: none;
+		color: inherit;
+		margin-bottom: 14px;
+	}
+
+	.indhold-row:hover {
+		background: var(--bg2);
+	}
+
+	.indhold-icon {
+		width: 36px;
+		height: 36px;
+		border-radius: 10px;
+		background: var(--sage);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.indhold-tekst {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.indhold-navn {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.indhold-sub {
+		font-size: 11.5px;
+		color: var(--text3);
+		margin-top: 2px;
 	}
 
 	.kvit-besked {

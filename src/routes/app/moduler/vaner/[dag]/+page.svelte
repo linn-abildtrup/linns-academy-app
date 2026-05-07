@@ -16,7 +16,7 @@
 	} from '$lib/content/vaner';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import { hentForlob } from '$lib/firestore/forlob';
-	import { gemVanedag, hentVanedag, hentVaneProgram } from '$lib/firestore/vaner';
+	import { gemVanedag, hentVanedag, hentVaneprogramDag } from '$lib/firestore/vaner';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const getUser = getContext<() => User | null>('user');
@@ -130,20 +130,14 @@
 			}
 
 			const f = await hentForlob(forlobId);
-			if (!f || !f.vaneProgramId) {
-				fejl = 'Forløbet er ikke fuldt sat op endnu.';
+			if (!f) {
+				fejl = 'Forløbet kunne ikke findes.';
 				loading = false;
 				return;
 			}
 			forlob = f;
 
-			const data = await hentVaneProgram(f.vaneProgramId);
-			if (!data) {
-				fejl = 'Vaneprogrammet kunne ikke findes.';
-				loading = false;
-				return;
-			}
-			const dagData = data.dage.find((d) => d.dagNummer === dagNummer);
+			const dagData = await hentVaneprogramDag(forlobId, dagNummer);
 			if (!dagData) {
 				fejl = `Dag ${dagNummer} findes ikke i programmet.`;
 				loading = false;

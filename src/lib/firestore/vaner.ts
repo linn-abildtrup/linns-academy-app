@@ -1,6 +1,11 @@
 // Firestore-helpers for vanetracker.
 // Holdt adskilt fra src/lib/content/vaner.ts (typer + pure logik) så
 // unit tests for sidstnævnte ikke trækker firebase/firestore-runtime ind.
+//
+// Datamodel:
+//   - forlob/{forlobId}/vaneprogram/{dagId}     ← programmets spørgsmål pr dag
+//                                                  (hver forløb har sit eget)
+//   - users/{uid}/products/{productId}/vanedage/{dagId}  ← brugerens svar
 
 import {
 	collection,
@@ -11,66 +16,50 @@ import {
 	setDoc
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
-import type {
-	VaneProgram,
-	VaneProgramDag,
-	VanedagEntry
-} from '$lib/content/vaner';
+import type { VaneProgramDag, VanedagEntry } from '$lib/content/vaner';
 
 // ==============================================
-// VaneProgram-helpers (admin + klient kan læse)
+// Vaneprogram-helpers (pr forløb)
 // ==============================================
-
-export interface VaneProgramMedDage {
-	id: string;
-	program: VaneProgram;
-	dage: VaneProgramDag[];
-}
 
 /**
- * Lister alle vaneProgrammer (uden dage).
- * Bruges af admin-oversigten.
+ * Henter alle vaneprogram-dage for et forløb sorteret efter dagNummer.
+ * Returnerer en tom liste hvis forløbet ikke har vaner sat op endnu.
  */
-export async function hentAlleVaneProgrammer(): Promise<VaneProgram[]> {
-	const snap = await getDocs(collection(db, 'vaneProgrammer'));
+export async function hentVaneprogramForForlob(forlobId: string): Promise<VaneProgramDag[]> {
+	const snap = await getDocs(collection(db, 'forlob', forlobId, 'vaneprogram'));
 	return snap.docs
-		.map((d) => ({ id: d.id, ...d.data() }) as VaneProgram)
-		.sort((a, b) => a.navn.localeCompare(b.navn, 'da'));
-}
-
-/**
- * Henter et vaneProgram med alle dets dage.
- * Returnerer null hvis programmet ikke findes.
- */
-export async function hentVaneProgram(programId: string): Promise<VaneProgramMedDage | null> {
-	const programRef = doc(db, 'vaneProgrammer', programId);
-	const programSnap = await getDoc(programRef);
-	if (!programSnap.exists()) return null;
-
-	const program = { id: programSnap.id, ...programSnap.data() } as VaneProgram;
-
-	const daysSnap = await getDocs(collection(db, 'vaneProgrammer', programId, 'days'));
-	const dage = daysSnap.docs
 		.map((d) => d.data() as VaneProgramDag)
 		.sort((a, b) => a.dagNummer - b.dagNummer);
-
-	return { id: programSnap.id, program, dage };
 }
 
 /**
- * Gemmer en vaneprogramdag (admin-skrivning).
+ * Henter én specifik vaneprogram-dag for et forløb.
  */
-export async function gemVaneProgramDag(
-	programId: string,
+export async function hentVaneprogramDag(
+	forlobId: string,
+	dagNummer: number
+): Promise<VaneProgramDag | null> {
+	const ref = doc(db, 'forlob', forlobId, 'vaneprogram', `dag${dagNummer}`);
+	const snap = await getDoc(ref);
+	if (!snap.exists()) return null;
+	return snap.data() as VaneProgramDag;
+}
+
+/**
+ * Gemmer en vaneprogram-dag for et forløb (admin-skrivning).
+ */
+export async function gemVaneprogramDag(
+	forlobId: string,
 	dag: VaneProgramDag
 ): Promise<void> {
 	const id = `dag${dag.dagNummer}`;
-	const ref = doc(db, 'vaneProgrammer', programId, 'days', id);
+	const ref = doc(db, 'forlob', forlobId, 'vaneprogram', id);
 	await setDoc(ref, dag);
 }
 
 // ==============================================
-// VanedagEntry-helpers (brugerens svar)
+// VanedagEntry-helpers (brugerens svar — uændret)
 // ==============================================
 
 /**

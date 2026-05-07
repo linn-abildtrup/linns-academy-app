@@ -3,10 +3,10 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { Bonus, Vane, VaneProgramDag } from '$lib/content/vaner';
-	import { gemVaneProgramDag, hentVaneProgram } from '$lib/firestore/vaner';
+	import { gemVaneprogramDag, hentVaneprogramDag } from '$lib/firestore/vaner';
 	import Icon from '$lib/components/Icon.svelte';
 
-	const programId = $derived(page.params.programId ?? '');
+	const forlobId = $derived(page.params.id ?? '');
 	const dagNummer = $derived(parseInt(page.params.dag ?? '', 10));
 
 	let dag = $state<VaneProgramDag | null>(null);
@@ -26,13 +26,7 @@
 
 	onMount(async () => {
 		try {
-			const data = await hentVaneProgram(programId);
-			if (!data) {
-				fejl = 'Programmet findes ikke.';
-				loading = false;
-				return;
-			}
-			const fundet = data.dage.find((d) => d.dagNummer === dagNummer);
+			const fundet = await hentVaneprogramDag(forlobId, dagNummer);
 			if (!fundet) {
 				fejl = `Dag ${dagNummer} findes ikke i programmet.`;
 				loading = false;
@@ -97,7 +91,7 @@
 				isWin: formIsWin
 			};
 
-			await gemVaneProgramDag(programId, opdateret);
+			await gemVaneprogramDag(forlobId, opdateret);
 			dag = opdateret;
 			gemKvit = true;
 			setTimeout(() => (gemKvit = false), 2000);
@@ -110,17 +104,17 @@
 	}
 
 	function tilbage() {
-		goto(`/app/admin/vaner/${programId}`);
+		goto(`/app/admin/forlob/${forlobId}/vaner`);
 	}
 </script>
 
 <div class="page">
 	<header class="page-header">
-		<a class="back" href="/app/admin/vaner/{programId}">
+		<a class="back" href="/app/admin/forlob/{forlobId}/vaner">
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Programdage</span>
 		</a>
-		<div class="eyebrow">Admin · Vaner · {programId}</div>
+		<div class="eyebrow">Admin · {forlobId} · Vaner</div>
 		<h1>{formIsBaseline ? 'Baseline' : `Dag ${dagNummer}`}</h1>
 	</header>
 
