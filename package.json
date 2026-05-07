@@ -17,7 +17,9 @@
 		"seed:mikrotraening": "tsx scripts/seed-mikrotraening.ts",
 		"upload:videos": "tsx scripts/upload-videos.ts",
 		"upload:audio": "tsx scripts/upload-audio.ts",
-		"reset:mikrotraening": "tsx scripts/reset-mikrotraening.ts"
+		"reset:mikrotraening": "tsx scripts/reset-mikrotraening.ts",
+		"inspect:program": "tsx scripts/inspect-program.ts",
+		"generate:program": "tsx scripts/auto-generate-program.ts"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.4",
