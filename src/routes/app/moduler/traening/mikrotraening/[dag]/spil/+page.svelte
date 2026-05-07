@@ -53,7 +53,14 @@
 
 	let musikEl = $state<HTMLAudioElement | null>(null);
 	let musikUrl = $state<string | null>(null);
-	let musikSlaaetTil = $state(true);
+	let lydSlaaetTil = $state(true);
+
+	let nedtaellingGoEl = $state<HTMLAudioElement | null>(null);
+	let nedtaellingPauseEl = $state<HTMLAudioElement | null>(null);
+	let nedtaellingGoUrl = $state<string | null>(null);
+	let nedtaellingPauseUrl = $state<string | null>(null);
+	let sidsteCountdownNoegle = $state<string | null>(null);
+	let unduckTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const dag = $derived<TrainingDay | null>(
 		programData?.dage.find((d) => d.dagNummer === dagNummer) ?? null
@@ -154,11 +161,23 @@
 			);
 			videoUrls = new Map(urlPar.filter(([, u]) => u));
 
-			try {
-				musikUrl = await getAudioUrl('baggrundsmusik.mp3');
-			} catch (e) {
-				console.warn('Kunne ikke hente baggrundsmusik:', e);
-			}
+			const [musik, goLyd, pauseLyd] = await Promise.all([
+				getAudioUrl('baggrundsmusik.mp3').catch((e) => {
+					console.warn('Kunne ikke hente baggrundsmusik:', e);
+					return null;
+				}),
+				getAudioUrl('nedtaelling-go.mp3').catch((e) => {
+					console.warn('Kunne ikke hente go-nedtælling:', e);
+					return null;
+				}),
+				getAudioUrl('nedtaelling-pause.mp3').catch((e) => {
+					console.warn('Kunne ikke hente pause-nedtælling:', e);
+					return null;
+				})
+			]);
+			musikUrl = musik;
+			nedtaellingGoUrl = goLyd;
+			nedtaellingPauseUrl = pauseLyd;
 
 			startTimer();
 		} catch (e) {
@@ -171,9 +190,14 @@
 
 	onDestroy(() => {
 		stopTimer();
-		if (musikEl) {
+		if (unduckTimer !== null) {
+			clearTimeout(unduckTimer);
+			unduckTimer = null;
+		}
+		for (const el of [musikEl, nedtaellingGoEl, nedtaellingPauseEl]) {
+			if (!el) continue;
 			try {
-				musikEl.pause();
+				el.pause();
 			} catch {
 				// ignorer — elementet kan være rent dødt
 			}
@@ -181,9 +205,21 @@
 	});
 
 	$effect(() => {
+		if (!paused) return;
+		for (const el of [nedtaellingGoEl, nedtaellingPauseEl]) {
+			if (!el || el.paused) continue;
+			try {
+				el.pause();
+			} catch {
+				// ignorer
+			}
+		}
+	});
+
+	$effect(() => {
 		const el = musikEl;
 		if (!el || !musikUrl) return;
-		const skalSpille = musikSlaaetTil && !paused && phase !== 'done' && !loading && !fejl;
+		const skalSpille = lydSlaaetTil && !paused && phase !== 'done' && !loading && !fejl;
 		if (skalSpille && el.paused) {
 			const p = el.play();
 			if (p && p.catch) {
@@ -200,6 +236,7 @@
 		timerHandle = setInterval(() => {
 			if (paused) return;
 			rem -= 1;
+			afspilNedtaellingHvisRelevant();
 			if (rem < 0) advance();
 		}, 1000);
 	}
@@ -215,6 +252,60 @@
 		phase = ny;
 		rem = sek;
 		phaseTotal = sek;
+	}
+
+	function afspilNedtaellingHvisRelevant() {
+		if (!lydSlaaetTil) return;
+		if (rem !== 3) return;
+		const ex = aktuelOvelse;
+		if (!ex) return;
+
+		let voiceKey: 'go' | 'pause' | null = null;
+		if (phase === 'prep' || phase === 'rest' || phase === 'switch') {
+			voiceKey = 'go';
+		} else if (phase === 'work') {
+			const sidsteSet = si >= ex.sets;
+			const sidsteOvelse = ei >= exercises.length - 1;
+			if (sidsteSet && sidsteOvelse) return;
+			voiceKey = 'pause';
+		}
+		if (!voiceKey) return;
+
+		const noegle = `${phase}-${ei}-${si}`;
+		if (sidsteCountdownNoegle === noegle) return;
+		sidsteCountdownNoegle = noegle;
+
+		const el = voiceKey === 'go' ? nedtaellingGoEl : nedtaellingPauseEl;
+		if (!el) return;
+
+		try {
+			el.currentTime = 0;
+			duckMusik();
+			const p = el.play();
+			if (p && p.catch) {
+				p.catch((e) => {
+					console.warn('Kunne ikke afspille nedtælling:', e);
+					unduckMusik();
+				});
+			}
+		} catch (e) {
+			console.warn('Nedtælling-afspilning fejlede:', e);
+			unduckMusik();
+		}
+	}
+
+	function duckMusik() {
+		if (musikEl) musikEl.volume = 0;
+		if (unduckTimer !== null) clearTimeout(unduckTimer);
+		unduckTimer = setTimeout(unduckMusik, 5000);
+	}
+
+	function unduckMusik() {
+		if (musikEl) musikEl.volume = 1;
+		if (unduckTimer !== null) {
+			clearTimeout(unduckTimer);
+			unduckTimer = null;
+		}
 	}
 
 	function advance() {
@@ -260,8 +351,8 @@
 		paused = !paused;
 	}
 
-	function toggleMusik() {
-		musikSlaaetTil = !musikSlaaetTil;
+	function toggleLyd() {
+		lydSlaaetTil = !lydSlaaetTil;
 	}
 
 	function stopOgForlad() {
@@ -325,6 +416,12 @@
 <div class="player">
 	{#if musikUrl}
 		<audio bind:this={musikEl} src={musikUrl} loop preload="auto"></audio>
+	{/if}
+	{#if nedtaellingGoUrl}
+		<audio bind:this={nedtaellingGoEl} src={nedtaellingGoUrl} preload="auto"></audio>
+	{/if}
+	{#if nedtaellingPauseUrl}
+		<audio bind:this={nedtaellingPauseEl} src={nedtaellingPauseUrl} preload="auto"></audio>
 	{/if}
 
 	{#if loading}
@@ -457,11 +554,11 @@
 			<button
 				class="lyd-knap"
 				type="button"
-				onclick={toggleMusik}
-				aria-label={musikSlaaetTil ? 'Slå lyd fra' : 'Slå lyd til'}
-				aria-pressed={musikSlaaetTil}
+				onclick={toggleLyd}
+				aria-label={lydSlaaetTil ? 'Slå lyd fra' : 'Slå lyd til'}
+				aria-pressed={lydSlaaetTil}
 			>
-				{#if musikSlaaetTil}
+				{#if lydSlaaetTil}
 					<svg
 						viewBox="0 0 24 24"
 						width="18"
