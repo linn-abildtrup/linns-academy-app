@@ -15,7 +15,8 @@
 	// Modul-id til rute. Kun moduler der har en bygget side er klikbare.
 	// De øvrige forbliver ikke-klikbare indtil deres sider er bygget.
 	const RUTER: Record<string, string> = {
-		traening: '/app/moduler/traening'
+		traening: '/app/moduler/traening',
+		vaner: '/app/moduler/vaner'
 	};
 
 	function ruteFor(modul: Modul): string | null {

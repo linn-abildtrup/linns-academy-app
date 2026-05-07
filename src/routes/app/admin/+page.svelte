@@ -11,11 +11,19 @@
 			icon: 'cal' as const
 		},
 		{
+			id: 'vaner',
+			navn: 'Vaner',
+			beskrivelse: 'Rediger refleksioner, vaner og bonus pr dag',
+			rute: '/app/admin/vaner',
+			accent: '#6F9E7E',
+			icon: 'leaf' as const
+		},
+		{
 			id: 'mikrotraening',
 			navn: 'Mikrotræning',
 			beskrivelse: 'Rediger træningsprogrammer og dage',
 			rute: '/app/admin/mikrotraening',
-			accent: '#6F9E7E',
+			accent: '#C9A07A',
 			icon: 'flame' as const
 		}
 	];
