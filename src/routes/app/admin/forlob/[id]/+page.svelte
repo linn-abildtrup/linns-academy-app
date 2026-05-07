@@ -1,0 +1,520 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { Timestamp } from 'firebase/firestore';
+	import type { AllowedEmail, Forlob } from '$lib/content/forlobAdgang';
+	import {
+		gemForlob,
+		hentAllowedEmailsForForlob,
+		hentForlob,
+		sletForlob
+	} from '$lib/firestore/forlob';
+	import Icon from '$lib/components/Icon.svelte';
+
+	const forlobId = $derived(page.params.id ?? '');
+
+	let forlob = $state<Forlob | null>(null);
+	let emails = $state<AllowedEmail[]>([]);
+	let loading = $state(true);
+	let fejl = $state<string | null>(null);
+
+	let formNavn = $state('');
+	let formStartDato = $state('');
+	let formAntalDage = $state(21);
+	let formAktiv = $state(true);
+	let gemmer = $state(false);
+	let gemFejl = $state<string | null>(null);
+	let gemKvit = $state(false);
+
+	let sletter = $state(false);
+	let bekraefter = $state(false);
+
+	onMount(async () => {
+		await indlaes();
+	});
+
+	async function indlaes() {
+		loading = true;
+		fejl = null;
+		try {
+			const f = await hentForlob(forlobId);
+			if (!f) {
+				fejl = 'Forløbet findes ikke.';
+				loading = false;
+				return;
+			}
+			forlob = f;
+			formNavn = f.navn;
+			formStartDato = f.startDato.toDate().toISOString().slice(0, 10);
+			formAntalDage = f.antalDage;
+			formAktiv = f.aktiv;
+
+			emails = await hentAllowedEmailsForForlob(forlobId);
+		} catch (e) {
+			console.error(e);
+			fejl = 'Kunne ikke hente forløbet.';
+		} finally {
+			loading = false;
+		}
+	}
+
+	async function gem() {
+		gemFejl = null;
+		gemKvit = false;
+		const trimmedNavn = formNavn.trim();
+		if (!trimmedNavn) {
+			gemFejl = 'Forløbet skal have et navn.';
+			return;
+		}
+		if (!formStartDato) {
+			gemFejl = 'Vælg en startdato.';
+			return;
+		}
+		if (formAntalDage < 1 || formAntalDage > 365) {
+			gemFejl = 'Antal dage skal være mellem 1 og 365.';
+			return;
+		}
+		gemmer = true;
+		try {
+			const startDate = new Date(formStartDato + 'T06:00:00');
+			await gemForlob(forlobId, {
+				navn: trimmedNavn,
+				startDato: Timestamp.fromDate(startDate),
+				antalDage: formAntalDage,
+				aktiv: formAktiv
+			});
+			if (forlob) {
+				forlob = {
+					...forlob,
+					navn: trimmedNavn,
+					startDato: Timestamp.fromDate(startDate),
+					antalDage: formAntalDage,
+					aktiv: formAktiv
+				};
+			}
+			gemKvit = true;
+			setTimeout(() => (gemKvit = false), 2000);
+		} catch (e) {
+			console.error(e);
+			gemFejl = 'Kunne ikke gemme. Prøv igen.';
+		} finally {
+			gemmer = false;
+		}
+	}
+
+	async function slet() {
+		if (!bekraefter) {
+			bekraefter = true;
+			return;
+		}
+		sletter = true;
+		try {
+			await sletForlob(forlobId);
+			goto('/app/admin/forlob');
+		} catch (e) {
+			console.error(e);
+			gemFejl = 'Kunne ikke slette forløbet.';
+			sletter = false;
+		}
+	}
+
+	function statusLabel(status: AllowedEmail['status']): string {
+		return status === 'registered' ? 'Tilmeldt' : 'Inviteret';
+	}
+</script>
+
+<div class="page">
+	<header class="page-header">
+		<a class="back" href="/app/admin/forlob">
+			<Icon name="arrow-l" size={14} color="var(--text2)" />
+			<span>Forløb</span>
+		</a>
+		<div class="eyebrow">Admin · Forløb</div>
+		<h1>{forlob?.navn ?? forlobId}</h1>
+	</header>
+
+	{#if loading}
+		<div class="status-besked">Henter forløb...</div>
+	{:else if fejl}
+		<div class="status-besked fejl">{fejl}</div>
+	{:else if forlob}
+		<div class="form-card">
+			<div class="form-titel">Indstillinger</div>
+			<label class="felt">
+				<span class="felt-label">Navn</span>
+				<input type="text" bind:value={formNavn} disabled={gemmer} />
+			</label>
+			<div class="felt-rad">
+				<label class="felt">
+					<span class="felt-label">Startdato</span>
+					<input type="date" bind:value={formStartDato} disabled={gemmer} />
+				</label>
+				<label class="felt">
+					<span class="felt-label">Antal dage</span>
+					<input
+						type="number"
+						min="1"
+						max="365"
+						bind:value={formAntalDage}
+						disabled={gemmer}
+					/>
+				</label>
+			</div>
+			<label class="checkbox-rad">
+				<input type="checkbox" bind:checked={formAktiv} disabled={gemmer} />
+				<span>Aktivt forløb (nye køb tilknyttes automatisk)</span>
+			</label>
+
+			{#if gemFejl}
+				<div class="fejl-besked">{gemFejl}</div>
+			{/if}
+			{#if gemKvit}
+				<div class="kvit-besked">Gemt ✓</div>
+			{/if}
+
+			<button class="form-knap primary" type="button" onclick={gem} disabled={gemmer}>
+				{gemmer ? 'Gemmer...' : 'Gem ændringer'}
+			</button>
+		</div>
+
+		<div class="emails-card">
+			<div class="emails-head">
+				<div class="form-titel">Tilmeldte emails</div>
+				<div class="emails-tael">{emails.length}</div>
+			</div>
+			{#if emails.length === 0}
+				<div class="status-besked" style="margin: 0;">
+					Ingen emails tilknyttet endnu. CSV-upload kommer snart.
+				</div>
+			{:else}
+				<div class="emails-liste">
+					{#each emails as e (e.email)}
+						<div class="email-row">
+							<div class="email-info">
+								<div class="email-adresse">{e.email}</div>
+								{#if e.firstName || e.lastName}
+									<div class="email-navn">{e.firstName} {e.lastName}</div>
+								{/if}
+							</div>
+							<span class="badge {e.status === 'registered' ? 'aktiv' : 'inaktiv'}">
+								{statusLabel(e.status)}
+							</span>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
+
+		<div class="slet-omraade">
+			{#if !bekraefter}
+				<button class="slet-knap" type="button" onclick={slet}>Slet forløb</button>
+			{:else}
+				<div class="slet-bekraeft">
+					<div class="slet-tekst">
+						Slet forløbet permanent? Tilknyttede allowedEmails forbliver i Firestore.
+					</div>
+					<div class="slet-knapper">
+						<button
+							class="form-knap ghost"
+							type="button"
+							onclick={() => (bekraefter = false)}
+							disabled={sletter}
+						>
+							Annuller
+						</button>
+						<button class="form-knap danger" type="button" onclick={slet} disabled={sletter}>
+							{sletter ? 'Sletter...' : 'Ja, slet'}
+						</button>
+					</div>
+				</div>
+			{/if}
+		</div>
+	{/if}
+</div>
+
+<style>
+	.page {
+		padding: 18px 18px 100px;
+		max-width: 520px;
+		margin: 0 auto;
+	}
+
+	.page-header {
+		margin-bottom: 18px;
+	}
+
+	.back {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		color: var(--text2);
+		text-decoration: none;
+		margin-bottom: 12px;
+	}
+
+	.back:hover {
+		color: var(--text);
+	}
+
+	.eyebrow {
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	h1 {
+		font-family: var(--ff-d);
+		font-size: 26px;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+		margin: 4px 0 0;
+		line-height: 1.05;
+		color: var(--text);
+	}
+
+	.status-besked {
+		padding: 14px 16px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		color: var(--text2);
+		font-size: 13px;
+		text-align: center;
+		margin-bottom: 14px;
+	}
+
+	.status-besked.fejl {
+		color: #8a4a3e;
+		background: #fbeeea;
+		border-color: #f0d6cf;
+	}
+
+	.form-card,
+	.emails-card {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		padding: 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		margin-bottom: 14px;
+	}
+
+	.form-titel {
+		font-family: var(--ff-d);
+		font-size: 18px;
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.emails-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.emails-tael {
+		font-size: 13px;
+		color: var(--text3);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.emails-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		max-height: 320px;
+		overflow-y: auto;
+	}
+
+	.email-row {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 10px;
+		background: var(--bg2);
+		border-radius: 8px;
+	}
+
+	.email-info {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.email-adresse {
+		font-size: 13px;
+		color: var(--text);
+		font-weight: 500;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.email-navn {
+		font-size: 11px;
+		color: var(--text3);
+		margin-top: 1px;
+	}
+
+	.felt {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.felt-label {
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.felt input {
+		padding: 10px 12px;
+		font-size: 14px;
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: var(--bg2);
+		color: var(--text);
+		font-family: var(--ff-b);
+		outline: none;
+	}
+
+	.felt input:focus {
+		border-color: var(--terra);
+	}
+
+	.felt-rad {
+		display: grid;
+		grid-template-columns: 2fr 1fr;
+		gap: 10px;
+	}
+
+	.checkbox-rad {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+		color: var(--text2);
+		cursor: pointer;
+	}
+
+	.checkbox-rad input {
+		width: 16px;
+		height: 16px;
+		accent-color: var(--terra);
+	}
+
+	.fejl-besked {
+		padding: 10px 12px;
+		background: #fbeeea;
+		border: 1px solid #f0d6cf;
+		border-radius: 8px;
+		font-size: 12px;
+		color: #8a4a3e;
+	}
+
+	.kvit-besked {
+		padding: 8px 12px;
+		background: var(--sdim);
+		border-radius: 8px;
+		font-size: 12px;
+		color: var(--sage);
+		text-align: center;
+	}
+
+	.form-knap {
+		padding: 12px;
+		font-size: 14px;
+		font-weight: 600;
+		border-radius: 10px;
+		border: none;
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.form-knap.ghost {
+		background: var(--white);
+		border: 1px solid var(--border);
+		color: var(--text2);
+	}
+
+	.form-knap.primary {
+		background: var(--terra);
+		color: #fff;
+	}
+
+	.form-knap.danger {
+		background: #b8503f;
+		color: #fff;
+	}
+
+	.form-knap:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.badge {
+		font-size: 9.5px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		padding: 2px 7px;
+		border-radius: 99px;
+		font-weight: 600;
+	}
+
+	.badge.aktiv {
+		background: var(--sdim);
+		color: var(--sage);
+	}
+
+	.badge.inaktiv {
+		background: var(--bg2);
+		color: var(--text3);
+	}
+
+	.slet-omraade {
+		margin-top: 24px;
+	}
+
+	.slet-knap {
+		background: none;
+		border: 1px solid #e8c8c1;
+		color: #b8503f;
+		font-size: 13px;
+		font-weight: 500;
+		padding: 10px 16px;
+		border-radius: 10px;
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.slet-knap:hover {
+		background: #fbeeea;
+	}
+
+	.slet-bekraeft {
+		background: #fbeeea;
+		border: 1px solid #f0d6cf;
+		border-radius: 12px;
+		padding: 14px;
+	}
+
+	.slet-tekst {
+		font-size: 13px;
+		color: #8a4a3e;
+		margin-bottom: 10px;
+	}
+
+	.slet-knapper {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+	}
+</style>
