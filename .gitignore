@@ -32,3 +32,6 @@ scripts/service-account-key.json
 
 # Claude Code lokale settings
 /.claude
+
+# Screenshots til hurtig deling med Claude
+/screenshots

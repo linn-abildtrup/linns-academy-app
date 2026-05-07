@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+	match /databases/{database}/documents {
+		// Bruger-dokument: kun egen bruger kan læse og skrive
+		match /users/{uid} {
+			allow read, write: if request.auth != null && request.auth.uid == uid;
+
+			// Bruger-produkter (køb, fremgang, valg): kun egen bruger
+			match /products/{productId} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
+
+			// Pause-state for igangværende træning: kun egen bruger
+			match /pauses/{pauseId} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
+		}
+
+		// Øvelsesbibliotek: alle autentificerede kan læse, ingen kan skrive fra klienten
+		match /exercises/{exerciseId} {
+			allow read: if request.auth != null;
+			allow write: if false;
+		}
+
+		// Træningsprogrammer + deres dage: alle autentificerede kan læse, ingen kan skrive fra klienten
+		match /trainingPrograms/{programId} {
+			allow read: if request.auth != null;
+			allow write: if false;
+
+			match /days/{dayId} {
+				allow read: if request.auth != null;
+				allow write: if false;
+			}
+		}
+
+		// Produkter (Kickstart osv.): alle autentificerede kan læse, ingen kan skrive fra klienten
+		match /products/{productId} {
+			allow read: if request.auth != null;
+			allow write: if false;
+		}
+	}
+}
