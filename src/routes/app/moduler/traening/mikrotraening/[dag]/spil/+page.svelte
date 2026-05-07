@@ -6,10 +6,14 @@
 	import type {
 		DayExercise,
 		Exercise,
+		Feedback,
+		MikrotraeningFremgang,
 		TrainingDay,
 		UserProduct
 	} from '$lib/content/mikrotraening';
+	import { markerDagSomGennemfort, registrerFeedback } from '$lib/content/mikrotraening';
 	import {
+		gemMikrotraeningFremgang,
 		hentExercises,
 		hentProgram,
 		hentUserProduct,
@@ -42,6 +46,10 @@
 	let phaseTotal = $state(PREP_SEC);
 	let paused = $state(false);
 	let timerHandle: ReturnType<typeof setInterval> | null = null;
+
+	let gemmer = $state(false);
+	let gemFejl = $state<string | null>(null);
+	let viserFeedback = $state(false);
 
 	const dag = $derived<TrainingDay | null>(
 		programData?.dage.find((d) => d.dagNummer === dagNummer) ?? null
@@ -225,6 +233,58 @@
 		stopTimer();
 		goto(`/app/moduler/traening/mikrotraening/${dagNummer}`);
 	}
+
+	function huidigFremgang(): MikrotraeningFremgang {
+		return (
+			(userProduct?.fremgang?.mikrotraening as MikrotraeningFremgang | undefined) ?? {
+				gennemforte: [],
+				feedback: {}
+			}
+		);
+	}
+
+	async function gemTraening() {
+		const u = user;
+		if (!u || gemmer) return;
+		gemmer = true;
+		gemFejl = null;
+		try {
+			const opdateret = markerDagSomGennemfort(huidigFremgang(), dagNummer);
+			await gemMikrotraeningFremgang(u.uid, 'kickstart', opdateret);
+			if (userProduct) {
+				userProduct = {
+					...userProduct,
+					fremgang: { ...userProduct.fremgang, mikrotraening: opdateret }
+				};
+			}
+			viserFeedback = true;
+		} catch (e) {
+			console.error(e);
+			gemFejl = 'Kunne ikke gemme træningen. Prøv igen.';
+		} finally {
+			gemmer = false;
+		}
+	}
+
+	async function vaelgFeedback(feedback: Feedback) {
+		const u = user;
+		if (!u || gemmer) return;
+		gemmer = true;
+		gemFejl = null;
+		try {
+			const opdateret = registrerFeedback(huidigFremgang(), dagNummer, feedback);
+			await gemMikrotraeningFremgang(u.uid, 'kickstart', opdateret);
+			goto(`/app/moduler/traening/mikrotraening/${dagNummer}`);
+		} catch (e) {
+			console.error(e);
+			gemFejl = 'Kunne ikke gemme feedback. Prøv igen.';
+			gemmer = false;
+		}
+	}
+
+	function springFeedbackOver() {
+		goto(`/app/moduler/traening/mikrotraening/${dagNummer}`);
+	}
 </script>
 
 <div class="player">
@@ -233,6 +293,86 @@
 	{:else if fejl}
 		<div class="status-besked fejl">{fejl}</div>
 		<button class="tilbage-knap" type="button" onclick={stopOgForlad}>Tilbage</button>
+	{:else if phase === 'done'}
+		<div class="finish-card">
+			<div class="finish-emoji">🎉</div>
+			<h2 class="finish-titel">Træning gennemført!</h2>
+			<p class="finish-sub">Lidt er bedre end ingenting — du gjorde det.</p>
+			{#if gemFejl}
+				<div class="status-besked fejl">{gemFejl}</div>
+			{/if}
+			<button
+				class="ctrl primary fuld"
+				type="button"
+				onclick={gemTraening}
+				disabled={gemmer || viserFeedback}
+			>
+				{#if gemmer}
+					Gemmer...
+				{:else}
+					Gem træning
+					<Icon name="check" size={14} color="#fff" />
+				{/if}
+			</button>
+			<button class="ctrl ghost" type="button" onclick={stopOgForlad}>
+				Tilbage uden at gemme
+			</button>
+		</div>
+
+		{#if viserFeedback}
+			<div
+				class="modal-bag"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="feedback-titel"
+			>
+				<div class="modal">
+					<div class="modal-greb"></div>
+					<div class="modal-titel" id="feedback-titel">Hvordan føltes træningen?</div>
+					<div class="modal-sub">Valgfrit — din feedback hjælper Linn</div>
+					{#if gemFejl}
+						<div class="status-besked fejl">{gemFejl}</div>
+					{/if}
+					<div class="feedback-rad">
+						<button
+							class="fb-knap"
+							type="button"
+							onclick={() => vaelgFeedback('let')}
+							disabled={gemmer}
+						>
+							<span class="fb-cirkel">😊</span>
+							<span class="fb-label">Let</span>
+						</button>
+						<button
+							class="fb-knap"
+							type="button"
+							onclick={() => vaelgFeedback('tilpas')}
+							disabled={gemmer}
+						>
+							<span class="fb-cirkel">💪</span>
+							<span class="fb-label">Tilpas</span>
+						</button>
+						<button
+							class="fb-knap"
+							type="button"
+							onclick={() => vaelgFeedback('udfordrende')}
+							disabled={gemmer}
+						>
+							<span class="fb-cirkel">🔥</span>
+							<span class="fb-label">Udfordrende</span>
+						</button>
+					</div>
+					<button
+						class="modal-spring"
+						type="button"
+						onclick={springFeedbackOver}
+						disabled={gemmer}
+					>
+						Spring over
+					</button>
+				</div>
+			</div>
+		{/if}
 	{:else if dag && aktuelOvelse && aktuelExercise}
 		<div class="video-omraade" class:hviler={phase === 'rest'}>
 			{#if aktuelOvelse.bonus}
@@ -606,5 +746,159 @@
 	.ctrl.primary {
 		background: var(--terra);
 		color: #fff;
+	}
+
+	.ctrl.primary:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.ctrl.fuld {
+		grid-column: 1 / -1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+	}
+
+	.ctrl.ghost {
+		background: transparent;
+		border: none;
+		color: var(--text3);
+		font-size: 13px;
+		font-weight: 500;
+	}
+
+	.finish-card {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 18px;
+		padding: 32px 24px 24px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+		margin-top: 18px;
+	}
+
+	.finish-emoji {
+		font-size: 56px;
+		line-height: 1;
+		margin-bottom: 4px;
+	}
+
+	.finish-titel {
+		font-family: var(--ff-d);
+		font-size: 26px;
+		font-weight: 600;
+		color: var(--text);
+		margin: 0;
+		text-align: center;
+		letter-spacing: -0.01em;
+	}
+
+	.finish-sub {
+		font-size: 13px;
+		color: var(--text2);
+		text-align: center;
+		margin: 0 0 10px;
+		max-width: 320px;
+		line-height: 1.5;
+	}
+
+	.modal-bag {
+		position: fixed;
+		inset: 0;
+		background: rgba(42, 31, 23, 0.45);
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		z-index: 600;
+		padding: 0;
+	}
+
+	.modal {
+		background: var(--white);
+		border-radius: 20px 20px 0 0;
+		padding: 14px 22px 32px;
+		width: 100%;
+		max-width: 520px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+		box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15);
+	}
+
+	.modal-greb {
+		width: 38px;
+		height: 4px;
+		border-radius: 2px;
+		background: var(--border2);
+		margin-bottom: 4px;
+	}
+
+	.modal-titel {
+		font-family: var(--ff-d);
+		font-size: 18px;
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.modal-sub {
+		font-size: 12.5px;
+		color: var(--text3);
+		text-align: center;
+	}
+
+	.feedback-rad {
+		display: flex;
+		gap: 14px;
+		margin-top: 10px;
+	}
+
+	.fb-knap {
+		background: none;
+		border: none;
+		cursor: pointer;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 6px;
+	}
+
+	.fb-knap:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.fb-cirkel {
+		width: 56px;
+		height: 56px;
+		border-radius: 50%;
+		background: var(--sdim);
+		border: 2px solid var(--sage);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 26px;
+	}
+
+	.fb-label {
+		font-size: 12px;
+		font-weight: 500;
+		color: var(--text2);
+	}
+
+	.modal-spring {
+		background: none;
+		border: none;
+		font-size: 13px;
+		color: var(--text3);
+		cursor: pointer;
+		padding: 6px 12px;
+		margin-top: 6px;
 	}
 </style>
