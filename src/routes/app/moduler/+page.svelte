@@ -12,6 +12,17 @@
 		return getModulerForUser(userDoc.state);
 	});
 
+	// Modul-id til rute. Kun moduler der har en bygget side er klikbare.
+	// De øvrige forbliver ikke-klikbare indtil deres sider er bygget.
+	const RUTER: Record<string, string> = {
+		traening: '/app/moduler/traening'
+	};
+
+	function ruteFor(modul: Modul): string | null {
+		if (modul.status !== 'aktiv' && modul.status !== 'laeseadgang') return null;
+		return RUTER[modul.id] ?? null;
+	}
+
 	const undertekst = $derived.by(() => {
 		if (!userDoc) return '';
 		if (userDoc.state === 'forlobskunde') {
@@ -38,10 +49,14 @@
 
 	<div class="modul-liste">
 		{#each moduler as modul (modul.id)}
-			<article
+			{@const rute = ruteFor(modul)}
+			<svelte:element
+				this={rute ? 'a' : 'article'}
 				class="modul-row"
 				class:laast={modul.status === 'laast'}
 				class:laeseadgang={modul.status === 'laeseadgang'}
+				class:klikbar={!!rute}
+				href={rute ?? undefined}
 			>
 				<div class="modul-icon" style="background: {modul.accent};">
 					<Icon name={modul.icon} size={18} color="#fff" />
@@ -64,7 +79,7 @@
 						<span class="badge badge-laeseadgang">{modul.statusTekst}</span>
 					{/if}
 				</div>
-			</article>
+			</svelte:element>
 		{/each}
 	</div>
 </div>
@@ -134,10 +149,20 @@
 		gap: 12px;
 		padding: 14px 14px;
 		border-top: 1px solid var(--border);
+		text-decoration: none;
+		color: inherit;
 	}
 
 	.modul-row:first-child {
 		border-top: none;
+	}
+
+	.modul-row.klikbar {
+		cursor: pointer;
+	}
+
+	.modul-row.klikbar:hover {
+		background: var(--bg2);
 	}
 
 	.modul-row.laast {
