@@ -3,11 +3,19 @@
 
 	const omraader = [
 		{
+			id: 'forlob',
+			navn: 'Forløb',
+			beskrivelse: 'Opret nye runder og upload Simplero-whitelist',
+			rute: '/app/admin/forlob',
+			accent: '#B87B6E',
+			icon: 'cal' as const
+		},
+		{
 			id: 'mikrotraening',
 			navn: 'Mikrotræning',
 			beskrivelse: 'Rediger træningsprogrammer og dage',
 			rute: '/app/admin/mikrotraening',
-			accent: '#B87B6E',
+			accent: '#6F9E7E',
 			icon: 'flame' as const
 		}
 	];
