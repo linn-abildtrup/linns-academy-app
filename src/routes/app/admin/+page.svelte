@@ -11,11 +11,19 @@
 			icon: 'cal' as const
 		},
 		{
+			id: 'opskrifter',
+			navn: 'Opskrifter',
+			beskrivelse: 'Opret og rediger opskrifter til 30-30-3-modulet',
+			rute: '/app/admin/opskrifter',
+			accent: '#6F9E7E',
+			icon: 'book' as const
+		},
+		{
 			id: 'mikrotraening',
 			navn: 'Mikrotræning',
 			beskrivelse: 'Rediger træningsprogrammer og dage',
 			rute: '/app/admin/mikrotraening',
-			accent: '#6F9E7E',
+			accent: '#C9A07A',
 			icon: 'flame' as const
 		}
 	];

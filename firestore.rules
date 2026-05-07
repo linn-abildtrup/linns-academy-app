@@ -58,6 +58,19 @@ service cloud.firestore {
 			allow write: if isAdmin();
 		}
 
+		// Fødevaredatabase (840+ items): alle autentificerede kan læse,
+		// kun admin kan skrive. Klienten cacher hele databasen ved første load.
+		match /fodevarer/{fodevareId} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
+		// Opskrifter: alle autentificerede kan læse, kun admin kan skrive.
+		match /opskrifter/{opskriftId} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
 		// Forløb (kohorter med startdato + whitelist): alle autentificerede kan læse,
 		// kun admin kan skrive. Klienten har brug for at læse for at vise startdato.
 		match /forlob/{forlobId} {
