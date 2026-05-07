@@ -47,6 +47,7 @@ const KENDTE_KATEGORIER = new Set([
 	'morgenmad',
 	'frokost',
 	'aftensmad',
+	'salat',
 	'snack',
 	'dessert',
 	'tilbehor'
@@ -71,27 +72,39 @@ interface GammelOpskrift {
 	instructions?: string;
 }
 
-function mapKategorier(input: string[] | undefined): string[] {
-	if (!Array.isArray(input)) return [];
-	const ud: string[] = [];
-	for (const k of input) {
-		const lower = String(k).toLowerCase().trim();
-		// Map almindelige varianter
-		const mapped =
-			lower === 'morgen'
-				? 'morgenmad'
-				: lower === 'aften'
-					? 'aftensmad'
-					: lower === 'mellemmad'
-						? 'snack'
-						: lower === 'tilbehør'
-							? 'tilbehor'
+function mapKategori(rå: string): string | null {
+	const lower = rå.toLowerCase().trim();
+	const mapped =
+		lower === 'morgen'
+			? 'morgenmad'
+			: lower === 'aften' || lower === 'middagsmad'
+				? 'aftensmad'
+				: lower === 'mellemmad' || lower === 'snacks'
+					? 'snack'
+					: lower === 'tilbehør'
+						? 'tilbehor'
+						: lower === 'salater'
+							? 'salat'
 							: lower;
-		if (KENDTE_KATEGORIER.has(mapped) && !ud.includes(mapped)) {
-			ud.push(mapped);
+	return KENDTE_KATEGORIER.has(mapped) ? mapped : null;
+}
+
+function mapKategorier(input: string[] | undefined): {
+	kategorier: string[];
+	droppede: string[];
+} {
+	if (!Array.isArray(input)) return { kategorier: [], droppede: [] };
+	const kategorier: string[] = [];
+	const droppede: string[] = [];
+	for (const k of input) {
+		const mapped = mapKategori(String(k));
+		if (mapped) {
+			if (!kategorier.includes(mapped)) kategorier.push(mapped);
+		} else {
+			droppede.push(String(k));
 		}
 	}
-	return ud;
+	return { kategorier, droppede };
 }
 
 function mapIngredienser(input: GammelIngrediens[] | undefined) {
@@ -106,9 +119,7 @@ function mapIngredienser(input: GammelIngrediens[] | undefined) {
 }
 
 function mapOpskrift(id: string, gammel: GammelOpskrift) {
-	const ukendteKats = (gammel.categories ?? []).filter(
-		(k) => !KENDTE_KATEGORIER.has(String(k).toLowerCase().trim())
-	);
+	const { kategorier, droppede } = mapKategorier(gammel.categories);
 	const droppedDietTags = (gammel.dietTags ?? []).length;
 
 	return {
@@ -117,13 +128,13 @@ function mapOpskrift(id: string, gammel: GammelOpskrift) {
 			titel: (gammel.title || 'Uden titel').trim(),
 			beskrivelse: (gammel.description || '').trim(),
 			billedeUrl: gammel.imageUrl?.trim() || null,
-			kategorier: mapKategorier(gammel.categories),
+			kategorier,
 			defaultPortioner: gammel.defaultServings || 4,
 			ingredienser: mapIngredienser(gammel.ingredients),
 			instruktioner: (gammel.instructions || '').trim(),
 			aktiv: false
 		},
-		ukendteKats,
+		ukendteKats: droppede,
 		droppedDietTags
 	};
 }

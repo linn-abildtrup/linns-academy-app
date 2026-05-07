@@ -15,6 +15,7 @@ export type OpskriftKategori =
 	| 'morgenmad'
 	| 'frokost'
 	| 'aftensmad'
+	| 'salat'
 	| 'snack'
 	| 'dessert'
 	| 'tilbehor';
@@ -47,6 +48,7 @@ export const KATEGORI_LABELS: Record<OpskriftKategori, string> = {
 	morgenmad: 'Morgenmad',
 	frokost: 'Frokost',
 	aftensmad: 'Aftensmad',
+	salat: 'Salater',
 	snack: 'Snack',
 	dessert: 'Dessert',
 	tilbehor: 'Tilbehør'
@@ -56,6 +58,7 @@ export const ALLE_KATEGORIER: OpskriftKategori[] = [
 	'morgenmad',
 	'frokost',
 	'aftensmad',
+	'salat',
 	'snack',
 	'dessert',
 	'tilbehor'
