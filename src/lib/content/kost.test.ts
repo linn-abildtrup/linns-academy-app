@@ -26,7 +26,7 @@ const skyr: Fodevare = {
 const havre: Fodevare = {
 	id: 'havre',
 	name: 'Havregryn',
-	cat: 'fuldkorn',
+	cat: 'korn',
 	p: 13.5,
 	f: 10,
 	units: [{ u: 'dl', label: 'dl', g: 35 }]
@@ -35,7 +35,7 @@ const havre: Fodevare = {
 const broccoli: Fodevare = {
 	id: 'broccoli',
 	name: 'Broccoli',
-	cat: 'groent',
+	cat: 'gront',
 	p: 2.8,
 	f: 2.6
 };
@@ -172,7 +172,7 @@ describe('filtrerFodevarer', () => {
 	});
 
 	it('kombinerer søgeord og kategori', () => {
-		expect(filtrerFodevarer(liste, 'skyr', 'fuldkorn')).toEqual([]);
+		expect(filtrerFodevarer(liste, 'skyr', 'korn')).toEqual([]);
 	});
 });
 

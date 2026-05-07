@@ -19,11 +19,12 @@ export type Kategori =
 	| 'koed'
 	| 'fisk'
 	| 'baelg'
-	| 'fuldkorn'
-	| 'groent'
-	| 'frugt'
+	| 'korn'
+	| 'gront'
+	| 'baer'
 	| 'noedder'
-	| 'tilskud'
+	| 'prot'
+	| 'drikke'
 	| 'andet';
 
 /**
@@ -76,11 +77,12 @@ export const KATEGORI_LABELS: Record<Kategori, string> = {
 	koed: 'Kød & fjerkræ',
 	fisk: 'Fisk & skaldyr',
 	baelg: 'Bælgfrugter',
-	fuldkorn: 'Fuldkorn & brød',
-	groent: 'Grøntsager',
-	frugt: 'Bær & frugt',
+	korn: 'Fuldkorn & brød',
+	gront: 'Grøntsager',
+	baer: 'Bær & frugt',
 	noedder: 'Nødder & kerner',
-	tilskud: 'Protein-tilskud',
+	prot: 'Protein-tilskud',
+	drikke: 'Drikke',
 	andet: 'Andet'
 };
 
