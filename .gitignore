@@ -29,6 +29,7 @@ scripts/service-account-key.json
 # Lokale arbejdsfiler (uploades ikke til repo)
 /reference
 /videos-to-upload
+/sounds
 
 # Claude Code lokale settings
 /.claude

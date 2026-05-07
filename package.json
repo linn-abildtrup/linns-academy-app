@@ -15,7 +15,8 @@
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run",
 		"seed:mikrotraening": "tsx scripts/seed-mikrotraening.ts",
-		"upload:videos": "tsx scripts/upload-videos.ts"
+		"upload:videos": "tsx scripts/upload-videos.ts",
+		"upload:audio": "tsx scripts/upload-audio.ts"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.4",
