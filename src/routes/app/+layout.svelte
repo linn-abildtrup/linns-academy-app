@@ -3,7 +3,7 @@
 	import { onMount, setContext } from 'svelte';
 	import { onAuthStateChanged, type User } from 'firebase/auth';
 	import { auth } from '$lib/firebase';
-	import { getUserDoc, createUserDoc } from '$lib/userDoc';
+	import { createUserDoc, getUserDoc, synkroniserForlobskundeStatus } from '$lib/userDoc';
 	import type { UserDoc } from '$lib/types';
 	import TabBar from '$lib/components/TabBar.svelte';
 
@@ -35,6 +35,17 @@
 			if (!doc) {
 				await createUserDoc(u.uid, u.email ?? '');
 				doc = await getUserDoc(u.uid);
+			}
+
+			// Tjek om brugeren er på et forløbs-whitelist og opdater state +
+			// userProduct hvis det er tilfældet. Best-effort — fejl logges men
+			// blokerer ikke login.
+			if (doc && u.email) {
+				try {
+					doc = await synkroniserForlobskundeStatus(u.uid, u.email, doc);
+				} catch (e) {
+					console.warn('Forløbssync fejlede:', e);
+				}
 			}
 
 			userDoc = doc;

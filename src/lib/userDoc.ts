@@ -1,6 +1,10 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { UserDoc, UserState } from '$lib/types';
+import {
+	hentAllowedEmail,
+	markerAllowedEmailRegistreret
+} from '$lib/firestore/forlob';
 
 /**
  * Henter bruger-dokumentet fra Firestore.
@@ -31,4 +35,68 @@ export async function createUserDoc(
 		createdAt: Date.now()
 	};
 	await setDoc(ref, userDoc);
+}
+
+/**
+ * Synkroniserer brugerens forløbs-status mod allowedEmails-whitelisten.
+ *
+ * Hvis brugerens email findes i allowedEmails:
+ *   - userDoc.state sættes til 'forlobskunde'
+ *   - userDoc.firstName udfyldes hvis det mangler
+ *   - users/{uid}/products/kickstart oprettes/opdateres med forlobId
+ *   - allowedEmails-status sættes til 'registered' hvis den var 'invited'
+ *
+ * Hvis brugerens email ikke findes på listen, gør funktionen ingenting —
+ * userDoc beholder sin nuværende state (typisk 'modulbruger').
+ *
+ * Returnerer det opdaterede userDoc-objekt (eller det oprindelige hvis
+ * intet ændredes), så kalderen kan opdatere sin lokale kopi.
+ */
+export async function synkroniserForlobskundeStatus(
+	uid: string,
+	email: string,
+	current: UserDoc
+): Promise<UserDoc> {
+	if (!email) return current;
+
+	const allowed = await hentAllowedEmail(email);
+	if (!allowed) return current;
+
+	const productRef = doc(db, 'users', uid, 'products', 'kickstart');
+	const productSnap = await getDoc(productRef);
+	if (productSnap.exists()) {
+		const data = productSnap.data() as { forlobId?: string };
+		if (data.forlobId !== allowed.forlobId) {
+			await updateDoc(productRef, { forlobId: allowed.forlobId });
+		}
+	} else {
+		await setDoc(productRef, {
+			forlobId: allowed.forlobId,
+			koebt: new Date(),
+			startDato: new Date(),
+			udloberDato: null,
+			programValg: {},
+			fremgang: {}
+		});
+	}
+
+	const opdateringer: Partial<UserDoc> = {};
+	if (current.state !== 'forlobskunde') {
+		opdateringer.state = 'forlobskunde';
+	}
+	if (!current.firstName && allowed.firstName) {
+		opdateringer.firstName = allowed.firstName;
+	}
+	if (Object.keys(opdateringer).length > 0) {
+		const userRef = doc(db, 'users', uid);
+		await updateDoc(userRef, opdateringer);
+	}
+
+	if (allowed.status === 'invited') {
+		await markerAllowedEmailRegistreret(email).catch((e) =>
+			console.warn('Kunne ikke markere allowedEmail som registreret:', e)
+		);
+	}
+
+	return { ...current, ...opdateringer };
 }
