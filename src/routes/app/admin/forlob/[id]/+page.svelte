@@ -3,12 +3,15 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { Timestamp } from 'firebase/firestore';
-	import type { AllowedEmail, Forlob } from '$lib/content/forlobAdgang';
+	import type { AllowedEmail, CsvParseResult, Forlob } from '$lib/content/forlobAdgang';
+	import { parseSimpleroCsv } from '$lib/content/forlobAdgang';
 	import {
+		gemAllowedEmailsBatch,
 		gemForlob,
 		hentAllowedEmailsForForlob,
 		hentForlob,
-		sletForlob
+		sletForlob,
+		type ImportResultat
 	} from '$lib/firestore/forlob';
 	import Icon from '$lib/components/Icon.svelte';
 
@@ -29,6 +32,12 @@
 
 	let sletter = $state(false);
 	let bekraefter = $state(false);
+
+	let csvIndhold = $state('');
+	let parsResultat = $state<CsvParseResult | null>(null);
+	let importerer = $state(false);
+	let importResultat = $state<ImportResultat | null>(null);
+	let importFejl = $state<string | null>(null);
 
 	onMount(async () => {
 		await indlaes();
@@ -122,6 +131,31 @@
 	function statusLabel(status: AllowedEmail['status']): string {
 		return status === 'registered' ? 'Tilmeldt' : 'Inviteret';
 	}
+
+	function previewCsv() {
+		importResultat = null;
+		importFejl = null;
+		const r = parseSimpleroCsv(csvIndhold);
+		parsResultat = r;
+	}
+
+	async function importer() {
+		if (!parsResultat || parsResultat.rows.length === 0) return;
+		importerer = true;
+		importFejl = null;
+		try {
+			const r = await gemAllowedEmailsBatch(parsResultat.rows, forlobId);
+			importResultat = r;
+			emails = await hentAllowedEmailsForForlob(forlobId);
+			csvIndhold = '';
+			parsResultat = null;
+		} catch (e) {
+			console.error(e);
+			importFejl = 'Kunne ikke importere. Prøv igen.';
+		} finally {
+			importerer = false;
+		}
+	}
 </script>
 
 <div class="page">
@@ -176,6 +210,76 @@
 			<button class="form-knap primary" type="button" onclick={gem} disabled={gemmer}>
 				{gemmer ? 'Gemmer...' : 'Gem ændringer'}
 			</button>
+		</div>
+
+		<div class="form-card">
+			<div class="form-titel">Importér emails fra Simplero</div>
+			<p class="csv-hint">
+				Åbn din Simplero-eksport, marker alt (Cmd+A), kopier (Cmd+C) og indsæt her. Klienter
+				med "Canceled at" udfyldt springes automatisk over.
+			</p>
+			<textarea
+				class="csv-textarea"
+				placeholder="Paste CSV-indhold her..."
+				bind:value={csvIndhold}
+				disabled={importerer}
+				rows="6"
+			></textarea>
+
+			<div class="csv-knapper">
+				<button
+					class="form-knap ghost"
+					type="button"
+					onclick={previewCsv}
+					disabled={!csvIndhold.trim() || importerer}
+				>
+					Forhåndsvis
+				</button>
+				<button
+					class="form-knap primary"
+					type="button"
+					onclick={importer}
+					disabled={!parsResultat || parsResultat.rows.length === 0 || importerer}
+				>
+					{importerer ? 'Importerer...' : 'Importér'}
+				</button>
+			</div>
+
+			{#if parsResultat}
+				{#if parsResultat.fejl}
+					<div class="fejl-besked">{parsResultat.fejl}</div>
+				{:else}
+					<div class="csv-preview">
+						<div class="csv-preview-tael">
+							<strong>{parsResultat.rows.length}</strong> gyldige emails klar til import
+						</div>
+						{#if parsResultat.skippedCanceled > 0}
+							<div class="csv-preview-info">
+								{parsResultat.skippedCanceled} annullerede sprunget over
+							</div>
+						{/if}
+						{#if parsResultat.skippedInvalid > 0}
+							<div class="csv-preview-info">
+								{parsResultat.skippedInvalid} ugyldige rækker sprunget over
+							</div>
+						{/if}
+					</div>
+				{/if}
+			{/if}
+
+			{#if importResultat}
+				<div class="kvit-besked">
+					Import færdig — {importResultat.tilfoejet} tilføjet · {importResultat.opdateret} opdateret
+					· {importResultat.uaendret} uændret
+					{#if importResultat.fejl > 0}
+						· {importResultat.fejl} fejl
+					{/if}
+				</div>
+			{/if}
+
+			{#if importFejl}
+				<div class="fejl-besked">{importFejl}</div>
+			{/if}
 		</div>
 
 		<div class="emails-card">
@@ -427,6 +531,57 @@
 		font-size: 12px;
 		color: var(--sage);
 		text-align: center;
+	}
+
+	.csv-hint {
+		font-size: 12px;
+		color: var(--text3);
+		line-height: 1.5;
+		margin: 0;
+	}
+
+	.csv-textarea {
+		font-family: ui-monospace, monospace;
+		font-size: 11px;
+		padding: 10px 12px;
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: var(--bg2);
+		color: var(--text);
+		outline: none;
+		resize: vertical;
+		min-height: 100px;
+	}
+
+	.csv-textarea:focus {
+		border-color: var(--terra);
+	}
+
+	.csv-knapper {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+	}
+
+	.csv-preview {
+		padding: 10px 12px;
+		background: var(--bg2);
+		border-radius: 8px;
+		font-size: 12px;
+		color: var(--text2);
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.csv-preview-tael strong {
+		color: var(--terra);
+		font-size: 14px;
+	}
+
+	.csv-preview-info {
+		font-size: 11px;
+		color: var(--text3);
 	}
 
 	.form-knap {
