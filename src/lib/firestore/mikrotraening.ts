@@ -117,6 +117,21 @@ export async function gemMikrotraeningFremgang(
 }
 
 /**
+ * Sætter brugerens programvalg for en træningsform (fx mikrotraening).
+ * Opdaterer userProduct.programValg.{treaningsform} via dot-path så
+ * andre programvalg på samme produkt ikke berøres.
+ */
+export async function gemProgramValg(
+	uid: string,
+	productId: string,
+	treaningsform: string,
+	programId: string
+): Promise<void> {
+	const ref = doc(db, 'users', uid, 'products', productId);
+	await updateDoc(ref, { [`programValg.${treaningsform}`]: programId });
+}
+
+/**
  * Bygger pauseId-strengen ud fra programId og dag-nummer.
  * Format: {programId}_{dagNummer} — sikrer én pause pr program-dag.
  */
