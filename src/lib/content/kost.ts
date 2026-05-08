@@ -55,14 +55,28 @@ export interface Fodevare {
 
 /**
  * Et item i et byggemåltid: hvilken fødevare og hvor stor portion.
- * portion er i den valgte enhed (g eller en custom unit).
- * Hvis enhedId er undefined eller 'g', betyder portion antal gram.
- * Ellers slås enhedId op i fødevarens units-liste for at finde gram-vægten.
+ *
+ * To tilstande:
+ *   1. KOBLET — foodId peger på en gyldig fødevare. portion + enhedId
+ *      bruges til at beregne protein/fiber.
+ *   2. MANUEL — foodId er tom streng og manuel-objektet har navn + enhed.
+ *      Bruges når en opskrift-ingrediens ikke kunne auto-matches mod
+ *      databasen. Item vises på listen, men bidrager ikke til protein/
+ *      fiber-totalerne. Brugeren kan klikke for at erstatte med en
+ *      koblet fødevare.
  */
 export interface MaaltidsItem {
 	foodId: string;
 	portion: number;
 	enhedId?: string;
+	manuel?: { navn: string; enhed: string };
+}
+
+/**
+ * Returnerer true hvis item ikke er koblet til en fødevare i databasen.
+ */
+export function erManueltItem(item: MaaltidsItem): boolean {
+	return !item.foodId || !!item.manuel;
 }
 
 // ==============================================
@@ -103,13 +117,14 @@ export function gramForEnhed(food: Fodevare | undefined, enhedId?: string): numb
 
 /**
  * Beregner protein og fiber for ét måltidsitem.
- * Returnerer 0 for begge hvis fødevaren ikke findes (defensiv mod stale data).
+ * Returnerer 0 for begge hvis itemet er manuelt (ingen fødevare-kobling)
+ * eller hvis fødevaren ikke findes (defensiv mod stale data).
  */
 export function beregnItem(
 	item: MaaltidsItem,
 	food: Fodevare | undefined
 ): { protein: number; fiber: number; gram: number } {
-	if (!food) return { protein: 0, fiber: 0, gram: 0 };
+	if (erManueltItem(item) || !food) return { protein: 0, fiber: 0, gram: 0 };
 	const gramPrEnhed = gramForEnhed(food, item.enhedId);
 	const totalGram = item.portion * gramPrEnhed;
 	return {
@@ -246,39 +261,43 @@ function vaelgEnhed(food: Fodevare, ingrediensEnhed: string): string | undefined
 }
 
 /**
- * Matcher en liste af opskrift-ingredienser mod fødevaredatabasen og
- * returnerer hvilke der kunne tilføjes som måltidsitems og hvilke der
- * ikke kunne findes.
+ * Matcher en liste af opskrift-ingredienser mod fødevaredatabasen.
  *
- * Hvis ingrediens-enhed er 'g' (eller tom), bruges portion=mængde direkte.
- * Hvis enheden findes på fødevaren (fx 'spsk', 'dl'), bruges den.
- * Ellers falder vi tilbage til gram-portion (selv om enhed-strengen var fx 'stk',
- * hvor mængden så fortolkes som gram — bedre end at droppe ingrediensen).
+ * Returnerer en komplet liste af måltidsitems — både koblede og manuelle —
+ * så ingen ingrediens "forsvinder". Manuelle items har foodId='' og bevarer
+ * det oprindelige navn + enhed fra opskriften, så brugeren kan erstatte
+ * dem med en koblet fødevare senere.
+ *
+ * ikkeMatchede returneres separat så kalderen kan vise en kvit-besked.
+ *
+ * Ingredienser med 0 mængde og uden navn springes helt over.
  */
 export function matchIngredienserMaltid(
 	ingredienser: OpskriftsIngrediens[],
 	foods: Fodevare[]
-): { matchede: MaaltidsItem[]; ikkeMatchede: OpskriftsIngrediens[] } {
-	const matchede: MaaltidsItem[] = [];
+): { items: MaaltidsItem[]; ikkeMatchede: OpskriftsIngrediens[] } {
+	const items: MaaltidsItem[] = [];
 	const ikkeMatchede: OpskriftsIngrediens[] = [];
 
 	for (const ing of ingredienser) {
-		if (!ing.navn || ing.maengde <= 0) {
-			if (ing.navn) ikkeMatchede.push(ing);
-			continue;
-		}
-		const food = findFodevareForIngrediens(ing.navn, foods);
+		if (!ing.navn) continue;
+		const food = ing.maengde > 0 ? findFodevareForIngrediens(ing.navn, foods) : null;
 		if (!food) {
 			ikkeMatchede.push(ing);
+			items.push({
+				foodId: '',
+				portion: ing.maengde,
+				manuel: { navn: ing.navn, enhed: ing.enhed }
+			});
 			continue;
 		}
 		const enhedId = vaelgEnhed(food, ing.enhed);
-		matchede.push({
+		items.push({
 			foodId: food.id,
 			portion: ing.maengde,
 			enhedId
 		});
 	}
 
-	return { matchede, ikkeMatchede };
+	return { items, ikkeMatchede };
 }

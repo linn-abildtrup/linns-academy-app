@@ -5,6 +5,7 @@
 	import {
 		beregnItem,
 		beregnMaaltid,
+		erManueltItem,
 		filtrerFodevarer,
 		formatGram,
 		KATEGORI_LABELS as FODEVARE_KATEGORIER,
@@ -70,6 +71,7 @@
 	let viserPicker = $state(false);
 	let pickerSoeg = $state('');
 	let pickerKategori = $state<Kategori | 'all'>('all');
+	let erstatterIndex = $state<number | null>(null);
 
 	// Opskrifter-state
 	let opskriftSoeg = $state('');
@@ -142,14 +144,37 @@
 
 	function tilfoejTilMaaltid(food: Fodevare) {
 		const standardEnhed = food.units?.[0]?.u;
-		const standardPortion = standardEnhed ? 1 : 100;
-		maaltid = [
-			...maaltid,
-			{ foodId: food.id, portion: standardPortion, enhedId: standardEnhed }
-		];
+		if (erstatterIndex !== null) {
+			// Erstat manuelt item — bevar portion hvis muligt, ellers brug standard
+			const eksisterende = maaltid[erstatterIndex];
+			const portion = eksisterende?.portion > 0 ? eksisterende.portion : standardEnhed ? 1 : 100;
+			const opdateret = [...maaltid];
+			opdateret[erstatterIndex] = {
+				foodId: food.id,
+				portion,
+				enhedId: standardEnhed
+			};
+			maaltid = opdateret;
+			erstatterIndex = null;
+		} else {
+			const standardPortion = standardEnhed ? 1 : 100;
+			maaltid = [
+				...maaltid,
+				{ foodId: food.id, portion: standardPortion, enhedId: standardEnhed }
+			];
+			skiftTab('maaltid');
+		}
 		viserPicker = false;
 		pickerSoeg = '';
-		skiftTab('maaltid');
+	}
+
+	function aabnErstat(index: number) {
+		erstatterIndex = index;
+		const item = maaltid[index];
+		viserPicker = true;
+		// Pre-udfyld søgefeltet med ingrediensens navn for hurtig matching
+		pickerSoeg = item?.manuel?.navn ?? '';
+		pickerKategori = 'all';
 	}
 
 	function fjernItem(index: number) {
@@ -175,6 +200,7 @@
 	}
 
 	function aabnPicker() {
+		erstatterIndex = null;
 		viserPicker = true;
 		pickerSoeg = '';
 		pickerKategori = 'all';
@@ -182,6 +208,7 @@
 
 	function lukPicker() {
 		viserPicker = false;
+		erstatterIndex = null;
 	}
 
 	function toggleOpskriftKategori(k: OpskriftKategori) {
@@ -342,46 +369,75 @@
 				{:else}
 					{#each maaltid as item, i (i)}
 						{@const food = foodMap.get(item.foodId)}
+						{@const manuel = erManueltItem(item)}
 						{@const beregnet = beregnItem(item, food)}
-						<div class="item-row">
-							<div class="item-tekst">
-								<div class="item-navn">{food?.name ?? item.foodId}</div>
-								<div class="item-meta">
-									{formatGram(beregnet.protein)} protein · {formatGram(beregnet.fiber)} fiber
+						<div class="item-row" class:manuel>
+							{#if manuel}
+								<div class="item-tekst">
+									<div class="item-navn">
+										{item.manuel?.navn ?? '(uden navn)'}
+										<span class="manuel-badge">Manuel</span>
+									</div>
+									<div class="item-meta">
+										{item.portion > 0 ? `${item.portion} ${item.manuel?.enhed ?? ''}` : 'efter smag'}
+										· ingen protein/fiber-beregning
+									</div>
 								</div>
-							</div>
-							<input
-								class="portion-input"
-								type="number"
-								min="0"
-								step="0.5"
-								value={item.portion}
-								oninput={(e) =>
-									opdaterPortion(i, (e.target as HTMLInputElement).value)}
-							/>
-							{#if food?.units && food.units.length > 0}
-								<select
-									class="enhed-select"
-									value={item.enhedId ?? 'g'}
-									onchange={(e) =>
-										opdaterEnhed(i, (e.target as HTMLSelectElement).value)}
+								<button
+									class="erstat-knap"
+									type="button"
+									onclick={() => aabnErstat(i)}
 								>
-									<option value="g">g</option>
-									{#each food.units as u (u.u)}
-										<option value={u.u}>{u.label}</option>
-									{/each}
-								</select>
+									Find
+								</button>
+								<button
+									class="ikon-knap"
+									type="button"
+									onclick={() => fjernItem(i)}
+									aria-label="Fjern ingrediens"
+								>
+									×
+								</button>
 							{:else}
-								<span class="enhed-static">g</span>
+								<div class="item-tekst">
+									<div class="item-navn">{food?.name ?? item.foodId}</div>
+									<div class="item-meta">
+										{formatGram(beregnet.protein)} protein · {formatGram(beregnet.fiber)} fiber
+									</div>
+								</div>
+								<input
+									class="portion-input"
+									type="number"
+									min="0"
+									step="0.5"
+									value={item.portion}
+									oninput={(e) =>
+										opdaterPortion(i, (e.target as HTMLInputElement).value)}
+								/>
+								{#if food?.units && food.units.length > 0}
+									<select
+										class="enhed-select"
+										value={item.enhedId ?? 'g'}
+										onchange={(e) =>
+											opdaterEnhed(i, (e.target as HTMLSelectElement).value)}
+									>
+										<option value="g">g</option>
+										{#each food.units as u (u.u)}
+											<option value={u.u}>{u.label}</option>
+										{/each}
+									</select>
+								{:else}
+									<span class="enhed-static">g</span>
+								{/if}
+								<button
+									class="ikon-knap"
+									type="button"
+									onclick={() => fjernItem(i)}
+									aria-label="Fjern fødevare"
+								>
+									×
+								</button>
 							{/if}
-							<button
-								class="ikon-knap"
-								type="button"
-								onclick={() => fjernItem(i)}
-								aria-label="Fjern fødevare"
-							>
-								×
-							</button>
 						</div>
 					{/each}
 				{/if}
@@ -476,7 +532,9 @@
 		>
 			<div class="modal">
 				<div class="modal-head">
-					<div class="modal-titel">Vælg fødevare</div>
+					<div class="modal-titel">
+						{erstatterIndex !== null ? 'Erstat med fødevare' : 'Vælg fødevare'}
+					</div>
 					<button class="modal-luk" type="button" onclick={lukPicker} aria-label="Luk">
 						×
 					</button>
@@ -795,6 +853,42 @@
 		background: var(--white);
 		border: 1px solid var(--border);
 		border-radius: 10px;
+	}
+
+	.item-row.manuel {
+		grid-template-columns: 1fr auto 32px;
+		background: #fdf3e7;
+		border-color: #ecd9b8;
+	}
+
+	.manuel-badge {
+		font-size: 9px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		background: #ecd9b8;
+		color: #8a6a3c;
+		padding: 2px 7px;
+		border-radius: 99px;
+		margin-left: 6px;
+		font-weight: 600;
+		vertical-align: middle;
+	}
+
+	.erstat-knap {
+		padding: 6px 12px;
+		font-size: 12px;
+		font-weight: 600;
+		border-radius: 8px;
+		border: 1px solid var(--terra);
+		background: var(--white);
+		color: var(--terra);
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.erstat-knap:hover {
+		background: var(--terra);
+		color: #fff;
 	}
 
 	.item-tekst {

@@ -240,15 +240,15 @@ describe('matchIngredienserMaltid', () => {
 			],
 			liste
 		);
-		expect(r.matchede).toHaveLength(2);
-		expect(r.matchede[0].foodId).toBe('skyr');
-		expect(r.matchede[0].portion).toBe(200);
-		expect(r.matchede[1].foodId).toBe('havre');
-		expect(r.matchede[1].enhedId).toBe('dl');
+		expect(r.items).toHaveLength(2);
+		expect(r.items[0].foodId).toBe('skyr');
+		expect(r.items[0].portion).toBe(200);
+		expect(r.items[1].foodId).toBe('havre');
+		expect(r.items[1].enhedId).toBe('dl');
 		expect(r.ikkeMatchede).toHaveLength(0);
 	});
 
-	it('rapporterer ikke-matchede ingredienser separat', () => {
+	it('returnerer ikke-matchede som manuelle items i listen', () => {
 		const r = matchIngredienserMaltid(
 			[
 				{ navn: 'skyr', maengde: 100, enhed: 'g' },
@@ -256,22 +256,27 @@ describe('matchIngredienserMaltid', () => {
 			],
 			liste
 		);
-		expect(r.matchede).toHaveLength(1);
+		expect(r.items).toHaveLength(2);
+		expect(r.items[0].foodId).toBe('skyr');
+		expect(r.items[1].foodId).toBe('');
+		expect(r.items[1].manuel).toEqual({ navn: 'eksotisk_ingrediens', enhed: 'g' });
 		expect(r.ikkeMatchede).toHaveLength(1);
-		expect(r.ikkeMatchede[0].navn).toBe('eksotisk_ingrediens');
 	});
 
-	it('springer ingredienser med 0 mængde over (uden navn) men inkluderer dem ved navn', () => {
+	it('inkluderer ingredienser med 0 mængde som manuelle (fx krydderier)', () => {
 		const r = matchIngredienserMaltid(
-			[
-				{ navn: 'salt og peber', maengde: 0, enhed: 'stk' },
-				{ navn: '', maengde: 0, enhed: '' }
-			],
+			[{ navn: 'salt og peber', maengde: 0, enhed: 'stk' }],
 			liste
 		);
-		expect(r.matchede).toHaveLength(0);
+		expect(r.items).toHaveLength(1);
+		expect(r.items[0].manuel?.navn).toBe('salt og peber');
 		expect(r.ikkeMatchede).toHaveLength(1);
-		expect(r.ikkeMatchede[0].navn).toBe('salt og peber');
+	});
+
+	it('springer helt tomme ingredienser over', () => {
+		const r = matchIngredienserMaltid([{ navn: '', maengde: 0, enhed: '' }], liste);
+		expect(r.items).toHaveLength(0);
+		expect(r.ikkeMatchede).toHaveLength(0);
 	});
 
 	it('falder tilbage til gram-portion hvis enhed ikke findes på fødevaren', () => {
@@ -279,7 +284,25 @@ describe('matchIngredienserMaltid', () => {
 			[{ navn: 'broccoli', maengde: 100, enhed: 'stk' }],
 			liste
 		);
-		expect(r.matchede).toHaveLength(1);
-		expect(r.matchede[0].enhedId).toBeUndefined();
+		expect(r.items).toHaveLength(1);
+		expect(r.items[0].enhedId).toBeUndefined();
+	});
+});
+
+describe('erManueltItem og beregnItem for manuel', () => {
+	it('manuel item har 0 protein og fiber', () => {
+		const r = beregnItem({ foodId: '', portion: 1, manuel: { navn: 'salt', enhed: 'tsk' } }, undefined);
+		expect(r.protein).toBe(0);
+		expect(r.fiber).toBe(0);
+	});
+
+	it('manuel item ignoreres af beregnMaaltid', () => {
+		const map = new Map([['skyr', skyr]]);
+		const items: MaaltidsItem[] = [
+			{ foodId: 'skyr', portion: 100 },
+			{ foodId: '', portion: 1, manuel: { navn: 'salt', enhed: 'tsk' } }
+		];
+		const r = beregnMaaltid(items, map);
+		expect(r.protein).toBe(11);
 	});
 });

@@ -67,7 +67,7 @@
 				...ing,
 				maengde: skalerMaengde(ing.maengde, opskrift!.defaultPortioner, portioner)
 			}));
-			const { matchede, ikkeMatchede } = matchIngredienserMaltid(skaleredeIngredienser, foods);
+			const { items, ikkeMatchede } = matchIngredienserMaltid(skaleredeIngredienser, foods);
 
 			let nuvaerende: MaaltidsItem[] = [];
 			try {
@@ -79,19 +79,20 @@
 			} catch {
 				// ignorer fejl ved læsning
 			}
-			const opdateret = [...nuvaerende, ...matchede];
+			const opdateret = [...nuvaerende, ...items];
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(opdateret));
 
+			const matchede = items.length - ikkeMatchede.length;
 			if (ikkeMatchede.length === 0) {
 				tilfoejBesked = {
-					tekst: `${matchede.length} ingredienser tilføjet til dit måltid.`,
+					tekst: `${items.length} ingredienser tilføjet til dit måltid.`,
 					type: 'ok'
 				};
 			} else {
 				tilfoejBesked = {
 					tekst:
-						`${matchede.length} af ${matchede.length + ikkeMatchede.length} ingredienser blev tilføjet. ` +
-						`Disse blev ikke fundet i fødevaredatabasen og må tilføjes manuelt: ${ikkeMatchede.map((i) => i.navn).join(', ')}.`,
+						`${items.length} ingredienser tilføjet (${matchede} med protein/fiber-beregning, ${ikkeMatchede.length} manuelle). ` +
+						`Klik på de manuelle for at koble dem til en fødevare i databasen.`,
 					type: 'advarsel'
 				};
 			}
