@@ -22,6 +22,7 @@ import type {
 	CsvRow,
 	Forlob
 } from '$lib/content/forlobAdgang';
+import type { ForlobDag } from '$lib/content/forlob';
 
 // ==============================================
 // Forlob-helpers
@@ -107,22 +108,28 @@ export async function kopierForlobIndhold(
 	tilForlobId: string
 ): Promise<{
 	vaneprogramDage: number;
+	forlobsdage: number;
 	faqKategorier: number;
 	faqItems: number;
 	guideKategorier: number;
 	guideItems: number;
 }> {
-	const [fraVane, fraFaqKats, fraFaqItems, fraGuideKats, fraGuideItems] = await Promise.all([
-		getDocs(collection(db, 'forlob', fraForlobId, 'vaneprogram')),
-		getDocs(collection(db, 'forlob', fraForlobId, 'faqKategorier')),
-		getDocs(collection(db, 'forlob', fraForlobId, 'faqItems')),
-		getDocs(collection(db, 'forlob', fraForlobId, 'guideKategorier')),
-		getDocs(collection(db, 'forlob', fraForlobId, 'guideItems'))
-	]);
+	const [fraVane, fraDage, fraFaqKats, fraFaqItems, fraGuideKats, fraGuideItems] =
+		await Promise.all([
+			getDocs(collection(db, 'forlob', fraForlobId, 'vaneprogram')),
+			getDocs(collection(db, 'forlob', fraForlobId, 'forlobsdage')),
+			getDocs(collection(db, 'forlob', fraForlobId, 'faqKategorier')),
+			getDocs(collection(db, 'forlob', fraForlobId, 'faqItems')),
+			getDocs(collection(db, 'forlob', fraForlobId, 'guideKategorier')),
+			getDocs(collection(db, 'forlob', fraForlobId, 'guideItems'))
+		]);
 
 	const batch = writeBatch(db);
 	for (const d of fraVane.docs) {
 		batch.set(doc(db, 'forlob', tilForlobId, 'vaneprogram', d.id), d.data());
+	}
+	for (const d of fraDage.docs) {
+		batch.set(doc(db, 'forlob', tilForlobId, 'forlobsdage', d.id), d.data());
 	}
 	for (const d of fraFaqKats.docs) {
 		batch.set(doc(db, 'forlob', tilForlobId, 'faqKategorier', d.id), d.data());
@@ -140,6 +147,7 @@ export async function kopierForlobIndhold(
 
 	return {
 		vaneprogramDage: fraVane.size,
+		forlobsdage: fraDage.size,
 		faqKategorier: fraFaqKats.size,
 		faqItems: fraFaqItems.size,
 		guideKategorier: fraGuideKats.size,
@@ -269,4 +277,50 @@ export async function gemAllowedEmailsBatch(
 	}
 
 	return resultat;
+}
+
+// ==============================================
+// Forløbsdage (lektioner + note pr dagNummer)
+// ==============================================
+
+/**
+ * Henter alle forløbsdage for et forløb sorteret efter dagNummer.
+ */
+export async function hentForlobsdage(forlobId: string): Promise<ForlobDag[]> {
+	const snap = await getDocs(collection(db, 'forlob', forlobId, 'forlobsdage'));
+	return snap.docs
+		.map((d) => d.data() as ForlobDag)
+		.sort((a, b) => a.dagNummer - b.dagNummer);
+}
+
+/**
+ * Henter én specifik forløbsdag. Returnerer null hvis dagen ikke er gemt
+ * endnu — kalderen kan så bruge tomForlobDag() til at få en tom skabelon.
+ */
+export async function hentForlobsdag(
+	forlobId: string,
+	dagNummer: number
+): Promise<ForlobDag | null> {
+	const ref = doc(db, 'forlob', forlobId, 'forlobsdage', `dag${dagNummer}`);
+	const snap = await getDoc(ref);
+	if (!snap.exists()) return null;
+	return snap.data() as ForlobDag;
+}
+
+/**
+ * Gemmer en forløbsdag. Dokument-id er 'dag${dagNummer}' så kopiering
+ * mellem forløb kan bevare reference.
+ */
+export async function gemForlobsdag(forlobId: string, dag: ForlobDag): Promise<void> {
+	const id = `dag${dag.dagNummer}`;
+	const ref = doc(db, 'forlob', forlobId, 'forlobsdage', id);
+	await setDoc(ref, dag);
+}
+
+/**
+ * Sletter en forløbsdag (typisk hvis Linn beslutter at en dag ikke skal
+ * have lektioner overhovedet — eller før hun gemmer en helt ny version).
+ */
+export async function sletForlobsdag(forlobId: string, dagNummer: number): Promise<void> {
+	await deleteDoc(doc(db, 'forlob', forlobId, 'forlobsdage', `dag${dagNummer}`));
 }
