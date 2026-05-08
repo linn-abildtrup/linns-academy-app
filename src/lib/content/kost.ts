@@ -298,17 +298,26 @@ export interface OpskriftsIngrediens {
  */
 export function renseIngrediensNavn(navn: string): string {
 	let n = navn.toLowerCase().trim();
+	// "saft fra 1/2 citron" → "citron"
+	n = n.replace(/^saft\s+fra\s+(\d+([.,/]\d+)?\s+)?/, '');
 	// Fjern alt efter første komma (typisk "X, i tern" / "X, kogt" / "X, rå")
 	const kommaIdx = n.indexOf(',');
 	if (kommaIdx > 0) n = n.slice(0, kommaIdx).trim();
 	// Fjern indledende mængde- og portioneringsord ("2 spsk", "1 stor", "ca. 100g")
 	n = n
-		.replace(/^(ca\.?\s+)?\d+([.,]\d+)?\s*(g|kg|ml|dl|l|stk|spsk|tsk|knsp|knivspids|håndfuld|skive|skiver|kop|kopper|glas|dåse|dåser|pose|poser)\s+/i, '')
-		.replace(/^(ca\.?\s+)?\d+([.,]\d+)?\s+/i, '')
+		.replace(/^(ca\.?\s+)?\d+([.,/]\d+)?\s*(g|kg|ml|dl|l|stk|spsk|tsk|knsp|knivspids|håndfuld|skive|skiver|kop|kopper|glas|dåse|dåser|pose|poser|fed|fede|klove|stang|stænger|bundt|bundter|stilk|stilke)\s+/i, '')
+		.replace(/^(ca\.?\s+)?\d+([.,/]\d+)?\s+/i, '')
 		.replace(/^(en|et|to|tre|fire|fem|seks|syv|otte|ni|ti|halv|halvt|en halv|et halvt)\s+/i, '')
-		.replace(/^(stor|stort|store|lille|lillebitte|små|mellem|mellemstor|halv|halvt|kvart)\s+/i, '');
+		.replace(/^(stor|stort|store|lille|lillebitte|små|mellem|mellemstor|halv|halvt|kvart)\s+/i, '')
+		.replace(/^(fed|fede|klove)\s+/i, '')
+		.replace(/^(stang|stænger|bundt|bundter|stilk|stilke|dåse|dåser|pose|poser)\s+/i, '');
 	// Fjern indledende tilberedningsord
-	n = n.replace(/^(frisk|friske|tørret|tørrede|kogt|kogte|stegt|stegte|bagt|bagte|røget|rå|rene|skåret|hakket|finthakket|revet)\s+/i, '');
+	n = n.replace(/^(frisk|friske|tørret|tørrede|kogt|kogte|stegt|stegte|bagt|bagte|røget|rå|rene|skåret|hakket|finthakket|revet|passeret|passerede|stødt|hel|hele)\s+/i, '');
+	// Fjern beskrivende suffix uden komma
+	n = n
+		.replace(/\s+i\s+(tern|skiver|strimler|staver|halve|kvarte|stykker|små stykker)$/i, '')
+		.replace(/\s+(til\s+stegning|til\s+pynt|til\s+servering)$/i, '')
+		.replace(/\s+uden\s+tilsat\s+\w+$/i, '');
 	return n.trim();
 }
 
@@ -332,18 +341,21 @@ export function findFodevareForIngrediens(
 		if (!q) return null;
 		const eksakt = foods.find((f) => f.name.toLowerCase() === q);
 		if (eksakt) return eksakt;
-		const starter = foods
-			.filter((f) => f.name.toLowerCase().startsWith(q))
-			.sort((a, b) => a.name.length - b.name.length);
-		if (starter.length > 0) return starter[0];
-		// Fødevare-navn med komma-prefiks: "Agurk, rå" matcher ingrediens "agurk"
-		const startMedKomma = foods
+		// Prioritér 'rent' match: fødevare-navn = q fulgt af komma eller mellemrum
+		// — fx 'Laks, fersk' matcher 'laks' bedre end 'Laksetatar' gør.
+		const startMedOrdgraense = foods
 			.filter((f) => {
 				const navn = f.name.toLowerCase();
 				return navn.startsWith(q + ',') || navn.startsWith(q + ' ');
 			})
 			.sort((a, b) => a.name.length - b.name.length);
-		if (startMedKomma.length > 0) return startMedKomma[0];
+		if (startMedOrdgraense.length > 0) return startMedOrdgraense[0];
+		// Compound-match: fødevare-navn starter med q som del af længere ord
+		// — fx 'Cherrytomat' matcher 'cherrytomat'.
+		const starter = foods
+			.filter((f) => f.name.toLowerCase().startsWith(q))
+			.sort((a, b) => a.name.length - b.name.length);
+		if (starter.length > 0) return starter[0];
 		const indeholder = foods
 			.filter((f) => f.name.toLowerCase().includes(q))
 			.sort((a, b) => a.name.length - b.name.length);
@@ -360,7 +372,49 @@ export function findFodevareForIngrediens(
 		if (viaRenset) return viaRenset;
 	}
 
+	// Sidste fallback: prøv hvert af de længste ord i den rensede streng
+	// — fanger sammensatte navne som "fed hvidløg" → "hvidløg" når
+	// renseIngrediensNavn ikke har fjernet 'fed'.
+	const baseString = renset || raa;
+	const ord = baseString.split(/\s+/).filter((w) => w.length >= 4);
+	const sorteret = [...ord].sort((a, b) => b.length - a.length);
+	for (const o of sorteret) {
+		const m = findMatch(o);
+		if (m) return m;
+		// Prøv stemming: fjern almindelige danske flertals-endelser og
+		// sammensatte suffikser som '-filet', '-skive', '-kerne'
+		for (const variant of stemVarianter(o)) {
+			const m2 = findMatch(variant);
+			if (m2) return m2;
+		}
+	}
+
 	return null;
+}
+
+/**
+ * Returnerer kandidat-stems for et ord — bruges som sidste fallback i
+ * matching. Fanger fx 'cherrytomater' → 'cherrytomat',
+ * 'laksefilet' → 'laks', 'kyllingebryster' → 'kyllingebryst'.
+ */
+function stemVarianter(ord: string): string[] {
+	const ud: string[] = [];
+	// Flertal-endelser
+	if (ord.endsWith('erne')) ud.push(ord.slice(0, -4));
+	if (ord.endsWith('ene')) ud.push(ord.slice(0, -3));
+	if (ord.endsWith('ler') && ord.length > 5) ud.push(ord.slice(0, -3) + 'el');
+	if (ord.endsWith('er') && ord.length > 4) ud.push(ord.slice(0, -2));
+	if (ord.endsWith('e') && ord.length > 4) ud.push(ord.slice(0, -1));
+	// Sammensatte suffix på fx 'laksefilet', 'rugbrødskiks'
+	for (const suffix of ['filet', 'fileter', 'skive', 'skiver', 'kerne', 'kerner']) {
+		const idx = ord.lastIndexOf(suffix);
+		if (idx > 1 && idx + suffix.length === ord.length) {
+			let stamme = ord.slice(0, idx);
+			if (stamme.endsWith('e') || stamme.endsWith('s')) stamme = stamme.slice(0, -1);
+			if (stamme.length >= 3) ud.push(stamme);
+		}
+	}
+	return ud;
 }
 
 /**
