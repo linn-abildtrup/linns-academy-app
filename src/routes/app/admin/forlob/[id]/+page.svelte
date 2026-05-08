@@ -212,6 +212,17 @@
 			</button>
 		</div>
 
+		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/lektioner">
+			<div class="indhold-icon" style="background: #9D6358;">
+				<Icon name="path" size={16} color="#fff" />
+			</div>
+			<div class="indhold-tekst">
+				<div class="indhold-navn">Lektioner</div>
+				<div class="indhold-sub">Læg dagens lektion ind for hver dag i forløbet</div>
+			</div>
+			<Icon name="chevron-r" size={14} color="var(--text3)" />
+		</a>
+
 		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/vaner">
 			<div class="indhold-icon">
 				<Icon name="leaf" size={16} color="#fff" />
