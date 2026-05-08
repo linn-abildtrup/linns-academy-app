@@ -94,6 +94,13 @@ service cloud.firestore {
 				allow write: if isAdmin();
 			}
 
+			// Forløbsdage pr forløb (lektioner + note fra Linn pr dagNummer):
+			// alle autentificerede kan læse, kun admin kan skrive.
+			match /forlobsdage/{dagId} {
+				allow read: if request.auth != null;
+				allow write: if isAdmin();
+			}
+
 			// Bibliotek pr forløb — FAQ-kategorier: alle autentificerede kan læse,
 			// kun admin kan skrive. Klient-koden filtrerer på udgivet-flag.
 			match /faqKategorier/{kategoriId} {
