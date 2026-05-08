@@ -343,7 +343,7 @@
 			{/if}
 		{:else if aabenGuide.type === 'audio'}
 			<div class="overlay-audio">
-				<audio controls src={aabenGuide.url}>
+				<audio controls autoplay src={aabenGuide.url}>
 					Din browser kan ikke afspille lyd-elementet.
 				</audio>
 			</div>

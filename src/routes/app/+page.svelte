@@ -1173,8 +1173,9 @@
 	}
 
 	.lektion-duration {
-		font-size: 10.5px;
-		opacity: 0.85;
+		font-size: 13px;
+		font-weight: 500;
+		opacity: 0.9;
 	}
 
 	/* ── Actions ───────────────────────────────────────────────── */

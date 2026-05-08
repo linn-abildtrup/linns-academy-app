@@ -38,8 +38,10 @@
 
 	const programDage = $derived.by<ForlobDag[]>(() => {
 		if (!forlob) return [];
+		// Vis kun dage der er nået — fremtidige dage skal ikke kunne ses
+		const sidste = aktivDagNr === null ? 0 : aktivDagNr;
 		const ud: ForlobDag[] = [];
-		for (let i = 1; i <= forlob.antalDage; i++) {
+		for (let i = 1; i <= sidste; i++) {
 			ud.push(dagsmap.get(i) ?? tomForlobDag(i));
 		}
 		return ud;
@@ -284,7 +286,7 @@
 				></iframe>
 			</div>
 		{:else if aabenErAudio}
-			<audio controls src={aabenLektion.url}>Din browser kan ikke afspille lyd.</audio>
+			<audio controls autoplay src={aabenLektion.url}>Din browser kan ikke afspille lyd.</audio>
 		{/if}
 
 		{#if aabenLektion.beskrivelse}
