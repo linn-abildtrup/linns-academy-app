@@ -127,16 +127,19 @@ export async function markerSpoergsmaalLaest(uid: string): Promise<void> {
 /**
  * Henter en bestemt klients egne spørgsmål, sorteret med nyeste først.
  * Bruges på klientens "Mine spørgsmål"-side så de kan se Linns svar.
+ *
+ * Sorterer klient-side i stedet for at bruge orderBy, så vi undgår
+ * et composite index på (uid, oprettet). Hver klient har normalt
+ * meget få spørgsmål så det er billigt.
  */
 export async function hentMineSpoergsmaal(uid: string): Promise<KlientSpoergsmaal[]> {
 	const q = query(
 		collection(db, 'klientspoergsmaal'),
 		where('uid', '==', uid),
-		orderBy('oprettet', 'desc'),
 		limit(100)
 	);
 	const snap = await getDocs(q);
-	return snap.docs.map((d) => {
+	const items = snap.docs.map((d) => {
 		const data = d.data();
 		return {
 			id: d.id,
@@ -149,4 +152,10 @@ export async function hentMineSpoergsmaal(uid: string): Promise<KlientSpoergsmaa
 			besvaretAt: data.besvaretAt ?? undefined
 		};
 	});
+	items.sort((a, b) => {
+		const at = a.oprettet?.toDate?.()?.getTime?.() ?? 0;
+		const bt = b.oprettet?.toDate?.()?.getTime?.() ?? 0;
+		return bt - at;
+	});
+	return items;
 }
