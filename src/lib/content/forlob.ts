@@ -1,100 +1,76 @@
-// Hardkodet eksempel-indhold for forløbet.
-// Erstattes senere af data fra Sanity.
+// Mit forløb-modul — typer og pure-funktioner.
+//
+// Et forløb består af en startdato + antalDage og har tilknyttet:
+//   - vaneprogram pr dagNummer (i forlob/{id}/vaneprogram, dækket af vaner-modulet)
+//   - lektioner pr dagNummer (i forlob/{id}/forlobsdage)
+//   - FAQ + guides (i forlob/{id}/...)
+//
+// Det selve Forløb-dokument med startDato+antalDage ligger i
+// src/lib/content/forlobAdgang.ts (interface Forlob med Timestamp).
+// Denne fil håndterer kun lektioner og dagsberegning til UI-niveau.
 
-export interface Lektion {
+// ==============================================
+// Typer
+// ==============================================
+
+/**
+ * Et enkelt lektion-item på en forløbsdag. Lektioner kan være tekst-baserede
+ * (kun titel + beskrivelse) eller indeholde en URL til video/PDF/lyd. URL er
+ * tom streng hvis ikke i brug.
+ *
+ * id genereres klient-side ved oprettelse (crypto.randomUUID) så Linn kan
+ * tilføje/fjerne flere lektioner pr dag uden at rode med Firestore-id'er.
+ */
+export interface LektionItem {
 	id: string;
-	dag: number;
-	uge: number;
 	titel: string;
 	beskrivelse: string;
 	varighedMin: number;
 	format: string;
+	url: string;
 }
 
-export type ActionModul = 'kost' | 'traening' | 'vaner';
-
-export interface DagensAction {
-	id: string;
-	modul: ActionModul;
-	eyebrow: string;
-	titel: string;
-	meta: string;
-	done: boolean;
-}
-
-export interface Forlob {
-	id: string;
-	titel: string;
-	kortNavn: string;
-	startDato: string;
-	antalDage: number;
-}
-
-export interface DagensIndhold {
-	dag: number;
+/**
+ * En forløbsdag — én pr dagNummer i forlob/{id}/forlobsdage.
+ * dagNummer 0 = baseline-dag (samme konvention som vaneprogram).
+ * dagNummer 1+ = programdage.
+ *
+ * lektioner kan være tom liste (intet indhold den dag).
+ * noteFraLinn kan være tom streng (ingen note).
+ */
+export interface ForlobDag {
+	dagNummer: number;
 	uge: number;
-	lektioner: Lektion[];
-	actions: DagensAction[];
-	noteFraLinn?: string;
+	lektioner: LektionItem[];
+	noteFraLinn: string;
 }
 
-// Eksempel-forløb: Maria er på dag 8 af 21
-export const aktivtForlob: Forlob = {
-	id: 'kickstart-2026',
-	titel: 'Kickstart en sund overgangsalder',
-	kortNavn: 'Kickstart',
-	startDato: '2026-04-27',
-	antalDage: 21
-};
+// ==============================================
+// Dags-beregning
+// ==============================================
 
-// Indhold for dag 8
-export const dagensIndhold: DagensIndhold = {
-	dag: 8,
-	uge: 2,
-	lektioner: [
-		{
-			id: 'lektion-d8',
-			dag: 8,
-			uge: 2,
-			titel: 'Hormoner og søvn',
-			beskrivelse: 'Hvorfor du vågner kl. 3, og hvad du kan gøre ved det',
-			varighedMin: 14,
-			format: 'video + tekst'
-		}
-	],
-	actions: [
-		{
-			id: 'action-kost-d8',
-			modul: 'kost',
-			eyebrow: 'Kost',
-			titel: 'Log dit protein i dag',
-			meta: '30g pr. måltid, 1 af 3 logget',
-			done: false
-		},
-		{
-			id: 'action-traening-d8',
-			modul: 'traening',
-			eyebrow: 'Træning',
-			titel: 'Mikrotræning, bækkenbund',
-			meta: '7 min, valgfri',
-			done: true
-		},
-		{
-			id: 'action-vaner-d8',
-			modul: 'vaner',
-			eyebrow: 'Vaner',
-			titel: 'Tjek dagens 3 vaner',
-			meta: 'vand, søvn, gå-tur',
-			done: true
-		}
-	],
-	noteFraLinn: 'Husk, uge 2 handler om søvnen. Vær blid med dig selv hvis det stadig tager tid.'
-};
+/**
+ * Beregner ugenummer fra dagNummer.
+ * Dag 0 = uge 0 (baseline).
+ * Dag 1-7 = uge 1, dag 8-14 = uge 2, dag 15-21 = uge 3, osv.
+ */
+export function ugeForDag(dagNummer: number): number {
+	if (dagNummer <= 0) return 0;
+	return Math.ceil(dagNummer / 7);
+}
 
-// Beregner hvor mange dage der er gået siden forløbet startede.
-// Returnerer 1 hvis vi er på første dag, 2 hvis vi er på dag 2, osv.
-// Returnerer null hvis startdato er i fremtiden.
-export function getCurrentDay(forlob: Forlob, now: Date = new Date()): number | null {
+/**
+ * Beregner hvor mange dage der er gået siden forløbet startede.
+ * Returnerer 1 hvis vi er på første dag, 2 hvis vi er på dag 2, osv.
+ * Returnerer null hvis startdato er i fremtiden.
+ *
+ * Bemærk: dette giver 1-indekseret visning (dag 1 = startdagen).
+ * Til datalagring (dagNummer 0 = baseline) brug dageSidenStart i forlobAdgang.ts.
+ */
+export function getCurrentDay(
+	forlob: { startDato: string; antalDage: number },
+	now: Date = new Date()
+): number | null {
 	const start = new Date(forlob.startDato);
 	const msPerDag = 1000 * 60 * 60 * 24;
 	const startMidnat = new Date(start.getFullYear(), start.getMonth(), start.getDate());
@@ -107,7 +83,33 @@ export function getCurrentDay(forlob: Forlob, now: Date = new Date()): number | 
 	return diffDage + 1;
 }
 
-// Formaterer dato som "Tirsdag, 4. juni"
+// ==============================================
+// Status pr dag
+// ==============================================
+
+/**
+ * Status for en forløbsdag set fra klientens perspektiv.
+ * 'fremtid' = endnu ikke nået
+ * 'aktiv' = dagens dag
+ * 'fortid' = passeret (kan stadig læses)
+ */
+export type DagStatus = 'fremtid' | 'aktiv' | 'fortid';
+
+/**
+ * Returnerer status for en given dag baseret på den aktuelle dag.
+ * aktivDag er output fra getCurrentDay (1-indekseret).
+ */
+export function dagStatus(dagNummer: number, aktivDag: number | null): DagStatus {
+	if (aktivDag === null) return 'fremtid';
+	if (dagNummer < aktivDag) return 'fortid';
+	if (dagNummer === aktivDag) return 'aktiv';
+	return 'fremtid';
+}
+
+// ==============================================
+// Datoformatering
+// ==============================================
+
 const ugedage = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
 const maaneder = [
 	'januar',
@@ -124,9 +126,46 @@ const maaneder = [
 	'december'
 ];
 
+/**
+ * Formaterer dato som "Tirsdag, 4. juni".
+ */
 export function formatDato(date: Date = new Date()): string {
 	const ugedag = ugedage[date.getDay()];
 	const dag = date.getDate();
 	const maaned = maaneder[date.getMonth()];
 	return ugedag + ', ' + dag + '. ' + maaned;
+}
+
+// ==============================================
+// Helpers til at bygge nye lektioner
+// ==============================================
+
+/**
+ * Genererer en tom LektionItem med et nyt id. Bruges når Linn klikker
+ * 'Tilføj lektion' i admin-UI'et.
+ */
+export function nyLektion(): LektionItem {
+	return {
+		id: typeof crypto !== 'undefined' && crypto.randomUUID
+			? crypto.randomUUID()
+			: 'lektion-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+		titel: '',
+		beskrivelse: '',
+		varighedMin: 0,
+		format: '',
+		url: ''
+	};
+}
+
+/**
+ * Returnerer en tom ForlobDag med given dagNummer. Bruges når der ikke
+ * er gemt data for dagen endnu.
+ */
+export function tomForlobDag(dagNummer: number): ForlobDag {
+	return {
+		dagNummer,
+		uge: ugeForDag(dagNummer),
+		lektioner: [],
+		noteFraLinn: ''
+	};
 }
