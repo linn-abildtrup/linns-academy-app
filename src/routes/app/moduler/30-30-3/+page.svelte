@@ -488,7 +488,7 @@
 			<span>Moduler</span>
 		</a>
 		<div class="eyebrow">Kost</div>
-		<h1>30-30-3</h1>
+		<h1>30-30 beregner</h1>
 	</header>
 
 	{#if loading}
