@@ -383,7 +383,7 @@
 
 			<section class="actions-section">
 				<div class="actions-header">
-					<div class="eyebrow eyebrow-muted">Dagens action</div>
+					<div class="eyebrow eyebrow-muted">Dagens små skridt</div>
 				</div>
 				<div class="actions-list">
 					{#each actions as action (action.modul)}
