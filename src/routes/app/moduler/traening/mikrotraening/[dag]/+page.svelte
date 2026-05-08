@@ -17,6 +17,7 @@
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
 	import { getVideoUrl } from '$lib/utils/storage';
+	import { onDestroy } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -37,6 +38,9 @@
 	async function aabnPreview(ex: Exercise) {
 		aabenPreview = ex;
 		previewVideoUrl = null;
+		if (typeof document !== 'undefined') {
+			document.body.classList.add('html-fullscreen-aktiv');
+		}
 		if (!ex.videoPath) return;
 		previewLoading = true;
 		try {
@@ -51,7 +55,16 @@
 	function lukPreview() {
 		aabenPreview = null;
 		previewVideoUrl = null;
+		if (typeof document !== 'undefined') {
+			document.body.classList.remove('html-fullscreen-aktiv');
+		}
 	}
+
+	onDestroy(() => {
+		if (typeof document !== 'undefined') {
+			document.body.classList.remove('html-fullscreen-aktiv');
+		}
+	});
 	let exerciseMap = $state<Map<string, Exercise>>(new Map());
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
@@ -203,59 +216,62 @@
 </div>
 
 {#if aabenPreview}
-	<div
-		class="overlay-bg"
-		role="button"
-		tabindex="0"
-		onclick={lukPreview}
-		onkeydown={(e) => e.key === 'Escape' && lukPreview()}
-	></div>
 	<div class="preview-overlay" role="dialog" aria-modal="true">
 		<header class="preview-head">
-			<div class="preview-titel">{aabenPreview.name}</div>
-			<button class="preview-luk" type="button" onclick={lukPreview} aria-label="Luk">×</button>
+			<button class="preview-luk" type="button" onclick={lukPreview}>
+				<Icon name="arrow-l" size={14} color="var(--text)" />
+				<span>Tilbage</span>
+			</button>
+			<div class="preview-titel-top">{aabenPreview.name}</div>
 		</header>
 
-		<div class="preview-video">
-			{#if previewLoading}
-				<Loading tekst="Henter video..." kompakt />
-			{:else if previewVideoUrl}
-				<video
-					src={previewVideoUrl}
-					controls
-					autoplay
-					muted
-					loop
-					playsinline
-					preload="auto"
-				></video>
-			{:else}
-				<div class="preview-fallback">Ingen video tilgængelig.</div>
-			{/if}
+		<div class="preview-body">
+			<div class="preview-video">
+				{#if previewLoading}
+					<Loading tekst="Henter video..." kompakt />
+				{:else if previewVideoUrl}
+					<video
+						src={previewVideoUrl}
+						autoplay
+						muted
+						loop
+						playsinline
+						preload="auto"
+					></video>
+				{:else}
+					<div class="preview-fallback">
+						<div class="preview-fallback-navn">{aabenPreview.name}</div>
+						<div class="preview-fallback-hint">Video følger snart</div>
+					</div>
+				{/if}
+			</div>
+
+			<div class="preview-card">
+				<div class="preview-navn">{aabenPreview.name}</div>
+				{#if aabenPreview.desc}
+					<p class="preview-desc">{aabenPreview.desc}</p>
+				{/if}
+
+				{#if aabenPreview.how && aabenPreview.how.length > 0}
+					<div class="preview-divider"></div>
+					<div class="preview-how-label">Sådan udfører du øvelsen</div>
+					<ol class="preview-how-liste">
+						{#each aabenPreview.how as trin (trin)}
+							<li>{trin}</li>
+						{/each}
+					</ol>
+				{/if}
+
+				{#if aabenPreview.tags && aabenPreview.tags.length > 0}
+					<div class="preview-divider"></div>
+					<div class="preview-tags">
+						{#each aabenPreview.tags as tag (tag)}
+							<span class="preview-tag">{tag}</span>
+						{/each}
+					</div>
+				{/if}
+			</div>
 		</div>
-
-		{#if aabenPreview.desc}
-			<p class="preview-desc">{aabenPreview.desc}</p>
-		{/if}
-
-		{#if aabenPreview.how && aabenPreview.how.length > 0}
-			<div class="preview-how">
-				<div class="preview-how-label">Sådan gør du</div>
-				<ol class="preview-how-liste">
-					{#each aabenPreview.how as trin (trin)}
-						<li>{trin}</li>
-					{/each}
-				</ol>
-			</div>
-		{/if}
-
-		{#if aabenPreview.tags && aabenPreview.tags.length > 0}
-			<div class="preview-tags">
-				{#each aabenPreview.tags as tag (tag)}
-					<span class="preview-tag">{tag}</span>
-				{/each}
-			</div>
-		{/if}
 	</div>
 {/if}
 
@@ -457,69 +473,69 @@
 		transform: scale(0.95);
 	}
 
-	.overlay-bg {
-		position: fixed;
-		inset: 0;
-		background: rgba(20, 14, 18, 0.7);
-		z-index: 60;
-		border: none;
-	}
-
 	.preview-overlay {
 		position: fixed;
-		left: 50%;
-		top: 50%;
-		transform: translate(-50%, -50%);
-		background: var(--white);
-		border-radius: 16px;
-		width: calc(100% - 24px);
-		max-width: 520px;
-		max-height: 92vh;
-		overflow-y: auto;
+		inset: 0;
+		z-index: 100;
+		background: var(--bg);
 		display: flex;
 		flex-direction: column;
-		gap: 12px;
-		padding: 16px;
-		z-index: 61;
-		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+		padding-top: env(safe-area-inset-top);
+		padding-bottom: env(safe-area-inset-bottom);
 	}
 
 	.preview-head {
 		display: flex;
 		align-items: center;
-		gap: 10px;
-	}
-
-	.preview-titel {
-		flex: 1;
-		font-family: var(--ff-d);
-		font-size: 18px;
-		font-weight: 600;
-		color: var(--text);
-		line-height: 1.3;
+		gap: 12px;
+		padding: 10px 14px;
+		border-bottom: 1px solid var(--border);
+		flex-shrink: 0;
+		background: var(--white);
 	}
 
 	.preview-luk {
-		width: 32px;
-		height: 32px;
-		border-radius: 999px;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 12px;
+		border-radius: 8px;
 		border: 1px solid var(--border);
 		background: var(--white);
-		color: var(--text2);
-		font-size: 18px;
+		color: var(--text);
+		font-size: 13px;
+		font-weight: 500;
 		cursor: pointer;
+		font-family: var(--ff-b);
+		flex-shrink: 0;
+	}
+
+	.preview-titel-top {
+		flex: 1;
+		font-family: var(--ff-d);
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--text);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.preview-body {
+		flex: 1;
+		overflow-y: auto;
+		padding: 14px;
 		display: flex;
-		align-items: center;
-		justify-content: center;
+		flex-direction: column;
+		gap: 14px;
 	}
 
 	.preview-video {
-		position: relative;
 		width: 100%;
-		aspect-ratio: 9 / 16;
-		max-height: 480px;
-		background: #000;
-		border-radius: 10px;
+		aspect-ratio: 16 / 9;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 14px;
 		overflow: hidden;
 		display: flex;
 		align-items: center;
@@ -533,40 +549,75 @@
 	}
 
 	.preview-fallback {
-		color: rgba(255, 255, 255, 0.6);
-		font-size: 13px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		text-align: center;
+		padding: 20px;
+	}
+
+	.preview-fallback-navn {
+		font-family: var(--ff-d);
+		font-size: 22px;
+		font-style: italic;
+		color: var(--text3);
+	}
+
+	.preview-fallback-hint {
+		font-size: 10px;
+		color: var(--text4);
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+	}
+
+	.preview-card {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		padding: 18px;
+		display: flex;
+		flex-direction: column;
+		gap: 11px;
+	}
+
+	.preview-navn {
+		font-family: var(--ff-d);
+		font-size: 22px;
+		font-weight: 600;
+		color: var(--text);
+		line-height: 1.2;
 	}
 
 	.preview-desc {
 		font-size: 14px;
-		line-height: 1.55;
-		color: var(--text);
+		line-height: 1.6;
+		color: var(--text2);
 		margin: 0;
 	}
 
-	.preview-how {
-		background: var(--bg2);
-		border-radius: 12px;
-		padding: 14px 16px;
+	.preview-divider {
+		height: 1px;
+		background: var(--border);
+		margin: 4px 0;
 	}
 
 	.preview-how-label {
 		font-size: 10px;
-		font-weight: 600;
-		letter-spacing: 0.16em;
+		font-weight: 500;
+		letter-spacing: 0.12em;
 		text-transform: uppercase;
-		color: var(--text3);
-		margin-bottom: 8px;
+		color: var(--terra);
 	}
 
 	.preview-how-liste {
 		margin: 0;
-		padding-left: 18px;
+		padding-left: 20px;
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
-		font-size: 13px;
-		line-height: 1.5;
+		gap: 8px;
+		font-size: 14px;
+		line-height: 1.6;
 		color: var(--text);
 	}
 
@@ -577,7 +628,7 @@
 	.preview-tags {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 6px;
+		gap: 7px;
 	}
 
 	.preview-tag {
