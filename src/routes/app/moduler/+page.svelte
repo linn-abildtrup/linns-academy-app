@@ -17,7 +17,8 @@
 	const RUTER: Record<string, string> = {
 		traening: '/app/moduler/traening',
 		vaner: '/app/moduler/vaner',
-		kost: '/app/moduler/30-30-3'
+		kost: '/app/moduler/30-30-3',
+		bibliotek: '/app/moduler/bibliotek'
 	};
 
 	function ruteFor(modul: Modul): string | null {
