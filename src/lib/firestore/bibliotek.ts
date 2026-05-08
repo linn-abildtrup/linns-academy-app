@@ -1,10 +1,12 @@
-// Firestore-helpers for bibliotek (FAQ + senere guides).
+// Firestore-helpers for bibliotek (FAQ + guides).
 // Holdt adskilt fra src/lib/content/bibliotek.ts (typer + pure logik) så
 // unit tests for sidstnævnte ikke trækker firebase/firestore-runtime ind.
 //
 // Datamodel — alt forløbs-specifikt:
 //   - forlob/{forlobId}/faqKategorier/{id}
 //   - forlob/{forlobId}/faqItems/{id}
+//   - forlob/{forlobId}/guideKategorier/{id}
+//   - forlob/{forlobId}/guideItems/{id}
 
 import {
 	addDoc,
@@ -17,7 +19,12 @@ import {
 	writeBatch
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
-import type { FaqKategori, FaqItem } from '$lib/content/bibliotek';
+import type {
+	FaqKategori,
+	FaqItem,
+	GuideKategori,
+	GuideItem
+} from '$lib/content/bibliotek';
 
 // ==============================================
 // FAQ-kategorier
@@ -134,4 +141,117 @@ export async function opdaterFaqItem(
  */
 export async function sletFaqItem(forlobId: string, itemId: string): Promise<void> {
 	await deleteDoc(doc(db, 'forlob', forlobId, 'faqItems', itemId));
+}
+
+// ==============================================
+// Guide-kategorier
+// ==============================================
+
+/**
+ * Henter alle guide-kategorier for et forløb.
+ */
+export async function hentGuideKategorier(forlobId: string): Promise<GuideKategori[]> {
+	const snap = await getDocs(collection(db, 'forlob', forlobId, 'guideKategorier'));
+	return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GuideKategori);
+}
+
+/**
+ * Opretter en ny guide-kategori og returnerer det auto-genererede id.
+ */
+export async function opretGuideKategori(
+	forlobId: string,
+	navn: string,
+	orden: number
+): Promise<string> {
+	const ref = await addDoc(collection(db, 'forlob', forlobId, 'guideKategorier'), {
+		navn,
+		orden,
+		oprettet: serverTimestamp()
+	});
+	return ref.id;
+}
+
+/**
+ * Opdaterer en guide-kategoris navn og/eller orden.
+ */
+export async function opdaterGuideKategori(
+	forlobId: string,
+	kategoriId: string,
+	felter: Partial<Pick<GuideKategori, 'navn' | 'orden'>>
+): Promise<void> {
+	const ref = doc(db, 'forlob', forlobId, 'guideKategorier', kategoriId);
+	await updateDoc(ref, felter);
+}
+
+/**
+ * Sletter en guide-kategori og alle dens items i én batch.
+ */
+export async function sletGuideKategoriMedItems(
+	forlobId: string,
+	kategoriId: string
+): Promise<{ slettedeItems: number }> {
+	const items = await hentGuideItems(forlobId);
+	const tilSletning = items.filter((it) => it.kategoriId === kategoriId);
+
+	const batch = writeBatch(db);
+	for (const it of tilSletning) {
+		batch.delete(doc(db, 'forlob', forlobId, 'guideItems', it.id));
+	}
+	batch.delete(doc(db, 'forlob', forlobId, 'guideKategorier', kategoriId));
+	await batch.commit();
+
+	return { slettedeItems: tilSletning.length };
+}
+
+// ==============================================
+// Guide-items
+// ==============================================
+
+/**
+ * Henter alle guide-items for et forløb. Klient-koden filtrerer og sorterer
+ * selv (sorterGuides + kunUdgivne).
+ */
+export async function hentGuideItems(forlobId: string): Promise<GuideItem[]> {
+	const snap = await getDocs(collection(db, 'forlob', forlobId, 'guideItems'));
+	return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GuideItem);
+}
+
+/**
+ * Opretter et nyt guide-item under en eksisterende kategori.
+ */
+export async function opretGuideItem(
+	forlobId: string,
+	data: Omit<GuideItem, 'id' | 'oprettet' | 'opdateret'>
+): Promise<string> {
+	const ref = await addDoc(collection(db, 'forlob', forlobId, 'guideItems'), {
+		...data,
+		oprettet: serverTimestamp(),
+		opdateret: serverTimestamp()
+	});
+	return ref.id;
+}
+
+/**
+ * Opdaterer et guide-item. Felter ikke i input forbliver uændrede. Sætter
+ * altid opdateret-tidsstempel.
+ */
+export async function opdaterGuideItem(
+	forlobId: string,
+	itemId: string,
+	felter: Partial<
+		Pick<
+			GuideItem,
+			'kategoriId' | 'type' | 'titel' | 'beskrivelse' | 'url' | 'dato' | 'orden' | 'udgivet'
+		>
+	>
+): Promise<void> {
+	const ref = doc(db, 'forlob', forlobId, 'guideItems', itemId);
+	await updateDoc(ref, { ...felter, opdateret: serverTimestamp() });
+}
+
+/**
+ * Sletter et guide-item.
+ */
+export async function sletGuideItem(forlobId: string, itemId: string): Promise<void> {
+	await deleteDoc(doc(db, 'forlob', forlobId, 'guideItems', itemId));
 }
