@@ -18,6 +18,7 @@
 	import { hentForlob } from '$lib/firestore/forlob';
 	import { gemVanedag, hentVanedag, hentVaneprogramDag } from '$lib/firestore/vaner';
 	import Icon from '$lib/components/Icon.svelte';
+	import Loading from '$lib/components/Loading.svelte';
 
 	const getUser = getContext<() => User | null>('user');
 	const user = $derived(getUser());
@@ -263,7 +264,7 @@
 	</header>
 
 	{#if loading}
-		<div class="status-besked">Henter dagen...</div>
+		<Loading tekst="Henter dagen..." />
 	{:else if fejl}
 		<div class="status-besked fejl">{fejl}</div>
 	{:else if erLaast}

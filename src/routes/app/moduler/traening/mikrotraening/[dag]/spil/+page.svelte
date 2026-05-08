@@ -24,6 +24,7 @@
 	} from '$lib/firestore/mikrotraening';
 	import { getAudioUrl, getVideoUrl } from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
+	import Loading from '$lib/components/Loading.svelte';
 
 	const PREP_SEC = 10;
 	const SWITCH_SEC = 15;
@@ -594,7 +595,7 @@
 	{/if}
 
 	{#if loading}
-		<div class="status-besked">Henter dagens træning...</div>
+		<Loading tekst="Henter dagens træning..." />
 	{:else if fejl}
 		<div class="status-besked fejl">{fejl}</div>
 		<button class="tilbage-knap" type="button" onclick={stopOgForlad}>Tilbage</button>

@@ -7,6 +7,7 @@
 	import { naesteDag, beregnProgramFremgang } from '$lib/content/mikrotraening';
 	import { hentProgram, hentUserProduct, type ProgramMedDage } from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
+	import Loading from '$lib/components/Loading.svelte';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -89,7 +90,7 @@
 	</header>
 
 	{#if loading}
-		<div class="status-besked">Henter dit program...</div>
+		<Loading tekst="Henter dit program..." />
 	{:else if fejl}
 		<div class="status-besked fejl">{fejl}</div>
 	{:else if programData}

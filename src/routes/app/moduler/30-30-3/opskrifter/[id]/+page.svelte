@@ -17,6 +17,7 @@
 		type MaaltidsItem
 	} from '$lib/content/kost';
 	import Icon from '$lib/components/Icon.svelte';
+	import Loading from '$lib/components/Loading.svelte';
 
 	const STORAGE_KEY = 'la_30303_maaltid_v1';
 
@@ -114,7 +115,7 @@
 	</header>
 
 	{#if loading}
-		<div class="status-besked">Henter opskrift...</div>
+		<Loading tekst="Henter opskrift..." />
 	{:else if fejl}
 		<div class="status-besked fejl">{fejl}</div>
 	{:else if opskrift}

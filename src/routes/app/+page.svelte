@@ -12,6 +12,7 @@
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
+	import Loading from '$lib/components/Loading.svelte';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const getUser = getContext<() => User | null>('user');
@@ -659,7 +660,7 @@
 	</div>
 {:else}
 	<div class="placeholder-page">
-		<p class="placeholder-text">Et øjeblik...</p>
+		<Loading tekst="Et øjeblik..." />
 	</div>
 {/if}
 
@@ -1587,11 +1588,4 @@
 		text-align: center;
 	}
 
-	.placeholder-text {
-		font-family: var(--ff-d);
-		font-style: italic;
-		font-size: 13px;
-		color: var(--text2);
-		margin: 0;
-	}
 </style>

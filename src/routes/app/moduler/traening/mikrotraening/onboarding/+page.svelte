@@ -7,6 +7,7 @@
 		hentUserProduct
 	} from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
+	import Loading from '$lib/components/Loading.svelte';
 
 	type Valg = 'kettlebell' | 'no_kettlebell';
 
@@ -78,7 +79,7 @@
 	</header>
 
 	{#if loading}
-		<div class="status-besked">Henter dine programvalg...</div>
+		<Loading tekst="Henter dine programvalg..." />
 	{:else if fejl}
 		<div class="status-besked fejl">{fejl}</div>
 	{:else}

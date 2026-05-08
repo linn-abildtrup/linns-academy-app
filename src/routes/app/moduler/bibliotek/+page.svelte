@@ -29,6 +29,7 @@
 	} from '$lib/firestore/bibliotek';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
+	import Loading from '$lib/components/Loading.svelte';
 
 	const getUser = getContext<() => User | null>('user');
 	const user = $derived(getUser());
@@ -194,7 +195,7 @@
 
 	{#if aktivTab === 'faq'}
 		{#if loading}
-			<div class="status-besked">Henter FAQ...</div>
+			<Loading tekst="Henter FAQ..." kompakt />
 		{:else if fejl}
 			<div class="status-besked fejl">{fejl}</div>
 		{:else if sorterede.length === 0}
@@ -241,7 +242,7 @@
 		{/if}
 	{:else}
 		{#if loading}
-			<div class="status-besked">Henter guides...</div>
+			<Loading tekst="Henter guides..." kompakt />
 		{:else if fejl}
 			<div class="status-besked fejl">{fejl}</div>
 		{:else if sorteredeGuideKats.length === 0}

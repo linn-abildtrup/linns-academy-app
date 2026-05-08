@@ -53,6 +53,7 @@
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
 	import Icon from '$lib/components/Icon.svelte';
 	import IndkoebsListeOverlay from '$lib/components/IndkoebsListeOverlay.svelte';
+	import Loading from '$lib/components/Loading.svelte';
 	import {
 		byggIndkoebsliste,
 		type IndkoebsItem,
@@ -548,7 +549,7 @@
 	</header>
 
 	{#if loading}
-		<div class="status-besked">Henter data...</div>
+		<Loading tekst="Henter data..." />
 	{:else if fejl}
 		<div class="status-besked fejl">{fejl}</div>
 	{:else}
@@ -1001,7 +1002,7 @@
 			<div class="dato-label">{visningsDato(dagbogDato)}</div>
 
 			{#if dagbogIndlaeser}
-				<div class="status-besked">Henter dagbog...</div>
+				<Loading tekst="Henter dagbog..." kompakt />
 			{:else if dagbogFejl}
 				<div class="status-besked fejl">{dagbogFejl}</div>
 			{:else if dagbogMaaltider.length === 0}

@@ -12,6 +12,7 @@
 	import type { UserDoc } from '$lib/types';
 	import TabBar from '$lib/components/TabBar.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import Loading from '$lib/components/Loading.svelte';
 
 	let { children } = $props();
 
@@ -78,7 +79,7 @@
 
 {#if loading}
 	<div class="loading-screen">
-		<p>Et øjeblik...</p>
+		<Loading tekst="Et øjeblik..." />
 	</div>
 {:else}
 	<div class="app-shell">
@@ -99,9 +100,6 @@
 		align-items: center;
 		justify-content: center;
 		background: var(--bg);
-		font-family: var(--ff-b);
-		color: var(--text3);
-		font-size: 14px;
 	}
 
 	.app-shell {
