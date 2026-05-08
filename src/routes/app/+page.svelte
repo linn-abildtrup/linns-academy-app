@@ -85,7 +85,7 @@
 
 	function formatStripChipDato(d: Date): { dag: string; ugedag: string } {
 		return {
-			dag: String(d.getDate()),
+			dag: d.getDate() + '/' + (d.getMonth() + 1),
 			ugedag: UGEDAGE_KORT[d.getDay()]
 		};
 	}
@@ -801,10 +801,11 @@
 
 	.chip-dag {
 		font-family: var(--ff-d);
-		font-size: 17px;
+		font-size: 15px;
 		font-weight: 700;
 		line-height: 1;
 		color: var(--text);
+		font-variant-numeric: tabular-nums;
 	}
 
 	.strip-chip.erValgt .chip-dag {
