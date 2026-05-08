@@ -553,4 +553,13 @@
 	.flower-none.status-empty {
 		background: var(--white);
 	}
+
+	/* Udfyldt men 0 ja (alle vaner besvaret med 'nej' eller kun bonus/note):
+	   skiller sig fra ikke-udfyldte dage så Linn kan se hvad hun har gennemgået. */
+	.flower-none.status-partial,
+	.flower-none.status-completed {
+		background: var(--bg2);
+		border-color: var(--border2, var(--border));
+		color: var(--text3);
+	}
 </style>
