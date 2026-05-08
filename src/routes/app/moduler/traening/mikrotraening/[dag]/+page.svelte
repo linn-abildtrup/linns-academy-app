@@ -225,27 +225,27 @@
 			<div class="preview-titel-top">{aabenPreview.name}</div>
 		</header>
 
-		<div class="preview-body">
-			<div class="preview-video">
-				{#if previewLoading}
-					<Loading tekst="Henter video..." kompakt />
-				{:else if previewVideoUrl}
-					<video
-						src={previewVideoUrl}
-						autoplay
-						muted
-						loop
-						playsinline
-						preload="auto"
-					></video>
-				{:else}
-					<div class="preview-fallback">
-						<div class="preview-fallback-navn">{aabenPreview.name}</div>
-						<div class="preview-fallback-hint">Video følger snart</div>
-					</div>
-				{/if}
-			</div>
+		<div class="preview-video">
+			{#if previewLoading}
+				<Loading tekst="Henter video..." kompakt />
+			{:else if previewVideoUrl}
+				<video
+					src={previewVideoUrl}
+					autoplay
+					muted
+					loop
+					playsinline
+					preload="auto"
+				></video>
+			{:else}
+				<div class="preview-fallback">
+					<div class="preview-fallback-navn">{aabenPreview.name}</div>
+					<div class="preview-fallback-hint">Video følger snart</div>
+				</div>
+			{/if}
+		</div>
 
+		<div class="preview-scroll">
 			<div class="preview-card">
 				<div class="preview-navn">{aabenPreview.name}</div>
 				{#if aabenPreview.desc}
@@ -521,31 +521,30 @@
 		white-space: nowrap;
 	}
 
-	.preview-body {
-		flex: 1;
-		overflow-y: auto;
-		padding: 14px;
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-	}
-
 	.preview-video {
+		flex-shrink: 0;
 		width: 100%;
 		aspect-ratio: 16 / 9;
-		background: var(--bg2);
-		border: 1px solid var(--border);
-		border-radius: 14px;
-		overflow: hidden;
+		background: #000;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		overflow: hidden;
 	}
 
 	.preview-video video {
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
+		object-fit: contain;
+		background: #000;
+	}
+
+	.preview-scroll {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+		padding: 14px;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.preview-fallback {
