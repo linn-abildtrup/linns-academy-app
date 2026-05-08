@@ -5,6 +5,7 @@
 		if (pathname.startsWith('/app/admin/forlob')) return 'ADMIN — FORLØB';
 		if (pathname.startsWith('/app/admin/mikrotraening')) return 'ADMIN — MIKROTRÆNING';
 		if (pathname.startsWith('/app/admin/opskrifter')) return 'ADMIN — OPSKRIFTER';
+		if (pathname.startsWith('/app/admin/spoergsmaal')) return 'ADMIN — SPØRGSMÅL';
 		if (pathname.startsWith('/app/admin')) return 'ADMIN';
 		if (pathname.startsWith('/app/moduler/30-30-3')) return '30-30 BEREGNER';
 		if (pathname.startsWith('/app/moduler/bibliotek')) return 'BIBLIOTEK';

@@ -5,7 +5,19 @@
 // admin-fladen. Klienten får ikke et personligt svar — spørgsmålene
 // bruges til at forme videoer, live-events og kommende app-indhold.
 
-import { addDoc, collection, serverTimestamp, type Timestamp } from 'firebase/firestore';
+import {
+	addDoc,
+	collection,
+	deleteDoc,
+	doc,
+	getDocs,
+	limit,
+	orderBy,
+	query,
+	serverTimestamp,
+	updateDoc,
+	type Timestamp
+} from 'firebase/firestore';
 import { db } from '$lib/firebase';
 
 export type SpoergsmaalStatus = 'ny' | 'laest' | 'besvaret' | 'brugt';
@@ -44,4 +56,41 @@ export async function gemSpoergsmaal(
 		oprettet: serverTimestamp()
 	});
 	return ref.id;
+}
+
+/**
+ * Henter alle klientspørgsmål sorteret med nyeste først. Kun admin har
+ * læseadgang i Firestore-rules. Begrænset til 500 for performance.
+ */
+export async function hentAlleSpoergsmaal(): Promise<KlientSpoergsmaal[]> {
+	const q = query(
+		collection(db, 'klientspoergsmaal'),
+		orderBy('oprettet', 'desc'),
+		limit(500)
+	);
+	const snap = await getDocs(q);
+	return snap.docs.map((d) => {
+		const data = d.data();
+		return {
+			id: d.id,
+			uid: data.uid ?? '',
+			email: data.email ?? '',
+			spoergsmaal: data.spoergsmaal ?? '',
+			status: (data.status as SpoergsmaalStatus) ?? 'ny',
+			oprettet: data.oprettet
+		};
+	});
+}
+
+/** Opdaterer status på et spørgsmål. */
+export async function opdaterSpoergsmaalStatus(
+	id: string,
+	status: SpoergsmaalStatus
+): Promise<void> {
+	await updateDoc(doc(db, 'klientspoergsmaal', id), { status });
+}
+
+/** Sletter et spørgsmål permanent. */
+export async function sletSpoergsmaal(id: string): Promise<void> {
+	await deleteDoc(doc(db, 'klientspoergsmaal', id));
 }

@@ -25,6 +25,14 @@
 			rute: '/app/admin/mikrotraening',
 			accent: '#C9A07A',
 			icon: 'flame' as const
+		},
+		{
+			id: 'spoergsmaal',
+			navn: 'Spørgsmål fra klienter',
+			beskrivelse: 'Læs, sortér og eksportér klienternes spørgsmål',
+			rute: '/app/admin/spoergsmaal',
+			accent: '#5C7A8C',
+			icon: 'mail' as const
 		}
 	];
 </script>
