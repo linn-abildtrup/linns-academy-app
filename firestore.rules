@@ -127,6 +127,17 @@ service cloud.firestore {
 			}
 		}
 
+		// Klientspørgsmål til Linn:
+		//   - Klienter kan oprette deres egne spørgsmål (uid skal matche)
+		//   - Klienter kan IKKE læse andres spørgsmål
+		//   - Admin kan læse alle og opdatere status (ny → laest → besvaret → brugt)
+		match /klientspoergsmaal/{spoergsmaalId} {
+			allow read: if isAdmin();
+			allow create: if request.auth != null
+				&& request.resource.data.uid == request.auth.uid;
+			allow update, delete: if isAdmin();
+		}
+
 		// AllowedEmails (whitelist fra CSV-import):
 		//   - Brugeren kan læse SIN egen email-record (til login-flow check)
 		//   - Admin kan læse alle og skrive frit (CSV-upload, status-update)
