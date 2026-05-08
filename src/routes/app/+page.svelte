@@ -413,11 +413,17 @@
 			{/if}
 
 			{#if dagensDag && dagensDag.lektioner.length > 0}
-				{#each dagensDag.lektioner as lektion (lektion.id)}
-					<section class="lektion-section">
-						<div class="eyebrow eyebrow-terra">
-							{valgtErIDag ? 'Dagens lektion' : 'Lektion for ' + formatLangDato(stripDage[dagensDag.dagNummer]?.dato ?? new Date())}
-						</div>
+				{@const flere = dagensDag.lektioner.length > 1}
+				{@const langDato = formatLangDato(stripDage[dagensDag.dagNummer]?.dato ?? new Date())}
+				<section class="lektion-section">
+					<div class="eyebrow eyebrow-terra">
+						{#if valgtErIDag}
+							{flere ? 'Dagens lektioner' : 'Dagens lektion'}
+						{:else}
+							{flere ? 'Lektioner for ' + langDato : 'Lektion for ' + langDato}
+						{/if}
+					</div>
+					{#each dagensDag.lektioner as lektion (lektion.id)}
 						<a class="lektion-card" href="/app/moduler/forlob?lektion={lektion.id}">
 							<div class="lektion-decoration lektion-decoration-1"></div>
 							<div class="lektion-decoration lektion-decoration-2"></div>
@@ -440,8 +446,8 @@
 								</div>
 							</div>
 						</a>
-					</section>
-				{/each}
+					{/each}
+				</section>
 			{:else if dagensDag && !valgtErIDag}
 				<section class="lektion-section">
 					<div class="eyebrow eyebrow-muted">
@@ -1110,6 +1116,12 @@
 	}
 
 	/* ── Lektion-card ──────────────────────────────────────────── */
+
+	.lektion-section {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
 
 	.lektion-card {
 		display: block;
