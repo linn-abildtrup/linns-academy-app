@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
+	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { Forlob } from '$lib/content/forlobAdgang';
@@ -26,8 +28,18 @@
 	let forlob = $state<Forlob | null>(null);
 	let forlobsdage = $state<ForlobDag[]>([]);
 	let userProduct = $state<UserProduct | null>(null);
-	let valgtDagNummer = $state<number | null>(null);
+	// Initialiseres fra ?dag=N query-param så valget bevares når brugeren
+	// går væk og tilbage (fx via history.back fra lektion-overlay).
+	let valgtDagNummer = $state<number | null>(dagFraQuery());
 	let mineSpoergsmaal = $state<KlientSpoergsmaal[]>([]);
+
+	function dagFraQuery(): number | null {
+		if (typeof window === 'undefined') return null;
+		const v = new URL(window.location.href).searchParams.get('dag');
+		if (v === null) return null;
+		const n = parseInt(v, 10);
+		return Number.isFinite(n) && n >= 0 ? n : null;
+	}
 
 	const ubeskrivedeSpoergsmaal = $derived.by<KlientSpoergsmaal[]>(() => {
 		const senest = userDoc?.senestSpoergsmaalLaestAt ?? 0;
@@ -68,10 +80,23 @@
 		if (aktivDagNummer === null) return;
 		if (n > aktivDagNummer) return;
 		valgtDagNummer = n;
+		opdaterUrlMedDag(n);
 	}
 
 	function nulstilTilIDag() {
 		valgtDagNummer = null;
+		opdaterUrlMedDag(null);
+	}
+
+	function opdaterUrlMedDag(n: number | null) {
+		if (typeof window === 'undefined') return;
+		const url = new URL(page.url);
+		if (n === null) {
+			url.searchParams.delete('dag');
+		} else {
+			url.searchParams.set('dag', String(n));
+		}
+		replaceState(url, page.state);
 	}
 
 	// Bygger strip-data for alle dage i forløbet (inkl baseline 0)
