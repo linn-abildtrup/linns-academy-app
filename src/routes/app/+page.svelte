@@ -1,19 +1,65 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
+	import { getContext, onMount } from 'svelte';
+	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
+	import type { Forlob } from '$lib/content/forlobAdgang';
+	import type { ForlobDag } from '$lib/content/forlob';
+	import type { UserProduct } from '$lib/content/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 	import { getGreetingWithName } from '$lib/utils/greeting';
-	import { aktivtForlob, dagensIndhold, formatDato, getCurrentDay } from '$lib/content/forlob';
+	import { formatDato, getCurrentDay, tomForlobDag } from '$lib/content/forlob';
+	import { hentForlob, hentForlobsdag } from '$lib/firestore/forlob';
+	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const getUser = getContext<() => User | null>('user');
 
 	const userDoc = $derived(getUserDoc());
+	const user = $derived(getUser());
 
 	const greeting = $derived(getGreetingWithName(userDoc?.firstName ?? ''));
 	const today = $derived(formatDato(new Date()));
-	const dayNumber = $derived(getCurrentDay(aktivtForlob) ?? dagensIndhold.dag);
-	const completedActions = $derived(dagensIndhold.actions.filter((a) => a.done).length);
-	const totalActions = $derived(dagensIndhold.actions.length);
+
+	let forlob = $state<Forlob | null>(null);
+	let dagensDag = $state<ForlobDag | null>(null);
+
+	const dayNumber = $derived.by<number | null>(() => {
+		if (!forlob) return null;
+		const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
+		return getCurrentDay({ startDato, antalDage: forlob.antalDage });
+	});
+
+	type ActionGenvej = {
+		modul: 'kost' | 'traening' | 'vaner';
+		eyebrow: string;
+		titel: string;
+		meta: string;
+		href: string;
+	};
+
+	const actions: ActionGenvej[] = [
+		{
+			modul: 'kost',
+			eyebrow: 'Kost',
+			titel: 'Log dagens måltider',
+			meta: '30-30-3, byg måltid og se opskrifter',
+			href: '/app/moduler/30-30-3'
+		},
+		{
+			modul: 'traening',
+			eyebrow: 'Træning',
+			titel: 'Mikrotræning',
+			meta: 'Korte daglige sessioner',
+			href: '/app/moduler/traening'
+		},
+		{
+			modul: 'vaner',
+			eyebrow: 'Vaner',
+			titel: 'Tjek dagens vaner',
+			meta: 'Refleksion og daglige checks',
+			href: '/app/moduler/vaner'
+		}
+	];
 
 	type ModulGenvej = {
 		navn: string;
@@ -21,36 +67,41 @@
 		ikon: 'check' | 'flame' | 'leaf' | 'book';
 		accent: string;
 		dim: string;
+		href: string;
 	};
 
 	const moduler: ModulGenvej[] = [
 		{
 			navn: 'Vaner',
-			meta: '14 dages flow',
+			meta: 'Dagens checks',
 			ikon: 'check',
 			accent: '#6F9E7E',
-			dim: 'rgba(111,158,126,.10)'
+			dim: 'rgba(111,158,126,.10)',
+			href: '/app/moduler/vaner'
 		},
 		{
 			navn: 'Træning',
-			meta: '3 nye øvelser',
+			meta: 'Mikrotræning',
 			ikon: 'flame',
 			accent: 'var(--terra)',
-			dim: 'var(--tdim)'
+			dim: 'var(--tdim)',
+			href: '/app/moduler/traening'
 		},
 		{
 			navn: 'Kost',
-			meta: '30-30-3 i dag',
+			meta: '30-30-3',
 			ikon: 'leaf',
 			accent: 'var(--sage)',
-			dim: 'var(--sdim)'
+			dim: 'var(--sdim)',
+			href: '/app/moduler/30-30-3'
 		},
 		{
 			navn: 'Bibliotek',
-			meta: '3 nye podcasts',
+			meta: 'FAQ og guides',
 			ikon: 'book',
 			accent: '#5C7A8C',
-			dim: 'rgba(92,122,140,.10)'
+			dim: 'rgba(92,122,140,.10)',
+			href: '/app/moduler/bibliotek'
 		}
 	];
 
@@ -99,6 +150,38 @@
 		if (modul === 'traening') return 'flame';
 		return 'check';
 	}
+
+	$effect(() => {
+		// Kun for forløbskunder skal vi hente forløb og dagens lektion
+		const u = user;
+		const ud = userDoc;
+		if (!u || ud?.state !== 'forlobskunde') {
+			forlob = null;
+			dagensDag = null;
+			return;
+		}
+		void indlaesForlob(u.uid);
+	});
+
+	async function indlaesForlob(uid: string) {
+		try {
+			const up = await hentUserProduct(uid, 'kickstart');
+			if (!up) return;
+			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+			if (!forlobId) return;
+			const f = await hentForlob(forlobId);
+			if (!f) return;
+			forlob = f;
+
+			const startDato = f.startDato.toDate().toISOString().slice(0, 10);
+			const dn = getCurrentDay({ startDato, antalDage: f.antalDage });
+			if (dn === null) return;
+			const dag = await hentForlobsdag(forlobId, dn);
+			dagensDag = dag ?? tomForlobDag(dn);
+		} catch (e) {
+			console.error('Kunne ikke hente forløb til forsiden:', e);
+		}
+	}
 </script>
 
 {#if userDoc?.state === 'forlobskunde'}
@@ -108,10 +191,17 @@
 				<div class="header-text">
 					<div class="date-label">{today}</div>
 					<h1 class="greeting">{greeting}</h1>
-					<div class="forlob-badge">
-						<span class="badge-dot"></span>
-						{aktivtForlob.kortNavn} · dag {dayNumber} af {aktivtForlob.antalDage}
-					</div>
+					{#if forlob && dayNumber !== null}
+						<a class="forlob-badge" href="/app/moduler/forlob">
+							<span class="badge-dot"></span>
+							{forlob.navn} · dag {dayNumber} af {forlob.antalDage}
+						</a>
+					{:else if forlob}
+						<a class="forlob-badge" href="/app/moduler/forlob">
+							<span class="badge-dot"></span>
+							{forlob.navn} · starter snart
+						</a>
+					{/if}
 				</div>
 				<button class="bell-button" aria-label="Notifikationer">
 					<Icon name="bell" size={15} color="var(--text2)" />
@@ -121,49 +211,49 @@
 		</header>
 
 		<div class="forside-body">
-			{#each dagensIndhold.lektioner as lektion (lektion.id)}
-				<section class="lektion-section">
-					<div class="eyebrow eyebrow-terra">Dagens lektion</div>
-					<div class="lektion-card">
-						<div class="lektion-decoration lektion-decoration-1"></div>
-						<div class="lektion-decoration lektion-decoration-2"></div>
-						<div class="lektion-content">
-							<div class="lektion-meta">Dag {lektion.dag} · uge {lektion.uge}</div>
-							<div class="lektion-title">{lektion.titel}</div>
-							<div class="lektion-description">{lektion.beskrivelse}</div>
-							<div class="lektion-actions">
-								<button class="lektion-button">
-									<Icon name="play" size={12} color="var(--terra)" filled />
-									Begynd
-								</button>
-								<span class="lektion-duration">
-									{lektion.varighedMin} min · {lektion.format}
-								</span>
+			{#if dagensDag && dagensDag.lektioner.length > 0}
+				{#each dagensDag.lektioner as lektion (lektion.id)}
+					<section class="lektion-section">
+						<div class="eyebrow eyebrow-terra">Dagens lektion</div>
+						<a class="lektion-card" href="/app/moduler/forlob">
+							<div class="lektion-decoration lektion-decoration-1"></div>
+							<div class="lektion-decoration lektion-decoration-2"></div>
+							<div class="lektion-content">
+								<div class="lektion-meta">Dag {dagensDag.dagNummer} · uge {dagensDag.uge}</div>
+								<div class="lektion-title">{lektion.titel}</div>
+								{#if lektion.beskrivelse}
+									<div class="lektion-description">{lektion.beskrivelse}</div>
+								{/if}
+								<div class="lektion-actions">
+									<span class="lektion-button">
+										<Icon name="play" size={12} color="var(--terra)" filled />
+										Begynd
+									</span>
+									{#if lektion.varighedMin > 0 || lektion.format}
+										<span class="lektion-duration">
+											{lektion.varighedMin > 0 ? lektion.varighedMin + ' min' : ''}{lektion.varighedMin > 0 && lektion.format ? ' · ' : ''}{lektion.format}
+										</span>
+									{/if}
+								</div>
 							</div>
-						</div>
-					</div>
-				</section>
-			{/each}
+						</a>
+					</section>
+				{/each}
+			{/if}
 
 			<section class="actions-section">
 				<div class="actions-header">
 					<div class="eyebrow eyebrow-muted">Dagens action</div>
-					<div class="actions-counter">{completedActions} af {totalActions} i dag</div>
 				</div>
 				<div class="actions-list">
-					{#each dagensIndhold.actions as action (action.id)}
-						<button class="action-card" class:action-done={action.done}>
+					{#each actions as action (action.modul)}
+						<a class="action-card" href={action.href}>
 							<div class="action-icon" style="background: {getActionAccentDim(action.modul)}">
 								<Icon
 									name={getActionIcon(action.modul)}
 									size={15}
 									color={getActionAccent(action.modul)}
 								/>
-								{#if action.done}
-									<span class="action-check">
-										<Icon name="check" size={8} color="#fff" />
-									</span>
-								{/if}
 							</div>
 							<div class="action-text">
 								<div class="action-eyebrow" style="color: {getActionAccent(action.modul)}">
@@ -173,17 +263,17 @@
 								<div class="action-meta">{action.meta}</div>
 							</div>
 							<Icon name="chevron-r" size={14} color="var(--text3)" />
-						</button>
+						</a>
 					{/each}
 				</div>
 			</section>
 
-			{#if dagensIndhold.noteFraLinn}
+			{#if dagensDag && dagensDag.noteFraLinn}
 				<section class="note-section">
 					<div class="note-badge">L</div>
 					<div class="note-content">
 						<div class="note-eyebrow">Note fra Linn</div>
-						<div class="note-text">{dagensIndhold.noteFraLinn}</div>
+						<div class="note-text">{dagensDag.noteFraLinn}</div>
 					</div>
 				</section>
 			{/if}
@@ -204,36 +294,6 @@
 				<h1 class="greeting">{greeting}</h1>
 			</section>
 
-			<section class="actions-section">
-				<div class="eyebrow eyebrow-terra">Dagens action</div>
-				<div class="actions-list">
-					{#each dagensIndhold.actions as action (action.id)}
-						<button class="action-card" class:action-done={action.done}>
-							<div class="action-icon" style="background: {getActionAccentDim(action.modul)}">
-								<Icon
-									name={getActionIcon(action.modul)}
-									size={15}
-									color={getActionAccent(action.modul)}
-								/>
-								{#if action.done}
-									<span class="action-check">
-										<Icon name="check" size={8} color="#fff" />
-									</span>
-								{/if}
-							</div>
-							<div class="action-text">
-								<div class="action-eyebrow" style="color: {getActionAccent(action.modul)}">
-									{action.eyebrow}
-								</div>
-								<div class="action-title">{action.titel}</div>
-								<div class="action-meta">{action.meta}</div>
-							</div>
-							<Icon name="chevron-r" size={14} color="var(--text3)" />
-						</button>
-					{/each}
-				</div>
-			</section>
-
 			<section class="moduler-section">
 				<div class="moduler-header">
 					<div class="eyebrow eyebrow-muted">Mine moduler</div>
@@ -241,13 +301,13 @@
 				</div>
 				<div class="moduler-grid">
 					{#each moduler as modul (modul.navn)}
-						<button class="modul-card">
+						<a class="modul-card" href={modul.href}>
 							<div class="modul-icon" style="background: {modul.dim}">
 								<Icon name={modul.ikon} size={15} color={modul.accent} />
 							</div>
 							<div class="modul-name">{modul.navn}</div>
 							<div class="modul-meta">{modul.meta}</div>
-						</button>
+						</a>
 					{/each}
 				</div>
 			</section>
@@ -401,6 +461,11 @@
 		font-size: 10px;
 		font-weight: 600;
 		letter-spacing: 0.04em;
+		text-decoration: none;
+	}
+
+	.forlob-badge:hover {
+		filter: brightness(0.95);
 	}
 
 	.badge-dot {
@@ -499,6 +564,7 @@
 	/* ── Lektion-card ──────────────────────────────────────────── */
 
 	.lektion-card {
+		display: block;
 		border-radius: 16px;
 		overflow: hidden;
 		background: linear-gradient(160deg, #c99587 0%, #b87b6e 60%, #9d6358 100%);
@@ -506,6 +572,11 @@
 		padding: 18px;
 		position: relative;
 		min-height: 170px;
+		text-decoration: none;
+	}
+
+	.lektion-card:hover {
+		filter: brightness(1.03);
 	}
 
 	.lektion-decoration {
@@ -592,13 +663,6 @@
 		margin-bottom: 8px;
 	}
 
-	.actions-counter {
-		font-size: 10px;
-		color: var(--text3);
-		font-family: var(--ff-d);
-		font-style: italic;
-	}
-
 	.actions-list {
 		display: flex;
 		flex-direction: column;
@@ -616,7 +680,13 @@
 		width: 100%;
 		text-align: left;
 		font-family: var(--ff-b);
+		text-decoration: none;
+		color: inherit;
 		cursor: pointer;
+	}
+
+	.action-card:hover {
+		background: var(--bg2);
 	}
 
 	.action-icon {
@@ -627,21 +697,6 @@
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
-		position: relative;
-	}
-
-	.action-check {
-		position: absolute;
-		bottom: -2px;
-		right: -2px;
-		width: 14px;
-		height: 14px;
-		border-radius: 50%;
-		background: var(--sage);
-		border: 2px solid var(--white);
-		display: flex;
-		align-items: center;
-		justify-content: center;
 	}
 
 	.action-text {
@@ -668,12 +723,6 @@
 		font-size: 10px;
 		color: var(--text3);
 		margin-top: 2px;
-	}
-
-	.action-done .action-title {
-		text-decoration: line-through;
-		text-decoration-color: var(--text3);
-		opacity: 0.55;
 	}
 
 	/* ── Note fra Linn ─────────────────────────────────────────── */
@@ -758,7 +807,13 @@
 		min-height: 80px;
 		text-align: left;
 		font-family: var(--ff-b);
+		text-decoration: none;
+		color: inherit;
 		cursor: pointer;
+	}
+
+	.modul-card:hover {
+		background: var(--bg2);
 	}
 
 	.modul-icon {
