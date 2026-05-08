@@ -16,6 +16,7 @@
 		hentUserProduct,
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
+	import { getVideoUrl } from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -26,6 +27,31 @@
 
 	let userProduct = $state<UserProduct | null>(null);
 	let programData = $state<ProgramMedDage | null>(null);
+
+	// Preview-state: når klienten trykker på play-ikonet ud for en øvelse,
+	// åbner vi en overlay med video + beskrivelse + how-to-steps.
+	let aabenPreview = $state<Exercise | null>(null);
+	let previewVideoUrl = $state<string | null>(null);
+	let previewLoading = $state(false);
+
+	async function aabnPreview(ex: Exercise) {
+		aabenPreview = ex;
+		previewVideoUrl = null;
+		if (!ex.videoPath) return;
+		previewLoading = true;
+		try {
+			previewVideoUrl = await getVideoUrl(ex.videoPath);
+		} catch (e) {
+			console.warn('Kunne ikke hente video for', ex.id, e);
+		} finally {
+			previewLoading = false;
+		}
+	}
+
+	function lukPreview() {
+		aabenPreview = null;
+		previewVideoUrl = null;
+	}
 	let exerciseMap = $state<Map<string, Exercise>>(new Map());
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
@@ -147,6 +173,17 @@
 							<div class="ovelse-cat">{exercise.catLabel}</div>
 						{/if}
 					</div>
+					{#if exercise}
+						<button
+							class="preview-knap"
+							type="button"
+							onclick={() => aabnPreview(exercise)}
+							aria-label="Se hvordan {exercise.name} udføres"
+							title="Se øvelsen"
+						>
+							<Icon name="play" size={14} color="#fff" filled />
+						</button>
+					{/if}
 				</article>
 			{/each}
 		</div>
@@ -164,6 +201,63 @@
 		</a>
 	{/if}
 </div>
+
+{#if aabenPreview}
+	<div
+		class="overlay-bg"
+		role="button"
+		tabindex="0"
+		onclick={lukPreview}
+		onkeydown={(e) => e.key === 'Escape' && lukPreview()}
+	></div>
+	<div class="preview-overlay" role="dialog" aria-modal="true">
+		<header class="preview-head">
+			<div class="preview-titel">{aabenPreview.name}</div>
+			<button class="preview-luk" type="button" onclick={lukPreview} aria-label="Luk">×</button>
+		</header>
+
+		<div class="preview-video">
+			{#if previewLoading}
+				<Loading tekst="Henter video..." kompakt />
+			{:else if previewVideoUrl}
+				<video
+					src={previewVideoUrl}
+					controls
+					autoplay
+					muted
+					loop
+					playsinline
+					preload="auto"
+				></video>
+			{:else}
+				<div class="preview-fallback">Ingen video tilgængelig.</div>
+			{/if}
+		</div>
+
+		{#if aabenPreview.desc}
+			<p class="preview-desc">{aabenPreview.desc}</p>
+		{/if}
+
+		{#if aabenPreview.how && aabenPreview.how.length > 0}
+			<div class="preview-how">
+				<div class="preview-how-label">Sådan gør du</div>
+				<ol class="preview-how-liste">
+					{#each aabenPreview.how as trin (trin)}
+						<li>{trin}</li>
+					{/each}
+				</ol>
+			</div>
+		{/if}
+
+		{#if aabenPreview.tags && aabenPreview.tags.length > 0}
+			<div class="preview-tags">
+				{#each aabenPreview.tags as tag (tag)}
+					<span class="preview-tag">{tag}</span>
+				{/each}
+			</div>
+		{/if}
+	</div>
+{/if}
 
 <style>
 	.page {
@@ -337,5 +431,160 @@
 
 	.start-knap:hover {
 		filter: brightness(0.95);
+	}
+
+	.preview-knap {
+		flex-shrink: 0;
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		border: none;
+		background: var(--terra);
+		color: #fff;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--ff-b);
+		padding: 0;
+	}
+
+	.preview-knap:hover {
+		filter: brightness(1.05);
+	}
+
+	.preview-knap:active {
+		transform: scale(0.95);
+	}
+
+	.overlay-bg {
+		position: fixed;
+		inset: 0;
+		background: rgba(20, 14, 18, 0.7);
+		z-index: 60;
+		border: none;
+	}
+
+	.preview-overlay {
+		position: fixed;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		background: var(--white);
+		border-radius: 16px;
+		width: calc(100% - 24px);
+		max-width: 520px;
+		max-height: 92vh;
+		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 16px;
+		z-index: 61;
+		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+	}
+
+	.preview-head {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.preview-titel {
+		flex: 1;
+		font-family: var(--ff-d);
+		font-size: 18px;
+		font-weight: 600;
+		color: var(--text);
+		line-height: 1.3;
+	}
+
+	.preview-luk {
+		width: 32px;
+		height: 32px;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		background: var(--white);
+		color: var(--text2);
+		font-size: 18px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.preview-video {
+		position: relative;
+		width: 100%;
+		aspect-ratio: 9 / 16;
+		max-height: 480px;
+		background: #000;
+		border-radius: 10px;
+		overflow: hidden;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.preview-video video {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.preview-fallback {
+		color: rgba(255, 255, 255, 0.6);
+		font-size: 13px;
+	}
+
+	.preview-desc {
+		font-size: 14px;
+		line-height: 1.55;
+		color: var(--text);
+		margin: 0;
+	}
+
+	.preview-how {
+		background: var(--bg2);
+		border-radius: 12px;
+		padding: 14px 16px;
+	}
+
+	.preview-how-label {
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-bottom: 8px;
+	}
+
+	.preview-how-liste {
+		margin: 0;
+		padding-left: 18px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		font-size: 13px;
+		line-height: 1.5;
+		color: var(--text);
+	}
+
+	.preview-how-liste li {
+		padding-left: 4px;
+	}
+
+	.preview-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.preview-tag {
+		font-size: 11px;
+		padding: 4px 10px;
+		border-radius: 999px;
+		background: var(--tdim);
+		color: var(--terra);
 	}
 </style>
