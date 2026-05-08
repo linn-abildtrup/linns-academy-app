@@ -43,6 +43,8 @@ export interface Enhed {
  * units er valgfrie portion-enheder. Hvis tom: kun 'g' kan bruges.
  * liquid: hvis true, vis dl-enhed som default i UI.
  */
+export type Kilde = 'kickstart' | 'frida' | 'custom';
+
 export interface Fodevare {
 	id: string;
 	name: string;
@@ -51,6 +53,7 @@ export interface Fodevare {
 	f: number;
 	units?: Enhed[];
 	liquid?: boolean;
+	kilde?: Kilde;
 }
 
 /**
