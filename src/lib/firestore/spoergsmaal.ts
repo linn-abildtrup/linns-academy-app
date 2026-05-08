@@ -16,6 +16,7 @@ import {
 	query,
 	serverTimestamp,
 	updateDoc,
+	where,
 	type Timestamp
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
@@ -29,6 +30,8 @@ export interface KlientSpoergsmaal {
 	spoergsmaal: string;
 	status: SpoergsmaalStatus;
 	oprettet: Timestamp;
+	svar?: string;
+	besvaretAt?: Timestamp;
 }
 
 export const SPOERGSMAAL_MAX_LAENGDE = 500;
@@ -93,4 +96,45 @@ export async function opdaterSpoergsmaalStatus(
 /** Sletter et spørgsmål permanent. */
 export async function sletSpoergsmaal(id: string): Promise<void> {
 	await deleteDoc(doc(db, 'klientspoergsmaal', id));
+}
+
+/**
+ * Gemmer et svar på et spørgsmål og sætter status til 'besvaret'.
+ * Trimmer whitespace og afviser tomme svar.
+ */
+export async function svarPaaSpoergsmaal(id: string, svar: string): Promise<void> {
+	const trimmet = svar.trim();
+	if (!trimmet) throw new Error('Svar må ikke være tomt');
+	await updateDoc(doc(db, 'klientspoergsmaal', id), {
+		svar: trimmet,
+		status: 'besvaret' as SpoergsmaalStatus,
+		besvaretAt: serverTimestamp()
+	});
+}
+
+/**
+ * Henter en bestemt klients egne spørgsmål, sorteret med nyeste først.
+ * Bruges på klientens "Mine spørgsmål"-side så de kan se Linns svar.
+ */
+export async function hentMineSpoergsmaal(uid: string): Promise<KlientSpoergsmaal[]> {
+	const q = query(
+		collection(db, 'klientspoergsmaal'),
+		where('uid', '==', uid),
+		orderBy('oprettet', 'desc'),
+		limit(100)
+	);
+	const snap = await getDocs(q);
+	return snap.docs.map((d) => {
+		const data = d.data();
+		return {
+			id: d.id,
+			uid: data.uid ?? '',
+			email: data.email ?? '',
+			spoergsmaal: data.spoergsmaal ?? '',
+			status: (data.status as SpoergsmaalStatus) ?? 'ny',
+			oprettet: data.oprettet,
+			svar: data.svar ?? undefined,
+			besvaretAt: data.besvaretAt ?? undefined
+		};
+	});
 }

@@ -5,6 +5,7 @@
 		hentAlleSpoergsmaal,
 		opdaterSpoergsmaalStatus,
 		sletSpoergsmaal,
+		svarPaaSpoergsmaal,
 		type KlientSpoergsmaal,
 		type SpoergsmaalStatus
 	} from '$lib/firestore/spoergsmaal';
@@ -31,6 +32,11 @@
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let toast = $state<string | null>(null);
+
+	// Svar-state pr spørgsmål-id (kun det åbne svar-felt vises ad gangen)
+	let svarUdkast = $state<Record<string, string>>({});
+	let svarSender = $state<string | null>(null);
+	let aabenSvarId = $state<string | null>(null);
 
 	const filtreret = $derived(
 		aktivtFilter === 'alle' ? alle : alle.filter((q) => q.status === aktivtFilter)
@@ -77,6 +83,45 @@
 		} catch (e) {
 			console.error(e);
 			visToast('Kunne ikke slette');
+		}
+	}
+
+	function aabnSvar(q: KlientSpoergsmaal) {
+		aabenSvarId = q.id;
+		if (!(q.id in svarUdkast)) {
+			svarUdkast[q.id] = q.svar ?? '';
+		}
+	}
+
+	function lukSvar() {
+		aabenSvarId = null;
+	}
+
+	async function sendSvar(id: string) {
+		const tekst = (svarUdkast[id] ?? '').trim();
+		if (!tekst) {
+			visToast('Skriv et svar først');
+			return;
+		}
+		svarSender = id;
+		try {
+			await svarPaaSpoergsmaal(id, tekst);
+			alle = alle.map((q) =>
+				q.id === id
+					? {
+							...q,
+							svar: tekst,
+							status: 'besvaret'
+						}
+					: q
+			);
+			aabenSvarId = null;
+			visToast('Svar sendt');
+		} catch (e) {
+			console.error(e);
+			visToast('Kunne ikke sende svar');
+		} finally {
+			svarSender = null;
 		}
 	}
 
@@ -188,19 +233,59 @@
 						<span>{formaterDato(q.oprettet)}</span>
 					</div>
 					<div class="spq-tekst">{q.spoergsmaal}</div>
+
+					{#if q.svar && aabenSvarId !== q.id}
+						<div class="svar-vist">
+							<div class="svar-label">Svar fra Linn</div>
+							<div class="svar-tekst">{q.svar}</div>
+						</div>
+					{/if}
+
+					{#if aabenSvarId === q.id}
+						<div class="svar-form">
+							<label class="svar-label" for="svar-{q.id}">Svar til klienten</label>
+							<textarea
+								id="svar-{q.id}"
+								class="svar-input"
+								rows="4"
+								placeholder="Skriv dit svar her..."
+								bind:value={svarUdkast[q.id]}
+								disabled={svarSender === q.id}
+							></textarea>
+							<div class="svar-knapper">
+								<button
+									type="button"
+									class="primary-knap sm"
+									onclick={() => sendSvar(q.id)}
+									disabled={svarSender === q.id}
+								>
+									{svarSender === q.id ? 'Sender...' : q.svar ? 'Opdater svar' : 'Send svar'}
+								</button>
+								<button
+									type="button"
+									class="ghost-knap sm"
+									onclick={lukSvar}
+									disabled={svarSender === q.id}
+								>
+									Annullér
+								</button>
+							</div>
+						</div>
+					{/if}
+
 					<div class="spq-knapper">
+						{#if aabenSvarId !== q.id}
+							<button
+								type="button"
+								class="primary-knap sm"
+								onclick={() => aabnSvar(q)}
+							>
+								{q.svar ? 'Rediger svar' : 'Svar klienten'}
+							</button>
+						{/if}
 						{#if q.status !== 'laest'}
 							<button type="button" class="ghost-knap sm" onclick={() => aendreStatus(q.id, 'laest')}>
 								Markér som læst
-							</button>
-						{/if}
-						{#if q.status !== 'besvaret'}
-							<button
-								type="button"
-								class="ghost-knap sm"
-								onclick={() => aendreStatus(q.id, 'besvaret')}
-							>
-								Markér som besvaret
 							</button>
 						{/if}
 						{#if q.status !== 'brugt'}
@@ -451,6 +536,64 @@
 	.spq-knapper {
 		display: flex;
 		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.primary-knap.sm {
+		padding: 8px 12px;
+		font-size: 12px;
+	}
+
+	.svar-vist {
+		background: var(--header);
+		border-left: 3px solid var(--terra);
+		padding: 10px 12px;
+		border-radius: 8px;
+	}
+
+	.svar-label {
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--terra);
+		margin-bottom: 4px;
+		display: block;
+	}
+
+	.svar-tekst {
+		font-size: 13px;
+		color: var(--text);
+		line-height: 1.5;
+		white-space: pre-wrap;
+	}
+
+	.svar-form {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.svar-input {
+		font-family: var(--ff-b);
+		font-size: 13px;
+		line-height: 1.5;
+		padding: 10px 12px;
+		border-radius: 8px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		color: var(--text);
+		outline: none;
+		resize: vertical;
+		min-height: 80px;
+	}
+
+	.svar-input:focus {
+		border-color: var(--terra);
+	}
+
+	.svar-knapper {
+		display: flex;
 		gap: 6px;
 	}
 

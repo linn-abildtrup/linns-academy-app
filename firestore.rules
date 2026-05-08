@@ -129,10 +129,12 @@ service cloud.firestore {
 
 		// Klientspørgsmål til Linn:
 		//   - Klienter kan oprette deres egne spørgsmål (uid skal matche)
+		//   - Klienter kan læse SINE egne spørgsmål (for at se Linns svar)
 		//   - Klienter kan IKKE læse andres spørgsmål
-		//   - Admin kan læse alle og opdatere status (ny → laest → besvaret → brugt)
+		//   - Admin kan læse alle og opdatere status + svar
 		match /klientspoergsmaal/{spoergsmaalId} {
-			allow read: if isAdmin();
+			allow read: if isAdmin()
+				|| (request.auth != null && resource.data.uid == request.auth.uid);
 			allow create: if request.auth != null
 				&& request.resource.data.uid == request.auth.uid;
 			allow update, delete: if isAdmin();

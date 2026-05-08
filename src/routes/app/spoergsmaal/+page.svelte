@@ -1,9 +1,14 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
+	import { getContext, onMount } from 'svelte';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
-	import { gemSpoergsmaal, SPOERGSMAAL_MAX_LAENGDE } from '$lib/firestore/spoergsmaal';
+	import {
+		gemSpoergsmaal,
+		hentMineSpoergsmaal,
+		SPOERGSMAAL_MAX_LAENGDE,
+		type KlientSpoergsmaal
+	} from '$lib/firestore/spoergsmaal';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -14,9 +19,20 @@
 	let gemmer = $state(false);
 	let kvittering = $state(false);
 	let fejl = $state<string | null>(null);
+	let mine = $state<KlientSpoergsmaal[]>([]);
 
 	const tegnAntal = $derived(tekst.length);
 	const kanSende = $derived(tekst.trim().length > 0 && !gemmer && !!user);
+
+	async function genindlaesMine() {
+		const u = user;
+		if (!u) return;
+		try {
+			mine = await hentMineSpoergsmaal(u.uid);
+		} catch (e) {
+			console.warn('Kunne ikke hente egne spørgsmål', e);
+		}
+	}
 
 	async function send() {
 		if (!user || !kanSende) return;
@@ -27,6 +43,7 @@
 			await gemSpoergsmaal(user.uid, email, tekst);
 			tekst = '';
 			kvittering = true;
+			void genindlaesMine();
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke sende. Prøv igen om lidt.';
@@ -34,6 +51,16 @@
 			gemmer = false;
 		}
 	}
+
+	function formaterDato(t: { toDate?: () => Date } | null | undefined): string {
+		if (!t || !t.toDate) return '';
+		const d = t.toDate();
+		return d.toLocaleDateString('da-DK', { day: 'numeric', month: 'long' });
+	}
+
+	$effect(() => {
+		if (user) void genindlaesMine();
+	});
 </script>
 
 <div class="page">
@@ -92,6 +119,33 @@
 			</button>
 		{/if}
 	</section>
+
+	{#if mine.length > 0}
+		<section class="mine-section">
+			<div class="mine-eyebrow">Mine spørgsmål</div>
+			<div class="mine-liste">
+				{#each mine as q (q.id)}
+					<article class="mine-kort" class:besvaret={!!q.svar}>
+						<div class="mine-meta">
+							<span class="mine-dato">{formaterDato(q.oprettet)}</span>
+							{#if q.svar}
+								<span class="mine-pill">Besvaret</span>
+							{:else}
+								<span class="mine-pill mine-pill-venter">Afventer svar</span>
+							{/if}
+						</div>
+						<div class="mine-tekst">{q.spoergsmaal}</div>
+						{#if q.svar}
+							<div class="mine-svar">
+								<div class="mine-svar-label">Svar fra Linn</div>
+								<div class="mine-svar-tekst">{q.svar}</div>
+							</div>
+						{/if}
+					</article>
+				{/each}
+			</div>
+		</section>
+	{/if}
 </div>
 
 <style>
@@ -239,5 +293,96 @@
 		font-size: 13px;
 		font-weight: 500;
 		cursor: pointer;
+	}
+
+	.mine-section {
+		margin-top: 24px;
+	}
+
+	.mine-eyebrow {
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-bottom: 10px;
+	}
+
+	.mine-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.mine-kort {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		padding: 12px 14px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.mine-kort.besvaret {
+		border-color: var(--terra);
+	}
+
+	.mine-meta {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.mine-dato {
+		font-size: 11px;
+		color: var(--text3);
+	}
+
+	.mine-pill {
+		background: var(--terra);
+		color: var(--white);
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		padding: 2px 8px;
+		border-radius: 99px;
+	}
+
+	.mine-pill-venter {
+		background: var(--bg2);
+		color: var(--text3);
+	}
+
+	.mine-tekst {
+		font-size: 13px;
+		color: var(--text);
+		line-height: 1.5;
+		white-space: pre-wrap;
+	}
+
+	.mine-svar {
+		background: var(--header);
+		border-left: 3px solid var(--terra);
+		padding: 10px 12px;
+		border-radius: 8px;
+	}
+
+	.mine-svar-label {
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--terra);
+		margin-bottom: 4px;
+	}
+
+	.mine-svar-tekst {
+		font-size: 13px;
+		color: var(--text);
+		line-height: 1.5;
+		white-space: pre-wrap;
 	}
 </style>
