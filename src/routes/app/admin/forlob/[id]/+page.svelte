@@ -39,6 +39,36 @@
 	let importResultat = $state<ImportResultat | null>(null);
 	let importFejl = $state<string | null>(null);
 
+	let soegning = $state('');
+
+	const filtreredeEmails = $derived.by<AllowedEmail[]>(() => {
+		const q = soegning.trim().toLowerCase();
+		if (!q) return emails;
+		return emails.filter((e) => {
+			return (
+				e.email.toLowerCase().includes(q) ||
+				(e.firstName ?? '').toLowerCase().includes(q) ||
+				(e.lastName ?? '').toLowerCase().includes(q)
+			);
+		});
+	});
+
+	function laesCsvFil(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const fil = input.files?.[0];
+		if (!fil) return;
+		const reader = new FileReader();
+		reader.onload = () => {
+			csvIndhold = String(reader.result ?? '');
+			previewCsv();
+		};
+		reader.onerror = () => {
+			importFejl = 'Kunne ikke læse filen.';
+		};
+		reader.readAsText(fil, 'utf-8');
+		input.value = '';
+	}
+
 	onMount(async () => {
 		await indlaes();
 	});
@@ -248,9 +278,22 @@
 		<div class="form-card">
 			<div class="form-titel">Importér emails fra Simplero</div>
 			<p class="csv-hint">
-				Åbn din Simplero-eksport, marker alt (Cmd+A), kopier (Cmd+C) og indsæt her. Klienter
-				med "Canceled at" udfyldt springes automatisk over.
+				Upload din Simplero-eksport som CSV-fil eller paste indholdet ind. Klienter med
+				"Canceled at" udfyldt springes automatisk over.
 			</p>
+
+			<label class="csv-fil-knap" class:disabled={importerer}>
+				📎 Vælg CSV-fil
+				<input
+					type="file"
+					accept=".csv,text/csv,text/plain"
+					onchange={laesCsvFil}
+					disabled={importerer}
+				/>
+			</label>
+
+			<div class="csv-eller">eller indsæt manuelt</div>
+
 			<textarea
 				class="csv-textarea"
 				placeholder="Paste CSV-indhold her..."
@@ -318,15 +361,47 @@
 		<div class="emails-card">
 			<div class="emails-head">
 				<div class="form-titel">Tilmeldte emails</div>
-				<div class="emails-tael">{emails.length}</div>
+				<div class="emails-tael">
+					{#if soegning.trim() && filtreredeEmails.length !== emails.length}
+						{filtreredeEmails.length} af {emails.length}
+					{:else}
+						{emails.length}
+					{/if}
+				</div>
 			</div>
+
+			{#if emails.length > 0}
+				<div class="soeg-rad">
+					<input
+						type="search"
+						class="soeg-input"
+						placeholder="Søg på navn eller email..."
+						bind:value={soegning}
+					/>
+					{#if soegning}
+						<button
+							class="soeg-ryd"
+							type="button"
+							onclick={() => (soegning = '')}
+							aria-label="Ryd søgning"
+						>
+							×
+						</button>
+					{/if}
+				</div>
+			{/if}
+
 			{#if emails.length === 0}
 				<div class="status-besked" style="margin: 0;">
-					Ingen emails tilknyttet endnu. CSV-upload kommer snart.
+					Ingen emails tilknyttet endnu. Importér en CSV-fil ovenfor for at komme i gang.
+				</div>
+			{:else if filtreredeEmails.length === 0}
+				<div class="status-besked" style="margin: 0;">
+					Ingen match for "{soegning}".
 				</div>
 			{:else}
 				<div class="emails-liste">
-					{#each emails as e (e.email)}
+					{#each filtreredeEmails as e (e.email)}
 						<div class="email-row">
 							<div class="email-info">
 								<div class="email-adresse">{e.email}</div>
@@ -616,6 +691,90 @@
 		color: var(--text3);
 		line-height: 1.5;
 		margin: 0;
+	}
+
+	.csv-fil-knap {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 11px 16px;
+		font-size: 13px;
+		font-weight: 600;
+		border-radius: 10px;
+		border: 1px dashed var(--terra);
+		background: var(--tdim);
+		color: var(--terra);
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.csv-fil-knap:hover {
+		background: var(--white);
+	}
+
+	.csv-fil-knap.disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.csv-fil-knap input[type='file'] {
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		cursor: pointer;
+		font-size: 0;
+	}
+
+	.csv-fil-knap.disabled input[type='file'] {
+		cursor: not-allowed;
+	}
+
+	.csv-eller {
+		text-align: center;
+		font-size: 11px;
+		color: var(--text3);
+		font-style: italic;
+		margin: 2px 0;
+	}
+
+	.soeg-rad {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+
+	.soeg-input {
+		flex: 1;
+		padding: 10px 36px 10px 12px;
+		font-size: 13px;
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: var(--bg2);
+		color: var(--text);
+		font-family: var(--ff-b);
+		outline: none;
+	}
+
+	.soeg-input:focus {
+		border-color: var(--terra);
+	}
+
+	.soeg-ryd {
+		position: absolute;
+		right: 6px;
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		border: none;
+		background: var(--text3);
+		color: #fff;
+		font-size: 14px;
+		line-height: 1;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.csv-textarea {
