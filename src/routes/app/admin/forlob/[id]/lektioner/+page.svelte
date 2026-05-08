@@ -23,7 +23,7 @@
 	const programDage = $derived.by<ForlobDag[]>(() => {
 		if (!forlob) return [];
 		const ud: ForlobDag[] = [];
-		for (let i = 1; i <= forlob.antalDage; i++) {
+		for (let i = 0; i <= forlob.antalDage; i++) {
 			ud.push(dagsmap.get(i) ?? tomForlobDag(i));
 		}
 		return ud;
@@ -73,8 +73,10 @@
 					<div class="dag-num">{dag.dagNummer}</div>
 					<div class="dag-tekst">
 						<div class="dag-titel">
-							Dag {dag.dagNummer}
-							<span class="dag-uge">· uge {dag.uge}</span>
+							{dag.dagNummer === 0 ? 'Baseline' : `Dag ${dag.dagNummer}`}
+							{#if dag.dagNummer > 0}
+								<span class="dag-uge">· uge {dag.uge}</span>
+							{/if}
 						</div>
 						{#if tael > 0}
 							<div class="dag-sub">
@@ -96,12 +98,6 @@
 				</a>
 			{/each}
 		</div>
-
-		<a class="baseline-link" href="/app/admin/forlob/{forlobId}/lektioner/0">
-			<Icon name="sparkle" size={14} color="var(--sage)" />
-			<span>Rediger baseline-dag (dag 0)</span>
-			<Icon name="chevron-r" size={12} color="var(--text3)" />
-		</a>
 	{/if}
 </div>
 
@@ -249,24 +245,4 @@
 		font-size: 11px;
 	}
 
-	.baseline-link {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 12px 14px;
-		background: var(--white);
-		border: 1px solid var(--border);
-		border-radius: 12px;
-		text-decoration: none;
-		color: var(--text2);
-		font-size: 13px;
-	}
-
-	.baseline-link:hover {
-		background: var(--bg2);
-	}
-
-	.baseline-link span {
-		flex: 1;
-	}
 </style>
