@@ -9,7 +9,7 @@
 	import { getGreetingWithName } from '$lib/utils/greeting';
 	import { formatDato, getCurrentDay, tomForlobDag } from '$lib/content/forlob';
 	import { naesteDag } from '$lib/content/mikrotraening';
-	import { hentForlob, hentForlobsdag } from '$lib/firestore/forlob';
+	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -22,13 +22,93 @@
 	const today = $derived(formatDato(new Date()));
 
 	let forlob = $state<Forlob | null>(null);
-	let dagensDag = $state<ForlobDag | null>(null);
+	let forlobsdage = $state<ForlobDag[]>([]);
 	let userProduct = $state<UserProduct | null>(null);
+	let valgtDagNummer = $state<number | null>(null);
 
-	const dayNumber = $derived.by<number | null>(() => {
+	const aktivDagNummer = $derived.by<number | null>(() => {
 		if (!forlob) return null;
 		const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
 		return getCurrentDay({ startDato, antalDage: forlob.antalDage });
+	});
+
+	// Bagudkompatibel alias indtil vi får ryddet i template'n
+	const dayNumber = $derived(aktivDagNummer);
+
+	const dagsmap = $derived.by<Map<number, ForlobDag>>(() => {
+		const m = new Map<number, ForlobDag>();
+		for (const d of forlobsdage) m.set(d.dagNummer, d);
+		return m;
+	});
+
+	const valgtDag = $derived.by<ForlobDag | null>(() => {
+		const n = valgtDagNummer ?? aktivDagNummer;
+		if (n === null) return null;
+		return dagsmap.get(n) ?? tomForlobDag(n);
+	});
+
+	// Bagudkompatibel alias
+	const dagensDag = $derived(valgtDag);
+
+	function vaelgDag(n: number) {
+		if (aktivDagNummer === null) return;
+		if (n > aktivDagNummer) return;
+		valgtDagNummer = n;
+	}
+
+	function nulstilTilIDag() {
+		valgtDagNummer = null;
+	}
+
+	// Bygger strip-data for alle dage i forløbet (inkl baseline 0)
+	const stripDage = $derived.by<{ dagNummer: number; dato: Date; harIndhold: boolean; status: 'fortid' | 'aktiv' | 'fremtid' }[]>(() => {
+		if (!forlob) return [];
+		const start = forlob.startDato.toDate();
+		const out: { dagNummer: number; dato: Date; harIndhold: boolean; status: 'fortid' | 'aktiv' | 'fremtid' }[] = [];
+		for (let i = 0; i <= forlob.antalDage; i++) {
+			const d = new Date(start);
+			d.setHours(12, 0, 0, 0);
+			d.setDate(start.getDate() + i);
+			const dag = dagsmap.get(i);
+			const harIndhold = !!(dag && (dag.lektioner.length > 0 || dag.noteFraLinn));
+			let status: 'fortid' | 'aktiv' | 'fremtid' = 'fremtid';
+			if (aktivDagNummer !== null) {
+				if (i < aktivDagNummer) status = 'fortid';
+				else if (i === aktivDagNummer) status = 'aktiv';
+			}
+			out.push({ dagNummer: i, dato: d, harIndhold, status });
+		}
+		return out;
+	});
+
+	const UGEDAGE_KORT = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
+
+	function formatStripChipDato(d: Date): { dag: string; ugedag: string } {
+		return {
+			dag: String(d.getDate()),
+			ugedag: UGEDAGE_KORT[d.getDay()]
+		};
+	}
+
+	function formatLangDato(d: Date): string {
+		return d.toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long' });
+	}
+
+	const valgtErIDag = $derived(
+		valgtDagNummer === null || valgtDagNummer === aktivDagNummer
+	);
+
+	// Auto-scroll strip til aktiv dag når data er klar
+	let stripEl = $state<HTMLDivElement | null>(null);
+	$effect(() => {
+		if (!stripEl || aktivDagNummer === null || stripDage.length === 0) return;
+		const target = stripEl.querySelector<HTMLElement>(
+			`[data-dag="${valgtDagNummer ?? aktivDagNummer}"]`
+		);
+		if (target) {
+			const left = target.offsetLeft - stripEl.clientWidth / 2 + target.offsetWidth / 2;
+			stripEl.scrollLeft = Math.max(0, left);
+		}
 	});
 
 	// Beregner næste mikrotræning-dag fra brugerens fremgang. Falder tilbage til
@@ -173,8 +253,9 @@
 		const ud = userDoc;
 		if (!u || ud?.state !== 'forlobskunde') {
 			forlob = null;
-			dagensDag = null;
+			forlobsdage = [];
 			userProduct = null;
+			valgtDagNummer = null;
 			return;
 		}
 		void indlaesForlob(u.uid);
@@ -187,15 +268,13 @@
 			userProduct = up;
 			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
 			if (!forlobId) return;
-			const f = await hentForlob(forlobId);
+			const [f, dage] = await Promise.all([
+				hentForlob(forlobId),
+				hentForlobsdage(forlobId)
+			]);
 			if (!f) return;
 			forlob = f;
-
-			const startDato = f.startDato.toDate().toISOString().slice(0, 10);
-			const dn = getCurrentDay({ startDato, antalDage: f.antalDage });
-			if (dn === null) return;
-			const dag = await hentForlobsdag(forlobId, dn);
-			dagensDag = dag ?? tomForlobDag(dn);
+			forlobsdage = dage;
 		} catch (e) {
 			console.error('Kunne ikke hente forløb til forsiden:', e);
 		}
@@ -229,10 +308,51 @@
 		</header>
 
 		<div class="forside-body">
+			{#if forlob && stripDage.length > 0}
+				<section class="strip-section">
+					<div class="strip-head">
+						<div class="eyebrow eyebrow-muted">Forløbet</div>
+						{#if !valgtErIDag}
+							<button class="strip-tilbage" type="button" onclick={nulstilTilIDag}>
+								Tilbage til i dag
+							</button>
+						{/if}
+					</div>
+					<div class="strip" bind:this={stripEl}>
+						{#each stripDage as chip (chip.dagNummer)}
+							{@const fmt = formatStripChipDato(chip.dato)}
+							{@const erValgt = (valgtDagNummer ?? aktivDagNummer) === chip.dagNummer}
+							<button
+								type="button"
+								class="strip-chip"
+								class:erValgt
+								class:erIDag={chip.status === 'aktiv'}
+								class:erFremtid={chip.status === 'fremtid'}
+								disabled={chip.status === 'fremtid'}
+								data-dag={chip.dagNummer}
+								onclick={() => vaelgDag(chip.dagNummer)}
+								aria-label="Dag {chip.dagNummer}, {fmt.ugedag} {fmt.dag}."
+							>
+								<span class="chip-ugedag">{fmt.ugedag}</span>
+								<span class="chip-dag">{fmt.dag}</span>
+								<span class="chip-num">
+									{chip.dagNummer === 0 ? 'Start' : 'D' + chip.dagNummer}
+								</span>
+								{#if chip.harIndhold}
+									<span class="chip-prik" aria-hidden="true"></span>
+								{/if}
+							</button>
+						{/each}
+					</div>
+				</section>
+			{/if}
+
 			{#if dagensDag && dagensDag.lektioner.length > 0}
 				{#each dagensDag.lektioner as lektion (lektion.id)}
 					<section class="lektion-section">
-						<div class="eyebrow eyebrow-terra">Dagens lektion</div>
+						<div class="eyebrow eyebrow-terra">
+							{valgtErIDag ? 'Dagens lektion' : 'Lektion for ' + formatLangDato(stripDage[dagensDag.dagNummer]?.dato ?? new Date())}
+						</div>
 						<a class="lektion-card" href="/app/moduler/forlob?lektion={lektion.id}">
 							<div class="lektion-decoration lektion-decoration-1"></div>
 							<div class="lektion-decoration lektion-decoration-2"></div>
@@ -257,6 +377,13 @@
 						</a>
 					</section>
 				{/each}
+			{:else if dagensDag && !valgtErIDag}
+				<section class="lektion-section">
+					<div class="eyebrow eyebrow-muted">
+						Lektion for {formatLangDato(stripDage[dagensDag.dagNummer]?.dato ?? new Date())}
+					</div>
+					<div class="ingen-lektion">Ingen lektion lagt op for denne dag.</div>
+				</section>
 			{/if}
 
 			<section class="actions-section">
@@ -577,6 +704,146 @@
 
 	.eyebrow-muted {
 		color: var(--text3);
+	}
+
+	/* ── Dato-strip ────────────────────────────────────────────── */
+
+	.strip-section {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.strip-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		min-height: 18px;
+	}
+
+	.strip-tilbage {
+		background: none;
+		border: none;
+		color: var(--terra);
+		font-family: var(--ff-b);
+		font-size: 11px;
+		font-weight: 600;
+		cursor: pointer;
+		padding: 2px 4px;
+	}
+
+	.strip-tilbage:hover {
+		text-decoration: underline;
+	}
+
+	.strip {
+		display: flex;
+		gap: 6px;
+		overflow-x: auto;
+		padding: 4px 2px 6px;
+		scroll-behavior: smooth;
+		scrollbar-width: none;
+	}
+
+	.strip::-webkit-scrollbar {
+		display: none;
+	}
+
+	.strip-chip {
+		flex: 0 0 auto;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
+		padding: 8px 10px 7px;
+		min-width: 52px;
+		border-radius: 12px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		color: var(--text2);
+		font-family: var(--ff-b);
+		cursor: pointer;
+		position: relative;
+		transition: transform 0.1s, border-color 0.18s;
+	}
+
+	.strip-chip:active {
+		transform: scale(0.96);
+	}
+
+	.strip-chip.erFremtid {
+		opacity: 0.45;
+		cursor: not-allowed;
+		background: var(--bg2);
+	}
+
+	.strip-chip.erIDag {
+		border-color: var(--terra);
+	}
+
+	.strip-chip.erValgt {
+		background: var(--terra);
+		color: #fff;
+		border-color: var(--terra);
+	}
+
+	.chip-ugedag {
+		font-size: 9px;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.strip-chip.erValgt .chip-ugedag {
+		color: rgba(255, 255, 255, 0.85);
+	}
+
+	.chip-dag {
+		font-family: var(--ff-d);
+		font-size: 17px;
+		font-weight: 700;
+		line-height: 1;
+		color: var(--text);
+	}
+
+	.strip-chip.erValgt .chip-dag {
+		color: #fff;
+	}
+
+	.chip-num {
+		font-size: 9px;
+		color: var(--text3);
+		letter-spacing: 0.04em;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.strip-chip.erValgt .chip-num {
+		color: rgba(255, 255, 255, 0.85);
+	}
+
+	.chip-prik {
+		position: absolute;
+		bottom: 4px;
+		right: 6px;
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+		background: var(--terra);
+	}
+
+	.strip-chip.erValgt .chip-prik {
+		background: #fff;
+	}
+
+	.ingen-lektion {
+		padding: 18px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		color: var(--text3);
+		font-size: 13px;
+		text-align: center;
 	}
 
 	/* ── Lektion-card ──────────────────────────────────────────── */
