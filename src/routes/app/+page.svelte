@@ -131,29 +131,56 @@
 		href: string;
 	};
 
-	const actions = $derived<ActionGenvej[]>([
-		{
-			modul: 'kost',
-			eyebrow: 'Kost',
-			titel: 'Log dagens måltider',
-			meta: '30-30 beregner, byg måltid og se opskrifter',
-			href: '/app/moduler/30-30-3'
-		},
-		{
-			modul: 'traening',
-			eyebrow: 'Træning',
-			titel: 'Mikrotræning',
-			meta: 'Korte daglige sessioner',
-			href: traeningHref
-		},
-		{
-			modul: 'vaner',
-			eyebrow: 'Vaner',
-			titel: 'Tjek dagens vaner',
-			meta: 'Refleksion og daglige checks',
-			href: '/app/moduler/vaner'
+	// Genveje tilpasses den valgte dag i strippen:
+	//   Dag 0 (baseline): kun baseline check-in (under Vaner)
+	//   Dag 1-antalDage: Kost, Træning og Vaner. Vaner-href peger på den
+	//     specifikke dag så Linn kan rette tilbage i tidligere dages svar.
+	//   Andet (ingen forløb / efter forløbet): ingen genveje
+	const actions = $derived.by<ActionGenvej[]>(() => {
+		const n = valgtDagNummer ?? aktivDagNummer;
+		const antal = forlob?.antalDage ?? 21;
+		if (n === null) return [];
+
+		if (n === 0) {
+			return [
+				{
+					modul: 'vaner',
+					eyebrow: 'Vaner',
+					titel: 'Baseline check-in',
+					meta: 'Mærk dit udgangspunkt før forløbet starter',
+					href: '/app/moduler/vaner/0'
+				}
+			];
 		}
-	]);
+
+		if (n >= 1 && n <= antal) {
+			return [
+				{
+					modul: 'kost',
+					eyebrow: 'Kost',
+					titel: 'Log dagens måltider',
+					meta: '30-30 beregner, byg måltid og se opskrifter',
+					href: '/app/moduler/30-30-3'
+				},
+				{
+					modul: 'traening',
+					eyebrow: 'Træning',
+					titel: 'Mikrotræning',
+					meta: 'Korte daglige sessioner',
+					href: traeningHref
+				},
+				{
+					modul: 'vaner',
+					eyebrow: 'Vaner',
+					titel: 'Tjek dagens vaner',
+					meta: 'Refleksion og daglige checks',
+					href: `/app/moduler/vaner/${n}`
+				}
+			];
+		}
+
+		return [];
+	});
 
 	type ModulGenvej = {
 		navn: string;
@@ -381,32 +408,40 @@
 				</section>
 			{/if}
 
-			<section class="actions-section">
-				<div class="actions-header">
-					<div class="eyebrow eyebrow-muted">Dagens små skridt</div>
-				</div>
-				<div class="actions-list">
-					{#each actions as action (action.modul)}
-						<a class="action-card" href={action.href}>
-							<div class="action-icon" style="background: {getActionAccentDim(action.modul)}">
-								<Icon
-									name={getActionIcon(action.modul)}
-									size={15}
-									color={getActionAccent(action.modul)}
-								/>
-							</div>
-							<div class="action-text">
-								<div class="action-eyebrow" style="color: {getActionAccent(action.modul)}">
-									{action.eyebrow}
+			{#if actions.length > 0}
+				<section class="actions-section">
+					<div class="actions-header">
+						<div class="eyebrow eyebrow-muted">Dagens små skridt</div>
+					</div>
+					<div class="actions-list">
+						{#each actions as action (action.modul)}
+							<a class="action-card" href={action.href}>
+								<div
+									class="action-icon"
+									style="background: {getActionAccentDim(action.modul)}"
+								>
+									<Icon
+										name={getActionIcon(action.modul)}
+										size={15}
+										color={getActionAccent(action.modul)}
+									/>
 								</div>
-								<div class="action-title">{action.titel}</div>
-								<div class="action-meta">{action.meta}</div>
-							</div>
-							<Icon name="chevron-r" size={14} color="var(--text3)" />
-						</a>
-					{/each}
-				</div>
-			</section>
+								<div class="action-text">
+									<div
+										class="action-eyebrow"
+										style="color: {getActionAccent(action.modul)}"
+									>
+										{action.eyebrow}
+									</div>
+									<div class="action-title">{action.titel}</div>
+									<div class="action-meta">{action.meta}</div>
+								</div>
+								<Icon name="chevron-r" size={14} color="var(--text3)" />
+							</a>
+						{/each}
+					</div>
+				</section>
+			{/if}
 
 			{#if dagensDag && dagensDag.noteFraLinn}
 				<section class="note-section">
