@@ -4,7 +4,13 @@ import {
 	sorterItems,
 	kunUdgivne,
 	grupperEfterKategori,
-	naesteOrden
+	naesteOrden,
+	detekterGuideType,
+	youtubeId,
+	vimeoId,
+	videoEmbedUrl,
+	sorterGuides,
+	formatDanskDato
 } from './bibliotek';
 
 describe('sorterKategorier', () => {
@@ -95,5 +101,125 @@ describe('naesteOrden', () => {
 
 	it('returnerer max+1', () => {
 		expect(naesteOrden([{ orden: 0 }, { orden: 5 }, { orden: 2 }])).toBe(6);
+	});
+});
+
+describe('detekterGuideType', () => {
+	it('genkender YouTube-URLs som video', () => {
+		expect(detekterGuideType('https://www.youtube.com/watch?v=abc123')).toBe('video');
+		expect(detekterGuideType('https://youtu.be/abc123')).toBe('video');
+	});
+
+	it('genkender Vimeo-URLs som video', () => {
+		expect(detekterGuideType('https://vimeo.com/123456')).toBe('video');
+	});
+
+	it('genkender PDF-URLs', () => {
+		expect(detekterGuideType('https://example.com/dokument.pdf')).toBe('pdf');
+		expect(detekterGuideType('https://example.com/dokument.pdf?id=1')).toBe('pdf');
+	});
+
+	it('genkender lyd-filer', () => {
+		expect(detekterGuideType('https://example.com/lyd.mp3')).toBe('audio');
+		expect(detekterGuideType('https://example.com/lyd.m4a')).toBe('audio');
+	});
+
+	it('returnerer link som fallback', () => {
+		expect(detekterGuideType('https://example.com')).toBe('link');
+		expect(detekterGuideType('')).toBe('link');
+	});
+});
+
+describe('youtubeId', () => {
+	it('udtrækker id fra ?v=-format', () => {
+		expect(youtubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
+	});
+
+	it('udtrækker id fra youtu.be-format', () => {
+		expect(youtubeId('https://youtu.be/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
+	});
+
+	it('udtrækker id fra embed-format', () => {
+		expect(youtubeId('https://www.youtube.com/embed/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
+	});
+
+	it('udtrækker id fra shorts-format', () => {
+		expect(youtubeId('https://www.youtube.com/shorts/abc123def')).toBe('abc123def');
+	});
+
+	it('returnerer null for ikke-YouTube-URLs', () => {
+		expect(youtubeId('https://vimeo.com/123')).toBeNull();
+		expect(youtubeId('')).toBeNull();
+	});
+});
+
+describe('vimeoId', () => {
+	it('udtrækker id fra vimeo.com/N-format', () => {
+		expect(vimeoId('https://vimeo.com/123456789')).toBe('123456789');
+	});
+
+	it('udtrækker id fra vimeo.com/video/N-format', () => {
+		expect(vimeoId('https://vimeo.com/video/123456789')).toBe('123456789');
+	});
+
+	it('returnerer null for ikke-Vimeo-URLs', () => {
+		expect(vimeoId('https://youtube.com/watch?v=abc')).toBeNull();
+	});
+});
+
+describe('videoEmbedUrl', () => {
+	it('bygger YouTube embed-URL', () => {
+		expect(videoEmbedUrl('https://youtu.be/abc123')).toBe(
+			'https://www.youtube.com/embed/abc123'
+		);
+	});
+
+	it('bygger Vimeo embed-URL', () => {
+		expect(videoEmbedUrl('https://vimeo.com/123')).toBe('https://player.vimeo.com/video/123');
+	});
+
+	it('returnerer null for ukendte URL-formater', () => {
+		expect(videoEmbedUrl('https://example.com/video.mp4')).toBeNull();
+	});
+});
+
+describe('sorterGuides', () => {
+	it('sorterer nyeste dato øverst', () => {
+		const ud = sorterGuides([
+			{ id: 'a', dato: '2026-01-01', orden: 0 },
+			{ id: 'b', dato: '2026-05-01', orden: 0 },
+			{ id: 'c', dato: '2026-03-01', orden: 0 }
+		]);
+		expect(ud.map((i) => i.id)).toEqual(['b', 'c', 'a']);
+	});
+
+	it('items uden dato lander nederst', () => {
+		const ud = sorterGuides([
+			{ id: 'a', dato: '', orden: 0 },
+			{ id: 'b', dato: '2026-05-01', orden: 0 }
+		]);
+		expect(ud.map((i) => i.id)).toEqual(['b', 'a']);
+	});
+
+	it('items uden dato sorteres efter orden indbyrdes', () => {
+		const ud = sorterGuides([
+			{ id: 'a', dato: '', orden: 2 },
+			{ id: 'b', dato: '', orden: 0 },
+			{ id: 'c', dato: '', orden: 1 }
+		]);
+		expect(ud.map((i) => i.id)).toEqual(['b', 'c', 'a']);
+	});
+});
+
+describe('formatDanskDato', () => {
+	it('formaterer ISO til dansk', () => {
+		expect(formatDanskDato('2026-05-08')).toBe('8. maj 2026');
+		expect(formatDanskDato('2026-01-01')).toBe('1. januar 2026');
+		expect(formatDanskDato('2026-12-24')).toBe('24. december 2026');
+	});
+
+	it('returnerer tom streng for ugyldigt input', () => {
+		expect(formatDanskDato('')).toBe('');
+		expect(formatDanskDato('ikke-en-dato')).toBe('');
 	});
 });
