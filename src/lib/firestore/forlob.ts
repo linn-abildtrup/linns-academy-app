@@ -91,27 +91,46 @@ export async function sletForlob(forlobId: string): Promise<void> {
 }
 
 /**
- * Kopierer alt indhold (vaneprogram-dage osv.) fra et eksisterende forløb
- * til et nyt. Senere udvides funktionen til også at kopiere FAQ, guides
- * og andet forløbs-specifikt indhold når de moduler bygges.
+ * Kopierer alt indhold (vaneprogram-dage, FAQ-kategorier, FAQ-items) fra et
+ * eksisterende forløb til et nyt. Senere udvides funktionen til også at
+ * kopiere guides og andet forløbs-specifikt indhold når de moduler bygges.
  *
  * Bruges når et nyt forløb oprettes baseret på et tidligere — fx Linn
  * laver "Kickstart august 2026" med samme spørgsmål som maj-forløbet.
  *
- * Idempotent: hvis det nye forløb allerede har dage, overskrives de.
+ * FAQ-items beholder deres reference til kategorierne via kategoriId,
+ * og fordi vi kopierer kategorierne med deres oprindelige id (samme
+ * doc-id) bevares forholdet i det nye forløb.
+ *
+ * Idempotent: hvis det nye forløb allerede har indhold, overskrives det.
  */
 export async function kopierForlobIndhold(
 	fraForlobId: string,
 	tilForlobId: string
-): Promise<{ vaneprogramDage: number }> {
-	const fraVane = await getDocs(collection(db, 'forlob', fraForlobId, 'vaneprogram'));
+): Promise<{ vaneprogramDage: number; faqKategorier: number; faqItems: number }> {
+	const [fraVane, fraFaqKats, fraFaqItems] = await Promise.all([
+		getDocs(collection(db, 'forlob', fraForlobId, 'vaneprogram')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'faqKategorier')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'faqItems'))
+	]);
+
 	const batch = writeBatch(db);
 	for (const d of fraVane.docs) {
-		const dest = doc(db, 'forlob', tilForlobId, 'vaneprogram', d.id);
-		batch.set(dest, d.data());
+		batch.set(doc(db, 'forlob', tilForlobId, 'vaneprogram', d.id), d.data());
+	}
+	for (const d of fraFaqKats.docs) {
+		batch.set(doc(db, 'forlob', tilForlobId, 'faqKategorier', d.id), d.data());
+	}
+	for (const d of fraFaqItems.docs) {
+		batch.set(doc(db, 'forlob', tilForlobId, 'faqItems', d.id), d.data());
 	}
 	await batch.commit();
-	return { vaneprogramDage: fraVane.size };
+
+	return {
+		vaneprogramDage: fraVane.size,
+		faqKategorier: fraFaqKats.size,
+		faqItems: fraFaqItems.size
+	};
 }
 
 // ==============================================
