@@ -308,7 +308,7 @@ export function renseIngrediensNavn(navn: string): string {
 		.replace(/^(ca\.?\s+)?\d+([.,/]\d+)?\s*(g|kg|ml|dl|l|stk|spsk|tsk|knsp|knivspids|håndfuld|skive|skiver|kop|kopper|glas|dåse|dåser|pose|poser|fed|fede|klove|stang|stænger|bundt|bundter|stilk|stilke)\s+/i, '')
 		.replace(/^(ca\.?\s+)?\d+([.,/]\d+)?\s+/i, '')
 		.replace(/^(en|et|to|tre|fire|fem|seks|syv|otte|ni|ti|halv|halvt|en halv|et halvt)\s+/i, '')
-		.replace(/^(stor|stort|store|lille|lillebitte|små|mellem|mellemstor|halv|halvt|kvart)\s+/i, '')
+		.replace(/^(stor|stort|store|lille|lillebitte|små|mellem|mellemstor|halv|halvt|kvart|håndfuld|en\s+håndfuld|et\s+nip)\s+/i, '')
 		.replace(/^(fed|fede|klove)\s+/i, '')
 		.replace(/^(stang|stænger|bundt|bundter|stilk|stilke|dåse|dåser|pose|poser)\s+/i, '');
 	// Fjern indledende tilberedningsord
@@ -393,6 +393,50 @@ export function findFodevareForIngrediens(
 }
 
 /**
+ * Liste af kendte suffikser/præfikser på sammensatte danske fødevareord.
+ * Bruges af stemVarianter til at "spalte" sammensatte ord til forsøg på
+ * match mod databasen.
+ */
+const COMPOUND_SUFFIKSER = [
+	'filet',
+	'fileter',
+	'skive',
+	'skiver',
+	'kerne',
+	'kerner',
+	'pulver',
+	'flager',
+	'flage',
+	'kiks',
+	'plader',
+	'plade',
+	'ris',
+	'bønner',
+	'tortilla',
+	'lasagne',
+	'pasta',
+	'sennep',
+	'mayonnaise',
+	'dressing',
+	'sauce',
+	'olie',
+	'eddike',
+	'mælk',
+	'yoghurt',
+	'ost'
+];
+
+const COMPOUND_PREFIKSER = [
+	'fuldkorns',
+	'fuldkorn',
+	'snack',
+	'øko',
+	'bio',
+	'økologisk',
+	'dijon'
+];
+
+/**
  * Returnerer kandidat-stems for et ord — bruges som sidste fallback i
  * matching. Fanger fx 'cherrytomater' → 'cherrytomat',
  * 'laksefilet' → 'laks', 'kyllingebryster' → 'kyllingebryst'.
@@ -405,13 +449,37 @@ function stemVarianter(ord: string): string[] {
 	if (ord.endsWith('ler') && ord.length > 5) ud.push(ord.slice(0, -3) + 'el');
 	if (ord.endsWith('er') && ord.length > 4) ud.push(ord.slice(0, -2));
 	if (ord.endsWith('e') && ord.length > 4) ud.push(ord.slice(0, -1));
-	// Sammensatte suffix på fx 'laksefilet', 'rugbrødskiks'
-	for (const suffix of ['filet', 'fileter', 'skive', 'skiver', 'kerne', 'kerner']) {
+	// Sammensatte suffix på fx 'laksefilet', 'rugbrødskiks', 'chiliflager'
+	for (const suffix of COMPOUND_SUFFIKSER) {
 		const idx = ord.lastIndexOf(suffix);
 		if (idx > 1 && idx + suffix.length === ord.length) {
 			let stamme = ord.slice(0, idx);
 			if (stamme.endsWith('e') || stamme.endsWith('s')) stamme = stamme.slice(0, -1);
 			if (stamme.length >= 3) ud.push(stamme);
+			// Også prøv selve suffikset som standalone ord
+			// — fx 'rugbrødskiks' → 'kiks'
+			ud.push(suffix);
+		}
+	}
+	// Sammensatte præfiks: 'fuldkornstortilla' → 'tortilla',
+	// 'snackpeber' → 'peber'
+	for (const prefix of COMPOUND_PREFIKSER) {
+		if (ord.startsWith(prefix) && ord.length > prefix.length + 2) {
+			let rest = ord.slice(prefix.length);
+			if (rest.startsWith('s')) rest = rest.slice(1);
+			if (rest.length >= 3) {
+				ud.push(rest);
+				// Rekursiv: hvis 'rest' har en compound suffix også
+				// — fx 'fuldkornslasagneplader' → 'lasagneplader' → 'lasagne'
+				for (const suffix of COMPOUND_SUFFIKSER) {
+					const idx = rest.lastIndexOf(suffix);
+					if (idx > 1 && idx + suffix.length === rest.length) {
+						let stamme = rest.slice(0, idx);
+						if (stamme.endsWith('e') || stamme.endsWith('s')) stamme = stamme.slice(0, -1);
+						if (stamme.length >= 3) ud.push(stamme);
+					}
+				}
+			}
 		}
 	}
 	return ud;
