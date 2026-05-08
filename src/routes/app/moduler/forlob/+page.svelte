@@ -21,6 +21,7 @@
 	let fejl = $state<string | null>(null);
 
 	let aabenLektion = $state<LektionItem | null>(null);
+	let lektionFraQueryParam = $state(false);
 
 	const aktivDagNr = $derived.by<number | null>(() => {
 		if (!forlob) return null;
@@ -63,7 +64,11 @@
 
 	function lukLektion() {
 		aabenLektion = null;
-		// Ryd query-param så lektion ikke åbnes igen ved tilbagenavigation
+		if (lektionFraQueryParam && typeof history !== 'undefined' && history.length > 1) {
+			lektionFraQueryParam = false;
+			history.back();
+			return;
+		}
 		const url = new URL(page.url);
 		if (url.searchParams.has('lektion')) {
 			url.searchParams.delete('lektion');
@@ -122,6 +127,7 @@
 				for (const dag of dage) {
 					const fundet = dag.lektioner.find((l) => l.id === ønsketId);
 					if (fundet) {
+						lektionFraQueryParam = true;
 						aabnLektionItem(fundet);
 						break;
 					}
