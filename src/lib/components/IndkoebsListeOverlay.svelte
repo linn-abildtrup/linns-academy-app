@@ -13,6 +13,19 @@
 	} from '$lib/content/indkoebsliste';
 	import { genererPDF } from '$lib/content/indkoebsliste-pdf';
 
+	// Action der flytter elementet til document.body så det kommer ud af
+	// app-shellens stacking context og lægger sig over TabBar etc.
+	function portalToBody(node: HTMLElement) {
+		document.body.appendChild(node);
+		return {
+			destroy() {
+				if (node.parentNode === document.body) {
+					document.body.removeChild(node);
+				}
+			}
+		};
+	}
+
 	interface Props {
 		items: IndkoebsItem[];
 		valgte: ValgteOpskrifter;
@@ -110,6 +123,7 @@
 	role="button"
 	tabindex="0"
 	aria-label="Luk indkøbsliste"
+	use:portalToBody
 	onclick={(e) => e.target === e.currentTarget && onClose()}
 	onkeydown={(e) => (e.key === 'Escape' || e.key === 'Enter') && onClose()}
 >
