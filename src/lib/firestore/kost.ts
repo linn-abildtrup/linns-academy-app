@@ -120,6 +120,19 @@ export async function hentFavoritter(uid: string): Promise<FavoritMaaltid[]> {
 }
 
 /**
+ * Opdaterer en eksisterende favorit. Bruges når brugeren redigerer
+ * navnet eller ingredienserne på en favorit-skabelon.
+ */
+export async function opdaterFavorit(
+	uid: string,
+	favoritId: string,
+	data: Omit<FavoritMaaltid, 'id'>
+): Promise<void> {
+	const ref = doc(db, 'users', uid, 'favoritmaaltider', favoritId);
+	await setDoc(ref, { ...data, opdateret: serverTimestamp() }, { merge: true });
+}
+
+/**
  * Sletter en favorit.
  */
 export async function sletFavorit(uid: string, favoritId: string): Promise<void> {

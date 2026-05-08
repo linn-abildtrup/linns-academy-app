@@ -31,6 +31,7 @@
 		gemMaaltid,
 		hentFavoritter,
 		hentMaaltiderForDato,
+		opdaterFavorit,
 		sletFavorit,
 		sletMaaltid
 	} from '$lib/firestore/kost';
@@ -115,6 +116,10 @@
 
 	// Favoritter
 	let favoritter = $state<FavoritMaaltid[]>([]);
+	let redigererFavorit = $state<{ id: string; navn: string } | null>(null);
+	let redigerNavn = $state('');
+	let opdaterer = $state(false);
+	let redigerBesked = $state<{ tekst: string; type: 'ok' | 'fejl' } | null>(null);
 
 	const filtreret = $derived(
 		sorterFodevarer(filtrerFodevarer(foods, soegeord, aktivKategori), sortMode)
@@ -206,6 +211,59 @@
 			favoritter = favoritter.filter((f) => f.id !== id);
 		} catch (e) {
 			console.error(e);
+		}
+	}
+
+	function startRedigerFavorit(fav: FavoritMaaltid) {
+		if (maaltid.length > 0) {
+			const ok = confirm(
+				'Du har et måltid i gang. Det erstattes af favoritten du vil redigere.'
+			);
+			if (!ok) return;
+		}
+		maaltid = fav.items.map((i) => ({ ...i }));
+		redigererFavorit = { id: fav.id, navn: fav.navn };
+		redigerNavn = fav.navn;
+		redigerBesked = null;
+		skiftTab('maaltid');
+	}
+
+	function annullerRediger() {
+		const ok = confirm('Kassér ændringer? Favoritten forbliver uændret.');
+		if (!ok) return;
+		maaltid = [];
+		localStorage.setItem(STORAGE_KEY, '[]');
+		redigererFavorit = null;
+		redigerBesked = null;
+	}
+
+	async function gemRedigeretFavorit() {
+		const u = user;
+		const aktiv = redigererFavorit;
+		if (!u || !aktiv || opdaterer) return;
+		const navn = redigerNavn.trim();
+		if (!navn) {
+			redigerBesked = { tekst: 'Favoritten skal have et navn.', type: 'fejl' };
+			return;
+		}
+		if (maaltid.length === 0) {
+			redigerBesked = { tekst: 'Tilføj mindst én ingrediens.', type: 'fejl' };
+			return;
+		}
+		opdaterer = true;
+		redigerBesked = null;
+		try {
+			await opdaterFavorit(u.uid, aktiv.id, { navn, items: maaltid });
+			await indlaesFavoritter();
+			maaltid = [];
+			localStorage.setItem(STORAGE_KEY, '[]');
+			redigererFavorit = null;
+			redigerBesked = null;
+		} catch (e) {
+			console.error(e);
+			redigerBesked = { tekst: 'Kunne ikke opdatere favoritten. Prøv igen.', type: 'fejl' };
+		} finally {
+			opdaterer = false;
 		}
 	}
 
@@ -541,7 +599,30 @@
 				{/if}
 			</div>
 		{:else if aktivTab === 'maaltid'}
-			{#if favoritter.length > 0}
+			{#if redigererFavorit}
+				<div class="rediger-banner">
+					<div class="rediger-banner-tekst">
+						<div class="rediger-banner-lbl">Redigerer favorit</div>
+						<input
+							class="rediger-navn-input"
+							type="text"
+							bind:value={redigerNavn}
+							disabled={opdaterer}
+						/>
+					</div>
+					<button
+						class="rediger-banner-luk"
+						type="button"
+						onclick={annullerRediger}
+						disabled={opdaterer}
+						aria-label="Annullér"
+					>
+						×
+					</button>
+				</div>
+			{/if}
+
+			{#if favoritter.length > 0 && !redigererFavorit}
 				<div class="favorit-sektion">
 					<div class="favorit-overskrift">Mine favoritter</div>
 					<div class="favorit-rad">
@@ -555,14 +636,26 @@
 									<span class="favorit-navn">{f.navn}</span>
 									<span class="favorit-antal">{f.items.length} ingredienser</span>
 								</button>
-								<button
-									class="favorit-slet"
-									type="button"
-									onclick={() => sletFavoritKlik(f.id, f.navn)}
-									aria-label="Slet favorit"
-								>
-									×
-								</button>
+								<div class="favorit-handlinger">
+									<button
+										class="favorit-mini"
+										type="button"
+										onclick={() => startRedigerFavorit(f)}
+										aria-label="Rediger favorit"
+										title="Rediger"
+									>
+										✎
+									</button>
+									<button
+										class="favorit-mini"
+										type="button"
+										onclick={() => sletFavoritKlik(f.id, f.navn)}
+										aria-label="Slet favorit"
+										title="Slet"
+									>
+										×
+									</button>
+								</div>
 							</div>
 						{/each}
 					</div>
@@ -677,7 +770,23 @@
 			<button class="primary-knap" type="button" onclick={aabnPicker}>
 				+ Tilføj fødevare
 			</button>
-			{#if maaltid.length > 0}
+
+			{#if redigererFavorit}
+				{#if redigerBesked}
+					<div class="gem-besked {redigerBesked.type}">{redigerBesked.tekst}</div>
+				{/if}
+				<button
+					class="primary-knap sage"
+					type="button"
+					onclick={gemRedigeretFavorit}
+					disabled={opdaterer}
+				>
+					{opdaterer ? 'Opdaterer...' : 'Gem ændringer i favorit'}
+				</button>
+				<button class="ghost-knap" type="button" onclick={annullerRediger} disabled={opdaterer}>
+					Annullér redigering
+				</button>
+			{:else if maaltid.length > 0}
 				<button class="primary-knap sage" type="button" onclick={aabnGemModal}>
 					Gem måltidet i dagbog
 				</button>
@@ -1778,17 +1887,22 @@
 		color: var(--text3);
 	}
 
-	.favorit-slet {
+	.favorit-handlinger {
 		position: absolute;
 		top: 4px;
 		right: 4px;
+		display: flex;
+		gap: 4px;
+	}
+
+	.favorit-mini {
 		width: 22px;
 		height: 22px;
 		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.85);
+		background: rgba(255, 255, 255, 0.9);
 		border: 1px solid var(--border);
 		color: var(--text3);
-		font-size: 14px;
+		font-size: 12px;
 		cursor: pointer;
 		font-family: var(--ff-b);
 		line-height: 1;
@@ -1798,7 +1912,70 @@
 		padding: 0;
 	}
 
-	.favorit-slet:hover {
+	.favorit-mini:hover {
+		background: var(--terra);
+		color: #fff;
+		border-color: var(--terra);
+	}
+
+	.rediger-banner {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 12px;
+		background: var(--tdim);
+		border: 1px solid var(--terra);
+		border-radius: 12px;
+		margin-bottom: 14px;
+	}
+
+	.rediger-banner-tekst {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.rediger-banner-lbl {
+		font-size: 10.5px;
+		font-weight: 600;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--terra);
+	}
+
+	.rediger-navn-input {
+		padding: 7px 10px;
+		font-size: 14px;
+		font-weight: 600;
+		border-radius: 8px;
+		border: 1px solid var(--border);
+		background: var(--white);
+		color: var(--text);
+		font-family: var(--ff-b);
+		outline: none;
+		width: 100%;
+	}
+
+	.rediger-navn-input:focus {
+		border-color: var(--terra);
+	}
+
+	.rediger-banner-luk {
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		background: var(--white);
+		border: 1px solid var(--border);
+		color: var(--text2);
+		font-size: 18px;
+		cursor: pointer;
+		font-family: var(--ff-b);
+		flex-shrink: 0;
+	}
+
+	.rediger-banner-luk:hover {
 		background: #fbeeea;
 		color: #8a4a3e;
 	}
