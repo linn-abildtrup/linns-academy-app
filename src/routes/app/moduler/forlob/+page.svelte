@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
+	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
 	import type { User } from 'firebase/auth';
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import type { Forlob } from '$lib/content/forlobAdgang';
@@ -61,6 +63,12 @@
 
 	function lukLektion() {
 		aabenLektion = null;
+		// Ryd query-param så lektion ikke åbnes igen ved tilbagenavigation
+		const url = new URL(page.url);
+		if (url.searchParams.has('lektion')) {
+			url.searchParams.delete('lektion');
+			replaceState(url, page.state);
+		}
 	}
 
 	const aabenEmbed = $derived(
@@ -107,6 +115,18 @@
 			}
 			forlob = f;
 			forlobsdage = dage;
+
+			// Auto-åbn lektion fra query-param (fx fra forsidens dagens-lektion-card)
+			const ønsketId = page.url.searchParams.get('lektion');
+			if (ønsketId) {
+				for (const dag of dage) {
+					const fundet = dag.lektioner.find((l) => l.id === ønsketId);
+					if (fundet) {
+						aabnLektionItem(fundet);
+						break;
+					}
+				}
+			}
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente forløb. Prøv igen.';

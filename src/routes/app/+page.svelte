@@ -4,10 +4,11 @@
 	import type { UserDoc } from '$lib/types';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import type { ForlobDag } from '$lib/content/forlob';
-	import type { UserProduct } from '$lib/content/mikrotraening';
+	import type { MikrotraeningFremgang, UserProduct } from '$lib/content/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 	import { getGreetingWithName } from '$lib/utils/greeting';
 	import { formatDato, getCurrentDay, tomForlobDag } from '$lib/content/forlob';
+	import { naesteDag } from '$lib/content/mikrotraening';
 	import { hentForlob, hentForlobsdag } from '$lib/firestore/forlob';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 
@@ -22,11 +23,26 @@
 
 	let forlob = $state<Forlob | null>(null);
 	let dagensDag = $state<ForlobDag | null>(null);
+	let userProduct = $state<UserProduct | null>(null);
 
 	const dayNumber = $derived.by<number | null>(() => {
 		if (!forlob) return null;
 		const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
 		return getCurrentDay({ startDato, antalDage: forlob.antalDage });
+	});
+
+	// Beregner næste mikrotræning-dag fra brugerens fremgang. Falder tilbage til
+	// /traening-oversigten hvis brugeren ikke har valgt et program endnu.
+	const traeningHref = $derived.by<string>(() => {
+		const programId = userProduct?.programValg?.mikrotraening;
+		if (!programId) return '/app/moduler/traening/mikrotraening';
+		const fremgang = (userProduct?.fremgang?.mikrotraening as MikrotraeningFremgang | undefined) ?? {
+			gennemforte: [],
+			feedback: {}
+		};
+		const naeste = naesteDag(fremgang, 21);
+		if (naeste === null) return '/app/moduler/traening/mikrotraening';
+		return `/app/moduler/traening/mikrotraening/${naeste}`;
 	});
 
 	type ActionGenvej = {
@@ -37,12 +53,12 @@
 		href: string;
 	};
 
-	const actions: ActionGenvej[] = [
+	const actions = $derived<ActionGenvej[]>([
 		{
 			modul: 'kost',
 			eyebrow: 'Kost',
 			titel: 'Log dagens måltider',
-			meta: '30-30-3, byg måltid og se opskrifter',
+			meta: '30-30 beregner, byg måltid og se opskrifter',
 			href: '/app/moduler/30-30-3'
 		},
 		{
@@ -50,7 +66,7 @@
 			eyebrow: 'Træning',
 			titel: 'Mikrotræning',
 			meta: 'Korte daglige sessioner',
-			href: '/app/moduler/traening'
+			href: traeningHref
 		},
 		{
 			modul: 'vaner',
@@ -59,7 +75,7 @@
 			meta: 'Refleksion og daglige checks',
 			href: '/app/moduler/vaner'
 		}
-	];
+	]);
 
 	type ModulGenvej = {
 		navn: string;
@@ -89,7 +105,7 @@
 		},
 		{
 			navn: 'Kost',
-			meta: '30-30-3',
+			meta: '30-30 beregner',
 			ikon: 'leaf',
 			accent: 'var(--sage)',
 			dim: 'var(--sdim)',
@@ -158,6 +174,7 @@
 		if (!u || ud?.state !== 'forlobskunde') {
 			forlob = null;
 			dagensDag = null;
+			userProduct = null;
 			return;
 		}
 		void indlaesForlob(u.uid);
@@ -167,6 +184,7 @@
 		try {
 			const up = await hentUserProduct(uid, 'kickstart');
 			if (!up) return;
+			userProduct = up;
 			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
 			if (!forlobId) return;
 			const f = await hentForlob(forlobId);
@@ -215,7 +233,7 @@
 				{#each dagensDag.lektioner as lektion (lektion.id)}
 					<section class="lektion-section">
 						<div class="eyebrow eyebrow-terra">Dagens lektion</div>
-						<a class="lektion-card" href="/app/moduler/forlob">
+						<a class="lektion-card" href="/app/moduler/forlob?lektion={lektion.id}">
 							<div class="lektion-decoration lektion-decoration-1"></div>
 							<div class="lektion-decoration lektion-decoration-2"></div>
 							<div class="lektion-content">
