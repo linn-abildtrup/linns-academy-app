@@ -425,6 +425,22 @@
 				</section>
 			{/if}
 
+			{#if nyestUbeskrevneSvar}
+				<section class="nyt-svar-section">
+					<a class="nyt-svar-card" href="/app/spoergsmaal">
+						<div class="nyt-svar-eyebrow">
+							<span class="nyt-svar-prik"></span>
+							Nyt svar fra Linn
+						</div>
+						<div class="nyt-svar-spoergsmaal">{nyestUbeskrevneSvar.spoergsmaal}</div>
+						<div class="nyt-svar-tekst">{nyestUbeskrevneSvar.svar}</div>
+						<div class="nyt-svar-link">Læs alle dine spørgsmål
+							<Icon name="arrow" size={12} color="var(--terra)" />
+						</div>
+					</a>
+				</section>
+			{/if}
+
 			{#if actions.length > 0}
 				<section class="actions-section">
 					<div class="actions-header">
@@ -490,22 +506,6 @@
 					</div>
 				</a>
 			</section>
-
-			{#if nyestUbeskrevneSvar}
-				<section class="nyt-svar-section">
-					<a class="nyt-svar-card" href="/app/spoergsmaal">
-						<div class="nyt-svar-eyebrow">
-							<span class="nyt-svar-prik"></span>
-							Nyt svar fra Linn
-						</div>
-						<div class="nyt-svar-spoergsmaal">{nyestUbeskrevneSvar.spoergsmaal}</div>
-						<div class="nyt-svar-tekst">{nyestUbeskrevneSvar.svar}</div>
-						<div class="nyt-svar-link">Læs alle dine spørgsmål
-							<Icon name="arrow" size={12} color="var(--terra)" />
-						</div>
-					</a>
-				</section>
-			{/if}
 
 			<section class="spq-section">
 				<div class="eyebrow eyebrow-muted">
