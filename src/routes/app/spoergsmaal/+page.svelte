@@ -6,6 +6,7 @@
 	import {
 		gemSpoergsmaal,
 		hentMineSpoergsmaal,
+		markerSpoergsmaalLaest,
 		SPOERGSMAAL_MAX_LAENGDE,
 		type KlientSpoergsmaal
 	} from '$lib/firestore/spoergsmaal';
@@ -29,6 +30,9 @@
 		if (!u) return;
 		try {
 			mine = await hentMineSpoergsmaal(u.uid);
+			// Markér alle besvarelser som læst nu — bruges af forsiden til
+			// at fjerne notifikations-prikken og det inline svar-card.
+			void markerSpoergsmaalLaest(u.uid);
 		} catch (e) {
 			console.warn('Kunne ikke hente egne spørgsmål', e);
 		}

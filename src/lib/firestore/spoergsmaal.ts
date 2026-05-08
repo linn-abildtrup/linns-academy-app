@@ -113,6 +113,18 @@ export async function svarPaaSpoergsmaal(id: string, svar: string): Promise<void
 }
 
 /**
+ * Markerer at brugeren har set sine spørgsmål-svar nu. Skriver til
+ * userDoc fordi det er rule-frit (brugeren har skriveadgang til sin
+ * egen brugerdokument). Bruges af forsiden til at vise notifikations-
+ * prik på spørgsmål-cardet når der er ubeskrevne svar.
+ */
+export async function markerSpoergsmaalLaest(uid: string): Promise<void> {
+	await updateDoc(doc(db, 'users', uid), {
+		senestSpoergsmaalLaestAt: Date.now()
+	});
+}
+
+/**
  * Henter en bestemt klients egne spørgsmål, sorteret med nyeste først.
  * Bruges på klientens "Mine spørgsmål"-side så de kan se Linns svar.
  */

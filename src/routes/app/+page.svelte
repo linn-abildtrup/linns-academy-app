@@ -11,6 +11,7 @@
 	import { naesteDag } from '$lib/content/mikrotraening';
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
+	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const getUser = getContext<() => User | null>('user');
@@ -25,6 +26,18 @@
 	let forlobsdage = $state<ForlobDag[]>([]);
 	let userProduct = $state<UserProduct | null>(null);
 	let valgtDagNummer = $state<number | null>(null);
+	let mineSpoergsmaal = $state<KlientSpoergsmaal[]>([]);
+
+	const ubeskrivedeSpoergsmaal = $derived.by<KlientSpoergsmaal[]>(() => {
+		const senest = userDoc?.senestSpoergsmaalLaestAt ?? 0;
+		return mineSpoergsmaal.filter((q) => {
+			if (!q.svar || !q.besvaretAt) return false;
+			const besvaretMs = q.besvaretAt.toDate().getTime();
+			return besvaretMs > senest;
+		});
+	});
+
+	const nyestUbeskrevneSvar = $derived(ubeskrivedeSpoergsmaal[0] ?? null);
 
 	const aktivDagNummer = $derived.by<number | null>(() => {
 		if (!forlob) return null;
@@ -281,10 +294,20 @@
 			forlobsdage = [];
 			userProduct = null;
 			valgtDagNummer = null;
+			mineSpoergsmaal = [];
 			return;
 		}
 		void indlaesForlob(u.uid);
+		void indlaesMineSpoergsmaal(u.uid);
 	});
+
+	async function indlaesMineSpoergsmaal(uid: string) {
+		try {
+			mineSpoergsmaal = await hentMineSpoergsmaal(uid);
+		} catch (e) {
+			console.warn('Kunne ikke hente egne spørgsmål til forsiden:', e);
+		}
+	}
 
 	async function indlaesForlob(uid: string) {
 		try {
@@ -468,16 +491,36 @@
 				</a>
 			</section>
 
+			{#if nyestUbeskrevneSvar}
+				<section class="nyt-svar-section">
+					<a class="nyt-svar-card" href="/app/spoergsmaal">
+						<div class="nyt-svar-eyebrow">
+							<span class="nyt-svar-prik"></span>
+							Nyt svar fra Linn
+						</div>
+						<div class="nyt-svar-spoergsmaal">{nyestUbeskrevneSvar.spoergsmaal}</div>
+						<div class="nyt-svar-tekst">{nyestUbeskrevneSvar.svar}</div>
+						<div class="nyt-svar-link">Læs alle dine spørgsmål
+							<Icon name="arrow" size={12} color="var(--terra)" />
+						</div>
+					</a>
+				</section>
+			{/if}
+
 			<section class="spq-section">
-				<div class="eyebrow eyebrow-muted">Har du et spørgsmål?</div>
+				<div class="eyebrow eyebrow-muted">
+					Har du et spørgsmål?
+					{#if ubeskrivedeSpoergsmaal.length > 0}
+						<span class="spq-prik" aria-label="Nye svar"></span>
+					{/if}
+				</div>
 				<div class="spq-card">
 					<p class="spq-tekst">
 						Del dit spørgsmål med Linn. Spørgsmålene samles og besvares ud fra emner der går igen,
-						i videoer, live og kommende indhold i appen. Du får ikke et personligt svar, men dit
-						spørgsmål er med til at bestemme hvad der bliver taget op.
+						i videoer, live og kommende indhold i appen.
 					</p>
 					<a class="spq-knap" href="/app/spoergsmaal">
-						<span>Stil et spørgsmål til Linn</span>
+						<span>{ubeskrivedeSpoergsmaal.length > 0 ? 'Se svar og stil et nyt spørgsmål' : 'Stil et spørgsmål til Linn'}</span>
 						<Icon name="arrow" size={14} color="#fff" />
 					</a>
 				</div>
@@ -740,6 +783,79 @@
 		font-size: 13px;
 		font-weight: 600;
 		text-decoration: none;
+	}
+
+	.spq-prik {
+		display: inline-block;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--terra);
+		margin-left: 6px;
+		vertical-align: middle;
+	}
+
+	.nyt-svar-section {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.nyt-svar-card {
+		background: var(--header);
+		border: 1px solid var(--terra);
+		border-radius: 14px;
+		padding: 14px 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.nyt-svar-eyebrow {
+		font-size: 10px;
+		font-weight: 700;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--terra);
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.nyt-svar-prik {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--terra);
+		display: inline-block;
+	}
+
+	.nyt-svar-spoergsmaal {
+		font-size: 12px;
+		font-style: italic;
+		color: var(--text2);
+		line-height: 1.45;
+		border-left: 2px solid var(--border);
+		padding-left: 10px;
+	}
+
+	.nyt-svar-tekst {
+		font-family: var(--ff-d);
+		font-size: 14px;
+		color: var(--text);
+		line-height: 1.5;
+		white-space: pre-wrap;
+	}
+
+	.nyt-svar-link {
+		font-size: 11px;
+		font-weight: 600;
+		color: var(--terra);
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 	}
 
 	/* ── A1 header ─────────────────────────────────────────────── */

@@ -16,4 +16,8 @@ export interface UserDoc {
 	email: string;
 	state: UserState;
 	createdAt: number; // Unix timestamp i millisekunder
+
+	// Senest tidspunkt brugeren åbnede /app/spoergsmaal og så sine svar.
+	// Bruges til at detektere ubeskrevne svar (svar.besvaretAt > dette).
+	senestSpoergsmaalLaestAt?: number;
 }
