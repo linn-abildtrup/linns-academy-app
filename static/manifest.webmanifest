@@ -1,0 +1,32 @@
+{
+	"name": "Linn's Academy",
+	"short_name": "Linn's Academy",
+	"description": "Forløb, opskrifter og daglige vaner fra Linn's Academy.",
+	"start_url": "/app",
+	"scope": "/",
+	"display": "standalone",
+	"orientation": "portrait",
+	"background_color": "#FAF6F1",
+	"theme_color": "#B87B6E",
+	"lang": "da-DK",
+	"icons": [
+		{
+			"src": "/icon-192.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
+		}
+	]
+}
