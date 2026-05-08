@@ -15,6 +15,7 @@
 	// Modul-id til rute. Kun moduler der har en bygget side er klikbare.
 	// De øvrige forbliver ikke-klikbare indtil deres sider er bygget.
 	const RUTER: Record<string, string> = {
+		forlob: '/app/moduler/forlob',
 		traening: '/app/moduler/traening',
 		vaner: '/app/moduler/vaner',
 		kost: '/app/moduler/30-30-3',
