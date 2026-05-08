@@ -223,6 +223,17 @@
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
 
+		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/bibliotek">
+			<div class="indhold-icon" style="background: var(--terra);">
+				<Icon name="book" size={16} color="#fff" />
+			</div>
+			<div class="indhold-tekst">
+				<div class="indhold-navn">Bibliotek</div>
+				<div class="indhold-sub">FAQ og guides for forløbet</div>
+			</div>
+			<Icon name="chevron-r" size={14} color="var(--text3)" />
+		</a>
+
 		<div class="form-card">
 			<div class="form-titel">Importér emails fra Simplero</div>
 			<p class="csv-hint">
