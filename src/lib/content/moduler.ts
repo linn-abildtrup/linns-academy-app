@@ -101,7 +101,7 @@ function forlobskundeStatus(base: ModulBase): Modul {
 }
 
 function modulbrugerStatus(base: ModulBase): Modul {
-	const koebt = ['traening', 'kost', 'vaner', 'bibliotek'];
+	const koebt = ['traening', 'kost', 'vaner'];
 	const erKoebt = koebt.includes(base.id);
 
 	if (!erKoebt) {
@@ -118,21 +118,18 @@ function modulbrugerStatus(base: ModulBase): Modul {
 	const progressMap: Record<string, number> = {
 		traening: 0.42,
 		kost: 0.65,
-		vaner: 0.18,
-		bibliotek: 0
+		vaner: 0.18
 	};
 	const subMap: Record<string, string> = {
 		traening: '3 af 7 sessioner',
 		kost: 'Uge 4 af 6',
-		vaner: '3 dage i træk',
-		bibliotek: 'Dine købte moduler'
+		vaner: '3 dage i træk'
 	};
-	const isLibrary = base.id === 'bibliotek';
 	return {
 		...base,
 		status: 'aktiv',
-		progress: isLibrary ? null : progressMap[base.id],
-		statusTekst: isLibrary ? 'Åbent' : 'Løbende',
+		progress: progressMap[base.id],
+		statusTekst: 'Løbende',
 		subTekst: subMap[base.id],
 		laasTekst: null
 	};

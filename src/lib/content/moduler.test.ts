@@ -52,12 +52,18 @@ describe('getModulerForUser', () => {
 			expect(forlob?.laasTekst).toBe('Få adgang via Kickstart');
 		});
 
-		it('har Træning, Kost, Vaner og Bibliotek aktive', () => {
+		it('har Bibliotek låst (forløbs-specifikt)', () => {
+			const bibliotek = moduler.find((m) => m.id === 'bibliotek');
+			expect(bibliotek?.status).toBe('laast');
+			expect(bibliotek?.laasTekst).toBe('Få adgang via Kickstart');
+		});
+
+		it('har Træning, Kost og Vaner aktive', () => {
 			const aktive = moduler.filter((m) => m.status === 'aktiv').map((m) => m.id);
 			expect(aktive).toContain('traening');
 			expect(aktive).toContain('kost');
 			expect(aktive).toContain('vaner');
-			expect(aktive).toContain('bibliotek');
+			expect(aktive).not.toContain('bibliotek');
 		});
 
 		it('har korrekt status-tekst på aktive moduler', () => {
