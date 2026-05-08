@@ -87,3 +87,16 @@ h4 {
 	letter-spacing: -0.01em;
 	margin: 0;
 }
+
+/* Når en HTML-fil åbnes i fullscreen-overlay sættes denne klasse på
+   document.body — så skjuler vi global Header og TabBar så HTML-
+   indholdet får hele skærmen. Sider der åbner HTML-overlays har
+   ansvaret for at sætte og fjerne klassen. */
+body.html-fullscreen-aktiv .app-header,
+body.html-fullscreen-aktiv .tabbar-wrap {
+	display: none !important;
+}
+
+body.html-fullscreen-aktiv .app-shell {
+	overflow: hidden;
+}

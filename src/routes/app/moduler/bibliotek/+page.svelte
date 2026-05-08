@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getContext, onMount } from 'svelte';
+	import { getContext, onDestroy, onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import type { User } from 'firebase/auth';
@@ -216,6 +216,26 @@
 			console.error('Print fejlede:', e);
 		}
 	}
+
+	// Skjul global Header og TabBar når et HTML-overlay er åbent.
+	const htmlOverlayAaben = $derived(
+		(aabenGuide && aabenGuide.type === 'html') || (aabenLektion && lektionType === 'html')
+	);
+
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+		if (htmlOverlayAaben) {
+			document.body.classList.add('html-fullscreen-aktiv');
+		} else {
+			document.body.classList.remove('html-fullscreen-aktiv');
+		}
+	});
+
+	onDestroy(() => {
+		if (typeof document !== 'undefined') {
+			document.body.classList.remove('html-fullscreen-aktiv');
+		}
+	});
 </script>
 
 <div class="page">
@@ -433,9 +453,6 @@
 				<span>Luk</span>
 			</button>
 			<div class="html-overlay-titel">{aabenGuide.titel}</div>
-			<button class="html-overlay-pdf" type="button" onclick={() => gemHtmlSomPdf(htmlIframeGuide)}>
-				📄 PDF
-			</button>
 		</header>
 		<iframe
 			bind:this={htmlIframeGuide}
@@ -443,6 +460,11 @@
 			title={aabenGuide.titel}
 			sandbox="allow-same-origin allow-scripts allow-popups allow-modals"
 		></iframe>
+		<div class="html-overlay-foot">
+			<button class="html-overlay-pdf" type="button" onclick={() => gemHtmlSomPdf(htmlIframeGuide)}>
+				📄 Gem som PDF
+			</button>
+		</div>
 	</div>
 {:else if aabenGuide}
 	<div

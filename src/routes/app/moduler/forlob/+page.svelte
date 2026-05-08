@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getContext, onMount } from 'svelte';
+	import { getContext, onDestroy, onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import type { User } from 'firebase/auth';
@@ -95,6 +95,23 @@
 	const aabenErHtml = $derived(
 		!!aabenLektion?.url && detekterGuideType(aabenLektion.url) === 'html'
 	);
+
+	// Skjul global Header og TabBar mens HTML-overlay er åben — så HTML-
+	// indholdet får hele skærmen og knapperne ikke skjules.
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+		if (aabenErHtml) {
+			document.body.classList.add('html-fullscreen-aktiv');
+		} else {
+			document.body.classList.remove('html-fullscreen-aktiv');
+		}
+	});
+
+	onDestroy(() => {
+		if (typeof document !== 'undefined') {
+			document.body.classList.remove('html-fullscreen-aktiv');
+		}
+	});
 
 	let htmlIframe = $state<HTMLIFrameElement | null>(null);
 
@@ -305,9 +322,6 @@
 				<span>Luk</span>
 			</button>
 			<div class="html-overlay-titel">{aabenLektion.titel}</div>
-			<button class="html-overlay-pdf" type="button" onclick={gemHtmlSomPdf}>
-				📄 PDF
-			</button>
 		</header>
 		<iframe
 			bind:this={htmlIframe}
@@ -315,6 +329,11 @@
 			title={aabenLektion.titel}
 			sandbox="allow-same-origin allow-scripts allow-popups allow-modals"
 		></iframe>
+		<div class="html-overlay-foot">
+			<button class="html-overlay-pdf" type="button" onclick={gemHtmlSomPdf}>
+				📄 Gem som PDF
+			</button>
+		</div>
 	</div>
 {:else if aabenLektion}
 	<div
@@ -856,27 +875,39 @@
 		white-space: nowrap;
 	}
 
-	.html-overlay-pdf {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 8px 14px;
-		border-radius: 8px;
-		border: none;
-		background: var(--terra);
-		color: #fff;
-		font-size: 13px;
-		font-weight: 600;
-		cursor: pointer;
-		font-family: var(--ff-b);
-		flex-shrink: 0;
-	}
-
 	.html-overlay iframe {
 		flex: 1;
 		width: 100%;
 		border: none;
 		background: var(--white);
+	}
+
+	.html-overlay-foot {
+		flex-shrink: 0;
+		padding: 12px 14px;
+		border-top: 1px solid var(--border);
+		background: var(--white);
+	}
+
+	.html-overlay-pdf {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		padding: 14px;
+		border-radius: 12px;
+		border: none;
+		background: var(--terra);
+		color: #fff;
+		font-size: 15px;
+		font-weight: 600;
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.html-overlay-pdf:active {
+		opacity: 0.85;
 	}
 
 	.overlay-beskrivelse {
