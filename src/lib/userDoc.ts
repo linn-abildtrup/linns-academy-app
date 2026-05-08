@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { UserDoc, UserState } from '$lib/types';
 import {
@@ -15,6 +15,32 @@ export async function getUserDoc(uid: string): Promise<UserDoc | null> {
 	const snap = await getDoc(ref);
 	if (!snap.exists()) return null;
 	return snap.data() as UserDoc;
+}
+
+/**
+ * Lytter på bruger-dokumentet og kalder callback ved hver ændring.
+ * Returnerer en unsubscribe-funktion. Bruges i layoutet så ændringer
+ * (fx senestSpoergsmaalLaestAt) propageres uden at brugeren skal
+ * genindlæse siden.
+ */
+export function lytTilUserDoc(
+	uid: string,
+	callback: (userDoc: UserDoc | null) => void
+): () => void {
+	const ref = doc(db, 'users', uid);
+	return onSnapshot(
+		ref,
+		(snap) => {
+			if (!snap.exists()) {
+				callback(null);
+				return;
+			}
+			callback(snap.data() as UserDoc);
+		},
+		(err) => {
+			console.warn('userDoc-listener fejlede:', err);
+		}
+	);
 }
 
 /**

@@ -3,7 +3,12 @@
 	import { onMount, setContext } from 'svelte';
 	import { onAuthStateChanged, type User } from 'firebase/auth';
 	import { auth } from '$lib/firebase';
-	import { createUserDoc, getUserDoc, synkroniserForlobskundeStatus } from '$lib/userDoc';
+	import {
+		createUserDoc,
+		getUserDoc,
+		lytTilUserDoc,
+		synkroniserForlobskundeStatus
+	} from '$lib/userDoc';
 	import type { UserDoc } from '$lib/types';
 	import TabBar from '$lib/components/TabBar.svelte';
 	import Header from '$lib/components/Header.svelte';
@@ -19,9 +24,13 @@
 	setContext('user', () => user);
 
 	onMount(() => {
-		const unsubscribe = onAuthStateChanged(auth, async (u) => {
+		let userDocUnsubscribe: (() => void) | null = null;
+
+		const authUnsubscribe = onAuthStateChanged(auth, async (u) => {
 			if (!u) {
 				// Ikke logget ind → send til login
+				userDocUnsubscribe?.();
+				userDocUnsubscribe = null;
 				await goto('/login');
 				return;
 			}
@@ -51,9 +60,19 @@
 
 			userDoc = doc;
 			loading = false;
+
+			// Start live-listener så ændringer (fx markerSpoergsmaalLaest)
+			// propageres uden manuel reload
+			userDocUnsubscribe?.();
+			userDocUnsubscribe = lytTilUserDoc(u.uid, (ny) => {
+				if (ny) userDoc = ny;
+			});
 		});
 
-		return unsubscribe;
+		return () => {
+			authUnsubscribe();
+			userDocUnsubscribe?.();
+		};
 	});
 </script>
 
