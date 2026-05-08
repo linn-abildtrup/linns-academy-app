@@ -849,6 +849,14 @@
 				<button class="ghost-knap" type="button" onclick={nulstilMaaltid}>Nulstil måltid</button>
 			{/if}
 		{:else if aktivTab === 'opskrifter'}
+			<div class="hint-boks">
+				<span class="hint-ikon">+</span>
+				<span class="hint-tekst">
+					Klik på <strong>+</strong> på en opskrift for at samle ingredienserne i én indkøbsliste.
+					Vælg flere på tværs af kategorier og få listen som tekst eller PDF.
+				</span>
+			</div>
+
 			<input
 				type="search"
 				class="search"
@@ -1620,6 +1628,43 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 10px;
+	}
+
+	.hint-boks {
+		display: flex;
+		align-items: flex-start;
+		gap: 10px;
+		padding: 10px 14px;
+		background: var(--tdim);
+		border: 1px solid var(--tdim2, var(--border));
+		border-radius: 12px;
+		margin-bottom: 10px;
+		font-size: 12px;
+		line-height: 1.45;
+		color: var(--terra);
+	}
+
+	.hint-ikon {
+		flex-shrink: 0;
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		background: var(--terra);
+		color: var(--white);
+		font-weight: 700;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 14px;
+		line-height: 1;
+	}
+
+	.hint-tekst {
+		flex: 1;
+	}
+
+	.hint-tekst strong {
+		font-weight: 700;
 	}
 
 	.opskrift-kort {
