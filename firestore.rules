@@ -106,6 +106,18 @@ service cloud.firestore {
 				allow read: if request.auth != null;
 				allow write: if isAdmin();
 			}
+
+			// Bibliotek pr forløb — guide-kategorier: samme mønster som FAQ.
+			match /guideKategorier/{kategoriId} {
+				allow read: if request.auth != null;
+				allow write: if isAdmin();
+			}
+
+			// Bibliotek pr forløb — guide-items: samme mønster som FAQ.
+			match /guideItems/{itemId} {
+				allow read: if request.auth != null;
+				allow write: if isAdmin();
+			}
 		}
 
 		// AllowedEmails (whitelist fra CSV-import):
