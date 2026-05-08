@@ -446,6 +446,42 @@
 					</div>
 				</section>
 			{/if}
+
+			<section class="coaching-section">
+				<div class="eyebrow eyebrow-muted">Personlig coaching</div>
+				<a
+					class="coaching-knap"
+					href="https://linn.simplero.com/coaching-1-1-45-min"
+					target="_blank"
+					rel="noopener"
+				>
+					<div class="coaching-venstre">
+						<div class="coaching-ikon" aria-hidden="true">🎯</div>
+						<div class="coaching-tekst">
+							<div class="coaching-titel">Book 1:1 online coaching</div>
+							<div class="coaching-sub">Personlig træning med Linn</div>
+						</div>
+					</div>
+					<div class="coaching-arrow">
+						<Icon name="arrow" size={14} color="#fff" />
+					</div>
+				</a>
+			</section>
+
+			<section class="spq-section">
+				<div class="eyebrow eyebrow-muted">Har du et spørgsmål?</div>
+				<div class="spq-card">
+					<p class="spq-tekst">
+						Del dit spørgsmål med Linn. Spørgsmålene samles og besvares ud fra emner der går igen,
+						i videoer, live og kommende indhold i appen. Du får ikke et personligt svar, men dit
+						spørgsmål er med til at bestemme hvad der bliver taget op.
+					</p>
+					<a class="spq-knap" href="/app/spoergsmaal">
+						<span>Stil et spørgsmål til Linn</span>
+						<Icon name="arrow" size={14} color="#fff" />
+					</a>
+				</div>
+			</section>
 		</div>
 	</div>
 {:else if userDoc?.state === 'modulbruger'}
@@ -486,6 +522,27 @@
 				<button class="featured-play" aria-label="Afspil">
 					<Icon name="play" size={11} color="#fff" filled />
 				</button>
+			</section>
+
+			<section class="coaching-section">
+				<div class="eyebrow eyebrow-muted">Personlig coaching</div>
+				<a
+					class="coaching-knap"
+					href="https://linn.simplero.com/coaching-1-1-45-min"
+					target="_blank"
+					rel="noopener"
+				>
+					<div class="coaching-venstre">
+						<div class="coaching-ikon" aria-hidden="true">🎯</div>
+						<div class="coaching-tekst">
+							<div class="coaching-titel">Book 1:1 online coaching</div>
+							<div class="coaching-sub">Personlig træning med Linn</div>
+						</div>
+					</div>
+					<div class="coaching-arrow">
+						<Icon name="arrow" size={14} color="#fff" />
+					</div>
+				</a>
 			</section>
 		</div>
 	</div>
@@ -534,6 +591,27 @@
 			</section>
 
 			<div class="c1-disclaimer">Ingen forpligtelse — du bestemmer selv tempoet.</div>
+
+			<section class="coaching-section">
+				<div class="eyebrow eyebrow-muted">Personlig coaching</div>
+				<a
+					class="coaching-knap"
+					href="https://linn.simplero.com/coaching-1-1-45-min"
+					target="_blank"
+					rel="noopener"
+				>
+					<div class="coaching-venstre">
+						<div class="coaching-ikon" aria-hidden="true">🎯</div>
+						<div class="coaching-tekst">
+							<div class="coaching-titel">Book 1:1 online coaching</div>
+							<div class="coaching-sub">Personlig træning med Linn</div>
+						</div>
+					</div>
+					<div class="coaching-arrow">
+						<Icon name="arrow" size={14} color="#fff" />
+					</div>
+				</a>
+			</section>
 		</div>
 	</div>
 {:else}
@@ -559,6 +637,109 @@
 		display: flex;
 		flex-direction: column;
 		gap: 14px;
+	}
+
+	/* ── Coaching og spørgsmål-sektioner ───────────────────────── */
+
+	.coaching-section,
+	.spq-section {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.coaching-knap {
+		background: var(--terra);
+		border-radius: 14px;
+		padding: 14px 16px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		text-decoration: none;
+	}
+
+	.coaching-knap:active {
+		opacity: 0.9;
+	}
+
+	.coaching-venstre {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.coaching-ikon {
+		width: 40px;
+		height: 40px;
+		border-radius: 10px;
+		background: rgba(255, 255, 255, 0.18);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 20px;
+		flex-shrink: 0;
+	}
+
+	.coaching-tekst {
+		min-width: 0;
+	}
+
+	.coaching-titel {
+		font-family: var(--ff-d);
+		font-size: 15px;
+		font-weight: 500;
+		color: var(--white);
+	}
+
+	.coaching-sub {
+		font-size: 11px;
+		color: rgba(255, 255, 255, 0.72);
+		font-weight: 400;
+	}
+
+	.coaching-arrow {
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.2);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.spq-card {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		padding: 14px 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.spq-tekst {
+		font-size: 12px;
+		line-height: 1.55;
+		color: var(--text2);
+		margin: 0;
+	}
+
+	.spq-knap {
+		background: var(--terra);
+		color: var(--white);
+		border-radius: 10px;
+		padding: 12px 14px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		font-size: 13px;
+		font-weight: 600;
+		text-decoration: none;
 	}
 
 	/* ── A1 header ─────────────────────────────────────────────── */
