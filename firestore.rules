@@ -93,6 +93,19 @@ service cloud.firestore {
 				allow read: if request.auth != null;
 				allow write: if isAdmin();
 			}
+
+			// Bibliotek pr forløb — FAQ-kategorier: alle autentificerede kan læse,
+			// kun admin kan skrive. Klient-koden filtrerer på udgivet-flag.
+			match /faqKategorier/{kategoriId} {
+				allow read: if request.auth != null;
+				allow write: if isAdmin();
+			}
+
+			// Bibliotek pr forløb — FAQ-items: samme regel som kategorier.
+			match /faqItems/{itemId} {
+				allow read: if request.auth != null;
+				allow write: if isAdmin();
+			}
 		}
 
 		// AllowedEmails (whitelist fra CSV-import):
