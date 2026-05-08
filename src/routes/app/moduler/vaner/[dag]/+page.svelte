@@ -209,6 +209,20 @@
 		gemFejl = null;
 		gemmer = true;
 		try {
+			// For baseline: fyld manglende skydere ud med 5 (neutral default).
+			// Klienter der ikke rykker skyderen efterlader ellers ingen måling.
+			if (prog?.isBaseline) {
+				type SliderId = Exclude<keyof CheckinSvar, 'generelTekst'>;
+				const fyldt: CheckinSvar = { ...checkin };
+				for (const q of CHECKIN_SPORGSMAAL) {
+					const id = q.id as SliderId;
+					if (typeof fyldt[id] !== 'number') {
+						fyldt[id] = 5;
+					}
+				}
+				checkin = fyldt;
+			}
+
 			await gemVanedag(
 				u.uid,
 				{
