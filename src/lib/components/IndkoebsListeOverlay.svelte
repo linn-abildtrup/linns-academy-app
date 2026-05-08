@@ -193,6 +193,7 @@
 
 			<div class="eksport-section">
 				<div class="section-label">Eksport — indkøbsliste og opskrifter</div>
+				<div class="eksport-hint">PDF indeholder indkøbslisten + alle valgte opskrifter</div>
 				<div class="eksport-knapper">
 					<button type="button" class="ghost-knap" onclick={eksporterTekst} disabled={!aktiveCount}>
 						Kopier som tekst
@@ -206,7 +207,6 @@
 						{pdfArbejder ? 'Genererer...' : 'Download PDF'}
 					</button>
 				</div>
-				<div class="eksport-hint">PDF indeholder indkøbslisten + alle valgte opskrifter</div>
 			</div>
 		</div>
 
@@ -480,10 +480,10 @@
 	}
 
 	.eksport-hint {
-		margin-top: 6px;
+		margin: 0 0 8px;
 		font-size: 11px;
 		color: var(--text3);
-		text-align: center;
+		line-height: 1.45;
 	}
 
 	.toast {
