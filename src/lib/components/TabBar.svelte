@@ -112,7 +112,7 @@
 		border-top: 1px solid var(--border);
 		background: var(--white);
 		display: flex;
-		padding: 8px 4px 18px;
+		padding: 8px 4px max(18px, env(safe-area-inset-bottom));
 		flex-shrink: 0;
 	}
 

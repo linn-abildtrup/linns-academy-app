@@ -38,7 +38,7 @@
 	.app-header {
 		background: var(--header);
 		border-bottom: 1px solid var(--border);
-		padding: 14px 20px 10px;
+		padding: calc(14px + env(safe-area-inset-top)) 20px 10px;
 		position: sticky;
 		top: 0;
 		z-index: 50;
