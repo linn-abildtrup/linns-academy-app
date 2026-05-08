@@ -52,6 +52,12 @@
 	const user = $derived(getUser());
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
 	import Icon from '$lib/components/Icon.svelte';
+	import IndkoebsListeOverlay from '$lib/components/IndkoebsListeOverlay.svelte';
+	import {
+		byggIndkoebsliste,
+		type IndkoebsItem,
+		type ValgteOpskrifter
+	} from '$lib/content/indkoebsliste';
 
 	const STORAGE_KEY = 'la_30303_maaltid_v1';
 
@@ -98,6 +104,56 @@
 	let opskriftSoeg = $state('');
 	let valgteOpskriftKategorier = $state<OpskriftKategori[]>([]);
 	let valgteDietTags = $state<DietTag[]>([]);
+
+	// Indkøbsliste-state — valgte opskrifter med portioner og overlay
+	let valgteOpskrifter = $state<ValgteOpskrifter>(new Map());
+	let viserIndkoebsliste = $state(false);
+	let indkoebslisteItems = $state<IndkoebsItem[]>([]);
+	let bevareteManuelle = $state<IndkoebsItem[]>([]);
+
+	const valgteAntal = $derived(valgteOpskrifter.size);
+
+	function toggleValgtOpskrift(o: Opskrift, e: MouseEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		const ny = new Map(valgteOpskrifter);
+		if (ny.has(o.id)) {
+			ny.delete(o.id);
+		} else {
+			ny.set(o.id, o.defaultPortioner);
+		}
+		valgteOpskrifter = ny;
+	}
+
+	function aendrePortioner(opskriftId: string, delta: number, e: MouseEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		const aktuel = valgteOpskrifter.get(opskriftId);
+		if (aktuel === undefined) return;
+		const ny = Math.max(1, aktuel + delta);
+		const ny2 = new Map(valgteOpskrifter);
+		ny2.set(opskriftId, ny);
+		valgteOpskrifter = ny2;
+	}
+
+	function aabnIndkoebsliste() {
+		indkoebslisteItems = byggIndkoebsliste(opskrifter, valgteOpskrifter, bevareteManuelle);
+		viserIndkoebsliste = true;
+	}
+
+	function lukIndkoebsliste() {
+		bevareteManuelle = indkoebslisteItems.filter((i) => i.manuel);
+		viserIndkoebsliste = false;
+	}
+
+	function opdaterItems(ny: IndkoebsItem[]) {
+		indkoebslisteItems = ny;
+	}
+
+	function nulstilValgteOpskrifter() {
+		valgteOpskrifter = new Map();
+		bevareteManuelle = [];
+	}
 
 	// Dagbog-state
 	let dagbogDato = $state<string>(formatDatoKey());
@@ -835,13 +891,24 @@
 			{:else}
 				<div class="opskrift-grid">
 					{#each filtreredeOpskrifter as o (o.id)}
-						<a class="opskrift-kort" href="/app/moduler/30-30-3/opskrifter/{o.id}">
+						{@const erValgt = valgteOpskrifter.has(o.id)}
+						{@const portioner = valgteOpskrifter.get(o.id) ?? o.defaultPortioner}
+						<a class="opskrift-kort" class:valgt={erValgt} href="/app/moduler/30-30-3/opskrifter/{o.id}">
 							<div class="opskrift-billede">
 								{#if o.billedeUrl}
 									<img src={o.billedeUrl} alt={o.titel} />
 								{:else}
 									<div class="opskrift-emoji">🍽️</div>
 								{/if}
+								<button
+									type="button"
+									class="vaelg-knap"
+									class:on={erValgt}
+									aria-label={erValgt ? 'Fjern fra indkøbsliste' : 'Vælg til indkøbsliste'}
+									onclick={(e) => toggleValgtOpskrift(o, e)}
+								>
+									{erValgt ? '✓' : '+'}
+								</button>
 							</div>
 							<div class="opskrift-tekst">
 								<div class="opskrift-titel">{o.titel}</div>
@@ -852,10 +919,42 @@
 										{/each}
 									</div>
 								{/if}
+								{#if erValgt}
+									<div class="portioner-rad">
+										<button
+											type="button"
+											class="portioner-knap"
+											aria-label="Færre portioner"
+											onclick={(e) => aendrePortioner(o.id, -1, e)}>−</button
+										>
+										<span class="portioner-val">{portioner} pers.</span>
+										<button
+											type="button"
+											class="portioner-knap"
+											aria-label="Flere portioner"
+											onclick={(e) => aendrePortioner(o.id, 1, e)}>+</button
+										>
+									</div>
+								{/if}
 							</div>
 						</a>
 					{/each}
 				</div>
+
+				{#if valgteAntal > 0}
+					<div class="indkoeb-bar">
+						<button type="button" class="indkoeb-knap" onclick={aabnIndkoebsliste}>
+							Generer indkøbsliste
+							<span class="indkoeb-badge">{valgteAntal}</span>
+						</button>
+						<button
+							type="button"
+							class="nulstil-knap"
+							onclick={nulstilValgteOpskrifter}
+							aria-label="Nulstil valg">×</button
+						>
+					</div>
+				{/if}
 			{/if}
 		{:else}
 			<div class="dagbog-rad">
@@ -1095,6 +1194,16 @@
 		</div>
 	{/if}
 </div>
+
+{#if viserIndkoebsliste}
+	<IndkoebsListeOverlay
+		items={indkoebslisteItems}
+		valgte={valgteOpskrifter}
+		{opskrifter}
+		onClose={lukIndkoebsliste}
+		onItemsChange={opdaterItems}
+	/>
+{/if}
 
 <style>
 	.page {
@@ -1528,6 +1637,11 @@
 		border-color: var(--terra);
 	}
 
+	.opskrift-kort.valgt {
+		border-color: var(--terra);
+		box-shadow: 0 0 0 1px var(--terra);
+	}
+
 	.opskrift-billede {
 		aspect-ratio: 4 / 3;
 		background: var(--bg2);
@@ -1535,6 +1649,109 @@
 		align-items: center;
 		justify-content: center;
 		overflow: hidden;
+		position: relative;
+	}
+
+	.vaelg-knap {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.9);
+		border: 1.5px solid var(--terra);
+		color: var(--terra);
+		font-size: 16px;
+		font-weight: 700;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 1;
+		backdrop-filter: blur(4px);
+	}
+
+	.vaelg-knap.on {
+		background: var(--terra);
+		color: var(--white);
+	}
+
+	.portioner-rad {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-top: 4px;
+	}
+
+	.portioner-knap {
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		border: 1px solid var(--border);
+		background: var(--white);
+		color: var(--text2);
+		font-size: 14px;
+		font-weight: 700;
+		cursor: pointer;
+		line-height: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.portioner-val {
+		font-size: 11px;
+		font-weight: 600;
+		color: var(--terra);
+	}
+
+	.indkoeb-bar {
+		position: sticky;
+		bottom: 14px;
+		margin-top: 14px;
+		display: flex;
+		gap: 8px;
+		z-index: 10;
+	}
+
+	.indkoeb-knap {
+		flex: 1;
+		background: var(--terra);
+		color: var(--white);
+		border: none;
+		padding: 14px 18px;
+		border-radius: 99px;
+		font-family: inherit;
+		font-size: 14px;
+		font-weight: 600;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		box-shadow: 0 4px 18px rgba(184, 123, 110, 0.35);
+	}
+
+	.indkoeb-badge {
+		background: rgba(255, 255, 255, 0.25);
+		border-radius: 99px;
+		padding: 2px 9px;
+		font-size: 11px;
+		font-weight: 700;
+	}
+
+	.nulstil-knap {
+		width: 44px;
+		height: 44px;
+		border-radius: 50%;
+		background: var(--white);
+		border: 1px solid var(--border);
+		color: var(--text2);
+		font-size: 22px;
+		cursor: pointer;
+		line-height: 1;
+		flex-shrink: 0;
 	}
 
 	.opskrift-billede img {
