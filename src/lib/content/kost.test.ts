@@ -9,6 +9,7 @@ import {
 	sorterFodevarer,
 	findFodevareForIngrediens,
 	matchIngredienserMaltid,
+	renseIngrediensNavn,
 	type Fodevare,
 	type MaaltidsItem
 } from './kost';
@@ -204,6 +205,39 @@ describe('sorterFodevarer', () => {
 	});
 });
 
+describe('renseIngrediensNavn', () => {
+	it('fjerner alt efter første komma', () => {
+		expect(renseIngrediensNavn('agurk, i tern')).toBe('agurk');
+		expect(renseIngrediensNavn('kylling, kogt')).toBe('kylling');
+	});
+
+	it('fjerner indledende mængde og enhed', () => {
+		expect(renseIngrediensNavn('2 spsk olivenolie')).toBe('olivenolie');
+		expect(renseIngrediensNavn('100g kylling')).toBe('kylling');
+		expect(renseIngrediensNavn('1 dl havregryn')).toBe('havregryn');
+	});
+
+	it('fjerner indledende størrelses-ord', () => {
+		expect(renseIngrediensNavn('1 stor gulerod')).toBe('gulerod');
+		expect(renseIngrediensNavn('lille æble')).toBe('æble');
+	});
+
+	it('fjerner indledende tilberedningsord', () => {
+		expect(renseIngrediensNavn('frisk persille')).toBe('persille');
+		expect(renseIngrediensNavn('hakket løg')).toBe('løg');
+		expect(renseIngrediensNavn('finthakket hvidløg')).toBe('hvidløg');
+	});
+
+	it('lader simple navne være uændret', () => {
+		expect(renseIngrediensNavn('skyr')).toBe('skyr');
+		expect(renseIngrediensNavn('havregryn')).toBe('havregryn');
+	});
+
+	it('lower-caser alt', () => {
+		expect(renseIngrediensNavn('AGURK, i tern')).toBe('agurk');
+	});
+});
+
 describe('findFodevareForIngrediens', () => {
 	const liste = [skyr, havre, broccoli];
 
@@ -226,6 +260,42 @@ describe('findFodevareForIngrediens', () => {
 
 	it('returnerer null for tom streng', () => {
 		expect(findFodevareForIngrediens('', liste)).toBeNull();
+	});
+
+	it('finder match efter rensning af komma-suffix', () => {
+		const agurk: Fodevare = {
+			id: 'agurk',
+			name: 'Agurk, rå',
+			cat: 'gront',
+			p: 0.6,
+			f: 0.5
+		};
+		const r = findFodevareForIngrediens('agurk, i tern', [agurk]);
+		expect(r).toEqual(agurk);
+	});
+
+	it('finder match efter fjernelse af mængde-prefiks', () => {
+		const olie: Fodevare = {
+			id: 'olivenolie',
+			name: 'Olivenolie',
+			cat: 'andet',
+			p: 0,
+			f: 0
+		};
+		const r = findFodevareForIngrediens('2 spsk olivenolie', [olie]);
+		expect(r).toEqual(olie);
+	});
+
+	it('finder match efter fjernelse af tilberedningsord', () => {
+		const persille: Fodevare = {
+			id: 'persille',
+			name: 'Persille, rå',
+			cat: 'gront',
+			p: 3,
+			f: 5
+		};
+		const r = findFodevareForIngrediens('frisk persille', [persille]);
+		expect(r).toEqual(persille);
 	});
 });
 

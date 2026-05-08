@@ -286,12 +286,38 @@ export interface OpskriftsIngrediens {
 }
 
 /**
+ * Renser et ingrediens-navn for tilberedning- og portioneringsbeskrivelser
+ * så det matcher bedre mod fødevaredatabasen.
+ *
+ * Eksempler:
+ *   "agurk, i tern"     → "agurk"
+ *   "kylling, kogt"     → "kylling"
+ *   "frisk persille"    → "persille"
+ *   "1 stor gulerod"    → "gulerod"
+ *   "2 spsk olivenolie" → "olivenolie"
+ */
+export function renseIngrediensNavn(navn: string): string {
+	let n = navn.toLowerCase().trim();
+	// Fjern alt efter første komma (typisk "X, i tern" / "X, kogt" / "X, rå")
+	const kommaIdx = n.indexOf(',');
+	if (kommaIdx > 0) n = n.slice(0, kommaIdx).trim();
+	// Fjern indledende mængde- og portioneringsord ("2 spsk", "1 stor", "ca. 100g")
+	n = n
+		.replace(/^(ca\.?\s+)?\d+([.,]\d+)?\s*(g|kg|ml|dl|l|stk|spsk|tsk|knsp|knivspids|håndfuld|skive|skiver|kop|kopper|glas|dåse|dåser|pose|poser)\s+/i, '')
+		.replace(/^(ca\.?\s+)?\d+([.,]\d+)?\s+/i, '')
+		.replace(/^(en|et|to|tre|fire|fem|seks|syv|otte|ni|ti|halv|halvt|en halv|et halvt)\s+/i, '')
+		.replace(/^(stor|stort|store|lille|lillebitte|små|mellem|mellemstor|halv|halvt|kvart)\s+/i, '');
+	// Fjern indledende tilberedningsord
+	n = n.replace(/^(frisk|friske|tørret|tørrede|kogt|kogte|stegt|stegte|bagt|bagte|røget|rå|rene|skåret|hakket|finthakket|revet)\s+/i, '');
+	return n.trim();
+}
+
+/**
  * Finder den bedst matchende fødevare for en ingrediens-streng.
  *
- * Strategi (i prioritet):
- *   1. Eksakt match på lower-cased navn
- *   2. Fødevare-navn starter med ingrediens-navnet (efter lower-case)
- *   3. Ingrediens-navnet er indeholdt i fødevare-navnet
+ * Forsøger først eksakt/start-match med det rå navn. Hvis intet match,
+ * renser navnet (fjerner ", i tern", tilberedning, mængder) og prøver igen.
+ * Endeligt fallback er substring-match.
  *
  * Hvis flere matches, foretrækkes den med det korteste navn (mest generel).
  */
@@ -299,21 +325,40 @@ export function findFodevareForIngrediens(
 	ingrediensNavn: string,
 	foods: Fodevare[]
 ): Fodevare | null {
-	const q = ingrediensNavn.toLowerCase().trim();
-	if (!q) return null;
+	const raa = ingrediensNavn.toLowerCase().trim();
+	if (!raa) return null;
 
-	const eksakt = foods.find((f) => f.name.toLowerCase() === q);
-	if (eksakt) return eksakt;
+	function findMatch(q: string): Fodevare | null {
+		if (!q) return null;
+		const eksakt = foods.find((f) => f.name.toLowerCase() === q);
+		if (eksakt) return eksakt;
+		const starter = foods
+			.filter((f) => f.name.toLowerCase().startsWith(q))
+			.sort((a, b) => a.name.length - b.name.length);
+		if (starter.length > 0) return starter[0];
+		// Fødevare-navn med komma-prefiks: "Agurk, rå" matcher ingrediens "agurk"
+		const startMedKomma = foods
+			.filter((f) => {
+				const navn = f.name.toLowerCase();
+				return navn.startsWith(q + ',') || navn.startsWith(q + ' ');
+			})
+			.sort((a, b) => a.name.length - b.name.length);
+		if (startMedKomma.length > 0) return startMedKomma[0];
+		const indeholder = foods
+			.filter((f) => f.name.toLowerCase().includes(q))
+			.sort((a, b) => a.name.length - b.name.length);
+		if (indeholder.length > 0) return indeholder[0];
+		return null;
+	}
 
-	const starter = foods
-		.filter((f) => f.name.toLowerCase().startsWith(q))
-		.sort((a, b) => a.name.length - b.name.length);
-	if (starter.length > 0) return starter[0];
+	const direkte = findMatch(raa);
+	if (direkte) return direkte;
 
-	const indeholder = foods
-		.filter((f) => f.name.toLowerCase().includes(q))
-		.sort((a, b) => a.name.length - b.name.length);
-	if (indeholder.length > 0) return indeholder[0];
+	const renset = renseIngrediensNavn(ingrediensNavn);
+	if (renset && renset !== raa) {
+		const viaRenset = findMatch(renset);
+		if (viaRenset) return viaRenset;
+	}
 
 	return null;
 }
