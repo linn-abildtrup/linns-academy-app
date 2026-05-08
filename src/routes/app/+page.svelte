@@ -61,22 +61,20 @@
 	}
 
 	// Bygger strip-data for alle dage i forløbet (inkl baseline 0)
-	const stripDage = $derived.by<{ dagNummer: number; dato: Date; harIndhold: boolean; status: 'fortid' | 'aktiv' | 'fremtid' }[]>(() => {
+	const stripDage = $derived.by<{ dagNummer: number; dato: Date; status: 'fortid' | 'aktiv' | 'fremtid' }[]>(() => {
 		if (!forlob) return [];
 		const start = forlob.startDato.toDate();
-		const out: { dagNummer: number; dato: Date; harIndhold: boolean; status: 'fortid' | 'aktiv' | 'fremtid' }[] = [];
+		const out: { dagNummer: number; dato: Date; status: 'fortid' | 'aktiv' | 'fremtid' }[] = [];
 		for (let i = 0; i <= forlob.antalDage; i++) {
 			const d = new Date(start);
 			d.setHours(12, 0, 0, 0);
 			d.setDate(start.getDate() + i);
-			const dag = dagsmap.get(i);
-			const harIndhold = !!(dag && (dag.lektioner.length > 0 || dag.noteFraLinn));
 			let status: 'fortid' | 'aktiv' | 'fremtid' = 'fremtid';
 			if (aktivDagNummer !== null) {
 				if (i < aktivDagNummer) status = 'fortid';
 				else if (i === aktivDagNummer) status = 'aktiv';
 			}
-			out.push({ dagNummer: i, dato: d, harIndhold, status });
+			out.push({ dagNummer: i, dato: d, status });
 		}
 		return out;
 	});
@@ -338,9 +336,6 @@
 								<span class="chip-num">
 									{chip.dagNummer === 0 ? 'Start' : 'D' + chip.dagNummer}
 								</span>
-								{#if chip.harIndhold}
-									<span class="chip-prik" aria-hidden="true"></span>
-								{/if}
 							</button>
 						{/each}
 					</div>
@@ -821,20 +816,6 @@
 
 	.strip-chip.erValgt .chip-num {
 		color: rgba(255, 255, 255, 0.85);
-	}
-
-	.chip-prik {
-		position: absolute;
-		bottom: 4px;
-		right: 6px;
-		width: 5px;
-		height: 5px;
-		border-radius: 50%;
-		background: var(--terra);
-	}
-
-	.strip-chip.erValgt .chip-prik {
-		background: #fff;
 	}
 
 	.ingen-lektion {
