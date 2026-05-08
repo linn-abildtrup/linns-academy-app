@@ -116,13 +116,13 @@
 	let htmlIframe = $state<HTMLIFrameElement | null>(null);
 
 	function gemHtmlSomPdf() {
-		// Trigger systemets print-dialog inde i iframen — på iOS Safari + Android
-		// Chrome kan brugeren herfra vælge 'Gem som PDF' / 'Save to Files'.
-		try {
-			htmlIframe?.contentWindow?.focus();
-			htmlIframe?.contentWindow?.print();
-		} catch (e) {
-			console.error('Print fejlede:', e);
+		// Åbn HTML-filen i ny fane så brugeren kan bruge browserens native
+		// Del/Print → 'Gem som PDF'. Iframens contentWindow.print() blokeres
+		// af browseren fordi Firebase Storage er cross-origin ift. appen.
+		// På iOS Safari: Del → Print → pinch-zoom → Gem til Filer.
+		// På Android Chrome: Tre prikker → Del → Print → Gem som PDF.
+		if (aabenLektion?.url) {
+			window.open(aabenLektion.url, '_blank', 'noopener,noreferrer');
 		}
 	}
 

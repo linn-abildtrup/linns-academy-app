@@ -208,12 +208,12 @@
 	let htmlIframeGuide = $state<HTMLIFrameElement | null>(null);
 	let htmlIframeLektion = $state<HTMLIFrameElement | null>(null);
 
-	function gemHtmlSomPdf(iframe: HTMLIFrameElement | null) {
-		try {
-			iframe?.contentWindow?.focus();
-			iframe?.contentWindow?.print();
-		} catch (e) {
-			console.error('Print fejlede:', e);
+	function gemHtmlSomPdf(url: string | undefined) {
+		// Åbn HTML-filen i ny fane så brugeren kan bruge browserens native
+		// Del/Print → 'Gem som PDF'. Iframens contentWindow.print() blokeres
+		// fordi Firebase Storage er cross-origin ift. appen.
+		if (url) {
+			window.open(url, '_blank', 'noopener,noreferrer');
 		}
 	}
 
@@ -461,7 +461,7 @@
 			sandbox="allow-same-origin allow-scripts allow-popups allow-modals"
 		></iframe>
 		<div class="html-overlay-foot">
-			<button class="html-overlay-pdf" type="button" onclick={() => gemHtmlSomPdf(htmlIframeGuide)}>
+			<button class="html-overlay-pdf" type="button" onclick={() => gemHtmlSomPdf(aabenGuide?.url)}>
 				📄 Gem som PDF
 			</button>
 		</div>
@@ -524,9 +524,6 @@
 				<span>Luk</span>
 			</button>
 			<div class="html-overlay-titel">{aabenLektion.titel}</div>
-			<button class="html-overlay-pdf" type="button" onclick={() => gemHtmlSomPdf(htmlIframeLektion)}>
-				📄 PDF
-			</button>
 		</header>
 		<iframe
 			bind:this={htmlIframeLektion}
@@ -534,6 +531,11 @@
 			title={aabenLektion.titel}
 			sandbox="allow-same-origin allow-scripts allow-popups allow-modals"
 		></iframe>
+		<div class="html-overlay-foot">
+			<button class="html-overlay-pdf" type="button" onclick={() => gemHtmlSomPdf(aabenLektion?.url)}>
+				📄 Gem som PDF
+			</button>
+		</div>
 	</div>
 {:else if aabenLektion}
 	<div
@@ -999,27 +1001,39 @@
 		white-space: nowrap;
 	}
 
-	.html-overlay-pdf {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 8px 14px;
-		border-radius: 8px;
-		border: none;
-		background: var(--terra);
-		color: #fff;
-		font-size: 13px;
-		font-weight: 600;
-		cursor: pointer;
-		font-family: var(--ff-b);
-		flex-shrink: 0;
-	}
-
 	.html-overlay iframe {
 		flex: 1;
 		width: 100%;
 		border: none;
 		background: var(--white);
+	}
+
+	.html-overlay-foot {
+		flex-shrink: 0;
+		padding: 12px 14px;
+		border-top: 1px solid var(--border);
+		background: var(--white);
+	}
+
+	.html-overlay-pdf {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		padding: 14px;
+		border-radius: 12px;
+		border: none;
+		background: var(--terra);
+		color: #fff;
+		font-size: 15px;
+		font-weight: 600;
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.html-overlay-pdf:active {
+		opacity: 0.85;
 	}
 
 	.overlay-audio audio {
