@@ -9,20 +9,26 @@ import {
 } from './forlob';
 
 describe('getCurrentDay', () => {
-	it('returnerer 1 på første dag', () => {
+	it('returnerer 0 på startdagen (baseline)', () => {
 		const forlob = { startDato: '2026-05-01', antalDage: 21 };
 		const now = new Date(2026, 4, 1, 10, 0);
+		expect(getCurrentDay(forlob, now)).toBe(0);
+	});
+
+	it('returnerer 1 dagen efter start (første programdag)', () => {
+		const forlob = { startDato: '2026-04-26', antalDage: 21 };
+		const now = new Date(2026, 3, 27, 10, 0);
 		expect(getCurrentDay(forlob, now)).toBe(1);
 	});
 
-	it('returnerer 8 på dag 8', () => {
-		const forlob = { startDato: '2026-04-27', antalDage: 21 };
+	it('returnerer 8 dagen efter en uge (dag 8)', () => {
+		const forlob = { startDato: '2026-04-26', antalDage: 21 };
 		const now = new Date(2026, 4, 4, 10, 0);
 		expect(getCurrentDay(forlob, now)).toBe(8);
 	});
 
-	it('returnerer 21 på sidste dag af 21-dages forløb', () => {
-		const forlob = { startDato: '2026-04-27', antalDage: 21 };
+	it('returnerer 21 på sidste programdag', () => {
+		const forlob = { startDato: '2026-04-26', antalDage: 21 };
 		const now = new Date(2026, 4, 17, 10, 0);
 		expect(getCurrentDay(forlob, now)).toBe(21);
 	});
@@ -37,8 +43,8 @@ describe('getCurrentDay', () => {
 		const forlob = { startDato: '2026-05-01', antalDage: 21 };
 		const morgen = new Date(2026, 4, 1, 5, 0);
 		const aften = new Date(2026, 4, 1, 23, 59);
-		expect(getCurrentDay(forlob, morgen)).toBe(1);
-		expect(getCurrentDay(forlob, aften)).toBe(1);
+		expect(getCurrentDay(forlob, morgen)).toBe(0);
+		expect(getCurrentDay(forlob, aften)).toBe(0);
 	});
 });
 

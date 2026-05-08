@@ -60,12 +60,11 @@ export function ugeForDag(dagNummer: number): number {
 }
 
 /**
- * Beregner hvor mange dage der er gået siden forløbet startede.
- * Returnerer 1 hvis vi er på første dag, 2 hvis vi er på dag 2, osv.
- * Returnerer null hvis startdato er i fremtiden.
+ * Beregner aktuel dagNummer i forløbet.
+ * Returnerer 0 på selve startdagen (baseline), 1 dagen efter (første programdag),
+ * osv. Returnerer null hvis startdato er i fremtiden.
  *
- * Bemærk: dette giver 1-indekseret visning (dag 1 = startdagen).
- * Til datalagring (dagNummer 0 = baseline) brug dageSidenStart i forlobAdgang.ts.
+ * Konventionen matcher vaneprogrammet: dag 0 = baseline, dag 1-21 = programdage.
  */
 export function getCurrentDay(
 	forlob: { startDato: string; antalDage: number },
@@ -80,7 +79,7 @@ export function getCurrentDay(
 	if (diffDage < 0) {
 		return null;
 	}
-	return diffDage + 1;
+	return diffDage;
 }
 
 // ==============================================

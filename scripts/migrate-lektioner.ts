@@ -4,10 +4,9 @@
 // Kilde: programConfig/global i vanetracker — felt days[YYYY-MM-DD].lessons[]
 // Mål:   forlob/{forlobId}/forlobsdage/dag{N} i linns-academy-app
 //
-// Mapping: dagNummer = (lektionsdato - forløbets startDato) + 1
-//   - Dag 1 = forløbets startdag
-//   - Dag 0 = dagen før (baseline-dag)
-//   - Dag 1-21 = programdage (eller op til antalDage)
+// Mapping: dagNummer = (lektionsdato - forløbets startDato) i dage
+//   - Dag 0 = forløbets startdag (baseline)
+//   - Dag 1-21 = programdage
 //   - Lektioner uden for [0, antalDage] springes over (logges)
 //
 // Forudsætter:
@@ -107,15 +106,14 @@ function detekterFormat(url: string): string {
 
 /**
  * Beregner dagNummer ud fra YYYY-MM-DD og forløbets startDato.
- * dag 1 = startDato, dag 0 = startDato - 1, dag -1 = før, osv.
+ * dag 0 = startDato (baseline), dag 1 = dagen efter, osv.
  */
 function dagNummerFor(dateKey: string, startDato: Date): number {
 	const d = new Date(dateKey + 'T06:00:00');
 	const start = new Date(startDato);
 	start.setHours(6, 0, 0, 0);
 	const ms = d.getTime() - start.getTime();
-	const dage = Math.round(ms / (1000 * 60 * 60 * 24));
-	return dage + 1;
+	return Math.round(ms / (1000 * 60 * 60 * 24));
 }
 
 // ==============================================
