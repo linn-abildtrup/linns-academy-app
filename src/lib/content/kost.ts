@@ -45,6 +45,59 @@ export interface Enhed {
  */
 export type Kilde = 'kickstart' | 'frida' | 'custom';
 
+export type Maaltidstype = 'morgenmad' | 'frokost' | 'aftensmad' | 'snack';
+
+export const MAALTIDSTYPE_LABELS: Record<Maaltidstype, string> = {
+	morgenmad: 'Morgenmad',
+	frokost: 'Frokost',
+	aftensmad: 'Aftensmad',
+	snack: 'Snack'
+};
+
+export const MAALTIDSTYPER: Maaltidstype[] = ['morgenmad', 'frokost', 'aftensmad', 'snack'];
+
+/**
+ * Sortér-orden så måltider vises morgen → aften i dagbog-visningen.
+ */
+export function maaltidstypeOrder(type: Maaltidstype): number {
+	return MAALTIDSTYPER.indexOf(type);
+}
+
+/**
+ * Et gemt måltid i dagbogen. Lever på users/{uid}/maaltider/{id}.
+ */
+export interface GemtMaaltid {
+	id: string;
+	navn: string;
+	type: Maaltidstype;
+	dato: string; // YYYY-MM-DD
+	items: MaaltidsItem[];
+	totalP: number;
+	totalF: number;
+}
+
+/**
+ * Returnerer dato som YYYY-MM-DD i lokal tidszone.
+ */
+export function formatDatoKey(d: Date = new Date()): string {
+	const yr = d.getFullYear();
+	const mo = String(d.getMonth() + 1).padStart(2, '0');
+	const da = String(d.getDate()).padStart(2, '0');
+	return `${yr}-${mo}-${da}`;
+}
+
+/**
+ * Gætter måltidstype ud fra klokkeslæt (i dag).
+ * Bruges som default i Gem-modal.
+ */
+export function gaetMaaltidstype(d: Date = new Date()): Maaltidstype {
+	const t = d.getHours();
+	if (t < 10) return 'morgenmad';
+	if (t < 14) return 'frokost';
+	if (t < 21) return 'aftensmad';
+	return 'snack';
+}
+
 export interface Fodevare {
 	id: string;
 	name: string;

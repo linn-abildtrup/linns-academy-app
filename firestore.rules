@@ -30,6 +30,11 @@ service cloud.firestore {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
 			}
 
+			// Dagbog — gemte måltider fra 30-30-3-beregneren: kun egen bruger
+			match /maaltider/{mealId} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
+
 			// Vanedage på userProduct: kun egen bruger (samme regel som pauses)
 			// Stien er users/{uid}/products/{productId}/vanedage/{dagId} så
 			// reglen ligger på products-niveau længere nede.

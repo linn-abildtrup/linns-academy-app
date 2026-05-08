@@ -1,23 +1,36 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { getContext, onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
+	import type { User } from 'firebase/auth';
 	import {
 		beregnItem,
 		beregnMaaltid,
 		erManueltItem,
 		filtrerFodevarer,
+		formatDatoKey,
 		formatGram,
+		gaetMaaltidstype,
 		KATEGORI_LABELS as FODEVARE_KATEGORIER,
+		MAALTIDSTYPE_LABELS,
+		MAALTIDSTYPER,
+		maaltidstypeOrder,
 		PROTEIN_MAALTIDS_MAAL,
 		FIBER_DAGS_MAAL,
 		procentMod,
 		sorterFodevarer,
 		type Fodevare,
+		type GemtMaaltid,
 		type Kategori,
 		type MaaltidsItem,
+		type Maaltidstype,
 		type SortMode
 	} from '$lib/content/kost';
+	import {
+		gemMaaltid,
+		hentMaaltiderForDato,
+		sletMaaltid
+	} from '$lib/firestore/kost';
 	import {
 		ALLE_DIET_TAGS,
 		ALLE_KATEGORIER as OPSKRIFT_KATEGORIER,
@@ -29,16 +42,19 @@
 		type OpskriftKategori
 	} from '$lib/content/opskrifter';
 	import { hentAlleFodevarer } from '$lib/firestore/kost';
+
+	const getUser = getContext<() => User | null>('user');
+	const user = $derived(getUser());
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const STORAGE_KEY = 'la_30303_maaltid_v1';
 
-	type Tab = 'opslag' | 'maaltid' | 'opskrifter';
+	type Tab = 'opslag' | 'maaltid' | 'opskrifter' | 'dagbog';
 
 	function tabFraQuery(): Tab {
 		const t = page.url.searchParams.get('tab');
-		if (t === 'maaltid' || t === 'opskrifter' || t === 'opslag') return t;
+		if (t === 'maaltid' || t === 'opskrifter' || t === 'dagbog' || t === 'opslag') return t;
 		return 'opslag';
 	}
 
@@ -77,6 +93,20 @@
 	let opskriftSoeg = $state('');
 	let valgteOpskriftKategorier = $state<OpskriftKategori[]>([]);
 	let valgteDietTags = $state<DietTag[]>([]);
+
+	// Dagbog-state
+	let dagbogDato = $state<string>(formatDatoKey());
+	let dagbogMaaltider = $state<GemtMaaltid[]>([]);
+	let dagbogIndlaeser = $state(false);
+	let dagbogFejl = $state<string | null>(null);
+
+	// Gem-måltid-modal state
+	let viserGemModal = $state(false);
+	let gemNavn = $state('');
+	let gemType = $state<Maaltidstype>('morgenmad');
+	let gemDato = $state<string>(formatDatoKey());
+	let gemmer = $state(false);
+	let gemBesked = $state<{ tekst: string; type: 'ok' | 'fejl' } | null>(null);
 
 	const filtreret = $derived(
 		sorterFodevarer(filtrerFodevarer(foods, soegeord, aktivKategori), sortMode)
@@ -131,6 +161,9 @@
 			loading = false;
 			initialiseret = true;
 		}
+
+		// Indlæs dagbog i baggrunden (brugeren skal kunne navigere til dagbog-tab)
+		void indlaesDagbog();
 	});
 
 	$effect(() => {
@@ -226,6 +259,116 @@
 			valgteDietTags = [...valgteDietTags, t];
 		}
 	}
+
+	// Dagbog
+	async function indlaesDagbog() {
+		const u = user;
+		if (!u) return;
+		dagbogIndlaeser = true;
+		dagbogFejl = null;
+		try {
+			const m = await hentMaaltiderForDato(u.uid, dagbogDato);
+			m.sort((a, b) => maaltidstypeOrder(a.type) - maaltidstypeOrder(b.type));
+			dagbogMaaltider = m;
+		} catch (e) {
+			console.error(e);
+			dagbogFejl = 'Kunne ikke hente dagbogen.';
+		} finally {
+			dagbogIndlaeser = false;
+		}
+	}
+
+	async function aendreDagbogDato(ny: string) {
+		dagbogDato = ny;
+		await indlaesDagbog();
+	}
+
+	async function sletGemtMaaltid(id: string) {
+		const u = user;
+		if (!u) return;
+		try {
+			await sletMaaltid(u.uid, id);
+			dagbogMaaltider = dagbogMaaltider.filter((m) => m.id !== id);
+		} catch (e) {
+			console.error(e);
+			dagbogFejl = 'Kunne ikke slette måltidet.';
+		}
+	}
+
+	// Gem-modal
+	function aabnGemModal() {
+		gemNavn = '';
+		gemType = gaetMaaltidstype();
+		gemDato = formatDatoKey();
+		gemBesked = null;
+		viserGemModal = true;
+	}
+
+	function lukGemModal() {
+		viserGemModal = false;
+		gemBesked = null;
+	}
+
+	async function gemMaaltidet() {
+		const u = user;
+		if (!u) {
+			gemBesked = { tekst: 'Du skal være logget ind.', type: 'fejl' };
+			return;
+		}
+		const navn = gemNavn.trim();
+		if (!navn) {
+			gemBesked = { tekst: 'Måltidet skal have et navn.', type: 'fejl' };
+			return;
+		}
+		if (maaltid.length === 0) {
+			gemBesked = { tekst: 'Måltidet er tomt — tilføj noget først.', type: 'fejl' };
+			return;
+		}
+		gemmer = true;
+		gemBesked = null;
+		try {
+			await gemMaaltid(u.uid, {
+				navn,
+				type: gemType,
+				dato: gemDato,
+				items: maaltid,
+				totalP: Math.round(totaler.protein * 10) / 10,
+				totalF: Math.round(totaler.fiber * 10) / 10
+			});
+			// Ryd måltid efter gem
+			maaltid = [];
+			localStorage.setItem(STORAGE_KEY, '[]');
+			viserGemModal = false;
+			// Skift til dagbog og indlæs
+			dagbogDato = gemDato;
+			await indlaesDagbog();
+			skiftTab('dagbog');
+		} catch (e) {
+			console.error(e);
+			gemBesked = { tekst: 'Kunne ikke gemme måltidet. Prøv igen.', type: 'fejl' };
+		} finally {
+			gemmer = false;
+		}
+	}
+
+	function dagbogTotaler() {
+		let p = 0;
+		let f = 0;
+		for (const m of dagbogMaaltider) {
+			p += m.totalP;
+			f += m.totalF;
+		}
+		return { protein: p, fiber: f };
+	}
+
+	function visningsDato(key: string): string {
+		const i_dag = formatDatoKey();
+		if (key === i_dag) return 'I dag';
+		const i_gar = formatDatoKey(new Date(Date.now() - 86400000));
+		if (key === i_gar) return 'I går';
+		const d = new Date(key + 'T12:00:00');
+		return d.toLocaleDateString('da-DK', { day: 'numeric', month: 'long' });
+	}
 </script>
 
 <div class="page">
@@ -267,6 +410,14 @@
 				onclick={() => skiftTab('opskrifter')}
 			>
 				Opskrifter
+			</button>
+			<button
+				class="tab-knap"
+				class:aktiv={aktivTab === 'dagbog'}
+				type="button"
+				onclick={() => skiftTab('dagbog')}
+			>
+				Dagbog
 			</button>
 		</div>
 
@@ -447,9 +598,12 @@
 				+ Tilføj fødevare
 			</button>
 			{#if maaltid.length > 0}
+				<button class="primary-knap sage" type="button" onclick={aabnGemModal}>
+					Gem måltidet i dagbog
+				</button>
 				<button class="ghost-knap" type="button" onclick={nulstilMaaltid}>Nulstil måltid</button>
 			{/if}
-		{:else}
+		{:else if aktivTab === 'opskrifter'}
 			<input
 				type="search"
 				class="search"
@@ -514,7 +668,178 @@
 					{/each}
 				</div>
 			{/if}
+		{:else}
+			<div class="dagbog-rad">
+				<button
+					class="dato-knap"
+					type="button"
+					onclick={() => {
+						const d = new Date(dagbogDato + 'T12:00:00');
+						d.setDate(d.getDate() - 1);
+						void aendreDagbogDato(formatDatoKey(d));
+					}}
+					aria-label="Forrige dag"
+				>
+					‹
+				</button>
+				<input
+					class="dato-input"
+					type="date"
+					value={dagbogDato}
+					onchange={(e) =>
+						void aendreDagbogDato((e.target as HTMLInputElement).value)}
+				/>
+				<button
+					class="dato-knap"
+					type="button"
+					onclick={() => {
+						const d = new Date(dagbogDato + 'T12:00:00');
+						d.setDate(d.getDate() + 1);
+						void aendreDagbogDato(formatDatoKey(d));
+					}}
+					aria-label="Næste dag"
+				>
+					›
+				</button>
+			</div>
+			<div class="dato-label">{visningsDato(dagbogDato)}</div>
+
+			{#if dagbogIndlaeser}
+				<div class="status-besked">Henter dagbog...</div>
+			{:else if dagbogFejl}
+				<div class="status-besked fejl">{dagbogFejl}</div>
+			{:else if dagbogMaaltider.length === 0}
+				<div class="status-besked">
+					Ingen måltider gemt for denne dag. Byg et måltid og tryk Gem.
+				</div>
+			{:else}
+				{@const dagsTotaler = dagbogTotaler()}
+				<div class="totaler">
+					<div class="total-card">
+						<div class="total-head">
+							<span class="total-label">Protein i dag</span>
+						</div>
+						<div class="total-val">{formatGram(dagsTotaler.protein)}</div>
+					</div>
+					<div class="total-card">
+						<div class="total-head">
+							<span class="total-label">Fibre i dag</span>
+							<span class="total-mål">mål {FIBER_DAGS_MAAL}g</span>
+						</div>
+						<div class="total-val">{formatGram(dagsTotaler.fiber)}</div>
+						<div class="total-bar">
+							<div
+								class="total-fill fiber-fill"
+								style="width: {procentMod(FIBER_DAGS_MAAL, dagsTotaler.fiber)}%"
+							></div>
+						</div>
+					</div>
+				</div>
+
+				<div class="dagbog-liste">
+					{#each MAALTIDSTYPER as type (type)}
+						{@const dette = dagbogMaaltider.filter((m) => m.type === type)}
+						{#if dette.length > 0}
+							<div class="type-gruppe">
+								<div class="type-overskrift">{MAALTIDSTYPE_LABELS[type]}</div>
+								{#each dette as m (m.id)}
+									<div class="dagbog-kort">
+										<div class="dagbog-kort-head">
+											<div class="dagbog-navn">{m.navn}</div>
+											<button
+												class="ikon-knap"
+												type="button"
+												onclick={() => sletGemtMaaltid(m.id)}
+												aria-label="Slet måltid"
+											>
+												×
+											</button>
+										</div>
+										<div class="dagbog-totaler">
+											<span>{formatGram(m.totalP)} protein</span>
+											<span>·</span>
+											<span>{formatGram(m.totalF)} fiber</span>
+											<span>·</span>
+											<span>{m.items.length} ingredienser</span>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					{/each}
+				</div>
+			{/if}
 		{/if}
+	{/if}
+
+	{#if viserGemModal}
+		<div
+			class="modal-bag"
+			role="dialog"
+			aria-modal="true"
+			onclick={(e) => {
+				if (e.target === e.currentTarget) lukGemModal();
+			}}
+			onkeydown={(e) => {
+				if (e.key === 'Escape') lukGemModal();
+			}}
+			tabindex="-1"
+		>
+			<div class="modal">
+				<div class="modal-head">
+					<div class="modal-titel">Gem måltid i dagbog</div>
+					<button class="modal-luk" type="button" onclick={lukGemModal} aria-label="Luk">
+						×
+					</button>
+				</div>
+
+				<label class="felt">
+					<span class="felt-label">Navn</span>
+					<input
+						type="text"
+						class="felt-input"
+						placeholder="fx Morgenmad med skyr og bær"
+						bind:value={gemNavn}
+						disabled={gemmer}
+					/>
+				</label>
+
+				<div class="felt">
+					<span class="felt-label">Måltidstype</span>
+					<div class="type-rad">
+						{#each MAALTIDSTYPER as t (t)}
+							<button
+								type="button"
+								class="type-chip"
+								class:aktiv={gemType === t}
+								onclick={() => (gemType = t)}
+								disabled={gemmer}
+							>
+								{MAALTIDSTYPE_LABELS[t]}
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<label class="felt">
+					<span class="felt-label">Dato</span>
+					<input
+						type="date"
+						class="felt-input"
+						bind:value={gemDato}
+						disabled={gemmer}
+					/>
+				</label>
+
+				{#if gemBesked}
+					<div class="gem-besked {gemBesked.type}">{gemBesked.tekst}</div>
+				{/if}
+
+				<button class="primary-knap" type="button" onclick={gemMaaltidet} disabled={gemmer}>
+					{gemmer ? 'Gemmer...' : 'Gem'}
+				</button>
+			</div>
+		</div>
 	{/if}
 
 	{#if viserPicker}
@@ -629,7 +954,7 @@
 
 	.tabs {
 		display: grid;
-		grid-template-columns: 1fr 1fr 1fr;
+		grid-template-columns: 1fr 1fr 1fr 1fr;
 		background: var(--bg2);
 		padding: 4px;
 		border-radius: 12px;
@@ -960,6 +1285,16 @@
 		font-family: var(--ff-b);
 	}
 
+	.primary-knap.sage {
+		background: var(--sage);
+		margin-top: 8px;
+	}
+
+	.primary-knap:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
 	.ghost-knap {
 		display: block;
 		width: 100%;
@@ -1125,5 +1460,173 @@
 		font-size: 18px;
 		color: var(--terra);
 		font-weight: 600;
+	}
+
+	.dagbog-rad {
+		display: grid;
+		grid-template-columns: 40px 1fr 40px;
+		gap: 8px;
+		align-items: center;
+		margin-bottom: 4px;
+	}
+
+	.dato-knap {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		font-size: 18px;
+		color: var(--text2);
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.dato-knap:hover {
+		background: var(--terra);
+		color: #fff;
+		border-color: var(--terra);
+	}
+
+	.dato-input {
+		padding: 10px 12px;
+		font-size: 14px;
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: var(--bg2);
+		color: var(--text);
+		font-family: var(--ff-b);
+		outline: none;
+		text-align: center;
+	}
+
+	.dato-label {
+		font-family: var(--ff-d);
+		font-size: 16px;
+		font-weight: 600;
+		color: var(--text);
+		text-align: center;
+		margin-bottom: 14px;
+	}
+
+	.dagbog-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+
+	.type-overskrift {
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-bottom: 6px;
+	}
+
+	.dagbog-kort {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		padding: 12px 14px;
+		margin-bottom: 6px;
+	}
+
+	.dagbog-kort-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		margin-bottom: 4px;
+	}
+
+	.dagbog-navn {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--text);
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.dagbog-totaler {
+		font-size: 11.5px;
+		color: var(--text3);
+		display: flex;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+
+	.felt {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin-bottom: 4px;
+	}
+
+	.felt-label {
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.felt-input {
+		padding: 10px 12px;
+		font-size: 14px;
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: var(--bg2);
+		color: var(--text);
+		font-family: var(--ff-b);
+		outline: none;
+	}
+
+	.felt-input:focus {
+		border-color: var(--terra);
+	}
+
+	.type-rad {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 6px;
+	}
+
+	.type-chip {
+		padding: 9px 10px;
+		font-size: 12.5px;
+		font-weight: 500;
+		border-radius: 8px;
+		border: 1px solid var(--border);
+		background: var(--white);
+		color: var(--text2);
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.type-chip.aktiv {
+		background: var(--terra);
+		color: #fff;
+		border-color: var(--terra);
+	}
+
+	.gem-besked {
+		padding: 10px 12px;
+		border-radius: 8px;
+		font-size: 12.5px;
+		margin-bottom: 6px;
+	}
+
+	.gem-besked.ok {
+		background: var(--sdim);
+		color: var(--sage);
+	}
+
+	.gem-besked.fejl {
+		background: #fbeeea;
+		color: #8a4a3e;
 	}
 </style>
