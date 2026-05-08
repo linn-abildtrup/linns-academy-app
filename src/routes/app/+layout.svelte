@@ -6,6 +6,7 @@
 	import { createUserDoc, getUserDoc, synkroniserForlobskundeStatus } from '$lib/userDoc';
 	import type { UserDoc } from '$lib/types';
 	import TabBar from '$lib/components/TabBar.svelte';
+	import Header from '$lib/components/Header.svelte';
 
 	let { children } = $props();
 
@@ -62,6 +63,7 @@
 	</div>
 {:else}
 	<div class="app-shell">
+		<Header />
 		<main class="content">
 			{@render children()}
 		</main>

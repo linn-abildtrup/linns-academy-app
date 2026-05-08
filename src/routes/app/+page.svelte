@@ -309,26 +309,20 @@
 {#if userDoc?.state === 'forlobskunde'}
 	<div class="forside-a1">
 		<header class="forside-header">
-			<div class="header-content">
-				<div class="header-text">
-					<div class="date-label">{today}</div>
-					<h1 class="greeting">{greeting}</h1>
-					{#if forlob && dayNumber !== null}
-						<a class="forlob-badge" href="/app/moduler/forlob">
-							<span class="badge-dot"></span>
-							{forlob.navn} · dag {dayNumber} af {forlob.antalDage}
-						</a>
-					{:else if forlob}
-						<a class="forlob-badge" href="/app/moduler/forlob">
-							<span class="badge-dot"></span>
-							{forlob.navn} · starter snart
-						</a>
-					{/if}
-				</div>
-				<button class="bell-button" aria-label="Notifikationer">
-					<Icon name="bell" size={15} color="var(--text2)" />
-					<span class="bell-dot"></span>
-				</button>
+			<div class="header-text">
+				<div class="date-label">{today}</div>
+				<h1 class="greeting">{greeting}</h1>
+				{#if forlob && dayNumber !== null}
+					<a class="forlob-badge" href="/app/moduler/forlob">
+						<span class="badge-dot"></span>
+						{forlob.navn} · dag {dayNumber} af {forlob.antalDage}
+					</a>
+				{:else if forlob}
+					<a class="forlob-badge" href="/app/moduler/forlob">
+						<span class="badge-dot"></span>
+						{forlob.navn} · starter snart
+					</a>
+				{/if}
 			</div>
 		</header>
 
@@ -456,13 +450,6 @@
 	</div>
 {:else if userDoc?.state === 'modulbruger'}
 	<div class="forside-b1">
-		<header class="b1-header">
-			<div class="b1-brand">Linn's Academy</div>
-			<button class="bell-button" aria-label="Notifikationer">
-				<Icon name="bell" size={13} color="var(--text2)" />
-			</button>
-		</header>
-
 		<div class="forside-body">
 			<section class="b1-greeting">
 				<div class="date-label">{today}</div>
@@ -504,13 +491,6 @@
 	</div>
 {:else if userDoc?.state === 'udlobet'}
 	<div class="forside-c1">
-		<header class="b1-header">
-			<div class="b1-brand">Linn's Academy</div>
-			<button class="bell-button" aria-label="Notifikationer">
-				<Icon name="bell" size={13} color="var(--text2)" />
-			</button>
-		</header>
-
 		<div class="forside-body">
 			<section class="c1-greeting">
 				<div class="date-label">Velkommen tilbage</div>
@@ -589,18 +569,6 @@
 		border-bottom: 1px solid var(--border);
 	}
 
-	.header-content {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: 12px;
-	}
-
-	.header-text {
-		min-width: 0;
-		flex: 1;
-	}
-
 	.date-label {
 		font-size: 9.5px;
 		font-weight: 600;
@@ -648,51 +616,6 @@
 		height: 5px;
 		border-radius: 50%;
 		background: var(--terra);
-	}
-
-	.bell-button {
-		width: 34px;
-		height: 34px;
-		border-radius: 50%;
-		background: var(--white);
-		border: 1px solid var(--border);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		position: relative;
-		flex-shrink: 0;
-		cursor: pointer;
-	}
-
-	.bell-dot {
-		position: absolute;
-		top: 7px;
-		right: 8px;
-		width: 6px;
-		height: 6px;
-		border-radius: 50%;
-		background: var(--terra);
-	}
-
-	/* ── B1 og C1 header ───────────────────────────────────────── */
-
-	.b1-header {
-		padding: 10px 20px 0;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.b1-brand {
-		font-family: var(--ff-d);
-		font-style: italic;
-		font-size: 12px;
-		color: var(--text2);
-	}
-
-	.b1-header .bell-button {
-		width: 32px;
-		height: 32px;
 	}
 
 	.b1-greeting {
