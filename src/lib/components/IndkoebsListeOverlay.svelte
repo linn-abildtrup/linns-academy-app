@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
 	import type { Opskrift } from '$lib/content/opskrifter';
 	import {
 		BUTIKS_GRUPPER,
@@ -27,6 +28,22 @@
 	let manuelEnhed = $state('stk');
 	let toast = $state<string | null>(null);
 	let pdfArbejder = $state(false);
+
+	// Lås bagvedliggende scroll så iPhone ikke scroller siden under overlayet
+	onMount(() => {
+		const original = document.body.style.overflow;
+		document.body.style.overflow = 'hidden';
+		return () => {
+			document.body.style.overflow = original;
+		};
+	});
+
+	onDestroy(() => {
+		// Sikkerhed: nulstil hvis komponenten fjernes uden at onMount-cleanup kører
+		if (typeof document !== 'undefined') {
+			document.body.style.overflow = '';
+		}
+	});
 
 	const grupper = $derived(grupperIndkoebsliste(items));
 	const aktiveCount = $derived(items.filter((i) => !i.tjekket).length);
@@ -214,7 +231,7 @@
 		background: var(--bg);
 		width: 100%;
 		max-width: 520px;
-		max-height: 92vh;
+		max-height: 92dvh;
 		border-radius: 18px 18px 0 0;
 		display: flex;
 		flex-direction: column;
@@ -267,9 +284,12 @@
 	}
 
 	.body {
-		padding: 14px 18px 24px;
+		padding: 14px 18px calc(24px + env(safe-area-inset-bottom));
 		overflow-y: auto;
+		overscroll-behavior: contain;
+		-webkit-overflow-scrolling: touch;
 		flex: 1;
+		min-height: 0;
 	}
 
 	.tom {
