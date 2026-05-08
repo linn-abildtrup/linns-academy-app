@@ -31,6 +31,10 @@ scripts/service-account-key.json
 /videos-to-upload
 /sounds
 
+# Data-filer til seeding (kan downloades igen, behøver ikke commit)
+scripts/*.xlsx
+scripts/*.csv
+
 # Claude Code lokale settings
 /.claude
 
