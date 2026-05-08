@@ -3,7 +3,7 @@
 
 	function getModuleName(pathname: string): string {
 		if (pathname.startsWith('/app/admin/forlob')) return 'ADMIN — FORLØB';
-		if (pathname.startsWith('/app/admin/mikrotraening')) return 'ADMIN — MIKROTRÆNING';
+		if (pathname.startsWith('/app/admin/traening')) return 'ADMIN — TRÆNINGSMODUL';
 		if (pathname.startsWith('/app/admin/opskrifter')) return 'ADMIN — OPSKRIFTER';
 		if (pathname.startsWith('/app/admin/spoergsmaal')) return 'ADMIN — SPØRGSMÅL';
 		if (pathname.startsWith('/app/admin')) return 'ADMIN';

@@ -4,13 +4,15 @@
 	import type { Exercise, TrainingDay } from '$lib/content/mikrotraening';
 	import { filtrerOvelserTilProgram, genererStandardProgram } from '$lib/content/mikrotraening';
 	import {
-		gemDage,
+		gemForlobsDage,
+		gemForlobsProgram,
 		hentAlleExercises,
-		hentProgram,
+		hentForlobsProgram,
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 
+	const forlobId = $derived(page.params.id ?? '');
 	const programId = $derived(page.params.programId ?? '');
 
 	let programData = $state<ProgramMedDage | null>(null);
@@ -20,15 +22,32 @@
 	let genererStatus = $state<'klar' | 'arbejder' | 'gemt' | 'fejl'>('klar');
 	let genererBesked = $state<string>('');
 
+	// Metadata-redigering
+	let formNavn = $state('');
+	let formBeskrivelse = $state('');
+	let formAktiv = $state(true);
+	let metaGemmer = $state(false);
+	let metaKvit = $state(false);
+	let metaFejl = $state<string | null>(null);
+
 	const tommeDage = $derived(programData?.dage.filter((d) => d.exercises.length === 0).length ?? 0);
 	const altErTomt = $derived(programData !== null && tommeDage === programData.dage.length);
 
 	onMount(async () => {
 		try {
-			const [data, ovelser] = await Promise.all([hentProgram(programId), hentAlleExercises()]);
+			const [data, ovelser] = await Promise.all([
+				hentForlobsProgram(forlobId, programId),
+				hentAlleExercises()
+			]);
 			programData = data;
 			alleOvelser = ovelser;
-			if (!data) fejl = 'Programmet kunne ikke findes.';
+			if (data) {
+				formNavn = data.program.navn;
+				formBeskrivelse = data.program.beskrivelse;
+				formAktiv = data.program.aktiv;
+			} else {
+				fejl = 'Programmet kunne ikke findes.';
+			}
 		} catch (e) {
 			fejl = 'Kunne ikke hente data.';
 			console.error(e);
@@ -37,9 +56,45 @@
 		}
 	});
 
+	async function gemMetadata() {
+		if (!programData) return;
+		metaGemmer = true;
+		metaKvit = false;
+		metaFejl = null;
+		const navn = formNavn.trim();
+		if (!navn) {
+			metaFejl = 'Navnet må ikke være tomt.';
+			metaGemmer = false;
+			return;
+		}
+		try {
+			await gemForlobsProgram(forlobId, programId, {
+				...programData.program,
+				navn,
+				beskrivelse: formBeskrivelse.trim(),
+				aktiv: formAktiv
+			});
+			programData = {
+				...programData,
+				program: {
+					...programData.program,
+					navn,
+					beskrivelse: formBeskrivelse.trim(),
+					aktiv: formAktiv
+				}
+			};
+			metaKvit = true;
+			setTimeout(() => (metaKvit = false), 2000);
+		} catch (e) {
+			console.error(e);
+			metaFejl = 'Kunne ikke gemme.';
+		} finally {
+			metaGemmer = false;
+		}
+	}
+
 	async function genererStandardprogram() {
 		if (!programData) return;
-
 		const bekraeftet = confirm(
 			`Det vil overskrive alle ${programData.dage.length} dage med et standardprogram. Er du sikker?`
 		);
@@ -51,8 +106,7 @@
 		try {
 			const filtrerede = filtrerOvelserTilProgram(alleOvelser, programData.program.udstyr);
 			const nyeDage = genererStandardProgram(programData.program.antalDage, filtrerede);
-			await gemDage(programId, nyeDage);
-
+			await gemForlobsDage(forlobId, programId, nyeDage);
 			programData = { ...programData, dage: nyeDage };
 			genererStatus = 'gemt';
 			genererBesked = `${nyeDage.length} dage genereret og gemt.`;
@@ -75,11 +129,11 @@
 
 <div class="page">
 	<header class="page-header">
-		<a class="back" href="/app/admin/mikrotraening">
+		<a class="back" href="/app/admin/forlob/{forlobId}/mikrotraening">
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Programmer</span>
 		</a>
-		<div class="eyebrow">Admin · Program</div>
+		<div class="eyebrow">Admin · Mikrotræning</div>
 		<h1>{programData?.program.navn ?? 'Henter...'}</h1>
 		{#if programData}
 			<p class="page-sub">{programData.program.beskrivelse}</p>
@@ -91,10 +145,33 @@
 	{:else if fejl}
 		<div class="status-besked fejl">{fejl}</div>
 	{:else if programData}
+		<section class="form-card">
+			<div class="section-label">Indstillinger</div>
+			<label class="felt">
+				<span class="felt-label">Navn</span>
+				<input type="text" bind:value={formNavn} disabled={metaGemmer} />
+			</label>
+			<label class="felt">
+				<span class="felt-label">Beskrivelse</span>
+				<textarea bind:value={formBeskrivelse} rows="2" disabled={metaGemmer}></textarea>
+			</label>
+			<label class="checkbox-rad">
+				<input type="checkbox" bind:checked={formAktiv} disabled={metaGemmer} />
+				<span>Aktiv (kan vælges af klienter)</span>
+			</label>
+			{#if metaFejl}
+				<div class="besked fejl">{metaFejl}</div>
+			{/if}
+			{#if metaKvit}
+				<div class="besked ok">Gemt ✓</div>
+			{/if}
+			<button class="btn primary" type="button" onclick={gemMetadata} disabled={metaGemmer}>
+				{metaGemmer ? 'Gemmer...' : 'Gem ændringer'}
+			</button>
+		</section>
+
 		<section class="actions-card">
-			<div class="actions-head">
-				<div class="section-label">Hurtige handlinger</div>
-			</div>
+			<div class="section-label">Hurtige handlinger</div>
 			<button
 				class="btn primary"
 				type="button"
@@ -132,7 +209,7 @@
 					<a
 						class="dag-row"
 						class:tom={dag.exercises.length === 0}
-						href="/app/admin/mikrotraening/{programId}/{dag.dagNummer}"
+						href="/app/admin/forlob/{forlobId}/mikrotraening/{programId}/{dag.dagNummer}"
 					>
 						<div class="dag-num">{dag.dagNummer}</div>
 						<div class="dag-tekst">
@@ -170,10 +247,6 @@
 		margin-bottom: 12px;
 	}
 
-	.back:hover {
-		color: var(--text);
-	}
-
 	.eyebrow {
 		font-size: 10px;
 		font-weight: 600;
@@ -184,7 +257,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 28px;
+		font-size: 26px;
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -215,6 +288,7 @@
 		border-color: #f0d6cf;
 	}
 
+	.form-card,
 	.actions-card,
 	.dage-card {
 		background: var(--white);
@@ -222,14 +296,15 @@
 		border-radius: 14px;
 		padding: 16px;
 		margin-bottom: 14px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
 	}
 
-	.actions-head,
 	.card-head {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		margin-bottom: 12px;
 	}
 
 	.section-label {
@@ -238,6 +313,57 @@
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
 		color: var(--text3);
+	}
+
+	.felt {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.felt-label {
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.felt input,
+	.felt textarea {
+		padding: 10px 12px;
+		font-size: 14px;
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: var(--bg2);
+		color: var(--text);
+		font-family: var(--ff-b);
+		outline: none;
+	}
+
+	.felt textarea {
+		resize: vertical;
+		line-height: 1.5;
+	}
+
+	.felt input:focus,
+	.felt textarea:focus {
+		border-color: var(--terra);
+	}
+
+	.checkbox-rad {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+		color: var(--text2);
+		cursor: pointer;
+	}
+
+	.checkbox-rad input {
+		width: 16px;
+		height: 16px;
+		accent-color: var(--terra);
 	}
 
 	.tom-tael {
@@ -271,19 +397,14 @@
 		cursor: not-allowed;
 	}
 
-	.btn:hover:not(:disabled) {
-		filter: brightness(0.95);
-	}
-
 	.hint {
 		font-size: 11px;
 		color: var(--text4);
-		margin: 8px 0 0;
+		margin: 0;
 		line-height: 1.4;
 	}
 
 	.besked {
-		margin-top: 10px;
 		padding: 8px 12px;
 		border-radius: 10px;
 		font-size: 12px;

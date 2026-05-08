@@ -5,7 +5,7 @@
 	import type { UserDoc } from '$lib/types';
 	import type { MikrotraeningFremgang, UserProduct } from '$lib/content/mikrotraening';
 	import { naesteDag, beregnProgramFremgang } from '$lib/content/mikrotraening';
-	import { hentProgram, hentUserProduct, type ProgramMedDage } from '$lib/firestore/mikrotraening';
+	import { hentForlobsProgram, hentUserProduct, type ProgramMedDage } from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -54,7 +54,14 @@
 				return;
 			}
 
-			const data = await hentProgram(programId);
+			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+			if (!forlobId) {
+				fejl = 'Du er ikke tilknyttet et forløb endnu. Kontakt Linn.';
+				loading = false;
+				return;
+			}
+
+			const data = await hentForlobsProgram(forlobId, programId);
 			if (!data) {
 				fejl = 'Programmet kunne ikke findes.';
 				loading = false;

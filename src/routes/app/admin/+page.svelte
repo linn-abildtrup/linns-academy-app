@@ -19,10 +19,10 @@
 			icon: 'book' as const
 		},
 		{
-			id: 'mikrotraening',
-			navn: 'Mikrotræning',
-			beskrivelse: 'Rediger træningsprogrammer og dage',
-			rute: '/app/admin/mikrotraening',
+			id: 'traening',
+			navn: 'Træningsmodul',
+			beskrivelse: 'Øvelsesbank — opret og rediger øvelser til mikrotræningsprogrammer',
+			rute: '/app/admin/traening',
 			accent: '#C9A07A',
 			icon: 'flame' as const
 		},

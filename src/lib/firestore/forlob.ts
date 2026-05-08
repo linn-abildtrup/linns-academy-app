@@ -113,16 +113,44 @@ export async function kopierForlobIndhold(
 	faqItems: number;
 	guideKategorier: number;
 	guideItems: number;
+	mikrotraeningProgrammer: number;
+	mikrotraeningDage: number;
 }> {
-	const [fraVane, fraDage, fraFaqKats, fraFaqItems, fraGuideKats, fraGuideItems] =
-		await Promise.all([
-			getDocs(collection(db, 'forlob', fraForlobId, 'vaneprogram')),
-			getDocs(collection(db, 'forlob', fraForlobId, 'forlobsdage')),
-			getDocs(collection(db, 'forlob', fraForlobId, 'faqKategorier')),
-			getDocs(collection(db, 'forlob', fraForlobId, 'faqItems')),
-			getDocs(collection(db, 'forlob', fraForlobId, 'guideKategorier')),
-			getDocs(collection(db, 'forlob', fraForlobId, 'guideItems'))
-		]);
+	const [
+		fraVane,
+		fraDage,
+		fraFaqKats,
+		fraFaqItems,
+		fraGuideKats,
+		fraGuideItems,
+		fraMikroProgs
+	] = await Promise.all([
+		getDocs(collection(db, 'forlob', fraForlobId, 'vaneprogram')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'forlobsdage')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'faqKategorier')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'faqItems')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'guideKategorier')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'guideItems')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'mikrotraeningProgrammer'))
+	]);
+
+	// Hent dage for hvert mikrotræningsprogram parallelt så vi kan kopiere
+	// både program-dokument og subcollection days/{dagId} i samme batch.
+	const mikroDageSnaps = await Promise.all(
+		fraMikroProgs.docs.map((p) =>
+			getDocs(
+				collection(
+					db,
+					'forlob',
+					fraForlobId,
+					'mikrotraeningProgrammer',
+					p.id,
+					'days'
+				)
+			)
+		)
+	);
+	let mikroDageTotal = 0;
 
 	const batch = writeBatch(db);
 	for (const d of fraVane.docs) {
@@ -143,6 +171,29 @@ export async function kopierForlobIndhold(
 	for (const d of fraGuideItems.docs) {
 		batch.set(doc(db, 'forlob', tilForlobId, 'guideItems', d.id), d.data());
 	}
+	for (let i = 0; i < fraMikroProgs.docs.length; i++) {
+		const p = fraMikroProgs.docs[i];
+		batch.set(
+			doc(db, 'forlob', tilForlobId, 'mikrotraeningProgrammer', p.id),
+			p.data()
+		);
+		const dageSnap = mikroDageSnaps[i];
+		mikroDageTotal += dageSnap.size;
+		for (const d of dageSnap.docs) {
+			batch.set(
+				doc(
+					db,
+					'forlob',
+					tilForlobId,
+					'mikrotraeningProgrammer',
+					p.id,
+					'days',
+					d.id
+				),
+				d.data()
+			);
+		}
+	}
 	await batch.commit();
 
 	return {
@@ -151,7 +202,9 @@ export async function kopierForlobIndhold(
 		faqKategorier: fraFaqKats.size,
 		faqItems: fraFaqItems.size,
 		guideKategorier: fraGuideKats.size,
-		guideItems: fraGuideItems.size
+		guideItems: fraGuideItems.size,
+		mikrotraeningProgrammer: fraMikroProgs.size,
+		mikrotraeningDage: mikroDageTotal
 	};
 }
 

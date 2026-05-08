@@ -264,6 +264,17 @@
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
 
+		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/mikrotraening">
+			<div class="indhold-icon" style="background: #C9A07A;">
+				<Icon name="flame" size={16} color="#fff" />
+			</div>
+			<div class="indhold-tekst">
+				<div class="indhold-navn">Mikrotræning</div>
+				<div class="indhold-sub">Byg programmer (varianter) som klienten kan vælge imellem</div>
+			</div>
+			<Icon name="chevron-r" size={14} color="var(--text3)" />
+		</a>
+
 		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/bibliotek">
 			<div class="indhold-icon" style="background: var(--terra);">
 				<Icon name="book" size={16} color="#fff" />

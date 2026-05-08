@@ -101,6 +101,19 @@ service cloud.firestore {
 				allow write: if isAdmin();
 			}
 
+			// Mikrotræningsprogrammer pr forløb: program-metadata + dage som
+			// subcollection. Alle autentificerede kan læse (klient skal se
+			// program og dage), kun admin kan skrive.
+			match /mikrotraeningProgrammer/{programId} {
+				allow read: if request.auth != null;
+				allow write: if isAdmin();
+
+				match /days/{dagId} {
+					allow read: if request.auth != null;
+					allow write: if isAdmin();
+				}
+			}
+
 			// Bibliotek pr forløb — FAQ-kategorier: alle autentificerede kan læse,
 			// kun admin kan skrive. Klient-koden filtrerer på udgivet-flag.
 			match /faqKategorier/{kategoriId} {

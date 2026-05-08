@@ -12,7 +12,7 @@
 	import { harGennemfortDag } from '$lib/content/mikrotraening';
 	import {
 		hentExercises,
-		hentProgram,
+		hentForlobsProgram,
 		hentUserProduct,
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
@@ -72,7 +72,14 @@
 				return;
 			}
 
-			const data = await hentProgram(programId);
+			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+			if (!forlobId) {
+				fejl = 'Du er ikke tilknyttet et forløb endnu.';
+				loading = false;
+				return;
+			}
+
+			const data = await hentForlobsProgram(forlobId, programId);
 			if (!data) {
 				fejl = 'Programmet kunne ikke findes.';
 				loading = false;

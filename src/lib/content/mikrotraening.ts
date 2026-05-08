@@ -126,6 +126,20 @@ export interface PauseDoc {
 // ==============================================
 
 /**
+ * Genererer et tomt skelet af træningsdage for et nyt program.
+ * Hver dag får dagNummer 1..antal og tomt exercises-array — Linn
+ * fylder dem ud via admin-UI'et bagefter.
+ */
+export function tommeDageSkelet(antal: number): TrainingDay[] {
+	return Array.from({ length: antal }, (_, i) => ({
+		dagNummer: i + 1,
+		titel: '',
+		indledning: '',
+		exercises: []
+	}));
+}
+
+/**
  * Beregner total tid for en træningsdag i sekunder.
  * Inkluderer alle øvelser, alle sæt, og hvile mellem sæt.
  * Tæller IKKE prep-tid før første øvelse eller switch-tid mellem øvelser.

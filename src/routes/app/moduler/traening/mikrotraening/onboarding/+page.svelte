@@ -2,26 +2,29 @@
 	import { getContext, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
+	import type { TrainingProgram, UserProduct } from '$lib/content/mikrotraening';
 	import {
 		gemProgramValg,
+		hentForlobsProgrammer,
 		hentUserProduct
 	} from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
-	type Valg = 'kettlebell' | 'no_kettlebell';
-
-	const PROGRAM_ID: Record<Valg, string> = {
-		kettlebell: 'mikrotraening_kettlebell',
-		no_kettlebell: 'mikrotraening_no_kettlebell'
-	};
-
 	const getUser = getContext<() => User | null>('user');
 	const user = $derived(getUser());
 
+	let programmer = $state<TrainingProgram[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
-	let gemmer = $state<Valg | null>(null);
+	let gemmer = $state<string | null>(null);
+
+	function emojiForUdstyr(udstyr: string[]): string {
+		if (udstyr.includes('kettlebell')) return '🔔';
+		if (udstyr.includes('haandvaegte')) return '💪';
+		if (udstyr.includes('elastik')) return '🧘';
+		return '💪';
+	}
 
 	onMount(async () => {
 		const u = user;
@@ -41,6 +44,19 @@
 				goto('/app/moduler/traening/mikrotraening');
 				return;
 			}
+
+			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+			if (!forlobId) {
+				fejl = 'Du er ikke tilknyttet et forløb endnu. Kontakt Linn.';
+				loading = false;
+				return;
+			}
+
+			const alle = await hentForlobsProgrammer(forlobId);
+			programmer = alle.filter((p) => p.aktiv);
+			if (programmer.length === 0) {
+				fejl = 'Der er ikke lagt nogen mikrotræningsprogrammer op for dit forløb endnu.';
+			}
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente data. Prøv igen.';
@@ -49,13 +65,13 @@
 		}
 	});
 
-	async function vaelg(valg: Valg) {
+	async function vaelg(programId: string) {
 		const u = user;
 		if (!u || gemmer) return;
-		gemmer = valg;
+		gemmer = programId;
 		fejl = null;
 		try {
-			await gemProgramValg(u.uid, 'kickstart', 'mikrotraening', PROGRAM_ID[valg]);
+			await gemProgramValg(u.uid, 'kickstart', 'mikrotraening', programId);
 			goto('/app/moduler/traening/mikrotraening');
 		} catch (e) {
 			console.error(e);
@@ -84,33 +100,23 @@
 		<div class="status-besked fejl">{fejl}</div>
 	{:else}
 		<div class="valg-liste">
-			<button
-				class="valg-knap"
-				type="button"
-				onclick={() => vaelg('kettlebell')}
-				disabled={gemmer !== null}
-			>
-				<span class="valg-emoji">🔔</span>
-				<span class="valg-titel">Ja, jeg har kettlebells</span>
-				<span class="valg-sub">Program med kettlebell-øvelser</span>
-				{#if gemmer === 'kettlebell'}
-					<span class="valg-status">Gemmer...</span>
-				{/if}
-			</button>
-
-			<button
-				class="valg-knap"
-				type="button"
-				onclick={() => vaelg('no_kettlebell')}
-				disabled={gemmer !== null}
-			>
-				<span class="valg-emoji">💪</span>
-				<span class="valg-titel">Nej, jeg træner uden</span>
-				<span class="valg-sub">Program uden udstyr</span>
-				{#if gemmer === 'no_kettlebell'}
-					<span class="valg-status">Gemmer...</span>
-				{/if}
-			</button>
+			{#each programmer as p (p.id)}
+				<button
+					class="valg-knap"
+					type="button"
+					onclick={() => vaelg(p.id)}
+					disabled={gemmer !== null}
+				>
+					<span class="valg-emoji">{emojiForUdstyr(p.udstyr)}</span>
+					<span class="valg-titel">{p.navn}</span>
+					{#if p.beskrivelse}
+						<span class="valg-sub">{p.beskrivelse}</span>
+					{/if}
+					{#if gemmer === p.id}
+						<span class="valg-status">Gemmer...</span>
+					{/if}
+				</button>
+			{/each}
 		</div>
 	{/if}
 </div>

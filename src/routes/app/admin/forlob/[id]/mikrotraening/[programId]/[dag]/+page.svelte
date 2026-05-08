@@ -3,13 +3,14 @@
 	import { page } from '$app/state';
 	import type { DayExercise, Exercise, TrainingDay } from '$lib/content/mikrotraening';
 	import {
-		gemDag,
+		gemForlobsDag,
 		hentAlleExercises,
-		hentProgram,
+		hentForlobsProgram,
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 
+	const forlobId = $derived(page.params.id ?? '');
 	const programId = $derived(page.params.programId ?? '');
 	const dagNummer = $derived(parseInt(page.params.dag ?? '', 10));
 
@@ -33,7 +34,10 @@
 
 	onMount(async () => {
 		try {
-			const [data, ovelser] = await Promise.all([hentProgram(programId), hentAlleExercises()]);
+			const [data, ovelser] = await Promise.all([
+				hentForlobsProgram(forlobId, programId),
+				hentAlleExercises()
+			]);
 			programData = data;
 			alleOvelser = ovelser;
 			if (!data) {
@@ -104,7 +108,7 @@
 				indledning,
 				exercises
 			};
-			await gemDag(programId, dagNummer, dag);
+			await gemForlobsDag(forlobId, programId, dagNummer, dag);
 			gemStatus = 'gemt';
 			gemBesked = 'Gemt.';
 		} catch (e) {
@@ -117,7 +121,7 @@
 
 <div class="page">
 	<header class="page-header">
-		<a class="back" href="/app/admin/mikrotraening/{programId}">
+		<a class="back" href="/app/admin/forlob/{forlobId}/mikrotraening/{programId}">
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Program</span>
 		</a>

@@ -30,11 +30,108 @@ export interface ProgramMedDage {
 
 /**
  * Henter alle træningsprogrammer (uden dage).
- * Bruges af admin-oversigten.
+ * @deprecated Programmer ligger nu under forlob/{forlobId}/mikrotraeningProgrammer.
+ * Brug hentForlobsProgrammer i stedet.
  */
 export async function hentAlleProgrammer(): Promise<TrainingProgram[]> {
 	const snap = await getDocs(collection(db, 'trainingPrograms'));
 	return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TrainingProgram);
+}
+
+/**
+ * Henter alle mikrotræningsprogrammer for et bestemt forløb (uden dage).
+ * Bruges af admin-listevisningen og af klient-onboarding når klienten
+ * skal vælge variant (fx 'med kettlebell' eller 'uden udstyr').
+ */
+export async function hentForlobsProgrammer(forlobId: string): Promise<TrainingProgram[]> {
+	const snap = await getDocs(
+		collection(db, 'forlob', forlobId, 'mikrotraeningProgrammer')
+	);
+	return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TrainingProgram);
+}
+
+/**
+ * Henter et mikrotræningsprogram inkl. alle dets dage.
+ * Returnerer null hvis programmet ikke findes under det givne forløb.
+ */
+export async function hentForlobsProgram(
+	forlobId: string,
+	programId: string
+): Promise<ProgramMedDage | null> {
+	const programRef = doc(db, 'forlob', forlobId, 'mikrotraeningProgrammer', programId);
+	const programSnap = await getDoc(programRef);
+	if (!programSnap.exists()) return null;
+
+	const program = { id: programSnap.id, ...programSnap.data() } as TrainingProgram;
+	const dageSnap = await getDocs(
+		collection(db, 'forlob', forlobId, 'mikrotraeningProgrammer', programId, 'days')
+	);
+	const dage = dageSnap.docs
+		.map((d) => d.data() as TrainingDay)
+		.sort((a, b) => a.dagNummer - b.dagNummer);
+
+	return { id: programSnap.id, program, dage };
+}
+
+/**
+ * Gemmer/opdaterer program-metadata (navn, antalDage, udstyr osv.) under
+ * et forløb. Days håndteres separat via gemForlobsDag.
+ */
+export async function gemForlobsProgram(
+	forlobId: string,
+	programId: string,
+	program: Omit<TrainingProgram, 'id'>
+): Promise<void> {
+	const ref = doc(db, 'forlob', forlobId, 'mikrotraeningProgrammer', programId);
+	await setDoc(ref, program, { merge: true });
+}
+
+/**
+ * Gemmer en træningsdag under et forløbs-program.
+ * Overskriver eksisterende dag hvis den findes.
+ */
+export async function gemForlobsDag(
+	forlobId: string,
+	programId: string,
+	dagNummer: number,
+	dag: TrainingDay
+): Promise<void> {
+	const ref = doc(
+		db,
+		'forlob',
+		forlobId,
+		'mikrotraeningProgrammer',
+		programId,
+		'days',
+		`dag${dagNummer}`
+	);
+	await setDoc(ref, dag);
+}
+
+/**
+ * Gemmer flere dage under et forløbs-program på én gang.
+ */
+export async function gemForlobsDage(
+	forlobId: string,
+	programId: string,
+	dage: TrainingDay[]
+): Promise<void> {
+	await Promise.all(dage.map((d) => gemForlobsDag(forlobId, programId, d.dagNummer, d)));
+}
+
+/**
+ * Sletter et helt mikrotræningsprogram inkl. alle dets dage. Bruges når
+ * Linn beslutter at en variant ikke længere er relevant for forløbet.
+ */
+export async function sletForlobsProgram(
+	forlobId: string,
+	programId: string
+): Promise<void> {
+	const dageSnap = await getDocs(
+		collection(db, 'forlob', forlobId, 'mikrotraeningProgrammer', programId, 'days')
+	);
+	await Promise.all(dageSnap.docs.map((d) => deleteDoc(d.ref)));
+	await deleteDoc(doc(db, 'forlob', forlobId, 'mikrotraeningProgrammer', programId));
 }
 
 /**
@@ -202,4 +299,25 @@ export async function hentExercises(exerciseIds: string[]): Promise<Map<string, 
 		if (ex) map.set(unikkeIds[i], ex);
 	});
 	return map;
+}
+
+/**
+ * Opretter eller opdaterer en øvelse i øvelsesbanken.
+ * exerciseId bruges som dokument-id så Linn kan vælge læselige id'er
+ * (fx 'goblet_squat') der matcher videofilnavn.
+ */
+export async function gemExercise(
+	exerciseId: string,
+	exercise: Omit<Exercise, 'id'>
+): Promise<void> {
+	const ref = doc(db, 'exercises', exerciseId);
+	await setDoc(ref, exercise, { merge: true });
+}
+
+/**
+ * Sletter en øvelse fra øvelsesbanken. Programmer der refererer til
+ * øvelsen får tomme pladser indtil Linn manuelt fjerner referencen.
+ */
+export async function sletExercise(exerciseId: string): Promise<void> {
+	await deleteDoc(doc(db, 'exercises', exerciseId));
 }

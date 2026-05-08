@@ -9,6 +9,7 @@ import {
 	genererStandardProgram,
 	markerDagSomGennemfort,
 	registrerFeedback,
+	tommeDageSkelet,
 	type Exercise,
 	type TrainingDay,
 	type MikrotraeningFremgang
@@ -307,5 +308,20 @@ describe('genererStandardProgram', () => {
 		const dage = genererStandardProgram(3, eksempelExercises);
 		expect(dage[0].dagNummer).toBe(1);
 		expect(dage[2].dagNummer).toBe(3);
+	});
+});
+
+describe('tommeDageSkelet', () => {
+	it('genererer det rigtige antal dage med tomme exercises-arrays', () => {
+		const dage = tommeDageSkelet(5);
+		expect(dage).toHaveLength(5);
+		expect(dage[0].dagNummer).toBe(1);
+		expect(dage[4].dagNummer).toBe(5);
+		expect(dage.every((d) => d.exercises.length === 0)).toBe(true);
+		expect(dage.every((d) => d.titel === '' && d.indledning === '')).toBe(true);
+	});
+
+	it('returnerer tom array for 0 dage', () => {
+		expect(tommeDageSkelet(0)).toEqual([]);
 	});
 });

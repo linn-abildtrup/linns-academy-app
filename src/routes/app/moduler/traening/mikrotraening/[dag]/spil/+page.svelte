@@ -16,8 +16,8 @@
 		gemMikrotraeningFremgang,
 		gemPause,
 		hentExercises,
+		hentForlobsProgram,
 		hentPause,
-		hentProgram,
 		hentUserProduct,
 		sletPause,
 		type ProgramMedDage
@@ -141,7 +141,14 @@
 			}
 			programId = valgtProgramId;
 
-			const data = await hentProgram(valgtProgramId);
+			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+			if (!forlobId) {
+				fejl = 'Du er ikke tilknyttet et forløb endnu.';
+				loading = false;
+				return;
+			}
+
+			const data = await hentForlobsProgram(forlobId, valgtProgramId);
 			if (!data) {
 				fejl = 'Programmet kunne ikke findes.';
 				loading = false;
