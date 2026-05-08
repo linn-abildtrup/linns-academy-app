@@ -91,27 +91,33 @@ export async function sletForlob(forlobId: string): Promise<void> {
 }
 
 /**
- * Kopierer alt indhold (vaneprogram-dage, FAQ-kategorier, FAQ-items) fra et
- * eksisterende forløb til et nyt. Senere udvides funktionen til også at
- * kopiere guides og andet forløbs-specifikt indhold når de moduler bygges.
+ * Kopierer alt indhold (vaneprogram-dage, FAQ, guides) fra et eksisterende
+ * forløb til et nyt. Bruges når et nyt forløb oprettes baseret på et tidligere
+ * — fx Linn laver "Kickstart august 2026" med samme spørgsmål og guides som
+ * maj-forløbet.
  *
- * Bruges når et nyt forløb oprettes baseret på et tidligere — fx Linn
- * laver "Kickstart august 2026" med samme spørgsmål som maj-forløbet.
- *
- * FAQ-items beholder deres reference til kategorierne via kategoriId,
- * og fordi vi kopierer kategorierne med deres oprindelige id (samme
- * doc-id) bevares forholdet i det nye forløb.
+ * Items beholder deres reference til kategorierne via kategoriId, og fordi
+ * vi kopierer kategorierne med deres oprindelige id (samme doc-id) bevares
+ * forholdet i det nye forløb.
  *
  * Idempotent: hvis det nye forløb allerede har indhold, overskrives det.
  */
 export async function kopierForlobIndhold(
 	fraForlobId: string,
 	tilForlobId: string
-): Promise<{ vaneprogramDage: number; faqKategorier: number; faqItems: number }> {
-	const [fraVane, fraFaqKats, fraFaqItems] = await Promise.all([
+): Promise<{
+	vaneprogramDage: number;
+	faqKategorier: number;
+	faqItems: number;
+	guideKategorier: number;
+	guideItems: number;
+}> {
+	const [fraVane, fraFaqKats, fraFaqItems, fraGuideKats, fraGuideItems] = await Promise.all([
 		getDocs(collection(db, 'forlob', fraForlobId, 'vaneprogram')),
 		getDocs(collection(db, 'forlob', fraForlobId, 'faqKategorier')),
-		getDocs(collection(db, 'forlob', fraForlobId, 'faqItems'))
+		getDocs(collection(db, 'forlob', fraForlobId, 'faqItems')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'guideKategorier')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'guideItems'))
 	]);
 
 	const batch = writeBatch(db);
@@ -124,12 +130,20 @@ export async function kopierForlobIndhold(
 	for (const d of fraFaqItems.docs) {
 		batch.set(doc(db, 'forlob', tilForlobId, 'faqItems', d.id), d.data());
 	}
+	for (const d of fraGuideKats.docs) {
+		batch.set(doc(db, 'forlob', tilForlobId, 'guideKategorier', d.id), d.data());
+	}
+	for (const d of fraGuideItems.docs) {
+		batch.set(doc(db, 'forlob', tilForlobId, 'guideItems', d.id), d.data());
+	}
 	await batch.commit();
 
 	return {
 		vaneprogramDage: fraVane.size,
 		faqKategorier: fraFaqKats.size,
-		faqItems: fraFaqItems.size
+		faqItems: fraFaqItems.size,
+		guideKategorier: fraGuideKats.size,
+		guideItems: fraGuideItems.size
 	};
 }
 
