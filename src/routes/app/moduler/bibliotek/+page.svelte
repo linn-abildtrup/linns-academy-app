@@ -11,6 +11,7 @@
 		GuideItem,
 		GuideType
 	} from '$lib/content/bibliotek';
+	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
 	import {
 		formatDanskDato,
 		GUIDE_TYPE_LABELS,
@@ -19,6 +20,7 @@
 		sorterGuides,
 		sorterItems,
 		sorterKategorier,
+		detekterGuideType,
 		videoEmbedUrl
 	} from '$lib/content/bibliotek';
 	import {
@@ -27,6 +29,7 @@
 		hentGuideKategorier,
 		hentGuideItems
 	} from '$lib/firestore/bibliotek';
+	import { hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
@@ -34,11 +37,12 @@
 	const getUser = getContext<() => User | null>('user');
 	const user = $derived(getUser());
 
-	type Tab = 'faq' | 'guides';
+	type Tab = 'faq' | 'guides' | 'lektioner';
 
 	function tabFraQuery(): Tab {
 		const t = page.url.searchParams.get('tab');
 		if (t === 'guides') return 'guides';
+		if (t === 'lektioner') return 'lektioner';
 		return 'faq';
 	}
 
@@ -59,11 +63,26 @@
 	let faqItems = $state<FaqItem[]>([]);
 	let guideKategorier = $state<GuideKategori[]>([]);
 	let guideItems = $state<GuideItem[]>([]);
+	let forlobsdage = $state<ForlobDag[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let aabneFaqItems = $state<Set<string>>(new Set());
 
 	let aabenGuide = $state<GuideItem | null>(null);
+	let aabenLektion = $state<LektionItem | null>(null);
+
+	type LektionMedDag = LektionItem & { dagNummer: number; uge: number };
+
+	const alleLektioner = $derived.by<LektionMedDag[]>(() => {
+		const ud: LektionMedDag[] = [];
+		for (const dag of forlobsdage) {
+			for (const l of dag.lektioner) {
+				if (!l.titel?.trim()) continue;
+				ud.push({ ...l, dagNummer: dag.dagNummer, uge: dag.uge });
+			}
+		}
+		return ud.sort((a, b) => a.dagNummer - b.dagNummer);
+	});
 
 	const sorterede = $derived(sorterKategorier(faqKategorier));
 	const faqItemsPrKategori = $derived(grupperEfterKategori(kunUdgivne(faqItems)));
@@ -111,6 +130,23 @@
 		aabenGuide = null;
 	}
 
+	function aabnLektion(it: LektionMedDag) {
+		if (!it.url) {
+			aabenLektion = it;
+			return;
+		}
+		const t = detekterGuideType(it.url);
+		if (t === 'pdf' || t === 'link') {
+			window.open(it.url, '_blank', 'noopener,noreferrer');
+			return;
+		}
+		aabenLektion = it;
+	}
+
+	function lukLektion() {
+		aabenLektion = null;
+	}
+
 	onMount(async () => {
 		const u = user;
 		if (!u) {
@@ -134,16 +170,18 @@
 				return;
 			}
 
-			const [faqKats, faqIts, guideKats, guideIts] = await Promise.all([
+			const [faqKats, faqIts, guideKats, guideIts, dage] = await Promise.all([
 				hentFaqKategorier(forlobId),
 				hentFaqItems(forlobId),
 				hentGuideKategorier(forlobId),
-				hentGuideItems(forlobId)
+				hentGuideItems(forlobId),
+				hentForlobsdage(forlobId)
 			]);
 			faqKategorier = faqKats;
 			faqItems = faqIts;
 			guideKategorier = guideKats;
 			guideItems = guideIts;
+			forlobsdage = dage;
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente bibliotek. Prøv igen.';
@@ -161,6 +199,11 @@
 	}
 
 	const aabenEmbed = $derived(aabenGuide?.type === 'video' ? videoEmbedUrl(aabenGuide.url) : null);
+
+	const lektionType = $derived(aabenLektion?.url ? detekterGuideType(aabenLektion.url) : null);
+	const lektionEmbed = $derived(
+		aabenLektion?.url && lektionType === 'video' ? videoEmbedUrl(aabenLektion.url) : null
+	);
 </script>
 
 <div class="page">
@@ -171,7 +214,7 @@
 		</a>
 		<div class="eyebrow">Bibliotek</div>
 		<h1>Bibliotek</h1>
-		<p class="page-sub">FAQ og guides for dit forløb.</p>
+		<p class="page-sub">FAQ, guides og lektioner for dit forløb.</p>
 	</header>
 
 	<div class="tabs">
@@ -190,6 +233,14 @@
 			onclick={() => skiftTab('guides')}
 		>
 			Guides
+		</button>
+		<button
+			class="tab-knap"
+			class:aktiv={aktivTab === 'lektioner'}
+			type="button"
+			onclick={() => skiftTab('lektioner')}
+		>
+			Lektioner
 		</button>
 	</div>
 
@@ -240,7 +291,7 @@
 				</div>
 			{/if}
 		{/if}
-	{:else}
+	{:else if aktivTab === 'guides'}
 		{#if loading}
 			<Loading tekst="Henter guides..." kompakt />
 		{:else if fejl}
@@ -306,6 +357,52 @@
 				</div>
 			{/if}
 		{/if}
+	{:else}
+		{#if loading}
+			<Loading tekst="Henter lektioner..." kompakt />
+		{:else if fejl}
+			<div class="status-besked fejl">{fejl}</div>
+		{:else if alleLektioner.length === 0}
+			<div class="status-besked">
+				Der er ikke lagt lektioner op for dit forløb endnu.
+			</div>
+		{:else}
+			<div class="lektion-liste-bib">
+				{#each alleLektioner as l (l.dagNummer + '-' + l.id)}
+					{@const t = l.url ? detekterGuideType(l.url) : null}
+					<button class="lektion-card-bib" type="button" onclick={() => aabnLektion(l)}>
+						<div class="lektion-dag-badge">
+							<span class="lektion-dag-tal">{l.dagNummer}</span>
+							<span class="lektion-dag-label">{l.dagNummer === 0 ? 'Baseline' : 'Dag'}</span>
+						</div>
+						<div class="lektion-body-bib">
+							<div class="lektion-uge-bib">Uge {l.uge}</div>
+							<div class="lektion-titel-bib">{l.titel}</div>
+							{#if l.beskrivelse}
+								<div class="lektion-beskrivelse-bib">{l.beskrivelse}</div>
+							{/if}
+							<div class="lektion-meta-bib">
+								{#if t}
+									<span
+										class="lektion-type-pill"
+										class:type-video={t === 'video'}
+										class:type-audio={t === 'audio'}
+										class:type-pdf={t === 'pdf'}
+										class:type-link={t === 'link'}
+									>
+										{GUIDE_TYPE_LABELS[t]}
+									</span>
+								{/if}
+								{#if l.varighedMin > 0}
+									<span class="lektion-duration-bib">{l.varighedMin} min</span>
+								{/if}
+							</div>
+						</div>
+						<Icon name="chevron-r" size={14} color="var(--text3)" />
+					</button>
+				{/each}
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -359,6 +456,49 @@
 	</div>
 {/if}
 
+{#if aabenLektion}
+	<div
+		class="overlay-bg"
+		role="button"
+		tabindex="0"
+		onclick={lukLektion}
+		onkeydown={(e) => e.key === 'Escape' && lukLektion()}
+	></div>
+	<div class="overlay" role="dialog" aria-modal="true">
+		<header class="overlay-head">
+			<div class="overlay-titel">{aabenLektion.titel}</div>
+			<button class="overlay-luk" type="button" onclick={lukLektion} aria-label="Luk">×</button>
+		</header>
+
+		{#if lektionEmbed}
+			<div class="overlay-video">
+				<iframe
+					src={lektionEmbed}
+					title={aabenLektion.titel}
+					allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+					allowfullscreen
+				></iframe>
+			</div>
+		{:else if lektionType === 'audio'}
+			<div class="overlay-audio">
+				<audio controls autoplay src={aabenLektion.url}>
+					Din browser kan ikke afspille lyd.
+				</audio>
+			</div>
+		{/if}
+
+		{#if aabenLektion.beskrivelse}
+			<p class="overlay-beskrivelse">{aabenLektion.beskrivelse}</p>
+		{/if}
+
+		{#if aabenLektion.varighedMin > 0 || aabenLektion.format}
+			<div class="overlay-dato">
+				{aabenLektion.varighedMin > 0 ? aabenLektion.varighedMin + ' min' : ''}{aabenLektion.varighedMin > 0 && aabenLektion.format ? ' · ' : ''}{aabenLektion.format}
+			</div>
+		{/if}
+	</div>
+{/if}
+
 <style>
 	.page {
 		padding: 18px 18px 100px;
@@ -407,7 +547,7 @@
 
 	.tabs {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: 1fr 1fr 1fr;
 		background: var(--bg2);
 		padding: 4px;
 		border-radius: 12px;
@@ -763,5 +903,134 @@
 		border-radius: 8px;
 		font-size: 13px;
 		font-weight: 600;
+	}
+
+	.lektion-liste-bib {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.lektion-card-bib {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 12px 14px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		text-align: left;
+		font-family: inherit;
+		color: inherit;
+		cursor: pointer;
+		width: 100%;
+	}
+
+	.lektion-card-bib:hover {
+		border-color: var(--terra);
+	}
+
+	.lektion-dag-badge {
+		width: 44px;
+		height: 44px;
+		border-radius: 10px;
+		background: var(--bg2);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.lektion-dag-tal {
+		font-family: var(--ff-d);
+		font-weight: 700;
+		font-size: 16px;
+		line-height: 1;
+		color: var(--text);
+	}
+
+	.lektion-dag-label {
+		font-size: 8px;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-top: 2px;
+	}
+
+	.lektion-body-bib {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.lektion-uge-bib {
+		font-size: 10px;
+		color: var(--text3);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.lektion-titel-bib {
+		font-family: var(--ff-d);
+		font-size: 15px;
+		font-weight: 600;
+		color: var(--text);
+		line-height: 1.3;
+	}
+
+	.lektion-beskrivelse-bib {
+		font-size: 12.5px;
+		color: var(--text2);
+		line-height: 1.45;
+		margin-top: 2px;
+		overflow: hidden;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+	}
+
+	.lektion-meta-bib {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-top: 4px;
+	}
+
+	.lektion-type-pill {
+		display: inline-block;
+		padding: 3px 9px;
+		border-radius: 999px;
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+	}
+
+	.lektion-type-pill.type-video {
+		background: var(--tdim);
+		color: var(--terra);
+	}
+
+	.lektion-type-pill.type-audio {
+		background: #f5e4dc;
+		color: #8a4a3e;
+	}
+
+	.lektion-type-pill.type-pdf {
+		background: #f0e6da;
+		color: #6b4f30;
+	}
+
+	.lektion-type-pill.type-link {
+		background: #d9e8df;
+		color: #2f5640;
+	}
+
+	.lektion-duration-bib {
+		font-size: 11px;
+		color: var(--text3);
 	}
 </style>

@@ -210,9 +210,10 @@
 		gemFejl = null;
 		gemmer = true;
 		try {
-			// For baseline: fyld manglende skydere ud med 5 (neutral default).
-			// Klienter der ikke rykker skyderen efterlader ellers ingen måling.
-			if (prog?.isBaseline) {
+			// Fyld manglende skydere ud med 5 (neutral default) på alle check-ins.
+			// Klienter der ikke rykker skyderen efterlader ellers ingen måling så
+			// sammenligning på tværs af forløbet bliver umulig.
+			if (prog?.isBaseline || prog?.isCheckin) {
 				type SliderId = Exclude<keyof CheckinSvar, 'generelTekst'>;
 				const fyldt: CheckinSvar = { ...checkin };
 				for (const q of CHECKIN_SPORGSMAAL) {
@@ -375,7 +376,7 @@
 					<div class="slider-row">
 						<div class="slider-head">
 							<div class="slider-label">{q.label}</div>
-							<div class="slider-val">{harSliderSvar(id) ? val : '–'}</div>
+							<div class="slider-val">{val}</div>
 						</div>
 						<input
 							type="range"

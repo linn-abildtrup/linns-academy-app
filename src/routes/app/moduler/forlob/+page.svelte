@@ -38,8 +38,11 @@
 
 	const programDage = $derived.by<ForlobDag[]>(() => {
 		if (!forlob) return [];
-		// Vis kun dage der er nået — fremtidige dage skal ikke kunne ses
-		const sidste = aktivDagNr === null ? 0 : aktivDagNr;
+		// Vis kun dage der er nået — fremtidige dage skal ikke kunne ses.
+		// Clamp til [0, antalDage] så vi hverken viser fremtidige eller dage
+		// udover programmets længde hvis forløbet er færdigt.
+		const aktiv = aktivDagNr ?? -1;
+		const sidste = Math.min(Math.max(aktiv, 0), forlob.antalDage);
 		const ud: ForlobDag[] = [];
 		for (let i = 1; i <= sidste; i++) {
 			ud.push(dagsmap.get(i) ?? tomForlobDag(i));
@@ -231,31 +234,46 @@
 			<div class="tidslinje">
 				{#each programDage as dag (dag.dagNummer)}
 					{@const status = dagStatus(dag.dagNummer, aktivDagNr)}
-					{@const harIndhold = dag.lektioner.length > 0 || !!dag.noteFraLinn}
-					<div class="dag-row" class:aktiv={status === 'aktiv'} class:laast={status === 'fremtid'}>
-						<div class="dag-num">
-							<span class="dag-num-tal">{dag.dagNummer}</span>
-							<span class="dag-num-label">Dag</span>
-						</div>
-						<div class="dag-info">
-							<div class="dag-uge">Uge {dag.uge}</div>
-							{#if dag.lektioner.length > 0}
+					{@const harIndhold = dag.lektioner.length > 0}
+					{#if harIndhold}
+						<button
+							class="dag-row"
+							class:aktiv={status === 'aktiv'}
+							type="button"
+							onclick={() => aabnLektionItem(dag.lektioner[0])}
+						>
+							<div class="dag-num">
+								<span class="dag-num-tal">{dag.dagNummer}</span>
+								<span class="dag-num-label">Dag</span>
+							</div>
+							<div class="dag-info">
+								<div class="dag-uge">Uge {dag.uge}</div>
 								<div class="dag-titel">{dag.lektioner[0].titel}</div>
 								{#if dag.lektioner.length > 1}
 									<div class="dag-meta">+ {dag.lektioner.length - 1} lektion mere</div>
 								{/if}
+							</div>
+							{#if status === 'aktiv'}
+								<span class="badge aktiv-badge">I dag</span>
 							{:else}
+								<Icon name="chevron-r" size={14} color="var(--text3)" />
+							{/if}
+						</button>
+					{:else}
+						<div class="dag-row dag-tom-row" class:aktiv={status === 'aktiv'}>
+							<div class="dag-num">
+								<span class="dag-num-tal">{dag.dagNummer}</span>
+								<span class="dag-num-label">Dag</span>
+							</div>
+							<div class="dag-info">
+								<div class="dag-uge">Uge {dag.uge}</div>
 								<div class="dag-titel dag-tom">Intet indhold</div>
+							</div>
+							{#if status === 'aktiv'}
+								<span class="badge aktiv-badge">I dag</span>
 							{/if}
 						</div>
-						{#if status === 'fremtid'}
-							<Icon name="lock" size={14} color="var(--text3)" />
-						{:else if status === 'aktiv'}
-							<span class="badge aktiv-badge">I dag</span>
-						{:else if harIndhold}
-							<Icon name="chevron-r" size={14} color="var(--text3)" />
-						{/if}
-					</div>
+					{/if}
 				{/each}
 			</div>
 		</section>
@@ -442,8 +460,9 @@
 	}
 
 	.lektion-duration {
-		font-size: 11px;
-		color: var(--text3);
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--text2);
 	}
 
 	.note-card {
@@ -553,6 +572,21 @@
 		gap: 12px;
 		padding: 12px 14px;
 		border-top: 1px solid var(--border);
+		width: 100%;
+		text-align: left;
+		background: transparent;
+		font-family: inherit;
+		color: inherit;
+	}
+
+	button.dag-row {
+		border: none;
+		border-top: 1px solid var(--border);
+		cursor: pointer;
+	}
+
+	button.dag-row:hover {
+		background: var(--bg2);
 	}
 
 	.dag-row:first-child {
@@ -563,7 +597,11 @@
 		background: var(--tdim);
 	}
 
-	.dag-row.laast {
+	button.dag-row.aktiv:hover {
+		background: var(--tdim);
+	}
+
+	.dag-tom-row {
 		opacity: 0.55;
 	}
 
