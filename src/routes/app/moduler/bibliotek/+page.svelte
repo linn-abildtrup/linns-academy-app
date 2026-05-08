@@ -204,6 +204,18 @@
 	const lektionEmbed = $derived(
 		aabenLektion?.url && lektionType === 'video' ? videoEmbedUrl(aabenLektion.url) : null
 	);
+
+	let htmlIframeGuide = $state<HTMLIFrameElement | null>(null);
+	let htmlIframeLektion = $state<HTMLIFrameElement | null>(null);
+
+	function gemHtmlSomPdf(iframe: HTMLIFrameElement | null) {
+		try {
+			iframe?.contentWindow?.focus();
+			iframe?.contentWindow?.print();
+		} catch (e) {
+			console.error('Print fejlede:', e);
+		}
+	}
 </script>
 
 <div class="page">
@@ -332,6 +344,12 @@
 													<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="1.8" stroke-linecap="round">
 														<path d="M3 10v4M7 7v10M11 4v16M15 8v8M19 11v2" />
 													</svg>
+												{:else if it.type === 'html'}
+													<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+														<path d="M4 5h16v14H4z" />
+														<path d="M4 9h16" />
+														<path d="M8 13l-2 2 2 2M16 13l2 2-2 2" />
+													</svg>
 												{:else}
 													<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="1.5">
 														<circle cx="12" cy="12" r="9" />
@@ -389,6 +407,7 @@
 										class:type-audio={t === 'audio'}
 										class:type-pdf={t === 'pdf'}
 										class:type-link={t === 'link'}
+										class:type-html={t === 'html'}
 									>
 										{GUIDE_TYPE_LABELS[t]}
 									</span>
@@ -444,6 +463,18 @@
 					Din browser kan ikke afspille lyd-elementet.
 				</audio>
 			</div>
+		{:else if aabenGuide.type === 'html'}
+			<div class="overlay-html">
+				<iframe
+					bind:this={htmlIframeGuide}
+					src={aabenGuide.url}
+					title={aabenGuide.titel}
+					sandbox="allow-same-origin allow-scripts allow-popups allow-modals"
+				></iframe>
+			</div>
+			<button class="overlay-pdf-knap" type="button" onclick={() => gemHtmlSomPdf(htmlIframeGuide)}>
+				📄 Gem som PDF
+			</button>
 		{/if}
 
 		{#if aabenGuide.beskrivelse}
@@ -485,6 +516,18 @@
 					Din browser kan ikke afspille lyd.
 				</audio>
 			</div>
+		{:else if lektionType === 'html'}
+			<div class="overlay-html">
+				<iframe
+					bind:this={htmlIframeLektion}
+					src={aabenLektion.url}
+					title={aabenLektion.titel}
+					sandbox="allow-same-origin allow-scripts allow-popups allow-modals"
+				></iframe>
+			</div>
+			<button class="overlay-pdf-knap" type="button" onclick={() => gemHtmlSomPdf(htmlIframeLektion)}>
+				📄 Gem som PDF
+			</button>
 		{/if}
 
 		{#if aabenLektion.beskrivelse}
@@ -762,6 +805,10 @@
 		background: linear-gradient(135deg, #B87B6E 0%, #CC9080 100%);
 	}
 
+	.thumb-html {
+		background: linear-gradient(135deg, #B89BCB 0%, #8E6FA8 100%);
+	}
+
 	.guide-body {
 		padding: 12px 14px 14px;
 		display: flex;
@@ -866,6 +913,40 @@
 		display: flex;
 		justify-content: center;
 		padding: 8px 0;
+	}
+
+	.overlay-html {
+		position: relative;
+		width: 100%;
+		height: 70vh;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		overflow: hidden;
+	}
+
+	.overlay-html iframe {
+		width: 100%;
+		height: 100%;
+		border: none;
+		background: var(--white);
+	}
+
+	.overlay-pdf-knap {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 11px 16px;
+		background: var(--terra);
+		color: #fff;
+		border: none;
+		border-radius: 10px;
+		font-size: 14px;
+		font-weight: 600;
+		cursor: pointer;
+		font-family: var(--ff-b);
+		align-self: flex-start;
 	}
 
 	.overlay-audio audio {
@@ -1027,6 +1108,11 @@
 	.lektion-type-pill.type-link {
 		background: #d9e8df;
 		color: #2f5640;
+	}
+
+	.lektion-type-pill.type-html {
+		background: #e6dcef;
+		color: #4a3568;
 	}
 
 	.lektion-duration-bib {

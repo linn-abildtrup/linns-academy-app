@@ -124,6 +124,12 @@ describe('detekterGuideType', () => {
 		expect(detekterGuideType('https://example.com/lyd.m4a')).toBe('audio');
 	});
 
+	it('genkender HTML-filer', () => {
+		expect(detekterGuideType('https://example.com/side.html')).toBe('html');
+		expect(detekterGuideType('https://example.com/side.htm')).toBe('html');
+		expect(detekterGuideType('https://example.com/side.html?token=abc')).toBe('html');
+	});
+
 	it('returnerer link som fallback', () => {
 		expect(detekterGuideType('https://example.com')).toBe('link');
 		expect(detekterGuideType('')).toBe('link');

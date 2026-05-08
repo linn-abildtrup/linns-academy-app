@@ -37,6 +37,7 @@
 		sletGuideItem,
 		sletGuideKategoriMedItems
 	} from '$lib/firestore/bibliotek';
+	import { uploadHtmlFil } from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const forlobId = $derived(page.params.id ?? '');
@@ -97,6 +98,7 @@
 	let guideDialogUdgivet = $state(true);
 	let guideDialogGemmer = $state(false);
 	let guideDialogFejl = $state<string | null>(null);
+	let guideDialogUploaderHtml = $state(false);
 
 	const sorteredeFaqKats = $derived(sorterKategorier(faqKats));
 	const faqItemsPrKategori = $derived(grupperEfterKategori(faqItems));
@@ -336,6 +338,29 @@
 	}
 	function autoDetektType() {
 		guideDialogType = detekterGuideType(guideDialogUrl);
+	}
+	async function haandterGuideHtmlUpload(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const fil = input.files?.[0];
+		if (!fil) return;
+		if (!/\.(html|htm)$/i.test(fil.name)) {
+			guideDialogFejl = 'Vælg en .html- eller .htm-fil.';
+			input.value = '';
+			return;
+		}
+		guideDialogUploaderHtml = true;
+		guideDialogFejl = null;
+		try {
+			const url = await uploadHtmlFil(forlobId, fil);
+			guideDialogUrl = url;
+			guideDialogType = 'html';
+		} catch (err) {
+			console.error(err);
+			guideDialogFejl = 'Upload fejlede. Prøv igen.';
+		} finally {
+			guideDialogUploaderHtml = false;
+			input.value = '';
+		}
 	}
 	async function gemGuide() {
 		const titel = guideDialogTitel.trim();
@@ -717,6 +742,18 @@
 				disabled={guideDialogGemmer}
 				onblur={autoDetektType}
 			/>
+			<div class="html-upload-rad">
+				<label class="html-upload-knap" class:disabled={guideDialogGemmer || guideDialogUploaderHtml}>
+					{guideDialogUploaderHtml ? 'Uploader...' : '📎 Upload HTML-fil'}
+					<input
+						type="file"
+						accept=".html,.htm,text/html"
+						onchange={haandterGuideHtmlUpload}
+						disabled={guideDialogGemmer || guideDialogUploaderHtml}
+					/>
+				</label>
+				<span class="html-upload-hint">eller indsæt URL ovenfor</span>
+			</div>
 		</label>
 
 		<div class="felt">
@@ -1214,5 +1251,56 @@
 	.type-chip:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+	}
+
+	.html-upload-rad {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-top: 6px;
+		flex-wrap: wrap;
+	}
+
+	.html-upload-knap {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		padding: 7px 12px;
+		font-size: 12px;
+		font-weight: 500;
+		border-radius: 8px;
+		border: 1px dashed var(--border);
+		background: var(--white);
+		color: var(--text2);
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.html-upload-knap:hover {
+		border-color: var(--terra);
+		color: var(--terra);
+	}
+
+	.html-upload-knap.disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.html-upload-knap input[type='file'] {
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		cursor: pointer;
+		font-size: 0;
+	}
+
+	.html-upload-knap.disabled input[type='file'] {
+		cursor: not-allowed;
+	}
+
+	.html-upload-hint {
+		font-size: 11px;
+		color: var(--text3);
+		font-style: italic;
 	}
 </style>

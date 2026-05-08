@@ -92,6 +92,23 @@
 		!!aabenLektion?.url && detekterGuideType(aabenLektion.url) === 'audio'
 	);
 
+	const aabenErHtml = $derived(
+		!!aabenLektion?.url && detekterGuideType(aabenLektion.url) === 'html'
+	);
+
+	let htmlIframe = $state<HTMLIFrameElement | null>(null);
+
+	function gemHtmlSomPdf() {
+		// Trigger systemets print-dialog inde i iframen — på iOS Safari + Android
+		// Chrome kan brugeren herfra vælge 'Gem som PDF' / 'Save to Files'.
+		try {
+			htmlIframe?.contentWindow?.focus();
+			htmlIframe?.contentWindow?.print();
+		} catch (e) {
+			console.error('Print fejlede:', e);
+		}
+	}
+
 	onMount(async () => {
 		const u = user;
 		if (!u) {
@@ -305,6 +322,18 @@
 			</div>
 		{:else if aabenErAudio}
 			<audio controls autoplay src={aabenLektion.url}>Din browser kan ikke afspille lyd.</audio>
+		{:else if aabenErHtml}
+			<div class="overlay-html">
+				<iframe
+					bind:this={htmlIframe}
+					src={aabenLektion.url}
+					title={aabenLektion.titel}
+					sandbox="allow-same-origin allow-scripts allow-popups allow-modals"
+				></iframe>
+			</div>
+			<button class="overlay-pdf-knap" type="button" onclick={gemHtmlSomPdf}>
+				📄 Gem som PDF
+			</button>
 		{/if}
 
 		{#if aabenLektion.beskrivelse}
@@ -770,6 +799,44 @@
 
 	.overlay audio {
 		width: 100%;
+	}
+
+	.overlay-html {
+		position: relative;
+		width: 100%;
+		height: 70vh;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		overflow: hidden;
+	}
+
+	.overlay-html iframe {
+		width: 100%;
+		height: 100%;
+		border: none;
+		background: var(--white);
+	}
+
+	.overlay-pdf-knap {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 11px 16px;
+		background: var(--terra);
+		color: #fff;
+		border: none;
+		border-radius: 10px;
+		font-size: 14px;
+		font-weight: 600;
+		cursor: pointer;
+		font-family: var(--ff-b);
+		align-self: flex-start;
+	}
+
+	.overlay-pdf-knap:hover {
+		background: var(--terra-dark, #9d6358);
 	}
 
 	.overlay-beskrivelse {

@@ -1,0 +1,46 @@
+rules_version = '2';
+
+// Firebase Storage-rules for Linn's Academy.
+// Skal copy-pastes til Firebase Console → Storage → Rules → Publish.
+//
+// Konvention: alt indhold er læsbart for autentificerede brugere,
+// men kun admin må skrive (samme mønster som Firestore-reglerne).
+
+service firebase.storage {
+	match /b/{bucket}/o {
+		// Admin-emails. Skal matche listen i src/lib/admin.ts og firestore.rules.
+		function isAdmin() {
+			return request.auth != null
+				&& request.auth.token.email in [
+					'linnabildtrup00@gmail.com'
+				];
+		}
+
+		// Øvelses-videoer (træningsmodul)
+		match /exercises/{filename=**} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
+		// Lyd-filer (træningsmodul + lektioner)
+		match /audio/{filename=**} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
+		// Forløbs-specifikt indhold (HTML-uploads til lektioner og guides):
+		// /forlob/{forlobId}/html/{filename}
+		match /forlob/{forlobId}/{folder}/{filename=**} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin()
+				&& request.resource.size < 5 * 1024 * 1024
+				&& request.resource.contentType.matches('text/html.*');
+		}
+
+		// Admin-uploads (PDF'er, manualer m.m.)
+		match /admin/{filename=**} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+	}
+}

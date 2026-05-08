@@ -5,6 +5,7 @@
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
 	import { nyLektion, tomForlobDag } from '$lib/content/forlob';
 	import { gemForlobsdag, hentForlobsdag, sletForlobsdag } from '$lib/firestore/forlob';
+	import { uploadHtmlFil } from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const forlobId = $derived(page.params.id ?? '');
@@ -16,6 +17,8 @@
 	let gemmer = $state(false);
 	let gemKvit = $state(false);
 	let bekraefter = $state(false);
+	let uploaderHtml = $state<string | null>(null);
+	let uploadFejl = $state<string | null>(null);
 
 	$effect(() => {
 		// Re-init når dagNummer ændrer sig (deep-link / navigation)
@@ -57,6 +60,29 @@
 			...dag,
 			lektioner: dag.lektioner.map((l) => (l.id === id ? { ...l, [felt]: vaerdi } : l))
 		};
+	}
+
+	async function haandterHtmlUpload(lektionId: string, e: Event) {
+		const input = e.target as HTMLInputElement;
+		const fil = input.files?.[0];
+		if (!fil) return;
+		if (!/\.(html|htm)$/i.test(fil.name)) {
+			uploadFejl = 'Vælg en .html- eller .htm-fil.';
+			input.value = '';
+			return;
+		}
+		uploaderHtml = lektionId;
+		uploadFejl = null;
+		try {
+			const url = await uploadHtmlFil(forlobId, fil);
+			opdaterLektion(lektionId, 'url', url);
+		} catch (err) {
+			console.error(err);
+			uploadFejl = 'Upload fejlede. Prøv igen.';
+		} finally {
+			uploaderHtml = null;
+			input.value = '';
+		}
 	}
 
 	async function gem() {
@@ -220,6 +246,18 @@
 							placeholder="https://..."
 							disabled={gemmer}
 						/>
+						<div class="html-upload-rad">
+							<label class="html-upload-knap" class:disabled={gemmer || uploaderHtml === l.id}>
+								{uploaderHtml === l.id ? 'Uploader...' : '📎 Upload HTML-fil'}
+								<input
+									type="file"
+									accept=".html,.htm,text/html"
+									onchange={(e) => haandterHtmlUpload(l.id, e)}
+									disabled={gemmer || uploaderHtml === l.id}
+								/>
+							</label>
+							<span class="html-upload-hint">eller indsæt URL ovenfor</span>
+						</div>
 					</label>
 				</article>
 			{/each}
@@ -233,6 +271,10 @@
 			>
 				+ Tilføj lektion
 			</button>
+
+			{#if uploadFejl}
+				<div class="status-besked fejl">{uploadFejl}</div>
+			{/if}
 		</div>
 
 		<div class="actions">
@@ -559,5 +601,56 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 10px;
+	}
+
+	.html-upload-rad {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-top: 6px;
+		flex-wrap: wrap;
+	}
+
+	.html-upload-knap {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		padding: 7px 12px;
+		font-size: 12px;
+		font-weight: 500;
+		border-radius: 8px;
+		border: 1px dashed var(--border);
+		background: var(--white);
+		color: var(--text2);
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.html-upload-knap:hover {
+		border-color: var(--terra);
+		color: var(--terra);
+	}
+
+	.html-upload-knap.disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.html-upload-knap input[type='file'] {
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		cursor: pointer;
+		font-size: 0;
+	}
+
+	.html-upload-knap.disabled input[type='file'] {
+		cursor: not-allowed;
+	}
+
+	.html-upload-hint {
+		font-size: 11px;
+		color: var(--text3);
+		font-style: italic;
 	}
 </style>

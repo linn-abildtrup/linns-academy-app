@@ -42,15 +42,16 @@ export interface FaqItem {
 // Guide-typer
 // ==============================================
 
-export type GuideType = 'video' | 'pdf' | 'link' | 'audio';
+export type GuideType = 'video' | 'pdf' | 'link' | 'audio' | 'html';
 
-export const GUIDE_TYPER: GuideType[] = ['video', 'pdf', 'link', 'audio'];
+export const GUIDE_TYPER: GuideType[] = ['video', 'pdf', 'link', 'audio', 'html'];
 
 export const GUIDE_TYPE_LABELS: Record<GuideType, string> = {
 	video: 'Video',
 	pdf: 'PDF',
 	link: 'Link',
-	audio: 'Lyd'
+	audio: 'Lyd',
+	html: 'HTML'
 };
 
 export interface GuideKategori {
@@ -143,6 +144,7 @@ export function detekterGuideType(url: string): GuideType {
 	if (u.includes('vimeo.com/')) return 'video';
 	if (u.endsWith('.pdf') || u.includes('.pdf?')) return 'pdf';
 	if (u.endsWith('.mp3') || u.endsWith('.m4a') || u.endsWith('.wav')) return 'audio';
+	if (u.endsWith('.html') || u.endsWith('.htm') || u.includes('.html?') || u.includes('.htm?')) return 'html';
 	return 'link';
 }
 
