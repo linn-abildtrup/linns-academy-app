@@ -14,7 +14,7 @@ import {
 	where
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
-import type { Fodevare, GemtMaaltid } from '$lib/content/kost';
+import type { FavoritMaaltid, Fodevare, GemtMaaltid } from '$lib/content/kost';
 
 /**
  * Henter hele fødevaredatabasen sorteret alfabetisk.
@@ -88,4 +88,40 @@ export async function hentMaaltiderForDato(
  */
 export async function sletMaaltid(uid: string, mealId: string): Promise<void> {
 	await deleteDoc(doc(db, 'users', uid, 'maaltider', mealId));
+}
+
+// ==============================================
+// Favoritmåltider — skabeloner til hurtig genbrug
+// ==============================================
+
+/**
+ * Gemmer et måltid som favorit-skabelon. Returnerer det generede id.
+ */
+export async function gemFavorit(
+	uid: string,
+	favorit: Omit<FavoritMaaltid, 'id'>
+): Promise<string> {
+	const ref = doc(collection(db, 'users', uid, 'favoritmaaltider'));
+	await setDoc(ref, {
+		...favorit,
+		oprettet: serverTimestamp()
+	});
+	return ref.id;
+}
+
+/**
+ * Henter alle favoritmåltider for en bruger sorteret alfabetisk.
+ */
+export async function hentFavoritter(uid: string): Promise<FavoritMaaltid[]> {
+	const snap = await getDocs(collection(db, 'users', uid, 'favoritmaaltider'));
+	return snap.docs
+		.map((d) => ({ id: d.id, ...d.data() }) as FavoritMaaltid)
+		.sort((a, b) => a.navn.localeCompare(b.navn, 'da'));
+}
+
+/**
+ * Sletter en favorit.
+ */
+export async function sletFavorit(uid: string, favoritId: string): Promise<void> {
+	await deleteDoc(doc(db, 'users', uid, 'favoritmaaltider', favoritId));
 }

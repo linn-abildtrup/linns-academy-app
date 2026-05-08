@@ -27,10 +27,14 @@
 		type SortMode
 	} from '$lib/content/kost';
 	import {
+		gemFavorit,
 		gemMaaltid,
+		hentFavoritter,
 		hentMaaltiderForDato,
+		sletFavorit,
 		sletMaaltid
 	} from '$lib/firestore/kost';
+	import type { FavoritMaaltid } from '$lib/content/kost';
 	import {
 		ALLE_DIET_TAGS,
 		ALLE_KATEGORIER as OPSKRIFT_KATEGORIER,
@@ -105,8 +109,12 @@
 	let gemNavn = $state('');
 	let gemType = $state<Maaltidstype>('morgenmad');
 	let gemDato = $state<string>(formatDatoKey());
+	let gemSomFavorit = $state(false);
 	let gemmer = $state(false);
 	let gemBesked = $state<{ tekst: string; type: 'ok' | 'fejl' } | null>(null);
+
+	// Favoritter
+	let favoritter = $state<FavoritMaaltid[]>([]);
 
 	const filtreret = $derived(
 		sorterFodevarer(filtrerFodevarer(foods, soegeord, aktivKategori), sortMode)
@@ -162,9 +170,44 @@
 			initialiseret = true;
 		}
 
-		// Indlæs dagbog i baggrunden (brugeren skal kunne navigere til dagbog-tab)
+		// Indlæs dagbog og favoritter i baggrunden
 		void indlaesDagbog();
+		void indlaesFavoritter();
 	});
+
+	async function indlaesFavoritter() {
+		const u = user;
+		if (!u) return;
+		try {
+			favoritter = await hentFavoritter(u.uid);
+		} catch (e) {
+			console.warn('Kunne ikke hente favoritter:', e);
+		}
+	}
+
+	function indlaesFavoritIMaaltid(fav: FavoritMaaltid) {
+		if (maaltid.length > 0) {
+			const ok = confirm(
+				'Du har allerede et måltid i gang. Vil du erstatte det med ' + fav.navn + '?'
+			);
+			if (!ok) return;
+		}
+		maaltid = fav.items.map((i) => ({ ...i }));
+		skiftTab('maaltid');
+	}
+
+	async function sletFavoritKlik(id: string, navn: string) {
+		const u = user;
+		if (!u) return;
+		const ok = confirm(`Slet favoritten "${navn}"?`);
+		if (!ok) return;
+		try {
+			await sletFavorit(u.uid, id);
+			favoritter = favoritter.filter((f) => f.id !== id);
+		} catch (e) {
+			console.error(e);
+		}
+	}
 
 	$effect(() => {
 		if (!initialiseret) return;
@@ -300,6 +343,7 @@
 		gemNavn = '';
 		gemType = gaetMaaltidstype();
 		gemDato = formatDatoKey();
+		gemSomFavorit = false;
 		gemBesked = null;
 		viserGemModal = true;
 	}
@@ -335,6 +379,14 @@
 				totalP: Math.round(totaler.protein * 10) / 10,
 				totalF: Math.round(totaler.fiber * 10) / 10
 			});
+			if (gemSomFavorit) {
+				try {
+					await gemFavorit(u.uid, { navn, items: maaltid });
+					await indlaesFavoritter();
+				} catch (e) {
+					console.warn('Kunne ikke gemme som favorit:', e);
+				}
+			}
 			// Ryd måltid efter gem
 			maaltid = [];
 			localStorage.setItem(STORAGE_KEY, '[]');
@@ -489,6 +541,34 @@
 				{/if}
 			</div>
 		{:else if aktivTab === 'maaltid'}
+			{#if favoritter.length > 0}
+				<div class="favorit-sektion">
+					<div class="favorit-overskrift">Mine favoritter</div>
+					<div class="favorit-rad">
+						{#each favoritter as f (f.id)}
+							<div class="favorit-kort">
+								<button
+									class="favorit-knap"
+									type="button"
+									onclick={() => indlaesFavoritIMaaltid(f)}
+								>
+									<span class="favorit-navn">{f.navn}</span>
+									<span class="favorit-antal">{f.items.length} ingredienser</span>
+								</button>
+								<button
+									class="favorit-slet"
+									type="button"
+									onclick={() => sletFavoritKlik(f.id, f.navn)}
+									aria-label="Slet favorit"
+								>
+									×
+								</button>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
 			<div class="totaler">
 				<div class="total-card protein">
 					<div class="total-head">
@@ -829,6 +909,16 @@
 						bind:value={gemDato}
 						disabled={gemmer}
 					/>
+				</label>
+
+				<label class="favorit-toggle" class:on={gemSomFavorit}>
+					<input type="checkbox" bind:checked={gemSomFavorit} disabled={gemmer} />
+					<div class="favorit-toggle-tekst">
+						<div class="favorit-toggle-lbl">Gem også som favorit</div>
+						<div class="favorit-toggle-sub">
+							Genbrug måltidet hurtigt næste gang under Byg måltid
+						</div>
+					</div>
 				</label>
 
 				{#if gemBesked}
@@ -1628,5 +1718,128 @@
 	.gem-besked.fejl {
 		background: #fbeeea;
 		color: #8a4a3e;
+	}
+
+	.favorit-sektion {
+		margin-bottom: 16px;
+	}
+
+	.favorit-overskrift {
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-bottom: 8px;
+	}
+
+	.favorit-rad {
+		display: flex;
+		gap: 8px;
+		overflow-x: auto;
+		padding-bottom: 4px;
+	}
+
+	.favorit-kort {
+		position: relative;
+		flex-shrink: 0;
+	}
+
+	.favorit-knap {
+		min-width: 140px;
+		max-width: 200px;
+		padding: 12px 14px 12px 14px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		text-align: left;
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.favorit-knap:hover {
+		border-color: var(--terra);
+		background: var(--tdim);
+	}
+
+	.favorit-navn {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--text);
+		line-height: 1.3;
+		padding-right: 22px;
+	}
+
+	.favorit-antal {
+		font-size: 11px;
+		color: var(--text3);
+	}
+
+	.favorit-slet {
+		position: absolute;
+		top: 4px;
+		right: 4px;
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.85);
+		border: 1px solid var(--border);
+		color: var(--text3);
+		font-size: 14px;
+		cursor: pointer;
+		font-family: var(--ff-b);
+		line-height: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+	}
+
+	.favorit-slet:hover {
+		background: #fbeeea;
+		color: #8a4a3e;
+	}
+
+	.favorit-toggle {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 12px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		cursor: pointer;
+	}
+
+	.favorit-toggle.on {
+		background: var(--tdim);
+		border-color: var(--terra);
+	}
+
+	.favorit-toggle input {
+		width: 18px;
+		height: 18px;
+		accent-color: var(--terra);
+		cursor: pointer;
+	}
+
+	.favorit-toggle-tekst {
+		flex: 1;
+	}
+
+	.favorit-toggle-lbl {
+		font-size: 13px;
+		color: var(--text);
+		font-weight: 500;
+	}
+
+	.favorit-toggle-sub {
+		font-size: 11.5px;
+		color: var(--text3);
+		margin-top: 1px;
+		line-height: 1.4;
 	}
 </style>

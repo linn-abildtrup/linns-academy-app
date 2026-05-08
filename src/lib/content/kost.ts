@@ -77,6 +77,19 @@ export interface GemtMaaltid {
 }
 
 /**
+ * En favorit-måltidsskabelon brugeren kan genbruge igen.
+ * Lever på users/{uid}/favoritmaaltider/{id}.
+ *
+ * Adskilt fra GemtMaaltid: ingen dato eller måltidstype — det vælges
+ * først når favoritten gemmes som faktisk måltid i dagbogen.
+ */
+export interface FavoritMaaltid {
+	id: string;
+	navn: string;
+	items: MaaltidsItem[];
+}
+
+/**
  * Returnerer dato som YYYY-MM-DD i lokal tidszone.
  */
 export function formatDatoKey(d: Date = new Date()): string {
