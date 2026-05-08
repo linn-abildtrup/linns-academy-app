@@ -425,7 +425,26 @@
 	{/if}
 </div>
 
-{#if aabenGuide}
+{#if aabenGuide && aabenGuide.type === 'html'}
+	<div class="html-overlay" role="dialog" aria-modal="true">
+		<header class="html-overlay-head">
+			<button class="html-overlay-luk" type="button" onclick={lukGuide}>
+				<Icon name="arrow-l" size={14} color="var(--text)" />
+				<span>Luk</span>
+			</button>
+			<div class="html-overlay-titel">{aabenGuide.titel}</div>
+			<button class="html-overlay-pdf" type="button" onclick={() => gemHtmlSomPdf(htmlIframeGuide)}>
+				📄 PDF
+			</button>
+		</header>
+		<iframe
+			bind:this={htmlIframeGuide}
+			src={aabenGuide.url}
+			title={aabenGuide.titel}
+			sandbox="allow-same-origin allow-scripts allow-popups allow-modals"
+		></iframe>
+	</div>
+{:else if aabenGuide}
 	<div
 		class="overlay-bg"
 		role="button"
@@ -463,18 +482,6 @@
 					Din browser kan ikke afspille lyd-elementet.
 				</audio>
 			</div>
-		{:else if aabenGuide.type === 'html'}
-			<div class="overlay-html">
-				<iframe
-					bind:this={htmlIframeGuide}
-					src={aabenGuide.url}
-					title={aabenGuide.titel}
-					sandbox="allow-same-origin allow-scripts allow-popups allow-modals"
-				></iframe>
-			</div>
-			<button class="overlay-pdf-knap" type="button" onclick={() => gemHtmlSomPdf(htmlIframeGuide)}>
-				📄 Gem som PDF
-			</button>
 		{/if}
 
 		{#if aabenGuide.beskrivelse}
@@ -487,7 +494,26 @@
 	</div>
 {/if}
 
-{#if aabenLektion}
+{#if aabenLektion && lektionType === 'html'}
+	<div class="html-overlay" role="dialog" aria-modal="true">
+		<header class="html-overlay-head">
+			<button class="html-overlay-luk" type="button" onclick={lukLektion}>
+				<Icon name="arrow-l" size={14} color="var(--text)" />
+				<span>Luk</span>
+			</button>
+			<div class="html-overlay-titel">{aabenLektion.titel}</div>
+			<button class="html-overlay-pdf" type="button" onclick={() => gemHtmlSomPdf(htmlIframeLektion)}>
+				📄 PDF
+			</button>
+		</header>
+		<iframe
+			bind:this={htmlIframeLektion}
+			src={aabenLektion.url}
+			title={aabenLektion.titel}
+			sandbox="allow-same-origin allow-scripts allow-popups allow-modals"
+		></iframe>
+	</div>
+{:else if aabenLektion}
 	<div
 		class="overlay-bg"
 		role="button"
@@ -516,18 +542,6 @@
 					Din browser kan ikke afspille lyd.
 				</audio>
 			</div>
-		{:else if lektionType === 'html'}
-			<div class="overlay-html">
-				<iframe
-					bind:this={htmlIframeLektion}
-					src={aabenLektion.url}
-					title={aabenLektion.titel}
-					sandbox="allow-same-origin allow-scripts allow-popups allow-modals"
-				></iframe>
-			</div>
-			<button class="overlay-pdf-knap" type="button" onclick={() => gemHtmlSomPdf(htmlIframeLektion)}>
-				📄 Gem som PDF
-			</button>
 		{/if}
 
 		{#if aabenLektion.beskrivelse}
@@ -915,38 +929,75 @@
 		padding: 8px 0;
 	}
 
-	.overlay-html {
-		position: relative;
-		width: 100%;
-		height: 70vh;
+	.html-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 100;
 		background: var(--white);
-		border: 1px solid var(--border);
-		border-radius: 10px;
-		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		padding-top: env(safe-area-inset-top);
+		padding-bottom: env(safe-area-inset-bottom);
 	}
 
-	.overlay-html iframe {
-		width: 100%;
-		height: 100%;
-		border: none;
+	.html-overlay-head {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 14px;
+		border-bottom: 1px solid var(--border);
+		flex-shrink: 0;
 		background: var(--white);
 	}
 
-	.overlay-pdf-knap {
+	.html-overlay-luk {
 		display: inline-flex;
 		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		padding: 11px 16px;
+		gap: 6px;
+		padding: 8px 12px;
+		border-radius: 8px;
+		border: 1px solid var(--border);
+		background: var(--white);
+		color: var(--text);
+		font-size: 13px;
+		font-weight: 500;
+		cursor: pointer;
+		font-family: var(--ff-b);
+		flex-shrink: 0;
+	}
+
+	.html-overlay-titel {
+		flex: 1;
+		font-family: var(--ff-d);
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--text);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.html-overlay-pdf {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 14px;
+		border-radius: 8px;
+		border: none;
 		background: var(--terra);
 		color: #fff;
-		border: none;
-		border-radius: 10px;
-		font-size: 14px;
+		font-size: 13px;
 		font-weight: 600;
 		cursor: pointer;
 		font-family: var(--ff-b);
-		align-self: flex-start;
+		flex-shrink: 0;
+	}
+
+	.html-overlay iframe {
+		flex: 1;
+		width: 100%;
+		border: none;
+		background: var(--white);
 	}
 
 	.overlay-audio audio {
