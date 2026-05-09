@@ -960,8 +960,9 @@
 	.hovedvideo {
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
+		object-fit: contain;
 		display: block;
+		background: #2a1f17;
 	}
 
 	.video-fallback {
@@ -1116,8 +1117,9 @@
 	.pip-video {
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
+		object-fit: contain;
 		display: block;
+		background: #2a1f17;
 	}
 
 	.pip-label {
