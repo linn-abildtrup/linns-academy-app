@@ -2256,12 +2256,13 @@
 
 	.tilfoej-knap {
 		flex: 1;
+		text-align: center;
 	}
 
 	.scan-knap-direkte {
-		width: 56px;
-		flex-shrink: 0;
-		border-radius: 12px;
+		flex: 1;
+		min-height: 48px;
+		border-radius: 10px;
 		background: linear-gradient(135deg, var(--terra) 0%, #a06b60 100%);
 		border: none;
 		color: #fff;
