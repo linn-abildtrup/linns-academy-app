@@ -1012,7 +1012,7 @@
 			</div>
 
 			<div class="tilfoej-rad">
-				<button class="primary-knap tilfoej-knap" type="button" onclick={aabnPicker}>
+				<button class="primary-knap tilfoej-fodevare-knap" type="button" onclick={aabnPicker}>
 					+ Tilføj fødevare
 				</button>
 				<button
@@ -1021,9 +1021,9 @@
 					onclick={aabnScanner}
 					disabled={scannerArbejder}
 					aria-label="Scan stregkode"
-					title="Scan stregkode"
 				>
-					<Icon name="barcode" size={20} color="#fff" />
+					<Icon name="barcode" size={16} color="#fff" />
+					<span>Scan</span>
 				</button>
 			</div>
 
@@ -2254,21 +2254,25 @@
 		align-items: stretch;
 	}
 
-	.tilfoej-knap {
+	.tilfoej-fodevare-knap {
 		flex: 1;
 		text-align: center;
 	}
 
 	.scan-knap-direkte {
 		flex: 1;
-		min-height: 48px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 13px;
+		font-size: 14px;
+		font-weight: 600;
+		font-family: var(--ff-b);
 		border-radius: 10px;
 		background: linear-gradient(135deg, var(--terra) 0%, #a06b60 100%);
 		border: none;
 		color: #fff;
-		display: flex;
-		align-items: center;
-		justify-content: center;
 		cursor: pointer;
 		box-shadow: 0 4px 12px rgba(184, 123, 110, 0.3);
 	}
