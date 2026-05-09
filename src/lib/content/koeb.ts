@@ -33,24 +33,6 @@ const KICKSTART_LAESEADGANG: Koeb = {
 	udlobsdato: '2026-11-15'
 };
 
-const VANETRACKER_AKTIV: Koeb = {
-	id: 'vanetracker-aktiv',
-	navn: 'Vanetracker',
-	kortNavn: 'Vanetracker',
-	type: 'app',
-	status: 'aktiv',
-	lobende: true
-};
-
-const VANETRACKER_LAESEADGANG: Koeb = {
-	id: 'vanetracker-laeseadgang',
-	navn: 'Vanetracker',
-	kortNavn: 'Vanetracker',
-	type: 'app',
-	status: 'laeseadgang',
-	lobende: true
-};
-
 const MIKROTRAENING: Koeb = {
 	id: 'mikrotraening',
 	navn: 'Mikrotræning',
@@ -71,13 +53,13 @@ const KOST_MODUL: Koeb = {
 
 export function getKoebForUser(state: UserState): Koeb[] {
 	if (state === 'forlobskunde') {
-		return [KICKSTART_AKTIV, VANETRACKER_AKTIV];
+		return [KICKSTART_AKTIV];
 	}
 	if (state === 'modulbruger') {
-		return [VANETRACKER_AKTIV, MIKROTRAENING, KOST_MODUL];
+		return [MIKROTRAENING, KOST_MODUL];
 	}
 	if (state === 'udlobet') {
-		return [KICKSTART_LAESEADGANG, VANETRACKER_LAESEADGANG];
+		return [KICKSTART_LAESEADGANG];
 	}
 	return [];
 }
