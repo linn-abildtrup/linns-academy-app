@@ -6,11 +6,10 @@
 	import type { UserDoc } from '$lib/types';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import type { ForlobDag } from '$lib/content/forlob';
-	import type { MikrotraeningFremgang, UserProduct } from '$lib/content/mikrotraening';
+	import type { UserProduct } from '$lib/content/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 	import { getGreetingWithName } from '$lib/utils/greeting';
 	import { formatDato, getCurrentDay, tomForlobDag } from '$lib/content/forlob';
-	import { naesteDag } from '$lib/content/mikrotraening';
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
@@ -148,20 +147,6 @@
 		}
 	});
 
-	// Beregner næste mikrotræning-dag fra brugerens fremgang. Falder tilbage til
-	// /traening-oversigten hvis brugeren ikke har valgt et program endnu.
-	const traeningHref = $derived.by<string>(() => {
-		const programId = userProduct?.programValg?.mikrotraening;
-		if (!programId) return '/app/moduler/traening/mikrotraening';
-		const fremgang = (userProduct?.fremgang?.mikrotraening as MikrotraeningFremgang | undefined) ?? {
-			gennemforte: [],
-			feedback: {}
-		};
-		const naeste = naesteDag(fremgang, 21);
-		if (naeste === null) return '/app/moduler/traening/mikrotraening';
-		return `/app/moduler/traening/mikrotraening/${naeste}`;
-	});
-
 	type ActionGenvej = {
 		modul: 'kost' | 'traening' | 'vaner';
 		eyebrow: string;
@@ -193,6 +178,10 @@
 		}
 
 		if (n >= 1 && n <= antal) {
+			const harProgramValg = !!userProduct?.programValg?.mikrotraening;
+			const traeningHrefForN = harProgramValg
+				? `/app/moduler/traening/mikrotraening/${n}`
+				: '/app/moduler/traening/mikrotraening';
 			return [
 				{
 					modul: 'kost',
@@ -206,7 +195,7 @@
 					eyebrow: 'Træning',
 					titel: 'Mikrotræning',
 					meta: 'Korte daglige sessioner',
-					href: traeningHref
+					href: traeningHrefForN
 				},
 				{
 					modul: 'vaner',
