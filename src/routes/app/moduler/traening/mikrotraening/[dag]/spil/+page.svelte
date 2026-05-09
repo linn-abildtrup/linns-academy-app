@@ -773,7 +773,12 @@
 				<button class="resume-link" type="button" onclick={startForfra}>Start forfra</button>
 			</div>
 		{/if}
-		<div class="video-omraade" class:hviler={phase === 'rest'} class:fuldskaerm>
+		<div
+			class="video-omraade"
+			class:hviler={phase === 'rest'}
+			class:fuldskaerm
+			class:switch={phase === 'switch'}
+		>
 			{#if aktuelOvelse.bonus}
 				<div class="bonus-ribbon">Bonus</div>
 			{/if}
@@ -1074,7 +1079,24 @@
 		pointer-events: none;
 	}
 
+	/* PIP-mode i switch-fasen: hovedvideoen skaleres ned til en kort-
+	   lignende preview med hvid kant — samme effekt som referenceappens
+	   PiP, bare uden et separat video-element (iOS Safari klarer ikke
+	   to videoer der spiller samtidig). */
+	.video-omraade.switch {
+		background: #1a1006;
+	}
+
+	.video-omraade.switch .hovedvideo {
+		transform: scale(0.65);
+		border-radius: 14px;
+		border: 3px solid #fff;
+		box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
+	}
+
 	.hovedvideo {
+		transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+			border-radius 0.5s ease, box-shadow 0.5s ease;
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
