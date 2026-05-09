@@ -28,10 +28,9 @@
 	let mtGemmer = $state<string | null>(null);
 
 	function ikonForUdstyr(udstyr: string[]): IconName {
-		if (udstyr.includes('kettlebell')) return 'flame';
-		if (udstyr.includes('haandvaegte')) return 'flame';
-		if (udstyr.includes('elastik')) return 'leaf';
-		return 'leaf';
+		if (udstyr.includes('kettlebell')) return 'kettlebell';
+		if (udstyr.includes('haandvaegte')) return 'kettlebell';
+		return 'stretch';
 	}
 
 	onMount(async () => {

@@ -34,7 +34,9 @@
 		| 'flame'
 		| 'leaf'
 		| 'lightning'
-		| 'unlock';
+		| 'unlock'
+		| 'kettlebell'
+		| 'stretch';
 </script>
 
 <script lang="ts">
@@ -161,5 +163,14 @@
 	{:else if name === 'unlock'}
 		<rect x="5" y="11" width="14" height="10" rx="2" />
 		<path d="M8 11V8a4 4 0 0 1 7-2.5" />
+	{:else if name === 'kettlebell'}
+		<path d="M8 9a4 4 0 0 1 8 0" />
+		<path d="M10 9a2 2 0 0 1 4 0" />
+		<circle cx="12" cy="15" r="5" />
+	{:else if name === 'stretch'}
+		<circle cx="12" cy="4.5" r="1.6" />
+		<path d="M12 6.5v7" />
+		<path d="M6 10l6-1.5 6 1.5" />
+		<path d="M9 20l3-6.5 3 6.5" />
 	{/if}
 </svg>
