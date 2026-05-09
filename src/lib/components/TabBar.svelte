@@ -22,6 +22,9 @@
 	const userDoc = $derived(getUserDoc?.());
 	const user = $derived(getUser?.());
 
+	const erAdmin = $derived(isAdmin(user ?? null));
+	const beskederHref = $derived(erAdmin ? '/app/admin/spoergsmaal' : '/app/beskeder');
+
 	const NAV_ITEMS = $derived<NavItem[]>([
 		{ id: 'home', label: 'Forside', icon: 'home', href: '/app' },
 		{ id: 'moduler', label: 'Moduler', icon: 'grid', href: '/app/moduler' },
@@ -36,7 +39,7 @@
 			id: 'beskeder',
 			label: 'Beskeder',
 			icon: 'mail',
-			href: '/app/beskeder',
+			href: beskederHref,
 			dot: true,
 			lockedFor: ['udlobet']
 		},
