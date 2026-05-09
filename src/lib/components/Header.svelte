@@ -1,6 +1,19 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
 	import { page } from '$app/state';
 	import Logo from '$lib/components/Logo.svelte';
+	import type { UserDoc } from '$lib/types';
+	import { getGreetingWithName } from '$lib/utils/greeting';
+	import { formatDato } from '$lib/content/forlob';
+
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const userDoc = $derived(getUserDoc?.() ?? null);
+
+	const erForside = $derived(
+		page.url.pathname === '/app' || page.url.pathname === '/app/'
+	);
+	const greeting = $derived(getGreetingWithName(userDoc?.firstName ?? ''));
+	const today = $derived(formatDato(new Date()));
 
 	function getModuleName(pathname: string): string {
 		if (pathname.startsWith('/app/admin/forlob')) return 'ADMIN — FORLØB';
@@ -31,6 +44,13 @@
 			<span class="brand-module">{moduleName}</span>
 		{/if}
 	</a>
+	{#if erForside && userDoc?.firstName}
+		<span class="divider" aria-hidden="true"></span>
+		<div class="header-hilsen">
+			<div class="date-label">{today}</div>
+			<div class="greeting-text">{greeting}</div>
+		</div>
+	{/if}
 </header>
 
 <style>
@@ -42,6 +62,9 @@
 		top: 0;
 		z-index: 50;
 		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		gap: 14px;
 	}
 
 	.brand {
@@ -52,6 +75,7 @@
 		text-decoration: none;
 		color: inherit;
 		gap: 4px;
+		flex-shrink: 0;
 	}
 
 	.brand-module {
@@ -62,5 +86,44 @@
 		letter-spacing: 0.22em;
 		text-transform: uppercase;
 		opacity: 0.85;
+	}
+
+	.divider {
+		width: 1px;
+		align-self: stretch;
+		background: var(--border);
+		margin: 4px 0;
+	}
+
+	.header-hilsen {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		text-align: right;
+		gap: 4px;
+		line-height: 1.1;
+	}
+
+	.date-label {
+		font-family: var(--ff-b);
+		font-size: 10px;
+		font-weight: 500;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.greeting-text {
+		font-family: var(--ff-d);
+		font-size: 16px;
+		font-weight: 500;
+		color: var(--text);
+		letter-spacing: -0.005em;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 100%;
 	}
 </style>

@@ -8,8 +8,7 @@
 	import type { ForlobDag } from '$lib/content/forlob';
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
-	import { getGreetingWithName } from '$lib/utils/greeting';
-	import { formatDato, getCurrentDay, tomForlobDag } from '$lib/content/forlob';
+	import { getCurrentDay, tomForlobDag } from '$lib/content/forlob';
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
@@ -20,9 +19,6 @@
 
 	const userDoc = $derived(getUserDoc());
 	const user = $derived(getUser());
-
-	const greeting = $derived(getGreetingWithName(userDoc?.firstName ?? ''));
-	const today = $derived(formatDato(new Date()));
 
 	let forlob = $state<Forlob | null>(null);
 	let forlobsdage = $state<ForlobDag[]>([]);
@@ -346,23 +342,21 @@
 
 {#if userDoc?.state === 'forlobskunde'}
 	<div class="forside-a1">
-		<header class="forside-header">
-			<div class="header-text">
-				<div class="date-label">{today}</div>
-				<h1 class="greeting">{greeting}</h1>
-				{#if forlob && dayNumber !== null}
+		{#if forlob}
+			<header class="forside-header">
+				{#if dayNumber !== null}
 					<a class="forlob-badge" href="/app/moduler/forlob">
 						<span class="badge-dot"></span>
 						{forlob.navn} · dag {dayNumber} af {forlob.antalDage}
 					</a>
-				{:else if forlob}
+				{:else}
 					<a class="forlob-badge" href="/app/moduler/forlob">
 						<span class="badge-dot"></span>
 						{forlob.navn} · starter snart
 					</a>
 				{/if}
-			</div>
-		</header>
+			</header>
+		{/if}
 
 		<div class="forside-body">
 			{#if forlob && stripDage.length > 0}
@@ -551,11 +545,6 @@
 {:else if userDoc?.state === 'modulbruger'}
 	<div class="forside-b1">
 		<div class="forside-body">
-			<section class="b1-greeting">
-				<div class="date-label">{today}</div>
-				<h1 class="greeting">{greeting}</h1>
-			</section>
-
 			<section class="moduler-section">
 				<div class="moduler-header">
 					<div class="eyebrow eyebrow-muted">Mine moduler</div>
@@ -614,8 +603,6 @@
 	<div class="forside-c1">
 		<div class="forside-body">
 			<section class="c1-greeting">
-				<div class="date-label">Velkommen tilbage</div>
-				<h1 class="greeting greeting-large">{greeting}</h1>
 				<p class="c1-tagline">Det er længe siden — godt at se dig igen.</p>
 			</section>
 
@@ -887,29 +874,6 @@
 		border-bottom: 1px solid var(--border);
 	}
 
-	.date-label {
-		font-size: 9.5px;
-		font-weight: 600;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: var(--text3);
-	}
-
-	.greeting {
-		font-family: var(--ff-d);
-		font-size: 22px;
-		font-weight: 700;
-		color: var(--text);
-		letter-spacing: -0.02em;
-		margin: 3px 0 0;
-		line-height: 1.05;
-	}
-
-	.greeting-large {
-		font-size: 26px;
-		margin: 4px 0 6px;
-	}
-
 	.forlob-badge {
 		margin-top: 6px;
 		display: inline-flex;
@@ -936,13 +900,6 @@
 		background: var(--terra);
 	}
 
-	.b1-greeting {
-		margin-bottom: 2px;
-	}
-
-	.b1-greeting .greeting {
-		font-size: 26px;
-	}
 
 	/* ── C1 hilsen ─────────────────────────────────────────────── */
 
