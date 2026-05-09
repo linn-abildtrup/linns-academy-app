@@ -1,17 +1,46 @@
 <script lang="ts">
+	// Loading-indikator med pseudo-progress: bar tæller lineært fra 0% til
+	// 99% over `maxSekunder`. Når data ankommer fjerner kalder-siden
+	// komponenten — så hurtige loadings når næsten ikke at vise procent,
+	// mens langsomme loadings får brugeren til at se noget bevæger sig.
+	//
+	// Vi når aldrig 100% af os selv (kun 99%), fordi 100% misvisende ville
+	// signalere "færdig" mens vi stadig venter på data.
+	import { onMount } from 'svelte';
+
 	interface Props {
 		tekst?: string;
 		kompakt?: boolean;
+		maxSekunder?: number;
 	}
 
-	let { tekst = 'Henter data...', kompakt = false }: Props = $props();
+	let {
+		tekst = 'Henter data...',
+		kompakt = false,
+		maxSekunder = 120
+	}: Props = $props();
+
+	let procent = $state(0);
+
+	onMount(() => {
+		const startTid = Date.now();
+		const total = maxSekunder * 1000;
+		const id = setInterval(() => {
+			const forl = Date.now() - startTid;
+			procent = Math.min(99, Math.floor((forl / total) * 100));
+		}, 200);
+		return () => clearInterval(id);
+	});
 </script>
 
 <div class="loading" class:kompakt>
 	<div class="bar" aria-hidden="true">
-		<div class="bar-fyld"></div>
+		<div class="bar-fyld" style:width="{procent}%"></div>
 	</div>
-	<div class="tekst">{tekst}</div>
+	<div class="tekst">
+		{tekst}
+		<span class="procent">{procent}%</span>
+	</div>
 </div>
 
 <style>
@@ -45,23 +74,10 @@
 	}
 
 	.bar-fyld {
-		position: absolute;
-		top: 0;
-		left: 0;
 		height: 100%;
-		width: 35%;
 		background: var(--terra);
 		border-radius: 99px;
-		animation: skub 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-	}
-
-	@keyframes skub {
-		0% {
-			transform: translateX(-100%);
-		}
-		100% {
-			transform: translateX(380%);
-		}
+		transition: width 0.3s linear;
 	}
 
 	.tekst {
@@ -76,11 +92,18 @@
 		font-size: 12px;
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.bar-fyld {
-			animation: none;
-			width: 100%;
-			opacity: 0.4;
-		}
+	.procent {
+		display: inline-block;
+		margin-left: 6px;
+		font-family: var(--ff-b);
+		font-style: normal;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--terra);
+		letter-spacing: 0;
+	}
+
+	.loading.kompakt .procent {
+		font-size: 11px;
 	}
 </style>
