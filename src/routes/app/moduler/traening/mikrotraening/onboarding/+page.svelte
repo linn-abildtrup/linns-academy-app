@@ -8,7 +8,7 @@
 		hentForlobsProgrammer,
 		hentUserProduct
 	} from '$lib/firestore/mikrotraening';
-	import Icon from '$lib/components/Icon.svelte';
+	import Icon, { type IconName } from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
 	const getUser = getContext<() => User | null>('user');
@@ -19,11 +19,11 @@
 	let fejl = $state<string | null>(null);
 	let gemmer = $state<string | null>(null);
 
-	function emojiForUdstyr(udstyr: string[]): string {
-		if (udstyr.includes('kettlebell')) return '🔔';
-		if (udstyr.includes('haandvaegte')) return '💪';
-		if (udstyr.includes('elastik')) return '🧘';
-		return '💪';
+	function ikonForUdstyr(udstyr: string[]): IconName {
+		if (udstyr.includes('kettlebell')) return 'flame';
+		if (udstyr.includes('haandvaegte')) return 'flame';
+		if (udstyr.includes('elastik')) return 'leaf';
+		return 'leaf';
 	}
 
 	onMount(async () => {
@@ -87,7 +87,9 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Træning</span>
 		</a>
-		<div class="emoji">🏋️</div>
+		<div class="header-ikon">
+			<Icon name="lightning" size={32} color="var(--terra)" />
+		</div>
 		<h1>Inden vi starter</h1>
 		<p class="page-sub">
 			Vælg det program der passer til dit udstyr. Du kan altid ændre det senere i din profil.
@@ -107,7 +109,9 @@
 					onclick={() => vaelg(p.id)}
 					disabled={gemmer !== null}
 				>
-					<span class="valg-emoji">{emojiForUdstyr(p.udstyr)}</span>
+					<span class="valg-ikon">
+						<Icon name={ikonForUdstyr(p.udstyr)} size={26} color="var(--terra)" />
+					</span>
 					<span class="valg-titel">{p.navn}</span>
 					{#if p.beskrivelse}
 						<span class="valg-sub">{p.beskrivelse}</span>
@@ -148,10 +152,15 @@
 		color: var(--text);
 	}
 
-	.emoji {
-		font-size: 56px;
-		line-height: 1;
-		margin-bottom: 14px;
+	.header-ikon {
+		width: 64px;
+		height: 64px;
+		border-radius: 50%;
+		background: var(--bg2);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin: 0 auto 14px;
 	}
 
 	h1 {
@@ -224,9 +233,15 @@
 		cursor: not-allowed;
 	}
 
-	.valg-emoji {
-		font-size: 28px;
-		line-height: 1;
+	.valg-ikon {
+		width: 48px;
+		height: 48px;
+		border-radius: 50%;
+		background: var(--bg2);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 4px;
 	}
 
 	.valg-titel {
