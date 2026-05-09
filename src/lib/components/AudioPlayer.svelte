@@ -117,7 +117,16 @@
 		<div class="ring ring-2" aria-hidden="true"></div>
 		<div class="ring ring-1" aria-hidden="true"></div>
 		<div class="cirkel">
-			<Icon name="flower" size={48} color="var(--terra)" filled />
+			<svg class="logo-mark" viewBox="0 0 540 140" aria-hidden="true">
+				<path
+					d="M 110 70 C 110 30, 200 30, 270 70 C 340 110, 430 110, 430 70 C 430 30, 340 30, 270 70 C 200 110, 110 110, 110 70 Z"
+					fill="none"
+					stroke="var(--terra)"
+					stroke-width="4"
+					stroke-linejoin="round"
+					stroke-linecap="round"
+				/>
+			</svg>
 		</div>
 	</div>
 
@@ -300,6 +309,12 @@
 		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
 		position: relative;
 		z-index: 2;
+	}
+
+	.logo-mark {
+		width: 80px;
+		height: 30px;
+		display: block;
 	}
 
 	.info {
