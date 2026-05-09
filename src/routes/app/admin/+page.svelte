@@ -33,6 +33,14 @@
 			rute: '/app/admin/spoergsmaal',
 			accent: '#5C7A8C',
 			icon: 'mail' as const
+		},
+		{
+			id: 'fodevarer',
+			navn: 'Fællesskabs-fødevarer',
+			beskrivelse: 'Se fødevarer scannet af brugere — verificér eller slet',
+			rute: '/app/admin/fodevarer',
+			accent: '#B8956A',
+			icon: 'community' as const
 		}
 	];
 </script>
