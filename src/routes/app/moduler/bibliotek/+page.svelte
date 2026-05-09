@@ -247,7 +247,7 @@
 		</a>
 		<div class="eyebrow">Bibliotek</div>
 		<h1>Bibliotek</h1>
-		<p class="page-sub">FAQ, guides og lektioner for dit forløb.</p>
+		<p class="page-sub">FAQ, links og lektioner for dit forløb.</p>
 	</header>
 
 	<div class="tabs">
@@ -265,7 +265,7 @@
 			type="button"
 			onclick={() => skiftTab('guides')}
 		>
-			Guides
+			Links
 		</button>
 		<button
 			class="tab-knap"
@@ -326,18 +326,18 @@
 		{/if}
 	{:else if aktivTab === 'guides'}
 		{#if loading}
-			<Loading tekst="Henter guides..." kompakt />
+			<Loading tekst="Henter links..." kompakt />
 		{:else if fejl}
 			<div class="status-besked fejl">{fejl}</div>
 		{:else if sorteredeGuideKats.length === 0}
 			<div class="status-besked">
-				Der er ikke lagt guides op for dit forløb endnu.
+				Der er ikke lagt links op for dit forløb endnu.
 			</div>
 		{:else}
 			{@const synligeKategorier = sorteredeGuideKats.filter((k) => harGuidesIKategori(k.id))}
 			{#if synligeKategorier.length === 0}
 				<div class="status-besked">
-					Der er ingen udgivne guides endnu.
+					Der er ingen udgivne links endnu.
 				</div>
 			{:else}
 				<div class="kat-liste">
