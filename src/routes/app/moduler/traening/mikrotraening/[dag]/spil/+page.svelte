@@ -74,7 +74,6 @@
 	let traeningGennemfort = $state(false);
 	let fuldskaerm = $state(false);
 	let hovedvideoEl = $state<HTMLVideoElement | null>(null);
-	let pipVideoEl = $state<HTMLVideoElement | null>(null);
 
 	const dag = $derived<TrainingDay | null>(
 		programData?.dage.find((d) => d.dagNummer === dagNummer) ?? null
@@ -93,6 +92,18 @@
 	);
 	const naesteVideoUrl = $derived<string | null>(
 		naesteExercise ? (videoUrls.get(naesteExercise.videoPath) ?? null) : null
+	);
+
+	// I switch-fasen viser vi den NÆSTE øvelses video direkte i hovedvideoen
+	// (i stedet for to konkurrerende videoer der ofte fejler at afspille
+	// samtidig på iOS Safari). Når switch slutter er videoen allerede den
+	// rigtige — ingen src-skift, ingen pause-glitch. Samme mønster som
+	// reference-appens mtEnterSwitch.
+	const vistVideoUrl = $derived<string | null>(
+		phase === 'switch' && naesteVideoUrl ? naesteVideoUrl : aktuelVideoUrl
+	);
+	const vistExercise = $derived<Exercise | null>(
+		phase === 'switch' && naesteExercise ? naesteExercise : aktuelExercise
 	);
 
 	const faseLabel = $derived(
@@ -261,17 +272,11 @@
 	// video-element. Når URL'en ændres tvinger vi derfor en eksplicit
 	// .play() — både på hovedvideoen og PIP-videoen i switch-fasen.
 	$effect(() => {
-		if (!aktuelVideoUrl || !hovedvideoEl) return;
+		if (!vistVideoUrl || !hovedvideoEl) return;
 		void hovedvideoEl.play().catch(() => {
 			// iOS kan afvise hvis ikke der er user-gesture, men 'Start
 			// træning'-klikket etablerer normalt nok permission. Ignorer.
 		});
-	});
-
-	$effect(() => {
-		if (!naesteVideoUrl || !pipVideoEl) return;
-		if (phase !== 'switch') return;
-		void pipVideoEl.play().catch(() => {});
 	});
 
 	$effect(() => {
@@ -734,49 +739,35 @@
 				<div class="bonus-ribbon">Bonus</div>
 			{/if}
 
-			{#if aktuelVideoUrl}
-				{#key aktuelVideoUrl}
+			{#if vistVideoUrl}
+				{#key vistVideoUrl}
 					<video
 						class="hovedvideo"
 						bind:this={hovedvideoEl}
-						src={aktuelVideoUrl}
+						src={vistVideoUrl}
 						autoplay
 						loop
 						muted
 						playsinline
 					></video>
 				{/key}
-			{:else}
+			{:else if vistExercise}
 				<div class="video-fallback">
-					<div class="fb-navn">{aktuelExercise.name}</div>
+					<div class="fb-navn">{vistExercise.name}</div>
 					<div class="fb-hint">Video kan ikke afspilles</div>
 				</div>
 			{/if}
 
-			{#if phase === 'switch' && naesteExercise}
-				<div class="pip-overlay">
-					<div class="pip-card">
-						{#if naesteVideoUrl}
-							{#key naesteVideoUrl}
-								<video
-									class="pip-video"
-									bind:this={pipVideoEl}
-									src={naesteVideoUrl}
-									autoplay
-									loop
-									muted
-									playsinline
-								></video>
-							{/key}
-						{/if}
-						<div class="pip-label">{naesteExercise.name}</div>
-					</div>
+			{#if phase === 'switch' && vistExercise}
+				<div class="naeste-overlay">
+					<div class="naeste-eyebrow">Næste øvelse</div>
+					<div class="naeste-navn">{vistExercise.name}</div>
 				</div>
 			{/if}
 
 			<div class="fase-badge">{faseLabel}</div>
 
-			{#if fuldskaerm}
+			{#if fuldskaerm && phase !== 'switch'}
 				<div class="navn-overlay">
 					<div class="navn-overlay-titel">{aktuelExercise.name}</div>
 					<div class="navn-overlay-meta">
@@ -1267,48 +1258,43 @@
 		margin-top: 2px;
 	}
 
-	.pip-overlay {
+	.naeste-overlay {
 		position: absolute;
-		inset: 0;
+		left: 50%;
+		bottom: 14px;
+		transform: translateX(-50%);
 		display: flex;
+		flex-direction: column;
 		align-items: center;
-		justify-content: center;
-		background: rgba(42, 31, 23, 0.55);
-		backdrop-filter: blur(6px);
-		z-index: 3;
-	}
-
-	.pip-card {
-		width: 60%;
-		max-width: 220px;
-		aspect-ratio: 1;
-		border-radius: 14px;
-		overflow: hidden;
-		border: 3px solid #fff;
-		box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
-		position: relative;
-		background: #2a1f17;
-	}
-
-	.pip-video {
-		width: 100%;
-		height: 100%;
-		object-fit: contain;
-		display: block;
-		background: #2a1f17;
-	}
-
-	.pip-label {
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		padding: 8px 10px;
-		background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-		color: #fff;
-		font-size: 13px;
-		font-weight: 600;
+		gap: 2px;
 		text-align: center;
+		padding: 10px 18px;
+		background: rgba(42, 31, 23, 0.7);
+		backdrop-filter: blur(6px);
+		border-radius: 999px;
+		z-index: 3;
+		max-width: calc(100% - 40px);
+		pointer-events: none;
+	}
+
+	.naeste-eyebrow {
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: rgba(255, 255, 255, 0.85);
+	}
+
+	.naeste-navn {
+		font-family: var(--ff-d);
+		font-size: 16px;
+		font-weight: 600;
+		color: #fff;
+		line-height: 1.2;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 100%;
 	}
 
 	.pause-overlay {
