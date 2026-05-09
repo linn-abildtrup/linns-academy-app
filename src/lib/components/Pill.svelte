@@ -28,7 +28,7 @@
 		gap: 4px;
 		padding: 3px 9px;
 		border-radius: 999px;
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;

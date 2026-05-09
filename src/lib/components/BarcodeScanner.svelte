@@ -186,7 +186,7 @@
 		text-align: center;
 		font-family: var(--ff-d);
 		font-style: italic;
-		font-size: 16px;
+		font-size: calc(16px * var(--fs-scale, 1));
 		color: #fff;
 	}
 
@@ -274,7 +274,7 @@
 
 	.hint {
 		font-family: var(--ff-b);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: rgba(255, 255, 255, 0.85);
 		padding: 12px 16px;
 		background: rgba(0, 0, 0, 0.5);
@@ -284,7 +284,7 @@
 
 	.fejl {
 		font-family: var(--ff-b);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: #fff;
 		padding: 14px 18px;
 		background: rgba(184, 70, 70, 0.85);

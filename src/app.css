@@ -6,6 +6,11 @@
    ============================================================ */
 
 :root {
+	/* Tekstskalering — sættes via data-text-scale på <html>.
+	   Alle font-sizes i appen bruger calc(Xpx * var(--fs-scale, 1)) så
+	   de skalerer med brugerens valg på profil-siden. */
+	--fs-scale: 1;
+
 	/* Baggrunde og overflader */
 	--bg: #faf6f1;
 	--header: #f2ebe3;
@@ -43,7 +48,17 @@
 	/* Typografi */
 	--ff-d: 'Playfair Display', Georgia, serif;
 	--ff-b: 'DM Sans', system-ui, sans-serif;
+}
 
+:root[data-text-scale='large'] {
+	--fs-scale: 1.15;
+}
+
+:root[data-text-scale='xlarge'] {
+	--fs-scale: 1.3;
+}
+
+:root {
 	/* Tæthed (Cozy) */
 	--card-pad: 18px;
 	--gap: 14px;
@@ -72,7 +87,7 @@ body {
 	background: var(--bg);
 	color: var(--text);
 	font-family: var(--ff-b);
-	font-size: 16px;
+	font-size: calc(16px * var(--fs-scale, 1));
 	line-height: 1.5;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;

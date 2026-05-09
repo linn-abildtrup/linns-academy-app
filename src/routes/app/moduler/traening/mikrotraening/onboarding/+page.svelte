@@ -140,7 +140,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 22px;
@@ -164,7 +164,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 30px;
+		font-size: calc(30px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 0;
@@ -173,7 +173,7 @@
 	}
 
 	.page-sub {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 10px auto 0;
 		line-height: 1.5;
@@ -186,7 +186,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
 
@@ -244,18 +244,18 @@
 	}
 
 	.valg-titel {
-		font-size: 16px;
+		font-size: calc(16px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
 
 	.valg-sub {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text3);
 	}
 
 	.valg-status {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--terra);
 		margin-top: 4px;
 		font-weight: 500;

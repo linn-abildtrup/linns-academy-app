@@ -290,7 +290,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
@@ -301,7 +301,7 @@
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -310,7 +310,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 28px;
+		font-size: calc(28px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -319,7 +319,7 @@
 	}
 
 	.page-sub {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
 		line-height: 1.4;
@@ -331,7 +331,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
 
@@ -369,7 +369,7 @@
 		border-radius: 50%;
 		background: var(--bg2);
 		color: var(--text2);
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 600;
 		display: flex;
 		align-items: center;
@@ -383,7 +383,7 @@
 	}
 
 	.ovelse-navn {
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		display: flex;
@@ -392,7 +392,7 @@
 	}
 
 	.bonus-badge {
-		font-size: 9px;
+		font-size: calc(9px * var(--fs-scale, 1));
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		background: var(--terra2);
@@ -402,13 +402,13 @@
 	}
 
 	.ovelse-meta {
-		font-size: 11.5px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
 
 	.ovelse-cat {
-		font-size: 10.5px;
+		font-size: calc(10.5px * var(--fs-scale, 1));
 		color: var(--text4);
 		margin-top: 2px;
 		letter-spacing: 0.04em;
@@ -422,7 +422,7 @@
 		background: #eef5ef;
 		border: 1px solid #d6e6da;
 		border-radius: 12px;
-		font-size: 12.5px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
 		color: #4a6b54;
 		margin-bottom: 14px;
 	}
@@ -436,7 +436,7 @@
 		padding: 14px;
 		background: var(--terra);
 		color: #fff;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		border-radius: 12px;
 		border: none;
@@ -503,7 +503,7 @@
 		border: 1px solid var(--border);
 		background: var(--white);
 		color: var(--text);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 500;
 		cursor: pointer;
 		font-family: var(--ff-b);
@@ -513,7 +513,7 @@
 	.preview-titel-top {
 		flex: 1;
 		font-family: var(--ff-d);
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		overflow: hidden;
@@ -558,13 +558,13 @@
 
 	.preview-fallback-navn {
 		font-family: var(--ff-d);
-		font-size: 22px;
+		font-size: calc(22px * var(--fs-scale, 1));
 		font-style: italic;
 		color: var(--text3);
 	}
 
 	.preview-fallback-hint {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text4);
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
@@ -582,14 +582,14 @@
 
 	.preview-navn {
 		font-family: var(--ff-d);
-		font-size: 22px;
+		font-size: calc(22px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		line-height: 1.2;
 	}
 
 	.preview-desc {
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		line-height: 1.6;
 		color: var(--text2);
 		margin: 0;
@@ -602,7 +602,7 @@
 	}
 
 	.preview-how-label {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 500;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -615,7 +615,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		line-height: 1.6;
 		color: var(--text);
 	}
@@ -631,7 +631,7 @@
 	}
 
 	.preview-tag {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		padding: 4px 10px;
 		border-radius: 999px;
 		background: var(--tdim);

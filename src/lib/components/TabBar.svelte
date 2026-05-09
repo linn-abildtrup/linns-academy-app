@@ -170,7 +170,7 @@
 	}
 
 	.label {
-		font-size: 9.5px;
+		font-size: calc(9.5px * var(--fs-scale, 1));
 		font-weight: 500;
 	}
 

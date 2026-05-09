@@ -58,17 +58,17 @@
 	/* Sizes */
 	.btn-sm {
 		padding: 8px 15px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 	}
 
 	.btn-md {
 		padding: 11px 18px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 	}
 
 	.btn-lg {
 		padding: 14px 22px;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 	}
 
 	/* Variants */

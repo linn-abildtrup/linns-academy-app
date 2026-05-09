@@ -116,14 +116,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -132,7 +132,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 26px;
+		font-size: calc(26px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -141,7 +141,7 @@
 	}
 
 	.page-sub {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
 		line-height: 1.4;
@@ -153,7 +153,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
 
@@ -199,7 +199,7 @@
 		justify-content: center;
 		font-family: var(--ff-d);
 		font-weight: 700;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		color: var(--text);
 		flex-shrink: 0;
 	}
@@ -210,7 +210,7 @@
 	}
 
 	.dag-titel {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
@@ -221,7 +221,7 @@
 	}
 
 	.dag-sub {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
@@ -231,7 +231,7 @@
 	}
 
 	.dag-preview {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin-top: 2px;
 		overflow: hidden;
@@ -242,7 +242,7 @@
 	.dag-mere {
 		color: var(--text3);
 		margin-left: 4px;
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 	}
 
 </style>

@@ -82,14 +82,14 @@
 
 	.tekst {
 		font-family: var(--ff-d);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-style: italic;
 		color: var(--text2);
 		letter-spacing: 0.01em;
 	}
 
 	.loading.kompakt .tekst {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 	}
 
 	.procent {
@@ -97,13 +97,13 @@
 		margin-left: 6px;
 		font-family: var(--ff-b);
 		font-style: normal;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--terra);
 		letter-spacing: 0;
 	}
 
 	.loading.kompakt .procent {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 	}
 </style>

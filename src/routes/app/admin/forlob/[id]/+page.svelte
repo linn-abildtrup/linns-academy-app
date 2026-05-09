@@ -471,7 +471,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
@@ -482,7 +482,7 @@
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -491,7 +491,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 26px;
+		font-size: calc(26px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -505,7 +505,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 		margin-bottom: 14px;
 	}
@@ -530,7 +530,7 @@
 
 	.form-titel {
 		font-family: var(--ff-d);
-		font-size: 18px;
+		font-size: calc(18px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
@@ -542,7 +542,7 @@
 	}
 
 	.emails-tael {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text3);
 		font-variant-numeric: tabular-nums;
 	}
@@ -570,7 +570,7 @@
 	}
 
 	.email-adresse {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text);
 		font-weight: 500;
 		overflow: hidden;
@@ -579,7 +579,7 @@
 	}
 
 	.email-navn {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 1px;
 	}
@@ -591,7 +591,7 @@
 	}
 
 	.felt-label {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
@@ -600,7 +600,7 @@
 
 	.felt input {
 		padding: 10px 12px;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		border-radius: 10px;
 		border: 1px solid var(--border);
 		background: var(--bg2);
@@ -623,7 +623,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		cursor: pointer;
 	}
@@ -639,7 +639,7 @@
 		background: #fbeeea;
 		border: 1px solid #f0d6cf;
 		border-radius: 8px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: #8a4a3e;
 	}
 
@@ -677,13 +677,13 @@
 	}
 
 	.indhold-navn {
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
 
 	.indhold-sub {
-		font-size: 11.5px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
@@ -692,13 +692,13 @@
 		padding: 8px 12px;
 		background: var(--sdim);
 		border-radius: 8px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--sage);
 		text-align: center;
 	}
 
 	.csv-hint {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text3);
 		line-height: 1.5;
 		margin: 0;
@@ -710,7 +710,7 @@
 		align-items: center;
 		justify-content: center;
 		padding: 11px 16px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 600;
 		border-radius: 10px;
 		border: 1px dashed var(--terra);
@@ -743,7 +743,7 @@
 
 	.csv-eller {
 		text-align: center;
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		font-style: italic;
 		margin: 2px 0;
@@ -758,7 +758,7 @@
 	.soeg-input {
 		flex: 1;
 		padding: 10px 36px 10px 12px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		border-radius: 10px;
 		border: 1px solid var(--border);
 		background: var(--bg2);
@@ -780,7 +780,7 @@
 		border: none;
 		background: var(--text3);
 		color: #fff;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		line-height: 1;
 		cursor: pointer;
 		display: flex;
@@ -790,7 +790,7 @@
 
 	.csv-textarea {
 		font-family: ui-monospace, monospace;
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		padding: 10px 12px;
 		border-radius: 10px;
 		border: 1px solid var(--border);
@@ -815,7 +815,7 @@
 		padding: 10px 12px;
 		background: var(--bg2);
 		border-radius: 8px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		display: flex;
 		flex-direction: column;
@@ -824,17 +824,17 @@
 
 	.csv-preview-tael strong {
 		color: var(--terra);
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 	}
 
 	.csv-preview-info {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 	}
 
 	.form-knap {
 		padding: 12px;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		border-radius: 10px;
 		border: none;
@@ -864,7 +864,7 @@
 	}
 
 	.badge {
-		font-size: 9.5px;
+		font-size: calc(9.5px * var(--fs-scale, 1));
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		padding: 2px 7px;
@@ -890,7 +890,7 @@
 		background: none;
 		border: 1px solid #e8c8c1;
 		color: #b8503f;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 500;
 		padding: 10px 16px;
 		border-radius: 10px;
@@ -910,7 +910,7 @@
 	}
 
 	.slet-tekst {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: #8a4a3e;
 		margin-bottom: 10px;
 	}

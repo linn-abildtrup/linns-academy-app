@@ -116,7 +116,7 @@
 		<Card>
 			<div class="eyebrow" style="color: var(--terra); margin-bottom: 8px;">Dagens lektion</div>
 			<h3 style="margin: 0 0 6px;">Hormoner og søvn</h3>
-			<p style="margin: 0; color: var(--text2); font-size: 13px;">
+			<p style="margin: 0; color: var(--text2); font-size: calc(13px * var(--fs-scale, 1));">
 				Hvorfor du vågner kl. 3 — og hvad du kan gøre ved det.
 			</p>
 		</Card>
@@ -139,12 +139,12 @@
 		<Card>
 			<div style="display: flex; gap: 12px;">
 				<div class="ic-bubble" style="background: var(--ic-rose); color: var(--terra);">
-					<span style="font-family: var(--ff-d); font-weight: 700; font-size: 14px;">L</span>
+					<span style="font-family: var(--ff-d); font-weight: 700; font-size: calc(14px * var(--fs-scale, 1));">L</span>
 				</div>
 				<div style="flex: 1;">
 					<div class="eyebrow" style="color: var(--text3);">Note fra Linn</div>
 					<p
-						style="font-family: var(--ff-d); font-style: italic; color: var(--text2); margin: 4px 0 0; font-size: 13px;"
+						style="font-family: var(--ff-d); font-style: italic; color: var(--text2); margin: 4px 0 0; font-size: calc(13px * var(--fs-scale, 1));"
 					>
 						Husk — uge 2 handler om søvnen. Vær blid med dig selv hvis det stadig tager tid.
 					</p>
@@ -199,11 +199,11 @@
 
 	.swatch span {
 		font-weight: 600;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 	}
 
 	.swatch small {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		opacity: 0.7;
 		font-family: ui-monospace, 'SF Mono', monospace;
 	}
@@ -219,7 +219,7 @@
 	}
 
 	.type-label {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
@@ -228,7 +228,7 @@
 	}
 
 	.eyebrow {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
@@ -282,7 +282,7 @@
 	}
 
 	.icon-tile small {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text3);
 		font-family: ui-monospace, 'SF Mono', monospace;
 	}

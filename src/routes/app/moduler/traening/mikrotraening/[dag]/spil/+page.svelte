@@ -1014,7 +1014,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
 
@@ -1030,7 +1030,7 @@
 		background: var(--white);
 		border: 1px solid var(--border);
 		border-radius: 10px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		cursor: pointer;
 	}
@@ -1044,14 +1044,14 @@
 		background: var(--tdim);
 		border: 1px solid var(--tdim2);
 		border-radius: 12px;
-		font-size: 12.5px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
 		color: var(--text2);
 	}
 
 	.resume-link {
 		background: none;
 		border: none;
-		font-size: 12.5px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--terra);
 		cursor: pointer;
@@ -1117,11 +1117,11 @@
 
 	.fb-navn {
 		font-family: var(--ff-d);
-		font-size: 22px;
+		font-size: calc(22px * var(--fs-scale, 1));
 	}
 
 	.fb-hint {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: rgba(255, 255, 255, 0.6);
 	}
 
@@ -1131,7 +1131,7 @@
 		left: 14px;
 		background: var(--terra);
 		color: #fff;
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -1146,7 +1146,7 @@
 		right: 14px;
 		background: rgba(0, 0, 0, 0.5);
 		color: #fff;
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -1206,7 +1206,7 @@
 
 	.navn-overlay-titel {
 		font-family: var(--ff-d);
-		font-size: 22px;
+		font-size: calc(22px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: #fff;
 		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
@@ -1214,7 +1214,7 @@
 	}
 
 	.navn-overlay-meta {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: rgba(255, 255, 255, 0.85);
 		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
@@ -1230,7 +1230,7 @@
 		background: var(--white);
 		border: 1px solid var(--border);
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 500;
 		border-radius: 12px;
 		cursor: pointer;
@@ -1306,13 +1306,13 @@
 
 	.tt-num {
 		font-family: var(--ff-d);
-		font-size: 28px;
+		font-size: calc(28px * var(--fs-scale, 1));
 		font-weight: 600;
 		line-height: 1;
 	}
 
 	.tt-unit {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		opacity: 0.85;
@@ -1339,7 +1339,7 @@
 	}
 
 	.naeste-eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
@@ -1348,7 +1348,7 @@
 
 	.naeste-navn {
 		font-family: var(--ff-d);
-		font-size: 16px;
+		font-size: calc(16px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: #fff;
 		line-height: 1.2;
@@ -1374,11 +1374,11 @@
 
 	.po-label {
 		font-family: var(--ff-d);
-		font-size: 24px;
+		font-size: calc(24px * var(--fs-scale, 1));
 	}
 
 	.po-hint {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		opacity: 0.75;
 	}
 
@@ -1391,21 +1391,21 @@
 
 	.info-navn {
 		font-family: var(--ff-d);
-		font-size: 22px;
+		font-size: calc(22px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		line-height: 1.1;
 	}
 
 	.info-meta {
-		font-size: 11.5px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		letter-spacing: 0.04em;
 		margin-top: 4px;
 	}
 
 	.info-desc {
-		font-size: 12.5px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
 		color: var(--text2);
 		line-height: 1.5;
 		margin-top: 8px;
@@ -1419,7 +1419,7 @@
 
 	.ctrl {
 		padding: 14px;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		border-radius: 12px;
 		border: none;
@@ -1456,7 +1456,7 @@
 		background: transparent;
 		border: none;
 		color: var(--text3);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 500;
 	}
 
@@ -1473,14 +1473,14 @@
 	}
 
 	.finish-emoji {
-		font-size: 56px;
+		font-size: calc(56px * var(--fs-scale, 1));
 		line-height: 1;
 		margin-bottom: 4px;
 	}
 
 	.finish-titel {
 		font-family: var(--ff-d);
-		font-size: 26px;
+		font-size: calc(26px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		margin: 0;
@@ -1489,7 +1489,7 @@
 	}
 
 	.finish-sub {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-align: center;
 		margin: 0 0 10px;
@@ -1531,13 +1531,13 @@
 
 	.modal-titel {
 		font-family: var(--ff-d);
-		font-size: 18px;
+		font-size: calc(18px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
 
 	.modal-sub {
-		font-size: 12.5px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		text-align: center;
 	}
@@ -1573,11 +1573,11 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 26px;
+		font-size: calc(26px * var(--fs-scale, 1));
 	}
 
 	.fb-label {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text2);
 	}
@@ -1585,7 +1585,7 @@
 	.modal-spring {
 		background: none;
 		border: none;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text3);
 		cursor: pointer;
 		padding: 6px 12px;

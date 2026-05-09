@@ -734,7 +734,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 20px;
+		font-size: calc(20px * var(--fs-scale, 1));
 		flex-shrink: 0;
 	}
 
@@ -744,13 +744,13 @@
 
 	.coaching-titel {
 		font-family: var(--ff-d);
-		font-size: 15px;
+		font-size: calc(15px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--white);
 	}
 
 	.coaching-sub {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: rgba(255, 255, 255, 0.72);
 		font-weight: 400;
 	}
@@ -777,7 +777,7 @@
 	}
 
 	.spq-tekst {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		line-height: 1.55;
 		color: var(--text2);
 		margin: 0;
@@ -792,7 +792,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 8px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 600;
 		text-decoration: none;
 	}
@@ -826,7 +826,7 @@
 	}
 
 	.nyt-svar-eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 700;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -845,7 +845,7 @@
 	}
 
 	.nyt-svar-spoergsmaal {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-style: italic;
 		color: var(--text2);
 		line-height: 1.45;
@@ -855,14 +855,14 @@
 
 	.nyt-svar-tekst {
 		font-family: var(--ff-d);
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		color: var(--text);
 		line-height: 1.5;
 		white-space: pre-wrap;
 	}
 
 	.nyt-svar-link {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--terra);
 		display: inline-flex;
@@ -887,7 +887,7 @@
 		border-radius: 99px;
 		background: var(--tdim);
 		color: var(--terra);
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-decoration: none;
@@ -914,7 +914,7 @@
 	.c1-tagline {
 		font-family: var(--ff-d);
 		font-style: italic;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 0;
 		line-height: 1.45;
@@ -923,7 +923,7 @@
 	/* ── Eyebrow-labels ────────────────────────────────────────── */
 
 	.eyebrow {
-		font-size: 9px;
+		font-size: calc(9px * var(--fs-scale, 1));
 		font-weight: 700;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
@@ -958,7 +958,7 @@
 		border: none;
 		color: var(--terra);
 		font-family: var(--ff-b);
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		cursor: pointer;
 		padding: 2px 4px;
@@ -1020,7 +1020,7 @@
 	}
 
 	.chip-ugedag {
-		font-size: 9px;
+		font-size: calc(9px * var(--fs-scale, 1));
 		font-weight: 700;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
@@ -1033,7 +1033,7 @@
 
 	.chip-dag {
 		font-family: var(--ff-d);
-		font-size: 15px;
+		font-size: calc(15px * var(--fs-scale, 1));
 		font-weight: 700;
 		line-height: 1;
 		color: var(--text);
@@ -1045,7 +1045,7 @@
 	}
 
 	.chip-num {
-		font-size: 9px;
+		font-size: calc(9px * var(--fs-scale, 1));
 		color: var(--text3);
 		letter-spacing: 0.04em;
 		font-variant-numeric: tabular-nums;
@@ -1061,7 +1061,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text3);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
 
@@ -1131,7 +1131,7 @@
 	}
 
 	.lektion-meta {
-		font-size: 9px;
+		font-size: calc(9px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
@@ -1140,14 +1140,14 @@
 
 	.lektion-title {
 		font-family: var(--ff-d);
-		font-size: 19px;
+		font-size: calc(19px * var(--fs-scale, 1));
 		font-weight: 700;
 		margin-top: 4px;
 		line-height: 1.1;
 	}
 
 	.lektion-description {
-		font-size: 11.5px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
 		opacity: 0.85;
 		margin-top: 3px;
 		line-height: 1.4;
@@ -1169,14 +1169,14 @@
 		background: #fff;
 		color: var(--terra);
 		border: none;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 600;
 		font-family: var(--ff-b);
 		cursor: pointer;
 	}
 
 	.lektion-duration {
-		font-size: 15px;
+		font-size: calc(15px * var(--fs-scale, 1));
 		font-weight: 600;
 		opacity: 0.95;
 	}
@@ -1232,7 +1232,7 @@
 	}
 
 	.action-eyebrow {
-		font-size: 9px;
+		font-size: calc(9px * var(--fs-scale, 1));
 		font-weight: 700;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
@@ -1240,14 +1240,14 @@
 
 	.action-title {
 		font-family: var(--ff-d);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 700;
 		margin-top: 2px;
 		line-height: 1.2;
 	}
 
 	.action-meta {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
@@ -1274,7 +1274,7 @@
 		flex-shrink: 0;
 		font-family: var(--ff-d);
 		font-weight: 700;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--terra);
 	}
 
@@ -1284,7 +1284,7 @@
 	}
 
 	.note-eyebrow {
-		font-size: 9px;
+		font-size: calc(9px * var(--fs-scale, 1));
 		font-weight: 700;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
@@ -1293,7 +1293,7 @@
 
 	.note-text {
 		font-family: var(--ff-d);
-		font-size: 12.5px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
 		font-style: italic;
 		color: var(--text2);
 		margin-top: 3px;
@@ -1311,7 +1311,7 @@
 
 	.moduler-title {
 		font-family: var(--ff-d);
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 700;
 		font-style: italic;
 		color: var(--text);
@@ -1354,14 +1354,14 @@
 
 	.modul-name {
 		font-family: var(--ff-d);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 700;
 		line-height: 1.1;
 		color: var(--text);
 	}
 
 	.modul-meta {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text3);
 	}
 
@@ -1393,7 +1393,7 @@
 	}
 
 	.featured-eyebrow {
-		font-size: 9px;
+		font-size: calc(9px * var(--fs-scale, 1));
 		font-weight: 700;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
@@ -1402,7 +1402,7 @@
 
 	.featured-title {
 		font-family: var(--ff-d);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 700;
 		margin-top: 2px;
 		line-height: 1.2;
@@ -1410,7 +1410,7 @@
 	}
 
 	.featured-meta {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text3);
 	}
 
@@ -1459,7 +1459,7 @@
 		padding: 3px 9px;
 		border-radius: 99px;
 		background: rgba(255, 255, 255, 0.22);
-		font-size: 9px;
+		font-size: calc(9px * var(--fs-scale, 1));
 		font-weight: 700;
 		letter-spacing: 0.14em;
 		margin-bottom: 10px;
@@ -1467,14 +1467,14 @@
 
 	.tilbud-title {
 		font-family: var(--ff-d);
-		font-size: 22px;
+		font-size: calc(22px * var(--fs-scale, 1));
 		font-weight: 700;
 		line-height: 1.1;
 		letter-spacing: -0.01em;
 	}
 
 	.tilbud-description {
-		font-size: 11.5px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
 		opacity: 0.9;
 		margin-top: 6px;
 		line-height: 1.45;
@@ -1489,7 +1489,7 @@
 		background: #fff;
 		color: var(--terra);
 		border: none;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 600;
 		font-family: var(--ff-b);
 		margin-top: 14px;
@@ -1507,7 +1507,7 @@
 
 	.kob-title {
 		font-family: var(--ff-d);
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 700;
 		font-style: italic;
 		color: var(--text);
@@ -1550,20 +1550,20 @@
 
 	.kob-name {
 		font-family: var(--ff-d);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 700;
 		line-height: 1.2;
 		color: var(--text);
 	}
 
 	.kob-meta {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
 
 	.kob-expires {
-		font-size: 9.5px;
+		font-size: calc(9.5px * var(--fs-scale, 1));
 		color: var(--terra);
 		margin-top: 2px;
 		font-weight: 600;
@@ -1571,7 +1571,7 @@
 	}
 
 	.c1-disclaimer {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text3);
 		font-family: var(--ff-d);
 		font-style: italic;

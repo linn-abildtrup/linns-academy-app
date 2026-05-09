@@ -458,7 +458,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
@@ -469,7 +469,7 @@
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -478,7 +478,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 28px;
+		font-size: calc(28px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -488,7 +488,7 @@
 
 	.status-badge {
 		display: inline-block;
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		padding: 4px 10px;
@@ -513,7 +513,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
 
@@ -532,7 +532,7 @@
 	}
 
 	.section-label {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
@@ -541,7 +541,7 @@
 	}
 
 	.reflection {
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		color: var(--text);
 		line-height: 1.5;
 		margin: 0 0 12px;
@@ -555,7 +555,7 @@
 		background: var(--bg2);
 		color: var(--text);
 		font-family: var(--ff-b);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		line-height: 1.5;
 		outline: none;
 		resize: vertical;
@@ -592,14 +592,14 @@
 	}
 
 	.check-label {
-		font-size: 13.5px;
+		font-size: calc(13.5px * var(--fs-scale, 1));
 		color: var(--text);
 		font-weight: 500;
 	}
 
 	.bonus-tag {
 		display: inline-block;
-		font-size: 9px;
+		font-size: calc(9px * var(--fs-scale, 1));
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		background: var(--terra2);
@@ -623,7 +623,7 @@
 
 	.check-knapper button {
 		padding: 9px 10px;
-		font-size: 12.5px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
 		font-weight: 600;
 		border-radius: 8px;
 		border: 1px solid var(--border);
@@ -670,7 +670,7 @@
 	}
 
 	.prog-tael {
-		font-size: 11.5px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 6px;
 	}
@@ -693,7 +693,7 @@
 	}
 
 	.slider-label {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text);
 		font-weight: 500;
 		flex: 1;
@@ -703,7 +703,7 @@
 
 	.slider-val {
 		font-family: var(--ff-d);
-		font-size: 22px;
+		font-size: calc(22px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--terra);
 		flex-shrink: 0;
@@ -724,7 +724,7 @@
 	.slider-skala {
 		display: flex;
 		justify-content: space-between;
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 		padding: 0 2px;
@@ -737,14 +737,14 @@
 	}
 
 	.generel-label {
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		margin-bottom: 4px;
 	}
 
 	.generel-sub {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text3);
 		line-height: 1.45;
 		margin-bottom: 10px;
@@ -764,7 +764,7 @@
 	}
 
 	.baseline-compare-label {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -773,7 +773,7 @@
 	}
 
 	.baseline-compare-tekst {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		line-height: 1.55;
 		color: var(--text2);
 		white-space: pre-wrap;
@@ -789,7 +789,7 @@
 		background: #fbeeea;
 		border: 1px solid #f0d6cf;
 		border-radius: 8px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: #8a4a3e;
 		margin-bottom: 12px;
 	}
@@ -806,7 +806,7 @@
 		gap: 8px;
 		width: 100%;
 		padding: 14px;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		border-radius: 12px;
 		border: none;

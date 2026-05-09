@@ -258,7 +258,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
@@ -269,7 +269,7 @@
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -278,7 +278,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 28px;
+		font-size: calc(28px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -287,7 +287,7 @@
 	}
 
 	.page-sub {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
 		line-height: 1.4;
@@ -299,7 +299,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
 
@@ -330,7 +330,7 @@
 	}
 
 	.section-label {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
@@ -338,13 +338,13 @@
 	}
 
 	.meta {
-		font-size: 11.5px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
 	}
 
 	.label {
 		display: block;
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text2);
 		margin-bottom: 12px;
@@ -361,7 +361,7 @@
 		width: 100%;
 		margin-top: 6px;
 		padding: 10px 12px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		border: 1px solid var(--border);
 		border-radius: 8px;
 		background: var(--white);
@@ -379,7 +379,7 @@
 
 	.input.sm {
 		padding: 6px 8px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		margin-top: 4px;
 	}
 
@@ -415,7 +415,7 @@
 		border-radius: 50%;
 		background: var(--bg2);
 		color: var(--text2);
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		display: flex;
 		align-items: center;
@@ -425,7 +425,7 @@
 
 	.ovelse-navn {
 		flex: 1;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		min-width: 0;
@@ -446,7 +446,7 @@
 		border-radius: 6px;
 		border: 1px solid var(--border);
 		background: var(--white);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		cursor: pointer;
 		display: flex;
@@ -477,7 +477,7 @@
 	.field {
 		display: flex;
 		flex-direction: column;
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text3);
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
@@ -490,7 +490,7 @@
 		gap: 4px;
 		text-transform: none;
 		letter-spacing: normal;
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text2);
 	}
@@ -507,7 +507,7 @@
 
 	.btn {
 		padding: 10px 14px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 600;
 		border-radius: 8px;
 		border: 1px solid var(--border);
@@ -537,14 +537,14 @@
 		display: block;
 		width: 100%;
 		padding: 14px;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 	}
 
 	.besked {
 		margin-top: 10px;
 		padding: 8px 12px;
 		border-radius: 10px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		text-align: center;
 	}
 

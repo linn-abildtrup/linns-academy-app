@@ -302,7 +302,7 @@
 
 	.eyebrow {
 		font-family: var(--ff-b);
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.2em;
 		text-transform: uppercase;
@@ -312,7 +312,7 @@
 	.kategori {
 		font-family: var(--ff-d);
 		font-style: italic;
-		font-size: 16px;
+		font-size: calc(16px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: rgba(255, 255, 255, 0.95);
 		margin-top: 2px;
@@ -403,7 +403,7 @@
 	.titel {
 		font-family: var(--ff-d);
 		font-weight: 500;
-		font-size: 22px;
+		font-size: calc(22px * var(--fs-scale, 1));
 		letter-spacing: -0.01em;
 		margin: 0;
 		color: #fff;
@@ -411,14 +411,14 @@
 
 	.sub {
 		font-family: var(--ff-b);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: rgba(255, 255, 255, 0.75);
 		margin-top: 6px;
 	}
 
 	.fejl {
 		text-align: center;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: #fbeeea;
 		margin-bottom: 12px;
 	}
@@ -477,7 +477,7 @@
 		display: flex;
 		justify-content: space-between;
 		font-family: var(--ff-b);
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: rgba(255, 255, 255, 0.7);
 		margin-top: 4px;
 	}
@@ -514,7 +514,7 @@
 
 	.sek-tekst {
 		font-family: var(--ff-b);
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: #fff;
 		letter-spacing: 0.02em;

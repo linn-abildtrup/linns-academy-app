@@ -10,14 +10,14 @@
 	}
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 22px;
+		font-size: calc(22px * var(--fs-scale, 1));
 		font-weight: 700;
 		color: var(--text);
 		margin: 0 0 8px;
 	}
 	p {
 		font-family: var(--ff-b);
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin: 0;
 	}

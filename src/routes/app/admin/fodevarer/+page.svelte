@@ -175,14 +175,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -191,14 +191,14 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 26px;
+		font-size: calc(26px * var(--fs-scale, 1));
 		font-weight: 600;
 		margin: 4px 0 6px;
 		color: var(--text);
 	}
 
 	.page-sub {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 0;
 	}
@@ -217,7 +217,7 @@
 		flex: 1;
 		min-width: 0;
 		padding: 8px 6px;
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 500;
 		font-family: var(--ff-b);
 		background: transparent;
@@ -241,7 +241,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		text-align: center;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 	}
 
@@ -279,19 +279,19 @@
 	}
 
 	.kort-navn {
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
 
 	.kort-meta {
-		font-size: 11.5px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 3px;
 	}
 
 	.kort-by {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 4px;
 		display: flex;
@@ -304,7 +304,7 @@
 		display: inline-flex;
 		padding: 2px 8px;
 		border-radius: 99px;
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.04em;
 	}
@@ -328,7 +328,7 @@
 		display: inline-flex;
 		padding: 2px 8px;
 		border-radius: 99px;
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		background: #fbeeea;
 		color: #8a4a3e;
@@ -342,7 +342,7 @@
 	.action {
 		flex: 1;
 		padding: 8px 12px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 600;
 		font-family: var(--ff-b);
 		border-radius: 9px;

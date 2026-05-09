@@ -276,14 +276,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -292,7 +292,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 26px;
+		font-size: calc(26px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -306,7 +306,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 		margin-bottom: 14px;
 	}
@@ -330,13 +330,13 @@
 
 	.form-titel {
 		font-family: var(--ff-d);
-		font-size: 16px;
+		font-size: calc(16px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
 
 	.hint {
-		font-size: 11.5px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin: 0 0 6px;
 		line-height: 1.45;
@@ -349,7 +349,7 @@
 	}
 
 	.felt-label {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
@@ -359,7 +359,7 @@
 	.felt input,
 	.textarea {
 		padding: 10px 12px;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		border-radius: 10px;
 		border: 1px solid var(--border);
 		background: var(--bg2);
@@ -394,7 +394,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		cursor: pointer;
 	}
@@ -418,11 +418,11 @@
 
 	.check-id {
 		font-family: ui-monospace, monospace;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 	}
 
 	.check-label-input {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 	}
 
 	.ikon-knap {
@@ -432,7 +432,7 @@
 		background: var(--bg2);
 		border: 1px solid var(--border);
 		color: var(--text3);
-		font-size: 18px;
+		font-size: calc(18px * var(--fs-scale, 1));
 		cursor: pointer;
 		font-family: var(--ff-b);
 	}
@@ -444,7 +444,7 @@
 
 	.ghost-knap {
 		padding: 10px 14px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 500;
 		border-radius: 10px;
 		background: var(--bg2);
@@ -466,7 +466,7 @@
 		background: #fbeeea;
 		border: 1px solid #f0d6cf;
 		border-radius: 8px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: #8a4a3e;
 		margin-bottom: 12px;
 	}
@@ -475,7 +475,7 @@
 		padding: 8px 12px;
 		background: var(--sdim);
 		border-radius: 8px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--sage);
 		text-align: center;
 		margin-bottom: 12px;
@@ -489,7 +489,7 @@
 
 	.form-knap {
 		padding: 12px;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		border-radius: 10px;
 		border: none;

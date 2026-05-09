@@ -32,6 +32,6 @@
 		text-align: center;
 		color: var(--text3);
 		font-family: var(--ff-b);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 	}
 </style>

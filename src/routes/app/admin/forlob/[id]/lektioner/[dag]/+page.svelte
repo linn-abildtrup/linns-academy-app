@@ -330,14 +330,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -346,7 +346,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 26px;
+		font-size: calc(26px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -355,7 +355,7 @@
 	}
 
 	.page-sub {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
 	}
@@ -366,7 +366,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
 
@@ -395,19 +395,19 @@
 
 	.form-titel {
 		font-family: var(--ff-d);
-		font-size: 16px;
+		font-size: calc(16px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
 
 	.form-tael {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		font-variant-numeric: tabular-nums;
 	}
 
 	.muted {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin: 0;
 		font-style: italic;
@@ -430,7 +430,7 @@
 	}
 
 	.lektion-edit-num {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
@@ -444,7 +444,7 @@
 		border: 1px solid var(--border);
 		background: var(--white);
 		color: var(--text2);
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		cursor: pointer;
 		display: flex;
 		align-items: center;
@@ -469,7 +469,7 @@
 	}
 
 	.felt-label {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
@@ -480,7 +480,7 @@
 	.felt textarea,
 	.form-card > textarea {
 		padding: 10px 12px;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		border-radius: 10px;
 		border: 1px solid var(--border);
 		background: var(--white);
@@ -516,7 +516,7 @@
 
 	.form-knap {
 		padding: 12px;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		border-radius: 10px;
 		border: none;
@@ -553,7 +553,7 @@
 		padding: 8px 12px;
 		background: var(--sdim);
 		border-radius: 8px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--sage);
 		text-align: center;
 	}
@@ -566,7 +566,7 @@
 		background: none;
 		border: 1px solid #e8c8c1;
 		color: #b8503f;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 500;
 		padding: 8px 14px;
 		border-radius: 8px;
@@ -592,7 +592,7 @@
 	}
 
 	.slet-tekst {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: #8a4a3e;
 		margin-bottom: 10px;
 	}
@@ -616,7 +616,7 @@
 		display: inline-flex;
 		align-items: center;
 		padding: 7px 12px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 500;
 		border-radius: 8px;
 		border: 1px dashed var(--border);
@@ -649,7 +649,7 @@
 	}
 
 	.html-upload-hint {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		font-style: italic;
 	}

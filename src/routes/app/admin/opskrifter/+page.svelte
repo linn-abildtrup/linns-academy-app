@@ -116,14 +116,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -132,7 +132,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 28px;
+		font-size: calc(28px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -141,7 +141,7 @@
 	}
 
 	.page-sub {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
 		line-height: 1.4;
@@ -153,7 +153,7 @@
 		padding: 13px;
 		background: var(--terra);
 		color: #fff;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		border-radius: 12px;
 		border: none;
@@ -173,7 +173,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
 
@@ -224,7 +224,7 @@
 	}
 
 	.thumb-emoji {
-		font-size: 22px;
+		font-size: calc(22px * var(--fs-scale, 1));
 		opacity: 0.4;
 	}
 
@@ -234,7 +234,7 @@
 	}
 
 	.navn {
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		display: flex;
@@ -243,13 +243,13 @@
 	}
 
 	.sub {
-		font-size: 11.5px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
 
 	.badge {
-		font-size: 9.5px;
+		font-size: calc(9.5px * var(--fs-scale, 1));
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		padding: 2px 7px;

@@ -13,12 +13,29 @@
 		hentUserProduct
 	} from '$lib/firestore/mikrotraening';
 	import Icon, { type IconName } from '$lib/components/Icon.svelte';
+	import {
+		anvendScale,
+		gemScale,
+		laesGemtScale,
+		type TextScale
+	} from '$lib/utils/textScale';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
+
+	// Tekststørrelse
+	let aktivScale = $state<TextScale>('normal');
+	onMount(() => {
+		aktivScale = laesGemtScale();
+	});
+	function vaelgScale(s: TextScale) {
+		aktivScale = s;
+		gemScale(s);
+		anvendScale(s);
+	}
 
 	// Mikrotræning-program-valg
 	let mtProgrammer = $state<TrainingProgram[]>([]);
@@ -199,6 +216,40 @@
 	{/if}
 
 	<section class="sektion">
+		<h2 class="sektion-titel">Tekststørrelse</h2>
+		<p class="sektion-sub">Gør tekst i hele appen større hvis du har svært ved at læse.</p>
+		<div class="scale-rad">
+			<button
+				type="button"
+				class="scale-knap"
+				class:aktiv={aktivScale === 'normal'}
+				onclick={() => vaelgScale('normal')}
+			>
+				<span class="scale-prov scale-prov-1">Aa</span>
+				<span class="scale-lbl">Normal</span>
+			</button>
+			<button
+				type="button"
+				class="scale-knap"
+				class:aktiv={aktivScale === 'large'}
+				onclick={() => vaelgScale('large')}
+			>
+				<span class="scale-prov scale-prov-2">Aa</span>
+				<span class="scale-lbl">Stor</span>
+			</button>
+			<button
+				type="button"
+				class="scale-knap"
+				class:aktiv={aktivScale === 'xlarge'}
+				onclick={() => vaelgScale('xlarge')}
+			>
+				<span class="scale-prov scale-prov-3">Aa</span>
+				<span class="scale-lbl">Ekstra stor</span>
+			</button>
+		</div>
+	</section>
+
+	<section class="sektion">
 		<h2 class="sektion-titel">Hjælp</h2>
 		<div class="hjaelp">
 			Skriv til <a href="mailto:kontakt@linnsacademy.dk">kontakt@linnsacademy.dk</a>
@@ -234,20 +285,20 @@
 		align-items: center;
 		justify-content: center;
 		font-family: 'Playfair Display', Georgia, serif;
-		font-size: 32px;
+		font-size: calc(32px * var(--fs-scale, 1));
 		font-weight: 500;
 		margin-bottom: 14px;
 	}
 
 	.navn {
-		font-size: 22px;
+		font-size: calc(22px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text);
 		margin: 0;
 	}
 
 	.email {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin: 4px 0 0;
 	}
@@ -261,7 +312,7 @@
 	}
 
 	.card-label {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 500;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -270,7 +321,7 @@
 	}
 
 	.card-text {
-		font-size: 15px;
+		font-size: calc(15px * var(--fs-scale, 1));
 		color: var(--text);
 		margin: 0;
 	}
@@ -280,7 +331,7 @@
 	}
 
 	.sektion-titel {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text);
 		margin: 0 4px 8px;
@@ -319,19 +370,19 @@
 	}
 
 	.koeb-navn {
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text);
 	}
 
 	.koeb-meta {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
 
 	.badge {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 500;
 		padding: 4px 9px;
 		border-radius: 10px;
@@ -347,7 +398,7 @@
 	}
 
 	.sektion-sub {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin: 0 4px 10px;
 		line-height: 1.5;
@@ -358,7 +409,7 @@
 		background: var(--white);
 		border: 1px solid var(--border);
 		border-radius: 10px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-align: center;
 	}
@@ -431,13 +482,13 @@
 	}
 
 	.program-navn {
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text);
 	}
 
 	.program-sub {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
@@ -451,8 +502,60 @@
 	}
 
 	.program-gemmer {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--terra);
+		font-weight: 500;
+	}
+
+	.scale-rad {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 8px;
+	}
+
+	.scale-knap {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		padding: 14px 8px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		cursor: pointer;
+		font-family: var(--ff-b);
+		transition:
+			border-color 0.15s ease,
+			background 0.15s ease;
+	}
+
+	.scale-knap.aktiv {
+		border-color: var(--sage, #6f9e7e);
+		background: var(--sdim, #f0f5f1);
+	}
+
+	.scale-prov {
+		font-family: var(--ff-d);
+		color: var(--text);
+		line-height: 1;
+		font-weight: 500;
+	}
+
+	.scale-prov-1 {
+		font-size: 18px;
+	}
+
+	.scale-prov-2 {
+		font-size: 22px;
+	}
+
+	.scale-prov-3 {
+		font-size: 27px;
+	}
+
+	.scale-lbl {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text2);
 		font-weight: 500;
 	}
 
@@ -461,7 +564,7 @@
 		border: 1px solid var(--border);
 		border-radius: 10px;
 		padding: 12px 14px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text);
 	}
 
@@ -483,7 +586,7 @@
 		border: 1px solid var(--border2, var(--border));
 		border-radius: 10px;
 		color: var(--text3);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-family: inherit;
 		text-align: center;
 		cursor: pointer;

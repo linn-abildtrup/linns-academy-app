@@ -173,7 +173,7 @@
 
 	.tagline {
 		margin: 10px 0 0;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		max-width: 260px;
 		line-height: 1.55;
@@ -187,7 +187,7 @@
 
 	.resume {
 		text-align: center;
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin: 6px 0 0;
 	}
@@ -242,7 +242,7 @@
 
 	.form-title {
 		font-family: var(--ff-d);
-		font-size: 28px;
+		font-size: calc(28px * var(--fs-scale, 1));
 		font-weight: 700;
 		color: var(--text);
 		letter-spacing: -0.01em;
@@ -251,7 +251,7 @@
 
 	.form-sub {
 		margin: 6px 0 0;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 	}
 
@@ -269,7 +269,7 @@
 
 	.label {
 		font-family: var(--ff-b);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text2);
 	}
@@ -281,7 +281,7 @@
 		border-radius: var(--r);
 		background: var(--white);
 		font-family: var(--ff-b);
-		font-size: 15px;
+		font-size: calc(15px * var(--fs-scale, 1));
 		color: var(--text);
 		transition: border-color 0.15s ease;
 		box-sizing: border-box;
@@ -303,7 +303,7 @@
 		color: var(--text);
 		border-radius: var(--r);
 		font-family: var(--ff-b);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 	}
 
 	/* === Logget ind === */
@@ -330,14 +330,14 @@
 	.hello {
 		margin: 0 0 4px;
 		font-family: var(--ff-b);
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		color: var(--text3);
 	}
 
 	.email {
 		margin: 0 0 20px;
 		font-family: var(--ff-b);
-		font-size: 16px;
+		font-size: calc(16px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text);
 	}

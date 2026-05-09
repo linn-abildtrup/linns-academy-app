@@ -600,14 +600,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -616,7 +616,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 30px;
+		font-size: calc(30px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -625,7 +625,7 @@
 	}
 
 	.page-sub {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
 		line-height: 1.4;
@@ -643,7 +643,7 @@
 
 	.tab-knap {
 		padding: 10px 6px;
-		font-size: 12.5px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
 		font-weight: 600;
 		border-radius: 8px;
 		border: none;
@@ -665,7 +665,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
 
@@ -689,7 +689,7 @@
 
 	.kat-title {
 		font-family: var(--ff-d);
-		font-size: 16px;
+		font-size: calc(16px * var(--fs-scale, 1));
 		font-weight: 500;
 		font-style: italic;
 		color: var(--text);
@@ -729,7 +729,7 @@
 
 	.faq-q-text {
 		flex: 1;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text);
 		line-height: 1.4;
@@ -748,7 +748,7 @@
 
 	.faq-a-inner {
 		padding: 0 14px 14px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		line-height: 1.65;
 		color: var(--text2);
 		white-space: pre-wrap;
@@ -806,7 +806,7 @@
 		z-index: 2;
 		background: rgba(42, 15, 30, 0.72);
 		color: #fff;
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 500;
 		letter-spacing: 0.06em;
 		padding: 4px 9px;
@@ -860,20 +860,20 @@
 	}
 
 	.guide-titel {
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		line-height: 1.35;
 	}
 
 	.guide-beskrivelse {
-		font-size: 12.5px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
 		color: var(--text2);
 		line-height: 1.5;
 	}
 
 	.guide-dato {
-		font-size: 10.5px;
+		font-size: calc(10.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		letter-spacing: 0.04em;
 		margin-top: 2px;
@@ -915,7 +915,7 @@
 	.overlay-titel {
 		flex: 1;
 		font-family: var(--ff-d);
-		font-size: 18px;
+		font-size: calc(18px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		line-height: 1.3;
@@ -928,7 +928,7 @@
 		border: 1px solid var(--border);
 		background: var(--white);
 		color: var(--text2);
-		font-size: 18px;
+		font-size: calc(18px * var(--fs-scale, 1));
 		cursor: pointer;
 		display: flex;
 		align-items: center;
@@ -982,7 +982,7 @@
 		border: 1px solid var(--border);
 		background: var(--white);
 		color: var(--text);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 500;
 		cursor: pointer;
 		font-family: var(--ff-b);
@@ -992,7 +992,7 @@
 	.html-overlay-titel {
 		flex: 1;
 		font-family: var(--ff-d);
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		overflow: hidden;
@@ -1025,7 +1025,7 @@
 		border: none;
 		background: var(--terra);
 		color: #fff;
-		font-size: 15px;
+		font-size: calc(15px * var(--fs-scale, 1));
 		font-weight: 600;
 		cursor: pointer;
 		font-family: var(--ff-b);
@@ -1036,7 +1036,7 @@
 	}
 
 	.overlay-beskrivelse {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		line-height: 1.6;
 		color: var(--text2);
 		margin: 0;
@@ -1044,7 +1044,7 @@
 	}
 
 	.overlay-dato {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		letter-spacing: 0.04em;
 	}
@@ -1053,7 +1053,7 @@
 		padding: 20px;
 		text-align: center;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 	}
 
 	.overlay-link {
@@ -1064,7 +1064,7 @@
 		color: #fff;
 		text-decoration: none;
 		border-radius: 8px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 600;
 	}
 
@@ -1108,13 +1108,13 @@
 	.lektion-dag-tal {
 		font-family: var(--ff-d);
 		font-weight: 700;
-		font-size: 16px;
+		font-size: calc(16px * var(--fs-scale, 1));
 		line-height: 1;
 		color: var(--text);
 	}
 
 	.lektion-dag-label {
-		font-size: 8px;
+		font-size: calc(8px * var(--fs-scale, 1));
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--text3);
@@ -1130,7 +1130,7 @@
 	}
 
 	.lektion-uge-bib {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text3);
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
@@ -1138,14 +1138,14 @@
 
 	.lektion-titel-bib {
 		font-family: var(--ff-d);
-		font-size: 15px;
+		font-size: calc(15px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		line-height: 1.3;
 	}
 
 	.lektion-beskrivelse-bib {
-		font-size: 12.5px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
 		color: var(--text2);
 		line-height: 1.45;
 		margin-top: 2px;
@@ -1167,7 +1167,7 @@
 		display: inline-block;
 		padding: 3px 9px;
 		border-radius: 999px;
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.04em;
 	}
@@ -1198,7 +1198,7 @@
 	}
 
 	.lektion-duration-bib {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 	}
 </style>

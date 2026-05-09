@@ -222,7 +222,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 	}
@@ -233,7 +233,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
 
@@ -261,13 +261,13 @@
 	}
 
 	.hero-emoji {
-		font-size: 56px;
+		font-size: calc(56px * var(--fs-scale, 1));
 		opacity: 0.4;
 	}
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 28px;
+		font-size: calc(28px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 0 0 8px;
@@ -283,7 +283,7 @@
 	}
 
 	.kategori-badge {
-		font-size: 10.5px;
+		font-size: calc(10.5px * var(--fs-scale, 1));
 		letter-spacing: 0.06em;
 		color: var(--terra);
 		background: var(--tdim);
@@ -298,7 +298,7 @@
 	}
 
 	.beskrivelse {
-		font-size: 13.5px;
+		font-size: calc(13.5px * var(--fs-scale, 1));
 		color: var(--text2);
 		line-height: 1.55;
 		margin: 0 0 16px;
@@ -313,7 +313,7 @@
 	}
 
 	.section-label {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
@@ -334,7 +334,7 @@
 		border-radius: 50%;
 		background: var(--bg2);
 		border: 1px solid var(--border);
-		font-size: 18px;
+		font-size: calc(18px * var(--fs-scale, 1));
 		color: var(--text2);
 		cursor: pointer;
 		font-family: var(--ff-b);
@@ -353,7 +353,7 @@
 
 	.portion-num {
 		font-family: var(--ff-d);
-		font-size: 22px;
+		font-size: calc(22px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		min-width: 32px;
@@ -361,7 +361,7 @@
 	}
 
 	.portion-label {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text3);
 	}
 
@@ -376,7 +376,7 @@
 		gap: 12px;
 		padding: 10px 0;
 		border-top: 1px solid var(--border);
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 	}
 
 	.ing-row:first-child {
@@ -393,7 +393,7 @@
 	}
 
 	.instruktioner {
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		line-height: 1.6;
 		color: var(--text);
 		white-space: pre-wrap;
@@ -405,7 +405,7 @@
 		padding: 14px;
 		background: var(--terra);
 		color: #fff;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		border-radius: 12px;
 		border: none;
@@ -422,7 +422,7 @@
 	.tilfoej-besked {
 		padding: 12px 14px;
 		border-radius: 10px;
-		font-size: 12.5px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
 		line-height: 1.5;
 		margin-bottom: 10px;
 	}

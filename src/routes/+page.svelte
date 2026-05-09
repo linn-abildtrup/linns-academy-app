@@ -30,6 +30,6 @@
 		background: var(--bg);
 		font-family: var(--ff-b);
 		color: var(--text3);
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 	}
 </style>

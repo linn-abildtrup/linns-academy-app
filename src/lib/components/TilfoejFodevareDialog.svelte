@@ -243,7 +243,7 @@
 
 	.titel {
 		font-family: var(--ff-d);
-		font-size: 18px;
+		font-size: calc(18px * var(--fs-scale, 1));
 		font-weight: 600;
 	}
 
@@ -254,7 +254,7 @@
 		background: var(--bg2);
 		border: none;
 		color: var(--text2);
-		font-size: 20px;
+		font-size: calc(20px * var(--fs-scale, 1));
 		cursor: pointer;
 	}
 
@@ -270,7 +270,7 @@
 	}
 
 	.barcode-info {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text3);
 	}
 
@@ -289,7 +289,7 @@
 	}
 
 	.lbl {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
@@ -299,7 +299,7 @@
 	.felt input,
 	.felt select {
 		padding: 10px 12px;
-		font-size: 16px;
+		font-size: calc(16px * var(--fs-scale, 1));
 		border-radius: 10px;
 		border: 1px solid var(--border);
 		background: var(--bg2);
@@ -322,7 +322,7 @@
 		display: flex;
 		align-items: flex-start;
 		gap: 6px;
-		font-size: 11.5px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		line-height: 1.45;
 		margin: 4px 0 0;
@@ -333,7 +333,7 @@
 		background: #fbeeea;
 		border: 1px solid #f0d6cf;
 		border-radius: 8px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: #8a4a3e;
 	}
 
@@ -352,7 +352,7 @@
 		border-radius: 12px;
 		font-family: var(--ff-b);
 		font-weight: 600;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		cursor: pointer;
 	}
 

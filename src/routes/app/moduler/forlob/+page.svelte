@@ -396,14 +396,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -420,7 +420,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 28px;
+		font-size: calc(28px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -429,7 +429,7 @@
 	}
 
 	.page-sub {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
 		line-height: 1.4;
@@ -441,7 +441,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 		margin-bottom: 14px;
 	}
@@ -483,21 +483,21 @@
 	}
 
 	.lektion-meta {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		letter-spacing: 0.05em;
 	}
 
 	.lektion-titel {
 		font-family: var(--ff-d);
-		font-size: 17px;
+		font-size: calc(17px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		line-height: 1.3;
 	}
 
 	.lektion-beskrivelse {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		line-height: 1.5;
 	}
@@ -517,12 +517,12 @@
 		border-radius: 999px;
 		background: var(--tdim);
 		color: var(--terra);
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 600;
 	}
 
 	.lektion-duration {
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text2);
 	}
@@ -547,12 +547,12 @@
 		justify-content: center;
 		font-family: var(--ff-d);
 		font-weight: 600;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		flex-shrink: 0;
 	}
 
 	.note-eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
@@ -561,7 +561,7 @@
 	}
 
 	.note-tekst {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		line-height: 1.55;
 		color: var(--text);
 		white-space: pre-wrap;
@@ -604,13 +604,13 @@
 	}
 
 	.baseline-titel {
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
 
 	.baseline-sub {
-		font-size: 11.5px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
@@ -687,7 +687,7 @@
 	.dag-num-tal {
 		font-family: var(--ff-d);
 		font-weight: 700;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		line-height: 1;
 		color: var(--text);
 	}
@@ -697,7 +697,7 @@
 	}
 
 	.dag-num-label {
-		font-size: 8px;
+		font-size: calc(8px * var(--fs-scale, 1));
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--text3);
@@ -714,14 +714,14 @@
 	}
 
 	.dag-uge {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text3);
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
 	}
 
 	.dag-titel {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text);
 		line-height: 1.3;
@@ -738,13 +738,13 @@
 	}
 
 	.dag-meta {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
 
 	.badge {
-		font-size: 9.5px;
+		font-size: calc(9.5px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
@@ -793,7 +793,7 @@
 	.overlay-titel {
 		flex: 1;
 		font-family: var(--ff-d);
-		font-size: 18px;
+		font-size: calc(18px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		line-height: 1.3;
@@ -806,7 +806,7 @@
 		border: 1px solid var(--border);
 		background: var(--white);
 		color: var(--text2);
-		font-size: 18px;
+		font-size: calc(18px * var(--fs-scale, 1));
 		cursor: pointer;
 		display: flex;
 		align-items: center;
@@ -860,7 +860,7 @@
 		border: 1px solid var(--border);
 		background: var(--white);
 		color: var(--text);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 500;
 		cursor: pointer;
 		font-family: var(--ff-b);
@@ -870,7 +870,7 @@
 	.html-overlay-titel {
 		flex: 1;
 		font-family: var(--ff-d);
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 		overflow: hidden;
@@ -903,7 +903,7 @@
 		border: none;
 		background: var(--terra);
 		color: #fff;
-		font-size: 15px;
+		font-size: calc(15px * var(--fs-scale, 1));
 		font-weight: 600;
 		cursor: pointer;
 		font-family: var(--ff-b);
@@ -914,7 +914,7 @@
 	}
 
 	.overlay-beskrivelse {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		line-height: 1.6;
 		color: var(--text2);
 		margin: 0;
@@ -922,7 +922,7 @@
 	}
 
 	.overlay-meta {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		letter-spacing: 0.04em;
 	}

@@ -241,14 +241,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -257,7 +257,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 26px;
+		font-size: calc(26px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -266,7 +266,7 @@
 	}
 
 	.page-sub {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
 		line-height: 1.4;
@@ -278,7 +278,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
 
@@ -308,7 +308,7 @@
 	}
 
 	.section-label {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
@@ -322,7 +322,7 @@
 	}
 
 	.felt-label {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
@@ -332,7 +332,7 @@
 	.felt input,
 	.felt textarea {
 		padding: 10px 12px;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		border-radius: 10px;
 		border: 1px solid var(--border);
 		background: var(--bg2);
@@ -355,7 +355,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		cursor: pointer;
 	}
@@ -367,7 +367,7 @@
 	}
 
 	.tom-tael {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--terra);
 		font-weight: 500;
 	}
@@ -376,7 +376,7 @@
 		display: block;
 		width: 100%;
 		padding: 12px 14px;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		border-radius: 12px;
 		border: 1px solid var(--border);
@@ -398,7 +398,7 @@
 	}
 
 	.hint {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text4);
 		margin: 0;
 		line-height: 1.4;
@@ -407,7 +407,7 @@
 	.besked {
 		padding: 8px 12px;
 		border-radius: 10px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 	}
 
 	.besked.ok {
@@ -455,7 +455,7 @@
 		border-radius: 50%;
 		background: var(--bg2);
 		color: var(--text2);
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 600;
 		display: flex;
 		align-items: center;
@@ -469,13 +469,13 @@
 	}
 
 	.dag-titel {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
 
 	.dag-sub {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 		overflow: hidden;

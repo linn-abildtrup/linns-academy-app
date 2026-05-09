@@ -264,7 +264,7 @@
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -273,7 +273,7 @@
 
 	h2 {
 		font-family: var(--ff-d);
-		font-size: 26px;
+		font-size: calc(26px * var(--fs-scale, 1));
 		font-weight: 600;
 		margin: 4px 0 0;
 		line-height: 1.05;
@@ -291,7 +291,7 @@
 		height: 32px;
 		border: none;
 		background: transparent;
-		font-size: 26px;
+		font-size: calc(26px * var(--fs-scale, 1));
 		color: var(--text2);
 		cursor: pointer;
 		line-height: 1;
@@ -310,11 +310,11 @@
 		padding: 24px;
 		text-align: center;
 		color: var(--text3);
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 	}
 
 	.gruppe-label {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -367,13 +367,13 @@
 		left: 50%;
 		transform: translate(-50%, -50%);
 		color: var(--white);
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 700;
 	}
 
 	.tekst {
 		flex: 1;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text);
 		min-width: 0;
 	}
@@ -393,7 +393,7 @@
 		background: transparent;
 		color: var(--text3);
 		cursor: pointer;
-		font-size: 20px;
+		font-size: calc(20px * var(--fs-scale, 1));
 		padding: 0 4px;
 		line-height: 1;
 	}
@@ -404,7 +404,7 @@
 	}
 
 	.section-label {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -426,7 +426,7 @@
 		border-radius: 10px;
 		background: var(--white);
 		font-family: inherit;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 	}
 
 	.manuel-rad input[type='number'] {
@@ -436,7 +436,7 @@
 		border-radius: 10px;
 		background: var(--white);
 		font-family: inherit;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: right;
 	}
 
@@ -446,7 +446,7 @@
 		border-radius: 10px;
 		background: var(--white);
 		font-family: inherit;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 	}
 
 	.eksport-knapper {
@@ -466,7 +466,7 @@
 		padding: 10px 14px;
 		border-radius: 10px;
 		font-family: inherit;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 600;
 		cursor: pointer;
 	}
@@ -483,7 +483,7 @@
 		padding: 10px 14px;
 		border-radius: 10px;
 		font-family: inherit;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 500;
 		cursor: pointer;
 	}
@@ -495,7 +495,7 @@
 
 	.eksport-hint {
 		margin: 0 0 8px;
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		line-height: 1.45;
 	}
@@ -509,7 +509,7 @@
 		color: var(--white);
 		padding: 8px 16px;
 		border-radius: 99px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 500;
 		box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
 	}

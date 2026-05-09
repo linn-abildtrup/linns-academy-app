@@ -77,7 +77,7 @@
 
 	.brand-module {
 		font-family: var(--ff-b);
-		font-size: 9px;
+		font-size: calc(9px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--terra);
 		letter-spacing: 0.22em;
@@ -105,7 +105,7 @@
 
 	.date-label {
 		font-family: var(--ff-b);
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 500;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
@@ -114,7 +114,7 @@
 
 	.greeting-text {
 		font-family: var(--ff-d);
-		font-size: 16px;
+		font-size: calc(16px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text);
 		letter-spacing: -0.005em;

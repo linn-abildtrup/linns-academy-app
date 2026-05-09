@@ -167,14 +167,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
 
 	.eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -183,7 +183,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: 26px;
+		font-size: calc(26px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -208,7 +208,7 @@
 	}
 
 	.intro {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 0;
 		line-height: 1.55;
@@ -221,14 +221,14 @@
 	}
 
 	.felt-label {
-		font-size: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text2);
 	}
 
 	.felt-input {
 		font-family: var(--ff-b);
-		font-size: 15px;
+		font-size: calc(15px * var(--fs-scale, 1));
 		line-height: 1.5;
 		padding: 12px 14px;
 		border-radius: 10px;
@@ -247,14 +247,14 @@
 	.felt-meta {
 		display: flex;
 		justify-content: space-between;
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 	}
 
 	.status {
 		padding: 10px 14px;
 		border-radius: 10px;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
 
@@ -277,7 +277,7 @@
 		padding: 14px;
 		border-radius: 10px;
 		font-family: inherit;
-		font-size: 14px;
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		cursor: pointer;
 	}
@@ -294,7 +294,7 @@
 		padding: 12px;
 		border-radius: 10px;
 		font-family: inherit;
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 500;
 		cursor: pointer;
 	}
@@ -304,7 +304,7 @@
 	}
 
 	.mine-eyebrow {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -340,14 +340,14 @@
 	}
 
 	.mine-dato {
-		font-size: 11px;
+		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 	}
 
 	.mine-pill {
 		background: var(--terra);
 		color: var(--white);
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
@@ -361,7 +361,7 @@
 	}
 
 	.mine-tekst {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text);
 		line-height: 1.5;
 		white-space: pre-wrap;
@@ -375,7 +375,7 @@
 	}
 
 	.mine-svar-label {
-		font-size: 10px;
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -384,7 +384,7 @@
 	}
 
 	.mine-svar-tekst {
-		font-size: 13px;
+		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text);
 		line-height: 1.5;
 		white-space: pre-wrap;
