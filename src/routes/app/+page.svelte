@@ -446,7 +446,7 @@
 
 			{#if nyestUbeskrevneSvar}
 				<section class="nyt-svar-section">
-					<a class="nyt-svar-card" href="/app/spoergsmaal">
+					<a class="nyt-svar-card" href="/app/beskeder">
 						<div class="nyt-svar-eyebrow">
 							<span class="nyt-svar-prik"></span>
 							Nyt svar fra Linn
@@ -526,24 +526,6 @@
 				</a>
 			</section>
 
-			<section class="spq-section">
-				<div class="eyebrow eyebrow-muted">
-					Har du et spørgsmål?
-					{#if ubeskrivedeSpoergsmaal.length > 0}
-						<span class="spq-prik" aria-label="Nye svar"></span>
-					{/if}
-				</div>
-				<div class="spq-card">
-					<p class="spq-tekst">
-						Del dit spørgsmål med Linn. Spørgsmålene samles og besvares ud fra emner der går igen,
-						i videoer, live og kommende indhold i appen.
-					</p>
-					<a class="spq-knap" href="/app/spoergsmaal">
-						<span>{ubeskrivedeSpoergsmaal.length > 0 ? 'Se svar og stil et nyt spørgsmål' : 'Stil et spørgsmål til Linn'}</span>
-						<Icon name="arrow" size={14} color="#fff" />
-					</a>
-				</div>
-			</section>
 		</div>
 	</div>
 {:else if userDoc?.state === 'modulbruger'}
@@ -696,8 +678,7 @@
 
 	/* ── Coaching og spørgsmål-sektioner ───────────────────────── */
 
-	.coaching-section,
-	.spq-section {
+	.coaching-section {
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
@@ -764,47 +745,6 @@
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
-	}
-
-	.spq-card {
-		background: var(--white);
-		border: 1px solid var(--border);
-		border-radius: 14px;
-		padding: 14px 16px;
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
-
-	.spq-tekst {
-		font-size: calc(12px * var(--fs-scale, 1));
-		line-height: 1.55;
-		color: var(--text2);
-		margin: 0;
-	}
-
-	.spq-knap {
-		background: var(--terra);
-		color: var(--white);
-		border-radius: 10px;
-		padding: 12px 14px;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-		font-size: calc(13px * var(--fs-scale, 1));
-		font-weight: 600;
-		text-decoration: none;
-	}
-
-	.spq-prik {
-		display: inline-block;
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		background: var(--terra);
-		margin-left: 6px;
-		vertical-align: middle;
 	}
 
 	.nyt-svar-section {

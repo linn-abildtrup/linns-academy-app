@@ -17,21 +17,6 @@
 		lockedFor?: UserState[];
 	};
 
-	const ADMIN_ITEM: NavItem = {
-		id: 'admin',
-		label: 'Admin',
-		icon: 'settings',
-		href: '/app/admin'
-	};
-
-	const FAELLESSKAB_ITEM: NavItem = {
-		id: 'faellesskab',
-		label: 'Fællesskab',
-		icon: 'community',
-		href: '/app/faellesskab',
-		lockedFor: ['udlobet']
-	};
-
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const getUser = getContext<() => User | null>('user');
 	const userDoc = $derived(getUserDoc?.());
@@ -48,7 +33,16 @@
 			dot: true,
 			lockedFor: ['udlobet']
 		},
-		isAdmin(user ?? null) ? ADMIN_ITEM : FAELLESSKAB_ITEM,
+		...(isAdmin(user ?? null)
+			? [
+					{
+						id: 'admin' as const,
+						label: 'Admin',
+						icon: 'settings' as IconName,
+						href: '/app/admin'
+					}
+				]
+			: []),
 		{ id: 'profil', label: 'Profil', icon: 'user', href: '/app/profil' }
 	]);
 
