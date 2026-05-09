@@ -34,8 +34,12 @@
 		opdaterFavorit,
 		opdaterMaaltid,
 		sletFavorit,
-		sletMaaltid
+		sletMaaltid,
+		stemPaaFodevare
 	} from '$lib/firestore/kost';
+	import { lookupBarcode } from '$lib/content/openFoodFacts';
+	import BarcodeScanner from '$lib/components/BarcodeScanner.svelte';
+	import TilfoejFodevareDialog from '$lib/components/TilfoejFodevareDialog.svelte';
 	import type { FavoritMaaltid } from '$lib/content/kost';
 	import {
 		ALLE_DIET_TAGS,
@@ -50,7 +54,9 @@
 	import { hentAlleFodevarer } from '$lib/firestore/kost';
 
 	const getUser = getContext<() => User | null>('user');
+	const getUserDoc = getContext<() => { firstName?: string } | null>('userDoc');
 	const user = $derived(getUser());
+	const userDoc = $derived(getUserDoc?.() ?? null);
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
 	import Icon from '$lib/components/Icon.svelte';
 	import IndkoebsListeOverlay from '$lib/components/IndkoebsListeOverlay.svelte';
@@ -115,6 +121,18 @@
 	let pickerSoeg = $state('');
 	let pickerKategori = $state<Kategori | 'all'>('all');
 	let erstatterIndex = $state<number | null>(null);
+
+	// Stregkode-scanner og 'tilføj ny fødevare'-dialog
+	let viserScanner = $state(false);
+	let scannerArbejder = $state(false);
+	let nyDialog = $state<{
+		barcode: string;
+		startNavn?: string;
+		startProtein?: number;
+		startFiber?: number;
+		startKat?: Kategori;
+	} | null>(null);
+	let stemmer = $state<string | null>(null); // fodevare-id der er ved at få stem opdateret
 
 	// Opskrifter-state
 	let opskriftSoeg = $state('');
@@ -429,6 +447,83 @@
 		viserPicker = true;
 		pickerSoeg = '';
 		pickerKategori = 'all';
+	}
+
+	function aabnScanner() {
+		viserScanner = true;
+	}
+
+	async function efterScan(barcode: string) {
+		viserScanner = false;
+		scannerArbejder = true;
+		try {
+			// Hvis fødevaren allerede findes (cf_-prefix på dokument-id) → tilføj direkte
+			const eksisterendeId = `cf_${barcode}`;
+			const eksisterende = foods.find((f) => f.id === eksisterendeId);
+			if (eksisterende) {
+				tilfoejTilMaaltid(eksisterende);
+				return;
+			}
+			const off = await lookupBarcode(barcode);
+			nyDialog = {
+				barcode,
+				startNavn: off?.navn ?? '',
+				startProtein: off?.protein ?? 0,
+				startFiber: off?.fiber ?? 0,
+				startKat: off?.katForslag ?? 'andet'
+			};
+		} finally {
+			scannerArbejder = false;
+		}
+	}
+
+	function aabnTilfoejManuel() {
+		nyDialog = {
+			barcode: 'manual_' + Date.now(),
+			startNavn: '',
+			startProtein: 0,
+			startFiber: 0,
+			startKat: 'andet'
+		};
+	}
+
+	function efterTilfoejet(ny: Fodevare) {
+		// Læg den nye fødevare ind i klient-cachen så den straks kan findes
+		foods = [...foods, ny].sort((a, b) => a.name.localeCompare(b.name, 'da'));
+		foodMap = new Map(foods.map((f) => [f.id, f]));
+		nyDialog = null;
+		// Tilføj direkte til måltid (eller erstat hvis vi var i erstat-flow)
+		tilfoejTilMaaltid(ny);
+	}
+
+	async function stemFodevare(food: Fodevare, type: 'ok' | 'ej', e: Event) {
+		e.stopPropagation();
+		const u = user;
+		if (!u || !food.id || stemmer) return;
+		stemmer = food.id;
+		try {
+			await stemPaaFodevare(food.id, u.uid, type);
+			// Opdater lokal cache så UI reagerer med det samme
+			const idx = foods.findIndex((f) => f.id === food.id);
+			if (idx >= 0) {
+				const okBy = (foods[idx].okBy ?? []).filter((x) => x !== u.uid);
+				const ejBy = (foods[idx].ejBy ?? []).filter((x) => x !== u.uid);
+				if (type === 'ok') okBy.push(u.uid);
+				else ejBy.push(u.uid);
+				const opdateret: Fodevare = {
+					...foods[idx],
+					okBy,
+					ejBy,
+					verificeret: okBy.length >= 3
+				};
+				foods = [...foods.slice(0, idx), opdateret, ...foods.slice(idx + 1)];
+				foodMap = new Map(foods.map((f) => [f.id, f]));
+			}
+		} catch (err) {
+			console.error(err);
+		} finally {
+			stemmer = null;
+		}
 	}
 
 	function lukPicker() {
@@ -1288,6 +1383,16 @@
 					</button>
 				</div>
 				<input type="search" class="search" placeholder="Søg..." bind:value={pickerSoeg} />
+				<div class="picker-actions">
+					<button class="picker-action" type="button" onclick={aabnScanner} disabled={scannerArbejder}>
+						<Icon name="search" size={14} color="var(--terra)" />
+						{scannerArbejder ? 'Henter...' : 'Scan stregkode'}
+					</button>
+					<button class="picker-action" type="button" onclick={aabnTilfoejManuel}>
+						<Icon name="plus" size={14} color="var(--terra)" />
+						Tilføj manuelt
+					</button>
+				</div>
 				<div class="chips">
 					{#each aktiveKategorier as cat (cat)}
 						<button
@@ -1302,17 +1407,61 @@
 				</div>
 				<div class="picker-liste">
 					{#each filtretetPicker as food (food.id)}
-						<button
-							class="picker-row"
-							type="button"
-							onclick={() => tilfoejTilMaaltid(food)}
-						>
-							<div class="picker-tekst">
-								<div class="food-navn">{food.name}</div>
-								<div class="food-meta">{food.p}g protein · {food.f}g fiber pr 100g</div>
-							</div>
-							<span class="picker-plus">+</span>
-						</button>
+						{@const erCommunity = food.kilde === 'community'}
+						{@const okAntal = food.okBy?.length ?? 0}
+						{@const ejAntal = food.ejBy?.length ?? 0}
+						{@const minStem = user && food.okBy?.includes(user.uid) ? 'ok' : user && food.ejBy?.includes(user.uid) ? 'ej' : null}
+						<div class="picker-row-wrap">
+							<button
+								class="picker-row"
+								type="button"
+								onclick={() => tilfoejTilMaaltid(food)}
+							>
+								<div class="picker-tekst">
+									<div class="food-navn">
+										{food.name}
+										{#if erCommunity && food.verificeret}
+											<span class="badge badge-verificeret" title="Verificeret af fællesskabet">✓</span>
+										{:else if erCommunity && ejAntal > okAntal}
+											<span class="badge badge-mistaenkelig" title="Flere har stemt 'ej' end 'ok'">⚠</span>
+										{:else if erCommunity}
+											<span class="badge badge-ny" title="Tilføjet af bruger">Ny</span>
+										{/if}
+									</div>
+									<div class="food-meta">
+										{food.p}g protein · {food.f}g fiber pr 100g
+										{#if erCommunity && food.addedByName}
+											<span class="meta-by"> · af {food.addedByName}</span>
+										{/if}
+									</div>
+								</div>
+								<span class="picker-plus">+</span>
+							</button>
+							{#if erCommunity && user && food.addedBy !== user.uid}
+								<div class="stem-rad">
+									<button
+										type="button"
+										class="stem-knap"
+										class:aktiv={minStem === 'ok'}
+										disabled={stemmer === food.id}
+										onclick={(e) => stemFodevare(food, 'ok', e)}
+										aria-label="Bekræft fødevare"
+									>
+										✓ {okAntal}
+									</button>
+									<button
+										type="button"
+										class="stem-knap stem-ej"
+										class:aktiv={minStem === 'ej'}
+										disabled={stemmer === food.id}
+										onclick={(e) => stemFodevare(food, 'ej', e)}
+										aria-label="Marker som dårlig kvalitet"
+									>
+										✗ {ejAntal}
+									</button>
+								</div>
+							{/if}
+						</div>
 					{/each}
 				</div>
 			</div>
@@ -1327,6 +1476,27 @@
 		{opskrifter}
 		onClose={lukIndkoebsliste}
 		onItemsChange={opdaterItems}
+	/>
+{/if}
+
+{#if viserScanner}
+	<BarcodeScanner
+		onDetected={efterScan}
+		onClose={() => (viserScanner = false)}
+	/>
+{/if}
+
+{#if nyDialog && user}
+	<TilfoejFodevareDialog
+		barcode={nyDialog.barcode}
+		startNavn={nyDialog.startNavn}
+		startProtein={nyDialog.startProtein}
+		startFiber={nyDialog.startFiber}
+		startKat={nyDialog.startKat}
+		uid={user.uid}
+		uidNavn={userDoc?.firstName ?? 'En bruger'}
+		onTilfoejet={efterTilfoejet}
+		onClose={() => (nyDialog = null)}
 	/>
 {/if}
 
@@ -2058,6 +2228,124 @@
 		font-size: 18px;
 		color: var(--terra);
 		font-weight: 600;
+	}
+
+	.picker-actions {
+		display: flex;
+		gap: 8px;
+		margin-bottom: 10px;
+	}
+
+	.picker-action {
+		flex: 1;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		padding: 9px 12px;
+		font-size: 12.5px;
+		font-weight: 500;
+		font-family: var(--ff-b);
+		border-radius: 10px;
+		background: var(--tdim);
+		color: var(--terra);
+		border: 1px solid var(--tdim2);
+		cursor: pointer;
+	}
+
+	.picker-action:disabled {
+		opacity: 0.6;
+	}
+
+	.picker-row-wrap {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
+
+	.badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 18px;
+		height: 18px;
+		padding: 0 5px;
+		font-size: 10px;
+		font-weight: 700;
+		border-radius: 99px;
+		margin-left: 6px;
+		vertical-align: middle;
+	}
+
+	.badge-verificeret {
+		background: var(--sdim);
+		color: var(--sage);
+		border: 1px solid rgba(111, 158, 126, 0.35);
+	}
+
+	.badge-mistaenkelig {
+		background: #fbeeea;
+		color: #8a4a3e;
+		border: 1px solid #f0d6cf;
+	}
+
+	.badge-ny {
+		background: var(--tdim);
+		color: var(--terra);
+		border: 1px solid var(--tdim2);
+		font-weight: 500;
+		font-size: 9.5px;
+		letter-spacing: 0.04em;
+	}
+
+	.meta-by {
+		color: var(--text3);
+		font-style: italic;
+	}
+
+	.stem-rad {
+		display: flex;
+		gap: 6px;
+		padding: 4px 12px 8px;
+		background: var(--bg2);
+		border-left: 1px solid var(--border);
+		border-right: 1px solid var(--border);
+		border-bottom: 1px solid var(--border);
+		border-radius: 0 0 10px 10px;
+		margin-top: -2px;
+	}
+
+	.stem-knap {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+		padding: 4px 10px;
+		font-size: 11px;
+		font-weight: 600;
+		font-family: var(--ff-b);
+		border-radius: 99px;
+		background: var(--white);
+		color: var(--text2);
+		border: 1px solid var(--border);
+		cursor: pointer;
+	}
+
+	.stem-knap.aktiv {
+		background: var(--sdim);
+		color: var(--sage);
+		border-color: rgba(111, 158, 126, 0.35);
+	}
+
+	.stem-knap.stem-ej.aktiv {
+		background: #fbeeea;
+		color: #8a4a3e;
+		border-color: #f0d6cf;
+	}
+
+	.stem-knap:disabled {
+		opacity: 0.5;
+		cursor: wait;
 	}
 
 	.dagbog-rad {

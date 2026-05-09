@@ -3,18 +3,22 @@
 // unit tests for sidstnævnte ikke trækker firebase/firestore-runtime ind.
 
 import {
+	arrayRemove,
+	arrayUnion,
 	collection,
 	deleteDoc,
 	doc,
 	getDoc,
 	getDocs,
 	query,
+	runTransaction,
 	serverTimestamp,
 	setDoc,
+	updateDoc,
 	where
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
-import type { FavoritMaaltid, Fodevare, GemtMaaltid } from '$lib/content/kost';
+import type { FavoritMaaltid, Fodevare, GemtMaaltid, Kategori } from '$lib/content/kost';
 
 /**
  * Henter hele fødevaredatabasen sorteret alfabetisk.
@@ -46,6 +50,119 @@ export async function gemFodevare(fodevare: Fodevare): Promise<void> {
 	const ref = doc(db, 'fodevarer', id);
 	await setDoc(ref, data, { merge: true });
 }
+
+// ==============================================
+// Community-fødevarer (scannet via stregkode)
+// ==============================================
+
+interface NyCommunityFodevare {
+	barcode: string;
+	name: string;
+	cat: Kategori;
+	p: number;
+	f: number;
+	uid: string;
+	uidNavn: string;
+}
+
+/**
+ * Gemmer en ny community-fødevare baseret på stregkode. Stregkoden bruges som
+ * dokument-ID med præfikset 'cf_' så vi ikke kolliderer med Frida-IDs.
+ *
+ * Hvis fødevaren allerede findes (samme barcode), tilføjes brugeren som ok-stem
+ * i stedet for at oprette dublet — samtidig opdateres verificeret-flag hvis
+ * tærsklen (3 ok-stemmer) er nået.
+ *
+ * Returnerer det dokument-ID brugeren skal tilføje til måltidet.
+ */
+export async function gemCommunityFodevare(
+	data: NyCommunityFodevare
+): Promise<string> {
+	const id = `cf_${data.barcode}`;
+	const ref = doc(db, 'fodevarer', id);
+
+	await runTransaction(db, async (tx) => {
+		const snap = await tx.get(ref);
+		if (snap.exists()) {
+			// Allerede oprettet — tilføj brugeren som ok-stem hvis ikke allerede
+			const eksisterende = snap.data() as Fodevare;
+			const okBy = eksisterende.okBy ?? [];
+			if (!okBy.includes(data.uid)) {
+				const nyOk = [...okBy, data.uid];
+				const ejBy = (eksisterende.ejBy ?? []).filter((u) => u !== data.uid);
+				tx.update(ref, {
+					okBy: nyOk,
+					ejBy,
+					verificeret: nyOk.length >= 3
+				});
+			}
+			return;
+		}
+		// Helt ny fødevare — scanner tæller som første ok-stem
+		const ny: Omit<Fodevare, 'id'> = {
+			name: data.name,
+			cat: data.cat,
+			p: data.p,
+			f: data.f,
+			kilde: 'community',
+			barcode: data.barcode,
+			addedBy: data.uid,
+			addedByName: data.uidNavn,
+			okBy: [data.uid],
+			ejBy: [],
+			verificeret: false
+		};
+		tx.set(ref, ny);
+	});
+
+	return id;
+}
+
+/**
+ * Bruger stemmer på en community-fødevare. Hvis de stemmer det modsatte af
+ * deres tidligere stem, fjernes det gamle stem først. verificeret-flag
+ * opdateres automatisk når okBy.length passerer 3.
+ */
+export async function stemPaaFodevare(
+	fodevareId: string,
+	uid: string,
+	type: 'ok' | 'ej'
+): Promise<void> {
+	const ref = doc(db, 'fodevarer', fodevareId);
+	await runTransaction(db, async (tx) => {
+		const snap = await tx.get(ref);
+		if (!snap.exists()) throw new Error('Fødevaren findes ikke længere.');
+		const data = snap.data() as Fodevare;
+		const okBy = (data.okBy ?? []).filter((u) => u !== uid);
+		const ejBy = (data.ejBy ?? []).filter((u) => u !== uid);
+		if (type === 'ok') okBy.push(uid);
+		else ejBy.push(uid);
+		tx.update(ref, {
+			okBy,
+			ejBy,
+			verificeret: okBy.length >= 3
+		});
+	});
+}
+
+/**
+ * Bruges af admin til manuelt at sætte verificeret-flag eller fjerne fødevaren.
+ */
+export async function adminSaetVerificeret(
+	fodevareId: string,
+	verificeret: boolean
+): Promise<void> {
+	const ref = doc(db, 'fodevarer', fodevareId);
+	await updateDoc(ref, { verificeret });
+}
+
+export async function sletCommunityFodevare(fodevareId: string): Promise<void> {
+	await deleteDoc(doc(db, 'fodevarer', fodevareId));
+}
+
+// arrayRemove er kun importeret for at holde den i bundtet til evt. fremtidige
+// helpers — eksplicit reference så TypeScript ikke fjerner importen.
+export const _arrayHelpers = { arrayUnion, arrayRemove };
 
 // ==============================================
 // Dagbog — gemte måltider pr bruger

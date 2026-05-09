@@ -72,7 +72,25 @@ service cloud.firestore {
 		// kun admin kan skrive. Klienten cacher hele databasen ved første load.
 		match /fodevarer/{fodevareId} {
 			allow read: if request.auth != null;
+			// Admin må alt
 			allow write: if isAdmin();
+			// Logget-ind brugere må oprette community-fødevarer (cf_-prefix)
+			// så længe addedBy matcher dem selv, kilde er 'community', og
+			// scanner-brugeren er i okBy som første stem.
+			allow create: if request.auth != null
+				&& fodevareId.matches('cf_.*')
+				&& request.resource.data.kilde == 'community'
+				&& request.resource.data.addedBy == request.auth.uid
+				&& request.resource.data.okBy is list
+				&& request.resource.data.okBy.size() == 1
+				&& request.resource.data.okBy[0] == request.auth.uid;
+			// Logget-ind brugere må stemme på community-fødevarer ved at
+			// opdatere okBy / ejBy / verificeret. Andre felter må ikke ændres.
+			allow update: if request.auth != null
+				&& fodevareId.matches('cf_.*')
+				&& resource.data.kilde == 'community'
+				&& request.resource.data.diff(resource.data).affectedKeys()
+					.hasOnly(['okBy', 'ejBy', 'verificeret']);
 		}
 
 		// Opskrifter: alle autentificerede kan læse, kun admin kan skrive.

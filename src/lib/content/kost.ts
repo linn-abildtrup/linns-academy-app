@@ -43,7 +43,7 @@ export interface Enhed {
  * units er valgfrie portion-enheder. Hvis tom: kun 'g' kan bruges.
  * liquid: hvis true, vis dl-enhed som default i UI.
  */
-export type Kilde = 'kickstart' | 'frida' | 'custom';
+export type Kilde = 'kickstart' | 'frida' | 'custom' | 'community';
 
 export type Maaltidstype = 'morgenmad' | 'frokost' | 'aftensmad' | 'snack';
 
@@ -120,6 +120,41 @@ export interface Fodevare {
 	units?: Enhed[];
 	liquid?: boolean;
 	kilde?: Kilde;
+
+	// Community-felter — kun udfyldt for kilde='community'
+	barcode?: string;
+	addedBy?: string; // uid på den der scannede første gang
+	addedByName?: string; // fornavn til "tilføjet af"-badge
+	okBy?: string[]; // uids der har stemt 'ok'
+	ejBy?: string[]; // uids der har stemt 'ej'
+	verificeret?: boolean; // sat når okBy.length >= 3
+}
+
+/**
+ * Returnerer 'ok' hvis brugeren allerede har stemt op, 'ej' hvis ned, ellers null.
+ */
+export function brugerStemme(f: Fodevare, uid: string): 'ok' | 'ej' | null {
+	if (f.okBy?.includes(uid)) return 'ok';
+	if (f.ejBy?.includes(uid)) return 'ej';
+	return null;
+}
+
+/**
+ * Returnerer en tilstand til UI-visning af community-fødevarer.
+ * 'verificeret' = officielt godkendt (≥3 ok-stemmer)
+ * 'mistaenkelig' = flere ej end ok
+ * 'ny' = community uden flueben endnu
+ * null = ikke en community-fødevare (Frida)
+ */
+export function communityStatus(
+	f: Fodevare
+): 'verificeret' | 'mistaenkelig' | 'ny' | null {
+	if (f.kilde !== 'community') return null;
+	if (f.verificeret) return 'verificeret';
+	const ok = f.okBy?.length ?? 0;
+	const ej = f.ejBy?.length ?? 0;
+	if (ej > ok) return 'mistaenkelig';
+	return 'ny';
 }
 
 /**
