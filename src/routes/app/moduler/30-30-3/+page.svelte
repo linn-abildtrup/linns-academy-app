@@ -1382,27 +1382,6 @@
 						×
 					</button>
 				</div>
-				<button
-					class="scan-banner"
-					type="button"
-					onclick={aabnScanner}
-					disabled={scannerArbejder}
-				>
-					<span class="scan-banner-ikon">
-						<Icon name="barcode" size={26} color="#fff" />
-					</span>
-					<span class="scan-banner-tekst">
-						<span class="scan-banner-titel">
-							{scannerArbejder ? 'Henter produkt...' : 'Scan stregkode'}
-						</span>
-						<span class="scan-banner-sub">Kan ikke finde fødevaren? Scan emballagen</span>
-					</span>
-					<Icon name="chevron-r" size={16} color="rgba(255,255,255,0.7)" />
-				</button>
-				<button class="manuel-link" type="button" onclick={aabnTilfoejManuel}>
-					<Icon name="plus" size={12} color="var(--terra)" />
-					Eller tilføj manuelt
-				</button>
 				<input type="search" class="search" placeholder="Søg..." bind:value={pickerSoeg} />
 				<div class="chips">
 					{#each aktiveKategorier as cat (cat)}
@@ -1474,6 +1453,29 @@
 							{/if}
 						</div>
 					{/each}
+				</div>
+				<div class="picker-footer">
+					<button
+						class="scan-banner"
+						type="button"
+						onclick={aabnScanner}
+						disabled={scannerArbejder}
+					>
+						<span class="scan-banner-ikon">
+							<Icon name="barcode" size={26} color="#fff" />
+						</span>
+						<span class="scan-banner-tekst">
+							<span class="scan-banner-titel">
+								{scannerArbejder ? 'Henter produkt...' : 'Scan stregkode'}
+							</span>
+							<span class="scan-banner-sub">Kan ikke finde fødevaren? Scan emballagen</span>
+						</span>
+						<Icon name="chevron-r" size={16} color="rgba(255,255,255,0.7)" />
+					</button>
+					<button class="manuel-link" type="button" onclick={aabnTilfoejManuel}>
+						<Icon name="plus" size={12} color="var(--terra)" />
+						Eller tilføj manuelt
+					</button>
 				</div>
 			</div>
 		</div>
@@ -2239,6 +2241,17 @@
 		font-size: 18px;
 		color: var(--terra);
 		font-weight: 600;
+	}
+
+	.picker-footer {
+		flex-shrink: 0;
+		padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		background: var(--white);
+		border-top: 1px solid var(--border);
+		margin-top: 4px;
 	}
 
 	.scan-banner {
