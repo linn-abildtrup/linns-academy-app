@@ -60,8 +60,8 @@
 		"xlsx": "^0.18.5"
 	},
 	"dependencies": {
-		"@zxing/browser": "^0.2.0",
-		"@zxing/library": "^0.22.0",
+		"@zxing/browser": "^0.1.5",
+		"@zxing/library": "^0.21.3",
 		"firebase": "^12.12.1",
 		"jspdf": "^4.2.1"
 	}
