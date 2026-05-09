@@ -73,6 +73,8 @@
 	let resumet = $state(false);
 	let traeningGennemfort = $state(false);
 	let fuldskaerm = $state(false);
+	let hovedvideoEl = $state<HTMLVideoElement | null>(null);
+	let pipVideoEl = $state<HTMLVideoElement | null>(null);
 
 	const dag = $derived<TrainingDay | null>(
 		programData?.dage.find((d) => d.dagNummer === dagNummer) ?? null
@@ -253,6 +255,23 @@
 		} else {
 			document.body.classList.remove('html-fullscreen-aktiv');
 		}
+	});
+
+	// iOS Safari ignorerer ofte autoplay-attributtet selv på et frisk
+	// video-element. Når URL'en ændres tvinger vi derfor en eksplicit
+	// .play() — både på hovedvideoen og PIP-videoen i switch-fasen.
+	$effect(() => {
+		if (!aktuelVideoUrl || !hovedvideoEl) return;
+		void hovedvideoEl.play().catch(() => {
+			// iOS kan afvise hvis ikke der er user-gesture, men 'Start
+			// træning'-klikket etablerer normalt nok permission. Ignorer.
+		});
+	});
+
+	$effect(() => {
+		if (!naesteVideoUrl || !pipVideoEl) return;
+		if (phase !== 'switch') return;
+		void pipVideoEl.play().catch(() => {});
 	});
 
 	$effect(() => {
@@ -719,6 +738,7 @@
 				{#key aktuelVideoUrl}
 					<video
 						class="hovedvideo"
+						bind:this={hovedvideoEl}
 						src={aktuelVideoUrl}
 						autoplay
 						loop
@@ -740,6 +760,7 @@
 							{#key naesteVideoUrl}
 								<video
 									class="pip-video"
+									bind:this={pipVideoEl}
 									src={naesteVideoUrl}
 									autoplay
 									loop
@@ -1096,7 +1117,7 @@
 	.fs-knap {
 		position: absolute;
 		top: 14px;
-		right: 14px;
+		left: 14px;
 		width: 40px;
 		height: 40px;
 		border-radius: 50%;
