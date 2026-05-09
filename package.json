@@ -60,6 +60,8 @@
 		"xlsx": "^0.18.5"
 	},
 	"dependencies": {
+		"@aws-sdk/client-s3": "^3.1045.0",
+		"@aws-sdk/s3-request-presigner": "^3.1045.0",
 		"@zxing/browser": "^0.1.5",
 		"@zxing/library": "^0.21.3",
 		"firebase": "^12.12.1",

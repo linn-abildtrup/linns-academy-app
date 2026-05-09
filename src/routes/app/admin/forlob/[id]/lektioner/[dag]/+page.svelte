@@ -5,7 +5,7 @@
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
 	import { nyLektion, tomForlobDag } from '$lib/content/forlob';
 	import { gemForlobsdag, hentForlobsdag, sletForlobsdag } from '$lib/firestore/forlob';
-	import { uploadHtmlFil } from '$lib/utils/storage';
+	import { uploadHtmlFil, uploadLydFil } from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const forlobId = $derived(page.params.id ?? '');
@@ -18,6 +18,7 @@
 	let gemKvit = $state(false);
 	let bekraefter = $state(false);
 	let uploaderHtml = $state<string | null>(null);
+	let uploaderLyd = $state<string | null>(null);
 	let uploadFejl = $state<string | null>(null);
 
 	$effect(() => {
@@ -81,6 +82,35 @@
 			uploadFejl = 'Upload fejlede. Prøv igen.';
 		} finally {
 			uploaderHtml = null;
+			input.value = '';
+		}
+	}
+
+	async function haandterLydUpload(lektionId: string, e: Event) {
+		const input = e.target as HTMLInputElement;
+		const fil = input.files?.[0];
+		if (!fil) return;
+		if (!/\.(mp3|m4a|wav|aac|ogg)$/i.test(fil.name)) {
+			uploadFejl = 'Vælg en lydfil (.mp3, .m4a, .wav, .aac eller .ogg).';
+			input.value = '';
+			return;
+		}
+		uploaderLyd = lektionId;
+		uploadFejl = null;
+		try {
+			const url = await uploadLydFil(fil);
+			opdaterLektion(lektionId, 'url', url);
+			// Opdater format-feltet automatisk hvis det er tomt
+			const lektion = dag.lektioner.find((l) => l.id === lektionId);
+			if (lektion && !lektion.format.trim()) {
+				opdaterLektion(lektionId, 'format', 'Lyd');
+			}
+		} catch (err) {
+			console.error(err);
+			uploadFejl =
+				err instanceof Error ? `Upload fejlede: ${err.message}` : 'Upload fejlede.';
+		} finally {
+			uploaderLyd = null;
 			input.value = '';
 		}
 	}
@@ -247,13 +277,22 @@
 							disabled={gemmer}
 						/>
 						<div class="html-upload-rad">
-							<label class="html-upload-knap" class:disabled={gemmer || uploaderHtml === l.id}>
-								{uploaderHtml === l.id ? 'Uploader...' : '📎 Upload HTML-fil'}
+							<label class="html-upload-knap" class:disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}>
+								{uploaderHtml === l.id ? 'Uploader...' : '📎 HTML-fil'}
 								<input
 									type="file"
 									accept=".html,.htm,text/html"
 									onchange={(e) => haandterHtmlUpload(l.id, e)}
-									disabled={gemmer || uploaderHtml === l.id}
+									disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
+								/>
+							</label>
+							<label class="html-upload-knap" class:disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}>
+								{uploaderLyd === l.id ? 'Uploader...' : '🎵 Lydfil'}
+								<input
+									type="file"
+									accept=".mp3,.m4a,.wav,.aac,.ogg,audio/*"
+									onchange={(e) => haandterLydUpload(l.id, e)}
+									disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
 								/>
 							</label>
 							<span class="html-upload-hint">eller indsæt URL ovenfor</span>

@@ -37,7 +37,7 @@
 		sletGuideItem,
 		sletGuideKategoriMedItems
 	} from '$lib/firestore/bibliotek';
-	import { uploadHtmlFil } from '$lib/utils/storage';
+	import { uploadHtmlFil, uploadLydFil } from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const forlobId = $derived(page.params.id ?? '');
@@ -99,6 +99,7 @@
 	let guideDialogGemmer = $state(false);
 	let guideDialogFejl = $state<string | null>(null);
 	let guideDialogUploaderHtml = $state(false);
+	let guideDialogUploaderLyd = $state(false);
 
 	const sorteredeFaqKats = $derived(sorterKategorier(faqKats));
 	const faqItemsPrKategori = $derived(grupperEfterKategori(faqItems));
@@ -359,6 +360,31 @@
 			guideDialogFejl = 'Upload fejlede. Prøv igen.';
 		} finally {
 			guideDialogUploaderHtml = false;
+			input.value = '';
+		}
+	}
+
+	async function haandterGuideLydUpload(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const fil = input.files?.[0];
+		if (!fil) return;
+		if (!/\.(mp3|m4a|wav|aac|ogg)$/i.test(fil.name)) {
+			guideDialogFejl = 'Vælg en lydfil (.mp3, .m4a, .wav, .aac eller .ogg).';
+			input.value = '';
+			return;
+		}
+		guideDialogUploaderLyd = true;
+		guideDialogFejl = null;
+		try {
+			const url = await uploadLydFil(fil);
+			guideDialogUrl = url;
+			guideDialogType = 'audio';
+		} catch (err) {
+			console.error(err);
+			guideDialogFejl =
+				err instanceof Error ? `Upload fejlede: ${err.message}` : 'Upload fejlede.';
+		} finally {
+			guideDialogUploaderLyd = false;
 			input.value = '';
 		}
 	}
@@ -743,13 +769,22 @@
 				onblur={autoDetektType}
 			/>
 			<div class="html-upload-rad">
-				<label class="html-upload-knap" class:disabled={guideDialogGemmer || guideDialogUploaderHtml}>
-					{guideDialogUploaderHtml ? 'Uploader...' : '📎 Upload HTML-fil'}
+				<label class="html-upload-knap" class:disabled={guideDialogGemmer || guideDialogUploaderHtml || guideDialogUploaderLyd}>
+					{guideDialogUploaderHtml ? 'Uploader...' : '📎 HTML-fil'}
 					<input
 						type="file"
 						accept=".html,.htm,text/html"
 						onchange={haandterGuideHtmlUpload}
-						disabled={guideDialogGemmer || guideDialogUploaderHtml}
+						disabled={guideDialogGemmer || guideDialogUploaderHtml || guideDialogUploaderLyd}
+					/>
+				</label>
+				<label class="html-upload-knap" class:disabled={guideDialogGemmer || guideDialogUploaderHtml || guideDialogUploaderLyd}>
+					{guideDialogUploaderLyd ? 'Uploader...' : '🎵 Lydfil'}
+					<input
+						type="file"
+						accept=".mp3,.m4a,.wav,.aac,.ogg,audio/*"
+						onchange={haandterGuideLydUpload}
+						disabled={guideDialogGemmer || guideDialogUploaderHtml || guideDialogUploaderLyd}
 					/>
 				</label>
 				<span class="html-upload-hint">eller indsæt URL ovenfor</span>
