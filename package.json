@@ -21,6 +21,7 @@
 		"seed:frida": "tsx scripts/seed-frida.ts",
 		"migrate:recipes": "tsx scripts/migrate-recipes.ts",
 		"migrate:lektioner": "tsx scripts/migrate-lektioner.ts",
+		"migrate:faq": "tsx scripts/migrate-faq.ts",
 		"aktiver:opskrifter": "tsx scripts/aktiver-opskrifter.ts",
 		"ryd:titler": "tsx scripts/ryd-opskriftstitler.ts",
 		"cleanup:vaneprogrammer": "tsx scripts/cleanup-vaneprogrammer.ts",
