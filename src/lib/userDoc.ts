@@ -1,10 +1,24 @@
 import { doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '$lib/firebase';
-import type { UserDoc, UserState } from '$lib/types';
+import type { DagligeMaal, UserDoc, UserState } from '$lib/types';
 import {
 	hentAllowedEmail,
 	markerAllowedEmailRegistreret
 } from '$lib/firestore/forlob';
+
+/**
+ * Opdaterer brugerens udvidet-næring-toggle og daglige mål. Kaldes fra
+ * profil-siden når brugeren skifter indstillinger.
+ */
+export async function gemNaeringsindstillinger(
+	uid: string,
+	visUdvidetNaering: boolean,
+	dagligeMaal?: DagligeMaal
+): Promise<void> {
+	const data: Record<string, unknown> = { visUdvidetNaering };
+	if (dagligeMaal) data.dagligeMaal = dagligeMaal;
+	await updateDoc(doc(db, 'users', uid), data);
+}
 
 /**
  * Henter bruger-dokumentet fra Firestore.

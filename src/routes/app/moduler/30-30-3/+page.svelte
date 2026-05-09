@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import type { User } from 'firebase/auth';
+	import type { UserDoc } from '$lib/types';
 	import {
 		beregnItem,
 		beregnMaaltid,
@@ -54,9 +55,10 @@
 	import { hentAlleFodevarer } from '$lib/firestore/kost';
 
 	const getUser = getContext<() => User | null>('user');
-	const getUserDoc = getContext<() => { firstName?: string } | null>('userDoc');
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc?.() ?? null);
+	const visUdvidet = $derived(userDoc?.visUdvidetNaering === true);
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
 	import Icon from '$lib/components/Icon.svelte';
 	import IndkoebsListeOverlay from '$lib/components/IndkoebsListeOverlay.svelte';
@@ -658,7 +660,10 @@
 				dato: gemDato,
 				items: maaltid,
 				totalP: Math.round(totaler.protein * 10) / 10,
-				totalF: Math.round(totaler.fiber * 10) / 10
+				totalF: Math.round(totaler.fiber * 10) / 10,
+				totalKh: Math.round(totaler.kh * 10) / 10,
+				totalFedt: Math.round(totaler.fedt * 10) / 10,
+				totalKcal: Math.round(totaler.kcal)
 			};
 			if (redigererMaaltid) {
 				await opdaterMaaltid(u.uid, redigererMaaltid.id, data);
@@ -693,11 +698,17 @@
 	function dagbogTotaler() {
 		let p = 0;
 		let f = 0;
+		let kh = 0;
+		let fedt = 0;
+		let kcal = 0;
 		for (const m of dagbogMaaltider) {
 			p += m.totalP;
 			f += m.totalF;
+			kh += m.totalKh ?? 0;
+			fedt += m.totalFedt ?? 0;
+			kcal += m.totalKcal ?? 0;
 		}
-		return { protein: p, fiber: f };
+		return { protein: p, fiber: f, kh, fedt, kcal };
 	}
 
 	function visningsDato(key: string): string {
@@ -928,6 +939,23 @@
 					</div>
 				</div>
 			</div>
+
+			{#if visUdvidet}
+				<div class="udvidet-totaler">
+					<div class="udvidet-celle">
+						<span class="udvidet-lbl">Kulhydrater</span>
+						<span class="udvidet-val">{formatGram(totaler.kh)}</span>
+					</div>
+					<div class="udvidet-celle">
+						<span class="udvidet-lbl">Fedt</span>
+						<span class="udvidet-val">{formatGram(totaler.fedt)}</span>
+					</div>
+					<div class="udvidet-celle">
+						<span class="udvidet-lbl">Kalorier</span>
+						<span class="udvidet-val">{Math.round(totaler.kcal)} kcal</span>
+					</div>
+				</div>
+			{/if}
 
 			<div class="maaltid-liste">
 				{#if maaltid.length === 0}
@@ -1232,6 +1260,23 @@
 					</div>
 				</div>
 
+				{#if visUdvidet}
+					<div class="udvidet-totaler">
+						<div class="udvidet-celle">
+							<span class="udvidet-lbl">Kulhydrater</span>
+							<span class="udvidet-val">{formatGram(dagsTotaler.kh)}</span>
+						</div>
+						<div class="udvidet-celle">
+							<span class="udvidet-lbl">Fedt</span>
+							<span class="udvidet-val">{formatGram(dagsTotaler.fedt)}</span>
+						</div>
+						<div class="udvidet-celle">
+							<span class="udvidet-lbl">Kalorier</span>
+							<span class="udvidet-val">{Math.round(dagsTotaler.kcal)} kcal</span>
+						</div>
+					</div>
+				{/if}
+
 				<div class="dagbog-liste">
 					{#each MAALTIDSTYPER as type (type)}
 						{@const dette = dagbogMaaltider.filter((m) => m.type === type)}
@@ -1265,6 +1310,14 @@
 											<span>{formatGram(m.totalP)} protein</span>
 											<span>·</span>
 											<span>{formatGram(m.totalF)} fiber</span>
+											{#if visUdvidet}
+												<span>·</span>
+												<span>{formatGram(m.totalKh ?? 0)} kh</span>
+												<span>·</span>
+												<span>{formatGram(m.totalFedt ?? 0)} fedt</span>
+												<span>·</span>
+												<span>{Math.round(m.totalKcal ?? 0)} kcal</span>
+											{/if}
 											<span>·</span>
 											<span>{m.items.length} ingredienser</span>
 										</div>
@@ -1716,6 +1769,38 @@
 		grid-template-columns: 1fr 1fr;
 		gap: 10px;
 		margin-bottom: 14px;
+	}
+
+	.udvidet-totaler {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 8px;
+		margin-bottom: 14px;
+		padding: 10px 12px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+	}
+
+	.udvidet-celle {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		text-align: center;
+	}
+
+	.udvidet-lbl {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 500;
+		letter-spacing: 0.04em;
+		color: var(--text3);
+	}
+
+	.udvidet-val {
+		font-family: var(--ff-d);
+		font-size: calc(15px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
 	}
 
 	.total-card {

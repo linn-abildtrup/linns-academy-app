@@ -19,6 +19,13 @@
 		laesGemtScale,
 		type TextScale
 	} from '$lib/utils/textScale';
+	import {
+		dagligeMalForBruger,
+		NAERING_LABELS,
+		NAERING_ENHEDER
+	} from '$lib/content/naering';
+	import { gemNaeringsindstillinger } from '$lib/userDoc';
+	import type { DagligeMaal } from '$lib/types';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -36,6 +43,50 @@
 		gemScale(s);
 		anvendScale(s);
 	}
+
+	// Næringsindstillinger
+	let visUdvidet = $state(false);
+	let dagligeMaal = $state<DagligeMaal>(dagligeMalForBruger(undefined));
+	let gemmerNaering = $state(false);
+	$effect(() => {
+		// Læs aktuelle indstillinger fra userDoc når den loader
+		const ud = userDoc;
+		if (!ud) return;
+		visUdvidet = ud.visUdvidetNaering ?? false;
+		dagligeMaal = dagligeMalForBruger(ud.dagligeMaal);
+	});
+
+	async function toggleUdvidet() {
+		const u = user;
+		if (!u || gemmerNaering) return;
+		visUdvidet = !visUdvidet;
+		gemmerNaering = true;
+		try {
+			await gemNaeringsindstillinger(u.uid, visUdvidet, dagligeMaal);
+		} catch (e) {
+			console.error(e);
+			visUdvidet = !visUdvidet;
+		} finally {
+			gemmerNaering = false;
+		}
+	}
+
+	let gemMaalTimer: ReturnType<typeof setTimeout> | null = null;
+	function maalAendret() {
+		const u = user;
+		if (!u) return;
+		// Debounce så vi ikke skriver ved hvert tastetryk
+		if (gemMaalTimer) clearTimeout(gemMaalTimer);
+		gemMaalTimer = setTimeout(async () => {
+			try {
+				await gemNaeringsindstillinger(u.uid, visUdvidet, dagligeMaal);
+			} catch (e) {
+				console.error(e);
+			}
+		}, 600);
+	}
+
+	const NAERINGSFELTER = ['protein', 'fiber', 'kh', 'fedt', 'kcal'] as const;
 
 	// Mikrotræning-program-valg
 	let mtProgrammer = $state<TrainingProgram[]>([]);
@@ -247,6 +298,54 @@
 				<span class="scale-lbl">Ekstra stor</span>
 			</button>
 		</div>
+	</section>
+
+	<section class="sektion">
+		<h2 class="sektion-titel">Næringsdata</h2>
+		<p class="sektion-sub">
+			Som standard ser du protein og fiber. Slå udvidet til hvis du også vil følge med i kulhydrater, fedt og kalorier.
+		</p>
+		<button
+			type="button"
+			class="naering-toggle"
+			class:on={visUdvidet}
+			onclick={toggleUdvidet}
+			disabled={gemmerNaering}
+		>
+			<div class="naering-toggle-tekst">
+				<div class="naering-toggle-titel">Vis udvidet næringsdata</div>
+				<div class="naering-toggle-sub">
+					{visUdvidet ? 'Slået til' : 'Slået fra'}
+				</div>
+			</div>
+			<div class="naering-switch" class:on={visUdvidet}>
+				<div class="naering-switch-knob"></div>
+			</div>
+		</button>
+
+		{#if visUdvidet}
+			<div class="naering-mal-card">
+				<div class="naering-mal-titel">Daglige mål</div>
+				<p class="naering-mal-sub">Bruges som reference på dagbogen og udviklings-siden.</p>
+				<div class="naering-mal-grid">
+					{#each NAERINGSFELTER as felt (felt)}
+						<label class="naering-felt">
+							<span class="naering-felt-lbl">{NAERING_LABELS[felt]}</span>
+							<div class="naering-felt-rad">
+								<input
+									type="number"
+									bind:value={dagligeMaal[felt]}
+									onchange={maalAendret}
+									min="0"
+									step={felt === 'kcal' ? 50 : 5}
+								/>
+								<span class="naering-felt-enhed">{NAERING_ENHEDER[felt]}</span>
+							</div>
+						</label>
+					{/each}
+				</div>
+			</div>
+		{/if}
 	</section>
 
 	<section class="sektion">
@@ -556,6 +655,153 @@
 	.scale-lbl {
 		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text2);
+		font-weight: 500;
+	}
+
+	.naering-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 14px;
+		width: 100%;
+		padding: 14px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		cursor: pointer;
+		text-align: left;
+		font-family: var(--ff-b);
+	}
+
+	.naering-toggle.on {
+		border-color: var(--sage, #6f9e7e);
+		background: var(--sdim, #f0f5f1);
+	}
+
+	.naering-toggle:disabled {
+		opacity: 0.7;
+		cursor: wait;
+	}
+
+	.naering-toggle-tekst {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.naering-toggle-titel {
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 500;
+		color: var(--text);
+	}
+
+	.naering-toggle-sub {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
+	}
+
+	.naering-switch {
+		width: 42px;
+		height: 24px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 99px;
+		position: relative;
+		flex-shrink: 0;
+		transition: background 0.18s ease;
+	}
+
+	.naering-switch.on {
+		background: var(--sage, #6f9e7e);
+		border-color: var(--sage, #6f9e7e);
+	}
+
+	.naering-switch-knob {
+		position: absolute;
+		top: 2px;
+		left: 2px;
+		width: 18px;
+		height: 18px;
+		background: #fff;
+		border-radius: 50%;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+		transition: transform 0.18s ease;
+	}
+
+	.naering-switch.on .naering-switch-knob {
+		transform: translateX(18px);
+	}
+
+	.naering-mal-card {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		padding: 14px;
+		margin-top: 10px;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.naering-mal-titel {
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.naering-mal-sub {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin: 0;
+		line-height: 1.45;
+	}
+
+	.naering-mal-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+	}
+
+	.naering-felt {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.naering-felt-lbl {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.naering-felt-rad {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 10px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 9px;
+	}
+
+	.naering-felt-rad:focus-within {
+		border-color: var(--terra);
+	}
+
+	.naering-felt input {
+		flex: 1;
+		min-width: 0;
+		font-family: var(--ff-b);
+		font-size: calc(16px * var(--fs-scale, 1));
+		font-weight: 500;
+		color: var(--text);
+		background: transparent;
+		border: none;
+		outline: none;
+	}
+
+	.naering-felt-enhed {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
 		font-weight: 500;
 	}
 
