@@ -16,6 +16,7 @@
 	import Logo from '$lib/components/Logo.svelte';
 	import AdminKlientBanner from '$lib/components/AdminKlientBanner.svelte';
 	import { ryAdminKlientMode } from '$lib/userDoc';
+	import { setAktivKlientForlobId } from '$lib/state/adminKlientState.svelte';
 
 	let { children } = $props();
 
@@ -30,6 +31,12 @@
 	// læs/skriv-paths. Returnerer null når admin er i normal admin-mode
 	// eller når brugeren er en almindelig klient.
 	setContext('adminKlientForlobId', () => userDoc?.adminKlientForlobId ?? null);
+
+	// Sync den globale state-singleton der læses fra firestore-helpers
+	// (de kan ikke bruge Svelte context fordi de ikke er komponenter).
+	$effect(() => {
+		setAktivKlientForlobId(userDoc?.adminKlientForlobId ?? null);
+	});
 
 	async function afslutKlientMode() {
 		if (!user) return;

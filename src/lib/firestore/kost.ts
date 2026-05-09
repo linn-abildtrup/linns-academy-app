@@ -19,6 +19,27 @@ import {
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { FavoritMaaltid, Fodevare, GemtMaaltid, Kategori } from '$lib/content/kost';
+import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
+
+/**
+ * Returnerer Firestore-collection for brugerens måltider med automatisk
+ * scoping til admin-klient-mode hvis admin er logget ind som klient.
+ */
+function maaltiderCollection(uid: string) {
+	return collection(db, `${aktivBrugerBasisPath(uid)}/maaltider`);
+}
+
+function maaltidDoc(uid: string, mealId: string) {
+	return doc(db, `${aktivBrugerBasisPath(uid)}/maaltider/${mealId}`);
+}
+
+function favoritterCollection(uid: string) {
+	return collection(db, `${aktivBrugerBasisPath(uid)}/favoritmaaltider`);
+}
+
+function favoritDoc(uid: string, favId: string) {
+	return doc(db, `${aktivBrugerBasisPath(uid)}/favoritmaaltider/${favId}`);
+}
 
 /**
  * Henter hele fødevaredatabasen sorteret alfabetisk.
@@ -176,7 +197,7 @@ export async function gemMaaltid(
 	uid: string,
 	maaltid: Omit<GemtMaaltid, 'id'>
 ): Promise<string> {
-	const ref = doc(collection(db, 'users', uid, 'maaltider'));
+	const ref = doc(maaltiderCollection(uid));
 	await setDoc(ref, {
 		...maaltid,
 		oprettet: serverTimestamp()
@@ -192,10 +213,7 @@ export async function hentMaaltiderForDato(
 	uid: string,
 	dato: string
 ): Promise<GemtMaaltid[]> {
-	const q = query(
-		collection(db, 'users', uid, 'maaltider'),
-		where('dato', '==', dato)
-	);
+	const q = query(maaltiderCollection(uid), where('dato', '==', dato));
 	const snap = await getDocs(q);
 	return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GemtMaaltid);
 }
@@ -210,7 +228,7 @@ export async function hentMaaltiderIPeriode(
 	tilDato: string
 ): Promise<GemtMaaltid[]> {
 	const q = query(
-		collection(db, 'users', uid, 'maaltider'),
+		maaltiderCollection(uid),
 		where('dato', '>=', fraDato),
 		where('dato', '<=', tilDato)
 	);
@@ -227,15 +245,14 @@ export async function opdaterMaaltid(
 	mealId: string,
 	data: Omit<GemtMaaltid, 'id'>
 ): Promise<void> {
-	const ref = doc(db, 'users', uid, 'maaltider', mealId);
-	await setDoc(ref, { ...data, opdateret: serverTimestamp() }, { merge: true });
+	await setDoc(maaltidDoc(uid, mealId), { ...data, opdateret: serverTimestamp() }, { merge: true });
 }
 
 /**
  * Sletter et gemt måltid.
  */
 export async function sletMaaltid(uid: string, mealId: string): Promise<void> {
-	await deleteDoc(doc(db, 'users', uid, 'maaltider', mealId));
+	await deleteDoc(maaltidDoc(uid, mealId));
 }
 
 // ==============================================
@@ -249,7 +266,7 @@ export async function gemFavorit(
 	uid: string,
 	favorit: Omit<FavoritMaaltid, 'id'>
 ): Promise<string> {
-	const ref = doc(collection(db, 'users', uid, 'favoritmaaltider'));
+	const ref = doc(favoritterCollection(uid));
 	await setDoc(ref, {
 		...favorit,
 		oprettet: serverTimestamp()
@@ -261,7 +278,7 @@ export async function gemFavorit(
  * Henter alle favoritmåltider for en bruger sorteret alfabetisk.
  */
 export async function hentFavoritter(uid: string): Promise<FavoritMaaltid[]> {
-	const snap = await getDocs(collection(db, 'users', uid, 'favoritmaaltider'));
+	const snap = await getDocs(favoritterCollection(uid));
 	return snap.docs
 		.map((d) => ({ id: d.id, ...d.data() }) as FavoritMaaltid)
 		.sort((a, b) => a.navn.localeCompare(b.navn, 'da'));
@@ -276,13 +293,12 @@ export async function opdaterFavorit(
 	favoritId: string,
 	data: Omit<FavoritMaaltid, 'id'>
 ): Promise<void> {
-	const ref = doc(db, 'users', uid, 'favoritmaaltider', favoritId);
-	await setDoc(ref, { ...data, opdateret: serverTimestamp() }, { merge: true });
+	await setDoc(favoritDoc(uid, favoritId), { ...data, opdateret: serverTimestamp() }, { merge: true });
 }
 
 /**
  * Sletter en favorit.
  */
 export async function sletFavorit(uid: string, favoritId: string): Promise<void> {
-	await deleteDoc(doc(db, 'users', uid, 'favoritmaaltider', favoritId));
+	await deleteDoc(favoritDoc(uid, favoritId));
 }

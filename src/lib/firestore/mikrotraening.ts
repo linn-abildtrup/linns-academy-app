@@ -21,6 +21,15 @@ import type {
 	MikrotraeningFremgang,
 	PauseDoc
 } from '$lib/content/mikrotraening';
+import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
+
+function userProductDoc(uid: string, productId: string) {
+	return doc(db, `${aktivBrugerBasisPath(uid)}/products/${productId}`);
+}
+
+function pauseDocRef(uid: string, pauseId: string) {
+	return doc(db, `${aktivBrugerBasisPath(uid)}/pauses/${pauseId}`);
+}
 
 export interface ProgramMedDage {
 	id: string;
@@ -190,8 +199,7 @@ export async function hentProgram(programId: string): Promise<ProgramMedDage | n
  * Returnerer null hvis brugeren ikke har adgang til produktet.
  */
 export async function hentUserProduct(uid: string, productId: string): Promise<UserProduct | null> {
-	const ref = doc(db, 'users', uid, 'products', productId);
-	const snap = await getDoc(ref);
+	const snap = await getDoc(userProductDoc(uid, productId));
 	if (!snap.exists()) return null;
 	return snap.data() as UserProduct;
 }
@@ -209,8 +217,7 @@ export async function gemMikrotraeningFremgang(
 	productId: string,
 	fremgang: MikrotraeningFremgang
 ): Promise<void> {
-	const ref = doc(db, 'users', uid, 'products', productId);
-	await updateDoc(ref, { 'fremgang.mikrotraening': fremgang });
+	await updateDoc(userProductDoc(uid, productId), { 'fremgang.mikrotraening': fremgang });
 }
 
 /**
@@ -224,8 +231,9 @@ export async function gemProgramValg(
 	treaningsform: string,
 	programId: string
 ): Promise<void> {
-	const ref = doc(db, 'users', uid, 'products', productId);
-	await updateDoc(ref, { [`programValg.${treaningsform}`]: programId });
+	await updateDoc(userProductDoc(uid, productId), {
+		[`programValg.${treaningsform}`]: programId
+	});
 }
 
 /**
@@ -245,8 +253,7 @@ export async function hentPause(
 	programId: string,
 	dag: number
 ): Promise<PauseDoc | null> {
-	const ref = doc(db, 'users', uid, 'pauses', pauseId(programId, dag));
-	const snap = await getDoc(ref);
+	const snap = await getDoc(pauseDocRef(uid, pauseId(programId, dag)));
 	if (!snap.exists()) return null;
 	return snap.data() as PauseDoc;
 }
@@ -259,7 +266,7 @@ export async function gemPause(
 	uid: string,
 	pause: Omit<PauseDoc, 'savedAt'>
 ): Promise<void> {
-	const ref = doc(db, 'users', uid, 'pauses', pauseId(pause.programId, pause.dag));
+	const ref = pauseDocRef(uid, pauseId(pause.programId, pause.dag));
 	await setDoc(ref, { ...pause, savedAt: serverTimestamp() });
 }
 
@@ -272,8 +279,7 @@ export async function sletPause(
 	programId: string,
 	dag: number
 ): Promise<void> {
-	const ref = doc(db, 'users', uid, 'pauses', pauseId(programId, dag));
-	await deleteDoc(ref);
+	await deleteDoc(pauseDocRef(uid, pauseId(programId, dag)));
 }
 
 /**

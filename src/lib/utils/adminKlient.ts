@@ -12,7 +12,9 @@
 //
 // Helpers her returnerer den korrekte base-path baseret på context. Alle
 // firestore-helpers der i dag bruger 'users/{uid}/X' skal igennem
-// brugerBasisPath i stedet for at hardcode pathen.
+// brugerBasisSegmenter i stedet for at hardcode pathen.
+
+import { getAktivKlientForlobId } from '$lib/state/adminKlientState.svelte';
 
 const ADMIN_KLIENT_BASIS = 'adminKlient';
 
@@ -32,15 +34,10 @@ export function brugerBasisPath(uid: string, adminKlientForlobId?: string | null
 }
 
 /**
- * Splitter base-pathen til (collection, doc, ...) som Firestore SDK
- * forventer i doc()/collection()-kald.
+ * Returnerer base-pathen med automatisk pickup af aktivt admin-klient-mode
+ * fra den globale state-singleton. Bruges af firestore-helpers der ikke
+ * eksplicit får forlobId som parameter.
  */
-export function brugerBasisSegmenter(
-	uid: string,
-	adminKlientForlobId?: string | null
-): string[] {
-	if (adminKlientForlobId) {
-		return ['users', uid, ADMIN_KLIENT_BASIS, adminKlientForlobId];
-	}
-	return ['users', uid];
+export function aktivBrugerBasisPath(uid: string): string {
+	return brugerBasisPath(uid, getAktivKlientForlobId());
 }

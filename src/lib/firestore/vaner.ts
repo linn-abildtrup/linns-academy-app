@@ -17,6 +17,15 @@ import {
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { VaneProgramDag, VanedagEntry } from '$lib/content/vaner';
+import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
+
+function vanedageCollection(uid: string, productId: string) {
+	return collection(db, `${aktivBrugerBasisPath(uid)}/products/${productId}/vanedage`);
+}
+
+function vanedagDoc(uid: string, productId: string, dagId: string) {
+	return doc(db, `${aktivBrugerBasisPath(uid)}/products/${productId}/vanedage/${dagId}`);
+}
 
 // ==============================================
 // Vaneprogram-helpers (pr forløb)
@@ -70,9 +79,7 @@ export async function hentAlleVanedage(
 	uid: string,
 	productId: string = 'kickstart'
 ): Promise<Map<number, VanedagEntry>> {
-	const snap = await getDocs(
-		collection(db, 'users', uid, 'products', productId, 'vanedage')
-	);
+	const snap = await getDocs(vanedageCollection(uid, productId));
 	const map = new Map<number, VanedagEntry>();
 	for (const d of snap.docs) {
 		const data = d.data() as VanedagEntry;
@@ -91,8 +98,7 @@ export async function hentVanedag(
 	productId: string = 'kickstart'
 ): Promise<VanedagEntry | null> {
 	const id = `dag${dagNummer}`;
-	const ref = doc(db, 'users', uid, 'products', productId, 'vanedage', id);
-	const snap = await getDoc(ref);
+	const snap = await getDoc(vanedagDoc(uid, productId, id));
 	if (!snap.exists()) return null;
 	return snap.data() as VanedagEntry;
 }
@@ -107,6 +113,9 @@ export async function gemVanedag(
 	productId: string = 'kickstart'
 ): Promise<void> {
 	const id = `dag${entry.dagNummer}`;
-	const ref = doc(db, 'users', uid, 'products', productId, 'vanedage', id);
-	await setDoc(ref, { ...entry, savedAt: serverTimestamp() }, { merge: true });
+	await setDoc(
+		vanedagDoc(uid, productId, id),
+		{ ...entry, savedAt: serverTimestamp() },
+		{ merge: true }
+	);
 }
