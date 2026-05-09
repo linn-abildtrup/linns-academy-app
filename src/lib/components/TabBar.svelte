@@ -59,16 +59,30 @@
 		}
 	}
 
-	// Admin har en ekstra knap der toggler mellem admin-mode og klient-mode.
-	// Når Linn er i klient-mode, hedder knappen 'Admin' og fører tilbage.
-	// Når hun er i admin-mode, hedder den 'Klient' og åbner forløbs-vælgeren.
-	const adminToggle = $derived<NavItem | null>(
+	// Admin har to ekstra ikoner i tabbaren:
+	//   1. 'Admin' — fast genvej til /app/admin. Kun synlig når IKKE i
+	//      klient-mode (det giver ingen mening at gå til admin-siden mens
+	//      man later som klient).
+	//   2. 'Klient' / 'Tilbage' — toggler mellem klient-mode og admin-mode.
+	//      Hedder 'Klient' i admin-mode, 'Admin' når i klient-mode.
+	const adminIndstillinger = $derived<NavItem | null>(
+		erAdmin && !erIKlientMode
+			? {
+					id: 'admin-indstillinger',
+					label: 'Admin',
+					icon: 'settings' as IconName,
+					href: '/app/admin'
+				}
+			: null
+	);
+
+	const klientToggle = $derived<NavItem | null>(
 		erAdmin
 			? erIKlientMode
 				? {
 						id: 'tilbage-admin',
-						label: 'Admin',
-						icon: 'settings' as IconName,
+						label: 'Tilbage',
+						icon: 'arrow-l' as IconName,
 						onAction: tilbageTilAdmin
 					}
 				: {
@@ -98,7 +112,8 @@
 			dot: true,
 			lockedFor: ['udlobet']
 		},
-		...(adminToggle ? [adminToggle] : []),
+		...(adminIndstillinger ? [adminIndstillinger] : []),
+		...(klientToggle ? [klientToggle] : []),
 		{ id: 'profil', label: 'Profil', icon: 'user', href: '/app/profil' }
 	]);
 
