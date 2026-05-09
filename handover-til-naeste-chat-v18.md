@@ -132,7 +132,8 @@ src/
 
 scripts/
 ├── migrer-mikrotraening-til-forlob.ts                 ← NY: kopierede programmer ind i forløbet
-└── slet-duplikat-program.ts                           ← NY: slettede mikrotraening_kettlebell_21
+├── slet-duplikat-program.ts                           ← NY: slettede mikrotraening_kettlebell_21
+└── migrate-faq.ts                                     ← NY: kopierede FAQ fra vanetracker
 
 src/app.css                                            ← +html-fullscreen-aktiv body-klasse
 firestore.rules                                        ← +mikrotraeningProgrammer-regel
@@ -162,6 +163,8 @@ npm run inspect:program -- mikrotraening_kettlebell     # detaljer for ét progr
 npx tsx scripts/migrer-mikrotraening-til-forlob.ts      # DRY_RUN flytter programmer
 DRY_RUN=false npx tsx scripts/migrer-mikrotraening-til-forlob.ts  # udfør
 DRY_RUN=false npx tsx scripts/slet-duplikat-program.ts  # slet duplikater
+npm run migrate:faq -- --dry                            # preview FAQ-migrering
+npm run migrate:faq                                     # migrer FAQ fra vanetracker
 ```
 
 ### Test-brugere (uændret)
@@ -265,9 +268,13 @@ b12eb9c Skjul Header og TabBar mens HTML-overlay er åbent
 2. **Upload resten af lektion-videoer til Vimeo** og opdater URL'erne i admin
 3. **Lektioner for dag 15-21** — eksisterer ikke i ref-app, skal udfyldes manuelt
 4. **Beskrivelser, varighed, format** på de migrerede lektioner — alle har titel + URL men beskrivelse er tom
-5. **FAQ og guides** for Kickstart maj 2026 — strukturen er klar men intet indhold endnu
+5. **Guides for Kickstart maj 2026** — strukturen er klar men intet indhold endnu (FAQ er migreret 9. maj 2026, se nedenfor)
 6. **Rigtigt logo** til PWA-ikon — pt placeholder LA-cirkel
 7. **Ryd top-level `trainingPrograms/`** — efter mindst en uge på production hvor alt virker
+
+### Migreret 9. maj 2026
+
+- **FAQ migreret** fra vanetracker (top-level `faqCategories` + `faqItems`) til `forlob/kickstart_maj_2026/faqKategorier` + `faqItems` via `npm run migrate:faq`. 7 kategorier og 25 spørgsmål. Original-ID'er bevaret så scriptet er idempotent (kør igen for at synce ændringer fra ref-app).
 
 ### Klient-side polering (åbne fra v17 og før)
 
