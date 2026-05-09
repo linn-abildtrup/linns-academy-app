@@ -699,14 +699,16 @@
 			{/if}
 
 			{#if aktuelVideoUrl}
-				<video
-					class="hovedvideo"
-					src={aktuelVideoUrl}
-					autoplay
-					loop
-					muted
-					playsinline
-				></video>
+				{#key aktuelVideoUrl}
+					<video
+						class="hovedvideo"
+						src={aktuelVideoUrl}
+						autoplay
+						loop
+						muted
+						playsinline
+					></video>
+				{/key}
 			{:else}
 				<div class="video-fallback">
 					<div class="fb-navn">{aktuelExercise.name}</div>
@@ -718,14 +720,16 @@
 				<div class="pip-overlay">
 					<div class="pip-card">
 						{#if naesteVideoUrl}
-							<video
-								class="pip-video"
-								src={naesteVideoUrl}
-								autoplay
-								loop
-								muted
-								playsinline
-							></video>
+							{#key naesteVideoUrl}
+								<video
+									class="pip-video"
+									src={naesteVideoUrl}
+									autoplay
+									loop
+									muted
+									playsinline
+								></video>
+							{/key}
 						{/if}
 						<div class="pip-label">{naesteExercise.name}</div>
 					</div>
