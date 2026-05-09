@@ -84,6 +84,19 @@ export async function hentMaaltiderForDato(
 }
 
 /**
+ * Opdaterer et eksisterende måltid i dagbogen. Bruges når brugeren
+ * redigerer navn, type, dato eller ingredienser på et gemt måltid.
+ */
+export async function opdaterMaaltid(
+	uid: string,
+	mealId: string,
+	data: Omit<GemtMaaltid, 'id'>
+): Promise<void> {
+	const ref = doc(db, 'users', uid, 'maaltider', mealId);
+	await setDoc(ref, { ...data, opdateret: serverTimestamp() }, { merge: true });
+}
+
+/**
  * Sletter et gemt måltid.
  */
 export async function sletMaaltid(uid: string, mealId: string): Promise<void> {

@@ -32,6 +32,7 @@
 		hentFavoritter,
 		hentMaaltiderForDato,
 		opdaterFavorit,
+		opdaterMaaltid,
 		sletFavorit,
 		sletMaaltid
 	} from '$lib/firestore/kost';
@@ -191,6 +192,14 @@
 	let redigerNavn = $state('');
 	let opdaterer = $state(false);
 	let redigerBesked = $state<{ tekst: string; type: 'ok' | 'fejl' } | null>(null);
+
+	// Rediger-måltid-state — sat når brugeren klikker rediger på et dagbog-kort
+	let redigererMaaltid = $state<{
+		id: string;
+		navn: string;
+		type: Maaltidstype;
+		dato: string;
+	} | null>(null);
 
 	const filtreret = $derived(
 		sorterFodevarer(filtrerFodevarer(foods, soegeord, aktivKategori), sortMode)
@@ -472,18 +481,55 @@
 		try {
 			await sletMaaltid(u.uid, id);
 			dagbogMaaltider = dagbogMaaltider.filter((m) => m.id !== id);
+			// Hvis brugeren er ved at redigere det måltid der nu slettes,
+			// så annullér rediger-tilstanden
+			if (redigererMaaltid?.id === id) {
+				maaltid = [];
+				localStorage.setItem(STORAGE_KEY, '[]');
+				redigererMaaltid = null;
+			}
 		} catch (e) {
 			console.error(e);
 			dagbogFejl = 'Kunne ikke slette måltidet.';
 		}
 	}
 
+	function startRedigerMaaltid(m: GemtMaaltid) {
+		if (maaltid.length > 0 && redigererMaaltid?.id !== m.id) {
+			const ok = confirm(
+				'Du har et måltid i gang. Det erstattes af måltidet du vil redigere.'
+			);
+			if (!ok) return;
+		}
+		maaltid = m.items.map((i) => ({ ...i }));
+		redigererMaaltid = { id: m.id, navn: m.navn, type: m.type, dato: m.dato };
+		// Annullér samtidig favorit-redigering hvis aktiv
+		redigererFavorit = null;
+		redigerBesked = null;
+		skiftTab('maaltid');
+	}
+
+	function annullerRedigerMaaltid() {
+		const ok = confirm('Kassér ændringer? Måltidet i dagbogen forbliver uændret.');
+		if (!ok) return;
+		maaltid = [];
+		localStorage.setItem(STORAGE_KEY, '[]');
+		redigererMaaltid = null;
+	}
+
 	// Gem-modal
 	function aabnGemModal() {
-		gemNavn = '';
-		gemType = gaetMaaltidstype();
-		gemDato = formatDatoKey();
-		gemSomFavorit = false;
+		if (redigererMaaltid) {
+			gemNavn = redigererMaaltid.navn;
+			gemType = redigererMaaltid.type;
+			gemDato = redigererMaaltid.dato;
+			gemSomFavorit = false;
+		} else {
+			gemNavn = '';
+			gemType = gaetMaaltidstype();
+			gemDato = formatDatoKey();
+			gemSomFavorit = false;
+		}
 		gemBesked = null;
 		viserGemModal = true;
 	}
@@ -511,20 +557,26 @@
 		gemmer = true;
 		gemBesked = null;
 		try {
-			await gemMaaltid(u.uid, {
+			const data = {
 				navn,
 				type: gemType,
 				dato: gemDato,
 				items: maaltid,
 				totalP: Math.round(totaler.protein * 10) / 10,
 				totalF: Math.round(totaler.fiber * 10) / 10
-			});
-			if (gemSomFavorit) {
-				try {
-					await gemFavorit(u.uid, { navn, items: maaltid });
-					await indlaesFavoritter();
-				} catch (e) {
-					console.warn('Kunne ikke gemme som favorit:', e);
+			};
+			if (redigererMaaltid) {
+				await opdaterMaaltid(u.uid, redigererMaaltid.id, data);
+				redigererMaaltid = null;
+			} else {
+				await gemMaaltid(u.uid, data);
+				if (gemSomFavorit) {
+					try {
+						await gemFavorit(u.uid, { navn, items: maaltid });
+						await indlaesFavoritter();
+					} catch (e) {
+						console.warn('Kunne ikke gemme som favorit:', e);
+					}
 				}
 			}
 			// Ryd måltid efter gem
@@ -697,6 +749,21 @@
 						type="button"
 						onclick={annullerRediger}
 						disabled={opdaterer}
+						aria-label="Annullér"
+					>
+						×
+					</button>
+				</div>
+			{:else if redigererMaaltid}
+				<div class="rediger-banner">
+					<div class="rediger-banner-tekst">
+						<div class="rediger-banner-lbl">Redigerer måltid i dagbog</div>
+						<div class="rediger-navn-static">{redigererMaaltid.navn}</div>
+					</div>
+					<button
+						class="rediger-banner-luk"
+						type="button"
+						onclick={annullerRedigerMaaltid}
 						aria-label="Annullér"
 					>
 						×
@@ -1068,14 +1135,24 @@
 									<div class="dagbog-kort">
 										<div class="dagbog-kort-head">
 											<div class="dagbog-navn">{m.navn}</div>
-											<button
-												class="ikon-knap"
-												type="button"
-												onclick={() => sletGemtMaaltid(m.id)}
-												aria-label="Slet måltid"
-											>
-												×
-											</button>
+											<div class="dagbog-handlinger">
+												<button
+													class="ikon-knap"
+													type="button"
+													onclick={() => startRedigerMaaltid(m)}
+													aria-label="Rediger måltid"
+												>
+													✎
+												</button>
+												<button
+													class="ikon-knap"
+													type="button"
+													onclick={() => sletGemtMaaltid(m.id)}
+													aria-label="Slet måltid"
+												>
+													×
+												</button>
+											</div>
 										</div>
 										<div class="dagbog-totaler">
 											<span>{formatGram(m.totalP)} protein</span>
@@ -1110,7 +1187,9 @@
 		>
 			<div class="modal">
 				<div class="modal-head">
-					<div class="modal-titel">Gem måltid i dagbog</div>
+					<div class="modal-titel">
+						{redigererMaaltid ? 'Rediger måltid' : 'Gem måltid i dagbog'}
+					</div>
 					<button class="modal-luk" type="button" onclick={lukGemModal} aria-label="Luk">
 						×
 					</button>
@@ -1155,15 +1234,17 @@
 						/>
 					</label>
 
-					<label class="favorit-toggle" class:on={gemSomFavorit}>
-						<input type="checkbox" bind:checked={gemSomFavorit} disabled={gemmer} />
-						<div class="favorit-toggle-tekst">
-							<div class="favorit-toggle-lbl">Gem også som favorit</div>
-							<div class="favorit-toggle-sub">
-								Genbrug måltidet hurtigt næste gang under Byg måltid
+					{#if !redigererMaaltid}
+						<label class="favorit-toggle" class:on={gemSomFavorit}>
+							<input type="checkbox" bind:checked={gemSomFavorit} disabled={gemmer} />
+							<div class="favorit-toggle-tekst">
+								<div class="favorit-toggle-lbl">Gem også som favorit</div>
+								<div class="favorit-toggle-sub">
+									Genbrug måltidet hurtigt næste gang under Byg måltid
+								</div>
 							</div>
-						</div>
-					</label>
+						</label>
+					{/if}
 
 					{#if gemBesked}
 						<div class="gem-besked {gemBesked.type}">{gemBesked.tekst}</div>
@@ -1172,7 +1253,11 @@
 
 				<div class="modal-footer">
 					<button class="primary-knap" type="button" onclick={gemMaaltidet} disabled={gemmer}>
-						{gemmer ? 'Gemmer...' : 'Gem'}
+						{#if gemmer}
+							{redigererMaaltid ? 'Opdaterer...' : 'Gemmer...'}
+						{:else}
+							{redigererMaaltid ? 'Opdater' : 'Gem'}
+						{/if}
 					</button>
 				</div>
 			</div>
@@ -1331,7 +1416,7 @@
 	.search {
 		width: 100%;
 		padding: 11px 14px;
-		font-size: 14px;
+		font-size: 16px;
 		border-radius: 10px;
 		border: 1px solid var(--border);
 		background: var(--bg2);
@@ -2003,7 +2088,7 @@
 
 	.dato-input {
 		padding: 10px 12px;
-		font-size: 14px;
+		font-size: 16px;
 		border-radius: 10px;
 		border: 1px solid var(--border);
 		background: var(--bg2);
@@ -2053,6 +2138,12 @@
 		margin-bottom: 4px;
 	}
 
+	.dagbog-handlinger {
+		display: flex;
+		gap: 6px;
+		flex-shrink: 0;
+	}
+
 	.dagbog-navn {
 		font-size: 14px;
 		font-weight: 600;
@@ -2089,7 +2180,7 @@
 
 	.felt-input {
 		padding: 10px 12px;
-		font-size: 14px;
+		font-size: 16px;
 		border-radius: 10px;
 		border: 1px solid var(--border);
 		background: var(--bg2);
@@ -2274,6 +2365,16 @@
 
 	.rediger-navn-input:focus {
 		border-color: var(--terra);
+	}
+
+	.rediger-navn-static {
+		padding: 7px 10px;
+		font-size: 14px;
+		font-weight: 600;
+		border-radius: 8px;
+		background: var(--white);
+		color: var(--text);
+		font-family: var(--ff-b);
 	}
 
 	.rediger-banner-luk {
