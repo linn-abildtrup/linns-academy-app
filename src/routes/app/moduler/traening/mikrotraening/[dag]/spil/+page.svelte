@@ -250,6 +250,10 @@
 		}
 		document.removeEventListener('visibilitychange', onVisibilityChange);
 		releaseWakeLock();
+		if (playRetryTimer) {
+			clearTimeout(playRetryTimer);
+			playRetryTimer = null;
+		}
 		if (typeof document !== 'undefined') {
 			document.body.classList.remove('html-fullscreen-aktiv');
 		}
@@ -271,12 +275,47 @@
 	// iOS Safari ignorerer ofte autoplay-attributtet selv på et frisk
 	// video-element. Når URL'en ændres tvinger vi derfor en eksplicit
 	// .play() — både på hovedvideoen og PIP-videoen i switch-fasen.
+	let playRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function tryPlayVideo(v: HTMLVideoElement, attempt: number = 0) {
+		if (playRetryTimer) {
+			clearTimeout(playRetryTimer);
+			playRetryTimer = null;
+		}
+		if (paused || phase === 'done') return;
+		if (!v || !v.getAttribute('src')) return;
+		const p = v.play();
+		if (p && p.catch) {
+			p.catch(() => {
+				if (attempt < 10) {
+					playRetryTimer = setTimeout(() => tryPlayVideo(v, attempt + 1), 200);
+				}
+			});
+		}
+	}
+
 	$effect(() => {
 		if (!vistVideoUrl || !hovedvideoEl) return;
-		void hovedvideoEl.play().catch(() => {
-			// iOS kan afvise hvis ikke der er user-gesture, men 'Start
-			// træning'-klikket etablerer normalt nok permission. Ignorer.
-		});
+		// Trigger på vistVideoUrl-skift — start retry-loop indtil iOS Safari
+		// accepterer .play() (op til 10 forsøg over ~2 sek). Reference-appen
+		// bruger samme mønster fordi autoplay-attributtet alene er upålideligt
+		// efter src-skift på iOS.
+		tryPlayVideo(hovedvideoEl);
+	});
+
+	// Hvis iOS Safari pauser videoen uventet (fx ved øvelses-skift, fokus-
+	// skift eller power-management), genoptag automatisk så længe vi er
+	// i en aktiv fase og brugeren ikke har trykket Pause.
+	$effect(() => {
+		if (!hovedvideoEl) return;
+		const v = hovedvideoEl;
+		const onPause = () => {
+			if (paused || phase === 'done') return;
+			if (typeof document !== 'undefined' && document.hidden) return;
+			tryPlayVideo(v);
+		};
+		v.addEventListener('pause', onPause);
+		return () => v.removeEventListener('pause', onPause);
 	});
 
 	$effect(() => {
