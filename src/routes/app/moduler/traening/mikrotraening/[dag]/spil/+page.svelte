@@ -943,7 +943,7 @@
 
 	.video-omraade {
 		position: relative;
-		aspect-ratio: 1;
+		aspect-ratio: 16 / 9;
 		border-radius: 18px;
 		overflow: hidden;
 		background: #2a1f17;
