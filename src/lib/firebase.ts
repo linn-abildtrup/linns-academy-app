@@ -4,7 +4,7 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 import {
@@ -26,8 +26,16 @@ const firebaseConfig = {
 };
 
 // Avoid re-initializing Firebase during hot-reload in development.
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const erFoerste = getApps().length === 0;
+const app = erFoerste ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+// ignoreUndefinedProperties: true lader Firestore skippe undefined-felter
+// stille i stedet for at smide fejl. Vigtigt for vores typer der har optional
+// felter (fx MaaltidsItem.enhedId og .manuel) — uden det fejler setDoc med
+// "Function setDoc() called with invalid data. Unsupported field value: undefined"
+// så snart en bruger gemmer et dokument hvor et optional felt ikke er sat.
+export const db = erFoerste
+	? initializeFirestore(app, { ignoreUndefinedProperties: true })
+	: getFirestore(app);
 export const storage = getStorage(app);
