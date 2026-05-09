@@ -24,8 +24,20 @@
 	let userDoc = $state<UserDoc | null>(null);
 	let loading = $state(true);
 
+	// Når admin er i klient-mode, override'r vi userDoc.state til
+	// 'forlobskunde' så klient-modulerne reagerer som om admin var klient
+	// på det valgte forløb. Den rigtige userDoc.state ændres ikke i
+	// Firestore — kun det context-objekt modulerne læser.
+	function effektivUserDoc(d: UserDoc | null): UserDoc | null {
+		if (!d) return null;
+		if (d.adminKlientForlobId) {
+			return { ...d, state: 'forlobskunde' };
+		}
+		return d;
+	}
+
 	// Gør userDoc tilgængeligt for alle undersider via Svelte context
-	setContext('userDoc', () => userDoc);
+	setContext('userDoc', () => effektivUserDoc(userDoc));
 	setContext('user', () => user);
 	// Eksponér adminKlientForlobId så firestore-helpers kan scope deres
 	// læs/skriv-paths. Returnerer null når admin er i normal admin-mode

@@ -38,10 +38,36 @@ export async function gemBrugerProfilOgMaal(
 
 /**
  * Sætter admin-klient-mode for en bestemt forløbsId. Mens feltet er sat
- * opfører appen sig som om admin var klient på forløbet.
+ * opfører appen sig som om admin var klient på forløbet. Auto-opretter
+ * userProduct på den scoped path så klient-modulerne har data at læse.
  */
 export async function gemAdminKlientMode(uid: string, forlobId: string): Promise<void> {
+	const { serverTimestamp, getDoc } = await import('firebase/firestore');
+
+	// 1. Sæt mode-flaget på userDoc
 	await updateDoc(doc(db, 'users', uid), { adminKlientForlobId: forlobId });
+
+	// 2. Auto-opret userProduct hvis det ikke findes på den scoped path
+	const productRef = doc(
+		db,
+		`users/${uid}/adminKlient/${forlobId}/products/kickstart`
+	);
+	const eks = await getDoc(productRef);
+	if (!eks.exists()) {
+		// Hent forløb for at få startDato
+		const forlobRef = doc(db, 'forlob', forlobId);
+		const forlobSnap = await getDoc(forlobRef);
+		const forlobData = forlobSnap.exists() ? forlobSnap.data() : null;
+		await setDoc(productRef, {
+			productId: 'kickstart',
+			forlobId,
+			startDato: forlobData?.startDato ?? serverTimestamp(),
+			udloberDato: null,
+			koebt: serverTimestamp(),
+			programValg: {},
+			fremgang: {}
+		});
+	}
 }
 
 /**
