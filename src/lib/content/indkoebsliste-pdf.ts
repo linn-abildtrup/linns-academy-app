@@ -63,16 +63,52 @@ function pageBg(doc: jsPDF) {
 	doc.rect(0, 0, doc.internal.pageSize.getWidth(), doc.internal.pageSize.getHeight(), 'F');
 }
 
+function infinity(doc: jsPDF, cx: number, cy: number, w: number) {
+	// Tegner ∞-tegnet som to bezier-løkker — matcher brand-pathen.
+	// Original SVG-path er normaliseret til en boks 0..540 horisontalt;
+	// vi mapper til [cx-w/2 .. cx+w/2] og en højde på w*140/540.
+	const h = (w * 140) / 540;
+	const sx = cx - w / 2;
+	const sy = cy - h / 2;
+	const map = (x: number, y: number): [number, number] => [
+		sx + (x / 540) * w,
+		sy + (y / 140) * h
+	];
+	doc.setDrawColor(...FARVER.terra);
+	doc.setLineWidth(0.4);
+	doc.setLineCap('round');
+	doc.setLineJoin('round');
+	const start = map(110, 70);
+	const lines: [[number, number], [number, number], [number, number]][] = [
+		[map(110, 30), map(200, 30), map(270, 70)],
+		[map(340, 110), map(430, 110), map(430, 70)],
+		[map(430, 30), map(340, 30), map(270, 70)],
+		[map(200, 110), map(110, 110), map(110, 70)]
+	];
+	const seg: number[][] = [];
+	for (const [c1, c2, end] of lines) {
+		seg.push([c1[0] - start[0], c1[1] - start[1], c2[0] - start[0], c2[1] - start[1], end[0] - start[0], end[1] - start[1]]);
+	}
+	doc.lines(seg, start[0], start[1], [1, 1], 'S', false);
+}
+
 function header(doc: jsPDF, modulNavn?: string) {
 	doc.setFillColor(...FARVER.terra);
 	doc.rect(0, 0, doc.internal.pageSize.getWidth(), 1.2, 'F');
+	// Linn's italic
 	doc.setFont('times', 'italic');
 	doc.setFontSize(11);
-	doc.setTextColor(...FARVER.terra);
-	doc.text("Linn's", 20, 14);
-	doc.setFont('times', 'bold');
 	doc.setTextColor(...FARVER.text);
-	doc.text('ACADEMY', 32, 14);
+	doc.text("Linn's", 20, 14);
+	// ∞ hairline mellem ordene
+	const linnsBredde = doc.getTextWidth("Linn's");
+	const infCx = 20 + linnsBredde + 4 + 4;
+	infinity(doc, infCx, 12, 8);
+	// Academy sperret
+	doc.setFont('helvetica', 'bold');
+	doc.setFontSize(8);
+	doc.setTextColor(...FARVER.terra);
+	doc.text('ACADEMY', infCx + 4 + 2, 14, { charSpace: 1.4 });
 	if (modulNavn) {
 		const W = doc.internal.pageSize.getWidth();
 		doc.setFont('helvetica', 'bold');
