@@ -434,7 +434,7 @@
 		<div class="eyebrow">Admin · Bibliotek</div>
 		<h1>Bibliotek</h1>
 		<p class="page-sub">
-			Opret kategorier og indhold til FAQ og guides for dette forløb.
+			Opret kategorier og indhold til FAQ og links for dette forløb.
 		</p>
 	</header>
 
@@ -453,7 +453,7 @@
 			type="button"
 			onclick={() => skiftTab('guides')}
 		>
-			Guides
+			Links
 		</button>
 	</div>
 
@@ -648,7 +648,7 @@
 							onclick={() => aabnNytGuide(kat.id)}
 							style="border-style: dashed;"
 						>
-							+ Ny guide
+							+ Nyt link
 						</button>
 					</section>
 				{/each}
@@ -720,7 +720,7 @@
 	></div>
 	<div class="dialog" role="dialog" aria-modal="true">
 		<header class="dialog-head">
-			<div class="form-titel">{guideDialogItemId ? 'Rediger guide' : 'Ny guide'}</div>
+			<div class="form-titel">{guideDialogItemId ? 'Rediger link' : 'Nyt link'}</div>
 			<button class="ikon-knap" type="button" onclick={lukGuideDialog} aria-label="Luk">×</button>
 		</header>
 

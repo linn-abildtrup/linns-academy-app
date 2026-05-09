@@ -242,7 +242,7 @@
 		},
 		{
 			navn: 'Bibliotek',
-			meta: 'FAQ og guides',
+			meta: 'FAQ og links',
 			ikon: 'book',
 			accent: '#5C7A8C',
 			dim: 'rgba(92,122,140,.10)',

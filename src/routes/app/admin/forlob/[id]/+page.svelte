@@ -281,7 +281,7 @@
 			</div>
 			<div class="indhold-tekst">
 				<div class="indhold-navn">Bibliotek</div>
-				<div class="indhold-sub">FAQ og guides for forløbet</div>
+				<div class="indhold-sub">FAQ og links for forløbet</div>
 			</div>
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
