@@ -143,21 +143,41 @@ function gaetKategori(navn: string): string {
 }
 
 /**
- * Find protein- og fiber-kolonner i Data_Table-arket.
+ * Find næringsdata-kolonner i Data_Table-arket.
  * Header-rækken er på række 0 (dansk parameter-navn).
- * Returnerer null hvis ikke fundet.
+ * protein og fiber er obligatoriske, resten er optional (null hvis ikke fundet).
  */
-function findProteinFiberKolonner(headerRow: unknown[]): { protein: number; fiber: number } | null {
+function findKolonner(headerRow: unknown[]): {
+	protein: number;
+	fiber: number;
+	kh: number;
+	fedt: number;
+	kcal: number;
+} | null {
 	const cells = headerRow.map((c) => String(c ?? '').toLowerCase().trim());
 	let protein = -1;
 	let fiber = -1;
+	let kh = -1;
+	let fedt = -1;
+	let kcal = -1;
 	for (let i = 0; i < cells.length; i++) {
 		const c = cells[i];
 		if (protein === -1 && c === 'protein') protein = i;
 		if (fiber === -1 && (c === 'kostfibre' || c === 'fibre, kost' || c === 'kostfiber')) fiber = i;
+		if (
+			kh === -1 &&
+			(c === 'kulhydrat tilgængelig' ||
+				c === 'kulhydrat, tilgængelig' ||
+				c === 'kulhydrat' ||
+				c === 'tilgængelig kulhydrat')
+		)
+			kh = i;
+		if (fedt === -1 && c === 'fedt') fedt = i;
+		if (kcal === -1 && (c === 'energi, kcal' || c === 'energi (kcal)' || c === 'energi kcal'))
+			kcal = i;
 	}
 	if (protein === -1 || fiber === -1) return null;
-	return { protein, fiber };
+	return { protein, fiber, kh, fedt, kcal };
 }
 
 // ==============================================
@@ -170,6 +190,9 @@ interface ParsetRekke {
 	cat: string;
 	p: number;
 	f: number;
+	kh: number;
+	fedt: number;
+	kcal: number;
 }
 
 function laesFil(): ParsetRekke[] {
@@ -197,14 +220,14 @@ function laesFil(): ParsetRekke[] {
 	//   Række 3: '↓FødevareNavn | ↓FoodName | ↓FoodID/→ParameterID | <ParameterID>...'
 	//   Række 4+: data — kolonne 0 = navn (dk), 1 = navn (en), 2 = FoodID, 3+ = værdier
 	const headerRow = rows[0];
-	const kolonner = findProteinFiberKolonner(headerRow);
+	const kolonner = findKolonner(headerRow);
 	if (!kolonner) {
 		console.error('❌ Kunne ikke finde "Protein" og "Kostfibre"-kolonner i Data_Table række 0.');
 		console.error('   Første 30 kolonner:', headerRow.slice(0, 30));
 		process.exit(1);
 	}
 	console.log(
-		`   ✓ Protein-kolonne: ${kolonner.protein}, Fiber-kolonne: ${kolonner.fiber}`
+		`   ✓ Protein: ${kolonner.protein}, Fiber: ${kolonner.fiber}, Kulhydrat: ${kolonner.kh}, Fedt: ${kolonner.fedt}, Kcal: ${kolonner.kcal}`
 	);
 
 	const dataRows = rows.slice(4);
@@ -219,13 +242,19 @@ function laesFil(): ParsetRekke[] {
 		const foodId = String(r[2] ?? '').trim();
 		const protein = toNumber(r[kolonner.protein]);
 		const fiber = toNumber(r[kolonner.fiber]);
+		const kh = kolonner.kh >= 0 ? toNumber(r[kolonner.kh]) : 0;
+		const fedt = kolonner.fedt >= 0 ? toNumber(r[kolonner.fedt]) : 0;
+		const kcal = kolonner.kcal >= 0 ? toNumber(r[kolonner.kcal]) : 0;
 		const id = `frida_${foodId || slugify(navn)}`;
 		ud.push({
 			id,
 			name: navn,
 			cat: gaetKategori(navn),
 			p: protein,
-			f: fiber
+			f: fiber,
+			kh,
+			fedt,
+			kcal
 		});
 	}
 	if (oversprunget > 0) console.log(`   ℹ️  Sprang ${oversprunget} tomme rækker over`);
@@ -267,13 +296,20 @@ async function main() {
 		const chunk = items.slice(start, start + batchSize);
 		for (const f of chunk) {
 			const ref = db.collection('fodevarer').doc(f.id);
-			batch.set(ref, {
-				name: f.name,
-				cat: f.cat,
-				p: f.p,
-				f: f.f,
-				kilde: 'frida'
-			});
+			batch.set(
+				ref,
+				{
+					name: f.name,
+					cat: f.cat,
+					p: f.p,
+					f: f.f,
+					kh: f.kh,
+					fedt: f.fedt,
+					kcal: f.kcal,
+					kilde: 'frida'
+				},
+				{ merge: true }
+			);
 		}
 		await batch.commit();
 		skrevet += chunk.length;

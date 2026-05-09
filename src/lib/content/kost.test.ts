@@ -92,6 +92,9 @@ describe('beregnItem', () => {
 		expect(beregnItem({ foodId: 'x', portion: 100 }, undefined)).toEqual({
 			protein: 0,
 			fiber: 0,
+			kh: 0,
+			fedt: 0,
+			kcal: 0,
 			gram: 0
 		});
 	});
@@ -115,11 +118,11 @@ describe('beregnMaaltid', () => {
 
 	it('ignorerer items med ukendt foodId', () => {
 		const r = beregnMaaltid([{ foodId: 'ukendt', portion: 100 }], map);
-		expect(r).toEqual({ protein: 0, fiber: 0 });
+		expect(r).toEqual({ protein: 0, fiber: 0, kh: 0, fedt: 0, kcal: 0 });
 	});
 
 	it('returnerer 0 for tomt måltid', () => {
-		expect(beregnMaaltid([], map)).toEqual({ protein: 0, fiber: 0 });
+		expect(beregnMaaltid([], map)).toEqual({ protein: 0, fiber: 0, kh: 0, fedt: 0, kcal: 0 });
 	});
 });
 

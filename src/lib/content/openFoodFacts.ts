@@ -15,6 +15,9 @@ export interface OffResultat {
 	navn: string;
 	protein: number; // pr 100g
 	fiber: number; // pr 100g
+	kh: number; // kulhydrater pr 100g
+	fedt: number; // fedt pr 100g
+	kcal: number; // kalorier pr 100g
 	katForslag: Kategori;
 	billedeUrl?: string;
 }
@@ -22,8 +25,15 @@ export interface OffResultat {
 interface OffNutriments {
 	proteins_100g?: number;
 	fiber_100g?: number;
-	'proteins'?: number;
-	'fiber'?: number;
+	carbohydrates_100g?: number;
+	fat_100g?: number;
+	'energy-kcal_100g'?: number;
+	'energy_100g'?: number;
+	proteins?: number;
+	fiber?: number;
+	carbohydrates?: number;
+	fat?: number;
+	'energy-kcal'?: number;
 }
 
 interface OffProduct {
@@ -70,13 +80,27 @@ export async function lookupBarcode(barcode: string): Promise<OffResultat | null
 			p.generic_name?.trim() ||
 			'';
 		if (!navn) return null;
-		const protein = p.nutriments?.proteins_100g ?? p.nutriments?.proteins ?? 0;
-		const fiber = p.nutriments?.fiber_100g ?? p.nutriments?.fiber ?? 0;
+		const n = p.nutriments ?? {};
+		const protein = n.proteins_100g ?? n.proteins ?? 0;
+		const fiber = n.fiber_100g ?? n.fiber ?? 0;
+		const kh = n.carbohydrates_100g ?? n.carbohydrates ?? 0;
+		const fedt = n.fat_100g ?? n.fat ?? 0;
+		// OFF angiver kalorier i 'energy-kcal_100g' (primær). 'energy_100g' er
+		// nogle gange kJ — vi bruger kun den hvis kcal-feltet mangler og
+		// regner om hvis værdien tydeligvis er kJ (>900 = umuligt for mad).
+		let kcal = n['energy-kcal_100g'] ?? n['energy-kcal'] ?? 0;
+		if (!kcal) {
+			const energy = n.energy_100g ?? 0;
+			kcal = energy > 900 ? energy / 4.184 : energy;
+		}
 		return {
 			barcode: ren,
 			navn: p.brands ? `${navn} (${p.brands})` : navn,
 			protein: Math.round(protein * 10) / 10,
 			fiber: Math.round(fiber * 10) / 10,
+			kh: Math.round(kh * 10) / 10,
+			fedt: Math.round(fedt * 10) / 10,
+			kcal: Math.round(kcal),
 			katForslag: foreslaaKategori(p.categories_tags ?? []),
 			billedeUrl: p.image_front_small_url || p.image_url
 		};

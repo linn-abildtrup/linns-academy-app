@@ -74,6 +74,9 @@ export interface GemtMaaltid {
 	items: MaaltidsItem[];
 	totalP: number;
 	totalF: number;
+	totalKh?: number; // udvidet næring
+	totalFedt?: number; // udvidet næring
+	totalKcal?: number; // udvidet næring
 }
 
 /**
@@ -115,8 +118,11 @@ export interface Fodevare {
 	id: string;
 	name: string;
 	cat: Kategori;
-	p: number;
-	f: number;
+	p: number; // protein g pr 100g
+	f: number; // fiber g pr 100g
+	kh?: number; // kulhydrater g pr 100g (udvidet næring)
+	fedt?: number; // fedt g pr 100g (udvidet næring)
+	kcal?: number; // kalorier kcal pr 100g (udvidet næring)
 	units?: Enhed[];
 	liquid?: boolean;
 	kilde?: Kilde;
@@ -224,16 +230,39 @@ export function gramForEnhed(food: Fodevare | undefined, enhedId?: string): numb
  * Returnerer 0 for begge hvis itemet er manuelt (ingen fødevare-kobling)
  * eller hvis fødevaren ikke findes (defensiv mod stale data).
  */
+export interface ItemBeregning {
+	protein: number;
+	fiber: number;
+	kh: number;
+	fedt: number;
+	kcal: number;
+	gram: number;
+}
+
+export interface MaaltidBeregning {
+	protein: number;
+	fiber: number;
+	kh: number;
+	fedt: number;
+	kcal: number;
+}
+
 export function beregnItem(
 	item: MaaltidsItem,
 	food: Fodevare | undefined
-): { protein: number; fiber: number; gram: number } {
-	if (erManueltItem(item) || !food) return { protein: 0, fiber: 0, gram: 0 };
+): ItemBeregning {
+	if (erManueltItem(item) || !food) {
+		return { protein: 0, fiber: 0, kh: 0, fedt: 0, kcal: 0, gram: 0 };
+	}
 	const gramPrEnhed = gramForEnhed(food, item.enhedId);
 	const totalGram = item.portion * gramPrEnhed;
+	const f = totalGram / 100;
 	return {
-		protein: (food.p * totalGram) / 100,
-		fiber: (food.f * totalGram) / 100,
+		protein: food.p * f,
+		fiber: food.f * f,
+		kh: (food.kh ?? 0) * f,
+		fedt: (food.fedt ?? 0) * f,
+		kcal: (food.kcal ?? 0) * f,
 		gram: totalGram
 	};
 }
@@ -245,15 +274,21 @@ export function beregnItem(
 export function beregnMaaltid(
 	items: MaaltidsItem[],
 	foods: Map<string, Fodevare>
-): { protein: number; fiber: number } {
+): MaaltidBeregning {
 	let protein = 0;
 	let fiber = 0;
+	let kh = 0;
+	let fedt = 0;
+	let kcal = 0;
 	for (const item of items) {
 		const r = beregnItem(item, foods.get(item.foodId));
 		protein += r.protein;
 		fiber += r.fiber;
+		kh += r.kh;
+		fedt += r.fedt;
+		kcal += r.kcal;
 	}
-	return { protein, fiber };
+	return { protein, fiber, kh, fedt, kcal };
 }
 
 /**
