@@ -406,8 +406,12 @@
 							{flere ? 'Lektioner for ' + langDato : 'Lektion for ' + langDato}
 						{/if}
 					</div>
-					{#each dagensDag.lektioner as lektion (lektion.id)}
-						<a class="lektion-card" href="/app/moduler/forlob?lektion={lektion.id}">
+					{#each dagensDag.lektioner as lektion, i (lektion.id)}
+						<a
+							class="lektion-card"
+							data-tone={i % 3}
+							href="/app/moduler/forlob?lektion={lektion.id}"
+						>
 							<div class="lektion-decoration lektion-decoration-1"></div>
 							<div class="lektion-decoration lektion-decoration-2"></div>
 							<div class="lektion-content">
@@ -1075,10 +1079,26 @@
 		overflow: hidden;
 		background: linear-gradient(160deg, #c99587 0%, #b87b6e 60%, #9d6358 100%);
 		color: #fff;
-		padding: 18px;
+		padding: 14px 16px;
 		position: relative;
-		min-height: 170px;
+		min-height: 102px;
 		text-decoration: none;
+	}
+
+	.lektion-card[data-tone='1'] {
+		background: linear-gradient(160deg, #8fb89c 0%, #6f9e7e 60%, #587f64 100%);
+	}
+
+	.lektion-card[data-tone='1'] .lektion-button {
+		color: var(--sage);
+	}
+
+	.lektion-card[data-tone='2'] {
+		background: linear-gradient(160deg, #d4b285 0%, #b8956a 60%, #957654 100%);
+	}
+
+	.lektion-card[data-tone='2'] .lektion-button {
+		color: var(--gold);
 	}
 
 	.lektion-card:hover {
@@ -1120,23 +1140,23 @@
 
 	.lektion-title {
 		font-family: var(--ff-d);
-		font-size: 22px;
+		font-size: 19px;
 		font-weight: 700;
-		margin-top: 6px;
+		margin-top: 4px;
 		line-height: 1.1;
 	}
 
 	.lektion-description {
 		font-size: 11.5px;
 		opacity: 0.85;
-		margin-top: 4px;
-		line-height: 1.45;
+		margin-top: 3px;
+		line-height: 1.4;
 	}
 
 	.lektion-actions {
 		display: flex;
 		gap: 8px;
-		margin-top: 14px;
+		margin-top: 9px;
 		align-items: center;
 	}
 
@@ -1144,7 +1164,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		padding: 9px 16px;
+		padding: 7px 14px;
 		border-radius: 99px;
 		background: #fff;
 		color: var(--terra);
