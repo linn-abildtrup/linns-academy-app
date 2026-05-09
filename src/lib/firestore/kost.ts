@@ -201,6 +201,24 @@ export async function hentMaaltiderForDato(
 }
 
 /**
+ * Henter alle måltider mellem to datoer (YYYY-MM-DD inklusive).
+ * Bruges af udviklings-siden til at lave aggregerede grafer pr dag.
+ */
+export async function hentMaaltiderIPeriode(
+	uid: string,
+	fraDato: string,
+	tilDato: string
+): Promise<GemtMaaltid[]> {
+	const q = query(
+		collection(db, 'users', uid, 'maaltider'),
+		where('dato', '>=', fraDato),
+		where('dato', '<=', tilDato)
+	);
+	const snap = await getDocs(q);
+	return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GemtMaaltid);
+}
+
+/**
  * Opdaterer et eksisterende måltid i dagbogen. Bruges når brugeren
  * redigerer navn, type, dato eller ingredienser på et gemt måltid.
  */

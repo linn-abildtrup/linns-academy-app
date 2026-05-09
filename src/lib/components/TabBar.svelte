@@ -26,6 +26,13 @@
 		{ id: 'home', label: 'Forside', icon: 'home', href: '/app' },
 		{ id: 'moduler', label: 'Moduler', icon: 'grid', href: '/app/moduler' },
 		{
+			id: 'udvikling',
+			label: 'Udvikling',
+			icon: 'fire',
+			href: '/app/udvikling',
+			lockedFor: ['udlobet']
+		},
+		{
 			id: 'beskeder',
 			label: 'Beskeder',
 			icon: 'mail',
