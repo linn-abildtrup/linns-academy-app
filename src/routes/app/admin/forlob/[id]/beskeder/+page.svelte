@@ -12,7 +12,7 @@
 	} from '$lib/firestore/spoergsmaal';
 	import { hentForlob } from '$lib/firestore/forlob';
 
-	const forlobId = $derived(page.params.id);
+	const forlobId = $derived(page.params.id ?? '');
 
 	type Filter = 'alle' | SpoergsmaalStatus;
 	const FILTRE: { id: Filter; label: string }[] = [
