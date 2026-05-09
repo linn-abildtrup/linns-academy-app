@@ -1,6 +1,6 @@
 import { doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '$lib/firebase';
-import type { DagligeMaal, UserDoc, UserState } from '$lib/types';
+import type { BrugerProfil, DagligeMaal, UserDoc, UserState } from '$lib/types';
 import {
 	hentAllowedEmail,
 	markerAllowedEmailRegistreret
@@ -18,6 +18,22 @@ export async function gemNaeringsindstillinger(
 	const data: Record<string, unknown> = { visUdvidetNaering };
 	if (dagligeMaal) data.dagligeMaal = dagligeMaal;
 	await updateDoc(doc(db, 'users', uid), data);
+}
+
+/**
+ * Gemmer brugerens fysiske profil sammen med beregnede daglige mål.
+ * Bruges af 'Beregn mine mål automatisk'-wizarden.
+ */
+export async function gemBrugerProfilOgMaal(
+	uid: string,
+	profil: BrugerProfil,
+	dagligeMaal: DagligeMaal
+): Promise<void> {
+	await updateDoc(doc(db, 'users', uid), {
+		brugerProfil: profil,
+		dagligeMaal,
+		visUdvidetNaering: true
+	});
 }
 
 /**

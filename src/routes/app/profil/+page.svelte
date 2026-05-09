@@ -24,8 +24,9 @@
 		NAERING_LABELS,
 		NAERING_ENHEDER
 	} from '$lib/content/naering';
-	import { gemNaeringsindstillinger } from '$lib/userDoc';
-	import type { DagligeMaal } from '$lib/types';
+	import { gemBrugerProfilOgMaal, gemNaeringsindstillinger } from '$lib/userDoc';
+	import type { BrugerProfil, DagligeMaal } from '$lib/types';
+	import BeregnMaalWizard from '$lib/components/BeregnMaalWizard.svelte';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -87,6 +88,26 @@
 	}
 
 	const NAERINGSFELTER = ['protein', 'fiber', 'kh', 'fedt', 'kcal'] as const;
+
+	// Wizard-state
+	let viserWizard = $state(false);
+
+	async function brugBeregnedeMaal(profil: BrugerProfil, maal: DagligeMaal) {
+		const u = user;
+		if (!u) {
+			viserWizard = false;
+			return;
+		}
+		try {
+			await gemBrugerProfilOgMaal(u.uid, profil, maal);
+			dagligeMaal = { ...maal };
+			visUdvidet = true;
+		} catch (e) {
+			console.error(e);
+		} finally {
+			viserWizard = false;
+		}
+	}
 
 	// Mikrotræning-program-valg
 	let mtProgrammer = $state<TrainingProgram[]>([]);
@@ -324,6 +345,19 @@
 		</button>
 
 		{#if visUdvidet}
+			<button
+				type="button"
+				class="beregn-knap"
+				onclick={() => (viserWizard = true)}
+			>
+				<Icon name="sparkle" size={16} color="#fff" />
+				<span class="beregn-knap-tekst">
+					<span class="beregn-knap-titel">Beregn mine mål automatisk</span>
+					<span class="beregn-knap-sub">Få et udgangspunkt baseret på din profil</span>
+				</span>
+				<Icon name="chevron-r" size={14} color="rgba(255,255,255,0.7)" />
+			</button>
+
 			<div class="naering-mal-card">
 				<div class="naering-mal-titel">Daglige mål</div>
 				<p class="naering-mal-sub">Bruges som reference på dagbogen og udviklings-siden.</p>
@@ -357,6 +391,14 @@
 
 	<button class="logout" onclick={handleLogout}>Log ud</button>
 </div>
+
+{#if viserWizard}
+	<BeregnMaalWizard
+		startProfil={userDoc?.brugerProfil}
+		onBrugMaal={brugBeregnedeMaal}
+		onClose={() => (viserWizard = false)}
+	/>
+{/if}
 
 <style>
 	.profil {
@@ -730,6 +772,45 @@
 
 	.naering-switch.on .naering-switch-knob {
 		transform: translateX(18px);
+	}
+
+	.beregn-knap {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		width: 100%;
+		padding: 14px 16px;
+		margin-top: 10px;
+		background: linear-gradient(135deg, var(--terra) 0%, #a06b60 100%);
+		border: none;
+		border-radius: 12px;
+		color: #fff;
+		text-align: left;
+		cursor: pointer;
+		font-family: var(--ff-b);
+		box-shadow: 0 4px 12px rgba(184, 123, 110, 0.25);
+	}
+
+	.beregn-knap:active {
+		transform: scale(0.99);
+	}
+
+	.beregn-knap-tekst {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+
+	.beregn-knap-titel {
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+	}
+
+	.beregn-knap-sub {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: rgba(255, 255, 255, 0.82);
 	}
 
 	.naering-mal-card {

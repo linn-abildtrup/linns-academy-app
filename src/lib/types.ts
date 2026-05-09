@@ -24,6 +24,24 @@ export interface DagligeMaal {
 	kcal: number;
 }
 
+export type Aktivitetsniveau = 'stille' | 'let' | 'moderat' | 'meget';
+export type MenopausalStatus = 'praemenopause' | 'perimenopause' | 'postmenopause';
+
+/**
+ * Brugerens fysiske profil — bruges af 'Beregn mine mål automatisk'-wizarden
+ * til at foreslå daglige næringsmål via Mifflin-St Jeor-formlen.
+ *
+ * Felterne huskes så klienten kan åbne wizarden igen og justere uden at
+ * skulle indtaste alt forfra.
+ */
+export interface BrugerProfil {
+	hojde: number; // cm
+	vaegt: number; // kg
+	alder: number; // år
+	aktivitet: Aktivitetsniveau;
+	menopaus: MenopausalStatus;
+}
+
 export interface UserDoc {
 	firstName: string;
 	email: string;
@@ -41,4 +59,8 @@ export interface UserDoc {
 	// Brugerens daglige mål for makro-næring. Kun aktiv når
 	// visUdvidetNaering = true.
 	dagligeMaal?: DagligeMaal;
+
+	// Snapshot af det input klienten gav til 'Beregn mine mål'-wizarden.
+	// Bruges til at pre-udfylde wizarden næste gang den åbnes.
+	brugerProfil?: BrugerProfil;
 }
