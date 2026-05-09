@@ -94,16 +94,26 @@
 			: null
 	);
 
+	// Klient-tabs (Forside/Moduler/Udvikling) skjules når admin er i normal
+	// admin-mode — de hører til klient-oplevelsen og er irrelevante for
+	// admin-arbejdet. De vises igen for almindelige klienter, og når admin
+	// skifter til klient-mode for at teste flow.
+	const skjulKlientTabs = $derived(erAdmin && !erIKlientMode);
+
 	const NAV_ITEMS = $derived<NavItem[]>([
-		{ id: 'home', label: 'Forside', icon: 'home', href: '/app' },
-		{ id: 'moduler', label: 'Moduler', icon: 'grid', href: '/app/moduler' },
-		{
-			id: 'udvikling',
-			label: 'Udvikling',
-			icon: 'fire',
-			href: '/app/udvikling',
-			lockedFor: ['udlobet']
-		},
+		...(skjulKlientTabs
+			? []
+			: [
+					{ id: 'home', label: 'Forside', icon: 'home' as IconName, href: '/app' },
+					{ id: 'moduler', label: 'Moduler', icon: 'grid' as IconName, href: '/app/moduler' },
+					{
+						id: 'udvikling',
+						label: 'Udvikling',
+						icon: 'fire' as IconName,
+						href: '/app/udvikling',
+						lockedFor: ['udlobet' as const]
+					}
+				]),
 		{
 			id: 'beskeder',
 			label: 'Beskeder',
