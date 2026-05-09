@@ -1101,61 +1101,65 @@
 					</button>
 				</div>
 
-				<label class="felt">
-					<span class="felt-label">Navn</span>
-					<input
-						type="text"
-						class="felt-input"
-						placeholder="fx Morgenmad med skyr og bær"
-						bind:value={gemNavn}
-						disabled={gemmer}
-					/>
-				</label>
+				<div class="modal-body">
+					<label class="felt">
+						<span class="felt-label">Navn</span>
+						<input
+							type="text"
+							class="felt-input"
+							placeholder="fx Morgenmad med skyr og bær"
+							bind:value={gemNavn}
+							disabled={gemmer}
+						/>
+					</label>
 
-				<div class="felt">
-					<span class="felt-label">Måltidstype</span>
-					<div class="type-rad">
-						{#each MAALTIDSTYPER as t (t)}
-							<button
-								type="button"
-								class="type-chip"
-								class:aktiv={gemType === t}
-								onclick={() => (gemType = t)}
-								disabled={gemmer}
-							>
-								{MAALTIDSTYPE_LABELS[t]}
-							</button>
-						{/each}
-					</div>
-				</div>
-
-				<label class="felt">
-					<span class="felt-label">Dato</span>
-					<input
-						type="date"
-						class="felt-input"
-						bind:value={gemDato}
-						disabled={gemmer}
-					/>
-				</label>
-
-				<label class="favorit-toggle" class:on={gemSomFavorit}>
-					<input type="checkbox" bind:checked={gemSomFavorit} disabled={gemmer} />
-					<div class="favorit-toggle-tekst">
-						<div class="favorit-toggle-lbl">Gem også som favorit</div>
-						<div class="favorit-toggle-sub">
-							Genbrug måltidet hurtigt næste gang under Byg måltid
+					<div class="felt">
+						<span class="felt-label">Måltidstype</span>
+						<div class="type-rad">
+							{#each MAALTIDSTYPER as t (t)}
+								<button
+									type="button"
+									class="type-chip"
+									class:aktiv={gemType === t}
+									onclick={() => (gemType = t)}
+									disabled={gemmer}
+								>
+									{MAALTIDSTYPE_LABELS[t]}
+								</button>
+							{/each}
 						</div>
 					</div>
-				</label>
 
-				{#if gemBesked}
-					<div class="gem-besked {gemBesked.type}">{gemBesked.tekst}</div>
-				{/if}
+					<label class="felt">
+						<span class="felt-label">Dato</span>
+						<input
+							type="date"
+							class="felt-input"
+							bind:value={gemDato}
+							disabled={gemmer}
+						/>
+					</label>
 
-				<button class="primary-knap" type="button" onclick={gemMaaltidet} disabled={gemmer}>
-					{gemmer ? 'Gemmer...' : 'Gem'}
-				</button>
+					<label class="favorit-toggle" class:on={gemSomFavorit}>
+						<input type="checkbox" bind:checked={gemSomFavorit} disabled={gemmer} />
+						<div class="favorit-toggle-tekst">
+							<div class="favorit-toggle-lbl">Gem også som favorit</div>
+							<div class="favorit-toggle-sub">
+								Genbrug måltidet hurtigt næste gang under Byg måltid
+							</div>
+						</div>
+					</label>
+
+					{#if gemBesked}
+						<div class="gem-besked {gemBesked.type}">{gemBesked.tekst}</div>
+					{/if}
+				</div>
+
+				<div class="modal-footer">
+					<button class="primary-knap" type="button" onclick={gemMaaltidet} disabled={gemmer}>
+						{gemmer ? 'Gemmer...' : 'Gem'}
+					</button>
+				</div>
 			</div>
 		</div>
 	{/if}
@@ -1865,17 +1869,34 @@
 	.modal {
 		background: var(--white);
 		border-radius: 18px 18px 0 0;
-		padding: 14px 18px calc(24px + env(safe-area-inset-bottom));
+		padding: 14px 18px 0;
 		width: 100%;
 		max-width: 520px;
-		max-height: 80vh;
+		max-height: 92dvh;
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
 		box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15);
+		overflow: hidden;
+	}
+
+	.modal-body {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		flex: 1;
+		min-height: 0;
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		-webkit-overflow-scrolling: touch;
+		padding-bottom: 4px;
+	}
+
+	.modal-footer {
+		flex-shrink: 0;
+		padding: 4px 0 calc(14px + env(safe-area-inset-bottom));
+		background: var(--white);
+		border-top: 1px solid var(--border);
 	}
 
 	.modal-head {
