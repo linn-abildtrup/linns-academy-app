@@ -1011,9 +1011,21 @@
 				{/if}
 			</div>
 
-			<button class="primary-knap" type="button" onclick={aabnPicker}>
-				+ Tilføj fødevare
-			</button>
+			<div class="tilfoej-rad">
+				<button class="primary-knap tilfoej-knap" type="button" onclick={aabnPicker}>
+					+ Tilføj fødevare
+				</button>
+				<button
+					class="scan-knap-direkte"
+					type="button"
+					onclick={aabnScanner}
+					disabled={scannerArbejder}
+					aria-label="Scan stregkode"
+					title="Scan stregkode"
+				>
+					<Icon name="barcode" size={20} color="#fff" />
+				</button>
+			</div>
 
 			{#if redigererFavorit}
 				{#if redigerBesked}
@@ -1455,26 +1467,9 @@
 					{/each}
 				</div>
 				<div class="picker-footer">
-					<button
-						class="scan-banner"
-						type="button"
-						onclick={aabnScanner}
-						disabled={scannerArbejder}
-					>
-						<span class="scan-banner-ikon">
-							<Icon name="barcode" size={26} color="#fff" />
-						</span>
-						<span class="scan-banner-tekst">
-							<span class="scan-banner-titel">
-								{scannerArbejder ? 'Henter produkt...' : 'Scan stregkode'}
-							</span>
-							<span class="scan-banner-sub">Kan ikke finde fødevaren? Scan emballagen</span>
-						</span>
-						<Icon name="chevron-r" size={16} color="rgba(255,255,255,0.7)" />
-					</button>
 					<button class="manuel-link" type="button" onclick={aabnTilfoejManuel}>
 						<Icon name="plus" size={12} color="var(--terra)" />
-						Eller tilføj manuelt
+						Tilføj fødevare manuelt
 					</button>
 				</div>
 			</div>
@@ -2245,13 +2240,45 @@
 
 	.picker-footer {
 		flex-shrink: 0;
-		padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+		padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
 		display: flex;
-		flex-direction: column;
-		gap: 6px;
+		justify-content: center;
 		background: var(--white);
 		border-top: 1px solid var(--border);
 		margin-top: 4px;
+	}
+
+	.tilfoej-rad {
+		display: flex;
+		gap: 8px;
+		align-items: stretch;
+	}
+
+	.tilfoej-knap {
+		flex: 1;
+	}
+
+	.scan-knap-direkte {
+		width: 56px;
+		flex-shrink: 0;
+		border-radius: 12px;
+		background: linear-gradient(135deg, var(--terra) 0%, #a06b60 100%);
+		border: none;
+		color: #fff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		box-shadow: 0 4px 12px rgba(184, 123, 110, 0.3);
+	}
+
+	.scan-knap-direkte:active {
+		transform: scale(0.97);
+	}
+
+	.scan-knap-direkte:disabled {
+		opacity: 0.7;
+		cursor: wait;
 	}
 
 	.scan-banner {
