@@ -286,6 +286,17 @@
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
 
+		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/beskeder">
+			<div class="indhold-icon" style="background: #5C7A8C;">
+				<Icon name="mail" size={16} color="#fff" />
+			</div>
+			<div class="indhold-tekst">
+				<div class="indhold-navn">Beskeder</div>
+				<div class="indhold-sub">Spørgsmål fra klienter på dette forløb</div>
+			</div>
+			<Icon name="chevron-r" size={14} color="var(--text3)" />
+		</a>
+
 		<div class="form-card">
 			<div class="form-titel">Importér emails fra Simplero</div>
 			<p class="csv-hint">
