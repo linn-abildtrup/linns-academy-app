@@ -243,13 +243,13 @@
 					{@const v = syvDageVaerdier[i]}
 					{@const pct = (v / syvDageMax) * 100}
 					{@const opfyldt = v >= dagligeMaal[aktivMetric]}
-					<div class="soejle-spalte" title="{formatVal(aktivMetric, v)}">
+					{@const harData = v > 0}
+					<div class="soejle-spalte" title={formatVal(aktivMetric, v)}>
+						<div class="soejle-tal" class:synlig={harData} class:opfyldt>
+							{aktivMetric === 'kcal' ? Math.round(v) : (Math.round(v * 10) / 10)}
+						</div>
 						<div class="soejle-baar">
-							<div
-								class="soejle-fyld"
-								class:opfyldt
-								style:height="{pct}%"
-							></div>
+							<div class="soejle-fyld" class:opfyldt style:height="{pct}%"></div>
 						</div>
 						<div class="soejle-dag">{dagNum(d)}</div>
 						<div class="soejle-uge">{ugedagKort(d)}</div>
@@ -451,6 +451,24 @@
 		gap: 4px;
 		height: 100%;
 		justify-content: end;
+	}
+
+	.soejle-tal {
+		font-family: var(--ff-d);
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--terra);
+		line-height: 1;
+		opacity: 0;
+		min-height: 12px;
+	}
+
+	.soejle-tal.synlig {
+		opacity: 1;
+	}
+
+	.soejle-tal.opfyldt {
+		color: var(--sage, #6f9e7e);
 	}
 
 	.soejle-baar {

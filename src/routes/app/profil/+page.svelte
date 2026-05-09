@@ -329,7 +329,7 @@
 				<p class="naering-mal-sub">Bruges som reference på dagbogen og udviklings-siden.</p>
 				<div class="naering-mal-grid">
 					{#each NAERINGSFELTER as felt (felt)}
-						<label class="naering-felt">
+						<label class="naering-felt" class:fuld={felt === 'kcal'}>
 							<span class="naering-felt-lbl">{NAERING_LABELS[felt]}</span>
 							<div class="naering-felt-rad">
 								<input
@@ -766,6 +766,10 @@
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
+	}
+
+	.naering-felt.fuld {
+		grid-column: 1 / -1;
 	}
 
 	.naering-felt-lbl {
