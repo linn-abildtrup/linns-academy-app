@@ -1,17 +1,73 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
+	import { getContext, onMount } from 'svelte';
 	import { signOut } from 'firebase/auth';
 	import { auth } from '$lib/firebase';
 	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import { getKoebForUser, formatUdlobsdato } from '$lib/content/koeb';
+	import type { TrainingProgram, UserProduct } from '$lib/content/mikrotraening';
+	import {
+		gemProgramValg,
+		hentForlobsProgrammer,
+		hentUserProduct
+	} from '$lib/firestore/mikrotraening';
+	import Icon, { type IconName } from '$lib/components/Icon.svelte';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
+
+	// Mikrotræning-program-valg
+	let mtProgrammer = $state<TrainingProgram[]>([]);
+	let valgtMtProgramId = $state<string | null>(null);
+	let mtIndlaeser = $state(false);
+	let mtFejl = $state<string | null>(null);
+	let mtGemmer = $state<string | null>(null);
+
+	function ikonForUdstyr(udstyr: string[]): IconName {
+		if (udstyr.includes('kettlebell')) return 'flame';
+		if (udstyr.includes('haandvaegte')) return 'flame';
+		if (udstyr.includes('elastik')) return 'leaf';
+		return 'leaf';
+	}
+
+	onMount(async () => {
+		const u = user;
+		if (!u) return;
+		mtIndlaeser = true;
+		try {
+			const up = await hentUserProduct(u.uid, 'kickstart');
+			if (!up) return;
+			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+			if (!forlobId) return;
+			const alle = await hentForlobsProgrammer(forlobId);
+			mtProgrammer = alle.filter((p) => p.aktiv);
+			valgtMtProgramId = up.programValg?.mikrotraening ?? null;
+		} catch (e) {
+			console.error('Kunne ikke hente mikrotræning-programmer:', e);
+		} finally {
+			mtIndlaeser = false;
+		}
+	});
+
+	async function vaelgMtProgram(programId: string) {
+		const u = user;
+		if (!u || mtGemmer || valgtMtProgramId === programId) return;
+		mtGemmer = programId;
+		mtFejl = null;
+		try {
+			await gemProgramValg(u.uid, 'kickstart', 'mikrotraening', programId);
+			valgtMtProgramId = programId;
+		} catch (e) {
+			console.error(e);
+			mtFejl = 'Kunne ikke skifte program. Prøv igen.';
+		} finally {
+			mtGemmer = null;
+		}
+	}
 
 	const initial = $derived((userDoc?.firstName ?? '?').charAt(0).toUpperCase());
 
@@ -93,6 +149,53 @@
 					</li>
 				{/each}
 			</ul>
+		</section>
+	{/if}
+
+	{#if mtProgrammer.length > 0}
+		<section class="sektion">
+			<h2 class="sektion-titel">Mikrotræning — program</h2>
+			<p class="sektion-sub">
+				Vælg om du træner med eller uden udstyr. Dit program opdateres med det samme.
+			</p>
+			{#if mtFejl}
+				<div class="status-besked fejl">{mtFejl}</div>
+			{/if}
+			<div class="program-liste">
+				{#each mtProgrammer as p (p.id)}
+					{@const aktiv = valgtMtProgramId === p.id}
+					{@const gemmerDenne = mtGemmer === p.id}
+					<button
+						class="program-knap"
+						class:aktiv
+						type="button"
+						onclick={() => vaelgMtProgram(p.id)}
+						disabled={mtGemmer !== null}
+					>
+						<span class="program-ikon" class:aktiv>
+							<Icon name={ikonForUdstyr(p.udstyr)} size={18} />
+						</span>
+						<span class="program-tekst">
+							<span class="program-navn">{p.navn}</span>
+							{#if p.beskrivelse}
+								<span class="program-sub">{p.beskrivelse}</span>
+							{/if}
+						</span>
+						<span class="program-status">
+							{#if gemmerDenne}
+								<span class="program-gemmer">Gemmer...</span>
+							{:else if aktiv}
+								<Icon name="check" size={18} color="var(--sage, #6f9e7e)" />
+							{/if}
+						</span>
+					</button>
+				{/each}
+			</div>
+		</section>
+	{:else if mtIndlaeser}
+		<section class="sektion">
+			<h2 class="sektion-titel">Mikrotræning — program</h2>
+			<div class="status-besked">Henter dine programvalg...</div>
 		</section>
 	{/if}
 
@@ -242,6 +345,116 @@
 	.badge-laeseadgang {
 		background: #f1ede8;
 		color: #8a7480;
+	}
+
+	.sektion-sub {
+		font-size: 12px;
+		color: var(--text3);
+		margin: 0 4px 10px;
+		line-height: 1.5;
+	}
+
+	.status-besked {
+		padding: 12px 14px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		font-size: 13px;
+		color: var(--text2);
+		text-align: center;
+	}
+
+	.status-besked.fejl {
+		color: #8a4a3e;
+		background: #fbeeea;
+		border-color: #f0d6cf;
+		margin-bottom: 8px;
+	}
+
+	.program-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.program-knap {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 14px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		cursor: pointer;
+		font-family: var(--ff-b);
+		text-align: left;
+		transition:
+			border-color 0.15s ease,
+			background 0.15s ease;
+	}
+
+	.program-knap:hover:not(:disabled) {
+		border-color: var(--terra);
+	}
+
+	.program-knap.aktiv {
+		border-color: var(--sage, #6f9e7e);
+		background: var(--sdim, #f0f5f1);
+	}
+
+	.program-knap:disabled {
+		cursor: not-allowed;
+		opacity: 0.7;
+	}
+
+	.program-ikon {
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		background: var(--bg2);
+		color: var(--terra);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.program-ikon.aktiv {
+		background: var(--white);
+		color: var(--sage, #6f9e7e);
+	}
+
+	.program-tekst {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.program-navn {
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--text);
+	}
+
+	.program-sub {
+		font-size: 12px;
+		color: var(--text3);
+		margin-top: 2px;
+	}
+
+	.program-status {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 24px;
+	}
+
+	.program-gemmer {
+		font-size: 11px;
+		color: var(--terra);
+		font-weight: 500;
 	}
 
 	.hjaelp {
