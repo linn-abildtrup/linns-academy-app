@@ -4,8 +4,11 @@
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { MikrotraeningFremgang, UserProduct } from '$lib/content/mikrotraening';
+	import type { Forlob } from '$lib/content/forlobAdgang';
 	import { naesteDag, beregnProgramFremgang } from '$lib/content/mikrotraening';
+	import { getCurrentDay } from '$lib/content/forlob';
 	import { hentForlobsProgram, hentUserProduct, type ProgramMedDage } from '$lib/firestore/mikrotraening';
+	import { hentForlob } from '$lib/firestore/forlob';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -16,6 +19,7 @@
 
 	let userProduct = $state<UserProduct | null>(null);
 	let programData = $state<ProgramMedDage | null>(null);
+	let forlob = $state<Forlob | null>(null);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
@@ -30,6 +34,15 @@
 	const dageTilbage = $derived(antalDage - dageKlaret);
 	const fremgangProcent = $derived(beregnProgramFremgang(fremgang, antalDage));
 	const naeste = $derived(naesteDag(fremgang, antalDage));
+
+	// Kalenderbaseret aktiv-dag fra forløbets startDato — bruges til at låse
+	// fremtidige dage i dag-griddet så klienter ikke kan starte træning før
+	// dens dato er nået.
+	const aktivKalenderDag = $derived.by<number | null>(() => {
+		if (!forlob) return null;
+		const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
+		return getCurrentDay({ startDato, antalDage: forlob.antalDage });
+	});
 
 	onMount(async () => {
 		const u = user;
@@ -61,13 +74,17 @@
 				return;
 			}
 
-			const data = await hentForlobsProgram(forlobId, programId);
+			const [data, f] = await Promise.all([
+				hentForlobsProgram(forlobId, programId),
+				hentForlob(forlobId)
+			]);
 			if (!data) {
 				fejl = 'Programmet kunne ikke findes.';
 				loading = false;
 				return;
 			}
 			programData = data;
+			forlob = f;
 		} catch (e) {
 			fejl = 'Kunne ikke hente data. Prøv igen.';
 			console.error(e);
@@ -76,8 +93,10 @@
 		}
 	});
 
-	function dagStatus(dagNummer: number): 'klaret' | 'naeste' | 'kommer' {
+	function dagStatus(dagNummer: number): 'klaret' | 'naeste' | 'kommer' | 'fremtid' {
 		if (fremgang.gennemforte.includes(dagNummer)) return 'klaret';
+		// Dage hvis kalenderdato endnu ikke er nået er låst
+		if (aktivKalenderDag !== null && dagNummer > aktivKalenderDag) return 'fremtid';
 		if (dagNummer === naeste) return 'naeste';
 		return 'kommer';
 	}
@@ -127,12 +146,18 @@
 			<div class="dage-grid">
 				{#each programData.dage as dag (dag.dagNummer)}
 					{@const status = dagStatus(dag.dagNummer)}
-					<a class="dag dag-{status}" href="/app/moduler/traening/mikrotraening/{dag.dagNummer}">
-						<span class="dag-num">{dag.dagNummer}</span>
-						{#if status === 'klaret'}
-							<Icon name="check" size={11} color="#fff" />
-						{/if}
-					</a>
+					{#if status === 'fremtid'}
+						<span class="dag dag-{status}" aria-disabled="true" title="Låst — dagen er endnu ikke nået">
+							<span class="dag-num">{dag.dagNummer}</span>
+						</span>
+					{:else}
+						<a class="dag dag-{status}" href="/app/moduler/traening/mikrotraening/{dag.dagNummer}">
+							<span class="dag-num">{dag.dagNummer}</span>
+							{#if status === 'klaret'}
+								<Icon name="check" size={11} color="#fff" />
+							{/if}
+						</a>
+					{/if}
 				{/each}
 			</div>
 		</section>
@@ -334,6 +359,18 @@
 		background: #6f9e7e;
 		color: #fff;
 		border-color: #6f9e7e;
+	}
+
+	.dag-fremtid {
+		background: var(--bg2);
+		color: var(--text4);
+		border-color: var(--border);
+		opacity: 0.55;
+		cursor: not-allowed;
+	}
+
+	.dag-fremtid:active {
+		transform: none;
 	}
 
 	.dag-num {
