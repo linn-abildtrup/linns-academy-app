@@ -1378,21 +1378,32 @@
 					<div class="modal-titel">
 						{erstatterIndex !== null ? 'Erstat med fødevare' : 'Vælg fødevare'}
 					</div>
-					<button class="modal-luk" type="button" onclick={lukPicker} aria-label="Luk">
-						×
-					</button>
+					<div class="modal-head-knapper">
+						<button
+							class="head-ikon"
+							type="button"
+							onclick={aabnScanner}
+							disabled={scannerArbejder}
+							aria-label="Scan stregkode"
+							title="Scan stregkode"
+						>
+							<Icon name="search" size={16} color="var(--terra)" />
+						</button>
+						<button
+							class="head-ikon"
+							type="button"
+							onclick={aabnTilfoejManuel}
+							aria-label="Tilføj manuelt"
+							title="Tilføj manuelt"
+						>
+							<Icon name="plus" size={16} color="var(--terra)" />
+						</button>
+						<button class="modal-luk" type="button" onclick={lukPicker} aria-label="Luk">
+							×
+						</button>
+					</div>
 				</div>
 				<input type="search" class="search" placeholder="Søg..." bind:value={pickerSoeg} />
-				<div class="picker-actions">
-					<button class="picker-action" type="button" onclick={aabnScanner} disabled={scannerArbejder}>
-						<Icon name="search" size={14} color="var(--terra)" />
-						{scannerArbejder ? 'Henter...' : 'Scan stregkode'}
-					</button>
-					<button class="picker-action" type="button" onclick={aabnTilfoejManuel}>
-						<Icon name="plus" size={14} color="var(--terra)" />
-						Tilføj manuelt
-					</button>
-				</div>
 				<div class="chips">
 					{#each aktiveKategorier as cat (cat)}
 						<button
@@ -2230,31 +2241,29 @@
 		font-weight: 600;
 	}
 
-	.picker-actions {
+	.modal-head-knapper {
 		display: flex;
-		gap: 8px;
-		margin-bottom: 10px;
+		align-items: center;
+		gap: 6px;
+		flex-shrink: 0;
 	}
 
-	.picker-action {
-		flex: 1;
-		display: inline-flex;
+	.head-ikon {
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		background: var(--tdim);
+		border: 1px solid var(--tdim2);
+		color: var(--terra);
+		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 6px;
-		padding: 9px 12px;
-		font-size: 12.5px;
-		font-weight: 500;
-		font-family: var(--ff-b);
-		border-radius: 10px;
-		background: var(--tdim);
-		color: var(--terra);
-		border: 1px solid var(--tdim2);
 		cursor: pointer;
 	}
 
-	.picker-action:disabled {
+	.head-ikon:disabled {
 		opacity: 0.6;
+		cursor: wait;
 	}
 
 	.picker-row-wrap {
