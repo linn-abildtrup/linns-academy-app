@@ -23,6 +23,73 @@
 	let duration = $state(0);
 	let fejl = $state<string | null>(null);
 
+	// Persistens-nøgle pr lyd-URL. Bruges til at huske hvor brugeren slap
+	// så afspilning kan genoptages efter pause, lukning, app-skift eller
+	// låst skærm.
+	const POS_KEY = $derived(`la_audio_pos:${url}`);
+
+	function gemPosition() {
+		if (typeof localStorage === 'undefined' || !audio) return;
+		const t = audio.currentTime;
+		if (!Number.isFinite(t) || t < 1) return;
+		try {
+			localStorage.setItem(POS_KEY, String(t));
+		} catch {
+			// ignore
+		}
+	}
+
+	function rydPosition() {
+		if (typeof localStorage === 'undefined') return;
+		try {
+			localStorage.removeItem(POS_KEY);
+		} catch {
+			// ignore
+		}
+	}
+
+	function genoptagPosition() {
+		if (typeof localStorage === 'undefined' || !audio) return;
+		try {
+			const stored = localStorage.getItem(POS_KEY);
+			if (!stored) return;
+			const t = parseFloat(stored);
+			// Kun genoptag hvis vi er mindst 5 sek fra slutningen, så vi
+			// ikke lander på det allersidste øjeblik af lyden.
+			if (Number.isFinite(t) && t > 0 && (!audio.duration || t < audio.duration - 5)) {
+				audio.currentTime = t;
+				currentTime = t;
+			}
+		} catch {
+			// ignore
+		}
+	}
+
+	function setupMediaSession() {
+		if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+		try {
+			navigator.mediaSession.metadata = new MediaMetadata({
+				title: titel,
+				artist: sub || "Linn's Academy",
+				album: kategori
+			});
+			navigator.mediaSession.setActionHandler('play', () => {
+				audio?.play().catch(() => {});
+			});
+			navigator.mediaSession.setActionHandler('pause', () => audio?.pause());
+			navigator.mediaSession.setActionHandler('seekbackward', () => spool(-15));
+			navigator.mediaSession.setActionHandler('seekforward', () => spool(15));
+		} catch {
+			// ignore — ikke alle browsere understøtter alle handlers
+		}
+	}
+
+	function onVisibilityChange() {
+		if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+			gemPosition();
+		}
+	}
+
 	function portalToBody(node: HTMLElement) {
 		document.body.appendChild(node);
 		return {
@@ -37,15 +104,29 @@
 	onMount(() => {
 		const original = document.body.style.overflow;
 		document.body.style.overflow = 'hidden';
+		document.addEventListener('visibilitychange', onVisibilityChange);
+		window.addEventListener('pagehide', gemPosition);
+		setupMediaSession();
 		return () => {
 			document.body.style.overflow = original;
+			document.removeEventListener('visibilitychange', onVisibilityChange);
+			window.removeEventListener('pagehide', gemPosition);
 		};
 	});
 
 	onDestroy(() => {
+		gemPosition();
 		if (typeof document !== 'undefined') {
 			document.body.style.overflow = '';
 		}
+	});
+
+	// Gem løbende mens lyden spiller, så vi har en frisk position selv
+	// hvis appen bliver dræbt af systemet uden at fyre cleanup-events.
+	$effect(() => {
+		if (!playing) return;
+		const id = setInterval(gemPosition, 3000);
+		return () => clearInterval(id);
 	});
 
 	function toggle() {
@@ -92,11 +173,21 @@
 		autoplay
 		preload="metadata"
 		onplay={() => (playing = true)}
-		onpause={() => (playing = false)}
+		onpause={() => {
+			playing = false;
+			gemPosition();
+		}}
 		ontimeupdate={() => audio && (currentTime = audio.currentTime)}
-		onloadedmetadata={() => audio && (duration = audio.duration)}
+		onloadedmetadata={() => {
+			if (!audio) return;
+			duration = audio.duration;
+			genoptagPosition();
+		}}
 		ondurationchange={() => audio && (duration = audio.duration)}
-		onended={() => (playing = false)}
+		onended={() => {
+			playing = false;
+			rydPosition();
+		}}
 		onerror={() => (fejl = 'Kunne ikke indlæse lyden.')}
 	>
 		Din browser kan ikke afspille lyd.
