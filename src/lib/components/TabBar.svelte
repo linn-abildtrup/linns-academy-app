@@ -5,6 +5,8 @@
 	import Icon, { type IconName } from '$lib/components/Icon.svelte';
 	import type { UserDoc } from '$lib/types';
 	import { isAdmin } from '$lib/admin';
+	import { gemAdminKlientMode, ryAdminKlientMode } from '$lib/userDoc';
+	import AdminKlientVaelger from '$lib/components/AdminKlientVaelger.svelte';
 
 	type UserState = 'forlobskunde' | 'modulbruger' | 'udlobet';
 
@@ -12,7 +14,8 @@
 		id: string;
 		label: string;
 		icon: IconName;
-		href: string;
+		href?: string;
+		onAction?: () => void;
 		dot?: boolean;
 		lockedFor?: UserState[];
 	};
@@ -23,7 +26,59 @@
 	const user = $derived(getUser?.());
 
 	const erAdmin = $derived(isAdmin(user ?? null));
-	const beskederHref = $derived(erAdmin ? '/app/admin/spoergsmaal' : '/app/beskeder');
+	const erIKlientMode = $derived(!!userDoc?.adminKlientForlobId);
+	const beskederHref = $derived(
+		erAdmin && !erIKlientMode ? '/app/admin/spoergsmaal' : '/app/beskeder'
+	);
+
+	let viserKlientVaelger = $state(false);
+
+	async function aabnKlientVaelger() {
+		viserKlientVaelger = true;
+	}
+
+	async function vaelgKlientForlob(forlobId: string) {
+		const u = user;
+		if (!u) return;
+		try {
+			await gemAdminKlientMode(u.uid, forlobId);
+		} catch (e) {
+			console.error('Kunne ikke skifte til klient-mode:', e);
+		} finally {
+			viserKlientVaelger = false;
+		}
+	}
+
+	async function tilbageTilAdmin() {
+		const u = user;
+		if (!u) return;
+		try {
+			await ryAdminKlientMode(u.uid);
+		} catch (e) {
+			console.error('Kunne ikke skifte tilbage til admin:', e);
+		}
+	}
+
+	// Admin har en ekstra knap der toggler mellem admin-mode og klient-mode.
+	// Når Linn er i klient-mode, hedder knappen 'Admin' og fører tilbage.
+	// Når hun er i admin-mode, hedder den 'Klient' og åbner forløbs-vælgeren.
+	const adminToggle = $derived<NavItem | null>(
+		erAdmin
+			? erIKlientMode
+				? {
+						id: 'tilbage-admin',
+						label: 'Admin',
+						icon: 'settings' as IconName,
+						onAction: tilbageTilAdmin
+					}
+				: {
+						id: 'skift-klient',
+						label: 'Klient',
+						icon: 'user' as IconName,
+						onAction: aabnKlientVaelger
+					}
+			: null
+	);
 
 	const NAV_ITEMS = $derived<NavItem[]>([
 		{ id: 'home', label: 'Forside', icon: 'home', href: '/app' },
@@ -43,20 +98,12 @@
 			dot: true,
 			lockedFor: ['udlobet']
 		},
-		...(isAdmin(user ?? null)
-			? [
-					{
-						id: 'admin' as const,
-						label: 'Admin',
-						icon: 'settings' as IconName,
-						href: '/app/admin'
-					}
-				]
-			: []),
+		...(adminToggle ? [adminToggle] : []),
 		{ id: 'profil', label: 'Profil', icon: 'user', href: '/app/profil' }
 	]);
 
 	function isActive(item: NavItem, pathname: string): boolean {
+		if (!item.href) return false;
 		if (item.href === '/app') {
 			return pathname === '/app' || pathname === '/app/';
 		}
@@ -89,7 +136,14 @@
 				</span>
 				<span class="label">{item.label}</span>
 			</span>
-		{:else}
+		{:else if item.onAction}
+			<button class="tab tab-action" type="button" onclick={item.onAction}>
+				<span class="icon-wrap">
+					<Icon name={item.icon} size={20} />
+				</span>
+				<span class="label">{item.label}</span>
+			</button>
+		{:else if item.href}
 			<a
 				href={item.href}
 				class="tab"
@@ -110,6 +164,14 @@
 		{/if}
 	{/each}
 </nav>
+
+{#if viserKlientVaelger}
+	<AdminKlientVaelger
+		aktivtForlobId={userDoc?.adminKlientForlobId}
+		onVaelg={vaelgKlientForlob}
+		onClose={() => (viserKlientVaelger = false)}
+	/>
+{/if}
 
 <style>
 	.tabbar {
@@ -136,6 +198,11 @@
 
 	.tab.active {
 		color: var(--terra);
+	}
+
+	.tab-action {
+		font-family: inherit;
+		cursor: pointer;
 	}
 
 	.tab-locked {

@@ -37,6 +37,25 @@ export async function gemBrugerProfilOgMaal(
 }
 
 /**
+ * Sætter admin-klient-mode for en bestemt forløbsId. Mens feltet er sat
+ * opfører appen sig som om admin var klient på forløbet.
+ */
+export async function gemAdminKlientMode(uid: string, forlobId: string): Promise<void> {
+	await updateDoc(doc(db, 'users', uid), { adminKlientForlobId: forlobId });
+}
+
+/**
+ * Skifter tilbage til admin-mode ved at fjerne adminKlientForlobId.
+ * Bruger 'deleteField' så feltet ikke står tilbage som null/undefined.
+ */
+export async function ryAdminKlientMode(uid: string): Promise<void> {
+	const { deleteField } = await import('firebase/firestore');
+	await updateDoc(doc(db, 'users', uid), {
+		adminKlientForlobId: deleteField()
+	});
+}
+
+/**
  * Henter bruger-dokumentet fra Firestore.
  * Returnerer null hvis dokumentet ikke findes.
  */

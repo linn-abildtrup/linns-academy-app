@@ -63,4 +63,13 @@ export interface UserDoc {
 	// Snapshot af det input klienten gav til 'Beregn mine mål'-wizarden.
 	// Bruges til at pre-udfylde wizarden næste gang den åbnes.
 	brugerProfil?: BrugerProfil;
+
+	// Når admin (Linn) bruger 'Skift til klient'-knappen lander dette
+	// felt på hendes egen userDoc. Mens det er sat, scope'r alle
+	// klient-data-helpers (måltider, vaner, mikrotræning-fremgang osv.)
+	// deres læs/skriv-operationer til 'users/{uid}/adminKlient/{forlobId}/...'
+	// så Linns admin-data ikke blandes sammen med klient-test-data.
+	// Felt er KUN aktivt for admin-emails — det giver ingen mening for
+	// almindelige klienter.
+	adminKlientForlobId?: string;
 }

@@ -14,6 +14,8 @@
 	import Header from '$lib/components/Header.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import Logo from '$lib/components/Logo.svelte';
+	import AdminKlientBanner from '$lib/components/AdminKlientBanner.svelte';
+	import { ryAdminKlientMode } from '$lib/userDoc';
 
 	let { children } = $props();
 
@@ -24,6 +26,19 @@
 	// Gør userDoc tilgængeligt for alle undersider via Svelte context
 	setContext('userDoc', () => userDoc);
 	setContext('user', () => user);
+	// Eksponér adminKlientForlobId så firestore-helpers kan scope deres
+	// læs/skriv-paths. Returnerer null når admin er i normal admin-mode
+	// eller når brugeren er en almindelig klient.
+	setContext('adminKlientForlobId', () => userDoc?.adminKlientForlobId ?? null);
+
+	async function afslutKlientMode() {
+		if (!user) return;
+		try {
+			await ryAdminKlientMode(user.uid);
+		} catch (e) {
+			console.error('Kunne ikke afslutte klient-mode:', e);
+		}
+	}
 
 	onMount(() => {
 		let userDocUnsubscribe: (() => void) | null = null;
@@ -85,6 +100,9 @@
 	</div>
 {:else}
 	<div class="app-shell">
+		{#if userDoc?.adminKlientForlobId}
+			<AdminKlientBanner forlobId={userDoc.adminKlientForlobId} onAfslut={afslutKlientMode} />
+		{/if}
 		<Header />
 		<main class="content">
 			{@render children()}
