@@ -1,11 +1,33 @@
 /**
- * Brugertilstand i Firestore.
+ * @deprecated Erstattes af accessLevel/accessSource/activeProduct. Beholdes
+ * indtil etape 2 hvor alle 12 kald-steder er refactoreret. Læs adgangs-
+ * status via helpers i $lib/utils/userAdgang.
  *
  * 'modulbruger' = abonnent der ikke er på et aktivt forløb (ser variant B)
  * 'forlobskunde' = bruger på et aktivt forløb (ser variant A1)
  * 'udlobet' = tidligere kunde uden aktiv adgang (ser variant C)
  */
 export type UserState = 'modulbruger' | 'forlobskunde' | 'udlobet';
+
+/**
+ * Adgangs-niveauet bestemmer hvilket app-indhold brugeren ser.
+ * Drives af de fire produkter i Simplero — basis dækker basis-app-niveauet
+ * og premium dækker premium-app-niveauet (mere indhold).
+ */
+export type AccessLevel = 'none' | 'basis' | 'premium';
+
+/**
+ * Hvor adgangen er kommet fra — bestemmer hvilken UI-variant brugeren ser
+ * på forsiden (forløbskunder ser A1-layout med strip og dagens lektion,
+ * abonnenter ser B-layout med modul-grid).
+ */
+export type AccessSource = 'abonnement' | 'forløb';
+
+/**
+ * Det specifikke produkt brugeren har købt. Sat fra Simplero-webhook
+ * baseret på hvilket tag der blev tilføjet.
+ */
+export type ActiveProduct = 'kickstart' | 'premiumforløb' | 'basisabo' | 'premiumabo';
 
 /**
  * Bruger-dokumentet i Firestore-collection 'users'.
@@ -45,8 +67,53 @@ export interface BrugerProfil {
 export interface UserDoc {
 	firstName: string;
 	email: string;
+
+	/**
+	 * @deprecated Læses via helpers i $lib/utils/userAdgang i stedet.
+	 * Beholdt for backwards compat indtil de 12 kald-steder er refactoreret.
+	 * Migrationen sætter dette automatisk fra accessLevel/accessSource.
+	 */
 	state: UserState;
+
 	createdAt: number; // Unix timestamp i millisekunder
+
+	// ============================================================
+	// Adgangs-model (drevet af Simplero-køb)
+	// ============================================================
+
+	/** Niveau af app-indhold brugeren har adgang til. */
+	accessLevel?: AccessLevel;
+
+	/** Hvor adgangen kommer fra — bestemmer UI-variant. */
+	accessSource?: AccessSource;
+
+	/** Det specifikke Simplero-produkt der gav adgangen. */
+	activeProduct?: ActiveProduct;
+
+	/** True hvis adgangen er et løbende abonnement (modsat engangs-forløbskøb). */
+	activeSubscription?: boolean;
+
+	/** Hvornår adgangen udløber — null for løbende abonnement uden slutdato. */
+	expiresAt?: number | null;
+
+	/**
+	 * Hvornår bonus-perioden efter et forløb slutter. Sat når et forløbskøb
+	 * registreres. Når denne dato er passeret bør accessLevel sættes til 'none'
+	 * medmindre brugeren har tegnet abonnement i mellemtiden.
+	 */
+	bonusPeriodEndsAt?: number | null;
+
+	/**
+	 * True hvis brugeren skal tilbydes specialtilbud (fx SK8-under-2-flow).
+	 * Sættes manuelt eller via Simplero-tag.
+	 */
+	specialOffer?: boolean;
+
+	/** Simplero customer-id til at koble adgangen til den ydre betalingskonto. */
+	simpleroCustomerId?: string;
+
+	/** Hvornår adgangsfelterne sidst blev opdateret af webhook eller migration. */
+	updatedAt?: number;
 
 	// Senest tidspunkt brugeren åbnede /app/spoergsmaal og så sine svar.
 	// Bruges til at detektere ubeskrevne svar (svar.besvaretAt > dette).
