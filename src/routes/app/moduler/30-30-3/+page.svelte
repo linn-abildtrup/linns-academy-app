@@ -60,6 +60,20 @@
 		type ValgteOpskrifter
 	} from '$lib/content/indkoebsliste';
 
+	// Flytter overlay-elementet til document.body så det kommer ud af
+	// app-shellens stacking context (.app-shell har overflow: hidden) og
+	// lægger sig oven på Header og TabBar uanset side-scroll.
+	function portalToBody(node: HTMLElement) {
+		document.body.appendChild(node);
+		return {
+			destroy() {
+				if (node.parentNode === document.body) {
+					document.body.removeChild(node);
+				}
+			}
+		};
+	}
+
 	const STORAGE_KEY = 'la_30303_maaltid_v1';
 
 	type Tab = 'opslag' | 'maaltid' | 'opskrifter' | 'dagbog';
@@ -1085,6 +1099,7 @@
 			class="modal-bag"
 			role="dialog"
 			aria-modal="true"
+			use:portalToBody
 			onclick={(e) => {
 				if (e.target === e.currentTarget) lukGemModal();
 			}}
@@ -1169,6 +1184,7 @@
 			class="modal-bag"
 			role="dialog"
 			aria-modal="true"
+			use:portalToBody
 			onclick={(e) => {
 				if (e.target === e.currentTarget) lukPicker();
 			}}
