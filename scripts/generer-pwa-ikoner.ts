@@ -26,12 +26,16 @@ const playfair = opentype.parse(
 	readFileSync(join(FONT_DIR, 'PlayfairDisplay-Italic.ttf')).buffer
 );
 
-function linnsPath(centerX: number, baselineY: number, fontSize: number): string {
-	// Bygger pathen glyph-for-glyph i stedet for at kalde getPath på hele
+function linnsPaths(centerX: number, baselineY: number, fontSize: number): string[] {
+	// Bygger glyph-for-glyph i stedet for at kalde getPath på hele
 	// strengen. Det omgår en bug i opentype.js hvor moderne OpenType-
 	// features (lookupType 6 substFormat 2 i Playfair v40) crasher
 	// stringToGlyphs. Glyph-by-glyph bruger ikke text-shaping, så vi
 	// undgår fejlen helt.
+	//
+	// Vi returnerer hver glyph som sin egen path-streng. Hvis de
+	// sammenkædes til én <path>, mister librsvg de senere subpaths —
+	// derfor renderes hver glyph som et separat <path>-element.
 	const text = "Linn's";
 	const scale = fontSize / playfair.unitsPerEm;
 	let advance = 0;
@@ -47,7 +51,7 @@ function linnsPath(centerX: number, baselineY: number, fontSize: number): string
 		const p = glyph.getPath(startX + x, baselineY, fontSize);
 		parts.push(p.toPathData(2));
 	}
-	return parts.join(' ');
+	return parts;
 }
 
 /**
@@ -65,25 +69,30 @@ function symbol(size: number, maskerable = false): string {
 	const safeX = size * padPct;
 	const safeY = size * padPct;
 
-	// "Linn's" — fontstørrelse skaleres til ca. 38% af safe-zone
-	const linnsFontSize = Math.round(safe * 0.38);
-	const linnsY = safeY + safe * 0.4;
+	// "Linn's" — fontstørrelse skaleres så ordet selv er ca. 32% af safe-zone
+	const linnsFontSize = Math.round(safe * 0.32);
+	const linnsY = safeY + safe * 0.42;
 
-	// ∞-tegnet — original viewBox er 540x140, skala det så bredden bliver
-	// ca. 76% af safe-zone og det centreres under "Linn's"
-	const infWidth = safe * 0.76;
-	const infHeight = (infWidth * 140) / 540;
-	const infX = safeX + (safe - infWidth) / 2;
-	const infY = safeY + safe * 0.55;
-	// Stroke skaleres med størrelsen så hairline forbliver synligt
-	const stroke = Math.max(1.4, size * 0.005);
+	// ∞-tegnet — original SVG har viewBox 540x140 men det synlige mærke
+	// fylder kun x=110..430 (= 59% af viewBox-bredden). For at få det
+	// synlige tegn til at fylde størstedelen af canvasen sigter vi mod
+	// 80% synlig bredde og scaler viewBox-bredden derefter.
+	const synligRatio = (430 - 110) / 540; // ≈ 0.593
+	const synligMaalBredde = size * 0.8;
+	const infWidth = synligMaalBredde / synligRatio;
+	const infX = size / 2 - infWidth / 2;
+	const infY = safeY + safe * 0.62;
+	// Stroke matcher hairline-ratio fra lockup C8 (1.8 / 280 = ca. 0.64%)
+	// målt på den synlige bredde — så ∞ forbliver visuelt let.
+	const stroke = synligMaalBredde * 0.0064;
 
-	const linnsD = linnsPath(size / 2, linnsY, linnsFontSize);
+	const linnsGlyphs = linnsPaths(size / 2, linnsY, linnsFontSize);
+	const linnsSvg = linnsGlyphs.map((d) => `<path d="${d}" fill="${TEXT}"/>`).join('\n  ');
 
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <rect width="${size}" height="${size}" fill="${CREME}"/>
-  <path d="${linnsD}" fill="${TEXT}"/>
+  ${linnsSvg}
   <g transform="translate(${infX}, ${infY}) scale(${infWidth / 540})">
     <path d="M 110 70 C 110 30, 200 30, 270 70 C 340 110, 430 110, 430 70 C 430 30, 340 30, 270 70 C 200 110, 110 110, 110 70 Z"
           fill="none"
