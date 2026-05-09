@@ -25,7 +25,13 @@ interface SimpleroPayload {
 	type?: string;
 	data?: {
 		customer?: { email?: string; id?: string | number };
-		product?: { id?: string | number; title?: string };
+		product?: { id?: string | number; title?: string; name?: string };
+		purchase?: {
+			id?: string | number;
+			product_id?: string | number;
+			customer_email?: string;
+			customer_id?: string | number;
+		};
 		subscription?: { id?: string | number };
 		[key: string]: unknown;
 	};
@@ -39,17 +45,26 @@ function uddragEvent(payload: SimpleroPayload): string {
 }
 
 function uddragEmail(payload: SimpleroPayload): string | null {
-	const e = payload.data?.customer?.email ?? payload.customer?.email;
+	const e =
+		payload.data?.customer?.email ??
+		payload.data?.purchase?.customer_email ??
+		payload.customer?.email;
 	return e ? e.toLowerCase().trim() : null;
 }
 
 function uddragProduktId(payload: SimpleroPayload): string | null {
-	const id = payload.data?.product?.id ?? payload.product?.id;
+	const id =
+		payload.data?.product?.id ??
+		payload.data?.purchase?.product_id ??
+		payload.product?.id;
 	return id ? String(id) : null;
 }
 
 function uddragKundeId(payload: SimpleroPayload): string | null {
-	const id = payload.data?.customer?.id ?? payload.customer?.id;
+	const id =
+		payload.data?.customer?.id ??
+		payload.data?.purchase?.customer_id ??
+		payload.customer?.id;
 	return id ? String(id) : null;
 }
 
