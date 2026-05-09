@@ -5,6 +5,7 @@
 	// vi tegner egne kontroller (play/pause, ±15s, progress).
 	import { onDestroy, onMount } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import Logo from '$lib/components/Logo.svelte';
 
 	interface Props {
 		url: string;
@@ -117,16 +118,7 @@
 		<div class="ring ring-2" aria-hidden="true"></div>
 		<div class="ring ring-1" aria-hidden="true"></div>
 		<div class="cirkel">
-			<svg class="logo-mark" viewBox="0 0 540 140" aria-hidden="true">
-				<path
-					d="M 110 70 C 110 30, 200 30, 270 70 C 340 110, 430 110, 430 70 C 430 30, 340 30, 270 70 C 200 110, 110 110, 110 70 Z"
-					fill="none"
-					stroke="var(--terra)"
-					stroke-width="4"
-					stroke-linejoin="round"
-					stroke-linecap="round"
-				/>
-			</svg>
+			<Logo size="sm" />
 		</div>
 	</div>
 
@@ -255,19 +247,19 @@
 	}
 
 	.ring-1 {
-		width: 180px;
-		height: 180px;
+		width: 210px;
+		height: 210px;
 	}
 
 	.ring-2 {
-		width: 240px;
-		height: 240px;
+		width: 270px;
+		height: 270px;
 		opacity: 0.6;
 	}
 
 	.ring-3 {
-		width: 300px;
-		height: 300px;
+		width: 330px;
+		height: 330px;
 		opacity: 0.35;
 	}
 
@@ -299,8 +291,8 @@
 	}
 
 	.cirkel {
-		width: 120px;
-		height: 120px;
+		width: 150px;
+		height: 150px;
 		border-radius: 50%;
 		background: rgba(255, 255, 255, 0.95);
 		display: flex;
@@ -309,12 +301,6 @@
 		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
 		position: relative;
 		z-index: 2;
-	}
-
-	.logo-mark {
-		width: 80px;
-		height: 30px;
-		display: block;
 	}
 
 	.info {
