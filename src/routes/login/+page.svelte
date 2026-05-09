@@ -11,6 +11,7 @@
 	import { createUserDoc } from '$lib/userDoc';
 	import Button from '$lib/components/Button.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import Logo from '$lib/components/Logo.svelte';
 
 	type View = 'welcome' | 'login' | 'signup';
 
@@ -74,13 +75,8 @@
 	{:else if view === 'welcome'}
 		<div class="welcome">
 			<div class="welcome-top">
-				<div class="badge">
-					<Icon name="flower" size={36} color="var(--terra)" filled />
-				</div>
-				<div class="title-block">
-					<h1 class="title">Linn's<br />Academy</h1>
-					<p class="tagline">Et roligt rum til mikrotræning, refleksion og kvinders sundhed.</p>
-				</div>
+				<Logo size="lg" />
+				<p class="tagline">Et roligt rum til mikrotræning, refleksion og kvinders sundhed.</p>
 			</div>
 
 			<div class="welcome-actions">
@@ -173,33 +169,6 @@
 		align-items: center;
 		text-align: center;
 		gap: 18px;
-	}
-
-	.badge {
-		width: 72px;
-		height: 72px;
-		border-radius: 50%;
-		background: var(--white);
-		border: 1px solid var(--border);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.title-block {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-
-	.title {
-		font-family: var(--ff-d);
-		font-size: 34px;
-		font-weight: 700;
-		color: var(--text);
-		letter-spacing: -0.02em;
-		line-height: 1.05;
-		margin: 0;
 	}
 
 	.tagline {

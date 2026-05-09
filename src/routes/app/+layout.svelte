@@ -13,6 +13,7 @@
 	import TabBar from '$lib/components/TabBar.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import Logo from '$lib/components/Logo.svelte';
 
 	let { children } = $props();
 
@@ -79,6 +80,7 @@
 
 {#if loading}
 	<div class="loading-screen">
+		<Logo size="lg" />
 		<Loading tekst="Et øjeblik..." />
 	</div>
 {:else}
@@ -97,8 +99,10 @@
 	.loading-screen {
 		min-height: 100dvh;
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
+		gap: 32px;
 		background: var(--bg);
 	}
 

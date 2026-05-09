@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import Logo from '$lib/components/Logo.svelte';
 
 	function getModuleName(pathname: string): string {
 		if (pathname.startsWith('/app/admin/forlob')) return 'ADMIN — FORLØB';
@@ -25,10 +26,7 @@
 
 <header class="app-header">
 	<a class="brand" href="/app" aria-label="Tilbage til forsiden">
-		<div class="brand-row">
-			<span class="brand-possessive">Linn's</span>
-			<span class="brand-title">Academy</span>
-		</div>
+		<Logo size="sm" />
 		{#if moduleName}
 			<span class="brand-module">{moduleName}</span>
 		{/if}
@@ -49,42 +47,20 @@
 	.brand {
 		display: inline-flex;
 		flex-direction: column;
+		align-items: flex-start;
 		line-height: 1;
 		text-decoration: none;
 		color: inherit;
-	}
-
-	.brand-row {
-		display: inline-flex;
-		align-items: baseline;
-		gap: 6px;
-	}
-
-	.brand-possessive {
-		font-family: var(--ff-d);
-		font-style: italic;
-		font-size: 16px;
-		color: var(--terra);
-		letter-spacing: 0.04em;
-	}
-
-	.brand-title {
-		font-family: var(--ff-d);
-		font-size: 16px;
-		font-weight: 700;
-		color: var(--text);
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
+		gap: 4px;
 	}
 
 	.brand-module {
-		font-family: var(--ff-r);
+		font-family: var(--ff-b);
 		font-size: 9px;
 		font-weight: 600;
 		color: var(--terra);
 		letter-spacing: 0.22em;
 		text-transform: uppercase;
-		margin-top: 4px;
 		opacity: 0.85;
 	}
 </style>
