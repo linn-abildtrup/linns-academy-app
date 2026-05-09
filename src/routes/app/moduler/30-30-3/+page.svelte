@@ -1378,31 +1378,31 @@
 					<div class="modal-titel">
 						{erstatterIndex !== null ? 'Erstat med fødevare' : 'Vælg fødevare'}
 					</div>
-					<div class="modal-head-knapper">
-						<button
-							class="head-ikon"
-							type="button"
-							onclick={aabnScanner}
-							disabled={scannerArbejder}
-							aria-label="Scan stregkode"
-							title="Scan stregkode"
-						>
-							<Icon name="search" size={16} color="var(--terra)" />
-						</button>
-						<button
-							class="head-ikon"
-							type="button"
-							onclick={aabnTilfoejManuel}
-							aria-label="Tilføj manuelt"
-							title="Tilføj manuelt"
-						>
-							<Icon name="plus" size={16} color="var(--terra)" />
-						</button>
-						<button class="modal-luk" type="button" onclick={lukPicker} aria-label="Luk">
-							×
-						</button>
-					</div>
+					<button class="modal-luk" type="button" onclick={lukPicker} aria-label="Luk">
+						×
+					</button>
 				</div>
+				<button
+					class="scan-banner"
+					type="button"
+					onclick={aabnScanner}
+					disabled={scannerArbejder}
+				>
+					<span class="scan-banner-ikon">
+						<Icon name="barcode" size={26} color="#fff" />
+					</span>
+					<span class="scan-banner-tekst">
+						<span class="scan-banner-titel">
+							{scannerArbejder ? 'Henter produkt...' : 'Scan stregkode'}
+						</span>
+						<span class="scan-banner-sub">Kan ikke finde fødevaren? Scan emballagen</span>
+					</span>
+					<Icon name="chevron-r" size={16} color="rgba(255,255,255,0.7)" />
+				</button>
+				<button class="manuel-link" type="button" onclick={aabnTilfoejManuel}>
+					<Icon name="plus" size={12} color="var(--terra)" />
+					Eller tilføj manuelt
+				</button>
 				<input type="search" class="search" placeholder="Søg..." bind:value={pickerSoeg} />
 				<div class="chips">
 					{#each aktiveKategorier as cat (cat)}
@@ -2241,29 +2241,82 @@
 		font-weight: 600;
 	}
 
-	.modal-head-knapper {
+	.scan-banner {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: 12px;
+		width: 100%;
+		padding: 14px 16px;
+		background: linear-gradient(135deg, var(--terra) 0%, #a06b60 100%);
+		border: none;
+		border-radius: 14px;
+		color: #fff;
+		text-align: left;
+		cursor: pointer;
+		font-family: var(--ff-b);
 		flex-shrink: 0;
+		box-shadow: 0 4px 12px rgba(184, 123, 110, 0.25);
 	}
 
-	.head-ikon {
-		width: 32px;
-		height: 32px;
-		border-radius: 50%;
-		background: var(--tdim);
-		border: 1px solid var(--tdim2);
-		color: var(--terra);
+	.scan-banner:active {
+		transform: scale(0.99);
+	}
+
+	.scan-banner:disabled {
+		opacity: 0.7;
+		cursor: wait;
+	}
+
+	.scan-banner-ikon {
+		width: 44px;
+		height: 44px;
+		border-radius: 12px;
+		background: rgba(255, 255, 255, 0.2);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		cursor: pointer;
+		flex-shrink: 0;
 	}
 
-	.head-ikon:disabled {
-		opacity: 0.6;
-		cursor: wait;
+	.scan-banner-tekst {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		gap: 2px;
+	}
+
+	.scan-banner-titel {
+		font-size: 15px;
+		font-weight: 600;
+		letter-spacing: -0.005em;
+	}
+
+	.scan-banner-sub {
+		font-size: 11.5px;
+		color: rgba(255, 255, 255, 0.82);
+		line-height: 1.3;
+	}
+
+	.manuel-link {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+		align-self: center;
+		padding: 6px 12px;
+		font-size: 12px;
+		font-weight: 500;
+		font-family: var(--ff-b);
+		color: var(--terra);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		flex-shrink: 0;
+	}
+
+	.manuel-link:hover {
+		text-decoration: underline;
 	}
 
 	.picker-row-wrap {

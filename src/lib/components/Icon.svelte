@@ -36,7 +36,8 @@
 		| 'lightning'
 		| 'unlock'
 		| 'kettlebell'
-		| 'stretch';
+		| 'stretch'
+		| 'barcode';
 </script>
 
 <script lang="ts">
@@ -172,5 +173,12 @@
 		<path d="M12 6.5v7" />
 		<path d="M6 10l6-1.5 6 1.5" />
 		<path d="M9 20l3-6.5 3 6.5" />
+	{:else if name === 'barcode'}
+		<rect x="3.5" y="5" width="1.4" height="14" fill={color} stroke="none" />
+		<rect x="6" y="5" width="2.4" height="14" fill={color} stroke="none" />
+		<rect x="9.5" y="5" width="1.4" height="14" fill={color} stroke="none" />
+		<rect x="12" y="5" width="1.4" height="14" fill={color} stroke="none" />
+		<rect x="14.5" y="5" width="2.8" height="14" fill={color} stroke="none" />
+		<rect x="18.5" y="5" width="1.4" height="14" fill={color} stroke="none" />
 	{/if}
 </svg>
