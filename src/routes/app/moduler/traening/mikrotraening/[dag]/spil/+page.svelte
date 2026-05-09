@@ -72,6 +72,7 @@
 	let programId = $state<string | null>(null);
 	let resumet = $state(false);
 	let traeningGennemfort = $state(false);
+	let fuldskaerm = $state(false);
 
 	const dag = $derived<TrainingDay | null>(
 		programData?.dage.find((d) => d.dagNummer === dagNummer) ?? null
@@ -236,6 +237,22 @@
 		}
 		document.removeEventListener('visibilitychange', onVisibilityChange);
 		releaseWakeLock();
+		if (typeof document !== 'undefined') {
+			document.body.classList.remove('html-fullscreen-aktiv');
+		}
+	});
+
+	function toggleFuldskaerm() {
+		fuldskaerm = !fuldskaerm;
+	}
+
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+		if (fuldskaerm) {
+			document.body.classList.add('html-fullscreen-aktiv');
+		} else {
+			document.body.classList.remove('html-fullscreen-aktiv');
+		}
 	});
 
 	$effect(() => {
@@ -687,13 +704,13 @@
 			</div>
 		{/if}
 	{:else if dag && aktuelOvelse && aktuelExercise}
-		{#if resumet}
+		{#if resumet && !fuldskaerm}
 			<div class="resume-banner">
 				<span>Du fortsætter hvor du slap.</span>
 				<button class="resume-link" type="button" onclick={startForfra}>Start forfra</button>
 			</div>
 		{/if}
-		<div class="video-omraade" class:hviler={phase === 'rest'}>
+		<div class="video-omraade" class:hviler={phase === 'rest'} class:fuldskaerm>
 			{#if aktuelOvelse.bonus}
 				<div class="bonus-ribbon">Bonus</div>
 			{/if}
@@ -737,6 +754,39 @@
 			{/if}
 
 			<div class="fase-badge">{faseLabel}</div>
+
+			{#if fuldskaerm}
+				<div class="navn-overlay">
+					<div class="navn-overlay-titel">{aktuelExercise.name}</div>
+					<div class="navn-overlay-meta">
+						Øvelse {ei + 1} / {exercises.length} · Sæt {si} / {aktuelOvelse.sets}
+					</div>
+				</div>
+			{/if}
+
+			<button
+				class="fs-knap"
+				type="button"
+				onclick={toggleFuldskaerm}
+				aria-label={fuldskaerm ? 'Forlad fuldskærm' : 'Vis i fuldskærm'}
+				aria-pressed={fuldskaerm}
+			>
+				{#if fuldskaerm}
+					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M9 4H4v5"></path>
+						<path d="M15 4h5v5"></path>
+						<path d="M4 15v5h5"></path>
+						<path d="M20 15v5h-5"></path>
+					</svg>
+				{:else}
+					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M3 9V3h6"></path>
+						<path d="M21 9V3h-6"></path>
+						<path d="M3 15v6h6"></path>
+						<path d="M21 15v6h-6"></path>
+					</svg>
+				{/if}
+			</button>
 
 			<div class="toggle-stak">
 				<button
@@ -860,22 +910,34 @@
 			{/if}
 		</div>
 
-		<div class="info-omraade">
-			<div class="info-navn">{aktuelExercise.name}</div>
-			<div class="info-meta">
-				Øvelse {ei + 1} / {exercises.length} · Sæt {si} / {aktuelOvelse.sets}
+		{#if !fuldskaerm}
+			<div class="info-omraade">
+				<div class="info-navn">{aktuelExercise.name}</div>
+				<div class="info-meta">
+					Øvelse {ei + 1} / {exercises.length} · Sæt {si} / {aktuelOvelse.sets}
+				</div>
+				{#if aktuelExercise.desc}
+					<div class="info-desc">{aktuelExercise.desc}</div>
+				{/if}
 			</div>
-			{#if aktuelExercise.desc}
-				<div class="info-desc">{aktuelExercise.desc}</div>
-			{/if}
-		</div>
 
-		<div class="ctrl-rad">
-			<button class="ctrl stop" type="button" onclick={stopOgForlad}>Stop</button>
-			<button class="ctrl primary" type="button" onclick={togglePause}>
-				{paused ? 'Fortsæt' : 'Pause'}
+			<div class="ctrl-rad">
+				<button class="ctrl stop" type="button" onclick={stopOgForlad}>Stop</button>
+				<button class="ctrl primary" type="button" onclick={togglePause}>
+					{paused ? 'Fortsæt' : 'Pause'}
+				</button>
+			</div>
+
+			<button class="fs-bund-knap" type="button" onclick={toggleFuldskaerm}>
+				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M3 9V3h6"></path>
+					<path d="M21 9V3h-6"></path>
+					<path d="M3 15v6h6"></path>
+					<path d="M21 15v6h-6"></path>
+				</svg>
+				Fuldskærm
 			</button>
-		</div>
+		{/if}
 	{/if}
 </div>
 
@@ -1029,6 +1091,95 @@
 		flex-direction: column;
 		gap: 8px;
 		z-index: 4;
+	}
+
+	.fs-knap {
+		position: absolute;
+		top: 14px;
+		right: 14px;
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		background: rgba(0, 0, 0, 0.45);
+		backdrop-filter: blur(6px);
+		border: none;
+		color: #fff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		padding: 0;
+		z-index: 5;
+	}
+
+	.fs-knap:hover {
+		background: rgba(0, 0, 0, 0.6);
+	}
+
+	.navn-overlay {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 14px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
+		text-align: center;
+		padding: 0 80px;
+		z-index: 3;
+		pointer-events: none;
+	}
+
+	.navn-overlay-titel {
+		font-family: var(--ff-d);
+		font-size: 22px;
+		font-weight: 600;
+		color: #fff;
+		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+		line-height: 1.2;
+	}
+
+	.navn-overlay-meta {
+		font-size: 12px;
+		font-weight: 500;
+		color: rgba(255, 255, 255, 0.85);
+		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+		letter-spacing: 0.04em;
+	}
+
+	.fs-bund-knap {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		justify-content: center;
+		padding: 11px 16px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		color: var(--text2);
+		font-size: 13px;
+		font-weight: 500;
+		border-radius: 12px;
+		cursor: pointer;
+		font-family: var(--ff-b);
+		align-self: stretch;
+	}
+
+	.fs-bund-knap:hover {
+		border-color: var(--terra);
+		color: var(--terra);
+	}
+
+	.video-omraade.fuldskaerm {
+		position: fixed;
+		inset: 0;
+		z-index: 100;
+		aspect-ratio: auto;
+		border-radius: 0;
+	}
+
+	.video-omraade.fuldskaerm .hovedvideo {
+		object-fit: contain;
 	}
 
 	.rund-knap {
