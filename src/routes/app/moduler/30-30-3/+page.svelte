@@ -333,6 +333,17 @@
 		}
 	});
 
+	// Lås bagvedliggende side-scroll mens en modal er åben, så iPhone ikke
+	// scroller forsiden under dialogen. IndkoebsListeOverlay låser selv.
+	$effect(() => {
+		if (!viserGemModal && !viserPicker) return;
+		const original = document.body.style.overflow;
+		document.body.style.overflow = 'hidden';
+		return () => {
+			document.body.style.overflow = original;
+		};
+	});
+
 	function tilfoejTilMaaltid(food: Fodevare) {
 		const standardEnhed = food.units?.[0]?.u;
 		if (erstatterIndex !== null) {
@@ -1854,7 +1865,7 @@
 	.modal {
 		background: var(--white);
 		border-radius: 18px 18px 0 0;
-		padding: 14px 18px 24px;
+		padding: 14px 18px calc(24px + env(safe-area-inset-bottom));
 		width: 100%;
 		max-width: 520px;
 		max-height: 80vh;
@@ -1862,6 +1873,9 @@
 		flex-direction: column;
 		gap: 10px;
 		box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.modal-head {
