@@ -9,9 +9,6 @@
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const userDoc = $derived(getUserDoc?.() ?? null);
 
-	const erForside = $derived(
-		page.url.pathname === '/app' || page.url.pathname === '/app/'
-	);
 	const greeting = $derived(getGreetingWithName(userDoc?.firstName ?? ''));
 	const today = $derived(formatDato(new Date()));
 
@@ -44,7 +41,7 @@
 			<span class="brand-module">{moduleName}</span>
 		{/if}
 	</a>
-	{#if erForside && userDoc?.firstName}
+	{#if userDoc?.firstName}
 		<span class="divider" aria-hidden="true"></span>
 		<div class="header-hilsen">
 			<div class="date-label">{today}</div>
