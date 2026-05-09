@@ -20,7 +20,21 @@ import { gemDocMerge, hentDocsHvorFeltLig } from '$lib/server/firestoreRest';
 import { findProduktAdgang } from '$lib/simplero/produktMapping';
 import { udledState } from '$lib/utils/userAdgang';
 
+// Simperos faktiske format er fladt — alle felter ligger på top-level. Event-
+// typen udledes af state + canceled_at + refunded_at. Det "test-format" jeg
+// brugte i de første unit-tests (med data.customer.xxx) bevares som fallback
+// så de gamle tests stadig virker.
 interface SimpleroPayload {
+	// Simperos rigtige format (flat)
+	object_type?: string;
+	state?: string;
+	email?: string;
+	product_id?: string | number;
+	customer_id?: string | number;
+	canceled_at?: string | null;
+	refunded_at?: string | null;
+	period_ends_at?: string | null;
+	// Test-format (legacy)
 	event?: string;
 	type?: string;
 	data?: {
@@ -32,28 +46,40 @@ interface SimpleroPayload {
 			customer_email?: string;
 			customer_id?: string | number;
 		};
-		subscription?: { id?: string | number };
 		[key: string]: unknown;
 	};
 	customer?: { email?: string; id?: string | number };
 	product?: { id?: string | number; title?: string };
+	purchase?: { email?: string; product_id?: string | number };
 	[key: string]: unknown;
 }
 
 function uddragEvent(payload: SimpleroPayload): string {
-	return (payload.event ?? payload.type ?? 'unknown').toString();
+	// Test-format har eksplicit event/type
+	if (payload.event) return String(payload.event);
+	if (payload.type) return String(payload.type);
+	// Simperos format: udled af state + felter
+	if (payload.refunded_at) return 'purchase.refunded';
+	if (payload.canceled_at || payload.state === 'canceled') return 'purchase.cancelled';
+	if (payload.object_type === 'Purchase' && payload.state === 'paid') return 'purchase.paid';
+	if (payload.object_type) return String(payload.object_type).toLowerCase();
+	return 'unknown';
 }
 
 function uddragEmail(payload: SimpleroPayload): string | null {
 	const e =
+		payload.email ??
+		payload.purchase?.email ??
 		payload.data?.customer?.email ??
 		payload.data?.purchase?.customer_email ??
 		payload.customer?.email;
-	return e ? e.toLowerCase().trim() : null;
+	return e ? String(e).toLowerCase().trim() : null;
 }
 
 function uddragProduktId(payload: SimpleroPayload): string | null {
 	const id =
+		payload.product_id ??
+		payload.purchase?.product_id ??
 		payload.data?.product?.id ??
 		payload.data?.purchase?.product_id ??
 		payload.product?.id;
@@ -62,6 +88,7 @@ function uddragProduktId(payload: SimpleroPayload): string | null {
 
 function uddragKundeId(payload: SimpleroPayload): string | null {
 	const id =
+		payload.customer_id ??
 		payload.data?.customer?.id ??
 		payload.data?.purchase?.customer_id ??
 		payload.customer?.id;
