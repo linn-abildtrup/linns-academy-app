@@ -22,6 +22,7 @@ import {
 import { db } from '$lib/firebase';
 
 export type SpoergsmaalStatus = 'ny' | 'laest' | 'besvaret' | 'brugt';
+export type SpoergsmaalKundeType = 'forlobskunde' | 'modulbruger' | 'udlobet';
 
 export interface KlientSpoergsmaal {
 	id: string;
@@ -32,32 +33,52 @@ export interface KlientSpoergsmaal {
 	oprettet: Timestamp;
 	svar?: string;
 	besvaretAt?: Timestamp;
+
+	// Kontekst-felter — fastfryses ved oprettelse, ændres ikke senere
+	// selvom kunden flytter til et nyt forløb. Det betyder Linn altid kan
+	// se hvilket forløb spørgsmålet kom fra.
+	forlobId?: string;
+	forlobNavn?: string;
+	kundeType?: SpoergsmaalKundeType;
 }
 
 export const SPOERGSMAAL_MAX_LAENGDE = 500;
 
+interface NytSpoergsmaalKontekst {
+	uid: string;
+	email: string;
+	spoergsmaal: string;
+	forlobId?: string;
+	forlobNavn?: string;
+	kundeType?: SpoergsmaalKundeType;
+}
+
 /**
  * Gemmer et nyt klientspørgsmål. Returnerer id'et for det oprettede dokument.
  * Trimmer whitespace og afviser tomme spørgsmål.
+ *
+ * `forlobId`/`forlobNavn`/`kundeType` fastfryses i dokumentet så Linn senere
+ * kan filtrere pr forløb selvom kunden flyttes til et nyt forløb bagefter.
  */
-export async function gemSpoergsmaal(
-	uid: string,
-	email: string,
-	spoergsmaal: string
-): Promise<string> {
-	const trimmet = spoergsmaal.trim();
+export async function gemSpoergsmaal(kontekst: NytSpoergsmaalKontekst): Promise<string> {
+	const trimmet = kontekst.spoergsmaal.trim();
 	if (!trimmet) throw new Error('Spørgsmål må ikke være tomt');
 	if (trimmet.length > SPOERGSMAAL_MAX_LAENGDE) {
 		throw new Error(`Spørgsmål må højst være ${SPOERGSMAAL_MAX_LAENGDE} tegn`);
 	}
 
-	const ref = await addDoc(collection(db, 'klientspoergsmaal'), {
-		uid,
-		email,
+	const data: Record<string, unknown> = {
+		uid: kontekst.uid,
+		email: kontekst.email,
 		spoergsmaal: trimmet,
 		status: 'ny' as SpoergsmaalStatus,
 		oprettet: serverTimestamp()
-	});
+	};
+	if (kontekst.forlobId) data.forlobId = kontekst.forlobId;
+	if (kontekst.forlobNavn) data.forlobNavn = kontekst.forlobNavn;
+	if (kontekst.kundeType) data.kundeType = kontekst.kundeType;
+
+	const ref = await addDoc(collection(db, 'klientspoergsmaal'), data);
 	return ref.id;
 }
 
@@ -80,7 +101,12 @@ export async function hentAlleSpoergsmaal(): Promise<KlientSpoergsmaal[]> {
 			email: data.email ?? '',
 			spoergsmaal: data.spoergsmaal ?? '',
 			status: (data.status as SpoergsmaalStatus) ?? 'ny',
-			oprettet: data.oprettet
+			oprettet: data.oprettet,
+			svar: data.svar ?? undefined,
+			besvaretAt: data.besvaretAt ?? undefined,
+			forlobId: data.forlobId ?? undefined,
+			forlobNavn: data.forlobNavn ?? undefined,
+			kundeType: (data.kundeType as SpoergsmaalKundeType | undefined) ?? undefined
 		};
 	});
 }
@@ -149,7 +175,10 @@ export async function hentMineSpoergsmaal(uid: string): Promise<KlientSpoergsmaa
 			status: (data.status as SpoergsmaalStatus) ?? 'ny',
 			oprettet: data.oprettet,
 			svar: data.svar ?? undefined,
-			besvaretAt: data.besvaretAt ?? undefined
+			besvaretAt: data.besvaretAt ?? undefined,
+			forlobId: data.forlobId ?? undefined,
+			forlobNavn: data.forlobNavn ?? undefined,
+			kundeType: (data.kundeType as SpoergsmaalKundeType | undefined) ?? undefined
 		};
 	});
 	items.sort((a, b) => {

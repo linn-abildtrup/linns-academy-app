@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
+	import { getContext, onMount } from 'svelte';
 	import type { User } from 'firebase/auth';
-	import type { UserDoc } from '$lib/types';
+	import type { UserDoc, UserState } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import {
 		gemSpoergsmaal,
@@ -10,11 +10,35 @@
 		SPOERGSMAAL_MAX_LAENGDE,
 		type KlientSpoergsmaal
 	} from '$lib/firestore/spoergsmaal';
+	import { hentUserProduct } from '$lib/firestore/mikrotraening';
+	import { hentForlob } from '$lib/firestore/forlob';
+	import type { UserProduct } from '$lib/content/mikrotraening';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
+
+	// Forløbskontekst — fastfryses på spørgsmål når brugeren sender, så
+	// admin kan filtrere pr forløb selv hvis kunden senere flytter.
+	let aktivtForlobId = $state<string | null>(null);
+	let aktivtForlobNavn = $state<string | null>(null);
+
+	onMount(async () => {
+		const u = user;
+		if (!u) return;
+		try {
+			const up = await hentUserProduct(u.uid, 'kickstart');
+			if (!up) return;
+			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+			if (!forlobId) return;
+			aktivtForlobId = forlobId;
+			const f = await hentForlob(forlobId);
+			aktivtForlobNavn = f?.navn ?? null;
+		} catch (e) {
+			console.warn('Kunne ikke hente forløbskontekst:', e);
+		}
+	});
 
 	let tekst = $state('');
 	let gemmer = $state(false);
@@ -42,7 +66,14 @@
 		gemmer = true;
 		try {
 			const email = user.email ?? userDoc?.email ?? '';
-			await gemSpoergsmaal(user.uid, email, tekst);
+			await gemSpoergsmaal({
+				uid: user.uid,
+				email,
+				spoergsmaal: tekst,
+				forlobId: aktivtForlobId ?? undefined,
+				forlobNavn: aktivtForlobNavn ?? undefined,
+				kundeType: (userDoc?.state as UserState | undefined) ?? undefined
+			});
 			tekst = '';
 			kvittering = true;
 			void genindlaesMine();

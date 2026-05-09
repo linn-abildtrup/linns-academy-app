@@ -29,6 +29,8 @@
 
 	let alle = $state<KlientSpoergsmaal[]>([]);
 	let aktivtFilter = $state<Filter>('alle');
+	// Forløbs-filter: 'alle' (alt), 'modulbrugere', 'uden-forlob' eller et forlobId
+	let aktivtForlobFilter = $state<string>('alle');
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let toast = $state<string | null>(null);
@@ -38,9 +40,88 @@
 	let svarSender = $state<string | null>(null);
 	let aabenSvarId = $state<string | null>(null);
 
+	function passerForlobFilter(q: KlientSpoergsmaal): boolean {
+		if (aktivtForlobFilter === 'alle') return true;
+		if (aktivtForlobFilter === 'modulbrugere') return q.kundeType === 'modulbruger';
+		if (aktivtForlobFilter === 'uden-forlob') return !q.forlobId;
+		return q.forlobId === aktivtForlobFilter;
+	}
+
 	const filtreret = $derived(
-		aktivtFilter === 'alle' ? alle : alle.filter((q) => q.status === aktivtFilter)
+		alle.filter(passerForlobFilter).filter((q) =>
+			aktivtFilter === 'alle' ? true : q.status === aktivtFilter
+		)
 	);
+
+	// Forløbs-grupper til dropdown-filter med antal og ubesvarede.
+	// Bygges ud fra spørgsmålenes forlobId/forlobNavn-felter (snapshot ved
+	// oprettelse), så et forløb der havde spørgsmål før vises selvom det
+	// senere er slettet.
+	type Gruppe = { value: string; label: string; antal: number; ubesvaret: number };
+	const forlobsGrupper = $derived.by<Gruppe[]>(() => {
+		const map = new Map<string, { navn: string; antal: number; ubesvaret: number }>();
+		let modulAntal = 0;
+		let modulUbesvaret = 0;
+		let udenAntal = 0;
+		let udenUbesvaret = 0;
+		for (const q of alle) {
+			const ubesvaret = !q.svar ? 1 : 0;
+			if (q.forlobId) {
+				const eks = map.get(q.forlobId);
+				if (eks) {
+					eks.antal += 1;
+					eks.ubesvaret += ubesvaret;
+				} else {
+					map.set(q.forlobId, {
+						navn: q.forlobNavn ?? q.forlobId,
+						antal: 1,
+						ubesvaret
+					});
+				}
+			} else if (q.kundeType === 'modulbruger') {
+				modulAntal += 1;
+				modulUbesvaret += ubesvaret;
+			} else {
+				udenAntal += 1;
+				udenUbesvaret += ubesvaret;
+			}
+		}
+		const grupper: Gruppe[] = [
+			{
+				value: 'alle',
+				label: `Alle (${alle.length}, ${alle.filter((q) => !q.svar).length} ubesvarede)`,
+				antal: alle.length,
+				ubesvaret: alle.filter((q) => !q.svar).length
+			}
+		];
+		for (const [id, info] of [...map.entries()].sort((a, b) =>
+			a[1].navn.localeCompare(b[1].navn, 'da')
+		)) {
+			grupper.push({
+				value: id,
+				label: `${info.navn} (${info.antal}, ${info.ubesvaret} ubesvarede)`,
+				antal: info.antal,
+				ubesvaret: info.ubesvaret
+			});
+		}
+		if (modulAntal > 0) {
+			grupper.push({
+				value: 'modulbrugere',
+				label: `Modulbrugere (${modulAntal}, ${modulUbesvaret} ubesvarede)`,
+				antal: modulAntal,
+				ubesvaret: modulUbesvaret
+			});
+		}
+		if (udenAntal > 0) {
+			grupper.push({
+				value: 'uden-forlob',
+				label: `Uden forløb (${udenAntal}, ${udenUbesvaret} ubesvarede)`,
+				antal: udenAntal,
+				ubesvaret: udenUbesvaret
+			});
+		}
+		return grupper;
+	});
 
 	async function genindlaes() {
 		loading = true;
@@ -194,6 +275,14 @@
 	</header>
 
 	<section class="filter-card">
+		<label class="forlob-filter">
+			<span class="forlob-filter-label">Forløb</span>
+			<select bind:value={aktivtForlobFilter}>
+				{#each forlobsGrupper as g (g.value)}
+					<option value={g.value}>{g.label}</option>
+				{/each}
+			</select>
+		</label>
 		<div class="filter-rad">
 			{#each FILTRE as f (f.id)}
 				<button
@@ -231,6 +320,13 @@
 						<span class="spq-email">{q.email || 'ukendt'}</span>
 						<span>·</span>
 						<span>{formaterDato(q.oprettet)}</span>
+						{#if q.forlobNavn}
+							<span>·</span>
+							<span class="spq-forlob">{q.forlobNavn}</span>
+						{:else if q.kundeType === 'modulbruger'}
+							<span>·</span>
+							<span class="spq-forlob">Modulbruger</span>
+						{/if}
 					</div>
 					<div class="spq-tekst">{q.spoergsmaal}</div>
 
@@ -373,6 +469,47 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
+	}
+
+	.forlob-filter {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.forlob-filter-label {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.forlob-filter select {
+		padding: 10px 12px;
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: var(--bg2);
+		color: var(--text);
+		outline: none;
+		cursor: pointer;
+	}
+
+	.forlob-filter select:focus {
+		border-color: var(--terra);
+	}
+
+	.spq-forlob {
+		display: inline-block;
+		padding: 1px 8px;
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		background: var(--tdim);
+		color: var(--terra);
+		border-radius: 99px;
 	}
 
 	.filter-rad {
