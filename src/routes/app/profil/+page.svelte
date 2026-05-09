@@ -329,7 +329,7 @@
 				<p class="naering-mal-sub">Bruges som reference på dagbogen og udviklings-siden.</p>
 				<div class="naering-mal-grid">
 					{#each NAERINGSFELTER as felt (felt)}
-						<label class="naering-felt" class:fuld={felt === 'kcal'}>
+						<label class="naering-felt">
 							<span class="naering-felt-lbl">{NAERING_LABELS[felt]}</span>
 							<div class="naering-felt-rad">
 								<input
@@ -757,34 +757,34 @@
 	}
 
 	.naering-mal-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 10px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
 	}
 
 	.naering-felt {
 		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.naering-felt.fuld {
-		grid-column: 1 / -1;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 4px 0;
 	}
 
 	.naering-felt-lbl {
-		font-size: calc(11px * var(--fs-scale, 1));
-		color: var(--text3);
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		font-weight: 500;
 	}
 
 	.naering-felt-rad {
-		display: flex;
+		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		padding: 8px 10px;
+		padding: 7px 10px;
 		background: var(--bg2);
 		border: 1px solid var(--border);
 		border-radius: 9px;
+		min-width: 110px;
 	}
 
 	.naering-felt-rad:focus-within {
@@ -792,8 +792,7 @@
 	}
 
 	.naering-felt input {
-		flex: 1;
-		min-width: 0;
+		width: 60px;
 		font-family: var(--ff-b);
 		font-size: calc(16px * var(--fs-scale, 1));
 		font-weight: 500;
@@ -801,6 +800,7 @@
 		background: transparent;
 		border: none;
 		outline: none;
+		text-align: right;
 	}
 
 	.naering-felt-enhed {
