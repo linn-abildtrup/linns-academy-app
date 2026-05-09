@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
 	import type { User } from 'firebase/auth';
-	import type { UserDoc, UserState } from '$lib/types';
+	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import {
 		gemSpoergsmaal,
@@ -13,11 +13,13 @@
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import { hentForlob } from '$lib/firestore/forlob';
 	import type { UserProduct } from '$lib/content/mikrotraening';
+	import { effektivState } from '$lib/utils/userAdgang';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
+	const userState = $derived(effektivState(userDoc));
 
 	// Forløbskontekst — fastfryses på spørgsmål når brugeren sender, så
 	// admin kan filtrere pr forløb selv hvis kunden senere flytter.
@@ -72,7 +74,7 @@
 				spoergsmaal: tekst,
 				forlobId: aktivtForlobId ?? undefined,
 				forlobNavn: aktivtForlobNavn ?? undefined,
-				kundeType: (userDoc?.state as UserState | undefined) ?? undefined
+				kundeType: userState ?? undefined
 			});
 			tekst = '';
 			kvittering = true;

@@ -3,13 +3,15 @@
 	import type { UserDoc } from '$lib/types';
 	import { getModulerForUser, type Modul } from '$lib/content/moduler';
 	import Icon from '$lib/components/Icon.svelte';
+	import { effektivState } from '$lib/utils/userAdgang';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const userDoc = $derived(getUserDoc());
+	const userState = $derived(effektivState(userDoc));
 
 	const moduler = $derived.by<Modul[]>(() => {
-		if (!userDoc) return [];
-		return getModulerForUser(userDoc.state);
+		if (!userState) return [];
+		return getModulerForUser(userState);
 	});
 
 	// Modul-id til rute. Kun moduler der har en bygget side er klikbare.
@@ -28,11 +30,11 @@
 	}
 
 	const undertekst = $derived.by(() => {
-		if (!userDoc) return '';
-		if (userDoc.state === 'forlobskunde') {
+		if (!userState) return '';
+		if (userState === 'forlobskunde') {
 			return 'Dit forløb og dine moduler samlet ét sted.';
 		}
-		if (userDoc.state === 'modulbruger') {
+		if (userState === 'modulbruger') {
 			return 'Dine moduler samlet ét sted.';
 		}
 		return 'Dit indhold med læseadgang.';

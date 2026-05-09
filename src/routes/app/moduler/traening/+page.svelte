@@ -2,6 +2,7 @@
 	import { getContext } from 'svelte';
 	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
+	import { erForlobsklient } from '$lib/utils/userAdgang';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const userDoc = $derived(getUserDoc());
@@ -26,7 +27,7 @@
 		<div class="eyebrow">Modul</div>
 		<h1>Træning</h1>
 		<p class="page-sub">
-			{#if userDoc?.state === 'forlobskunde'}
+			{#if erForlobsklient(userDoc)}
 				Dit aktive træningsprogram fra forløbet.
 			{:else}
 				Træningsprogrammer du har adgang til.

@@ -13,12 +13,14 @@
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
 	import Loading from '$lib/components/Loading.svelte';
+	import { effektivState } from '$lib/utils/userAdgang';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const getUser = getContext<() => User | null>('user');
 
 	const userDoc = $derived(getUserDoc());
 	const user = $derived(getUser());
+	const userState = $derived(effektivState(userDoc));
 
 	let forlob = $state<Forlob | null>(null);
 	let forlobsdage = $state<ForlobDag[]>([]);
@@ -340,7 +342,7 @@
 	}
 </script>
 
-{#if userDoc?.state === 'forlobskunde'}
+{#if userState === 'forlobskunde'}
 	<div class="forside-a1">
 		{#if forlob}
 			<header class="forside-header">
@@ -528,7 +530,7 @@
 
 		</div>
 	</div>
-{:else if userDoc?.state === 'modulbruger'}
+{:else if userState === 'modulbruger'}
 	<div class="forside-b1">
 		<div class="forside-body">
 			<section class="moduler-section">
@@ -585,7 +587,7 @@
 			</section>
 		</div>
 	</div>
-{:else if userDoc?.state === 'udlobet'}
+{:else if userState === 'udlobet'}
 	<div class="forside-c1">
 		<div class="forside-body">
 			<section class="c1-greeting">

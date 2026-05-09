@@ -24,14 +24,22 @@
 	let userDoc = $state<UserDoc | null>(null);
 	let loading = $state(true);
 
-	// Når admin er i klient-mode, override'r vi userDoc.state til
-	// 'forlobskunde' så klient-modulerne reagerer som om admin var klient
-	// på det valgte forløb. Den rigtige userDoc.state ændres ikke i
-	// Firestore — kun det context-objekt modulerne læser.
+	// Når admin er i klient-mode, override'r vi adgangs-felterne så
+	// klient-modulerne reagerer som om admin var klient på det valgte
+	// forløb. Den rigtige userDoc i Firestore ændres ikke — kun det
+	// context-objekt modulerne læser. Både legacy 'state' og de nye
+	// access-felter overrides så både gamle og refactor'ede callsites
+	// ser admin som forløbskunde.
 	function effektivUserDoc(d: UserDoc | null): UserDoc | null {
 		if (!d) return null;
 		if (d.adminKlientForlobId) {
-			return { ...d, state: 'forlobskunde' };
+			return {
+				...d,
+				state: 'forlobskunde',
+				accessLevel: 'basis',
+				accessSource: 'forløb',
+				activeProduct: 'kickstart'
+			};
 		}
 		return d;
 	}

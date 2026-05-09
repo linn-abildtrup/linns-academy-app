@@ -7,6 +7,7 @@
 	import { isAdmin } from '$lib/admin';
 	import { gemAdminKlientMode, ryAdminKlientMode } from '$lib/userDoc';
 	import AdminKlientVaelger from '$lib/components/AdminKlientVaelger.svelte';
+	import { effektivState } from '$lib/utils/userAdgang';
 
 	type UserState = 'forlobskunde' | 'modulbruger' | 'udlobet';
 
@@ -144,7 +145,7 @@
 		NAV_ITEMS.map((item) => ({
 			...item,
 			active: isActive(item, page.url.pathname),
-			locked: isLocked(item, userDoc?.state as UserState | undefined)
+			locked: isLocked(item, effektivState(userDoc) ?? undefined)
 		}))
 	);
 </script>

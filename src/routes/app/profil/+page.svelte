@@ -27,12 +27,14 @@
 	import { gemBrugerProfilOgMaal, gemNaeringsindstillinger } from '$lib/userDoc';
 	import type { BrugerProfil, DagligeMaal } from '$lib/types';
 	import BeregnMaalWizard from '$lib/components/BeregnMaalWizard.svelte';
+	import { effektivState } from '$lib/utils/userAdgang';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
+	const userState = $derived(effektivState(userDoc));
 
 	// Tekststørrelse
 	let aktivScale = $state<TextScale>('normal');
@@ -160,20 +162,19 @@
 	const initial = $derived((userDoc?.firstName ?? '?').charAt(0).toUpperCase());
 
 	const statusTekst = $derived.by(() => {
-		const state = userDoc?.state;
-		if (state === 'forlobskunde') {
+		if (userState === 'forlobskunde') {
 			return 'Du er på Kickstart en sund overgangsalder';
 		}
-		if (state === 'modulbruger') {
+		if (userState === 'modulbruger') {
 			return 'Du har adgang til Linn\u2019s Academy';
 		}
-		if (state === 'udlobet') {
+		if (userState === 'udlobet') {
 			return 'Din adgang er udløbet';
 		}
 		return '';
 	});
 
-	const koeb = $derived(userDoc?.state ? getKoebForUser(userDoc.state) : []);
+	const koeb = $derived(userState ? getKoebForUser(userState) : []);
 
 	async function handleLogout() {
 		try {
