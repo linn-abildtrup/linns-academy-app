@@ -5,6 +5,7 @@ import {
 	hentAllowedEmail,
 	markerAllowedEmailRegistreret
 } from '$lib/firestore/forlob';
+import { udledState } from '$lib/utils/userAdgang';
 
 /**
  * Opdaterer brugerens udvidet-næring-toggle og daglige mål. Kaldes fra
@@ -139,19 +140,27 @@ export async function createUserDoc(
 }
 
 /**
- * Synkroniserer brugerens forløbs-status mod allowedEmails-whitelisten.
+ * Synkroniserer brugerens adgang mod allowedEmails-whitelisten. Kaldes hver
+ * gang brugeren logger ind (eller første gang efter signup).
  *
- * Hvis brugerens email findes i allowedEmails:
- *   - userDoc.state sættes til 'forlobskunde'
- *   - userDoc.firstName udfyldes hvis det mangler
- *   - users/{uid}/products/kickstart oprettes/opdateres med forlobId
- *   - allowedEmails-status sættes til 'registered' hvis den var 'invited'
+ * Den håndterer to typer allowedEmails-records:
  *
- * Hvis brugerens email ikke findes på listen, gør funktionen ingenting —
- * userDoc beholder sin nuværende state (typisk 'modulbruger').
+ * 1. **Forløbs-records** (oprettet via CSV-import) har `forlobId` sat:
+ *    - userDoc.state = 'forlobskunde'
+ *    - users/{uid}/products/kickstart oprettes med forlobId
+ *    - allowedEmails-status sættes til 'registered'
  *
- * Returnerer det opdaterede userDoc-objekt (eller det oprindelige hvis
- * intet ændredes), så kalderen kan opdatere sin lokale kopi.
+ * 2. **Abonnements-records** (oprettet af Simplero-webhook) har
+ *    `accessLevel` sat:
+ *    - userDoc får accessLevel/accessSource/activeProduct/etc kopieret over
+ *    - userDoc.state synces fra accessLevel via udledState-helperen
+ *    - simpleroCustomerId gemmes så vi kan koble til Simplero ved cancel
+ *
+ * En record kan have begge dele (forløbs-køb via Simplero i fremtiden) —
+ * vi håndterer begge sæt felter i samme update så ingen data går tabt.
+ *
+ * Returnerer det opdaterede userDoc-objekt så kalderen kan opdatere sin
+ * lokale kopi.
  */
 export async function synkroniserForlobskundeStatus(
 	uid: string,
@@ -163,31 +172,57 @@ export async function synkroniserForlobskundeStatus(
 	const allowed = await hentAllowedEmail(email);
 	if (!allowed) return current;
 
-	const productRef = doc(db, 'users', uid, 'products', 'kickstart');
-	const productSnap = await getDoc(productRef);
-	if (productSnap.exists()) {
-		const data = productSnap.data() as { forlobId?: string };
-		if (data.forlobId !== allowed.forlobId) {
-			await updateDoc(productRef, { forlobId: allowed.forlobId });
+	const opdateringer: Partial<UserDoc> = {};
+
+	// Forløbs-flow: opret userProduct og sæt state hvis CSV gav os forlobId
+	if (allowed.forlobId) {
+		const productRef = doc(db, 'users', uid, 'products', 'kickstart');
+		const productSnap = await getDoc(productRef);
+		if (productSnap.exists()) {
+			const data = productSnap.data() as { forlobId?: string };
+			if (data.forlobId !== allowed.forlobId) {
+				await updateDoc(productRef, { forlobId: allowed.forlobId });
+			}
+		} else {
+			await setDoc(productRef, {
+				forlobId: allowed.forlobId,
+				koebt: new Date(),
+				startDato: new Date(),
+				udloberDato: null,
+				programValg: {},
+				fremgang: {}
+			});
 		}
-	} else {
-		await setDoc(productRef, {
-			forlobId: allowed.forlobId,
-			koebt: new Date(),
-			startDato: new Date(),
-			udloberDato: null,
-			programValg: {},
-			fremgang: {}
-		});
+		if (current.state !== 'forlobskunde') {
+			opdateringer.state = 'forlobskunde';
+		}
 	}
 
-	const opdateringer: Partial<UserDoc> = {};
-	if (current.state !== 'forlobskunde') {
-		opdateringer.state = 'forlobskunde';
+	// Abonnement/Simplero-flow: kopier access-felter over på userDoc.
+	// Disse har forrang over forløbs-state hvis begge er sat — fordi
+	// accessLevel/accessSource er den autoritative kilde i den nye model.
+	if (allowed.accessLevel) {
+		opdateringer.accessLevel = allowed.accessLevel;
+		if (allowed.accessSource) opdateringer.accessSource = allowed.accessSource;
+		if (allowed.activeProduct) opdateringer.activeProduct = allowed.activeProduct;
+		if (allowed.activeSubscription !== undefined) {
+			opdateringer.activeSubscription = allowed.activeSubscription;
+		}
+		if (allowed.simpleroCustomerId) {
+			opdateringer.simpleroCustomerId = allowed.simpleroCustomerId;
+		}
+		if (allowed.expiresAt !== undefined) opdateringer.expiresAt = allowed.expiresAt;
+		opdateringer.updatedAt = Date.now();
+		// Hold legacy state-feltet i sync med accessLevel/accessSource så
+		// de gamle 12 kald-steder (der falder tilbage til state) virker.
+		const udledtState = udledState(allowed.accessLevel, allowed.accessSource);
+		if (current.state !== udledtState) opdateringer.state = udledtState;
 	}
+
 	if (!current.firstName && allowed.firstName) {
 		opdateringer.firstName = allowed.firstName;
 	}
+
 	if (Object.keys(opdateringer).length > 0) {
 		const userRef = doc(db, 'users', uid);
 		await updateDoc(userRef, opdateringer);

@@ -33,12 +33,23 @@ export type AllowedEmailStatus = 'invited' | 'registered';
 
 export interface AllowedEmail {
 	email: string;
-	firstName: string;
-	lastName: string;
-	forlobId: string;
-	status: AllowedEmailStatus;
-	oprettet: Timestamp;
+	// CSV-felter — kun sat ved manuel forløbs-import. Ikke sat når webhook
+	// opretter en allowedEmail som whitelist for et abonnement-køb.
+	firstName?: string;
+	lastName?: string;
+	forlobId?: string;
+	status?: AllowedEmailStatus;
+	oprettet?: Timestamp;
 	registreret?: Timestamp;
+	// Adgangs-felter sat af Simplero-webhook. Kopieres over på userDoc
+	// første gang brugeren logger ind.
+	accessLevel?: 'none' | 'basis' | 'premium';
+	accessSource?: 'abonnement' | 'forløb';
+	activeProduct?: 'kickstart' | 'premiumforløb' | 'basisabo' | 'premiumabo';
+	activeSubscription?: boolean;
+	simpleroCustomerId?: string;
+	expiresAt?: number | null;
+	updatedAt?: number;
 }
 
 export interface CsvRow {
