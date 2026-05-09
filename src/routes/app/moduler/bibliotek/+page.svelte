@@ -33,6 +33,7 @@
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
 
 	const getUser = getContext<() => User | null>('user');
 	const user = $derived(getUser());
@@ -466,6 +467,14 @@
 			</button>
 		</div>
 	</div>
+{:else if aabenGuide && aabenGuide.type === 'audio'}
+	<AudioPlayer
+		url={aabenGuide.url}
+		titel={aabenGuide.titel}
+		sub={aabenGuide.beskrivelse}
+		kategori="Lydguide"
+		onClose={lukGuide}
+	/>
 {:else if aabenGuide}
 	<div
 		class="overlay-bg"
@@ -498,12 +507,6 @@
 					</a>
 				</div>
 			{/if}
-		{:else if aabenGuide.type === 'audio'}
-			<div class="overlay-audio">
-				<audio controls autoplay src={aabenGuide.url}>
-					Din browser kan ikke afspille lyd-elementet.
-				</audio>
-			</div>
 		{/if}
 
 		{#if aabenGuide.beskrivelse}
@@ -537,6 +540,14 @@
 			</button>
 		</div>
 	</div>
+{:else if aabenLektion && lektionType === 'audio'}
+	<AudioPlayer
+		url={aabenLektion.url}
+		titel={aabenLektion.titel}
+		sub={aabenLektion.beskrivelse}
+		kategori="Lektion"
+		onClose={lukLektion}
+	/>
 {:else if aabenLektion}
 	<div
 		class="overlay-bg"
@@ -559,12 +570,6 @@
 					allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
 					allowfullscreen
 				></iframe>
-			</div>
-		{:else if lektionType === 'audio'}
-			<div class="overlay-audio">
-				<audio controls autoplay src={aabenLektion.url}>
-					Din browser kan ikke afspille lyd.
-				</audio>
 			</div>
 		{/if}
 
@@ -947,12 +952,6 @@
 		border: none;
 	}
 
-	.overlay-audio {
-		display: flex;
-		justify-content: center;
-		padding: 8px 0;
-	}
-
 	.html-overlay {
 		position: fixed;
 		inset: 0;
@@ -1034,10 +1033,6 @@
 
 	.html-overlay-pdf:active {
 		opacity: 0.85;
-	}
-
-	.overlay-audio audio {
-		width: 100%;
 	}
 
 	.overlay-beskrivelse {

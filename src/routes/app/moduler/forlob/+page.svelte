@@ -12,6 +12,7 @@
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
 
 	const getUser = getContext<() => User | null>('user');
 	const user = $derived(getUser());
@@ -335,6 +336,14 @@
 			</button>
 		</div>
 	</div>
+{:else if aabenLektion && aabenErAudio}
+	<AudioPlayer
+		url={aabenLektion.url}
+		titel={aabenLektion.titel}
+		sub={aabenLektion.beskrivelse}
+		kategori="Lektion"
+		onClose={lukLektion}
+	/>
 {:else if aabenLektion}
 	<div
 		class="overlay-bg"
@@ -358,8 +367,6 @@
 					allowfullscreen
 				></iframe>
 			</div>
-		{:else if aabenErAudio}
-			<audio controls autoplay src={aabenLektion.url}>Din browser kan ikke afspille lyd.</audio>
 		{/if}
 
 		{#if aabenLektion.beskrivelse}
@@ -821,10 +828,6 @@
 		width: 100%;
 		height: 100%;
 		border: none;
-	}
-
-	.overlay audio {
-		width: 100%;
 	}
 
 	.html-overlay {
