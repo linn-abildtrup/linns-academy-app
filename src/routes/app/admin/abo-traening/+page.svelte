@@ -114,7 +114,7 @@
 					}
 				: {
 						navn: aktivTab === 'basis' ? 'Daglig mikrotræning' : 'Daglig mikrotræning premium',
-						beskrivelse: 'Tre minutters daglig styrketræning.',
+						beskrivelse: 'Daglig træning.',
 						treaningsform: 'mikrotraening',
 						antalDage: ABO_MIKROTRAENING_DAGE,
 						dagligTid: beregnetDagligTid,

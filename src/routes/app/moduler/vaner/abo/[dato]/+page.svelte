@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
@@ -214,6 +215,7 @@
 			});
 			oprindeligEntry = { dato, checks, bonus: bonusEntry, checkin, note };
 			editMode = false;
+			goto('/app/moduler/vaner');
 		} catch (e) {
 			console.error(e);
 			gemFejl = 'Kunne ikke gemme. Prøv igen.';
@@ -577,7 +579,7 @@
 		background: var(--white);
 		color: var(--text);
 		font-family: var(--ff-b);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(16px * var(--fs-scale, 1));
 		outline: none;
 		box-sizing: border-box;
 	}

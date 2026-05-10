@@ -163,9 +163,9 @@
 		<h1>Mikrotræning</h1>
 		<p class="page-sub">
 			{#if gren === 'forlob'}
-				{programData?.program.beskrivelse ?? 'Tre minutters daglig styrketræning.'}
+				{programData?.program.beskrivelse ?? 'Daglig træning.'}
 			{:else if gren === 'abo'}
-				{aboProgram?.program.beskrivelse ?? 'Tre minutters daglig styrketræning.'}
+				{aboProgram?.program.beskrivelse ?? 'Daglig træning.'}
 			{:else}
 				Mikrotræning kræver et abonnement eller forløb.
 			{/if}
