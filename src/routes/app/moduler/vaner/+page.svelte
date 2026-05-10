@@ -14,6 +14,7 @@
 	} from '$lib/content/vaner';
 	import {
 		beregnAboFlowerNiveau,
+		aboTrendScore,
 		beregnAboFremgang,
 		dagensBonus,
 		erUgentligCheckinDag,
@@ -112,6 +113,23 @@
 			formaterDato(til)
 		);
 	});
+
+	function entriesIInterval(dage: number): AboVanedagEntry[] {
+		const til = new Date();
+		const fra = new Date(til);
+		fra.setDate(fra.getDate() - (dage - 1));
+		const r: AboVanedagEntry[] = [];
+		const cur = new Date(fra);
+		while (cur <= til) {
+			const e = aboEntries.get(formaterDato(cur));
+			if (e) r.push(e);
+			cur.setDate(cur.getDate() + 1);
+		}
+		return r;
+	}
+
+	const trend7 = $derived(aboTrendScore(entriesIInterval(7)));
+	const trend30 = $derived(aboTrendScore(entriesIInterval(30)));
 
 	const dagsLabel = $derived.by(() => {
 		const d = new Date();
@@ -391,6 +409,34 @@
 				</div>
 				<p class="hint">Klik på en dag for at åbne den</p>
 			</section>
+
+			{#if trend7.antal > 0 || trend30.antal > 0}
+				<section class="card trend-card">
+					<div class="card-head">
+						<div class="section-label">Velvære-trend</div>
+					</div>
+					<div class="trend-grid">
+						<div class="trend-blok">
+							<div class="trend-tal">{trend7.antal > 0 ? trend7.score : '–'}{trend7.antal > 0 ? '%' : ''}</div>
+							<div class="trend-label">Sidste 7 dage</div>
+							<div class="trend-sub">
+								{trend7.antal} {trend7.antal === 1 ? 'svar' : 'svar'}
+							</div>
+						</div>
+						<div class="trend-blok">
+							<div class="trend-tal">{trend30.antal > 0 ? trend30.score : '–'}{trend30.antal > 0 ? '%' : ''}</div>
+							<div class="trend-label">Sidste 30 dage</div>
+							<div class="trend-sub">
+								{trend30.antal} {trend30.antal === 1 ? 'svar' : 'svar'}
+							</div>
+						</div>
+					</div>
+					<p class="hint trend-hint">
+						Procent positive svar på dagens bonus-spørgsmål. Et samlet billede af
+						dit velvære over tid.
+					</p>
+				</section>
+			{/if}
 
 			<section class="card">
 				<div class="section-label">Dine vaner</div>
@@ -829,5 +875,52 @@
 
 	.rediger-link:hover {
 		color: var(--terra);
+	}
+
+	.trend-card {
+		background: linear-gradient(180deg, var(--white) 0%, var(--bg2) 100%);
+	}
+
+	.trend-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+		margin-top: 4px;
+	}
+
+	.trend-blok {
+		text-align: center;
+		padding: 14px 8px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+	}
+
+	.trend-tal {
+		font-family: var(--ff-d);
+		font-size: calc(28px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--terra);
+		line-height: 1.1;
+	}
+
+	.trend-label {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text2);
+		margin-top: 6px;
+	}
+
+	.trend-sub {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		color: var(--text4);
+		margin-top: 2px;
+	}
+
+	.trend-hint {
+		margin-top: 10px;
+		margin-bottom: 0;
 	}
 </style>

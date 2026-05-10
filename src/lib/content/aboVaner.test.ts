@@ -11,6 +11,7 @@ import {
 	beregnAboDagsStatus,
 	beregnAboFlowerNiveau,
 	aboVaneStatistik,
+	aboTrendScore,
 	beregnAboFremgang,
 	LOCK_PERIODE_DAGE,
 	type ValgtVane,
@@ -25,16 +26,18 @@ const vaner3: ValgtVane[] = [
 	{ id: 'sv', label: '7+ timers søvn', kilde: 'egen' }
 ];
 
+const svar3: [string, string, string] = ['Godt', 'Okay', 'Lavt'];
+
 const bonusPulje: AboBonusForslag[] = [
-	{ id: 'b1', label: 'Træk vejret 1 min' },
-	{ id: 'b2', label: 'Gå 5 min udenfor' },
-	{ id: 'b3', label: 'Drik et stort glas vand' }
+	{ id: 'b1', label: 'Energiniveau?', kategori: 'Energi', svarmuligheder: svar3 },
+	{ id: 'b2', label: 'Søvn?', kategori: 'Søvn', svarmuligheder: svar3 },
+	{ id: 'b3', label: 'Humør?', kategori: 'Humør', svarmuligheder: svar3 }
 ];
 
 const tomEntry = (dato: string): AboVanedagEntry => ({
 	dato,
 	checks: {},
-	bonus: {},
+	bonus: null,
 	checkin: {},
 	note: ''
 });
@@ -162,7 +165,7 @@ describe('beregnAboDagsStatus', () => {
 
 	it('partial når kun bonus er svaret', () => {
 		const e = tomEntry('2026-05-11');
-		e.bonus = { b1: 'ja' };
+		e.bonus = { id: 'b1', svar: 0 };
 		expect(beregnAboDagsStatus(vaner3, bonus, false, e)).toBe('partial');
 	});
 
@@ -217,6 +220,43 @@ describe('aboVaneStatistik', () => {
 			{ ...tomEntry('2026-05-11'), checks: {} }
 		];
 		expect(aboVaneStatistik('pm', entries)).toEqual({ antal: 1, score: 100 });
+	});
+});
+
+describe('aboTrendScore', () => {
+	it('returnerer 0/0 for tom liste', () => {
+		expect(aboTrendScore([])).toEqual({ antal: 0, score: 0 });
+	});
+
+	it('100 hvis alle svar er positive (svar=0)', () => {
+		const entries: AboVanedagEntry[] = [
+			{ ...tomEntry('2026-05-10'), bonus: { id: 'b1', svar: 0 } },
+			{ ...tomEntry('2026-05-11'), bonus: { id: 'b2', svar: 0 } }
+		];
+		expect(aboTrendScore(entries)).toEqual({ antal: 2, score: 100 });
+	});
+
+	it('0 hvis alle svar er negative (svar=2)', () => {
+		const entries: AboVanedagEntry[] = [
+			{ ...tomEntry('2026-05-10'), bonus: { id: 'b1', svar: 2 } }
+		];
+		expect(aboTrendScore(entries)).toEqual({ antal: 1, score: 0 });
+	});
+
+	it('50 for blandet positiv og negativ', () => {
+		const entries: AboVanedagEntry[] = [
+			{ ...tomEntry('2026-05-10'), bonus: { id: 'b1', svar: 0 } },
+			{ ...tomEntry('2026-05-11'), bonus: { id: 'b2', svar: 2 } }
+		];
+		expect(aboTrendScore(entries)).toEqual({ antal: 2, score: 50 });
+	});
+
+	it('udelukker dage uden bonus-svar', () => {
+		const entries: AboVanedagEntry[] = [
+			{ ...tomEntry('2026-05-10'), bonus: { id: 'b1', svar: 0 } },
+			{ ...tomEntry('2026-05-11'), bonus: null }
+		];
+		expect(aboTrendScore(entries)).toEqual({ antal: 1, score: 100 });
 	});
 });
 

@@ -7,15 +7,14 @@
 		beregnAboDagsStatus,
 		dagensBonus,
 		erUgentligCheckinDag,
-		formaterDato,
 		parseDato,
 		type AboBonusForslag,
+		type AboBonusSvar,
 		type AboVaneOpsaetning,
 		type AboVanedagEntry
 	} from '$lib/content/aboVaner';
 	import {
 		CHECKIN_SPORGSMAAL,
-		type BonusSvar,
 		type CheckinSvar,
 		type VaneSvar
 	} from '$lib/content/vaner';
@@ -43,7 +42,8 @@
 	let bonus = $state<AboBonusForslag | null>(null);
 
 	let checks = $state<Record<string, VaneSvar>>({});
-	let bonusSvar = $state<Record<string, BonusSvar>>({});
+	let bonusSvarIdx = $state<AboBonusSvar | null>(null);
+	let bonusNote = $state('');
 	let checkin = $state<CheckinSvar>({});
 	let note = $state('');
 	let oprindeligEntry = $state<AboVanedagEntry | null>(null);
@@ -66,12 +66,18 @@
 		});
 	});
 
+	const aktuelBonus = $derived.by(() =>
+		bonus && bonusSvarIdx !== null
+			? { id: bonus.id, svar: bonusSvarIdx, note: bonusNote.trim() || undefined }
+			: null
+	);
+
 	const aktuelStatus = $derived(
 		opsaetning
 			? beregnAboDagsStatus(opsaetning.valgteVaner, bonus, erCheckinDag, {
 					dato,
 					checks,
-					bonus: bonusSvar,
+					bonus: aktuelBonus,
 					checkin,
 					note
 				})
@@ -84,7 +90,7 @@
 			const sv = checks[v.id];
 			return s + (sv === 'ja' ? 1 : sv === 'delvist' ? 0.5 : 0);
 		}, 0);
-		const bonusScore = bonus && bonusSvar[bonus.id] === 'ja' ? 1 : 0;
+		const bonusScore = bonus && bonusSvarIdx === 0 ? 1 : 0;
 		const total = opsaetning.valgteVaner.length + (bonus ? 1 : 0);
 		return total > 0 ? Math.round(((score + bonusScore) / total) * 100) : 0;
 	});
@@ -92,7 +98,7 @@
 	const fremgangAntal = $derived.by(() => {
 		if (!opsaetning) return { ja: 0, total: 0 };
 		const ja = opsaetning.valgteVaner.filter((v) => checks[v.id] === 'ja').length;
-		const bonusJa = bonus && bonusSvar[bonus.id] === 'ja' ? 1 : 0;
+		const bonusJa = bonus && bonusSvarIdx === 0 ? 1 : 0;
 		const total = opsaetning.valgteVaner.length + (bonus ? 1 : 0);
 		return { ja: ja + bonusJa, total };
 	});
@@ -131,7 +137,13 @@
 			if (entry) {
 				oprindeligEntry = entry;
 				checks = { ...(entry.checks ?? {}) };
-				bonusSvar = { ...(entry.bonus ?? {}) };
+				if (entry.bonus && entry.bonus.id === bonus?.id) {
+					bonusSvarIdx = entry.bonus.svar;
+					bonusNote = entry.bonus.note ?? '';
+				} else {
+					bonusSvarIdx = null;
+					bonusNote = '';
+				}
 				checkin = { ...(entry.checkin ?? {}) };
 				note = entry.note ?? '';
 				editMode = false;
@@ -165,14 +177,8 @@
 		return typeof checkin[id] === 'number';
 	}
 
-	function toggleBonusSvar(id: string, val: BonusSvar) {
-		const ny = { ...bonusSvar };
-		if (ny[id] === val) {
-			delete ny[id];
-		} else {
-			ny[id] = val;
-		}
-		bonusSvar = ny;
+	function vaelgBonusSvar(idx: AboBonusSvar) {
+		bonusSvarIdx = bonusSvarIdx === idx ? null : idx;
 	}
 
 	function startEdit() {
@@ -198,14 +204,15 @@
 				checkin = fyldt;
 			}
 
+			const bonusEntry = aktuelBonus;
 			await gemAboVanedag(u.uid, {
 				dato,
 				checks,
-				bonus: bonusSvar,
+				bonus: bonusEntry,
 				checkin,
 				note
 			});
-			oprindeligEntry = { dato, checks, bonus: bonusSvar, checkin, note };
+			oprindeligEntry = { dato, checks, bonus: bonusEntry, checkin, note };
 			editMode = false;
 		} catch (e) {
 			console.error(e);
@@ -286,32 +293,47 @@
 			{/each}
 
 			{#if bonus}
-				{@const bVal = bonusSvar[bonus.id]}
 				<div class="check-row bonus-row">
 					<div class="check-label">
-						<span class="bonus-tag">Bonus</span>
+						<span class="bonus-tag">Bonus · {bonus.kategori}</span>
 						{bonus.label}
 					</div>
-					<div class="check-knapper bonus-knapper">
+					<div class="check-knapper bonus-knapper-3">
 						<button
 							class="ja-knap"
-							class:aktiv={bVal === 'ja'}
+							class:aktiv={bonusSvarIdx === 0}
 							type="button"
-							onclick={() => toggleBonusSvar(bonus!.id, 'ja')}
+							onclick={() => vaelgBonusSvar(0)}
 							{disabled}
 						>
-							Ja
+							{bonus.svarmuligheder[0]}
+						</button>
+						<button
+							class="delvist-knap"
+							class:aktiv={bonusSvarIdx === 1}
+							type="button"
+							onclick={() => vaelgBonusSvar(1)}
+							{disabled}
+						>
+							{bonus.svarmuligheder[1]}
 						</button>
 						<button
 							class="nej-knap"
-							class:aktiv={bVal === 'nej'}
+							class:aktiv={bonusSvarIdx === 2}
 							type="button"
-							onclick={() => toggleBonusSvar(bonus!.id, 'nej')}
+							onclick={() => vaelgBonusSvar(2)}
 							{disabled}
 						>
-							Nej
+							{bonus.svarmuligheder[2]}
 						</button>
 					</div>
+					<input
+						type="text"
+						class="bonus-note"
+						placeholder="Vil du tilføje noget? (valgfrit)"
+						bind:value={bonusNote}
+						{disabled}
+					/>
 				</div>
 			{/if}
 
@@ -553,8 +575,31 @@
 		gap: 6px;
 	}
 
-	.bonus-knapper {
-		grid-template-columns: 1fr 1fr;
+	.bonus-knapper-3 {
+		grid-template-columns: 1fr 1fr 1fr;
+	}
+
+	.bonus-note {
+		width: 100%;
+		padding: 9px 10px;
+		margin-top: 8px;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--white);
+		color: var(--text);
+		font-family: var(--ff-b);
+		font-size: calc(13px * var(--fs-scale, 1));
+		outline: none;
+		box-sizing: border-box;
+	}
+
+	.bonus-note:focus {
+		border-color: var(--terra);
+	}
+
+	.bonus-note:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
 	}
 
 	.check-knapper button {

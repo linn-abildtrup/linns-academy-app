@@ -8,7 +8,7 @@
 // Vaner er låst i 21 dage efter sidste skift, så brugeren ikke kan zappe rundt.
 
 import type { Timestamp } from 'firebase/firestore';
-import type { VaneSvar, BonusSvar, CheckinSvar, DagStatus, FlowerNiveau } from './vaner';
+import type { VaneSvar, CheckinSvar, DagStatus, FlowerNiveau } from './vaner';
 import { CHECKIN_SPORGSMAAL } from './vaner';
 
 export const LOCK_PERIODE_DAGE = 21;
@@ -26,11 +26,23 @@ export interface AboVaneForslag {
 	kategori: string;
 }
 
-/** Et bonus-spørgsmål i puljen. Roteres deterministisk pr dato. */
+/**
+ * Et bonus-spørgsmål i puljen. Roteres deterministisk pr dato.
+ *
+ * Konvention: svarmuligheder[0] er det 'positive' svar, [2] det negative.
+ * Det gælder også for negativt formulerede spørgsmål — fx 'Har du følt
+ * dig stresset?' har svarmuligheder ['Nej', 'Lidt', 'Ja']. Det gør at
+ * trend-score kan beregnes uniformt på tværs af alle spørgsmål.
+ */
 export interface AboBonusForslag {
 	id: string;
 	label: string;
+	kategori: string;
+	svarmuligheder: [string, string, string];
 }
+
+/** Brugerens svar på et bonus-spørgsmål. 0 = positiv, 1 = neutral, 2 = negativ. */
+export type AboBonusSvar = 0 | 1 | 2;
 
 // ==============================================
 // Bruger-typer
@@ -52,11 +64,14 @@ export interface AboVaneOpsaetning {
 	opdateretAt: Timestamp;
 }
 
-/** Brugerens svar for én dato. Doc-id er datoen som YYYY-MM-DD. */
+/**
+ * Brugerens svar for én dato. Doc-id er datoen som YYYY-MM-DD.
+ * bonus indeholder kun ét svar pr dag (svarende til dagensBonus-rotation).
+ */
 export interface AboVanedagEntry {
 	dato: string;
 	checks: Record<string, VaneSvar>;
-	bonus: Record<string, BonusSvar>;
+	bonus?: { id: string; svar: AboBonusSvar; note?: string } | null;
 	checkin: CheckinSvar;
 	note: string;
 	savedAt?: Timestamp;
@@ -140,7 +155,7 @@ export function beregnLockUdloeb(now: Date = new Date()): Date {
 const tomEntry = (dato: string): AboVanedagEntry => ({
 	dato,
 	checks: {},
-	bonus: {},
+	bonus: null,
 	checkin: {},
 	note: ''
 });
@@ -161,7 +176,7 @@ export function beregnAboDagsStatus(
 	const e = entry ?? tomEntry('');
 
 	const harSvarPaaEnVane = valgteVaner.some((v) => e.checks?.[v.id]);
-	const harBonusSvar = bonus && e.bonus?.[bonus.id];
+	const harBonusSvar = !!(bonus && e.bonus && e.bonus.id === bonus.id);
 	const harNote = (e.note ?? '').trim().length > 0;
 	const harCheckinSvar =
 		isCheckin &&
@@ -179,6 +194,31 @@ export function beregnAboDagsStatus(
 
 	if (alleVanerJa && checkinOk) return 'completed';
 	return 'partial';
+}
+
+/**
+ * Beregner trend-score for bonus-svarene over en serie af dage.
+ *
+ * Returnerer procent positive svar (0-100). Index 0 = positiv = 1.0,
+ * index 1 = neutral = 0.5, index 2 = negativ = 0.0. Dage uden bonus-svar
+ * tælles ikke med.
+ *
+ * Hvis du vil have trend pr kategori, send entries kun fra dage hvor
+ * bonus.id matcher en bestemt kategori — eller udvid funktionen med
+ * en bonus-pulje-parameter til at slå kategori op.
+ */
+export function aboTrendScore(
+	entries: AboVanedagEntry[]
+): { antal: number; score: number } {
+	let sum = 0;
+	let antal = 0;
+	for (const e of entries) {
+		if (!e.bonus || typeof e.bonus.svar !== 'number') continue;
+		antal++;
+		sum += (2 - e.bonus.svar) / 2;
+	}
+	if (antal === 0) return { antal: 0, score: 0 };
+	return { antal, score: Math.round((sum / antal) * 100) };
 }
 
 /**

@@ -58,7 +58,12 @@
 
 	function tilfojBonus(produktType: 'basis' | 'premium') {
 		const liste = produktType === 'basis' ? bonusBasis : bonusPremium;
-		const ny: AboBonusForslag = { id: nyId('b', liste), label: '' };
+		const ny: AboBonusForslag = {
+			id: nyId('b', liste),
+			label: '',
+			kategori: '',
+			svarmuligheder: ['Ja', 'Nogenlunde', 'Nej']
+		};
 		if (produktType === 'basis') bonusBasis = [...liste, ny];
 		else bonusPremium = [...liste, ny];
 	}
@@ -199,21 +204,58 @@
 					<div class="kort-sub">{liste.length} spørgsmål</div>
 				</div>
 
+				<p class="hjaelp">
+					Konvention: skriv det <em>positive</em> svar først (svarmulighed 1).
+					Også for negativt formulerede spørgsmål — fx 'Har du følt dig stresset?'
+					skal have svar 'Nej / Lidt / Ja'. Det gør at trend-score kan beregnes
+					ensartet på tværs af spørgsmål.
+				</p>
+
 				{#each liste as bonus (bonus.id)}
-					<div class="rad">
-						<input
-							type="text"
-							class="input-label flex"
-							placeholder="Bonus-spørgsmål (fx 'Træk vejret 1 min')"
-							bind:value={bonus.label}
-						/>
-						<button
-							class="slet-btn"
-							aria-label="Slet"
-							onclick={() => fjernBonus(erBasis ? 'basis' : 'premium', bonus.id)}
-						>
-							×
-						</button>
+					<div class="bonus-blok">
+						<div class="rad">
+							<input
+								type="text"
+								class="input-label"
+								placeholder="Spørgsmål (fx 'Hvordan er dit energiniveau i dag?')"
+								bind:value={bonus.label}
+							/>
+							<button
+								class="slet-btn"
+								aria-label="Slet"
+								onclick={() => fjernBonus(erBasis ? 'basis' : 'premium', bonus.id)}
+							>
+								×
+							</button>
+						</div>
+						<div class="rad">
+							<input
+								type="text"
+								class="input-kategori"
+								placeholder="Kategori (fx 'Energi og krop')"
+								bind:value={bonus.kategori}
+							/>
+						</div>
+						<div class="svar-rad">
+							<input
+								type="text"
+								class="svar-input positiv"
+								placeholder="Positiv (fx Godt)"
+								bind:value={bonus.svarmuligheder[0]}
+							/>
+							<input
+								type="text"
+								class="svar-input neutral"
+								placeholder="Neutral (fx Okay)"
+								bind:value={bonus.svarmuligheder[1]}
+							/>
+							<input
+								type="text"
+								class="svar-input negativ"
+								placeholder="Negativ (fx Lavt)"
+								bind:value={bonus.svarmuligheder[2]}
+							/>
+						</div>
 					</div>
 				{/each}
 
@@ -411,6 +453,63 @@
 	.tilfoj-btn:hover {
 		border-color: var(--terra);
 		color: var(--terra);
+	}
+
+	.bonus-blok {
+		padding: 12px;
+		margin-bottom: 10px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+	}
+
+	.bonus-blok .input-kategori {
+		width: 100%;
+	}
+
+	.svar-rad {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 6px;
+		margin-top: 4px;
+	}
+
+	.svar-input {
+		padding: 8px 9px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--white);
+		color: var(--text);
+		min-width: 0;
+	}
+
+	.svar-input.positiv {
+		border-left: 3px solid #6f9e7e;
+	}
+
+	.svar-input.neutral {
+		border-left: 3px solid #c9a07a;
+	}
+
+	.svar-input.negativ {
+		border-left: 3px solid #b87b6e;
+	}
+
+	.svar-input:focus {
+		outline: 2px solid var(--terra);
+		outline-offset: -1px;
+	}
+
+	.hjaelp {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		line-height: 1.5;
+		margin: 0 0 10px;
+		padding: 8px 10px;
+		background: var(--bg2);
+		border-radius: 8px;
 	}
 
 	.bund {
