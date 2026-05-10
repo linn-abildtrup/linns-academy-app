@@ -17,8 +17,18 @@ export interface AboMikrotraeningFremgang {
 	opdateretAt?: Timestamp;
 }
 
-/** Programmets øverste doc — næsten identisk med TrainingProgram, antalDage = 14. */
-export type AboMikrotraeningProgram = TrainingProgram;
+/**
+ * Programmets øverste doc — TrainingProgram udvidet med en valgfri
+ * genererConfig så admin kan huske sine præ-indstillinger til næste auto-gen.
+ */
+export interface AboMikrotraeningProgram extends TrainingProgram {
+	genererConfig?: {
+		antalOvelser: number;
+		sets: number;
+		workSec: number;
+		restSec: number;
+	};
+}
 
 /** Programmets dage — genbruger TrainingDay-typen fra forløbs-modellen. */
 export type AboMikrotraeningDag = TrainingDay;

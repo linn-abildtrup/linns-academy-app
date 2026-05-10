@@ -241,6 +241,39 @@ export function registrerFeedback(
  * Default: 3 sæt × 30s arbejde × 10s hvile, ingen bonus.
  */
 export function genererStandardProgram(antalDage: number, exercises: Exercise[]): TrainingDay[] {
+	return genererProgramMedConfig(antalDage, exercises, {
+		antalOvelser: 3,
+		sets: 3,
+		workSec: 30,
+		restSec: 10
+	});
+}
+
+export interface GenererConfig {
+	/** Antal øvelser pr dag (mindst 1, anbefalet 3-5). */
+	antalOvelser: number;
+	/** Antal sæt pr øvelse. */
+	sets: number;
+	/** Arbejdstid i sekunder pr sæt. */
+	workSec: number;
+	/** Hviletid i sekunder mellem sæt. */
+	restSec: number;
+}
+
+/**
+ * Variant af genererStandardProgram der lader admin præ-konfigurere
+ * antal øvelser, sæt, arbejdstid og hviletid før auto-gen.
+ *
+ * Kategorier vælges deterministisk fra puljerne i rækkefølgen:
+ * ben, overkrop, core/stabilitet, og derefter cykles videre. Hvis admin
+ * vælger flere end 3 øvelser pr dag, får hver dag en anden kombination
+ * fra sammenflettede kategorier.
+ */
+export function genererProgramMedConfig(
+	antalDage: number,
+	exercises: Exercise[],
+	config: GenererConfig
+): TrainingDay[] {
 	const ben = exercises.filter((e) => e.cat === 'ben').map((e) => e.id);
 	const overkrop = exercises.filter((e) => e.cat === 'overkrop').map((e) => e.id);
 	const coreStab = exercises
@@ -250,33 +283,28 @@ export function genererStandardProgram(antalDage: number, exercises: Exercise[])
 	if (ben.length === 0 || overkrop.length === 0 || coreStab.length === 0) {
 		throw new Error('Mangler øvelser i en eller flere kategorier — kan ikke generere program.');
 	}
+	if (config.antalOvelser < 1) {
+		throw new Error('Antal øvelser skal være mindst 1.');
+	}
+
+	// Cykler ben → overkrop → core/stab → ben → ... så fordelingen er jævn
+	const kategorier = [ben, overkrop, coreStab];
 
 	return Array.from({ length: antalDage }, (_, i) => ({
 		dagNummer: i + 1,
 		titel: '',
 		indledning: '',
-		exercises: [
-			{
-				exerciseId: ben[i % ben.length],
-				sets: 3,
-				workSec: 30,
-				restSec: 10,
+		exercises: Array.from({ length: config.antalOvelser }, (_, j) => {
+			const kat = kategorier[j % kategorier.length];
+			// Forskyd index pr dag så samme dag ikke får samme øvelse hver runde
+			const idx = (i + Math.floor(j / kategorier.length)) % kat.length;
+			return {
+				exerciseId: kat[idx],
+				sets: config.sets,
+				workSec: config.workSec,
+				restSec: config.restSec,
 				bonus: false
-			},
-			{
-				exerciseId: overkrop[i % overkrop.length],
-				sets: 3,
-				workSec: 30,
-				restSec: 10,
-				bonus: false
-			},
-			{
-				exerciseId: coreStab[i % coreStab.length],
-				sets: 3,
-				workSec: 30,
-				restSec: 10,
-				bonus: false
-			}
-		]
+			};
+		})
 	}));
 }
