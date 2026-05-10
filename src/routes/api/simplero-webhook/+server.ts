@@ -200,6 +200,20 @@ export const POST: RequestHandler = async ({ request }) => {
 	};
 	if (kundeId) opdatering.simpleroCustomerId = kundeId;
 
+	// Forløbs-køb giver 90 dages bibliotek-bonus efter forløb-slut.
+	// Simplero sender period_ends_at = sidste dag i forløbet — vi tilføjer
+	// 90 dage for at få bonus-end-dato. For abonnementer er bonus ikke
+	// relevant (de mister adgang straks ved cancel), så vi sætter den ikke.
+	if (adgang.accessSource === 'forløb') {
+		const periodEndsAt = (payload as { period_ends_at?: string }).period_ends_at;
+		if (periodEndsAt) {
+			const slut = new Date(periodEndsAt).getTime();
+			if (Number.isFinite(slut)) {
+				opdatering.bonusPeriodEndsAt = slut + 90 * 24 * 60 * 60 * 1000;
+			}
+		}
+	}
+
 	// Hvis det er et forløbs-køb skal forlobId merges ind i arrayet uden
 	// at overskrive tidligere forløb (Maria → Kickstart → Premium skal
 	// beholde reference til BÅDE forløb). For allowedEmails gemmer vi

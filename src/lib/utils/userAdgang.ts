@@ -58,13 +58,36 @@ export function harBasisAdgang(userDoc: UserDoc | null | undefined): boolean {
 }
 
 /**
- * True hvis en udløbet Kickstart-kunde stadig er i sin 3-måneders bonus-
- * periode. I bonus-perioden har hun læseadgang til mikrotræning + opskrifter.
- * Efter bonus-perioden er kun bibliotek (med Træningsøvelser-fanen) tilbage.
+ * True hvis en forløbskunde stadig er i sin 90-dages bibliotek-bonus-
+ * periode efter forløb-slut. I bonus-perioden har hun adgang til biblioteket
+ * (FAQ + Links + Lektioner + Træningsøvelser + Opskrifter) selv om hun
+ * ikke længere har et aktivt abonnement.
  */
 export function erIBonusPeriode(userDoc: UserDoc | null | undefined): boolean {
 	if (!userDoc?.bonusPeriodEndsAt) return false;
 	return userDoc.bonusPeriodEndsAt > Date.now();
+}
+
+/**
+ * True hvis brugeren har adgang til biblioteket. Det gælder hvis hun:
+ *   - Har aktivt abonnement eller forløb (accessLevel != 'none')
+ *   - ELLER er i sin 90-dages bonus-periode efter forløb-slut
+ */
+export function harBibliotekAdgang(userDoc: UserDoc | null | undefined): boolean {
+	if (!userDoc) return false;
+	if (harBasisAdgang(userDoc)) return true;
+	return erIBonusPeriode(userDoc);
+}
+
+/**
+ * True hvis brugeren har INGEN adgang overhovedet — hverken aktivt
+ * abonnement/forløb eller bonus-periode. Bruges til at vise "Køb adgang"-
+ * siden i stedet for det normale app-indhold. Hun kan stadig logge ind
+ * (Firebase Auth virker), men ser ingen moduler eller indhold.
+ */
+export function harIngenAdgang(userDoc: UserDoc | null | undefined): boolean {
+	if (!userDoc) return false;
+	return !harBasisAdgang(userDoc) && !erIBonusPeriode(userDoc);
 }
 
 /**
@@ -75,6 +98,11 @@ export function erIBonusPeriode(userDoc: UserDoc | null | undefined): boolean {
 export function harGennemfoertForlob(userDoc: UserDoc | null | undefined): boolean {
 	return (userDoc?.forlobIds?.length ?? 0) > 0;
 }
+
+/**
+ * Bonus-perioden er 90 dage. Bruges af cancel-handler og admin-værktøjer.
+ */
+export const BONUS_PERIODE_DAGE = 90;
 
 /**
  * Mapping fra accessLevel + accessSource → den gamle UserState-værdi.

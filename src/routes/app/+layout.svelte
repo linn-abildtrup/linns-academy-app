@@ -15,8 +15,11 @@
 	import Loading from '$lib/components/Loading.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 	import AdminKlientBanner from '$lib/components/AdminKlientBanner.svelte';
+	import IngenAdgangScreen from '$lib/components/IngenAdgangScreen.svelte';
 	import { ryAdminKlientMode } from '$lib/userDoc';
 	import { setAktivKlientForlobId } from '$lib/state/adminKlientState.svelte';
+	import { harIngenAdgang } from '$lib/utils/userAdgang';
+	import { isAdmin } from '$lib/admin';
 
 	let { children } = $props();
 
@@ -125,6 +128,10 @@
 		<Logo size="lg" />
 		<Loading tekst="Et øjeblik..." />
 	</div>
+{:else if userDoc && !isAdmin(user) && harIngenAdgang(userDoc)}
+	<!-- Bruger uden adgang (efter 90-dages bonus + ingen aktivt abonnement)
+	     ser kun denne side. Admin omgås tjekket så Linn altid kan komme ind. -->
+	<IngenAdgangScreen />
 {:else}
 	<div class="app-shell">
 		{#if userDoc?.adminKlientForlobId}
