@@ -464,7 +464,6 @@
 		</a>
 		<div class="eyebrow">Bibliotek</div>
 		<h1>Bibliotek</h1>
-		<p class="page-sub">FAQ, links og lektioner for dit forløb.</p>
 	</header>
 
 	<div class="tabs">
