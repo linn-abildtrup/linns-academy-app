@@ -8,7 +8,6 @@
 	import { naesteDag, beregnProgramFremgang } from '$lib/content/mikrotraening';
 	import {
 		aktuelAboDag,
-		harKlaretAboDagIRunde,
 		type AboMikrotraeningFremgang
 	} from '$lib/content/aboMikrotraening';
 	import { getCurrentDay } from '$lib/content/forlob';
@@ -74,6 +73,40 @@
 
 	// === Abo-derived ===
 	const aboAktivDag = $derived(aktuelAboDag(aboFremgang));
+
+	function dagsDatoStr(d: Date): string {
+		const aar = d.getFullYear();
+		const m = String(d.getMonth() + 1).padStart(2, '0');
+		const dag = String(d.getDate()).padStart(2, '0');
+		return `${aar}-${m}-${dag}`;
+	}
+
+	const idagDato = $derived(dagsDatoStr(new Date()));
+
+	const sidste7Datoer = $derived.by<{ dato: string; trænet: boolean }[]>(() => {
+		const traenetMap = new Map<string, boolean>();
+		for (const t of aboTraeninger) traenetMap.set(t.dato, true);
+		const r: { dato: string; trænet: boolean }[] = [];
+		const idag = new Date();
+		for (let i = 6; i >= 0; i--) {
+			const cur = new Date(idag);
+			cur.setDate(cur.getDate() - i);
+			const datoStr = dagsDatoStr(cur);
+			r.push({ dato: datoStr, trænet: traenetMap.has(datoStr) });
+		}
+		return r;
+	});
+
+	function kortDagLabel(datoStr: string): string {
+		const [aar, m, d] = datoStr.split('-').map(Number);
+		const dt = new Date(aar, m - 1, d);
+		return dt.toLocaleDateString('da-DK', { weekday: 'short' }).slice(0, 2);
+	}
+
+	function dagINummer(datoStr: string): string {
+		const [, , d] = datoStr.split('-');
+		return String(parseInt(d, 10));
+	}
 
 	onMount(async () => {
 		const u = user;
@@ -168,11 +201,6 @@
 		return 'kommer';
 	}
 
-	function aboDagStatus(dagNummer: number): 'klaret' | 'naeste' | 'kommer' {
-		if (harKlaretAboDagIRunde(aboFremgang, dagNummer)) return 'klaret';
-		if (dagNummer === aboAktivDag) return 'naeste';
-		return 'kommer';
-	}
 </script>
 
 <div class="page">
@@ -187,7 +215,7 @@
 			{#if gren === 'forlob'}
 				{programData?.program.beskrivelse ?? 'Daglig træning.'}
 			{:else if gren === 'abo'}
-				{aboProgram?.program.beskrivelse ?? 'Daglig træning.'}
+				Daglig træning.
 			{:else}
 				Mikrotræning kræver et abonnement eller forløb.
 			{/if}
@@ -252,24 +280,28 @@
 			</div>
 		</div>
 	{:else if gren === 'abo' && aboProgram}
-		<a class="start-knap" href="/app/moduler/traening/mikrotraening/abo/{aboAktivDag}">
-			Start dag {aboAktivDag}
+		<a class="start-knap" href="/app/moduler/traening/mikrotraening/abo/{idagDato}">
+			Start dagens træning
 			<Icon name="arrow" size={14} color="#fff" />
 		</a>
 
 		<section class="card">
 			<div class="card-head">
-				<div class="section-label">Dit program</div>
-				<div class="card-tael">Dag {aboAktivDag}</div>
+				<div class="section-label">Sidste 7 dage</div>
 			</div>
 			<p class="hint">Tryk på en dag for at åbne den.</p>
-			<div class="dage-grid">
-				{#each aboProgram.dage as dag (dag.dagNummer)}
-					{@const status = aboDagStatus(dag.dagNummer)}
-					<a class="dag dag-{status}" href="/app/moduler/traening/mikrotraening/abo/{dag.dagNummer}">
-						<span class="dag-num">{dag.dagNummer}</span>
-						{#if status === 'klaret'}
-							<Icon name="check" size={11} color="#fff" />
+			<div class="dage-grid uge-grid-7">
+				{#each sidste7Datoer as d (d.dato)}
+					<a
+						class="dag"
+						class:dag-klaret={d.trænet}
+						class:dag-idag={d.dato === idagDato}
+						href="/app/moduler/traening/mikrotraening/abo/{d.dato}"
+					>
+						<span class="dag-uge">{kortDagLabel(d.dato)}</span>
+						<span class="dag-num">{dagINummer(d.dato)}</span>
+						{#if d.trænet}
+							<Icon name="check" size={9} color="#fff" />
 						{/if}
 					</a>
 				{/each}
@@ -292,15 +324,15 @@
 				</div>
 				<ul class="historik-liste">
 					{#each synligeTraeninger as t (t.dato)}
-						<li class="historik-item">
+						<a class="historik-item" href="/app/moduler/traening/mikrotraening/abo/{t.dato}">
 							<div class="historik-tekst">
 								<div class="historik-dato">{formatDatoLang(t.dato)}</div>
-								<div class="historik-meta">
-									Dag {t.programDag}{#if t.feedback} · {FEEDBACK_LABEL[t.feedback]}{/if}
-								</div>
+								{#if t.feedback}
+									<div class="historik-meta">{FEEDBACK_LABEL[t.feedback]}</div>
+								{/if}
 							</div>
 							<div class="historik-badge">✓</div>
-						</li>
+						</a>
 					{/each}
 				</ul>
 				{#if aboTraeninger.length > 7}
@@ -508,6 +540,23 @@
 		color: var(--text4);
 	}
 
+	.dag-idag {
+		outline: 2px solid var(--terra);
+		outline-offset: -2px;
+	}
+
+	.dag-uge {
+		font-size: calc(9.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.dag-klaret .dag-uge {
+		color: rgba(255, 255, 255, 0.7);
+	}
+
 	.stat-row {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -555,10 +604,18 @@
 		gap: 12px;
 		padding: 10px 0;
 		border-top: 1px solid var(--border);
+		text-decoration: none;
+		color: inherit;
 	}
 
 	.historik-item:first-child {
 		border-top: none;
+	}
+
+	.historik-item:hover {
+		background: var(--bg2);
+		margin: 0 -8px;
+		padding: 10px 8px;
 	}
 
 	.historik-tekst {

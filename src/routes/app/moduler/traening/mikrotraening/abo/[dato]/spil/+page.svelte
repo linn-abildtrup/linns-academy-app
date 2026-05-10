@@ -17,7 +17,7 @@
 		sletPause
 	} from '$lib/firestore/mikrotraening';
 	import {
-		ABO_MIKROTRAENING_DAGE,
+		aktuelAboDag,
 		genemfoerAboDag,
 		type AboMikrotraeningFremgang
 	} from '$lib/content/aboMikrotraening';
@@ -26,6 +26,7 @@
 		gemAboTraening,
 		hentAboFremgang,
 		hentAboMikrotraeningProgram,
+		hentAlleAboTraeninger,
 		type AboMikrotraeningProgramMedDage
 	} from '$lib/firestore/aboMikrotraening';
 	import { harPremium } from '$lib/utils/userAdgang';
@@ -47,11 +48,23 @@
 	// kun som key i users/{uid}/pauses/{programId}_{dag})
 	const ABO_PROGRAM_ID = $derived(`__abo_${produktType}`);
 
-	const dagNummer = $derived(parseInt(page.params.dag ?? '', 10));
+	const dato = $derived(page.params.dato ?? '');
+	const datoErGyldig = $derived(/^\d{4}-\d{2}-\d{2}$/.test(dato));
+
+	function dagsDatoStr(d: Date): string {
+		const aar = d.getFullYear();
+		const m = String(d.getMonth() + 1).padStart(2, '0');
+		const dag = String(d.getDate()).padStart(2, '0');
+		return `${aar}-${m}-${dag}`;
+	}
+	const idagDato = $derived(dagsDatoStr(new Date()));
 
 	let aboFremgang = $state<AboMikrotraeningFremgang | null>(null);
 	let programData = $state<AboMikrotraeningProgramMedDage | null>(null);
 	let exerciseMap = $state<Map<string, Exercise>>(new Map());
+
+	// programDag bestemmes ud fra dato + fremgang/historik
+	let dagNummer = $state<number>(1);
 	let videoUrls = $state<Map<string, string>>(new Map());
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
@@ -146,16 +159,22 @@
 			loading = false;
 			return;
 		}
-		if (!Number.isFinite(dagNummer) || dagNummer < 1 || dagNummer > ABO_MIKROTRAENING_DAGE) {
-			fejl = 'Ugyldigt dag-nummer.';
+		if (!datoErGyldig) {
+			fejl = 'Ugyldig dato.';
+			loading = false;
+			return;
+		}
+		if (dato > idagDato) {
+			fejl = 'Du kan ikke åbne en dag der ligger i fremtiden.';
 			loading = false;
 			return;
 		}
 
 		try {
-			const [data, fremgang] = await Promise.all([
+			const [data, fremgang, traeninger] = await Promise.all([
 				hentAboMikrotraeningProgram(produktType),
-				hentAboFremgang(u.uid)
+				hentAboFremgang(u.uid),
+				hentAlleAboTraeninger(u.uid)
 			]);
 			if (!data) {
 				fejl = 'Træningsprogrammet er ikke sat op endnu.';
@@ -163,6 +182,14 @@
 				return;
 			}
 			programData = data;
+
+			// Bestem programDag fra historik eller fremgang
+			const eksisterende = traeninger.find((t) => t.dato === dato);
+			if (eksisterende) {
+				dagNummer = eksisterende.programDag;
+			} else {
+				dagNummer = aktuelAboDag(fremgang);
+			}
 			aboFremgang = fremgang;
 
 			const dagData = data.dage.find((d) => d.dagNummer === dagNummer);
@@ -584,7 +611,7 @@
 				console.warn('Kunne ikke gemme pause ved stop:', e);
 			}
 		}
-		goto(`/app/moduler/traening/mikrotraening/abo/${dagNummer}`);
+		goto(`/app/moduler/traening/mikrotraening/abo/${dato}`);
 	}
 
 	async function startForfra() {
@@ -617,13 +644,11 @@
 				gemmer = false;
 				return;
 			}
-			const idag = new Date();
-			const datoStr = `${idag.getFullYear()}-${String(idag.getMonth() + 1).padStart(2, '0')}-${String(idag.getDate()).padStart(2, '0')}`;
 			const runde = Math.floor((nyTotal - 1) / 14) + 1;
 
 			await Promise.all([
 				gemAboFremgang(u.uid, nyTotal, aboFremgang?.feedback ?? {}),
-				gemAboTraening(u.uid, datoStr, dagNummer, runde)
+				gemAboTraening(u.uid, dato, dagNummer, runde)
 			]);
 			aboFremgang = {
 				totalGennemforte: nyTotal,
@@ -655,15 +680,13 @@
 				...(aboFremgang?.feedback ?? {}),
 				[`dag${dagNummer}`]: feedback
 			};
-			const idag = new Date();
-			const datoStr = `${idag.getFullYear()}-${String(idag.getMonth() + 1).padStart(2, '0')}-${String(idag.getDate()).padStart(2, '0')}`;
 			const runde = Math.floor((total - 1) / 14) + 1;
 
 			await Promise.all([
 				gemAboFremgang(u.uid, total, opdateret),
-				gemAboTraening(u.uid, datoStr, dagNummer, runde, feedback)
+				gemAboTraening(u.uid, dato, dagNummer, runde, feedback)
 			]);
-			goto(`/app/moduler/traening/mikrotraening/abo/${dagNummer}`);
+			goto(`/app/moduler/traening/mikrotraening/abo/${dato}`);
 		} catch (e) {
 			console.error(e);
 			gemFejl = 'Kunne ikke gemme feedback. Prøv igen.';
@@ -672,7 +695,7 @@
 	}
 
 	function springFeedbackOver() {
-		goto(`/app/moduler/traening/mikrotraening/abo/${dagNummer}`);
+		goto(`/app/moduler/traening/mikrotraening/abo/${dato}`);
 	}
 </script>
 

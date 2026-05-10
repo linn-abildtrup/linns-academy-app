@@ -5,14 +5,14 @@
 	import type { UserDoc } from '$lib/types';
 	import type { Exercise, TrainingDay } from '$lib/content/mikrotraening';
 	import {
-		ABO_MIKROTRAENING_DAGE,
 		aktuelAboDag,
-		harKlaretAboDagIRunde,
-		type AboMikrotraeningFremgang
+		type AboMikrotraeningFremgang,
+		type AboMikrotraeningTraening
 	} from '$lib/content/aboMikrotraening';
 	import {
 		hentAboFremgang,
 		hentAboMikrotraeningProgram,
+		hentAlleAboTraeninger,
 		type AboMikrotraeningProgramMedDage
 	} from '$lib/firestore/aboMikrotraening';
 	import { hentExercises } from '$lib/firestore/mikrotraening';
@@ -26,11 +26,34 @@
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
 
-	const dagNummer = $derived(parseInt(page.params.dag ?? '', 10));
+	const dato = $derived(page.params.dato ?? '');
 	const produktType = $derived<'basis' | 'premium'>(harPremium(userDoc) ? 'premium' : 'basis');
+
+	function dagsDatoStr(d: Date): string {
+		const aar = d.getFullYear();
+		const m = String(d.getMonth() + 1).padStart(2, '0');
+		const dag = String(d.getDate()).padStart(2, '0');
+		return `${aar}-${m}-${dag}`;
+	}
+
+	const idagDato = $derived(dagsDatoStr(new Date()));
+	const datoErGyldig = $derived(/^\d{4}-\d{2}-\d{2}$/.test(dato));
+
+	const datoStatus = $derived.by<'i_dag' | 'fortid_naer' | 'fortid_lang' | 'fremtid'>(() => {
+		if (!datoErGyldig) return 'fremtid';
+		if (dato === idagDato) return 'i_dag';
+		if (dato > idagDato) return 'fremtid';
+		// Beregn dage siden
+		const a = new Date(idagDato);
+		const b = new Date(dato);
+		const diffMs = a.getTime() - b.getTime();
+		const dageSiden = Math.round(diffMs / (1000 * 60 * 60 * 24));
+		return dageSiden <= 3 ? 'fortid_naer' : 'fortid_lang';
+	});
 
 	let programData = $state<AboMikrotraeningProgramMedDage | null>(null);
 	let fremgang = $state<AboMikrotraeningFremgang | null>(null);
+	let eksisterendeTraening = $state<AboMikrotraeningTraening | null>(null);
 	let exerciseMap = $state<Map<string, Exercise>>(new Map());
 
 	let aabenPreview = $state<Exercise | null>(null);
@@ -40,13 +63,38 @@
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
+	// ProgramDag bestemmes fra dato:
+	// - Eksisterende træning: brug stored programDag
+	// - I dag eller seneste få dage uden træning: brug aktuelAboDag
+	// - Fremtid eller ingen træning langt tilbage: vis fejl
+	const programDag = $derived.by<number | null>(() => {
+		if (eksisterendeTraening) return eksisterendeTraening.programDag;
+		if (datoStatus === 'i_dag' || datoStatus === 'fortid_naer') {
+			return aktuelAboDag(fremgang);
+		}
+		return null;
+	});
 	const dag = $derived<TrainingDay | null>(
-		programData?.dage.find((d) => d.dagNummer === dagNummer) ?? null
+		programData && programDag !== null
+			? programData.dage.find((d) => d.dagNummer === programDag) ?? null
+			: null
 	);
 	const harOvelser = $derived((dag?.exercises.length ?? 0) > 0);
-	const aktivDag = $derived(aktuelAboDag(fremgang));
-	const erKlaretIRunde = $derived(harKlaretAboDagIRunde(fremgang, dagNummer));
-	const erAktivDag = $derived(dagNummer === aktivDag);
+	const erTraenet = $derived(eksisterendeTraening !== null);
+	const kanStartes = $derived(
+		(datoStatus === 'i_dag' || datoStatus === 'fortid_naer') && !erTraenet
+	);
+
+	const datoLabel = $derived.by(() => {
+		if (!datoErGyldig) return '';
+		const [aar, m, d] = dato.split('-').map(Number);
+		const dt = new Date(aar, m - 1, d);
+		return dt.toLocaleDateString('da-DK', {
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long'
+		});
+	});
 
 	async function aabnPreview(ex: Exercise) {
 		aabenPreview = ex;
@@ -86,16 +134,22 @@
 			loading = false;
 			return;
 		}
-		if (!Number.isFinite(dagNummer) || dagNummer < 1 || dagNummer > ABO_MIKROTRAENING_DAGE) {
-			fejl = 'Ugyldigt dag-nummer.';
+		if (!datoErGyldig) {
+			fejl = 'Ugyldig dato.';
+			loading = false;
+			return;
+		}
+		if (datoStatus === 'fremtid') {
+			fejl = 'Du kan ikke åbne en dag der ligger i fremtiden.';
 			loading = false;
 			return;
 		}
 
 		try {
-			const [program, f] = await Promise.all([
+			const [program, f, traeninger] = await Promise.all([
 				hentAboMikrotraeningProgram(produktType),
-				hentAboFremgang(u.uid)
+				hentAboFremgang(u.uid),
+				hentAlleAboTraeninger(u.uid)
 			]);
 			if (!program) {
 				fejl = 'Træningsprogrammet er ikke sat op endnu.';
@@ -104,8 +158,15 @@
 			}
 			programData = program;
 			fremgang = f;
+			eksisterendeTraening = traeninger.find((t) => t.dato === dato) ?? null;
 
-			const exerciseIds = (program.dage.find((d) => d.dagNummer === dagNummer)?.exercises ?? []).map(
+			if (programDag === null) {
+				// Fortid uden træning og uden mulighed for sen-træning
+				loading = false;
+				return;
+			}
+
+			const exerciseIds = (program.dage.find((d) => d.dagNummer === programDag)?.exercises ?? []).map(
 				(e) => e.exerciseId
 			);
 			if (exerciseIds.length > 0) {
@@ -127,12 +188,14 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Tilbage</span>
 		</a>
-		<div class="eyebrow">Dag {dagNummer} af {ABO_MIKROTRAENING_DAGE}</div>
+		<div class="eyebrow">{datoLabel}</div>
 		<h1>Dagens øvelser</h1>
 		{#if dag?.indledning}
 			<p class="page-sub">{dag.indledning}</p>
+		{:else if erTraenet}
+			<p class="page-sub">Du trænede denne dag — her er hvad du lavede.</p>
 		{:else}
-			<p class="page-sub">Tryk på en øvelse for at se den. Marker som gennemført når du er færdig.</p>
+			<p class="page-sub">Tryk på en øvelse for at se den. Start træningen når du er klar.</p>
 		{/if}
 	</header>
 
@@ -140,8 +203,12 @@
 		<Loading tekst="Henter dagens øvelser..." />
 	{:else if fejl}
 		<div class="status-besked fejl">{fejl}</div>
+	{:else if programDag === null}
+		<div class="status-besked">
+			Du trænede ikke denne dag — og det er for længe siden til at registrere det nu.
+		</div>
 	{:else if !dag}
-		<div class="status-besked fejl">Dag {dagNummer} kunne ikke findes.</div>
+		<div class="status-besked fejl">Træningen for denne dag kunne ikke findes.</div>
 	{:else if !harOvelser}
 		<div class="status-besked">
 			Der er ikke lagt øvelser ind for denne dag endnu. Kig forbi senere.
@@ -181,31 +248,19 @@
 			{/each}
 		</div>
 
-		{#if erKlaretIRunde}
+		{#if erTraenet}
 			<div class="done-banner">
 				<Icon name="check" size={14} color="#6f9e7e" />
-				<span>Du har klaret denne dag i runden — du er velkommen til at køre den igen.</span>
-			</div>
-		{:else if !erAktivDag}
-			<div class="info-banner">
-				Dag {aktivDag} er din næste dag. Du kan se denne dag, men kan først starte den når du har klaret dagene før.
+				<span>Du trænede denne dag — du er velkommen til at køre den igen.</span>
 			</div>
 		{/if}
 
-		<a
-			class="start-knap"
-			class:disabled={!erAktivDag && !erKlaretIRunde}
-			href="/app/moduler/traening/mikrotraening/abo/{dagNummer}/spil"
-		>
-			{#if erKlaretIRunde}
-				Kør træningen igen
-			{:else if erAktivDag}
-				Start træning
-			{:else}
-				Ikke aktiv dag
-			{/if}
-			<Icon name="arrow" size={14} color="#fff" />
-		</a>
+		{#if kanStartes || erTraenet}
+			<a class="start-knap" href="/app/moduler/traening/mikrotraening/abo/{dato}/spil">
+				{erTraenet ? 'Kør træningen igen' : datoStatus === 'i_dag' ? 'Start dagens træning' : 'Registrer træning'}
+				<Icon name="arrow" size={14} color="#fff" />
+			</a>
+		{/if}
 	{/if}
 </div>
 
@@ -410,17 +465,6 @@
 		margin-bottom: 14px;
 	}
 
-	.info-banner {
-		padding: 12px 14px;
-		background: var(--tdim);
-		border: 1px solid var(--tdim2);
-		border-radius: 12px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
-		color: var(--text2);
-		margin-bottom: 14px;
-		line-height: 1.5;
-	}
-
 	.start-knap {
 		display: flex;
 		align-items: center;
@@ -438,11 +482,6 @@
 		font-family: var(--ff-b);
 		text-decoration: none;
 		box-sizing: border-box;
-	}
-
-	.start-knap.disabled {
-		opacity: 0.5;
-		pointer-events: none;
 	}
 
 	.preview-knap {
