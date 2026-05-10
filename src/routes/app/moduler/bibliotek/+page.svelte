@@ -203,7 +203,8 @@
 			(o) =>
 				o.titel.toLowerCase().includes(q) ||
 				o.beskrivelse.toLowerCase().includes(q) ||
-				o.kategorier.some((k) => KATEGORI_LABELS[k].toLowerCase().includes(q))
+				o.kategorier.some((k) => KATEGORI_LABELS[k].toLowerCase().includes(q)) ||
+				o.ingredienser.some((i) => i.navn.toLowerCase().includes(q))
 		);
 	});
 

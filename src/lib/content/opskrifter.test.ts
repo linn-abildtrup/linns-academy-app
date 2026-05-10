@@ -97,6 +97,11 @@ describe('filtrerOpskrifter', () => {
 		expect(filtrerOpskrifter(liste, 'protein', [])).toEqual(liste);
 	});
 
+	it('søger også i ingrediens-navne', () => {
+		expect(filtrerOpskrifter(liste, 'havregryn', [])).toEqual([havregroed]);
+		expect(filtrerOpskrifter(liste, 'mælk', [])).toEqual([havregroed]);
+	});
+
 	it('kombinerer søgeord og kategori', () => {
 		expect(filtrerOpskrifter(liste, 'kylling', ['morgenmad'])).toEqual([]);
 	});

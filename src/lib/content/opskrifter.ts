@@ -128,7 +128,8 @@ export function filtrerOpskrifter(
 			if (!harAlle) return false;
 		}
 		if (q) {
-			const tekst = (o.titel + ' ' + o.beskrivelse).toLowerCase();
+			const ingredienserTekst = o.ingredienser.map((i) => i.navn).join(' ');
+			const tekst = (o.titel + ' ' + o.beskrivelse + ' ' + ingredienserTekst).toLowerCase();
 			if (!tekst.includes(q)) return false;
 		}
 		return true;
