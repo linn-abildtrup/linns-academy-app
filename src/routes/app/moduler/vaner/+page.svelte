@@ -12,14 +12,18 @@
 		type VaneProgramDag,
 		type VanedagEntry
 	} from '$lib/content/vaner';
+	import { CHECKIN_SPORGSMAAL, type CheckinSvar } from '$lib/content/vaner';
 	import {
 		beregnAboFlowerNiveau,
 		aboTrendScore,
+		aboVaneSamletProcent,
 		beregnAboFremgang,
 		dagensBonus,
 		erUgentligCheckinDag,
 		formaterDato,
+		forsteCheckin,
 		parseDato,
+		senesteCheckin,
 		type AboBonusForslag,
 		type AboVaneOpsaetning,
 		type AboVanedagEntry
@@ -130,6 +134,18 @@
 
 	const trend7 = $derived(aboTrendScore(entriesIInterval(7)));
 	const trend30 = $derived(aboTrendScore(entriesIInterval(30)));
+
+	const alleAboEntriesArr = $derived(Array.from(aboEntries.values()));
+	const samletProcent = $derived.by(() => {
+		if (!aboOpsaetning) return { antalDage: 0, score: 0 };
+		return aboVaneSamletProcent(aboOpsaetning.valgteVaner, alleAboEntriesArr);
+	});
+
+	const baseline = $derived(forsteCheckin(alleAboEntriesArr));
+	const seneste = $derived(senesteCheckin(alleAboEntriesArr));
+	const harFlereCheckins = $derived(
+		baseline !== null && seneste !== null && baseline.dato !== seneste.dato
+	);
 
 	const dagsLabel = $derived.by(() => {
 		const d = new Date();
@@ -409,6 +425,62 @@
 				</div>
 				<p class="hint">Klik på en dag for at åbne den</p>
 			</section>
+
+			{#if samletProcent.antalDage > 0}
+				<section class="card procent-card">
+					<div class="card-head">
+						<div class="section-label">Vaner opnået</div>
+						<div class="card-tael">{samletProcent.antalDage} {samletProcent.antalDage === 1 ? 'dag' : 'dage'} indtastet</div>
+					</div>
+					<div class="procent-stor">{samletProcent.score}%</div>
+					<p class="hint procent-hint">
+						Beregnet på tværs af alle de dage du har indtastet. Hver vane vægtes
+						lige — 'ja' tæller som 1, 'delvist' som 0,5, 'nej' som 0.
+					</p>
+				</section>
+			{/if}
+
+			{#if baseline && seneste}
+				<section class="card">
+					<div class="card-head">
+						<div class="section-label">Din udvikling</div>
+						{#if harFlereCheckins}
+							<div class="card-tael">Skala 1-10</div>
+						{/if}
+					</div>
+					{#if !harFlereCheckins}
+						<p class="hint">
+							Dette er dit første check-in (baseline). Tag et nyt ugentligt check-in
+							om søndagen for at se din udvikling siden.
+						</p>
+					{/if}
+					<div class="udvikling-liste">
+						{#each CHECKIN_SPORGSMAAL as q (q.id)}
+							{@const id = q.id as keyof CheckinSvar}
+							{@const baseVal = baseline.checkin[id] as number}
+							{@const senesteVal = seneste.checkin[id] as number}
+							{@const delta = senesteVal - baseVal}
+							<div class="udvikling-row">
+								<div class="udvikling-label">{q.label}</div>
+								<div class="udvikling-skala">
+									<span class="udvikling-baseline" title="Baseline">{baseVal}</span>
+									{#if harFlereCheckins}
+										<span class="udvikling-pil">→</span>
+										<span class="udvikling-seneste" title="Seneste">{senesteVal}</span>
+										{#if delta > 0}
+											<span class="udvikling-delta op">+{delta}</span>
+										{:else if delta < 0}
+											<span class="udvikling-delta ned">{delta}</span>
+										{:else}
+											<span class="udvikling-delta nul">±0</span>
+										{/if}
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+				</section>
+			{/if}
 
 			{#if trend7.antal > 0 || trend30.antal > 0}
 				<section class="card trend-card">
@@ -922,5 +994,94 @@
 	.trend-hint {
 		margin-top: 10px;
 		margin-bottom: 0;
+	}
+
+	.procent-card {
+		text-align: center;
+	}
+
+	.procent-stor {
+		font-family: var(--ff-d);
+		font-size: calc(48px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--terra);
+		line-height: 1;
+		margin: 8px 0;
+	}
+
+	.procent-hint {
+		margin-top: 6px;
+		margin-bottom: 0;
+		text-align: center;
+	}
+
+	.udvikling-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
+
+	.udvikling-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 9px 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.udvikling-row:first-child {
+		border-top: none;
+	}
+
+	.udvikling-label {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+	}
+
+	.udvikling-skala {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-family: var(--ff-d);
+		font-weight: 600;
+	}
+
+	.udvikling-baseline {
+		font-size: calc(15px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.udvikling-pil {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text4);
+	}
+
+	.udvikling-seneste {
+		font-size: calc(18px * var(--fs-scale, 1));
+		color: var(--terra);
+	}
+
+	.udvikling-delta {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		padding: 2px 7px;
+		border-radius: 99px;
+		min-width: 32px;
+		text-align: center;
+	}
+
+	.udvikling-delta.op {
+		background: var(--sdim);
+		color: #4a6b54;
+	}
+
+	.udvikling-delta.ned {
+		background: #fbeeea;
+		color: #8a4a3e;
+	}
+
+	.udvikling-delta.nul {
+		background: var(--bg2);
+		color: var(--text3);
 	}
 </style>

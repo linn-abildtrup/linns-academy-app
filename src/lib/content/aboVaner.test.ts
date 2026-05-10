@@ -8,8 +8,11 @@ import {
 	beregnAboDagsStatus,
 	beregnAboFlowerNiveau,
 	aboVaneStatistik,
+	aboVaneSamletProcent,
 	aboTrendScore,
 	beregnAboFremgang,
+	forsteCheckin,
+	senesteCheckin,
 	type ValgtVane,
 	type AboBonusForslag,
 	type AboVanedagEntry
@@ -223,5 +226,64 @@ describe('beregnAboFremgang', () => {
 		entries.set('2026-05-12', { ...tomEntry('2026-05-12'), checks: { pm: 'ja' } });
 		const r = beregnAboFremgang(vaner3, entries, bonusPulje, '2026-05-11', '2026-05-13');
 		expect(r).toEqual({ gennemforte: 1, iAlt: 3 });
+	});
+});
+
+describe('aboVaneSamletProcent', () => {
+	it('returnerer 0 for tomme entries', () => {
+		expect(aboVaneSamletProcent(vaner3, [])).toEqual({ antalDage: 0, score: 0 });
+	});
+
+	it('100 hvis alle dage har alle ja', () => {
+		const entries: AboVanedagEntry[] = [
+			{ ...tomEntry('2026-05-10'), checks: { pm: 'ja', sk: 'ja', sv: 'ja' } },
+			{ ...tomEntry('2026-05-11'), checks: { pm: 'ja', sk: 'ja', sv: 'ja' } }
+		];
+		expect(aboVaneSamletProcent(vaner3, entries)).toEqual({ antalDage: 2, score: 100 });
+	});
+
+	it('beregner gennemsnit på tværs af dage', () => {
+		const entries: AboVanedagEntry[] = [
+			{ ...tomEntry('2026-05-10'), checks: { pm: 'ja', sk: 'ja', sv: 'ja' } }, // 100%
+			{ ...tomEntry('2026-05-11'), checks: { pm: 'ja', sk: 'delvist', sv: 'nej' } } // 50%
+		];
+		expect(aboVaneSamletProcent(vaner3, entries)).toEqual({ antalDage: 2, score: 75 });
+	});
+
+	it('udelukker dage uden vane-svar', () => {
+		const entries: AboVanedagEntry[] = [
+			{ ...tomEntry('2026-05-10'), checks: { pm: 'ja', sk: 'ja', sv: 'ja' } },
+			{ ...tomEntry('2026-05-11'), checks: {} } // ingen svar
+		];
+		expect(aboVaneSamletProcent(vaner3, entries)).toEqual({ antalDage: 1, score: 100 });
+	});
+});
+
+describe('forsteCheckin / senesteCheckin', () => {
+	const fuldCheckin = { energi: 7, mave: 6, cravings: 5, humor: 8, sovn: 7 };
+
+	it('returnerer null når ingen entry har komplet checkin', () => {
+		const entries: AboVanedagEntry[] = [
+			{ ...tomEntry('2026-05-10'), checkin: { energi: 7 } } // ufuldstændig
+		];
+		expect(forsteCheckin(entries)).toBeNull();
+		expect(senesteCheckin(entries)).toBeNull();
+	});
+
+	it('forsteCheckin finder den tidligste komplette', () => {
+		const entries: AboVanedagEntry[] = [
+			{ ...tomEntry('2026-05-15'), checkin: fuldCheckin },
+			{ ...tomEntry('2026-05-10'), checkin: fuldCheckin },
+			{ ...tomEntry('2026-05-12'), checkin: { energi: 5 } }
+		];
+		expect(forsteCheckin(entries)?.dato).toBe('2026-05-10');
+	});
+
+	it('senesteCheckin finder den nyeste komplette', () => {
+		const entries: AboVanedagEntry[] = [
+			{ ...tomEntry('2026-05-15'), checkin: fuldCheckin },
+			{ ...tomEntry('2026-05-10'), checkin: fuldCheckin }
+		];
+		expect(senesteCheckin(entries)?.dato).toBe('2026-05-15');
 	});
 });

@@ -245,6 +245,69 @@ export function aboVaneStatistik(
 }
 
 /**
+ * Samlet procent vaner opnået på tværs af alle dage hvor brugeren har
+ * besvaret mindst én vane. Hver vane vægtes lige. 'ja' = 1, 'delvist' = 0.5,
+ * 'nej' = 0. Returnerer { antalDage, score } hvor score er 0-100.
+ *
+ * Eksempel: bruger har 3 vaner, har besvaret 4 dage. På dag 1 har hun 3 ja
+ * = 100%. På dag 2 har hun 2 ja og 1 delvist = 83%. Osv. Samlet score er
+ * gennemsnittet af dagsscorerne.
+ */
+export function aboVaneSamletProcent(
+	valgteVaner: ValgtVane[],
+	entries: AboVanedagEntry[]
+): { antalDage: number; score: number } {
+	if (valgteVaner.length === 0) return { antalDage: 0, score: 0 };
+
+	let antalDage = 0;
+	let sumDage = 0;
+	for (const e of entries) {
+		const harSvarPaaEnVane = valgteVaner.some((v) => e.checks?.[v.id]);
+		if (!harSvarPaaEnVane) continue;
+		antalDage++;
+		const dagScore = valgteVaner.reduce((s, v) => {
+			const svar = e.checks?.[v.id];
+			return s + (svar === 'ja' ? 1 : svar === 'delvist' ? 0.5 : 0);
+		}, 0);
+		sumDage += dagScore / valgteVaner.length;
+	}
+	if (antalDage === 0) return { antalDage: 0, score: 0 };
+	return { antalDage, score: Math.round((sumDage / antalDage) * 100) };
+}
+
+/**
+ * Returnerer den FØRSTE entry hvor alle 5 sliders er udfyldt — bruges som
+ * baseline til sammenligning. Sorterer entries efter dato. Hvis ingen
+ * entry har komplet check-in, returneres null.
+ */
+export function forsteCheckin(entries: AboVanedagEntry[]): AboVanedagEntry | null {
+	const sorteret = [...entries].sort((a, b) => a.dato.localeCompare(b.dato));
+	for (const e of sorteret) {
+		if (harKomplettCheckin(e)) return e;
+	}
+	return null;
+}
+
+/**
+ * Returnerer den SENESTE entry hvor alle 5 sliders er udfyldt.
+ * Bruges til 'din udvikling siden baseline'-visning.
+ */
+export function senesteCheckin(entries: AboVanedagEntry[]): AboVanedagEntry | null {
+	const sorteret = [...entries].sort((a, b) => b.dato.localeCompare(a.dato));
+	for (const e of sorteret) {
+		if (harKomplettCheckin(e)) return e;
+	}
+	return null;
+}
+
+function harKomplettCheckin(e: AboVanedagEntry): boolean {
+	if (!e.checkin) return false;
+	return CHECKIN_SPORGSMAAL.every(
+		(q) => typeof e.checkin[q.id as keyof CheckinSvar] === 'number'
+	);
+}
+
+/**
  * Tæller hvor mange dage i intervallet der har status='completed'.
  * fraDato/tilDato inklusive, format YYYY-MM-DD.
  */
