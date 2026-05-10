@@ -38,24 +38,24 @@ export async function gemBrugerProfilOgMaal(
 }
 
 /**
- * Sætter admin-klient-mode for en bestemt forløbsId. Mens feltet er sat
- * opfører appen sig som om admin var klient på forløbet. Auto-opretter
+ * Sætter admin-klient-mode til et specifikt forløb. Mens feltet er sat
+ * opfører appen sig som om admin var forløbskunde på forløbet. Auto-opretter
  * userProduct på den scoped path så klient-modulerne har data at læse.
  */
-export async function gemAdminKlientMode(uid: string, forlobId: string): Promise<void> {
+export async function gemAdminKlientForlob(uid: string, forlobId: string): Promise<void> {
 	const { serverTimestamp, getDoc } = await import('firebase/firestore');
 
-	// 1. Sæt mode-flaget på userDoc
-	await updateDoc(doc(db, 'users', uid), { adminKlientForlobId: forlobId });
+	await updateDoc(doc(db, 'users', uid), {
+		adminKlientForlobId: forlobId,
+		adminKlientMode: 'forlob'
+	});
 
-	// 2. Auto-opret userProduct hvis det ikke findes på den scoped path
 	const productRef = doc(
 		db,
 		`users/${uid}/adminKlient/${forlobId}/products/kickstart`
 	);
 	const eks = await getDoc(productRef);
 	if (!eks.exists()) {
-		// Hent forløb for at få startDato
 		const forlobRef = doc(db, 'forlob', forlobId);
 		const forlobSnap = await getDoc(forlobRef);
 		const forlobData = forlobSnap.exists() ? forlobSnap.data() : null;
@@ -72,13 +72,38 @@ export async function gemAdminKlientMode(uid: string, forlobId: string): Promise
 }
 
 /**
- * Skifter tilbage til admin-mode ved at fjerne adminKlientForlobId.
- * Bruger 'deleteField' så feltet ikke står tilbage som null/undefined.
+ * Sætter admin-klient-mode til basis- eller premium-app. Scope-id er en
+ * reserved-streng (__basisapp / __premiumapp) så data scope'r til en
+ * dedikeret sandkasse under users/{uid}/adminKlient/{scope}/...
+ */
+export async function gemAdminKlientApp(
+	uid: string,
+	mode: 'basisapp' | 'premiumapp'
+): Promise<void> {
+	const scope = mode === 'basisapp' ? '__basisapp' : '__premiumapp';
+	await updateDoc(doc(db, 'users', uid), {
+		adminKlientForlobId: scope,
+		adminKlientMode: mode
+	});
+}
+
+/**
+ * @deprecated Brug gemAdminKlientForlob i stedet. Beholdt mens andre
+ * kald-steder migreres.
+ */
+export async function gemAdminKlientMode(uid: string, forlobId: string): Promise<void> {
+	return gemAdminKlientForlob(uid, forlobId);
+}
+
+/**
+ * Skifter tilbage til admin-mode ved at fjerne både adminKlientForlobId
+ * og adminKlientMode. Bruger deleteField så felterne ikke står tilbage.
  */
 export async function ryAdminKlientMode(uid: string): Promise<void> {
 	const { deleteField } = await import('firebase/firestore');
 	await updateDoc(doc(db, 'users', uid), {
-		adminKlientForlobId: deleteField()
+		adminKlientForlobId: deleteField(),
+		adminKlientMode: deleteField()
 	});
 }
 

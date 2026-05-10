@@ -5,7 +5,7 @@
 	import Icon, { type IconName } from '$lib/components/Icon.svelte';
 	import type { UserDoc } from '$lib/types';
 	import { isAdmin } from '$lib/admin';
-	import { gemAdminKlientMode, ryAdminKlientMode } from '$lib/userDoc';
+	import { gemAdminKlientApp, gemAdminKlientForlob, ryAdminKlientMode } from '$lib/userDoc';
 	import AdminKlientVaelger from '$lib/components/AdminKlientVaelger.svelte';
 	import { effektivState } from '$lib/utils/userAdgang';
 
@@ -27,7 +27,7 @@
 	const user = $derived(getUser?.());
 
 	const erAdmin = $derived(isAdmin(user ?? null));
-	const erIKlientMode = $derived(!!userDoc?.adminKlientForlobId);
+	const erIKlientMode = $derived(!!userDoc?.adminKlientMode || !!userDoc?.adminKlientForlobId);
 	const beskederHref = $derived(
 		erAdmin && !erIKlientMode ? '/app/admin/spoergsmaal' : '/app/beskeder'
 	);
@@ -42,7 +42,19 @@
 		const u = user;
 		if (!u) return;
 		try {
-			await gemAdminKlientMode(u.uid, forlobId);
+			await gemAdminKlientForlob(u.uid, forlobId);
+		} catch (e) {
+			console.error('Kunne ikke skifte til klient-mode:', e);
+		} finally {
+			viserKlientVaelger = false;
+		}
+	}
+
+	async function vaelgKlientApp(mode: 'basisapp' | 'premiumapp') {
+		const u = user;
+		if (!u) return;
+		try {
+			await gemAdminKlientApp(u.uid, mode);
 		} catch (e) {
 			console.error('Kunne ikke skifte til klient-mode:', e);
 		} finally {
@@ -203,7 +215,9 @@
 {#if viserKlientVaelger}
 	<AdminKlientVaelger
 		aktivtForlobId={userDoc?.adminKlientForlobId}
-		onVaelg={vaelgKlientForlob}
+		aktivMode={userDoc?.adminKlientMode}
+		onVaelgForlob={vaelgKlientForlob}
+		onVaelgApp={vaelgKlientApp}
 		onClose={() => (viserKlientVaelger = false)}
 	/>
 {/if}

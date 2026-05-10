@@ -28,20 +28,55 @@
 	let loading = $state(true);
 
 	// Når admin er i klient-mode, override'r vi adgangs-felterne så
-	// klient-modulerne reagerer som om admin var klient på det valgte
-	// forløb. Den rigtige userDoc i Firestore ændres ikke — kun det
-	// context-objekt modulerne læser. Både legacy 'state' og de nye
-	// access-felter overrides så både gamle og refactor'ede callsites
-	// ser admin som forløbskunde.
+	// klient-modulerne reagerer som om admin var den valgte klient-type.
+	// Den rigtige userDoc i Firestore ændres ikke — kun det context-objekt
+	// modulerne læser.
+	//
+	// 3 modes:
+	// - 'forlob': forløbskunde på et specifikt forløb (Maria-flow)
+	// - 'basisapp': modulbruger med basis-abo
+	// - 'premiumapp': modulbruger med premium-abo
 	function effektivUserDoc(d: UserDoc | null): UserDoc | null {
 		if (!d) return null;
-		if (d.adminKlientForlobId) {
+		const mode = d.adminKlientMode;
+		// Bagudkompatibilitet: hvis adminKlientForlobId er sat men adminKlientMode
+		// mangler (gamle dokumenter), antag forlobs-mode.
+		if (!mode && d.adminKlientForlobId) {
 			return {
 				...d,
 				state: 'forlobskunde',
 				accessLevel: 'basis',
 				accessSource: 'forløb',
 				activeProduct: 'kickstart'
+			};
+		}
+		if (mode === 'forlob') {
+			return {
+				...d,
+				state: 'forlobskunde',
+				accessLevel: 'basis',
+				accessSource: 'forløb',
+				activeProduct: 'kickstart'
+			};
+		}
+		if (mode === 'basisapp') {
+			return {
+				...d,
+				state: 'modulbruger',
+				accessLevel: 'basis',
+				accessSource: 'abonnement',
+				activeProduct: 'basisabo',
+				activeSubscription: true
+			};
+		}
+		if (mode === 'premiumapp') {
+			return {
+				...d,
+				state: 'modulbruger',
+				accessLevel: 'premium',
+				accessSource: 'abonnement',
+				activeProduct: 'premiumabo',
+				activeSubscription: true
 			};
 		}
 		return d;
@@ -134,8 +169,12 @@
 	<IngenAdgangScreen />
 {:else}
 	<div class="app-shell">
-		{#if userDoc?.adminKlientForlobId}
-			<AdminKlientBanner forlobId={userDoc.adminKlientForlobId} onAfslut={afslutKlientMode} />
+		{#if userDoc?.adminKlientMode || userDoc?.adminKlientForlobId}
+			<AdminKlientBanner
+				mode={userDoc.adminKlientMode}
+				forlobId={userDoc.adminKlientForlobId}
+				onAfslut={afslutKlientMode}
+			/>
 		{/if}
 		<Header />
 		<main class="content">

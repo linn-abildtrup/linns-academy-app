@@ -1,34 +1,44 @@
 <script lang="ts">
 	// Banner der vises øverst i app-shellen når admin er i klient-mode.
-	// Påminder Linn om hvilket forløb hun ser med klient-øjne, og giver et
-	// hurtigt link tilbage til admin-mode.
+	// Viser hvilken klient-oplevelse Linn tester (basis-app, premium-app
+	// eller specifikt forløb), og giver et hurtigt link tilbage til admin.
 	import { onMount } from 'svelte';
 	import { hentForlob } from '$lib/firestore/forlob';
 	import Icon from '$lib/components/Icon.svelte';
 
 	interface Props {
-		forlobId: string;
+		mode?: 'forlob' | 'basisapp' | 'premiumapp';
+		forlobId?: string;
 		onAfslut: () => void;
 	}
 
-	let { forlobId, onAfslut }: Props = $props();
+	let { mode, forlobId, onAfslut }: Props = $props();
 
 	let forlobNavn = $state<string>('');
+	const erForlob = $derived(mode === 'forlob' || (!mode && !!forlobId));
 
 	onMount(async () => {
-		try {
-			const f = await hentForlob(forlobId);
-			forlobNavn = f?.navn ?? forlobId;
-		} catch (e) {
-			console.warn('Kunne ikke hente forløbsnavn:', e);
-			forlobNavn = forlobId;
+		if (erForlob && forlobId) {
+			try {
+				const f = await hentForlob(forlobId);
+				forlobNavn = f?.navn ?? forlobId;
+			} catch (e) {
+				console.warn('Kunne ikke hente forløbsnavn:', e);
+				forlobNavn = forlobId;
+			}
 		}
+	});
+
+	const label = $derived.by(() => {
+		if (mode === 'basisapp') return 'Basis-app';
+		if (mode === 'premiumapp') return 'Premium-app';
+		return forlobNavn || '...';
 	});
 </script>
 
 <div class="banner">
 	<Icon name="user" size={14} color="#fff" />
-	<span class="banner-tekst">Klient-mode: <strong>{forlobNavn || '...'}</strong></span>
+	<span class="banner-tekst">Klient-mode: <strong>{label}</strong></span>
 	<button type="button" class="banner-knap" onclick={onAfslut}>Skift tilbage</button>
 </div>
 

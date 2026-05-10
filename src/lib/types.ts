@@ -134,11 +134,22 @@ export interface UserDoc {
 	// Når admin (Linn) bruger 'Skift til klient'-knappen lander dette
 	// felt på hendes egen userDoc. Mens det er sat, scope'r alle
 	// klient-data-helpers (måltider, vaner, mikrotræning-fremgang osv.)
-	// deres læs/skriv-operationer til 'users/{uid}/adminKlient/{forlobId}/...'
+	// deres læs/skriv-operationer til 'users/{uid}/adminKlient/{scope}/...'
 	// så Linns admin-data ikke blandes sammen med klient-test-data.
-	// Felt er KUN aktivt for admin-emails — det giver ingen mening for
-	// almindelige klienter.
+	// Felt er KUN aktivt for admin-emails.
+	//
+	// scope = forløbsId hvis adminKlientMode='forlob', ellers '__basisapp'
+	// eller '__premiumapp'. Sat samtidig med adminKlientMode.
 	adminKlientForlobId?: string;
+
+	/**
+	 * Hvilken klient-oplevelse admin tester:
+	 * - 'forlob': admin er klient på et specifikt forløb (forløbskunde)
+	 * - 'basisapp': admin tester basis-app som modulbruger
+	 * - 'premiumapp': admin tester premium-app som modulbruger
+	 * Når feltet ikke er sat, er admin i normal admin-mode.
+	 */
+	adminKlientMode?: 'forlob' | 'basisapp' | 'premiumapp';
 
 	/**
 	 * Alle forløb brugeren nogensinde har været på (Kickstart, Premium-forløb,
