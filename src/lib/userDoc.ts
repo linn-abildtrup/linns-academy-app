@@ -1,4 +1,4 @@
-import { doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
+import { arrayUnion, doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { BrugerProfil, DagligeMaal, UserDoc, UserState } from '$lib/types';
 import {
@@ -172,11 +172,17 @@ export async function synkroniserForlobskundeStatus(
 	const allowed = await hentAllowedEmail(email);
 	if (!allowed) return current;
 
-	const opdateringer: Partial<UserDoc> = {};
+	const opdateringer: Record<string, unknown> = {};
 
-	// Forløbs-flow: opret userProduct og sæt state hvis CSV gav os forlobId
+	// Forløbs-flow: opret userProduct og append forløbet til forlobIds-arrayet.
+	// Vigtigt: gamle userProducts slettes ALDRIG — bibliotek skal stadig vise
+	// materiale fra forløb brugeren har gennemført, selv hvis hun nu er på
+	// noget andet. activeProduct-id'et bruges som dokumentnavn så Maria der
+	// først tager Kickstart og senere Premium-forløb ender med to docs:
+	// products/kickstart + products/premiumforløb.
 	if (allowed.forlobId) {
-		const productRef = doc(db, 'users', uid, 'products', 'kickstart');
+		const productId = allowed.activeProduct ?? 'kickstart';
+		const productRef = doc(db, 'users', uid, 'products', productId);
 		const productSnap = await getDoc(productRef);
 		if (productSnap.exists()) {
 			const data = productSnap.data() as { forlobId?: string };
@@ -193,6 +199,9 @@ export async function synkroniserForlobskundeStatus(
 				fremgang: {}
 			});
 		}
+		// Append forløbet til userDoc.forlobIds — historik bevares så
+		// bibliotek kan vise materiale fra alle tidligere forløb.
+		opdateringer.forlobIds = arrayUnion(allowed.forlobId);
 		if (current.state !== 'forlobskunde') {
 			opdateringer.state = 'forlobskunde';
 		}
@@ -234,5 +243,12 @@ export async function synkroniserForlobskundeStatus(
 		);
 	}
 
-	return { ...current, ...opdateringer };
+	// Build returneret userDoc — erstat arrayUnion-FieldValue med den
+	// faktiske array-værdi vi forventer at have i Firestore bagefter.
+	const lokalOpdateringer = { ...opdateringer };
+	if (allowed.forlobId) {
+		const eks = (current as UserDoc & { forlobIds?: string[] }).forlobIds ?? [];
+		lokalOpdateringer.forlobIds = Array.from(new Set([...eks, allowed.forlobId]));
+	}
+	return { ...current, ...lokalOpdateringer } as UserDoc;
 }

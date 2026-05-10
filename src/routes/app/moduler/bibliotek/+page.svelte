@@ -3,7 +3,6 @@
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import type { User } from 'firebase/auth';
-	import type { UserProduct } from '$lib/content/mikrotraening';
 	import type {
 		FaqKategori,
 		FaqItem,
@@ -30,12 +29,34 @@
 		hentGuideItems
 	} from '$lib/firestore/bibliotek';
 	import { hentForlobsdage } from '$lib/firestore/forlob';
-	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
 	import type { UserDoc } from '$lib/types';
 	import { erForlobsklient } from '$lib/utils/userAdgang';
+	import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+	import { db } from '$lib/firebase';
+
+	/**
+	 * Hent alle forløb brugeren nogensinde har været på. Primær kilde er
+	 * userDoc.forlobIds (sat af webhook + sync). Fallback: scan alle
+	 * dokumenter i users/{uid}/products og uddrag deres forlobId-felt
+	 * (dækker brugere oprettet før forlobIds-feltet blev introduceret).
+	 */
+	async function hentBrugerensForlobIds(uid: string): Promise<string[]> {
+		const userSnap = await getDoc(doc(db, 'users', uid));
+		const data = userSnap.exists() ? (userSnap.data() as UserDoc) : null;
+		const fraDoc = data?.forlobIds ?? [];
+		if (fraDoc.length > 0) return Array.from(new Set(fraDoc));
+
+		const productsSnap = await getDocs(collection(db, 'users', uid, 'products'));
+		const fraProducts: string[] = [];
+		for (const p of productsSnap.docs) {
+			const fId = (p.data() as { forlobId?: string }).forlobId;
+			if (fId) fraProducts.push(fId);
+		}
+		return Array.from(new Set(fraProducts));
+	}
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -170,32 +191,37 @@
 		}
 
 		try {
-			const up = await hentUserProduct(u.uid, 'kickstart');
-			if (!up) {
-				fejl = 'Du har ikke adgang til Bibliotek endnu.';
+			// Hent alle forløb brugeren har været på — først fra userDoc.forlobIds
+			// (autoritativ kilde), ellers fald tilbage til at scanne userProducts.
+			// Bibliotek aggregerer materiale fra alle forløb så historik bevares
+			// selv hvis brugeren skifter abonnementstype undervejs.
+			const forlobIds = await hentBrugerensForlobIds(u.uid);
+
+			if (forlobIds.length === 0) {
+				fejl = userDoc && erForlobsklient(userDoc)
+					? 'Du er ikke tilknyttet et forløb endnu. Kontakt Linn.'
+					: 'Du har ikke gennemført et forløb endnu — biblioteket er tomt indtil du har været på et forløb.';
 				loading = false;
 				return;
 			}
 
-			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
-			if (!forlobId) {
-				fejl = 'Du er ikke tilknyttet et forløb endnu. Kontakt Linn.';
-				loading = false;
-				return;
-			}
-
-			const [faqKats, faqIts, guideKats, guideIts, dage] = await Promise.all([
-				hentFaqKategorier(forlobId),
-				hentFaqItems(forlobId),
-				hentGuideKategorier(forlobId),
-				hentGuideItems(forlobId),
-				hentForlobsdage(forlobId)
-			]);
-			faqKategorier = faqKats;
-			faqItems = faqIts;
-			guideKategorier = guideKats;
-			guideItems = guideIts;
-			forlobsdage = dage;
+			// Load FAQ + Guides + Lektioner fra ALLE forløb og merg dem.
+			const resultater = await Promise.all(
+				forlobIds.map((forlobId) =>
+					Promise.all([
+						hentFaqKategorier(forlobId),
+						hentFaqItems(forlobId),
+						hentGuideKategorier(forlobId),
+						hentGuideItems(forlobId),
+						hentForlobsdage(forlobId)
+					])
+				)
+			);
+			faqKategorier = resultater.flatMap((r) => r[0]);
+			faqItems = resultater.flatMap((r) => r[1]);
+			guideKategorier = resultater.flatMap((r) => r[2]);
+			guideItems = resultater.flatMap((r) => r[3]);
+			forlobsdage = resultater.flatMap((r) => r[4]);
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente bibliotek. Prøv igen.';

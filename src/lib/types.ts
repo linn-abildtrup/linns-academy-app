@@ -139,4 +139,12 @@ export interface UserDoc {
 	// Felt er KUN aktivt for admin-emails — det giver ingen mening for
 	// almindelige klienter.
 	adminKlientForlobId?: string;
+
+	/**
+	 * Alle forløb brugeren nogensinde har været på (Kickstart, Premium-forløb,
+	 * fremtidige forløb). Bruges af bibliotek-modulet til at vise materiale
+	 * fra alle gennemførte forløb. SKAL aldrig overskrives — kun appendes.
+	 * Webhook + sync-funktion bruger arrayUnion for at bevare historik.
+	 */
+	forlobIds?: string[];
 }

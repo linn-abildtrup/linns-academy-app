@@ -199,9 +199,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		updatedAt: Date.now()
 	};
 	if (kundeId) opdatering.simpleroCustomerId = kundeId;
-	if (adgang.forlobId) opdatering.forlobIds = [adgang.forlobId];
 
-	await opdaterBrugerEllerWhitelist(email, opdatering);
+	// Hvis det er et forløbs-køb skal forlobId merges ind i arrayet uden
+	// at overskrive tidligere forløb (Maria → Kickstart → Premium skal
+	// beholde reference til BÅDE forløb). For allowedEmails gemmer vi
+	// kun det enkelte forlobId — det aggregeres over på userDoc første
+	// gang brugeren logger ind.
+	const nytForlobId = adgang.forlobId;
+
+	await opdaterBrugerEllerWhitelist(email, opdatering, nytForlobId);
 	await gemILog(payload, 'granted', `${adgang.navn} til ${email}`);
 
 	return json({
@@ -217,24 +223,34 @@ export const POST: RequestHandler = async ({ request }) => {
  * Skriver opdateringen til users/{uid} hvis brugeren findes (fundet via
  * email-feltet), ellers til allowedEmails/{email} så hun får adgangen
  * når hun logger ind næste gang.
+ *
+ * Hvis nytForlobId er givet:
+ *   - For users: merges ind i forlobIds-arrayet (ingen overskrivning)
+ *   - For allowedEmails: gemmes som forlobId-feltet (synces over på
+ *     userDoc.forlobIds ved login)
  */
 async function opdaterBrugerEllerWhitelist(
 	email: string,
-	opdatering: Record<string, unknown>
+	opdatering: Record<string, unknown>,
+	nytForlobId?: string
 ): Promise<void> {
 	const brugere = await hentDocsHvorFeltLig('users', 'email', email);
 	if (brugere.length > 0) {
-		// Opdater alle matchende user-dokumenter (skulle kun være ét i praksis)
 		for (const b of brugere) {
-			await gemDocMerge(`users/${b.id}`, opdatering);
+			const opd = { ...opdatering };
+			if (nytForlobId) {
+				const eksisterende = (b.data.forlobIds as string[] | undefined) ?? [];
+				opd.forlobIds = Array.from(new Set([...eksisterende, nytForlobId]));
+			}
+			await gemDocMerge(`users/${b.id}`, opd);
 		}
 		return;
 	}
-	// Ingen aktiv konto endnu — gem på whitelist
 	const whitelistOpdatering: Record<string, unknown> = {
 		email,
 		...opdatering
 	};
+	if (nytForlobId) whitelistOpdatering.forlobId = nytForlobId;
 	await gemDocMerge(`allowedEmails/${loggerSafePath(email)}`, whitelistOpdatering);
 }
 
