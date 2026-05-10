@@ -34,9 +34,16 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
+	import type { UserDoc } from '$lib/types';
+	import { erForlobsklient } from '$lib/utils/userAdgang';
 
 	const getUser = getContext<() => User | null>('user');
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
+	const userDoc = $derived(getUserDoc?.());
+	// FAQ-fanen vises kun for forløbskunder — den hører til det aktive
+	// forløb. Modulbrugere (basis-app) ser kun Links + Lektioner.
+	const visFaq = $derived(erForlobsklient(userDoc));
 
 	type Tab = 'faq' | 'guides' | 'lektioner';
 
@@ -44,7 +51,13 @@
 		const t = page.url.searchParams.get('tab');
 		if (t === 'guides') return 'guides';
 		if (t === 'lektioner') return 'lektioner';
-		return 'faq';
+		// Hvis FAQ er skjult for denne bruger, default til Links i stedet
+		return visFaqInitial() ? 'faq' : 'guides';
+	}
+
+	function visFaqInitial(): boolean {
+		// Kan ikke bruge $derived under init — gentag tjekket inline
+		return erForlobsklient(getUserDoc?.());
 	}
 
 	let aktivTab = $state<Tab>(tabFraQuery());
@@ -251,14 +264,16 @@
 	</header>
 
 	<div class="tabs">
-		<button
-			class="tab-knap"
-			class:aktiv={aktivTab === 'faq'}
-			type="button"
-			onclick={() => skiftTab('faq')}
-		>
-			FAQ
-		</button>
+		{#if visFaq}
+			<button
+				class="tab-knap"
+				class:aktiv={aktivTab === 'faq'}
+				type="button"
+				onclick={() => skiftTab('faq')}
+			>
+				FAQ
+			</button>
+		{/if}
 		<button
 			class="tab-knap"
 			class:aktiv={aktivTab === 'guides'}

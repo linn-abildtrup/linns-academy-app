@@ -121,7 +121,10 @@
 			icon: 'mail',
 			href: beskederHref,
 			dot: true,
-			lockedFor: ['udlobet']
+			// Beskeder er en del af forløbskunde-relationen til Linn — ikke
+			// inkluderet i basis/modulbruger-abonnementet. Admin overrides
+			// nedenfor så vi (Linn) altid kan svare på spørgsmål.
+			lockedFor: ['udlobet', 'modulbruger']
 		},
 		...(adminIndstillinger ? [adminIndstillinger] : []),
 		...(klientToggle ? [klientToggle] : []),
@@ -145,7 +148,13 @@
 		NAV_ITEMS.map((item) => ({
 			...item,
 			active: isActive(item, page.url.pathname),
-			locked: isLocked(item, effektivState(userDoc) ?? undefined)
+			// Admin (i admin-mode) skal aldrig have låste tabs — selv om Linns
+			// egen state er 'modulbruger' skal hun stadig kunne åbne admin-
+			// spørgsmål-fanen. I klient-mode honoreres låsene normalt.
+			locked:
+				erAdmin && !erIKlientMode
+					? false
+					: isLocked(item, effektivState(userDoc) ?? undefined)
 		}))
 	);
 </script>

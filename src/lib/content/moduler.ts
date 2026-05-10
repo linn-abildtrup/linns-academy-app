@@ -101,7 +101,11 @@ function forlobskundeStatus(base: ModulBase): Modul {
 }
 
 function modulbrugerStatus(base: ModulBase): Modul {
-	const koebt = ['traening', 'kost', 'vaner'];
+	// Modulbrugere (basis-app) har adgang til mikrotræning, kost, vaner og
+	// deres personlige bibliotek (materiale fra forløb de har gennemført —
+	// tomt indtil de har været på et forløb). 'forlob'-modulet er kun for
+	// aktive forløbskunder.
+	const koebt = ['traening', 'kost', 'vaner', 'bibliotek'];
 	const erKoebt = koebt.includes(base.id);
 
 	if (!erKoebt) {
@@ -123,13 +127,15 @@ function modulbrugerStatus(base: ModulBase): Modul {
 	const subMap: Record<string, string> = {
 		traening: '3 af 7 sessioner',
 		kost: 'Uge 4 af 6',
-		vaner: '3 dage i træk'
+		vaner: '3 dage i træk',
+		bibliotek: 'Dit personlige bibliotek'
 	};
+	const isLibrary = base.id === 'bibliotek';
 	return {
 		...base,
 		status: 'aktiv',
-		progress: progressMap[base.id],
-		statusTekst: 'Løbende',
+		progress: isLibrary ? null : progressMap[base.id],
+		statusTekst: isLibrary ? 'Åbent' : 'Løbende',
 		subTekst: subMap[base.id],
 		laasTekst: null
 	};

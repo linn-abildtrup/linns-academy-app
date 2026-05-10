@@ -52,18 +52,18 @@ describe('getModulerForUser', () => {
 			expect(forlob?.laasTekst).toBe('Få adgang via Kickstart');
 		});
 
-		it('har Bibliotek låst (forløbs-specifikt)', () => {
+		it('har Bibliotek aktivt (personligt fra tidligere forløb)', () => {
 			const bibliotek = moduler.find((m) => m.id === 'bibliotek');
-			expect(bibliotek?.status).toBe('laast');
-			expect(bibliotek?.laasTekst).toBe('Få adgang via Kickstart');
+			expect(bibliotek?.status).toBe('aktiv');
+			expect(bibliotek?.laasTekst).toBeNull();
 		});
 
-		it('har Træning, Kost og Vaner aktive', () => {
+		it('har Træning, Kost, Vaner og Bibliotek aktive', () => {
 			const aktive = moduler.filter((m) => m.status === 'aktiv').map((m) => m.id);
 			expect(aktive).toContain('traening');
 			expect(aktive).toContain('kost');
 			expect(aktive).toContain('vaner');
-			expect(aktive).not.toContain('bibliotek');
+			expect(aktive).toContain('bibliotek');
 		});
 
 		it('har korrekt status-tekst på aktive moduler', () => {
