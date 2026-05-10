@@ -7,14 +7,12 @@
 	import {
 		ABO_MIKROTRAENING_DAGE,
 		aktuelAboDag,
-		genemfoerAboDag,
 		harKlaretAboDagIRunde,
 		type AboMikrotraeningFremgang
 	} from '$lib/content/aboMikrotraening';
 	import {
 		hentAboFremgang,
 		hentAboMikrotraeningProgram,
-		gemAboFremgang,
 		type AboMikrotraeningProgramMedDage
 	} from '$lib/firestore/aboMikrotraening';
 	import { hentExercises } from '$lib/firestore/mikrotraening';
@@ -41,8 +39,6 @@
 
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
-	let gemmer = $state(false);
-	let gemFejl = $state<string | null>(null);
 
 	const dag = $derived<TrainingDay | null>(
 		programData?.dage.find((d) => d.dagNummer === dagNummer) ?? null
@@ -123,29 +119,6 @@
 		}
 	});
 
-	async function markerGennemfoert() {
-		const u = user;
-		if (!u || gemmer) return;
-		gemFejl = null;
-		gemmer = true;
-		try {
-			const ny = genemfoerAboDag(fremgang, dagNummer);
-			if (ny === (fremgang?.totalGennemforte ?? 0)) {
-				gemFejl = 'Du kan kun markere den aktuelle dag som gennemført.';
-				return;
-			}
-			await gemAboFremgang(u.uid, ny, fremgang?.feedback ?? {});
-			fremgang = {
-				totalGennemforte: ny,
-				feedback: fremgang?.feedback ?? {}
-			};
-		} catch (e) {
-			console.error(e);
-			gemFejl = 'Kunne ikke gemme. Prøv igen.';
-		} finally {
-			gemmer = false;
-		}
-	}
 </script>
 
 <div class="page">
@@ -215,30 +188,24 @@
 			</div>
 		{:else if !erAktivDag}
 			<div class="info-banner">
-				Dag {aktivDag} er din næste dag. Du kan se denne dag, men kan først markere den som gennemført når du har klaret dagene før.
+				Dag {aktivDag} er din næste dag. Du kan se denne dag, men kan først starte den når du har klaret dagene før.
 			</div>
 		{/if}
 
-		{#if gemFejl}
-			<div class="status-besked fejl">{gemFejl}</div>
-		{/if}
-
-		<button
+		<a
 			class="start-knap"
-			onclick={markerGennemfoert}
-			disabled={gemmer || (!erAktivDag && !erKlaretIRunde)}
+			class:disabled={!erAktivDag && !erKlaretIRunde}
+			href="/app/moduler/traening/mikrotraening/abo/{dagNummer}/spil"
 		>
-			{#if gemmer}
-				Gemmer...
-			{:else if erKlaretIRunde}
-				Allerede klaret
+			{#if erKlaretIRunde}
+				Kør træningen igen
 			{:else if erAktivDag}
-				Markér som gennemført
-				<Icon name="check" size={14} color="#fff" />
+				Start træning
 			{:else}
 				Ikke aktiv dag
 			{/if}
-		</button>
+			<Icon name="arrow" size={14} color="#fff" />
+		</a>
 	{/if}
 </div>
 
@@ -469,11 +436,13 @@
 		border: none;
 		cursor: pointer;
 		font-family: var(--ff-b);
+		text-decoration: none;
+		box-sizing: border-box;
 	}
 
-	.start-knap:disabled {
+	.start-knap.disabled {
 		opacity: 0.5;
-		cursor: not-allowed;
+		pointer-events: none;
 	}
 
 	.preview-knap {

@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { Exercise, TrainingDay } from '$lib/content/mikrotraening';
+	import type { Exercise, GenererConfig, TrainingDay } from '$lib/content/mikrotraening';
 	import {
 		filtrerOvelserTilProgram,
-		genererStandardProgram
+		genererProgramMedConfig
 	} from '$lib/content/mikrotraening';
 	import {
 		ABO_MIKROTRAENING_DAGE,
@@ -33,6 +33,26 @@
 	let genererStatus = $state<'klar' | 'arbejder' | 'gemt' | 'fejl'>('klar');
 	let genererBesked = $state('');
 
+	// Pre-config-felter — gemmes på programmet og bruges som default
+	// næste gang admin auto-genererer.
+	const STANDARD_CONFIG: GenererConfig = {
+		antalOvelser: 3,
+		sets: 3,
+		workSec: 30,
+		restSec: 10
+	};
+	let configBasis = $state<GenererConfig>({ ...STANDARD_CONFIG });
+	let configPremium = $state<GenererConfig>({ ...STANDARD_CONFIG });
+
+	const aktivConfig = $derived(aktivTab === 'basis' ? configBasis : configPremium);
+
+	function setConfig(felt: keyof GenererConfig, val: number) {
+		const nuvaerende = aktivTab === 'basis' ? configBasis : configPremium;
+		const opdateret = { ...nuvaerende, [felt]: val };
+		if (aktivTab === 'basis') configBasis = opdateret;
+		else configPremium = opdateret;
+	}
+
 	const aktivProgram = $derived(programData[aktivTab]);
 	const tommeDage = $derived(
 		aktivProgram?.dage.filter((d) => d.exercises.length === 0).length ?? 0
@@ -50,6 +70,8 @@
 			]);
 			programData = { basis, premium };
 			alleOvelser = ovelser;
+			if (basis?.program.genererConfig) configBasis = { ...basis.program.genererConfig };
+			if (premium?.program.genererConfig) configPremium = { ...premium.program.genererConfig };
 		} catch (e) {
 			fejl = 'Kunne ikke hente data.';
 			console.error(e);
@@ -69,33 +91,46 @@
 		genererBesked = '';
 
 		try {
-			// Sikrer at program-doc'en findes med standard-metadata
+			const beregnetDagligTid = Math.max(
+				1,
+				Math.round(
+					(aktivConfig.antalOvelser *
+						aktivConfig.sets *
+						(aktivConfig.workSec + aktivConfig.restSec)) /
+						60
+				)
+			);
 			const program: Omit<AboMikrotraeningProgram, 'id'> = aktivProgram?.program
 				? {
 						navn: aktivProgram.program.navn,
 						beskrivelse: aktivProgram.program.beskrivelse,
 						treaningsform: 'mikrotraening',
 						antalDage: ABO_MIKROTRAENING_DAGE,
-						dagligTid: aktivProgram.program.dagligTid,
+						dagligTid: beregnetDagligTid,
 						niveau: aktivProgram.program.niveau,
 						udstyr: aktivProgram.program.udstyr ?? ['ingen'],
-						aktiv: true
+						aktiv: true,
+						genererConfig: { ...aktivConfig }
 					}
 				: {
 						navn: aktivTab === 'basis' ? 'Daglig mikrotræning' : 'Daglig mikrotræning premium',
-						beskrivelse:
-							'Tre minutters daglig styrketræning. 14 dage der looper.',
+						beskrivelse: `${aktivConfig.antalOvelser} øvelser om dagen i 14 dage der looper.`,
 						treaningsform: 'mikrotraening',
 						antalDage: ABO_MIKROTRAENING_DAGE,
-						dagligTid: 3,
+						dagligTid: beregnetDagligTid,
 						niveau: 'begynder',
 						udstyr: ['ingen'],
-						aktiv: true
+						aktiv: true,
+						genererConfig: { ...aktivConfig }
 					};
 			await gemAboMikrotraeningProgram(aktivTab, program);
 
 			const filtrerede = filtrerOvelserTilProgram(alleOvelser, program.udstyr);
-			const dage: TrainingDay[] = genererStandardProgram(ABO_MIKROTRAENING_DAGE, filtrerede);
+			const dage: TrainingDay[] = genererProgramMedConfig(
+				ABO_MIKROTRAENING_DAGE,
+				filtrerede,
+				aktivConfig
+			);
 			await gemAboMikrotraeningDage(aktivTab, dage);
 
 			programData = {
@@ -158,7 +193,57 @@
 		</div>
 
 		<section class="actions-card">
-			<div class="section-label">Auto-generér</div>
+			<div class="section-label">Indstillinger til auto-gen</div>
+			<div class="config-grid">
+				<label class="config-felt">
+					<span class="config-lbl">Antal øvelser pr dag</span>
+					<input
+						type="number"
+						min="1"
+						max="6"
+						step="1"
+						value={aktivConfig.antalOvelser}
+						oninput={(e) =>
+							setConfig('antalOvelser', parseInt((e.target as HTMLInputElement).value, 10))}
+					/>
+				</label>
+				<label class="config-felt">
+					<span class="config-lbl">Sæt pr øvelse</span>
+					<input
+						type="number"
+						min="1"
+						max="6"
+						step="1"
+						value={aktivConfig.sets}
+						oninput={(e) => setConfig('sets', parseInt((e.target as HTMLInputElement).value, 10))}
+					/>
+				</label>
+				<label class="config-felt">
+					<span class="config-lbl">Arbejdstid (sek)</span>
+					<input
+						type="number"
+						min="10"
+						max="120"
+						step="5"
+						value={aktivConfig.workSec}
+						oninput={(e) =>
+							setConfig('workSec', parseInt((e.target as HTMLInputElement).value, 10))}
+					/>
+				</label>
+				<label class="config-felt">
+					<span class="config-lbl">Hviletid (sek)</span>
+					<input
+						type="number"
+						min="0"
+						max="60"
+						step="5"
+						value={aktivConfig.restSec}
+						oninput={(e) =>
+							setConfig('restSec', parseInt((e.target as HTMLInputElement).value, 10))}
+					/>
+				</label>
+			</div>
+
 			<button
 				class="primary-knap"
 				type="button"
@@ -174,9 +259,10 @@
 				{/if}
 			</button>
 			<p class="hint">
-				Genererer 1 ben-, 1 overkrop- og 1 core/stabilitet-øvelse pr. dag, alle
-				3 sæt × 30s arbejde × 10s hvile. Du kan justere hver dag bagefter via
-				det almindelige forløbs-redigerings-flow (samme øvelses-bibliotek).
+				Cykler gennem ben → overkrop → core/stabilitet og forskyder valg pr. dag
+				så samme øvelse ikke gentages. Indstillingerne ovenfor gemmes med programmet
+				og er default næste gang du auto-genererer. Klik på en dag nedenfor for at
+				redigere den manuelt bagefter.
 			</p>
 			{#if genererStatus === 'gemt'}
 				<div class="besked ok">{genererBesked}</div>
@@ -189,13 +275,14 @@
 			<section class="dage-card">
 				<div class="section-label">Programmets {aktivProgram.dage.length} dage</div>
 				{#each aktivProgram.dage as dag (dag.dagNummer)}
-					<div class="dag-row">
+					<a class="dag-row" href="/app/admin/abo-traening/{aktivTab}/{dag.dagNummer}">
 						<div class="dag-num">{dag.dagNummer}</div>
 						<div class="dag-tekst">
 							<div class="dag-titel">Dag {dag.dagNummer}</div>
 							<div class="dag-sub">{dagOpsummering(dag)}</div>
 						</div>
-					</div>
+						<Icon name="chevron-r" size={14} color="var(--text3)" />
+					</a>
 				{/each}
 			</section>
 		{:else}
@@ -347,10 +434,54 @@
 		align-items: center;
 		padding: 10px 0;
 		border-top: 1px solid var(--border);
+		text-decoration: none;
+		color: inherit;
 	}
 
 	.dag-row:first-child {
 		border-top: none;
+	}
+
+	.dag-row:hover {
+		background: var(--bg2);
+		margin: 0 -8px;
+		padding: 10px 8px;
+	}
+
+	.config-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+		margin-bottom: 14px;
+	}
+
+	.config-felt {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.config-lbl {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		font-weight: 500;
+	}
+
+	.config-felt input {
+		padding: 9px 10px;
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--white);
+		color: var(--text);
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.config-felt input:focus {
+		outline: 2px solid var(--terra);
+		outline-offset: -1px;
 	}
 
 	.dag-num {
