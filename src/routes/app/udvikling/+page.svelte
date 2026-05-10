@@ -14,7 +14,11 @@
 		NAERING_ENHEDER
 	} from '$lib/content/naering';
 	import Loading from '$lib/components/Loading.svelte';
-	import { harPremium } from '$lib/utils/userAdgang';
+	import { erModulbruger, harPremium } from '$lib/utils/userAdgang';
+	import { hentAlleAboTraeninger } from '$lib/firestore/aboMikrotraening';
+	import type { AboMikrotraeningTraening } from '$lib/content/aboMikrotraening';
+	import { hentAboVaneOpsaetning, hentAlleAboVanedage } from '$lib/firestore/aboVaner';
+	import type { AboVaneOpsaetning, AboVanedagEntry } from '$lib/content/aboVaner';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -42,8 +46,13 @@
 	});
 
 	let alle = $state<GemtMaaltid[]>([]);
+	let aboTraeninger = $state<AboMikrotraeningTraening[]>([]);
+	let aboVaneOpsaetning = $state<AboVaneOpsaetning | null>(null);
+	let aboVanedage = $state<Map<string, AboVanedagEntry>>(new Map());
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
+
+	const visAbo = $derived(erModulbruger(userDoc));
 
 	function dageBack(antal: number): { fraDato: string; tilDato: string; dage: string[] } {
 		const idag = new Date();
@@ -67,7 +76,19 @@
 		loading = true;
 		try {
 			const { fraDato, tilDato } = dageBack(30);
-			alle = await hentMaaltiderIPeriode(u.uid, fraDato, tilDato);
+			const promiser: Promise<unknown>[] = [hentMaaltiderIPeriode(u.uid, fraDato, tilDato)];
+			if (visAbo) {
+				promiser.push(hentAlleAboTraeninger(u.uid));
+				promiser.push(hentAboVaneOpsaetning(u.uid));
+				promiser.push(hentAlleAboVanedage(u.uid));
+			}
+			const r = await Promise.all(promiser);
+			alle = r[0] as GemtMaaltid[];
+			if (visAbo) {
+				aboTraeninger = r[1] as AboMikrotraeningTraening[];
+				aboVaneOpsaetning = r[2] as AboVaneOpsaetning | null;
+				aboVanedage = r[3] as Map<string, AboVanedagEntry>;
+			}
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente data.';
@@ -146,6 +167,135 @@
 		return 'M ' + punkter.join(' L ');
 	});
 
+	// === Træning: 0/1 pr dag ===
+	const traenetDatoer = $derived(new Set(aboTraeninger.map((t) => t.dato)));
+
+	const syvDageTraening = $derived(
+		syvDageMeta.dage.map((d) => (traenetDatoer.has(d) ? 1 : 0))
+	);
+	const trediveTraening = $derived(
+		tredive.dage.map((d) => (traenetDatoer.has(d) ? 1 : 0))
+	);
+	const trediveTraeningPath = $derived.by(() => {
+		const w = 100;
+		const h = 60;
+		const n = trediveTraening.length;
+		if (n === 0) return '';
+		const pkt = trediveTraening.map((v, i) => {
+			const x = (i / (n - 1)) * w;
+			const y = h - v * h;
+			return `${x.toFixed(2)},${y.toFixed(2)}`;
+		});
+		return 'M ' + pkt.join(' L ');
+	});
+
+	// === Træning: pr uge (mandag-søndag) ===
+	function ugeNoegle(d: Date): string {
+		const kopi = new Date(d);
+		const ugedag = kopi.getDay() === 0 ? 6 : kopi.getDay() - 1; // mandag = 0
+		kopi.setDate(kopi.getDate() - ugedag);
+		return formatDatoKey(kopi);
+	}
+
+	const traeningPrUge = $derived.by(() => {
+		const map = new Map<string, number>();
+		for (const t of aboTraeninger) {
+			const noegle = ugeNoegle(new Date(t.dato + 'T12:00:00'));
+			map.set(noegle, (map.get(noegle) ?? 0) + 1);
+		}
+		// Seneste 8 uger
+		const r: { ugeStart: string; antal: number }[] = [];
+		const idag = new Date();
+		idag.setHours(12, 0, 0, 0);
+		for (let i = 7; i >= 0; i--) {
+			const d = new Date(idag);
+			d.setDate(idag.getDate() - i * 7);
+			const noegle = ugeNoegle(d);
+			r.push({ ugeStart: noegle, antal: map.get(noegle) ?? 0 });
+		}
+		// Dedupe sidste hvis samme uge som forrige
+		const unik: typeof r = [];
+		for (const u of r) {
+			if (unik.length === 0 || unik[unik.length - 1].ugeStart !== u.ugeStart) unik.push(u);
+		}
+		return unik;
+	});
+
+	// === Vaner: antal 'ja' pr dag ===
+	const valgteVaner = $derived(aboVaneOpsaetning?.valgteVaner ?? []);
+	const maxVaner = $derived(valgteVaner.length);
+
+	function antalJaForDato(dato: string): number {
+		const e = aboVanedage.get(dato);
+		if (!e || valgteVaner.length === 0) return 0;
+		return valgteVaner.filter((v) => e.checks?.[v.id] === 'ja').length;
+	}
+
+	const syvDageVaner = $derived(syvDageMeta.dage.map(antalJaForDato));
+	const trediveVaner = $derived(tredive.dage.map(antalJaForDato));
+	const trediveVanerPath = $derived.by(() => {
+		const w = 100;
+		const h = 60;
+		const n = trediveVaner.length;
+		if (n === 0 || maxVaner === 0) return '';
+		const pkt = trediveVaner.map((v, i) => {
+			const x = (i / (n - 1)) * w;
+			const y = h - (v / maxVaner) * h;
+			return `${x.toFixed(2)},${y.toFixed(2)}`;
+		});
+		return 'M ' + pkt.join(' L ');
+	});
+
+	// Streak-rapport for træning og vaner
+	const traeningRapport = $derived.by(() => {
+		const dage = tredive.dage;
+		let dageNåetMaal = 0;
+		let aktuelStreak = 0;
+		let bedsteStreak = 0;
+		let lokalStreak = 0;
+		for (const d of dage) {
+			if (traenetDatoer.has(d)) {
+				dageNåetMaal++;
+				lokalStreak++;
+				bedsteStreak = Math.max(bedsteStreak, lokalStreak);
+			} else {
+				lokalStreak = 0;
+			}
+		}
+		for (let i = dage.length - 1; i >= 0; i--) {
+			if (traenetDatoer.has(dage[i])) aktuelStreak++;
+			else break;
+		}
+		return { dageNåetMaal, aktuelStreak, bedsteStreak };
+	});
+
+	const vanerRapport = $derived.by(() => {
+		const dage = tredive.dage;
+		let dageNåetMaal = 0;
+		let aktuelStreak = 0;
+		let bedsteStreak = 0;
+		let lokalStreak = 0;
+		let dageMedData = 0;
+		for (let i = 0; i < dage.length; i++) {
+			const antal = antalJaForDato(dage[i]);
+			const harIndtastet = aboVanedage.has(dage[i]);
+			if (harIndtastet) dageMedData++;
+			if (harIndtastet && antal === maxVaner && maxVaner > 0) {
+				dageNåetMaal++;
+				lokalStreak++;
+				bedsteStreak = Math.max(bedsteStreak, lokalStreak);
+			} else if (harIndtastet) {
+				lokalStreak = 0;
+			}
+		}
+		for (let i = dage.length - 1; i >= 0; i--) {
+			if (!aboVanedage.has(dage[i])) continue;
+			if (antalJaForDato(dage[i]) === maxVaner && maxVaner > 0) aktuelStreak++;
+			else break;
+		}
+		return { dageNåetMaal, dageMedData, aktuelStreak, bedsteStreak };
+	});
+
 	// Mål-baseret data: streaks og totaler
 	const malRapport = $derived.by(() => {
 		const dage = dageBack(30).dage;
@@ -194,8 +344,12 @@
 	<header class="page-header">
 		<div class="eyebrow">Min udvikling</div>
 		<h1>Udvikling</h1>
-		<p class="page-sub">Følg din næringsdata over tid og se hvordan du klarer dig mod dine mål.</p>
+		<p class="page-sub">Følg din udvikling over tid.</p>
 	</header>
+
+	{#if visAbo}
+		<div class="sektion-titel">Næring</div>
+	{/if}
 
 	<div class="metric-rad">
 		{#each synligeMetrics as m (m)}
@@ -317,6 +471,163 @@
 				</div>
 			</div>
 		</section>
+	{/if}
+
+	{#if visAbo && !loading && !fejl}
+		<!-- TRÆNING -->
+		<div class="sektion-titel">Træning</div>
+
+		{#if aktivTab === 'syv'}
+			<section class="kort">
+				<div class="kort-titel">
+					Trænet sidste 7 dage
+					<span class="kort-mål">mål: 1 pr dag</span>
+				</div>
+				<div class="soejler">
+					{#each syvDageMeta.dage as d, i (d)}
+						{@const v = syvDageTraening[i]}
+						<div class="soejle-spalte">
+							<div class="soejle-tal" class:synlig={v > 0} class:opfyldt={v > 0}>
+								{v ? '✓' : ''}
+							</div>
+							<div class="soejle-baar">
+								<div class="soejle-fyld" class:opfyldt={v > 0} style:height="{v * 100}%"></div>
+							</div>
+							<div class="soejle-dag">{dagNum(d)}</div>
+							<div class="soejle-uge">{ugedagKort(d)}</div>
+						</div>
+					{/each}
+				</div>
+				<div class="kort-statistik">
+					<span>Trænet: <strong>{syvDageTraening.reduce<number>((s, v) => s + v, 0)} af 7 dage</strong></span>
+				</div>
+			</section>
+
+			<section class="kort">
+				<div class="kort-titel">
+					Træningsdage pr uge (sidste 8 uger)
+					<span class="kort-mål">{traeningPrUge[traeningPrUge.length - 1]?.antal ?? 0} denne uge</span>
+				</div>
+				<div class="soejler">
+					{#each traeningPrUge as u (u.ugeStart)}
+						{@const pct = (u.antal / 7) * 100}
+						<div class="soejle-spalte">
+							<div class="soejle-tal synlig" class:opfyldt={u.antal >= 5}>{u.antal}</div>
+							<div class="soejle-baar">
+								<div class="soejle-fyld" class:opfyldt={u.antal >= 5} style:height="{pct}%"></div>
+							</div>
+							<div class="soejle-uge">u{u.ugeStart.slice(8)}</div>
+						</div>
+					{/each}
+				</div>
+			</section>
+		{:else if aktivTab === 'tredive'}
+			<section class="kort">
+				<div class="kort-titel">
+					Trænet sidste 30 dage
+					<span class="kort-mål">{trediveTraening.reduce<number>((s, v) => s + v, 0)} af 30 dage</span>
+				</div>
+				<svg class="linje-graf" viewBox="0 0 100 60" preserveAspectRatio="none">
+					<path d={trediveTraeningPath} fill="none" stroke="var(--terra)" stroke-width="0.8" />
+				</svg>
+				<div class="linje-meta">
+					<span>{tredive.dage[0]}</span>
+					<span>i dag</span>
+				</div>
+			</section>
+		{:else}
+			<section class="kort">
+				<div class="kort-titel">Træning mod målet (1 pr dag)</div>
+				<div class="mal-grid">
+					<div class="mal-kort">
+						<div class="mal-tal">{traeningRapport.aktuelStreak}</div>
+						<div class="mal-lbl">dage i træk lige nu</div>
+					</div>
+					<div class="mal-kort">
+						<div class="mal-tal">{traeningRapport.bedsteStreak}</div>
+						<div class="mal-lbl">længste streak (30 dage)</div>
+					</div>
+					<div class="mal-kort">
+						<div class="mal-tal">{traeningRapport.dageNåetMaal} <span class="mal-tal-sub">/ 30</span></div>
+						<div class="mal-lbl">dage trænet (30 dage)</div>
+					</div>
+				</div>
+			</section>
+		{/if}
+
+		<!-- VANER -->
+		{#if maxVaner > 0}
+			<div class="sektion-titel">Vaner</div>
+
+			{#if aktivTab === 'syv'}
+				<section class="kort">
+					<div class="kort-titel">
+						Vaner med ja sidste 7 dage
+						<span class="kort-mål">mål: {maxVaner} pr dag</span>
+					</div>
+					<div class="soejler">
+						{#each syvDageMeta.dage as d, i (d)}
+							{@const v = syvDageVaner[i]}
+							{@const pct = (v / maxVaner) * 100}
+							{@const opfyldt = v === maxVaner}
+							{@const harData = aboVanedage.has(d)}
+							<div class="soejle-spalte">
+								<div class="soejle-tal" class:synlig={harData} class:opfyldt>{v}</div>
+								<div class="soejle-baar">
+									<div class="soejle-fyld" class:opfyldt style:height="{pct}%"></div>
+								</div>
+								<div class="soejle-dag">{dagNum(d)}</div>
+								<div class="soejle-uge">{ugedagKort(d)}</div>
+							</div>
+						{/each}
+					</div>
+					<div class="kort-statistik">
+						<span>Højeste: <strong>{Math.max(...syvDageVaner)} af {maxVaner}</strong></span>
+					</div>
+				</section>
+			{:else if aktivTab === 'tredive'}
+				<section class="kort">
+					<div class="kort-titel">
+						Vaner med ja sidste 30 dage
+						<span class="kort-mål">mål: {maxVaner} pr dag</span>
+					</div>
+					<svg class="linje-graf" viewBox="0 0 100 60" preserveAspectRatio="none">
+						<line
+							x1="0"
+							y1="0"
+							x2="100"
+							y2="0"
+							stroke="var(--sage, #6f9e7e)"
+							stroke-width="0.4"
+							stroke-dasharray="1.5 1.5"
+						/>
+						<path d={trediveVanerPath} fill="none" stroke="var(--terra)" stroke-width="0.8" />
+					</svg>
+					<div class="linje-meta">
+						<span>{tredive.dage[0]}</span>
+						<span>i dag</span>
+					</div>
+				</section>
+			{:else}
+				<section class="kort">
+					<div class="kort-titel">Vaner mod målet ({maxVaner} pr dag)</div>
+					<div class="mal-grid">
+						<div class="mal-kort">
+							<div class="mal-tal">{vanerRapport.aktuelStreak}</div>
+							<div class="mal-lbl">dage i træk med alle ja</div>
+						</div>
+						<div class="mal-kort">
+							<div class="mal-tal">{vanerRapport.bedsteStreak}</div>
+							<div class="mal-lbl">længste streak (30 dage)</div>
+						</div>
+						<div class="mal-kort">
+							<div class="mal-tal">{vanerRapport.dageNåetMaal} <span class="mal-tal-sub">/ {vanerRapport.dageMedData}</span></div>
+							<div class="mal-lbl">dage med alle vaner ja</div>
+						</div>
+					</div>
+				</section>
+			{/if}
+		{/if}
 	{/if}
 </div>
 
@@ -581,5 +892,13 @@
 		color: #8a4a3e;
 		background: #fbeeea;
 		border-color: #f0d6cf;
+	}
+
+	.sektion-titel {
+		font-family: var(--ff-d);
+		font-size: calc(20px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		margin: 22px 0 10px;
 	}
 </style>
