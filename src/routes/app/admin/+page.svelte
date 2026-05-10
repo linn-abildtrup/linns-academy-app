@@ -49,6 +49,14 @@
 			rute: '/app/admin/abo-vaner',
 			accent: '#7E9BB3',
 			icon: 'flower' as const
+		},
+		{
+			id: 'abo-traening',
+			navn: 'Abo-træning',
+			beskrivelse: 'Auto-genereret 14-dages mikrotræning for abonnenter',
+			rute: '/app/admin/abo-traening',
+			accent: '#A37F66',
+			icon: 'flame' as const
 		}
 	];
 </script>

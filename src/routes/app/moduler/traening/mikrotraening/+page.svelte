@@ -6,9 +6,26 @@
 	import type { MikrotraeningFremgang, UserProduct } from '$lib/content/mikrotraening';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import { naesteDag, beregnProgramFremgang } from '$lib/content/mikrotraening';
+	import {
+		ABO_MIKROTRAENING_DAGE,
+		aktuelAboDag,
+		aboRundeNummer,
+		harKlaretAboDagIRunde,
+		type AboMikrotraeningFremgang
+	} from '$lib/content/aboMikrotraening';
 	import { getCurrentDay } from '$lib/content/forlob';
-	import { hentForlobsProgram, hentUserProduct, type ProgramMedDage } from '$lib/firestore/mikrotraening';
+	import {
+		hentForlobsProgram,
+		hentUserProduct,
+		type ProgramMedDage
+	} from '$lib/firestore/mikrotraening';
+	import {
+		hentAboFremgang,
+		hentAboMikrotraeningProgram,
+		type AboMikrotraeningProgramMedDage
+	} from '$lib/firestore/aboMikrotraening';
 	import { hentForlob } from '$lib/firestore/forlob';
+	import { erForlobsklient, erModulbruger } from '$lib/utils/userAdgang';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -17,12 +34,24 @@
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
 
+	type Gren = 'forlob' | 'abo' | 'ingen';
+	const gren = $derived<Gren>(
+		erForlobsklient(userDoc) ? 'forlob' : erModulbruger(userDoc) ? 'abo' : 'ingen'
+	);
+
+	// === Forløbs-state ===
 	let userProduct = $state<UserProduct | null>(null);
 	let programData = $state<ProgramMedDage | null>(null);
 	let forlob = $state<Forlob | null>(null);
+
+	// === Abo-state ===
+	let aboProgram = $state<AboMikrotraeningProgramMedDage | null>(null);
+	let aboFremgang = $state<AboMikrotraeningFremgang | null>(null);
+
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
+	// === Forløbs-derived ===
 	const fremgang = $derived<MikrotraeningFremgang>(
 		(userProduct?.fremgang?.mikrotraening as MikrotraeningFremgang | undefined) ?? {
 			gennemforte: [],
@@ -35,14 +64,15 @@
 	const fremgangProcent = $derived(beregnProgramFremgang(fremgang, antalDage));
 	const naeste = $derived(naesteDag(fremgang, antalDage));
 
-	// Kalenderbaseret aktiv-dag fra forløbets startDato — bruges til at låse
-	// fremtidige dage i dag-griddet så klienter ikke kan starte træning før
-	// dens dato er nået.
 	const aktivKalenderDag = $derived.by<number | null>(() => {
 		if (!forlob) return null;
 		const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
 		return getCurrentDay({ startDato, antalDage: forlob.antalDage });
 	});
+
+	// === Abo-derived ===
+	const aboAktivDag = $derived(aktuelAboDag(aboFremgang));
+	const aboRunde = $derived(aboRundeNummer(aboFremgang));
 
 	onMount(async () => {
 		const u = user;
@@ -53,38 +83,11 @@
 		}
 
 		try {
-			const up = await hentUserProduct(u.uid, 'kickstart');
-			if (!up) {
-				fejl = 'Du har ikke adgang til mikrotræning endnu.';
-				loading = false;
-				return;
+			if (gren === 'forlob') {
+				await indlaesForlobsData(u.uid);
+			} else if (gren === 'abo') {
+				await indlaesAboData(u.uid);
 			}
-			userProduct = up;
-
-			const programId = up.programValg?.mikrotraening;
-			if (!programId) {
-				goto('/app/moduler/traening/mikrotraening/onboarding');
-				return;
-			}
-
-			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
-			if (!forlobId) {
-				fejl = 'Du er ikke tilknyttet et forløb endnu. Kontakt Linn.';
-				loading = false;
-				return;
-			}
-
-			const [data, f] = await Promise.all([
-				hentForlobsProgram(forlobId, programId),
-				hentForlob(forlobId)
-			]);
-			if (!data) {
-				fejl = 'Programmet kunne ikke findes.';
-				loading = false;
-				return;
-			}
-			programData = data;
-			forlob = f;
 		} catch (e) {
 			fejl = 'Kunne ikke hente data. Prøv igen.';
 			console.error(e);
@@ -93,11 +96,62 @@
 		}
 	});
 
+	async function indlaesForlobsData(uid: string) {
+		const up = await hentUserProduct(uid, 'kickstart');
+		if (!up) {
+			fejl = 'Du har ikke adgang til mikrotræning endnu.';
+			return;
+		}
+		userProduct = up;
+
+		const programId = up.programValg?.mikrotraening;
+		if (!programId) {
+			goto('/app/moduler/traening/mikrotraening/onboarding');
+			return;
+		}
+
+		const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+		if (!forlobId) {
+			fejl = 'Du er ikke tilknyttet et forløb endnu. Kontakt Linn.';
+			return;
+		}
+
+		const [data, f] = await Promise.all([
+			hentForlobsProgram(forlobId, programId),
+			hentForlob(forlobId)
+		]);
+		if (!data) {
+			fejl = 'Programmet kunne ikke findes.';
+			return;
+		}
+		programData = data;
+		forlob = f;
+	}
+
+	async function indlaesAboData(uid: string) {
+		const produktType = userDoc?.accessLevel === 'premium' ? 'premium' : 'basis';
+		const [program, fremgang] = await Promise.all([
+			hentAboMikrotraeningProgram(produktType),
+			hentAboFremgang(uid)
+		]);
+		if (!program) {
+			fejl = 'Træningsprogrammet er ikke sat op endnu. Kontakt Linn.';
+			return;
+		}
+		aboProgram = program;
+		aboFremgang = fremgang;
+	}
+
 	function dagStatus(dagNummer: number): 'klaret' | 'naeste' | 'kommer' | 'fremtid' {
 		if (fremgang.gennemforte.includes(dagNummer)) return 'klaret';
-		// Dage hvis kalenderdato endnu ikke er nået er låst
 		if (aktivKalenderDag !== null && dagNummer > aktivKalenderDag) return 'fremtid';
 		if (dagNummer === naeste) return 'naeste';
+		return 'kommer';
+	}
+
+	function aboDagStatus(dagNummer: number): 'klaret' | 'naeste' | 'kommer' {
+		if (harKlaretAboDagIRunde(aboFremgang, dagNummer)) return 'klaret';
+		if (dagNummer === aboAktivDag) return 'naeste';
 		return 'kommer';
 	}
 </script>
@@ -111,7 +165,13 @@
 		<div class="eyebrow">Træningsprogram</div>
 		<h1>Mikrotræning</h1>
 		<p class="page-sub">
-			{programData?.program.beskrivelse ?? 'Tre minutters daglig styrketræning i 21 dage.'}
+			{#if gren === 'forlob'}
+				{programData?.program.beskrivelse ?? 'Tre minutters daglig styrketræning i 21 dage.'}
+			{:else if gren === 'abo'}
+				{aboProgram?.program.beskrivelse ?? `Tre minutters daglig styrketræning. ${ABO_MIKROTRAENING_DAGE} dage der looper.`}
+			{:else}
+				Mikrotræning kræver et abonnement eller forløb.
+			{/if}
 		</p>
 	</header>
 
@@ -119,7 +179,7 @@
 		<Loading tekst="Henter dit program..." />
 	{:else if fejl}
 		<div class="status-besked fejl">{fejl}</div>
-	{:else if programData}
+	{:else if gren === 'forlob' && programData}
 		{@const naesteRute = naeste !== null ? `/app/moduler/traening/mikrotraening/${naeste}` : null}
 
 		{#if naesteRute}
@@ -171,6 +231,45 @@
 				<div class="stat-num">{dageTilbage}</div>
 				<div class="stat-lbl">dage tilbage</div>
 			</div>
+		</div>
+	{:else if gren === 'abo' && aboProgram}
+		<a class="start-knap" href="/app/moduler/traening/mikrotraening/abo/{aboAktivDag}">
+			Start dag {aboAktivDag}
+			<Icon name="arrow" size={14} color="#fff" />
+		</a>
+
+		<section class="card">
+			<div class="card-head">
+				<div class="section-label">Runde {aboRunde}</div>
+				<div class="card-tael">Dag {aboAktivDag} / {ABO_MIKROTRAENING_DAGE}</div>
+			</div>
+			<p class="hint">Tryk på en dag for at åbne den. Når du er færdig med dag {ABO_MIKROTRAENING_DAGE} starter en ny runde forfra.</p>
+			<div class="dage-grid">
+				{#each aboProgram.dage as dag (dag.dagNummer)}
+					{@const status = aboDagStatus(dag.dagNummer)}
+					<a class="dag dag-{status}" href="/app/moduler/traening/mikrotraening/abo/{dag.dagNummer}">
+						<span class="dag-num">{dag.dagNummer}</span>
+						{#if status === 'klaret'}
+							<Icon name="check" size={11} color="#fff" />
+						{/if}
+					</a>
+				{/each}
+			</div>
+		</section>
+
+		<div class="stat-row">
+			<div class="stat-box">
+				<div class="stat-num">{aboFremgang?.totalGennemforte ?? 0}</div>
+				<div class="stat-lbl">træninger i alt</div>
+			</div>
+			<div class="stat-box">
+				<div class="stat-num">{aboRunde}</div>
+				<div class="stat-lbl">runde</div>
+			</div>
+		</div>
+	{:else}
+		<div class="status-besked">
+			Mikrotræning kræver et basis-abo, premium-abo eller forløb.
 		</div>
 	{/if}
 </div>
@@ -257,19 +356,13 @@
 		margin-bottom: 14px;
 		border: none;
 		cursor: pointer;
-	}
-
-	.start-knap:hover {
-		filter: brightness(0.95);
+		font-family: var(--ff-b);
+		box-sizing: border-box;
 	}
 
 	.start-knap.faerdig {
-		background: #6f9e7e;
+		background: var(--sage);
 		cursor: default;
-	}
-
-	.start-knap.faerdig:hover {
-		filter: none;
 	}
 
 	.card {
@@ -320,12 +413,13 @@
 		color: var(--text4);
 		letter-spacing: 0.04em;
 		margin: 0 0 14px;
+		line-height: 1.5;
 	}
 
 	.dage-grid {
 		display: grid;
 		grid-template-columns: repeat(7, 1fr);
-		gap: 8px;
+		gap: 6px;
 	}
 
 	.dag {
@@ -342,35 +436,6 @@
 		border: 1px solid var(--border);
 		background: var(--white);
 		color: var(--text2);
-		transition: transform 0.1s ease;
-	}
-
-	.dag:active {
-		transform: scale(0.95);
-	}
-
-	.dag-naeste {
-		background: var(--terra);
-		color: #fff;
-		border-color: var(--terra);
-	}
-
-	.dag-klaret {
-		background: #6f9e7e;
-		color: #fff;
-		border-color: #6f9e7e;
-	}
-
-	.dag-fremtid {
-		background: var(--bg2);
-		color: var(--text4);
-		border-color: var(--border);
-		opacity: 0.55;
-		cursor: not-allowed;
-	}
-
-	.dag-fremtid:active {
-		transform: none;
 	}
 
 	.dag-num {
@@ -378,25 +443,43 @@
 		font-weight: 600;
 	}
 
+	.dag-klaret {
+		background: var(--sage);
+		color: #fff;
+		border-color: var(--sage);
+	}
+
+	.dag-naeste {
+		outline: 2px solid var(--terra);
+		outline-offset: -2px;
+	}
+
+	.dag-fremtid {
+		opacity: 0.45;
+		pointer-events: none;
+		background: var(--bg2);
+		color: var(--text4);
+	}
+
 	.stat-row {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 10px;
+		gap: 8px;
 	}
 
 	.stat-box {
+		text-align: center;
+		padding: 12px;
 		background: var(--white);
 		border: 1px solid var(--border);
 		border-radius: 12px;
-		padding: 14px;
-		text-align: center;
 	}
 
 	.stat-num {
 		font-family: var(--ff-d);
 		font-size: calc(22px * var(--fs-scale, 1));
 		font-weight: 600;
-		color: var(--text);
+		color: var(--terra);
 	}
 
 	.stat-lbl {
