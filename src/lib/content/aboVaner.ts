@@ -60,6 +60,12 @@ export interface AboVaneOpsaetning {
 	produktType: 'basis' | 'premium';
 	oprettetAt: Timestamp;
 	opdateretAt: Timestamp;
+	/**
+	 * Hvis sat: baseline-check-in tælles kun fra og med denne dato.
+	 * Brugeren kan trykke 'Nulstil baseline' for at starte sammenligning
+	 * forfra (relevant for langtidskunder).
+	 */
+	baselineNulstilletAt?: Timestamp;
 }
 
 /**
@@ -277,12 +283,19 @@ export function aboVaneSamletProcent(
 
 /**
  * Returnerer den FØRSTE entry hvor alle 5 sliders er udfyldt — bruges som
- * baseline til sammenligning. Sorterer entries efter dato. Hvis ingen
- * entry har komplet check-in, returneres null.
+ * baseline til sammenligning. Sorterer entries efter dato.
+ *
+ * Hvis fraDato er givet, returneres den første komplette check-in PÅ ELLER
+ * EFTER den dato. Bruges til 'nulstil baseline'-funktionen så langtidskunder
+ * kan starte sammenligning forfra.
  */
-export function forsteCheckin(entries: AboVanedagEntry[]): AboVanedagEntry | null {
+export function forsteCheckin(
+	entries: AboVanedagEntry[],
+	fraDato?: string
+): AboVanedagEntry | null {
 	const sorteret = [...entries].sort((a, b) => a.dato.localeCompare(b.dato));
 	for (const e of sorteret) {
+		if (fraDato && e.dato < fraDato) continue;
 		if (harKomplettCheckin(e)) return e;
 	}
 	return null;
@@ -305,6 +318,21 @@ function harKomplettCheckin(e: AboVanedagEntry): boolean {
 	return CHECKIN_SPORGSMAAL.every(
 		(q) => typeof e.checkin[q.id as keyof CheckinSvar] === 'number'
 	);
+}
+
+/**
+ * Returnerer alle entries med komplet 5-slider check-in, sorteret
+ * kronologisk. fraDato er valgfri (filtrerer 'fra og med'). Bruges
+ * af linje-grafen.
+ */
+export function alleCheckins(
+	entries: AboVanedagEntry[],
+	fraDato?: string
+): AboVanedagEntry[] {
+	return entries
+		.filter((e) => harKomplettCheckin(e))
+		.filter((e) => !fraDato || e.dato >= fraDato)
+		.sort((a, b) => a.dato.localeCompare(b.dato));
 }
 
 /**

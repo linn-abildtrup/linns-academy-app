@@ -14,6 +14,7 @@
 	} from '$lib/content/vaner';
 	import { CHECKIN_SPORGSMAAL, type CheckinSvar } from '$lib/content/vaner';
 	import {
+		alleCheckins,
 		beregnAboFlowerNiveau,
 		aboTrendScore,
 		aboVaneSamletProcent,
@@ -35,7 +36,8 @@
 	import {
 		hentAboBonusPulje,
 		hentAboVaneOpsaetning,
-		hentAlleAboVanedage
+		hentAlleAboVanedage,
+		nulstilAboBaseline
 	} from '$lib/firestore/aboVaner';
 	import {
 		erForlobsklient,
@@ -141,11 +143,80 @@
 		return aboVaneSamletProcent(aboOpsaetning.valgteVaner, alleAboEntriesArr);
 	});
 
-	const baseline = $derived(forsteCheckin(alleAboEntriesArr));
+	const baselineFraDato = $derived(
+		aboOpsaetning?.baselineNulstilletAt
+			? formaterDato(aboOpsaetning.baselineNulstilletAt.toDate())
+			: undefined
+	);
+	const baseline = $derived(forsteCheckin(alleAboEntriesArr, baselineFraDato));
 	const seneste = $derived(senesteCheckin(alleAboEntriesArr));
 	const harFlereCheckins = $derived(
 		baseline !== null && seneste !== null && baseline.dato !== seneste.dato
 	);
+
+	type GrafPeriode = '1m' | '3m' | '6m' | '12m' | 'alt';
+	let grafPeriode = $state<GrafPeriode>('3m');
+
+	const grafEntries = $derived.by(() => {
+		const cutoff = (() => {
+			if (grafPeriode === 'alt') return baselineFraDato;
+			const d = new Date();
+			const m = grafPeriode === '1m' ? 1 : grafPeriode === '3m' ? 3 : grafPeriode === '6m' ? 6 : 12;
+			d.setMonth(d.getMonth() - m);
+			const fra = formaterDato(d);
+			// Hvis brugeren har nulstillet baseline efter cutoff, brug nulstillingsdatoen
+			return baselineFraDato && baselineFraDato > fra ? baselineFraDato : fra;
+		})();
+		return alleCheckins(alleAboEntriesArr, cutoff);
+	});
+
+	let nulstillerBaseline = $state(false);
+
+	async function nulstilBaseline() {
+		const u = user;
+		if (!u || nulstillerBaseline) return;
+		const bekraeftet = confirm(
+			'Vil du nulstille baseline? Dit næste komplette check-in bliver den nye baseline du sammenligner med.'
+		);
+		if (!bekraeftet) return;
+		nulstillerBaseline = true;
+		try {
+			await nulstilAboBaseline(u.uid);
+			await indlaesAboData(u.uid);
+		} catch (e) {
+			console.error(e);
+		} finally {
+			nulstillerBaseline = false;
+		}
+	}
+
+	const SLIDER_FARVER: Record<string, string> = {
+		energi: '#b87b6e',
+		mave: '#6f9e7e',
+		cravings: '#c9a07a',
+		humor: '#7e9bb3',
+		sovn: '#9d6358'
+	};
+
+	function grafPath(sliderId: keyof CheckinSvar): string {
+		if (grafEntries.length === 0) return '';
+		const w = 300;
+		const h = 100;
+		const padX = 10;
+		const padY = 8;
+		const innerW = w - padX * 2;
+		const innerH = h - padY * 2;
+
+		const n = grafEntries.length;
+		const points = grafEntries.map((e, i) => {
+			const val = (e.checkin[sliderId] as number) ?? 5;
+			const x = n === 1 ? padX + innerW / 2 : padX + (i / (n - 1)) * innerW;
+			// Y-akse: 1 nederst, 10 øverst — så højere værdi = højere op
+			const y = padY + ((10 - val) / 9) * innerH;
+			return `${x.toFixed(1)},${y.toFixed(1)}`;
+		});
+		return 'M ' + points.join(' L ');
+	}
 
 	const dagsLabel = $derived.by(() => {
 		const d = new Date();
@@ -461,7 +532,10 @@
 							{@const senesteVal = seneste.checkin[id] as number}
 							{@const delta = senesteVal - baseVal}
 							<div class="udvikling-row">
-								<div class="udvikling-label">{q.label}</div>
+								<div class="udvikling-label">
+									<span class="udvikling-prik" style="background:{SLIDER_FARVER[q.id]}"></span>
+									{q.label}
+								</div>
 								<div class="udvikling-skala">
 									<span class="udvikling-baseline" title="Baseline">{baseVal}</span>
 									{#if harFlereCheckins}
@@ -479,6 +553,50 @@
 							</div>
 						{/each}
 					</div>
+
+					{#if grafEntries.length >= 2}
+						<div class="periode-vaelger">
+							{#each ['1m', '3m', '6m', '12m', 'alt'] as p}
+								<button
+									class="periode-knap"
+									class:aktiv={grafPeriode === p}
+									onclick={() => (grafPeriode = p as GrafPeriode)}
+								>
+									{p === 'alt' ? 'Alt' : p}
+								</button>
+							{/each}
+						</div>
+
+						<div class="graf-wrap">
+							<svg viewBox="0 0 300 100" class="graf" preserveAspectRatio="none">
+								<line x1="10" y1="8" x2="290" y2="8" stroke="var(--border)" stroke-width="0.5" />
+								<line x1="10" y1="54" x2="290" y2="54" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="2 2" />
+								<line x1="10" y1="92" x2="290" y2="92" stroke="var(--border)" stroke-width="0.5" />
+								{#each CHECKIN_SPORGSMAAL as q (q.id)}
+									<path
+										d={grafPath(q.id as keyof CheckinSvar)}
+										stroke={SLIDER_FARVER[q.id]}
+										stroke-width="1.6"
+										fill="none"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+								{/each}
+							</svg>
+							<div class="graf-skala">
+								<span>10</span>
+								<span>5</span>
+								<span>1</span>
+							</div>
+						</div>
+						<div class="graf-meta">
+							{grafEntries.length} check-ins · {grafEntries[0]?.dato} → {grafEntries[grafEntries.length - 1]?.dato}
+						</div>
+					{/if}
+
+					<button class="reset-knap" type="button" onclick={nulstilBaseline} disabled={nulstillerBaseline}>
+						{nulstillerBaseline ? 'Nulstiller...' : 'Nulstil baseline'}
+					</button>
 				</section>
 			{/if}
 
@@ -1033,11 +1151,6 @@
 		border-top: none;
 	}
 
-	.udvikling-label {
-		font-size: calc(13px * var(--fs-scale, 1));
-		color: var(--text);
-	}
-
 	.udvikling-skala {
 		display: flex;
 		align-items: center;
@@ -1083,5 +1196,102 @@
 	.udvikling-delta.nul {
 		background: var(--bg2);
 		color: var(--text3);
+	}
+
+	.udvikling-label {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.udvikling-prik {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+
+	.periode-vaelger {
+		display: flex;
+		gap: 4px;
+		margin: 14px 0 8px;
+	}
+
+	.periode-knap {
+		flex: 1;
+		padding: 6px 8px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		font-family: var(--ff-b);
+		border: 1px solid var(--border);
+		background: var(--white);
+		color: var(--text2);
+		border-radius: 6px;
+		cursor: pointer;
+	}
+
+	.periode-knap.aktiv {
+		background: var(--terra);
+		color: #fff;
+		border-color: var(--terra);
+	}
+
+	.graf-wrap {
+		position: relative;
+		margin: 6px 0 4px;
+	}
+
+	.graf {
+		width: 100%;
+		height: 110px;
+		display: block;
+	}
+
+	.graf-skala {
+		position: absolute;
+		right: 4px;
+		top: 0;
+		bottom: 0;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		font-size: calc(9px * var(--fs-scale, 1));
+		color: var(--text4);
+		pointer-events: none;
+		padding: 4px 0;
+	}
+
+	.graf-meta {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		color: var(--text4);
+		text-align: center;
+		margin-bottom: 10px;
+	}
+
+	.reset-knap {
+		display: block;
+		width: 100%;
+		margin-top: 10px;
+		padding: 9px;
+		background: var(--white);
+		color: var(--text2);
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		border-radius: 8px;
+		border: 1px solid var(--border);
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.reset-knap:hover:not(:disabled) {
+		border-color: var(--terra);
+		color: var(--terra);
+	}
+
+	.reset-knap:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 </style>

@@ -80,7 +80,8 @@ export async function hentAboVaneOpsaetning(uid: string): Promise<AboVaneOpsaetn
 }
 
 /**
- * Gemmer brugerens vanevalg. Bevarer oprettetAt hvis dokumentet eksisterer.
+ * Gemmer brugerens vanevalg. Bevarer oprettetAt + baselineNulstilletAt
+ * hvis dokumentet eksisterer.
  */
 export async function gemAboVaneOpsaetning(
 	uid: string,
@@ -93,9 +94,26 @@ export async function gemAboVaneOpsaetning(
 		valgteVaner,
 		produktType,
 		oprettetAt: eksisterende?.oprettetAt ?? nu,
-		opdateretAt: nu
+		opdateretAt: nu,
+		...(eksisterende?.baselineNulstilletAt && {
+			baselineNulstilletAt: eksisterende.baselineNulstilletAt
+		})
 	};
 	await setDoc(opsaetningRef(uid), data);
+}
+
+/**
+ * Nulstiller baseline til en ny dato (default: nu). Det første komplette
+ * check-in på eller efter denne dato bliver den nye baseline at sammenligne
+ * mod. Eksisterende check-ins bevares — kun hvad der vises som baseline
+ * ændrer sig.
+ */
+export async function nulstilAboBaseline(uid: string): Promise<void> {
+	await setDoc(
+		opsaetningRef(uid),
+		{ baselineNulstilletAt: Timestamp.now() },
+		{ merge: true }
+	);
 }
 
 // ==============================================
