@@ -545,7 +545,6 @@
 								<Icon name={modul.ikon} size={15} color={modul.accent} />
 							</div>
 							<div class="modul-name">{modul.navn}</div>
-							<div class="modul-meta">{modul.meta}</div>
 						</a>
 					{/each}
 				</div>
@@ -1288,10 +1287,6 @@
 		color: var(--text);
 	}
 
-	.modul-meta {
-		font-size: calc(10px * var(--fs-scale, 1));
-		color: var(--text3);
-	}
 
 	/* ── C1 tilbuds-card ───────────────────────────────────────── */
 
