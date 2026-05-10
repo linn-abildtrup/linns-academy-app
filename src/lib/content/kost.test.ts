@@ -147,17 +147,17 @@ describe('procentMod', () => {
 
 describe('formatGram', () => {
 	it('formaterer hele tal uden decimal', () => {
-		expect(formatGram(100)).toBe('100g');
-		expect(formatGram(0)).toBe('0g');
+		expect(formatGram(100)).toBe('100 gram');
+		expect(formatGram(0)).toBe('0 gram');
 	});
 
 	it('runder til én decimal', () => {
-		expect(formatGram(15.5)).toBe('15.5g');
-		expect(formatGram(15.55)).toBe('15.6g');
+		expect(formatGram(15.5)).toBe('15.5 gram');
+		expect(formatGram(15.55)).toBe('15.6 gram');
 	});
 
 	it('fjerner overflødig .0', () => {
-		expect(formatGram(15.0)).toBe('15g');
+		expect(formatGram(15.0)).toBe('15 gram');
 	});
 });
 

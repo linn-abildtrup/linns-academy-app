@@ -300,14 +300,14 @@ export function procentMod(maal: number, vaerdi: number): number {
 }
 
 /**
- * Formaterer et gram-tal med højst én decimal og 'g'-suffix.
+ * Formaterer et gram-tal med højst én decimal og 'gram'-suffix.
  * Fjerner unødvendigt '.0'.
  */
 export function formatGram(g: number): string {
-	if (g === 0) return '0g';
+	if (g === 0) return '0 gram';
 	const rundet = Math.round(g * 10) / 10;
-	if (rundet === Math.round(rundet)) return `${Math.round(rundet)}g`;
-	return `${rundet}g`;
+	if (rundet === Math.round(rundet)) return `${Math.round(rundet)} gram`;
+	return `${rundet} gram`;
 }
 
 /**
