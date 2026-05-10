@@ -33,9 +33,37 @@
 	import Loading from '$lib/components/Loading.svelte';
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
 	import type { UserDoc } from '$lib/types';
-	import { erForlobsklient } from '$lib/utils/userAdgang';
+	import { erForlobsklient, harGennemfoertForlob } from '$lib/utils/userAdgang';
 	import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
+	import type { Exercise } from '$lib/content/mikrotraening';
+	import {
+		hentExercises,
+		hentForlobsProgram,
+		hentForlobsProgrammer
+	} from '$lib/firestore/mikrotraening';
+	import { getVideoUrl } from '$lib/utils/storage';
+
+	/**
+	 * Hent alle træningsøvelser fra alle programmer på et forløb. Itererer
+	 * gennem alle programmer (fx Mikrotræning Kettlebell + Mikrotræning
+	 * Stretch), samler exerciseIds fra alle dage, og henter øvelses-data.
+	 */
+	async function hentOevelserForForlob(forlobId: string): Promise<Exercise[]> {
+		const programmer = await hentForlobsProgrammer(forlobId);
+		const programDage = await Promise.all(
+			programmer.map((p) => hentForlobsProgram(forlobId, p.id))
+		);
+		const alleIds = new Set<string>();
+		for (const pd of programDage) {
+			if (!pd) continue;
+			for (const dag of pd.dage) {
+				for (const e of dag.exercises) alleIds.add(e.exerciseId);
+			}
+		}
+		const map = await hentExercises(Array.from(alleIds));
+		return Array.from(map.values()).filter((ex) => ex.aktiv);
+	}
 
 	/**
 	 * Hent alle forløb brugeren nogensinde har været på. Primær kilde er
@@ -66,12 +94,17 @@
 	// forløb. Modulbrugere (basis-app) ser kun Links + Lektioner.
 	const visFaq = $derived(erForlobsklient(userDoc));
 
-	type Tab = 'faq' | 'guides' | 'lektioner';
+	type Tab = 'faq' | 'guides' | 'lektioner' | 'oevelser';
+	// Træningsøvelser-fanen vises hvis brugeren har gennemført mindst ét
+	// forløb — øvelserne er hendes "personlige" tilgængelige bibliotek af
+	// træning og bevares forevigt, også efter forløbet er udløbet.
+	const visOevelser = $derived(harGennemfoertForlob(userDoc));
 
 	function tabFraQuery(): Tab {
 		const t = page.url.searchParams.get('tab');
 		if (t === 'guides') return 'guides';
 		if (t === 'lektioner') return 'lektioner';
+		if (t === 'oevelser') return 'oevelser';
 		// Hvis FAQ er skjult for denne bruger, default til Links i stedet
 		return visFaqInitial() ? 'faq' : 'guides';
 	}
@@ -105,6 +138,37 @@
 
 	let aabenGuide = $state<GuideItem | null>(null);
 	let aabenLektion = $state<LektionItem | null>(null);
+
+	// Træningsøvelser fra alle brugerens forløb. Aggregeres ved load.
+	let oevelser = $state<Exercise[]>([]);
+	let aabenOevelse = $state<Exercise | null>(null);
+	let oevelseVideoUrl = $state<string | null>(null);
+	let oevelseVideoLoading = $state(false);
+
+	async function aabnOevelse(ex: Exercise) {
+		aabenOevelse = ex;
+		oevelseVideoUrl = null;
+		if (typeof document !== 'undefined') {
+			document.body.classList.add('html-fullscreen-aktiv');
+		}
+		if (!ex.videoPath) return;
+		oevelseVideoLoading = true;
+		try {
+			oevelseVideoUrl = await getVideoUrl(ex.videoPath);
+		} catch (e) {
+			console.warn('Kunne ikke hente video for', ex.id, e);
+		} finally {
+			oevelseVideoLoading = false;
+		}
+	}
+
+	function lukOevelse() {
+		aabenOevelse = null;
+		oevelseVideoUrl = null;
+		if (typeof document !== 'undefined') {
+			document.body.classList.remove('html-fullscreen-aktiv');
+		}
+	}
 
 	type LektionMedDag = LektionItem & { dagNummer: number; uge: number };
 
@@ -205,7 +269,7 @@
 				return;
 			}
 
-			// Load FAQ + Guides + Lektioner fra ALLE forløb og merg dem.
+			// Load FAQ + Guides + Lektioner + Træningsøvelser fra ALLE forløb.
 			const resultater = await Promise.all(
 				forlobIds.map((forlobId) =>
 					Promise.all([
@@ -213,7 +277,8 @@
 						hentFaqItems(forlobId),
 						hentGuideKategorier(forlobId),
 						hentGuideItems(forlobId),
-						hentForlobsdage(forlobId)
+						hentForlobsdage(forlobId),
+						hentOevelserForForlob(forlobId)
 					])
 				)
 			);
@@ -222,6 +287,14 @@
 			guideKategorier = resultater.flatMap((r) => r[2]);
 			guideItems = resultater.flatMap((r) => r[3]);
 			forlobsdage = resultater.flatMap((r) => r[4]);
+			// Dedupliker øvelser efter id (en øvelse kan være i flere forløb)
+			const oevelseMap = new Map<string, Exercise>();
+			for (const ex of resultater.flatMap((r) => r[5])) {
+				oevelseMap.set(ex.id, ex);
+			}
+			oevelser = Array.from(oevelseMap.values()).sort((a, b) =>
+				a.name.localeCompare(b.name, 'da')
+			);
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente bibliotek. Prøv igen.';
@@ -316,6 +389,16 @@
 		>
 			Lektioner
 		</button>
+		{#if visOevelser}
+			<button
+				class="tab-knap"
+				class:aktiv={aktivTab === 'oevelser'}
+				type="button"
+				onclick={() => skiftTab('oevelser')}
+			>
+				Træningsøvelser
+			</button>
+		{/if}
 	</div>
 
 	{#if aktivTab === 'faq'}
@@ -437,7 +520,7 @@
 				</div>
 			{/if}
 		{/if}
-	{:else}
+	{:else if aktivTab === 'lektioner'}
 		{#if loading}
 			<Loading tekst="Henter lektioner..." kompakt />
 		{:else if fejl}
@@ -484,8 +567,76 @@
 				{/each}
 			</div>
 		{/if}
+	{:else if aktivTab === 'oevelser'}
+		{#if loading}
+			<Loading tekst="Henter træningsøvelser..." kompakt />
+		{:else if oevelser.length === 0}
+			<div class="status-besked">
+				Der er ingen træningsøvelser fra dine forløb endnu.
+			</div>
+		{:else}
+			<div class="oevelser-liste">
+				{#each oevelser as ex (ex.id)}
+					<button class="oevelse-rad" type="button" onclick={() => aabnOevelse(ex)}>
+						<div class="oevelse-info">
+							<div class="oevelse-navn">{ex.name}</div>
+							<div class="oevelse-meta">{ex.catLabel}</div>
+						</div>
+						<div class="oevelse-play" aria-label="Afspil">
+							<Icon name="play" size={14} color="#fff" filled />
+						</div>
+					</button>
+				{/each}
+			</div>
+		{/if}
 	{/if}
 </div>
+
+{#if aabenOevelse}
+	<div
+		class="oevelse-overlay"
+		role="dialog"
+		aria-modal="true"
+		aria-label={aabenOevelse.name}
+	>
+		<button class="oevelse-luk" type="button" onclick={lukOevelse} aria-label="Luk">
+			×
+		</button>
+		<div class="oevelse-indhold">
+			<h2 class="oevelse-titel">{aabenOevelse.name}</h2>
+			<p class="oevelse-cat">{aabenOevelse.catLabel}</p>
+			<div class="oevelse-video-wrap">
+				{#if oevelseVideoLoading}
+					<Loading tekst="Henter video..." kompakt />
+				{:else if oevelseVideoUrl}
+					<!-- svelte-ignore a11y_media_has_caption -->
+					<video
+						class="oevelse-video"
+						src={oevelseVideoUrl}
+						controls
+						autoplay
+						playsinline
+					></video>
+				{:else}
+					<div class="status-besked">Ingen video tilgængelig.</div>
+				{/if}
+			</div>
+			{#if aabenOevelse.desc}
+				<p class="oevelse-desc">{aabenOevelse.desc}</p>
+			{/if}
+			{#if aabenOevelse.how && aabenOevelse.how.length > 0}
+				<div class="oevelse-how">
+					<div class="oevelse-how-titel">Sådan gør du</div>
+					<ol>
+						{#each aabenOevelse.how as step}
+							<li>{step}</li>
+						{/each}
+					</ol>
+				</div>
+			{/if}
+		</div>
+	</div>
+{/if}
 
 {#if aabenGuide && aabenGuide.type === 'html'}
 	<div class="html-overlay" role="dialog" aria-modal="true">
@@ -1241,5 +1392,139 @@
 	.lektion-duration-bib {
 		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
+	}
+
+	.oevelser-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.oevelse-rad {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 14px 16px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		font-family: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.oevelse-info {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.oevelse-navn {
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		margin-bottom: 2px;
+	}
+
+	.oevelse-meta {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.oevelse-play {
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		background: var(--terra);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.oevelse-overlay {
+		position: fixed;
+		inset: 0;
+		background: var(--bg);
+		z-index: 1000;
+		overflow-y: auto;
+		padding: 56px 16px 32px;
+	}
+
+	.oevelse-luk {
+		position: fixed;
+		top: 12px;
+		right: 12px;
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		background: var(--white);
+		border: 1px solid var(--border);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		z-index: 1001;
+	}
+
+	.oevelse-indhold {
+		max-width: 600px;
+		margin: 0 auto;
+	}
+
+	.oevelse-titel {
+		font-size: calc(20px * var(--fs-scale, 1));
+		margin: 0 0 4px;
+	}
+
+	.oevelse-cat {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin: 0 0 16px;
+	}
+
+	.oevelse-video-wrap {
+		background: var(--bg2);
+		border-radius: 12px;
+		overflow: hidden;
+		aspect-ratio: 16 / 9;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 16px;
+	}
+
+	.oevelse-video {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		background: #000;
+	}
+
+	.oevelse-desc {
+		font-size: calc(14px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.5;
+		margin: 0 0 16px;
+	}
+
+	.oevelse-how {
+		background: var(--bg2);
+		border-radius: 12px;
+		padding: 16px;
+	}
+
+	.oevelse-how-titel {
+		font-weight: 600;
+		font-size: calc(14px * var(--fs-scale, 1));
+		margin-bottom: 8px;
+	}
+
+	.oevelse-how ol {
+		margin: 0;
+		padding-left: 20px;
+		color: var(--text2);
+		font-size: calc(13px * var(--fs-scale, 1));
+		line-height: 1.5;
 	}
 </style>
