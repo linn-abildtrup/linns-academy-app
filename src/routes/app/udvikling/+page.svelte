@@ -347,6 +347,22 @@
 		<p class="page-sub">Følg din udvikling over tid.</p>
 	</header>
 
+	<div class="tabs">
+		<button class="tab-knap" class:aktiv={aktivTab === 'syv'} onclick={() => (aktivTab = 'syv')}>
+			7 dage
+		</button>
+		<button
+			class="tab-knap"
+			class:aktiv={aktivTab === 'tredive'}
+			onclick={() => (aktivTab = 'tredive')}
+		>
+			30 dage
+		</button>
+		<button class="tab-knap" class:aktiv={aktivTab === 'maal'} onclick={() => (aktivTab = 'maal')}>
+			Mål
+		</button>
+	</div>
+
 	{#if visAbo}
 		<div class="sektion-titel">Næring</div>
 	{/if}
@@ -362,22 +378,6 @@
 				{NAERING_LABELS[m]}
 			</button>
 		{/each}
-	</div>
-
-	<div class="tabs">
-		<button class="tab-knap" class:aktiv={aktivTab === 'syv'} onclick={() => (aktivTab = 'syv')}>
-			7 dage
-		</button>
-		<button
-			class="tab-knap"
-			class:aktiv={aktivTab === 'tredive'}
-			onclick={() => (aktivTab = 'tredive')}
-		>
-			30 dage
-		</button>
-		<button class="tab-knap" class:aktiv={aktivTab === 'maal'} onclick={() => (aktivTab = 'maal')}>
-			Mål
-		</button>
 	</div>
 
 	{#if loading}
