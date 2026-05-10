@@ -5,7 +5,6 @@
 	import type { UserDoc } from '$lib/types';
 	import {
 		maksAntalVaner,
-		kanSkifteVaner,
 		type AboVaneForslag,
 		type AboVaneOpsaetning,
 		type ValgtVane
@@ -36,16 +35,6 @@
 	let fejl = $state<string | null>(null);
 
 	const antalValgt = $derived(valgteIds.size + egneVaner.filter((e) => e.label.trim()).length);
-	const erLaast = $derived(!kanSkifteVaner(opsaetning));
-	const laastIndtilStr = $derived(
-		opsaetning
-			? opsaetning.laastIndtil.toDate().toLocaleDateString('da-DK', {
-					day: 'numeric',
-					month: 'long',
-					year: 'numeric'
-				})
-			: null
-	);
 
 	onMount(async () => {
 		const u = user;
@@ -79,7 +68,6 @@
 	});
 
 	function toggleForslag(id: string) {
-		if (erLaast) return;
 		const ny = new Set(valgteIds);
 		if (ny.has(id)) {
 			ny.delete(id);
@@ -90,7 +78,7 @@
 	}
 
 	function tilfojEgenVane() {
-		if (erLaast || antalValgt >= maks) return;
+		if (antalValgt >= maks) return;
 		egneVaner = [...egneVaner, { tempId: `egen-${Date.now()}`, label: '' }];
 	}
 
@@ -157,19 +145,6 @@
 	{:else if fejl && forslag.length === 0}
 		<div class="status-besked fejl">{fejl}</div>
 	{:else}
-		{#if erLaast}
-			<div class="lock-banner">
-				<Icon name="lock" size={14} color="var(--text2)" />
-				<div>
-					<div class="lock-titel">Dine vaner er låst i 21 dage</div>
-					<div class="lock-sub">
-						Du kan ændre dine vaner igen efter {laastIndtilStr}. Vaner virker bedst når
-						du holder fast i dem.
-					</div>
-				</div>
-			</div>
-		{/if}
-
 		<div class="taeller">
 			<div class="taeller-tekst">Valgt</div>
 			<div class="taeller-tal" class:full={antalValgt >= maks}>
@@ -188,7 +163,7 @@
 						<button
 							class="forslag-row"
 							class:valgt
-							disabled={erLaast || (!valgt && antalValgt >= maks)}
+							disabled={!valgt && antalValgt >= maks}
 							onclick={() => toggleForslag(f.id)}
 						>
 							<div class="check-cirkel" class:valgt>
@@ -217,13 +192,11 @@
 						class="input-egen"
 						placeholder="Skriv din egen vane"
 						bind:value={e.label}
-						disabled={erLaast}
 					/>
 					<button
 						class="slet-btn"
 						aria-label="Fjern"
 						onclick={() => fjernEgenVane(e.tempId)}
-						disabled={erLaast}
 					>
 						×
 					</button>
@@ -232,7 +205,7 @@
 			<button
 				class="tilfoj-btn"
 				onclick={tilfojEgenVane}
-				disabled={erLaast || antalValgt >= maks}
+				disabled={antalValgt >= maks}
 			>
 				<Icon name="plus" size={14} color="var(--text2)" />
 				Tilføj egen vane
@@ -243,8 +216,8 @@
 			<div class="status-besked fejl">{fejl}</div>
 		{/if}
 
-		<button class="gem-btn" onclick={gem} disabled={gemmer || erLaast || antalValgt === 0}>
-			{gemmer ? 'Gemmer...' : opsaetning ? 'Opdater vaner' : 'Lås vaner i 21 dage'}
+		<button class="gem-btn" onclick={gem} disabled={gemmer || antalValgt === 0}>
+			{gemmer ? 'Gemmer...' : opsaetning ? 'Opdater vaner' : 'Gem vaner'}
 		</button>
 	{/if}
 </div>
@@ -292,30 +265,6 @@
 		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
-		line-height: 1.4;
-	}
-
-	.lock-banner {
-		display: flex;
-		gap: 12px;
-		padding: 12px 14px;
-		background: var(--tdim);
-		border: 1px solid var(--tdim2);
-		border-radius: 12px;
-		margin-bottom: 14px;
-		align-items: flex-start;
-	}
-
-	.lock-titel {
-		font-size: calc(13px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--text);
-		margin-bottom: 2px;
-	}
-
-	.lock-sub {
-		font-size: calc(11.5px * var(--fs-scale, 1));
-		color: var(--text2);
 		line-height: 1.4;
 	}
 

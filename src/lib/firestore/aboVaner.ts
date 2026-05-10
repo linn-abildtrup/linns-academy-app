@@ -25,7 +25,6 @@ import type {
 	AboVanedagEntry,
 	ValgtVane
 } from '$lib/content/aboVaner';
-import { beregnLockUdloeb } from '$lib/content/aboVaner';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
 
 type ProduktType = 'basis' | 'premium';
@@ -81,8 +80,7 @@ export async function hentAboVaneOpsaetning(uid: string): Promise<AboVaneOpsaetn
 }
 
 /**
- * Gemmer brugerens vanevalg. Sætter laastIndtil = nu + 21 dage.
- * Bevarer oprettetAt hvis dokumentet eksisterer.
+ * Gemmer brugerens vanevalg. Bevarer oprettetAt hvis dokumentet eksisterer.
  */
 export async function gemAboVaneOpsaetning(
 	uid: string,
@@ -91,11 +89,9 @@ export async function gemAboVaneOpsaetning(
 ): Promise<void> {
 	const eksisterende = await hentAboVaneOpsaetning(uid);
 	const nu = Timestamp.now();
-	const laastIndtil = Timestamp.fromDate(beregnLockUdloeb(nu.toDate()));
 	const data: AboVaneOpsaetning = {
 		valgteVaner,
 		produktType,
-		laastIndtil,
 		oprettetAt: eksisterende?.oprettetAt ?? nu,
 		opdateretAt: nu
 	};

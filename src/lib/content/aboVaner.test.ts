@@ -1,23 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { Timestamp } from 'firebase/firestore';
 import {
 	formaterDato,
 	parseDato,
 	erUgentligCheckinDag,
 	maksAntalVaner,
 	dagensBonus,
-	kanSkifteVaner,
-	beregnLockUdloeb,
 	beregnAboDagsStatus,
 	beregnAboFlowerNiveau,
 	aboVaneStatistik,
 	aboTrendScore,
 	beregnAboFremgang,
-	LOCK_PERIODE_DAGE,
 	type ValgtVane,
 	type AboBonusForslag,
-	type AboVanedagEntry,
-	type AboVaneOpsaetning
+	type AboVanedagEntry
 } from './aboVaner';
 
 const vaner3: ValgtVane[] = [
@@ -89,45 +84,6 @@ describe('dagensBonus', () => {
 		const ids = datoer.map((d) => dagensBonus(bonusPulje, d)?.id);
 		const unikke = new Set(ids);
 		expect(unikke.size).toBeGreaterThan(1);
-	});
-});
-
-describe('kanSkifteVaner / beregnLockUdloeb', () => {
-	it('null opsætning = altid lov til at vælge', () => {
-		expect(kanSkifteVaner(null)).toBe(true);
-	});
-
-	it('låst hvis laastIndtil er i fremtiden', () => {
-		const fremtid = new Date();
-		fremtid.setDate(fremtid.getDate() + 5);
-		const o: AboVaneOpsaetning = {
-			valgteVaner: vaner3,
-			produktType: 'basis',
-			laastIndtil: Timestamp.fromDate(fremtid),
-			oprettetAt: Timestamp.now(),
-			opdateretAt: Timestamp.now()
-		};
-		expect(kanSkifteVaner(o)).toBe(false);
-	});
-
-	it('åben hvis laastIndtil er i fortiden', () => {
-		const fortid = new Date();
-		fortid.setDate(fortid.getDate() - 1);
-		const o: AboVaneOpsaetning = {
-			valgteVaner: vaner3,
-			produktType: 'basis',
-			laastIndtil: Timestamp.fromDate(fortid),
-			oprettetAt: Timestamp.now(),
-			opdateretAt: Timestamp.now()
-		};
-		expect(kanSkifteVaner(o)).toBe(true);
-	});
-
-	it('beregnLockUdloeb = nu + 21 dage', () => {
-		const nu = new Date(2026, 4, 10);
-		const udloeb = beregnLockUdloeb(nu);
-		const diff = (udloeb.getTime() - nu.getTime()) / (1000 * 60 * 60 * 24);
-		expect(Math.round(diff)).toBe(LOCK_PERIODE_DAGE);
 	});
 });
 

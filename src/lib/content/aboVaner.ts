@@ -5,13 +5,12 @@
 // (eller skriver sine egne) og tjekker ind dagligt. 5-slider check-in tages
 // ugentligt om søndagen. Bonus-spørgsmål roterer deterministisk fra en pulje.
 //
-// Vaner er låst i 21 dage efter sidste skift, så brugeren ikke kan zappe rundt.
+// Brugeren kan ændre sine vaner når som helst.
 
 import type { Timestamp } from 'firebase/firestore';
 import type { VaneSvar, CheckinSvar, DagStatus, FlowerNiveau } from './vaner';
 import { CHECKIN_SPORGSMAAL } from './vaner';
 
-export const LOCK_PERIODE_DAGE = 21;
 export const BASIS_MAKS_VANER = 3;
 export const PREMIUM_MAKS_VANER = 7;
 
@@ -59,7 +58,6 @@ export interface ValgtVane {
 export interface AboVaneOpsaetning {
 	valgteVaner: ValgtVane[];
 	produktType: 'basis' | 'premium';
-	laastIndtil: Timestamp;
 	oprettetAt: Timestamp;
 	opdateretAt: Timestamp;
 }
@@ -126,26 +124,6 @@ export function dagensBonus(
 	}
 	const idx = Math.abs(hash) % pulje.length;
 	return pulje[idx];
-}
-
-// ==============================================
-// Lock-logik
-// ==============================================
-
-/** Returnerer true hvis brugeren må skifte vaner nu. */
-export function kanSkifteVaner(
-	opsaetning: AboVaneOpsaetning | null,
-	now: Date = new Date()
-): boolean {
-	if (!opsaetning) return true;
-	return opsaetning.laastIndtil.toMillis() <= now.getTime();
-}
-
-/** Beregner ny laastIndtil-dato = nu + 21 dage. */
-export function beregnLockUdloeb(now: Date = new Date()): Date {
-	const d = new Date(now);
-	d.setDate(d.getDate() + LOCK_PERIODE_DAGE);
-	return d;
 }
 
 // ==============================================
