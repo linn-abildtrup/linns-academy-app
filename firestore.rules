@@ -51,6 +51,16 @@ service cloud.firestore {
 			match /adminKlient/{forlobId}/{document=**} {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
 			}
+
+			// Abo-vanetracker — brugerens valgte vaner (single doc 'aktiv')
+			match /aboVaneOpsaetning/{docId} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
+
+			// Abo-vanetracker — daglige svar pr dato (YYYY-MM-DD som doc-id)
+			match /aboVanedage/{dato} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
 		}
 
 		// Øvelsesbibliotek: alle autentificerede kan læse, kun admin kan skrive
@@ -164,6 +174,20 @@ service cloud.firestore {
 				allow read: if request.auth != null;
 				allow write: if isAdmin();
 			}
+		}
+
+		// Abo-vanetracker — kurateret vaneliste pr produkttype (basis/premium):
+		// alle autentificerede kan læse (klient skal se forslag), kun admin skriver.
+		match /aboVaneskabelon/{produktType} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
+		// Abo-vanetracker — bonus-pulje pr produkttype:
+		// alle autentificerede kan læse, kun admin skriver.
+		match /aboBonusPulje/{produktType} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
 		}
 
 		// Klientspørgsmål til Linn:

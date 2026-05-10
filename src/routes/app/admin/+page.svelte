@@ -41,6 +41,14 @@
 			rute: '/app/admin/fodevarer',
 			accent: '#B8956A',
 			icon: 'community' as const
+		},
+		{
+			id: 'abo-vaner',
+			navn: 'Abo-vaner',
+			beskrivelse: 'Vaneliste og bonus-pulje for basis/premium-abonnenter',
+			rute: '/app/admin/abo-vaner',
+			accent: '#7E9BB3',
+			icon: 'flower' as const
 		}
 	];
 </script>
