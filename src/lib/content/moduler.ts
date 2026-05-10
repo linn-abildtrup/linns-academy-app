@@ -142,38 +142,33 @@ function modulbrugerStatus(base: ModulBase): Modul {
 }
 
 function udlobetStatus(base: ModulBase): Modul {
-	// Udløbet Kickstart-bruger har:
-	//   - Bibliotek for evigt (FAQ skjult, Links + Lektioner + Træningsøvelser)
-	//   - Kost i 3 mdr efter forløb-slut (læseadgang til opskrifter)
-	//   - Træning er låst — øvelserne tilgås via bibliotek/Træningsøvelser
-	//   - Alt andet skjult/låst
-	// 3-mdr-vinduet håndteres dynamisk via userDoc.bonusPeriodEndsAt — kald
-	// erIBonusPeriode(userDoc) i komponenter der har brug for det. Denne
-	// statisk modul-config viser den optimale state (med bonus aktiv).
-	const synlige: Record<string, { tekst: string; status: ModulStatus; sub: string }> = {
-		bibliotek: { tekst: 'Åbent', status: 'aktiv', sub: 'Dit personlige bibliotek' },
-		kost: { tekst: 'Læseadgang', status: 'laeseadgang', sub: 'Se opskrifter fra forløbet' }
-	};
-	const synlig = synlige[base.id];
-	if (synlig) {
+	// Udløbet Kickstart-bruger har KUN adgang til bibliotek (forevigt).
+	// Bibliotek indeholder alt brugerens personlige indhold:
+	//   - FAQ + Links + Lektioner + Træningsøvelser + Opskrifter
+	// Alle andre moduler er låst — deres indhold (træning + opskrifter)
+	// er flyttet til biblioteket så det er ét samlet sted at finde alt.
+	if (base.id === 'bibliotek') {
 		return {
 			...base,
-			status: synlig.status,
+			status: 'aktiv',
 			progress: null,
-			statusTekst: synlig.tekst,
-			subTekst: synlig.sub,
+			statusTekst: 'Åbent',
+			subTekst: 'Dit personlige bibliotek',
 			laasTekst: null
 		};
 	}
+	const subMap: Record<string, string> = {
+		traening: 'Øvelserne ligger i biblioteket',
+		kost: 'Opskrifterne ligger i biblioteket',
+		vaner: 'Kræver aktivt abonnement eller forløb',
+		forlob: 'Kræver aktivt forløb'
+	};
 	return {
 		...base,
 		status: 'laast',
 		progress: null,
 		statusTekst: 'Låst',
-		subTekst:
-			base.id === 'traening'
-				? 'Øvelserne ligger i biblioteket'
-				: 'Kræver aktivt abonnement eller forløb',
+		subTekst: subMap[base.id] ?? 'Kræver aktivt abonnement eller forløb',
 		laasTekst: 'Få adgang igen'
 	};
 }

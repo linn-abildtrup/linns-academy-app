@@ -91,23 +91,22 @@ describe('getModulerForUser', () => {
 			expect(bib?.status).toBe('aktiv');
 		});
 
-		it('har kost på læseadgang (3-mdr bonus)', () => {
-			const kost = moduler.find((m) => m.id === 'kost');
-			expect(kost?.status).toBe('laeseadgang');
-		});
-
-		it('har træning, vaner og mit forløb låst', () => {
+		it('har alle moduler undtagen bibliotek låst', () => {
 			const traening = moduler.find((m) => m.id === 'traening');
+			const kost = moduler.find((m) => m.id === 'kost');
 			const vaner = moduler.find((m) => m.id === 'vaner');
 			const forlob = moduler.find((m) => m.id === 'forlob');
 			expect(traening?.status).toBe('laast');
+			expect(kost?.status).toBe('laast');
 			expect(vaner?.status).toBe('laast');
 			expect(forlob?.status).toBe('laast');
 		});
 
-		it('forklarer at træningsøvelser ligger i biblioteket', () => {
+		it('forklarer hvor træningsøvelser og opskrifter er flyttet hen', () => {
 			const traening = moduler.find((m) => m.id === 'traening');
+			const kost = moduler.find((m) => m.id === 'kost');
 			expect(traening?.subTekst).toContain('biblioteket');
+			expect(kost?.subTekst).toContain('biblioteket');
 		});
 
 		it('har ingen progress på nogen moduler', () => {

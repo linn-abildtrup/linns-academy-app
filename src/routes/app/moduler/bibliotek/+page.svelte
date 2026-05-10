@@ -43,6 +43,9 @@
 		hentForlobsProgrammer
 	} from '$lib/firestore/mikrotraening';
 	import { getVideoUrl } from '$lib/utils/storage';
+	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
+	import { KATEGORI_LABELS, type Opskrift } from '$lib/content/opskrifter';
+	import { goto } from '$app/navigation';
 
 	/**
 	 * Hent alle træningsøvelser fra alle programmer på et forløb. Itererer
@@ -94,7 +97,7 @@
 	// forløb. Modulbrugere (basis-app) ser kun Links + Lektioner.
 	const visFaq = $derived(erForlobsklient(userDoc));
 
-	type Tab = 'faq' | 'guides' | 'lektioner' | 'oevelser';
+	type Tab = 'faq' | 'guides' | 'lektioner' | 'oevelser' | 'opskrifter';
 	// Træningsøvelser-fanen vises hvis brugeren har gennemført mindst ét
 	// forløb — øvelserne er hendes "personlige" tilgængelige bibliotek af
 	// træning og bevares forevigt, også efter forløbet er udløbet.
@@ -105,6 +108,7 @@
 		if (t === 'guides') return 'guides';
 		if (t === 'lektioner') return 'lektioner';
 		if (t === 'oevelser') return 'oevelser';
+		if (t === 'opskrifter') return 'opskrifter';
 		// Hvis FAQ er skjult for denne bruger, default til Links i stedet
 		return visFaqInitial() ? 'faq' : 'guides';
 	}
@@ -144,6 +148,11 @@
 	let aabenOevelse = $state<Exercise | null>(null);
 	let oevelseVideoUrl = $state<string | null>(null);
 	let oevelseVideoLoading = $state(false);
+
+	// Opskrifter er globale (ikke pr forløb) — vi henter alle aktive og
+	// viser dem som en fast fane i biblioteket. Klik åbner detaljesiden
+	// under /app/moduler/30-30-3/opskrifter/[id] som allerede findes.
+	let opskrifter = $state<Opskrift[]>([]);
 
 	async function aabnOevelse(ex: Exercise) {
 		aabenOevelse = ex;
@@ -255,6 +264,12 @@
 		}
 
 		try {
+			// Opskrifter er globale — hent dem parallelt med forløbs-data.
+			// De er tilgængelige selv hvis brugeren ikke har været på et forløb.
+			const opskrifterPromise = hentAlleOpskrifter().then((alle) =>
+				alle.filter((o) => o.aktiv).sort((a, b) => a.titel.localeCompare(b.titel, 'da'))
+			);
+
 			// Hent alle forløb brugeren har været på — først fra userDoc.forlobIds
 			// (autoritativ kilde), ellers fald tilbage til at scanne userProducts.
 			// Bibliotek aggregerer materiale fra alle forløb så historik bevares
@@ -262,9 +277,13 @@
 			const forlobIds = await hentBrugerensForlobIds(u.uid);
 
 			if (forlobIds.length === 0) {
-				fejl = userDoc && erForlobsklient(userDoc)
-					? 'Du er ikke tilknyttet et forløb endnu. Kontakt Linn.'
-					: 'Du har ikke gennemført et forløb endnu — biblioteket er tomt indtil du har været på et forløb.';
+				// Ingen forløb endnu — vis kun opskrifter (globale)
+				opskrifter = await opskrifterPromise;
+				if (opskrifter.length === 0) {
+					fejl = userDoc && erForlobsklient(userDoc)
+						? 'Du er ikke tilknyttet et forløb endnu. Kontakt Linn.'
+						: 'Du har ikke gennemført et forløb endnu — biblioteket er tomt indtil du har været på et forløb.';
+				}
 				loading = false;
 				return;
 			}
@@ -295,6 +314,7 @@
 			oevelser = Array.from(oevelseMap.values()).sort((a, b) =>
 				a.name.localeCompare(b.name, 'da')
 			);
+			opskrifter = await opskrifterPromise;
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente bibliotek. Prøv igen.';
@@ -399,6 +419,14 @@
 				Træningsøvelser
 			</button>
 		{/if}
+		<button
+			class="tab-knap"
+			class:aktiv={aktivTab === 'opskrifter'}
+			type="button"
+			onclick={() => skiftTab('opskrifter')}
+		>
+			Opskrifter
+		</button>
 	</div>
 
 	{#if aktivTab === 'faq'}
@@ -585,6 +613,41 @@
 						<div class="oevelse-play" aria-label="Afspil">
 							<Icon name="play" size={14} color="#fff" filled />
 						</div>
+					</button>
+				{/each}
+			</div>
+		{/if}
+	{:else if aktivTab === 'opskrifter'}
+		{#if loading}
+			<Loading tekst="Henter opskrifter..." kompakt />
+		{:else if opskrifter.length === 0}
+			<div class="status-besked">
+				Der er ingen opskrifter endnu.
+			</div>
+		{:else}
+			<div class="opskrifter-liste">
+				{#each opskrifter as o (o.id)}
+					<button
+						class="opskrift-rad"
+						type="button"
+						onclick={() => goto(`/app/moduler/30-30-3/opskrifter/${o.id}`)}
+					>
+						{#if o.billedeUrl}
+							<img class="opskrift-billede" src={o.billedeUrl} alt="" loading="lazy" />
+						{:else}
+							<div class="opskrift-billede opskrift-billede-fallback">
+								<Icon name="leaf" size={20} color="var(--text3)" />
+							</div>
+						{/if}
+						<div class="opskrift-info">
+							<div class="opskrift-titel">{o.titel}</div>
+							{#if o.kategorier.length > 0}
+								<div class="opskrift-kategorier">
+									{o.kategorier.map((k) => KATEGORI_LABELS[k]).join(' · ')}
+								</div>
+							{/if}
+						</div>
+						<Icon name="chevron-r" size={14} color="var(--text3)" />
 					</button>
 				{/each}
 			</div>
@@ -1526,5 +1589,56 @@
 		color: var(--text2);
 		font-size: calc(13px * var(--fs-scale, 1));
 		line-height: 1.5;
+	}
+
+	.opskrifter-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.opskrift-rad {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		font-family: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.opskrift-billede {
+		width: 56px;
+		height: 56px;
+		border-radius: 8px;
+		object-fit: cover;
+		background: var(--bg2);
+		flex-shrink: 0;
+	}
+
+	.opskrift-billede-fallback {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.opskrift-info {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.opskrift-titel {
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		margin-bottom: 2px;
+	}
+
+	.opskrift-kategorier {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
 	}
 </style>
