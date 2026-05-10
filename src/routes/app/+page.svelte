@@ -551,20 +551,6 @@
 				</div>
 			</section>
 
-			<section class="featured-card">
-				<div class="featured-icon" style="background: rgba(92,122,140,.15)">
-					<Icon name="mic" size={17} color="#5C7A8C" />
-				</div>
-				<div class="featured-text">
-					<div class="featured-eyebrow">Ny podcast</div>
-					<div class="featured-title">Når kroppen siger fra</div>
-					<div class="featured-meta">32 min · samtale med Linn</div>
-				</div>
-				<button class="featured-play" aria-label="Afspil">
-					<Icon name="play" size={11} color="#fff" filled />
-				</button>
-			</section>
-
 			<section class="coaching-section">
 				<div class="eyebrow eyebrow-muted">Personlig coaching</div>
 				<a
@@ -1305,68 +1291,6 @@
 	.modul-meta {
 		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text3);
-	}
-
-	/* ── Featured card (B1 podcast) ────────────────────────────── */
-
-	.featured-card {
-		padding: 13px;
-		border-radius: 12px;
-		background: var(--bg2);
-		border: 1px solid var(--border);
-		display: flex;
-		align-items: center;
-		gap: 11px;
-	}
-
-	.featured-icon {
-		width: 42px;
-		height: 42px;
-		border-radius: 10px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-	}
-
-	.featured-text {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.featured-eyebrow {
-		font-size: calc(9px * var(--fs-scale, 1));
-		font-weight: 700;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: #5c7a8c;
-	}
-
-	.featured-title {
-		font-family: var(--ff-d);
-		font-size: calc(13px * var(--fs-scale, 1));
-		font-weight: 700;
-		margin-top: 2px;
-		line-height: 1.2;
-		color: var(--text);
-	}
-
-	.featured-meta {
-		font-size: calc(10px * var(--fs-scale, 1));
-		color: var(--text3);
-	}
-
-	.featured-play {
-		width: 28px;
-		height: 28px;
-		border-radius: 50%;
-		background: #5c7a8c;
-		border: none;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-		cursor: pointer;
 	}
 
 	/* ── C1 tilbuds-card ───────────────────────────────────────── */
