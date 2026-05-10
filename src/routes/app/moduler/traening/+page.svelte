@@ -11,7 +11,7 @@
 		{
 			id: 'mikrotraening',
 			navn: 'Mikrotræning',
-			beskrivelse: 'Tre minutters daglig styrketræning i 21 dage',
+			beskrivelse: 'Tre minutters daglig styrketræning',
 			rute: '/app/moduler/traening/mikrotraening',
 			tilgaengelig: true
 		}

@@ -83,7 +83,7 @@
 	async function autoGenerer() {
 		if (genererStatus === 'arbejder') return;
 		const bekraeftet = confirm(
-			`Det vil ${aktivProgram ? 'overskrive' : 'oprette'} ${ABO_MIKROTRAENING_DAGE} dages program for ${aktivTab}-abo. Er du sikker?`
+			`Det vil ${aktivProgram ? 'overskrive' : 'oprette'} programmet for ${aktivTab}-abo. Er du sikker?`
 		);
 		if (!bekraeftet) return;
 
@@ -114,7 +114,7 @@
 					}
 				: {
 						navn: aktivTab === 'basis' ? 'Daglig mikrotræning' : 'Daglig mikrotræning premium',
-						beskrivelse: `${aktivConfig.antalOvelser} øvelser om dagen i 14 dage der looper.`,
+						beskrivelse: 'Tre minutters daglig styrketræning.',
 						treaningsform: 'mikrotraening',
 						antalDage: ABO_MIKROTRAENING_DAGE,
 						dagligTid: beregnetDagligTid,
@@ -169,8 +169,7 @@
 		<div class="eyebrow">Admin · Abo-træning</div>
 		<h1>Mikrotræning for abonnenter</h1>
 		<p class="page-sub">
-			14 dages program der looper. Når basis- eller premium-abonnenten har
-			gennemført dag 14, starter hun forfra på dag 1 med samme indhold.
+			Mikrotræning for basis- og premium-abonnenter.
 		</p>
 	</header>
 
@@ -253,7 +252,7 @@
 				{#if genererStatus === 'arbejder'}
 					Genererer...
 				{:else if !aktivProgram || altErTomt}
-					Auto-generér 14-dages program
+					Auto-generér program
 				{:else}
 					Auto-generér igen (overskriver)
 				{/if}

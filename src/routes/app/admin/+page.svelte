@@ -53,7 +53,7 @@
 		{
 			id: 'abo-traening',
 			navn: 'Abo-træning',
-			beskrivelse: 'Auto-genereret 14-dages mikrotræning for abonnenter',
+			beskrivelse: 'Auto-genereret mikrotræning for abonnenter',
 			rute: '/app/admin/abo-traening',
 			accent: '#A37F66',
 			icon: 'flame' as const

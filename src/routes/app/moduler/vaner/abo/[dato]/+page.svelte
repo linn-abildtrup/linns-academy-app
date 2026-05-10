@@ -244,17 +244,6 @@
 		<div class="status-besked fejl">{fejl}</div>
 	{:else if opsaetning}
 		<section class="card">
-			<div class="section-label">Note</div>
-			<textarea
-				class="textarea"
-				placeholder="Hvordan har dagen været? Hvad lagde du mærke til?"
-				bind:value={note}
-				{disabled}
-				rows="3"
-			></textarea>
-		</section>
-
-		<section class="card">
 			<div class="section-label">Dine vaner</div>
 			{#each opsaetning.valgteVaner as v (v.id)}
 				{@const val = checks[v.id]}

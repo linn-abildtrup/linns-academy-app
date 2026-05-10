@@ -7,9 +7,7 @@
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import { naesteDag, beregnProgramFremgang } from '$lib/content/mikrotraening';
 	import {
-		ABO_MIKROTRAENING_DAGE,
 		aktuelAboDag,
-		aboRundeNummer,
 		harKlaretAboDagIRunde,
 		type AboMikrotraeningFremgang
 	} from '$lib/content/aboMikrotraening';
@@ -72,7 +70,6 @@
 
 	// === Abo-derived ===
 	const aboAktivDag = $derived(aktuelAboDag(aboFremgang));
-	const aboRunde = $derived(aboRundeNummer(aboFremgang));
 
 	onMount(async () => {
 		const u = user;
@@ -166,9 +163,9 @@
 		<h1>Mikrotræning</h1>
 		<p class="page-sub">
 			{#if gren === 'forlob'}
-				{programData?.program.beskrivelse ?? 'Tre minutters daglig styrketræning i 21 dage.'}
+				{programData?.program.beskrivelse ?? 'Tre minutters daglig styrketræning.'}
 			{:else if gren === 'abo'}
-				{aboProgram?.program.beskrivelse ?? `Tre minutters daglig styrketræning. ${ABO_MIKROTRAENING_DAGE} dage der looper.`}
+				{aboProgram?.program.beskrivelse ?? 'Tre minutters daglig styrketræning.'}
 			{:else}
 				Mikrotræning kræver et abonnement eller forløb.
 			{/if}
@@ -240,10 +237,10 @@
 
 		<section class="card">
 			<div class="card-head">
-				<div class="section-label">Runde {aboRunde}</div>
-				<div class="card-tael">Dag {aboAktivDag} / {ABO_MIKROTRAENING_DAGE}</div>
+				<div class="section-label">Dit program</div>
+				<div class="card-tael">Dag {aboAktivDag}</div>
 			</div>
-			<p class="hint">Tryk på en dag for at åbne den. Når du er færdig med dag {ABO_MIKROTRAENING_DAGE} starter en ny runde forfra.</p>
+			<p class="hint">Tryk på en dag for at åbne den.</p>
 			<div class="dage-grid">
 				{#each aboProgram.dage as dag (dag.dagNummer)}
 					{@const status = aboDagStatus(dag.dagNummer)}
@@ -257,14 +254,10 @@
 			</div>
 		</section>
 
-		<div class="stat-row">
+		<div class="stat-row solo">
 			<div class="stat-box">
 				<div class="stat-num">{aboFremgang?.totalGennemforte ?? 0}</div>
 				<div class="stat-lbl">træninger i alt</div>
-			</div>
-			<div class="stat-box">
-				<div class="stat-num">{aboRunde}</div>
-				<div class="stat-lbl">runde</div>
 			</div>
 		</div>
 	{:else}
@@ -465,6 +458,10 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 8px;
+	}
+
+	.stat-row.solo {
+		grid-template-columns: 1fr;
 	}
 
 	.stat-box {
