@@ -55,10 +55,12 @@
 	import { hentAlleFodevarer } from '$lib/firestore/kost';
 
 	const getUser = getContext<() => User | null>('user');
+	import { harPremium } from '$lib/utils/userAdgang';
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc?.() ?? null);
 	const visUdvidet = $derived(userDoc?.visUdvidetNaering === true);
+	const kanScanne = $derived(harPremium(userDoc));
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
 	import Icon from '$lib/components/Icon.svelte';
 	import IndkoebsListeOverlay from '$lib/components/IndkoebsListeOverlay.svelte';
@@ -452,6 +454,7 @@
 	}
 
 	function aabnScanner() {
+		if (!kanScanne) return;
 		viserScanner = true;
 	}
 
@@ -1043,16 +1046,18 @@
 				<button class="primary-knap tilfoej-fodevare-knap" type="button" onclick={aabnPicker}>
 					+ Tilføj fødevare
 				</button>
-				<button
-					class="scan-knap-direkte"
-					type="button"
-					onclick={aabnScanner}
-					disabled={scannerArbejder}
-					aria-label="Scan stregkode"
-				>
-					<Icon name="barcode" size={16} color="#fff" />
-					<span>Scan</span>
-				</button>
+				{#if kanScanne}
+					<button
+						class="scan-knap-direkte"
+						type="button"
+						onclick={aabnScanner}
+						disabled={scannerArbejder}
+						aria-label="Scan stregkode"
+					>
+						<Icon name="barcode" size={16} color="#fff" />
+						<span>Scan</span>
+					</button>
+				{/if}
 			</div>
 
 			{#if redigererFavorit}
