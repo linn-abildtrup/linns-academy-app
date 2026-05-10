@@ -143,23 +143,34 @@
 		return aboVaneSamletProcent(aboOpsaetning.valgteVaner, alleAboEntriesArr);
 	});
 
-	let viserAlleDage = $state(false);
+	let aabenMaaned = $state<string | null>(null);
 
-	const alleIndtastedeDage = $derived.by(() => {
-		const r: { dato: string; flower: FlowerNiveau }[] = [];
+	const dageGruperetPrMaaned = $derived.by(() => {
+		const grupper = new Map<string, { dato: string; flower: FlowerNiveau }[]>();
 		const sorteret = [...aboEntries.values()].sort((a, b) => b.dato.localeCompare(a.dato));
 		for (const e of sorteret) {
 			const harSvar = aboOpsaetning?.valgteVaner.some((v) => e.checks?.[v.id]) ?? false;
 			if (!harSvar) continue;
-			r.push({
+			const maaned = e.dato.slice(0, 7); // YYYY-MM
+			if (!grupper.has(maaned)) grupper.set(maaned, []);
+			grupper.get(maaned)!.push({
 				dato: e.dato,
-				flower: aboOpsaetning
-					? beregnAboFlowerNiveau(aboOpsaetning.valgteVaner, e)
-					: 'none'
+				flower: aboOpsaetning ? beregnAboFlowerNiveau(aboOpsaetning.valgteVaner, e) : 'none'
 			});
 		}
-		return r;
+		return Array.from(grupper.entries()).sort((a, b) => b[0].localeCompare(a[0]));
 	});
+
+	function maanedLabel(maaned: string): string {
+		const [aar, m] = maaned.split('-').map(Number);
+		const dt = new Date(aar, m - 1, 1);
+		return dt.toLocaleDateString('da-DK', { month: 'long', year: 'numeric' });
+	}
+
+	function dagINummer(dato: string): string {
+		const [, , d] = dato.split('-');
+		return String(parseInt(d, 10));
+	}
 
 	const baselineFraDato = $derived(
 		aboOpsaetning?.baselineNulstilletAt
@@ -515,31 +526,37 @@
 				<p class="hint">Klik på en dag for at åbne den</p>
 			</section>
 
-			{#if alleIndtastedeDage.length > 0}
-				{@const synligeDage = viserAlleDage ? alleIndtastedeDage : alleIndtastedeDage.slice(0, 7)}
+			{#if dageGruperetPrMaaned.length > 0}
 				<section class="card historik-card">
 					<div class="card-head">
-						<div class="section-label">Tidligere dage</div>
-						<div class="card-tael">{alleIndtastedeDage.length} indtastet</div>
+						<div class="section-label">Måneds-arkiv</div>
 					</div>
-					<ul class="historik-liste">
-						{#each synligeDage as d (d.dato)}
-							<a class="historik-item flower-{d.flower}" href="/app/moduler/vaner/abo/{d.dato}">
-								<div class="historik-prik flower-{d.flower}"></div>
-								<div class="historik-dato">{kortDagLabel(d.dato)} · {d.dato}</div>
-								<Icon name="chevron-r" size={12} color="var(--text3)" />
-							</a>
+					<div class="maaned-liste">
+						{#each dageGruperetPrMaaned as [maaned, dage] (maaned)}
+							{@const aaben = aabenMaaned === maaned}
+							<button
+								class="maaned-knap"
+								class:aaben
+								onclick={() => (aabenMaaned = aaben ? null : maaned)}
+							>
+								<span class="maaned-navn">{maanedLabel(maaned)}</span>
+								<span class="maaned-tael">{dage.length} {dage.length === 1 ? 'dag' : 'dage'}</span>
+								<Icon name={aaben ? 'chevron-d' : 'chevron-r'} size={12} color="var(--text3)" />
+							</button>
+							{#if aaben}
+								<div class="maaned-dage">
+									{#each dage as d (d.dato)}
+										<a
+											class="maaned-dag flower-{d.flower}"
+											href="/app/moduler/vaner/abo/{d.dato}"
+										>
+											{dagINummer(d.dato)}
+										</a>
+									{/each}
+								</div>
+							{/if}
 						{/each}
-					</ul>
-					{#if alleIndtastedeDage.length > 7}
-						<button
-							class="historik-knap"
-							type="button"
-							onclick={() => (viserAlleDage = !viserAlleDage)}
-						>
-							{viserAlleDage ? 'Vis færre' : `Vis alle ${alleIndtastedeDage.length} dage`}
-						</button>
-					{/if}
+					</div>
 				</section>
 			{/if}
 
@@ -1341,92 +1358,102 @@
 		cursor: not-allowed;
 	}
 
-	.historik-card .historik-liste {
-		list-style: none;
-		padding: 0;
-		margin: 0;
+	.maaned-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
 	}
 
-	.historik-item {
+	.maaned-knap {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		gap: 10px;
 		padding: 10px 4px;
+		border: none;
 		border-top: 1px solid var(--border);
-		text-decoration: none;
-		color: inherit;
 		background: var(--white);
+		color: var(--text);
+		text-align: left;
+		cursor: pointer;
+		font-family: var(--ff-b);
+		width: 100%;
 	}
 
-	.historik-item:first-child {
+	.maaned-knap:first-child {
 		border-top: none;
 	}
 
-	.historik-item:hover {
+	.maaned-knap.aaben {
 		background: var(--bg2);
+		margin: 0 -8px;
+		padding: 10px 8px;
+		border-top-color: transparent;
 	}
 
-	.historik-prik {
-		width: 12px;
-		height: 12px;
-		border-radius: 50%;
-		flex-shrink: 0;
-		border: 1px solid var(--border);
-	}
-
-	.historik-prik.flower-excellent {
-		background: #6f9e7e;
-		border-color: #6f9e7e;
-	}
-
-	.historik-prik.flower-good {
-		background: #92b39e;
-		border-color: #92b39e;
-	}
-
-	.historik-prik.flower-medium {
-		background: #c9a07a;
-		border-color: #c9a07a;
-	}
-
-	.historik-prik.flower-low {
-		background: #d4b59a;
-		border-color: #d4b59a;
-	}
-
-	.historik-prik.flower-poor {
-		background: #e0d0c0;
-		border-color: #d4c0aa;
-	}
-
-	.historik-prik.flower-none {
-		background: var(--bg2);
-	}
-
-	.historik-dato {
+	.maaned-navn {
 		flex: 1;
 		font-size: calc(13px * var(--fs-scale, 1));
-		color: var(--text);
+		font-weight: 600;
 		text-transform: capitalize;
 	}
 
-	.historik-knap {
-		display: block;
-		width: 100%;
-		margin-top: 10px;
-		padding: 9px;
-		background: var(--white);
-		color: var(--text2);
-		font-size: calc(12px * var(--fs-scale, 1));
-		font-weight: 600;
-		border-radius: 8px;
-		border: 1px solid var(--border);
-		cursor: pointer;
-		font-family: var(--ff-b);
+	.maaned-tael {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
 	}
 
-	.historik-knap:hover {
-		border-color: var(--terra);
-		color: var(--terra);
+	.maaned-dage {
+		display: grid;
+		grid-template-columns: repeat(7, 1fr);
+		gap: 6px;
+		padding: 8px 0 12px;
+		margin: 0 -8px;
+		padding-left: 8px;
+		padding-right: 8px;
+		background: var(--bg2);
+	}
+
+	.maaned-dag {
+		aspect-ratio: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 8px;
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		text-decoration: none;
+		border: 1px solid var(--border);
+		background: var(--white);
+		color: var(--text2);
+	}
+
+	.maaned-dag.flower-excellent {
+		background: #6f9e7e;
+		color: #fff;
+		border-color: #6f9e7e;
+	}
+
+	.maaned-dag.flower-good {
+		background: #92b39e;
+		color: #fff;
+		border-color: #92b39e;
+	}
+
+	.maaned-dag.flower-medium {
+		background: #c9a07a;
+		color: #fff;
+		border-color: #c9a07a;
+	}
+
+	.maaned-dag.flower-low {
+		background: #d4b59a;
+		color: #fff;
+		border-color: #d4b59a;
+	}
+
+	.maaned-dag.flower-poor {
+		background: #e0d0c0;
+		color: var(--text2);
+		border-color: #d4c0aa;
 	}
 </style>
