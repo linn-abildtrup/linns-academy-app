@@ -71,6 +71,16 @@ service cloud.firestore {
 			match /aboMikrotraeningTraeninger/{dato} {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
 			}
+
+			// Linn AI — brugerens chat-samtaler (premium-feature)
+			match /linnAiSamtaler/{samtaleId} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
+
+			// Linn AI — daglig query-quota (rate-limit-tæller)
+			match /linnAiQuotaer/{dato} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
 		}
 
 		// Øvelsesbibliotek: alle autentificerede kan læse, kun admin kan skrive
@@ -211,6 +221,14 @@ service cloud.firestore {
 				allow read: if request.auth != null;
 				allow write: if isAdmin();
 			}
+		}
+
+		// Linn AI — videnbase (PDFs, slides, klient-Q&A) som AI'en bruger.
+		// Alle autentificerede kan læse (worker'en læser for premium-brugere).
+		// Kun admin kan uploade og slette indhold.
+		match /linnAiVidenbase/{docId} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
 		}
 
 		// Klientspørgsmål til Linn:

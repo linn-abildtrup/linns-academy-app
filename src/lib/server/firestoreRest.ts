@@ -221,6 +221,37 @@ export async function gemDocMerge(path: string, data: Record<string, unknown>): 
 	}
 }
 
+/** Hent alle dokumenter i en collection (uden filter). */
+export async function hentAlleDocs(
+	collection: string
+): Promise<Array<{ id: string; data: Record<string, unknown> }>> {
+	const sa = laesServiceAccount();
+	const token = await hentAccessToken();
+	const res = await fetch(
+		`${dbBaseUrl(sa.projectId)}/${collection}?pageSize=300`,
+		{
+			method: 'GET',
+			headers: { Authorization: `Bearer ${token}` }
+		}
+	);
+	if (!res.ok) {
+		throw new Error(`Firestore list fejlede (${res.status}): ${await res.text()}`);
+	}
+	const data = (await res.json()) as {
+		documents?: Array<{ name: string; fields?: Record<string, FirestoreValue> }>;
+	};
+	const result: Array<{ id: string; data: Record<string, unknown> }> = [];
+	for (const d of data.documents ?? []) {
+		const id = d.name.split('/').pop() ?? '';
+		const out: Record<string, unknown> = {};
+		for (const [k, v] of Object.entries(d.fields ?? {})) {
+			out[k] = fraFirestoreValue(v);
+		}
+		result.push({ id, data: out });
+	}
+	return result;
+}
+
 /** Søg efter dokumenter i en collection hvor et felt matcher en værdi. */
 export async function hentDocsHvorFeltLig(
 	collection: string,

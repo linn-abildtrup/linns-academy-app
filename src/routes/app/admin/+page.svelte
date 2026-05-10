@@ -57,6 +57,14 @@
 			rute: '/app/admin/abo-traening',
 			accent: '#A37F66',
 			icon: 'flame' as const
+		},
+		{
+			id: 'linn-ai',
+			navn: 'Linn AI — videnbase',
+			beskrivelse: 'Upload PDFs og slides som AI\'en bruger til at svare premium-klienter',
+			rute: '/app/admin/linn-ai',
+			accent: '#5C7A8C',
+			icon: 'sparkle' as const
 		}
 	];
 </script>

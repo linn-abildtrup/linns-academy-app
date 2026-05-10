@@ -13,7 +13,7 @@
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
 	import Loading from '$lib/components/Loading.svelte';
-	import { effektivState } from '$lib/utils/userAdgang';
+	import { effektivState, harPremium } from '$lib/utils/userAdgang';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const getUser = getContext<() => User | null>('user');
@@ -211,13 +211,13 @@
 	type ModulGenvej = {
 		navn: string;
 		meta: string;
-		ikon: 'check' | 'flame' | 'leaf' | 'book';
+		ikon: 'check' | 'flame' | 'leaf' | 'book' | 'sparkle';
 		accent: string;
 		dim: string;
 		href: string;
 	};
 
-	const moduler: ModulGenvej[] = [
+	const moduler = $derived<ModulGenvej[]>([
 		{
 			navn: 'Vaner',
 			meta: 'Dagens checks',
@@ -249,8 +249,20 @@
 			accent: '#5C7A8C',
 			dim: 'rgba(92,122,140,.10)',
 			href: '/app/moduler/bibliotek'
-		}
-	];
+		},
+		...(harPremium(userDoc)
+			? [
+					{
+						navn: 'Linn AI',
+						meta: 'Spørg mig',
+						ikon: 'sparkle' as const,
+						accent: '#8b5d54',
+						dim: 'rgba(139,93,84,.10)',
+						href: '/app/moduler/linn-ai'
+					}
+				]
+			: [])
+	]);
 
 	type TidligereKob = {
 		navn: string;
