@@ -89,6 +89,24 @@
 		return Array.from(new Set(fraProducts));
 	}
 
+	/**
+	 * Henter brugerens forlobIds grupperet efter produkt-type. Bruges til
+	 * at gruppere lektioner per type (Kickstart vs Premium-forløb) så
+	 * hver type får sin egen fane i biblioteket.
+	 */
+	async function hentForlobIdsPerProduct(uid: string): Promise<Map<string, string[]>> {
+		const productsSnap = await getDocs(collection(db, 'users', uid, 'products'));
+		const map = new Map<string, string[]>();
+		for (const p of productsSnap.docs) {
+			const fId = (p.data() as { forlobId?: string }).forlobId;
+			if (!fId) continue;
+			const liste = map.get(p.id) ?? [];
+			liste.push(fId);
+			map.set(p.id, liste);
+		}
+		return map;
+	}
+
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
@@ -97,18 +115,31 @@
 	// forløb. Modulbrugere (basis-app) ser kun Links + Lektioner.
 	const visFaq = $derived(erForlobsklient(userDoc));
 
-	type Tab = 'faq' | 'guides' | 'lektioner' | 'oevelser' | 'opskrifter';
-	// Træningsøvelser-fanen vises hvis brugeren har gennemført mindst ét
-	// forløb — øvelserne er hendes "personlige" tilgængelige bibliotek af
-	// træning og bevares forevigt, også efter forløbet er udløbet.
+	// Tab-id'er er strenge — faste navne som 'faq'/'guides'/'oevelser'/
+	// 'opskrifter' og dynamiske 'lektioner-{productType}' (fx 'lektioner-kickstart',
+	// 'lektioner-premiumforløb') så hver forløbs-type får sin egen lektion-fane.
+	type Tab = string;
 	const visOevelser = $derived(harGennemfoertForlob(userDoc));
+
+	// Visningsnavne for lektion-faner per produkt-type. Fallback bruger
+	// productId capitalized hvis vi ikke har et eksplicit navn.
+	const LEKTION_TAB_LABELS: Record<string, string> = {
+		kickstart: 'Kickstart lektioner',
+		premiumforløb: 'Premium lektioner'
+	};
+	function lektionTabLabel(productId: string): string {
+		return (
+			LEKTION_TAB_LABELS[productId] ??
+			`${productId.charAt(0).toUpperCase()}${productId.slice(1)} lektioner`
+		);
+	}
 
 	function tabFraQuery(): Tab {
 		const t = page.url.searchParams.get('tab');
 		if (t === 'guides') return 'guides';
-		if (t === 'lektioner') return 'lektioner';
 		if (t === 'oevelser') return 'oevelser';
 		if (t === 'opskrifter') return 'opskrifter';
+		if (t && t.startsWith('lektioner-')) return t;
 		// Hvis FAQ er skjult for denne bruger, default til Links i stedet
 		return visFaqInitial() ? 'faq' : 'guides';
 	}
@@ -135,7 +166,16 @@
 	let faqItems = $state<FaqItem[]>([]);
 	let guideKategorier = $state<GuideKategori[]>([]);
 	let guideItems = $state<GuideItem[]>([]);
-	let forlobsdage = $state<ForlobDag[]>([]);
+	// Lektioner grupperes pr forløbs-type (kickstart, premiumforløb osv.) så
+	// hver type får sin egen fane. Hver entry er aggregeret over alle
+	// instanser af samme type (fx hvis brugeren har gennemført Kickstart Maj
+	// 2026 + Kickstart Sept 2026 → samme tab indeholder begge).
+	let forlobsdageEfterProduct = $state<Record<string, ForlobDag[]>>({});
+	const lektionTabIds = $derived(
+		Object.keys(forlobsdageEfterProduct).filter(
+			(p) => forlobsdageEfterProduct[p].length > 0
+		)
+	);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let aabneFaqItems = $state<Set<string>>(new Set());
@@ -152,7 +192,20 @@
 	// Opskrifter er globale (ikke pr forløb) — vi henter alle aktive og
 	// viser dem som en fast fane i biblioteket. Klik åbner detaljesiden
 	// under /app/moduler/30-30-3/opskrifter/[id] som allerede findes.
+	// fra=bibliotek-query skjuler "tilføj til byg-måltid"-knappen på
+	// detaljesiden så bibliotek-flowet er rent læse-orienteret.
 	let opskrifter = $state<Opskrift[]>([]);
+	let opskriftSoegning = $state('');
+	const filtreredeOpskrifter = $derived.by(() => {
+		const q = opskriftSoegning.trim().toLowerCase();
+		if (!q) return opskrifter;
+		return opskrifter.filter(
+			(o) =>
+				o.titel.toLowerCase().includes(q) ||
+				o.beskrivelse.toLowerCase().includes(q) ||
+				o.kategorier.some((k) => KATEGORI_LABELS[k].toLowerCase().includes(q))
+		);
+	});
 
 	async function aabnOevelse(ex: Exercise) {
 		aabenOevelse = ex;
@@ -181,16 +234,24 @@
 
 	type LektionMedDag = LektionItem & { dagNummer: number; uge: number };
 
-	const alleLektioner = $derived.by<LektionMedDag[]>(() => {
+	function lektionerForProduct(productId: string): LektionMedDag[] {
+		const dage = forlobsdageEfterProduct[productId] ?? [];
 		const ud: LektionMedDag[] = [];
-		for (const dag of forlobsdage) {
+		for (const dag of dage) {
 			for (const l of dag.lektioner) {
 				if (!l.titel?.trim()) continue;
 				ud.push({ ...l, dagNummer: dag.dagNummer, uge: dag.uge });
 			}
 		}
 		return ud.sort((a, b) => a.dagNummer - b.dagNummer);
-	});
+	}
+
+	const aktivLektionsProduct = $derived(
+		aktivTab.startsWith('lektioner-') ? aktivTab.slice('lektioner-'.length) : null
+	);
+	const aktiveLektioner = $derived(
+		aktivLektionsProduct ? lektionerForProduct(aktivLektionsProduct) : []
+	);
 
 	const sorterede = $derived(sorterKategorier(faqKategorier));
 	const faqItemsPrKategori = $derived(grupperEfterKategori(kunUdgivne(faqItems)));
@@ -288,7 +349,11 @@
 				return;
 			}
 
-			// Load FAQ + Guides + Lektioner + Træningsøvelser fra ALLE forløb.
+			// Load FAQ + Guides + Træningsøvelser aggregeret across ALLE forløb,
+			// og lektioner grupperet per produkt-type så hver type får sin
+			// egen fane.
+			const idsPerProduct = await hentForlobIdsPerProduct(u.uid);
+
 			const resultater = await Promise.all(
 				forlobIds.map((forlobId) =>
 					Promise.all([
@@ -296,7 +361,6 @@
 						hentFaqItems(forlobId),
 						hentGuideKategorier(forlobId),
 						hentGuideItems(forlobId),
-						hentForlobsdage(forlobId),
 						hentOevelserForForlob(forlobId)
 					])
 				)
@@ -305,15 +369,35 @@
 			faqItems = resultater.flatMap((r) => r[1]);
 			guideKategorier = resultater.flatMap((r) => r[2]);
 			guideItems = resultater.flatMap((r) => r[3]);
-			forlobsdage = resultater.flatMap((r) => r[4]);
 			// Dedupliker øvelser efter id (en øvelse kan være i flere forløb)
 			const oevelseMap = new Map<string, Exercise>();
-			for (const ex of resultater.flatMap((r) => r[5])) {
+			for (const ex of resultater.flatMap((r) => r[4])) {
 				oevelseMap.set(ex.id, ex);
 			}
 			oevelser = Array.from(oevelseMap.values()).sort((a, b) =>
 				a.name.localeCompare(b.name, 'da')
 			);
+
+			// Lektioner per produkt-type — load forløbsdage særskilt fra det
+			// per-product mapping og aggregér til flat liste pr type.
+			const lektionerPerProductEntries = await Promise.all(
+				Array.from(idsPerProduct.entries()).map(async ([productId, ids]) => {
+					const dageArrays = await Promise.all(ids.map((fId) => hentForlobsdage(fId)));
+					return [productId, dageArrays.flat()] as const;
+				})
+			);
+			const nyForlobsdage: Record<string, ForlobDag[]> = {};
+			for (const [pid, dage] of lektionerPerProductEntries) {
+				if (dage.length > 0) nyForlobsdage[pid] = dage;
+			}
+			// Fallback: hvis ingen userProducts har forlobId (legacy/test-bruger),
+			// vis lektioner under 'kickstart'-tab så vi ikke mister adgang.
+			if (Object.keys(nyForlobsdage).length === 0 && forlobIds.length > 0) {
+				const fallbackDage = await Promise.all(forlobIds.map((fId) => hentForlobsdage(fId)));
+				nyForlobsdage.kickstart = fallbackDage.flat();
+			}
+			forlobsdageEfterProduct = nyForlobsdage;
+
 			opskrifter = await opskrifterPromise;
 		} catch (e) {
 			console.error(e);
@@ -401,14 +485,16 @@
 		>
 			Links
 		</button>
-		<button
-			class="tab-knap"
-			class:aktiv={aktivTab === 'lektioner'}
-			type="button"
-			onclick={() => skiftTab('lektioner')}
-		>
-			Lektioner
-		</button>
+		{#each lektionTabIds as productId (productId)}
+			<button
+				class="tab-knap"
+				class:aktiv={aktivTab === `lektioner-${productId}`}
+				type="button"
+				onclick={() => skiftTab(`lektioner-${productId}`)}
+			>
+				{lektionTabLabel(productId)}
+			</button>
+		{/each}
 		{#if visOevelser}
 			<button
 				class="tab-knap"
@@ -548,18 +634,18 @@
 				</div>
 			{/if}
 		{/if}
-	{:else if aktivTab === 'lektioner'}
+	{:else if aktivLektionsProduct}
 		{#if loading}
 			<Loading tekst="Henter lektioner..." kompakt />
 		{:else if fejl}
 			<div class="status-besked fejl">{fejl}</div>
-		{:else if alleLektioner.length === 0}
+		{:else if aktiveLektioner.length === 0}
 			<div class="status-besked">
-				Der er ikke lagt lektioner op for dit forløb endnu.
+				Der er ikke lagt lektioner op for dette forløb endnu.
 			</div>
 		{:else}
 			<div class="lektion-liste-bib">
-				{#each alleLektioner as l (l.dagNummer + '-' + l.id)}
+				{#each aktiveLektioner as l (l.dagNummer + '-' + l.id)}
 					{@const t = l.url ? detekterGuideType(l.url) : null}
 					<button class="lektion-card-bib" type="button" onclick={() => aabnLektion(l)}>
 						<div class="lektion-dag-badge">
@@ -625,32 +711,47 @@
 				Der er ingen opskrifter endnu.
 			</div>
 		{:else}
-			<div class="opskrifter-liste">
-				{#each opskrifter as o (o.id)}
-					<button
-						class="opskrift-rad"
-						type="button"
-						onclick={() => goto(`/app/moduler/30-30-3/opskrifter/${o.id}`)}
-					>
-						{#if o.billedeUrl}
-							<img class="opskrift-billede" src={o.billedeUrl} alt="" loading="lazy" />
-						{:else}
-							<div class="opskrift-billede opskrift-billede-fallback">
-								<Icon name="leaf" size={20} color="var(--text3)" />
-							</div>
-						{/if}
-						<div class="opskrift-info">
-							<div class="opskrift-titel">{o.titel}</div>
-							{#if o.kategorier.length > 0}
-								<div class="opskrift-kategorier">
-									{o.kategorier.map((k) => KATEGORI_LABELS[k]).join(' · ')}
+			<div class="opskrift-soegning-wrap">
+				<Icon name="search" size={14} color="var(--text3)" />
+				<input
+					class="opskrift-soegning"
+					type="search"
+					placeholder="Søg efter opskrift..."
+					bind:value={opskriftSoegning}
+				/>
+			</div>
+			{#if filtreredeOpskrifter.length === 0}
+				<div class="status-besked">
+					Ingen opskrifter matcher søgningen.
+				</div>
+			{:else}
+				<div class="opskrifter-liste">
+					{#each filtreredeOpskrifter as o (o.id)}
+						<button
+							class="opskrift-rad"
+							type="button"
+							onclick={() => goto(`/app/moduler/30-30-3/opskrifter/${o.id}?fra=bibliotek`)}
+						>
+							{#if o.billedeUrl}
+								<img class="opskrift-billede" src={o.billedeUrl} alt="" loading="lazy" />
+							{:else}
+								<div class="opskrift-billede opskrift-billede-fallback">
+									<Icon name="leaf" size={20} color="var(--text3)" />
 								</div>
 							{/if}
-						</div>
-						<Icon name="chevron-r" size={14} color="var(--text3)" />
-					</button>
-				{/each}
-			</div>
+							<div class="opskrift-info">
+								<div class="opskrift-titel">{o.titel}</div>
+								{#if o.kategorier.length > 0}
+									<div class="opskrift-kategorier">
+										{o.kategorier.map((k) => KATEGORI_LABELS[k]).join(' · ')}
+									</div>
+								{/if}
+							</div>
+							<Icon name="chevron-r" size={14} color="var(--text3)" />
+						</button>
+					{/each}
+				</div>
+			{/if}
 		{/if}
 	{/if}
 </div>
@@ -1589,6 +1690,32 @@
 		color: var(--text2);
 		font-size: calc(13px * var(--fs-scale, 1));
 		line-height: 1.5;
+	}
+
+	.opskrift-soegning-wrap {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 0 12px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		margin-bottom: 12px;
+	}
+
+	.opskrift-soegning {
+		flex: 1;
+		border: none;
+		background: transparent;
+		padding: 12px 0;
+		font-size: 16px;
+		font-family: inherit;
+		color: var(--text);
+		outline: none;
+	}
+
+	.opskrift-soegning::placeholder {
+		color: var(--text3);
 	}
 
 	.opskrifter-liste {

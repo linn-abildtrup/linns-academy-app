@@ -22,6 +22,9 @@
 	const STORAGE_KEY = 'la_30303_maaltid_v1';
 
 	const opskriftId = $derived(page.params.id ?? '');
+	// Når brugeren kommer fra biblioteket (?fra=bibliotek) skjules
+	// "tilføj til byg-måltid"-knappen — bibliotek-flowet er rent læse-orienteret.
+	const fraBibliotek = $derived(page.url.searchParams.get('fra') === 'bibliotek');
 
 	let opskrift = $state<Opskrift | null>(null);
 	let foods = $state<Fodevare[]>([]);
@@ -191,7 +194,7 @@
 			</section>
 		{/if}
 
-		{#if opskrift.ingredienser.length > 0}
+		{#if opskrift.ingredienser.length > 0 && !fraBibliotek}
 			{#if tilfoejBesked}
 				<div class="tilfoej-besked {tilfoejBesked.type}">{tilfoejBesked.tekst}</div>
 			{/if}
