@@ -1,41 +1,34 @@
 // Mapping fra Simplero-produkt-id til app-adgang.
-// Når en kunde køber et produkt i Simplero, sendes en webhook med produkt-id.
-// Vi slår produktet op her og giver kunden den tilsvarende adgang i appen.
-//
-// Tilføj nye produkter ved at finde produkt-id'et i Simplero (det står i URL'en
-// når du redigerer produktet, fx /admin/products/255519) og tilføje en linje
-// her med den ønskede adgangs-konfiguration.
+// Bruger den centrale produkt-definition i $lib/content/produkter — tilføj
+// nye produkter dér i stedet for her, så vi har én sandhedskilde.
 
 import type { AccessLevel, AccessSource, ActiveProduct } from '$lib/types';
+import { alleProdukter } from '$lib/content/produkter';
 
 export interface ProduktAdgang {
-	/** Niveau af app-indhold brugeren får adgang til. */
 	accessLevel: AccessLevel;
-	/** Hvor adgangen kommer fra — bestemmer UI-variant på forsiden. */
 	accessSource: AccessSource;
-	/** Det specifikke produkt der gav adgangen. */
 	activeProduct: ActiveProduct;
-	/** True hvis det er et løbende abonnement (modsat engangs-forløbskøb). */
 	activeSubscription: boolean;
-	/** Forløb-id hvis kunden skal kobles til et specifikt forløb. */
 	forlobId?: string;
-	/** Produktnavn til visning i admin og logs. */
 	navn: string;
 }
 
-export const PRODUKT_MAPPING: Record<string, ProduktAdgang> = {
-	'255519': {
-		accessLevel: 'basis',
-		accessSource: 'abonnement',
-		activeProduct: 'basisabo',
-		activeSubscription: true,
-		navn: 'Basis-abonnement (basis-app)'
-	}
-	// Tilføj fremtidige produkter her:
-	// '...': { accessLevel: 'premium', accessSource: 'abonnement', ... },
-};
-
+/**
+ * Findes Simplero-produktet i vores liste? Returnerer adgangs-felterne
+ * webhook'en skal sætte på userDoc/allowedEmails — eller null hvis vi
+ * ikke kender produktet (typisk fordi vi ikke har tilføjet det endnu).
+ */
 export function findProduktAdgang(produktId: string | number): ProduktAdgang | null {
 	const id = String(produktId);
-	return PRODUKT_MAPPING[id] ?? null;
+	const match = alleProdukter().find((p) => p.simpleroProduktId === id);
+	if (!match) return null;
+	return {
+		accessLevel: match.accessLevel,
+		accessSource: match.accessSource,
+		activeProduct: match.activeProduct,
+		activeSubscription: match.activeSubscription,
+		forlobId: match.forlobId,
+		navn: match.navn
+	};
 }
