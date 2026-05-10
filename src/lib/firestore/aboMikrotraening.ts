@@ -16,7 +16,8 @@ import {
 import { db } from '$lib/firebase';
 import type {
 	AboMikrotraeningFremgang,
-	AboMikrotraeningProgram
+	AboMikrotraeningProgram,
+	AboMikrotraeningTraening
 } from '$lib/content/aboMikrotraening';
 import { ABO_MIKROTRAENING_DAGE } from '$lib/content/aboMikrotraening';
 import type { TrainingDay } from '$lib/content/mikrotraening';
@@ -108,3 +109,48 @@ export async function gemAboFremgang(
 }
 
 export const ABO_MIKROTRAENING_DAGE_TO_GENERATE = ABO_MIKROTRAENING_DAGE;
+
+// ==============================================
+// Trænings-historik (pr dato)
+// ==============================================
+
+function traeningRef(uid: string, dato: string) {
+	return doc(db, `${aktivBrugerBasisPath(uid)}/aboMikrotraeningTraeninger/${dato}`);
+}
+
+function traeningCollection(uid: string) {
+	return collection(db, `${aktivBrugerBasisPath(uid)}/aboMikrotraeningTraeninger`);
+}
+
+/**
+ * Logger en gennemført træning bundet til en bestemt dato. Hvis brugeren
+ * trænede flere gange samme dag, overskrives den sidste (kun én træning
+ * pr dato). Bruges til historik-visning.
+ */
+export async function gemAboTraening(
+	uid: string,
+	dato: string,
+	programDag: number,
+	runde: number,
+	feedback?: AboMikrotraeningTraening['feedback']
+): Promise<void> {
+	const data: Record<string, unknown> = {
+		dato,
+		programDag,
+		runde,
+		savedAt: serverTimestamp()
+	};
+	if (feedback) data.feedback = feedback;
+	await setDoc(traeningRef(uid, dato), data, { merge: true });
+}
+
+/**
+ * Henter alle træninger sorteret nyeste først. Bruges af historik-listen
+ * på mikrotræning-forsiden.
+ */
+export async function hentAlleAboTraeninger(uid: string): Promise<AboMikrotraeningTraening[]> {
+	const snap = await getDocs(traeningCollection(uid));
+	return snap.docs
+		.map((d) => d.data() as AboMikrotraeningTraening)
+		.sort((a, b) => b.dato.localeCompare(a.dato));
+}

@@ -18,6 +18,19 @@ export interface AboMikrotraeningFremgang {
 }
 
 /**
+ * Logger en gennemført træning bundet til en specifik dato.
+ * Bruges til 'Tidligere træninger'-historikken så brugeren kan scrolle
+ * tilbage og se hvad hun trænede på en bestemt dag.
+ */
+export interface AboMikrotraeningTraening {
+	dato: string; // YYYY-MM-DD
+	programDag: number; // 1-14
+	runde: number; // 1, 2, 3, ...
+	feedback?: Feedback;
+	savedAt?: Timestamp;
+}
+
+/**
  * Programmets øverste doc — TrainingProgram udvidet med en valgfri
  * genererConfig så admin kan huske sine præ-indstillinger til næste auto-gen.
  */

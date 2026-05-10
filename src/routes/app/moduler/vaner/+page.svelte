@@ -143,6 +143,24 @@
 		return aboVaneSamletProcent(aboOpsaetning.valgteVaner, alleAboEntriesArr);
 	});
 
+	let viserAlleDage = $state(false);
+
+	const alleIndtastedeDage = $derived.by(() => {
+		const r: { dato: string; flower: FlowerNiveau }[] = [];
+		const sorteret = [...aboEntries.values()].sort((a, b) => b.dato.localeCompare(a.dato));
+		for (const e of sorteret) {
+			const harSvar = aboOpsaetning?.valgteVaner.some((v) => e.checks?.[v.id]) ?? false;
+			if (!harSvar) continue;
+			r.push({
+				dato: e.dato,
+				flower: aboOpsaetning
+					? beregnAboFlowerNiveau(aboOpsaetning.valgteVaner, e)
+					: 'none'
+			});
+		}
+		return r;
+	});
+
 	const baselineFraDato = $derived(
 		aboOpsaetning?.baselineNulstilletAt
 			? formaterDato(aboOpsaetning.baselineNulstilletAt.toDate())
@@ -496,6 +514,34 @@
 				</div>
 				<p class="hint">Klik på en dag for at åbne den</p>
 			</section>
+
+			{#if alleIndtastedeDage.length > 0}
+				{@const synligeDage = viserAlleDage ? alleIndtastedeDage : alleIndtastedeDage.slice(0, 7)}
+				<section class="card historik-card">
+					<div class="card-head">
+						<div class="section-label">Tidligere dage</div>
+						<div class="card-tael">{alleIndtastedeDage.length} indtastet</div>
+					</div>
+					<ul class="historik-liste">
+						{#each synligeDage as d (d.dato)}
+							<a class="historik-item flower-{d.flower}" href="/app/moduler/vaner/abo/{d.dato}">
+								<div class="historik-prik flower-{d.flower}"></div>
+								<div class="historik-dato">{kortDagLabel(d.dato)} · {d.dato}</div>
+								<Icon name="chevron-r" size={12} color="var(--text3)" />
+							</a>
+						{/each}
+					</ul>
+					{#if alleIndtastedeDage.length > 7}
+						<button
+							class="historik-knap"
+							type="button"
+							onclick={() => (viserAlleDage = !viserAlleDage)}
+						>
+							{viserAlleDage ? 'Vis færre' : `Vis alle ${alleIndtastedeDage.length} dage`}
+						</button>
+					{/if}
+				</section>
+			{/if}
 
 			{#if samletProcent.antalDage > 0}
 				<section class="card procent-card">
@@ -1293,5 +1339,94 @@
 	.reset-knap:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	.historik-card .historik-liste {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.historik-item {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 4px;
+		border-top: 1px solid var(--border);
+		text-decoration: none;
+		color: inherit;
+		background: var(--white);
+	}
+
+	.historik-item:first-child {
+		border-top: none;
+	}
+
+	.historik-item:hover {
+		background: var(--bg2);
+	}
+
+	.historik-prik {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		flex-shrink: 0;
+		border: 1px solid var(--border);
+	}
+
+	.historik-prik.flower-excellent {
+		background: #6f9e7e;
+		border-color: #6f9e7e;
+	}
+
+	.historik-prik.flower-good {
+		background: #92b39e;
+		border-color: #92b39e;
+	}
+
+	.historik-prik.flower-medium {
+		background: #c9a07a;
+		border-color: #c9a07a;
+	}
+
+	.historik-prik.flower-low {
+		background: #d4b59a;
+		border-color: #d4b59a;
+	}
+
+	.historik-prik.flower-poor {
+		background: #e0d0c0;
+		border-color: #d4c0aa;
+	}
+
+	.historik-prik.flower-none {
+		background: var(--bg2);
+	}
+
+	.historik-dato {
+		flex: 1;
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		text-transform: capitalize;
+	}
+
+	.historik-knap {
+		display: block;
+		width: 100%;
+		margin-top: 10px;
+		padding: 9px;
+		background: var(--white);
+		color: var(--text2);
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		border-radius: 8px;
+		border: 1px solid var(--border);
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.historik-knap:hover {
+		border-color: var(--terra);
+		color: var(--terra);
 	}
 </style>

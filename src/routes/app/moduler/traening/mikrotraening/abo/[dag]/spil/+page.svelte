@@ -23,6 +23,7 @@
 	} from '$lib/content/aboMikrotraening';
 	import {
 		gemAboFremgang,
+		gemAboTraening,
 		hentAboFremgang,
 		hentAboMikrotraeningProgram,
 		type AboMikrotraeningProgramMedDage
@@ -616,7 +617,14 @@
 				gemmer = false;
 				return;
 			}
-			await gemAboFremgang(u.uid, nyTotal, aboFremgang?.feedback ?? {});
+			const idag = new Date();
+			const datoStr = `${idag.getFullYear()}-${String(idag.getMonth() + 1).padStart(2, '0')}-${String(idag.getDate()).padStart(2, '0')}`;
+			const runde = Math.floor((nyTotal - 1) / 14) + 1;
+
+			await Promise.all([
+				gemAboFremgang(u.uid, nyTotal, aboFremgang?.feedback ?? {}),
+				gemAboTraening(u.uid, datoStr, dagNummer, runde)
+			]);
 			aboFremgang = {
 				totalGennemforte: nyTotal,
 				feedback: aboFremgang?.feedback ?? {}
@@ -642,11 +650,19 @@
 		gemmer = true;
 		gemFejl = null;
 		try {
+			const total = aboFremgang?.totalGennemforte ?? 0;
 			const opdateret = {
 				...(aboFremgang?.feedback ?? {}),
 				[`dag${dagNummer}`]: feedback
 			};
-			await gemAboFremgang(u.uid, aboFremgang?.totalGennemforte ?? 0, opdateret);
+			const idag = new Date();
+			const datoStr = `${idag.getFullYear()}-${String(idag.getMonth() + 1).padStart(2, '0')}-${String(idag.getDate()).padStart(2, '0')}`;
+			const runde = Math.floor((total - 1) / 14) + 1;
+
+			await Promise.all([
+				gemAboFremgang(u.uid, total, opdateret),
+				gemAboTraening(u.uid, datoStr, dagNummer, runde, feedback)
+			]);
 			goto(`/app/moduler/traening/mikrotraening/abo/${dagNummer}`);
 		} catch (e) {
 			console.error(e);

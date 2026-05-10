@@ -20,8 +20,10 @@
 	import {
 		hentAboFremgang,
 		hentAboMikrotraeningProgram,
+		hentAlleAboTraeninger,
 		type AboMikrotraeningProgramMedDage
 	} from '$lib/firestore/aboMikrotraening';
+	import type { AboMikrotraeningTraening } from '$lib/content/aboMikrotraening';
 	import { hentForlob } from '$lib/firestore/forlob';
 	import { erForlobsklient, erModulbruger } from '$lib/utils/userAdgang';
 	import Icon from '$lib/components/Icon.svelte';
@@ -45,6 +47,8 @@
 	// === Abo-state ===
 	let aboProgram = $state<AboMikrotraeningProgramMedDage | null>(null);
 	let aboFremgang = $state<AboMikrotraeningFremgang | null>(null);
+	let aboTraeninger = $state<AboMikrotraeningTraening[]>([]);
+	let viserAlleTraeninger = $state(false);
 
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
@@ -127,9 +131,10 @@
 
 	async function indlaesAboData(uid: string) {
 		const produktType = userDoc?.accessLevel === 'premium' ? 'premium' : 'basis';
-		const [program, fremgang] = await Promise.all([
+		const [program, fremgang, traeninger] = await Promise.all([
 			hentAboMikrotraeningProgram(produktType),
-			hentAboFremgang(uid)
+			hentAboFremgang(uid),
+			hentAlleAboTraeninger(uid)
 		]);
 		if (!program) {
 			fejl = 'Træningsprogrammet er ikke sat op endnu. Kontakt Linn.';
@@ -137,7 +142,24 @@
 		}
 		aboProgram = program;
 		aboFremgang = fremgang;
+		aboTraeninger = traeninger;
 	}
+
+	function formatDatoLang(dato: string): string {
+		const [aar, m, d] = dato.split('-').map(Number);
+		const dt = new Date(aar, m - 1, d);
+		return dt.toLocaleDateString('da-DK', {
+			weekday: 'short',
+			day: 'numeric',
+			month: 'short'
+		});
+	}
+
+	const FEEDBACK_LABEL: Record<string, string> = {
+		let: 'Let',
+		tilpas: 'Tilpas',
+		udfordrende: 'Udfordrende'
+	};
 
 	function dagStatus(dagNummer: number): 'klaret' | 'naeste' | 'kommer' | 'fremtid' {
 		if (fremgang.gennemforte.includes(dagNummer)) return 'klaret';
@@ -260,6 +282,38 @@
 				<div class="stat-lbl">træninger i alt</div>
 			</div>
 		</div>
+
+		{#if aboTraeninger.length > 0}
+			{@const synligeTraeninger = viserAlleTraeninger ? aboTraeninger : aboTraeninger.slice(0, 7)}
+			<section class="card historik-card">
+				<div class="card-head">
+					<div class="section-label">Tidligere træninger</div>
+					<div class="card-tael">{aboTraeninger.length} i alt</div>
+				</div>
+				<ul class="historik-liste">
+					{#each synligeTraeninger as t (t.dato)}
+						<li class="historik-item">
+							<div class="historik-tekst">
+								<div class="historik-dato">{formatDatoLang(t.dato)}</div>
+								<div class="historik-meta">
+									Dag {t.programDag}{#if t.feedback} · {FEEDBACK_LABEL[t.feedback]}{/if}
+								</div>
+							</div>
+							<div class="historik-badge">✓</div>
+						</li>
+					{/each}
+				</ul>
+				{#if aboTraeninger.length > 7}
+					<button
+						class="historik-knap"
+						type="button"
+						onclick={() => (viserAlleTraeninger = !viserAlleTraeninger)}
+					>
+						{viserAlleTraeninger ? 'Vis færre' : `Vis alle ${aboTraeninger.length} træninger`}
+					</button>
+				{/if}
+			</section>
+		{/if}
 	{:else}
 		<div class="status-besked">
 			Mikrotræning kræver et basis-abo, premium-abo eller forløb.
@@ -483,5 +537,79 @@
 		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
+	}
+
+	.historik-card {
+		margin-top: 14px;
+	}
+
+	.historik-liste {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.historik-item {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.historik-item:first-child {
+		border-top: none;
+	}
+
+	.historik-tekst {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.historik-dato {
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		text-transform: capitalize;
+	}
+
+	.historik-meta {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
+	}
+
+	.historik-badge {
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		background: var(--sage);
+		color: #fff;
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 700;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.historik-knap {
+		display: block;
+		width: 100%;
+		margin-top: 10px;
+		padding: 9px;
+		background: var(--white);
+		color: var(--text2);
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		border-radius: 8px;
+		border: 1px solid var(--border);
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.historik-knap:hover {
+		border-color: var(--terra);
+		color: var(--terra);
 	}
 </style>
