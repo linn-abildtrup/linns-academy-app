@@ -59,7 +59,9 @@
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc?.() ?? null);
-	const visUdvidet = $derived(userDoc?.visUdvidetNaering === true);
+	// Udvidet næring (kh/fedt/kcal) er kun for premium. Brugerens toggle
+	// huskes på userDoc, men gælder kun hvis hun har premium-niveau.
+	const visUdvidet = $derived(harPremium(userDoc) && userDoc?.visUdvidetNaering === true);
 	const kanScanne = $derived(harPremium(userDoc));
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
 	import Icon from '$lib/components/Icon.svelte';

@@ -14,12 +14,14 @@
 		NAERING_ENHEDER
 	} from '$lib/content/naering';
 	import Loading from '$lib/components/Loading.svelte';
+	import { harPremium } from '$lib/utils/userAdgang';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc?.() ?? null);
-	const visUdvidet = $derived(userDoc?.visUdvidetNaering === true);
+	// Udvidet næring (kh/fedt/kcal) er kun for premium-brugere.
+	const visUdvidet = $derived(harPremium(userDoc) && userDoc?.visUdvidetNaering === true);
 	const dagligeMaal = $derived(dagligeMalForBruger(userDoc?.dagligeMaal));
 
 	type Tab = 'syv' | 'tredive' | 'maal';

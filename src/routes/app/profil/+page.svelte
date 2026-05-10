@@ -27,7 +27,7 @@
 	import { gemBrugerProfilOgMaal, gemNaeringsindstillinger } from '$lib/userDoc';
 	import type { BrugerProfil, DagligeMaal } from '$lib/types';
 	import BeregnMaalWizard from '$lib/components/BeregnMaalWizard.svelte';
-	import { effektivState } from '$lib/utils/userAdgang';
+	import { effektivState, harPremium } from '$lib/utils/userAdgang';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -35,6 +35,7 @@
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
 	const userState = $derived(effektivState(userDoc));
+	const erPremium = $derived(harPremium(userDoc));
 
 	// Tekststørrelse
 	let aktivScale = $state<TextScale>('normal');
@@ -322,6 +323,7 @@
 		</div>
 	</section>
 
+	{#if erPremium}
 	<section class="sektion">
 		<h2 class="sektion-titel">Næringsdata</h2>
 		<p class="sektion-sub">
@@ -382,6 +384,7 @@
 			</div>
 		{/if}
 	</section>
+	{/if}
 
 	<section class="sektion">
 		<h2 class="sektion-titel">Hjælp</h2>
