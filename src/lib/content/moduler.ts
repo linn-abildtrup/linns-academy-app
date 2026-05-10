@@ -142,19 +142,36 @@ function modulbrugerStatus(base: ModulBase): Modul {
 }
 
 function udlobetStatus(base: ModulBase): Modul {
-	const subMap: Record<string, string> = {
-		forlob: 'Indhold fra Kickstart',
-		traening: 'Sessioner og videoer',
-		kost: 'Opskrifter og guides',
-		vaner: 'Tidligere optegnelser',
-		bibliotek: 'Alt dit indhold'
+	// Udløbet Kickstart-bruger har:
+	//   - Bibliotek for evigt (deres personlige forløbsindhold)
+	//   - Træning + Kost i 3 mdr efter forløb-slut (læseadgang til
+	//     mikrotræning og opskrifter — ingen vaner, ingen 30-30, ingen dagbog)
+	//   - Alt andet skjult/låst
+	// 3-mdr-vinduet håndteres dynamisk via userDoc.bonusPeriodEndsAt — kald
+	// erIBonusPeriode(userDoc) i komponenter der har brug for det. Denne
+	// statisk modul-config viser den optimale state (med bonus aktiv).
+	const synlige: Record<string, { tekst: string; status: ModulStatus; sub: string }> = {
+		bibliotek: { tekst: 'Åbent', status: 'aktiv', sub: 'Dit personlige bibliotek' },
+		traening: { tekst: 'Læseadgang', status: 'laeseadgang', sub: 'Se mikrotræning fra forløbet' },
+		kost: { tekst: 'Læseadgang', status: 'laeseadgang', sub: 'Se opskrifter fra forløbet' }
 	};
+	const synlig = synlige[base.id];
+	if (synlig) {
+		return {
+			...base,
+			status: synlig.status,
+			progress: null,
+			statusTekst: synlig.tekst,
+			subTekst: synlig.sub,
+			laasTekst: null
+		};
+	}
 	return {
 		...base,
-		status: 'laeseadgang',
+		status: 'laast',
 		progress: null,
-		statusTekst: 'Læseadgang',
-		subTekst: subMap[base.id],
-		laasTekst: null
+		statusTekst: 'Låst',
+		subTekst: 'Kræver aktivt abonnement eller forløb',
+		laasTekst: 'Få adgang igen'
 	};
 }

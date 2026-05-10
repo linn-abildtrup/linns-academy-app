@@ -58,6 +58,25 @@ export function harBasisAdgang(userDoc: UserDoc | null | undefined): boolean {
 }
 
 /**
+ * True hvis en udløbet Kickstart-kunde stadig er i sin 3-måneders bonus-
+ * periode. I bonus-perioden har hun læseadgang til mikrotræning + opskrifter.
+ * Efter bonus-perioden er kun bibliotek (med Træningsøvelser-fanen) tilbage.
+ */
+export function erIBonusPeriode(userDoc: UserDoc | null | undefined): boolean {
+	if (!userDoc?.bonusPeriodEndsAt) return false;
+	return userDoc.bonusPeriodEndsAt > Date.now();
+}
+
+/**
+ * True hvis brugeren tidligere har været på et forløb (Kickstart eller
+ * Premium-forløb). Bruges til at vise Træningsøvelser-fanen i bibliotek
+ * for udløbede brugere og rene basis-abonnenter der har gennemført forløb.
+ */
+export function harGennemfoertForlob(userDoc: UserDoc | null | undefined): boolean {
+	return (userDoc?.forlobIds?.length ?? 0) > 0;
+}
+
+/**
  * Mapping fra accessLevel + accessSource → den gamle UserState-værdi.
  * Bruges af migration-script og synkroniserings-flows der skal sætte
  * begge formater korrekt indtil etape 2.

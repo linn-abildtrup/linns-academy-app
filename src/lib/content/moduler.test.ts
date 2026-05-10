@@ -86,27 +86,28 @@ describe('getModulerForUser', () => {
 			expect(moduler).toHaveLength(5);
 		});
 
-		it('har alle moduler på læseadgang', () => {
-			moduler.forEach((m) => {
-				expect(m.status).toBe('laeseadgang');
-			});
+		it('har bibliotek aktivt (forevigt)', () => {
+			const bib = moduler.find((m) => m.id === 'bibliotek');
+			expect(bib?.status).toBe('aktiv');
+		});
+
+		it('har træning og kost på læseadgang (3-mdr bonus)', () => {
+			const traening = moduler.find((m) => m.id === 'traening');
+			const kost = moduler.find((m) => m.id === 'kost');
+			expect(traening?.status).toBe('laeseadgang');
+			expect(kost?.status).toBe('laeseadgang');
+		});
+
+		it('har vaner og mit forløb låst (skjult)', () => {
+			const vaner = moduler.find((m) => m.id === 'vaner');
+			const forlob = moduler.find((m) => m.id === 'forlob');
+			expect(vaner?.status).toBe('laast');
+			expect(forlob?.status).toBe('laast');
 		});
 
 		it('har ingen progress på nogen moduler', () => {
 			moduler.forEach((m) => {
 				expect(m.progress).toBeNull();
-			});
-		});
-
-		it('har "Læseadgang" som statusTekst overalt', () => {
-			moduler.forEach((m) => {
-				expect(m.statusTekst).toBe('Læseadgang');
-			});
-		});
-
-		it('har ingen låseTekst', () => {
-			moduler.forEach((m) => {
-				expect(m.laasTekst).toBeNull();
 			});
 		});
 	});
