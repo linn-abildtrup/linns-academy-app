@@ -132,6 +132,18 @@ export async function tilfojBeskeder(
 	);
 }
 
+export async function opdaterSamtaleTitel(
+	uid: string,
+	samtaleId: string,
+	titel: string
+): Promise<void> {
+	await setDoc(
+		samtaleRef(uid, samtaleId),
+		{ titel, opdateretAt: Timestamp.now() },
+		{ merge: true }
+	);
+}
+
 export async function sletSamtale(uid: string, samtaleId: string): Promise<void> {
 	await deleteDoc(samtaleRef(uid, samtaleId));
 }

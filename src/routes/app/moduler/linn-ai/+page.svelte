@@ -8,7 +8,8 @@
 		hentSamtale,
 		opretSamtale,
 		tilfojBeskeder,
-		sletSamtale
+		sletSamtale,
+		opdaterSamtaleTitel
 	} from '$lib/firestore/linnAi';
 	import type { AiBesked, AiSamtale } from '$lib/content/linnAi';
 	import { Timestamp } from 'firebase/firestore';
@@ -85,6 +86,12 @@
 		}
 	}
 
+	function smartTitel(tekst: string): string {
+		const enLinje = tekst.replace(/\s+/g, ' ').trim();
+		const stop = enLinje.length > 50 ? enLinje.slice(0, 47).replace(/[.,!?]+$/, '') + '...' : enLinje;
+		return stop || 'Ny samtale';
+	}
+
 	async function send() {
 		const u = user;
 		if (!u || sender) return;
@@ -94,16 +101,21 @@
 		sender = true;
 		fejl = null;
 
-		// Sikr at vi har en aktiv samtale
+		// Sikr at vi har en aktiv samtale — navngiv den fra første spørgsmål
 		let samtale = aktivSamtale;
+		const erForsteBesked = !samtale || samtale.beskeder.length === 0;
 		if (!samtale) {
-			const id = await opretSamtale(u.uid, tekst.slice(0, 40));
+			const id = await opretSamtale(u.uid, smartTitel(tekst));
 			samtale = await hentSamtale(u.uid, id);
 			if (!samtale) {
 				sender = false;
 				return;
 			}
 			aktivSamtale = samtale;
+		} else if (erForsteBesked && samtale.titel === 'Ny samtale') {
+			// Bruger trykte "Ny samtale" først — opdater titel ud fra første besked
+			await opdaterSamtaleTitel(u.uid, samtale.id, smartTitel(tekst));
+			aktivSamtale = { ...samtale, titel: smartTitel(tekst) };
 		}
 
 		// Tilføj bruger-besked optimistisk i UI
