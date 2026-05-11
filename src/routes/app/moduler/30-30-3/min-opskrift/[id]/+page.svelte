@@ -4,6 +4,8 @@
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import { gemMinOpskrift, hentMinOpskrift, sletMinOpskrift } from '$lib/firestore/minOpskrift';
+	import { storage } from '$lib/firebase';
+	import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 	import type {
 		MinOpskrift,
 		MinOpskriftIngrediens,
@@ -31,6 +33,8 @@
 	let antalPortioner = $state(4);
 	let ingredienser = $state<MinOpskriftIngrediens[]>([]);
 	let makro = $state<MinOpskriftMakro>({ ...DEFAULT_MAKRO });
+	let nyBilledeFil = $state<File | null>(null);
+	let nyBilledePreview = $state<string | null>(null);
 
 	onMount(async () => {
 		const u = user;
@@ -56,13 +60,39 @@
 		antalPortioner = opskrift.antalPortioner;
 		ingredienser = opskrift.ingredienser.map((i) => ({ ...i }));
 		makro = { ...opskrift.makroPrPortion };
+		nyBilledeFil = null;
+		nyBilledePreview = null;
 		editMode = true;
 		gemBesked = null;
 	}
 
 	function annullerRediger() {
 		editMode = false;
+		nyBilledeFil = null;
+		nyBilledePreview = null;
 		gemBesked = null;
+	}
+
+	function handleNyBillede(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const fil = input.files?.[0];
+		if (!fil) return;
+		if (!fil.type.startsWith('image/')) {
+			gemBesked = 'Vælg venligst en billed-fil.';
+			return;
+		}
+		if (fil.size > 5 * 1024 * 1024) {
+			gemBesked = 'Billedet er for stort. Max 5 MB.';
+			return;
+		}
+		nyBilledeFil = fil;
+		nyBilledePreview = URL.createObjectURL(fil);
+		gemBesked = null;
+	}
+
+	function fjernNyBillede() {
+		nyBilledeFil = null;
+		nyBilledePreview = null;
 	}
 
 	function tilfojIngrediens() {
@@ -79,16 +109,42 @@
 		gemmer = true;
 		gemBesked = null;
 		try {
+			let nyBilledeUrl: string | undefined;
+			let gammelBilledeUrl: string | undefined;
+			if (nyBilledeFil) {
+				// Upload nyt billede
+				const billedeId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+				const sti = `users/${u.uid}/opskrift-billeder/${billedeId}`;
+				const billedeRef = ref(storage, sti);
+				await uploadBytes(billedeRef, nyBilledeFil);
+				nyBilledeUrl = await getDownloadURL(billedeRef);
+				gammelBilledeUrl = opskrift?.billedeUrl;
+			}
+
 			const rensede = ingredienser.filter((i) => i.navn.trim());
 			await gemMinOpskrift(u.uid, id, {
 				navn: navn.trim() || 'Min opskrift',
 				antalPortioner: Math.max(1, antalPortioner),
 				ingredienser: rensede,
-				makroPrPortion: makro
+				makroPrPortion: makro,
+				...(nyBilledeUrl ? { billedeUrl: nyBilledeUrl } : {})
 			});
+
+			// Best-effort sletning af gammelt billede
+			if (gammelBilledeUrl) {
+				try {
+					const gammelRef = ref(storage, gammelBilledeUrl);
+					await deleteObject(gammelRef);
+				} catch (e) {
+					console.warn('Kunne ikke slette gammelt billede:', e);
+				}
+			}
+
 			// Genindlæs
 			opskrift = await hentMinOpskrift(u.uid, id);
 			editMode = false;
+			nyBilledeFil = null;
+			nyBilledePreview = null;
 			gemBesked = 'Gemt.';
 			setTimeout(() => (gemBesked = null), 2500);
 		} catch (e) {
@@ -128,7 +184,7 @@
 	{:else if fejl}
 		<div class="status-besked fejl">{fejl}</div>
 	{:else if opskrift}
-		{#if opskrift.billedeUrl}
+		{#if opskrift.billedeUrl && !editMode}
 			<img class="billede" src={opskrift.billedeUrl} alt={opskrift.navn} />
 		{/if}
 
@@ -190,6 +246,39 @@
 			</button>
 		{:else}
 			<!-- REDIGER-MODE -->
+			<section class="card">
+				<div class="section-label">Billede</div>
+				{#if nyBilledePreview}
+					<img class="billede-preview" src={nyBilledePreview} alt="Nyt billede" />
+					<div class="billede-info">Nyt billede valgt — gemmes når du trykker "Gem ændringer".</div>
+					<div class="billede-knapper">
+						<label class="billede-skift">
+							<input type="file" accept="image/*" onchange={handleNyBillede} hidden />
+							<span>Vælg et andet</span>
+						</label>
+						<button class="billede-fortryd" type="button" onclick={fjernNyBillede}>
+							Fortryd skift
+						</button>
+					</div>
+				{:else if opskrift.billedeUrl}
+					<img class="billede-preview" src={opskrift.billedeUrl} alt={opskrift.navn} />
+					<div class="billede-knapper">
+						<label class="billede-skift">
+							<input type="file" accept="image/*" onchange={handleNyBillede} hidden />
+							<span>Skift billede</span>
+						</label>
+					</div>
+				{:else}
+					<div class="billede-info">Ingen billede gemt endnu.</div>
+					<div class="billede-knapper">
+						<label class="billede-skift">
+							<input type="file" accept="image/*" onchange={handleNyBillede} hidden />
+							<span>Tilføj billede</span>
+						</label>
+					</div>
+				{/if}
+			</section>
+
 			<section class="card">
 				<label class="felt">
 					<span class="felt-label">Opskriftens navn</span>
@@ -457,6 +546,58 @@
 	}
 
 	/* REDIGER-MODE STYLES */
+	.billede-preview {
+		display: block;
+		width: 100%;
+		max-height: 240px;
+		object-fit: cover;
+		border-radius: 10px;
+		margin-bottom: 10px;
+	}
+
+	.billede-info {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-bottom: 10px;
+	}
+
+	.billede-knapper {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.billede-skift {
+		display: inline-flex;
+		align-items: center;
+		padding: 8px 14px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text2);
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.billede-skift:hover {
+		border-color: var(--terra);
+		color: var(--terra);
+	}
+
+	.billede-fortryd {
+		padding: 8px 14px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text3);
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
 	.felt {
 		display: block;
 		margin-bottom: 12px;
