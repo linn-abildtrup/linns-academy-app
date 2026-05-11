@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import { gemMinOpskrift, hentMinOpskrift, sletMinOpskrift } from '$lib/firestore/minOpskrift';
+	import { gemMaaltid } from '$lib/firestore/kost';
 	import { storage } from '$lib/firebase';
 	import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 	import type {
@@ -11,7 +12,14 @@
 		MinOpskriftIngrediens,
 		MinOpskriftMakro
 	} from '$lib/content/minOpskrift';
-	import { DEFAULT_MAKRO } from '$lib/content/minOpskrift';
+	import { DEFAULT_MAKRO, skalerMakro } from '$lib/content/minOpskrift';
+	import {
+		formatDatoKey,
+		gaetMaaltidstype,
+		MAALTIDSTYPER,
+		MAALTIDSTYPE_LABELS,
+		type Maaltidstype
+	} from '$lib/content/kost';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -35,6 +43,20 @@
 	let makro = $state<MinOpskriftMakro>({ ...DEFAULT_MAKRO });
 	let nyBilledeFil = $state<File | null>(null);
 	let nyBilledePreview = $state<string | null>(null);
+
+	// Læg-som-måltid modal
+	let viserMaaltidModal = $state(false);
+	let maaltidPortioner = $state(1);
+	let maaltidDato = $state(formatDatoKey());
+	let maaltidType = $state<Maaltidstype>(gaetMaaltidstype());
+	let gemmerMaaltid = $state(false);
+	let maaltidBesked = $state<string | null>(null);
+
+	const skaleretMakro = $derived(
+		opskrift
+			? skalerMakro(opskrift.makroPrPortion, Math.max(0.01, maaltidPortioner))
+			: { ...DEFAULT_MAKRO }
+	);
 
 	onMount(async () => {
 		const u = user;
@@ -155,6 +177,57 @@
 		}
 	}
 
+	function aabnMaaltidModal() {
+		if (!opskrift) return;
+		maaltidPortioner = 1;
+		maaltidDato = formatDatoKey();
+		maaltidType = gaetMaaltidstype();
+		maaltidBesked = null;
+		viserMaaltidModal = true;
+	}
+
+	function lukMaaltidModal() {
+		if (gemmerMaaltid) return;
+		viserMaaltidModal = false;
+		maaltidBesked = null;
+	}
+
+	async function gemSomMaaltid() {
+		const u = user;
+		if (!u || !opskrift || gemmerMaaltid) return;
+		const portioner = Math.max(0.01, maaltidPortioner);
+		gemmerMaaltid = true;
+		maaltidBesked = null;
+		try {
+			const m = skalerMakro(opskrift.makroPrPortion, portioner);
+			const portionTekst = portioner === 1 ? 'portion' : 'portioner';
+			await gemMaaltid(u.uid, {
+				navn: opskrift.navn,
+				type: maaltidType,
+				dato: maaltidDato,
+				items: [
+					{
+						foodId: '',
+						portion: portioner,
+						manuel: { navn: opskrift.navn, enhed: portionTekst }
+					}
+				],
+				totalP: m.protein,
+				totalF: m.fiber,
+				totalKh: m.kh,
+				totalFedt: m.fedt,
+				totalKcal: m.kcal
+			});
+			viserMaaltidModal = false;
+			goto(`/app/moduler/30-30-3?tab=dagbog&dato=${maaltidDato}`);
+		} catch (e) {
+			console.error(e);
+			maaltidBesked = 'Kunne ikke gemme måltidet. Prøv igen.';
+		} finally {
+			gemmerMaaltid = false;
+		}
+	}
+
 	async function slet() {
 		const u = user;
 		if (!u || sletter) return;
@@ -240,6 +313,11 @@
 			{#if gemBesked}
 				<div class="status-besked ok">{gemBesked}</div>
 			{/if}
+
+			<button class="primaer-knap" type="button" onclick={aabnMaaltidModal}>
+				<Icon name="plus" size={14} color="#fff" />
+				<span>Læg ind som måltid</span>
+			</button>
 
 			<button class="slet-knap" type="button" onclick={slet} disabled={sletter}>
 				{sletter ? 'Sletter...' : 'Slet opskrift'}
@@ -358,6 +436,107 @@
 		{/if}
 	{/if}
 </div>
+
+{#if viserMaaltidModal && opskrift}
+	<div
+		class="modal-bag"
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+		onclick={(e) => {
+			if (e.target === e.currentTarget) lukMaaltidModal();
+		}}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') lukMaaltidModal();
+		}}
+	>
+		<div class="modal">
+			<div class="modal-head">
+				<h2>Læg ind som måltid</h2>
+				<button class="modal-luk" type="button" onclick={lukMaaltidModal} aria-label="Luk">
+					×
+				</button>
+			</div>
+
+			<div class="modal-info">
+				<div class="modal-info-navn">{opskrift.navn}</div>
+				<div class="modal-info-meta">
+					Hele opskriften: {opskrift.antalPortioner}
+					{opskrift.antalPortioner === 1 ? 'portion' : 'portioner'}
+				</div>
+			</div>
+
+			<label class="felt">
+				<span class="felt-label">Hvor mange portioner spiser du?</span>
+				<div class="portion-rad">
+					{#each [0.5, 1, 1.5, 2] as p (p)}
+						<button
+							type="button"
+							class="portion-chip"
+							class:aktiv={maaltidPortioner === p}
+							onclick={() => (maaltidPortioner = p)}
+						>
+							{p}
+						</button>
+					{/each}
+				</div>
+				<input
+					type="number"
+					min="0.25"
+					step="0.25"
+					bind:value={maaltidPortioner}
+					class="portion-input"
+				/>
+			</label>
+
+			<label class="felt">
+				<span class="felt-label">Dato</span>
+				<input type="date" bind:value={maaltidDato} />
+			</label>
+
+			<label class="felt">
+				<span class="felt-label">Måltidstype</span>
+				<select bind:value={maaltidType}>
+					{#each MAALTIDSTYPER as t (t)}
+						<option value={t}>{MAALTIDSTYPE_LABELS[t]}</option>
+					{/each}
+				</select>
+			</label>
+
+			<div class="modal-makro">
+				<div class="modal-makro-titel">Makro i dette måltid</div>
+				<div class="modal-makro-grid">
+					<div><strong>{skaleretMakro.protein}g</strong><span>Protein</span></div>
+					<div><strong>{skaleretMakro.fiber}g</strong><span>Fiber</span></div>
+					<div><strong>{skaleretMakro.kh}g</strong><span>Kulhydrater</span></div>
+					<div><strong>{skaleretMakro.fedt}g</strong><span>Fedt</span></div>
+					<div class="fuld"><strong>{skaleretMakro.kcal}</strong><span>Kalorier</span></div>
+				</div>
+			</div>
+
+			{#if maaltidBesked}
+				<div class="status-besked fejl">{maaltidBesked}</div>
+			{/if}
+
+			<button
+				class="primaer-knap"
+				type="button"
+				onclick={gemSomMaaltid}
+				disabled={gemmerMaaltid || maaltidPortioner <= 0}
+			>
+				{gemmerMaaltid ? 'Gemmer...' : 'Læg ind i dagbog'}
+			</button>
+			<button
+				class="annuller-btn"
+				type="button"
+				onclick={lukMaaltidModal}
+				disabled={gemmerMaaltid}
+			>
+				Annullér
+			</button>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.page {
@@ -737,6 +916,206 @@
 		border-radius: 10px;
 		cursor: pointer;
 		font-family: var(--ff-b);
+	}
+
+	.primaer-knap {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		padding: 14px;
+		background: var(--terra);
+		color: #fff;
+		font-size: max(16px, calc(14px * var(--fs-scale, 1)));
+		font-weight: 600;
+		border: none;
+		border-radius: 12px;
+		cursor: pointer;
+		font-family: var(--ff-b);
+		margin-bottom: 10px;
+	}
+
+	.primaer-knap:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	/* Læg-som-måltid modal */
+	.modal-bag {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.4);
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		z-index: 100;
+	}
+
+	.modal {
+		width: 100%;
+		max-width: 520px;
+		max-height: 92vh;
+		overflow-y: auto;
+		background: var(--bg);
+		border-radius: 18px 18px 0 0;
+		padding: 18px 18px 28px;
+	}
+
+	@media (min-width: 600px) {
+		.modal-bag {
+			align-items: center;
+		}
+		.modal {
+			border-radius: 18px;
+			max-height: 88vh;
+		}
+	}
+
+	.modal-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 10px;
+	}
+
+	.modal h2 {
+		font-family: var(--ff-d);
+		font-size: calc(20px * var(--fs-scale, 1));
+		font-weight: 600;
+		margin: 0;
+		color: var(--text);
+	}
+
+	.modal-luk {
+		background: none;
+		border: none;
+		font-size: 26px;
+		color: var(--text3);
+		cursor: pointer;
+		line-height: 1;
+		padding: 4px 8px;
+	}
+
+	.modal-info {
+		padding: 10px 12px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		margin-bottom: 14px;
+	}
+
+	.modal-info-navn {
+		font-weight: 600;
+		color: var(--text);
+		font-size: calc(14px * var(--fs-scale, 1));
+	}
+
+	.modal-info-meta {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
+	}
+
+	.modal .felt select,
+	.modal .felt input[type='date'] {
+		width: 100%;
+		padding: 10px 12px;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--bg2);
+		font-family: var(--ff-b);
+		font-size: max(16px, calc(14px * var(--fs-scale, 1)));
+		color: var(--text);
+		outline: none;
+		box-sizing: border-box;
+	}
+
+	.portion-rad {
+		display: flex;
+		gap: 6px;
+		margin-bottom: 6px;
+	}
+
+	.portion-chip {
+		flex: 1;
+		padding: 10px 4px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		font-family: var(--ff-b);
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text2);
+		cursor: pointer;
+	}
+
+	.portion-chip.aktiv {
+		background: var(--terra);
+		border-color: var(--terra);
+		color: #fff;
+	}
+
+	.portion-input {
+		width: 100%;
+		padding: 10px 12px;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--bg2);
+		font-family: var(--ff-b);
+		font-size: max(16px, calc(14px * var(--fs-scale, 1)));
+		color: var(--text);
+		outline: none;
+		box-sizing: border-box;
+	}
+
+	.modal-makro {
+		background: var(--sdim);
+		border: 1px solid var(--sage);
+		border-radius: 12px;
+		padding: 12px;
+		margin: 14px 0;
+	}
+
+	.modal-makro-titel {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-bottom: 8px;
+	}
+
+	.modal-makro-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+	}
+
+	.modal-makro-grid > div {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 8px;
+		background: var(--white);
+		border-radius: 8px;
+	}
+
+	.modal-makro-grid > div.fuld {
+		grid-column: span 2;
+	}
+
+	.modal-makro-grid strong {
+		font-family: var(--ff-d);
+		font-size: calc(17px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--terra);
+	}
+
+	.modal-makro-grid span {
+		font-size: calc(10px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
 	}
 
 	.slet-knap {
