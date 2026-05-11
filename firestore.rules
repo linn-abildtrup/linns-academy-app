@@ -81,6 +81,11 @@ service cloud.firestore {
 			match /linnAiQuotaer/{dato} {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
 			}
+
+			// Private opskrifter — klientens egne opskrifter med makro fra AI-vision
+			match /privateOpskrifter/{opskriftId} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
 		}
 
 		// Øvelsesbibliotek: alle autentificerede kan læse, kun admin kan skrive

@@ -64,6 +64,8 @@
 	const visUdvidet = $derived(harPremium(userDoc) && userDoc?.visUdvidetNaering === true);
 	const kanScanne = $derived(harPremium(userDoc));
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
+	import { hentMineOpskrifter } from '$lib/firestore/minOpskrift';
+	import type { MinOpskrift } from '$lib/content/minOpskrift';
 	import Icon from '$lib/components/Icon.svelte';
 	import IndkoebsListeOverlay from '$lib/components/IndkoebsListeOverlay.svelte';
 	import Loading from '$lib/components/Loading.svelte';
@@ -89,11 +91,12 @@
 
 	const STORAGE_KEY = 'la_30303_maaltid_v1';
 
-	type Tab = 'opslag' | 'maaltid' | 'opskrifter' | 'dagbog';
+	type Tab = 'opslag' | 'maaltid' | 'opskrifter' | 'mine' | 'dagbog';
 
 	function tabFraQuery(): Tab {
 		const t = page.url.searchParams.get('tab');
-		if (t === 'maaltid' || t === 'opskrifter' || t === 'dagbog' || t === 'opslag') return t;
+		if (t === 'maaltid' || t === 'opskrifter' || t === 'mine' || t === 'dagbog' || t === 'opslag')
+			return t;
 		return 'opslag';
 	}
 
@@ -113,6 +116,7 @@
 	let foods = $state<Fodevare[]>([]);
 	let foodMap = $state<Map<string, Fodevare>>(new Map());
 	let opskrifter = $state<Opskrift[]>([]);
+	let mineOpskrifter = $state<MinOpskrift[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
@@ -264,13 +268,16 @@
 		}
 
 		try {
-			const [allFoods, allOpskrifter] = await Promise.all([
+			const u = user;
+			const [allFoods, allOpskrifter, mine] = await Promise.all([
 				hentAlleFodevarer(),
-				hentAlleOpskrifter(true)
+				hentAlleOpskrifter(true),
+				u && harPremium(userDoc) ? hentMineOpskrifter(u.uid) : Promise.resolve([])
 			]);
 			foods = allFoods;
 			foodMap = new Map(allFoods.map((f) => [f.id, f]));
 			opskrifter = allOpskrifter;
+			mineOpskrifter = mine;
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente data.';
@@ -766,6 +773,16 @@
 			>
 				Opskrifter
 			</button>
+			{#if harPremium(userDoc)}
+				<button
+					class="tab-knap"
+					class:aktiv={aktivTab === 'mine'}
+					type="button"
+					onclick={() => skiftTab('mine')}
+				>
+					Mine
+				</button>
+			{/if}
 			<button
 				class="tab-knap"
 				class:aktiv={aktivTab === 'dagbog'}
@@ -1198,6 +1215,39 @@
 						>
 					</div>
 				{/if}
+			{/if}
+		{:else if aktivTab === 'mine'}
+			<div class="hint-boks">
+				<span class="hint-ikon">✨</span>
+				<span class="hint-tekst">
+					Tag billede af en opskrift — AI'en estimerer makro pr portion. Kun synlig for dig.
+				</span>
+			</div>
+			<a class="primary-knap mine-tilfoj" href="/app/moduler/30-30-3/min-opskrift/ny">
+				+ Tilføj fra billede
+			</a>
+			{#if mineOpskrifter.length === 0}
+				<div class="tom-boks">
+					<p>Du har ingen private opskrifter endnu. Tryk på knappen ovenfor for at tilføje din første.</p>
+				</div>
+			{:else}
+				<ul class="mine-liste">
+					{#each mineOpskrifter as o (o.id)}
+						<a class="mine-item" href="/app/moduler/30-30-3/min-opskrift/{o.id}">
+							{#if o.billedeUrl}
+								<img src={o.billedeUrl} alt={o.navn} class="mine-billede" />
+							{:else}
+								<div class="mine-billede placeholder"></div>
+							{/if}
+							<div class="mine-tekst">
+								<div class="mine-navn">{o.navn}</div>
+								<div class="mine-meta">
+									{o.makroPrPortion.protein}g protein · {o.makroPrPortion.kcal} kcal · {o.antalPortioner} {o.antalPortioner === 1 ? 'portion' : 'portioner'}
+								</div>
+							</div>
+						</a>
+					{/each}
+				</ul>
 			{/if}
 		{:else}
 			<div class="dagbog-rad">
@@ -2919,6 +2969,83 @@
 		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 1px;
+		line-height: 1.4;
+	}
+
+	.mine-tilfoj {
+		display: block;
+		text-align: center;
+		text-decoration: none;
+		margin-bottom: 14px;
+	}
+
+	.tom-boks {
+		padding: 24px 16px;
+		background: var(--bg2);
+		border: 1px dashed var(--border);
+		border-radius: 12px;
+		text-align: center;
+		color: var(--text2);
+		font-size: calc(13px * var(--fs-scale, 1));
+		line-height: 1.5;
+	}
+
+	.tom-boks p {
+		margin: 0;
+	}
+
+	.mine-liste {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.mine-item {
+		display: flex;
+		gap: 12px;
+		padding: 10px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.mine-item:hover {
+		border-color: var(--terra);
+	}
+
+	.mine-billede {
+		width: 64px;
+		height: 64px;
+		object-fit: cover;
+		border-radius: 10px;
+		flex-shrink: 0;
+		background: var(--bg2);
+	}
+
+	.mine-billede.placeholder {
+		background: var(--bg2);
+	}
+
+	.mine-tekst {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.mine-navn {
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.mine-meta {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
 		line-height: 1.4;
 	}
 </style>
