@@ -12,6 +12,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
+import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentAlleDocs, hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
 import { byggKontekst, byggSystemPrompt, MAX_QUERIES_PR_DAG, quotaNoegle } from '$lib/content/linnAi';
 import type { VidenbaseDokument } from '$lib/content/linnAi';
@@ -25,18 +26,26 @@ interface IndkommendeBesked {
 }
 
 async function verificerToken(idToken: string): Promise<string | null> {
-	// Verificer Firebase ID-token via Google tokeninfo-endpoint.
+	// Verificer Firebase ID-token via Google identity toolkit.
 	// Returnerer brugerens UID hvis valid, null ellers.
+	if (!PUBLIC_FIREBASE_API_KEY) {
+		console.error('PUBLIC_FIREBASE_API_KEY mangler ved build-tid');
+		return null;
+	}
 	try {
 		const res = await fetch(
-			`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${env.PUBLIC_FIREBASE_API_KEY ?? ''}`,
+			`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${PUBLIC_FIREBASE_API_KEY}`,
 			{
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ idToken })
 			}
 		);
-		if (!res.ok) return null;
+		if (!res.ok) {
+			const errText = await res.text();
+			console.warn('Token-verifikation HTTP-fejl:', res.status, errText);
+			return null;
+		}
 		const data = (await res.json()) as { users?: Array<{ localId: string }> };
 		return data.users?.[0]?.localId ?? null;
 	} catch (e) {
