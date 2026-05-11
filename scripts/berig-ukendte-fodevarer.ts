@@ -86,10 +86,9 @@ function laesFrida(): Map<string, FridaNaering> {
 			fedt: toNumber(r[fedt]),
 			kcal: toNumber(r[kcal])
 		};
-		// Index på flere variationer for at maksimere matches
+		// Vi indekserer KUN det fulde lowercase navn — så findMatch tager
+		// altid ranking-loopet og ikke første-træffer som er tilfældigt
 		map.set(navn.toLowerCase(), entry);
-		const udenKomma = navn.toLowerCase().split(',')[0].trim();
-		if (udenKomma && !map.has(udenKomma)) map.set(udenKomma, entry);
 	}
 	console.log(`   ✓ Læst ${map.size} unikke Frida-navne\n`);
 	return map;
@@ -135,6 +134,19 @@ function rankFrida(navn: string): number {
 	if (n.includes('naturel')) score -= 20;
 	if (n.includes('frisk')) score -= 10;
 	if (n.includes(', hel') || n.includes(', helt')) score -= 15;
+	// Foretrækker default-arter over eksotiske
+	if (n.includes('høne')) score -= 10;
+	if (n.includes('and,') || n.includes(', and') || n.includes('gås') || n.includes('vagtel') || n.includes('struds')) score += 30;
+	// Foretrækker konventionel drift over speciel ('økologisk', 'burhøns' er for specifik)
+	if (n.includes('økologisk')) score += 8;
+	if (n.includes('burhøns')) score += 5;
+	if (n.includes('frilands')) score += 5;
+	if (n.includes('skrabehøns')) score += 5;
+	// Undgå isolerede æg-dele når vi leder efter hele æg
+	if (n.includes('blomme')) score += 40;
+	if (n.includes('æggehvide')) score += 40;
+	if (n.includes('æggemasse')) score += 30;
+	if (n.includes('røræg')) score += 30;
 	// Kortere navn er ofte mere generisk
 	score += navn.length / 10;
 	return score;
@@ -160,7 +172,7 @@ function findMatch(
 
 	// 3. Find ALLE Frida-kandidater og vælg den bedst rangerede
 	const forsteOrd = udenKomma.split(/\s+/)[0];
-	if (forsteOrd && forsteOrd.length >= 3) {
+	if (forsteOrd && forsteOrd.length >= 2) {
 		const kandidater: FridaNaering[] = [];
 		for (const [key, entry] of fridaMap) {
 			if (
