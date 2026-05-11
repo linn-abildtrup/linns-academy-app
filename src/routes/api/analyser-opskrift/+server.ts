@@ -17,7 +17,8 @@ import { MAX_QUERIES_PR_DAG, quotaNoegle } from '$lib/content/linnAi';
 
 const MODEL = 'claude-sonnet-4-5-20250929';
 const MAX_TOKENS = 2048;
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB pr billede
+const MAX_BILLEDER = 3;
 
 async function verificerToken(idToken: string): Promise<string | null> {
 	if (!PUBLIC_FIREBASE_API_KEY) return null;
@@ -41,12 +42,12 @@ async function verificerToken(idToken: string): Promise<string | null> {
 
 const SYSTEM_PROMPT = `Du analyserer billeder af madopskrifter og estimerer næringsindhold.
 
-Du får et billede af en opskrift (kogebog, blad, screenshot, hjemmeside, håndskrift osv).
+Du får ét eller flere billeder af EN opskrift (kogebog, blad, screenshot, hjemmeside, håndskrift osv). Hvis der er flere billeder, hører de sammen — det er fx side 1 og side 2 af samme opskrift, eller flere screenshots der dækker forskellige dele. Læs alle billederne og kombinér dem til ét resultat.
 
 Din opgave:
-1. Læs opskriftens navn (titel)
+1. Læs opskriftens navn (titel) — typisk fra det første billede
 2. Find antallet af portioner. Hvis ikke angivet, antag 4 personer.
-3. List alle ingredienser med mængder og enheder (gram, dl, spsk, stk osv.)
+3. List alle ingredienser med mængder og enheder (gram, dl, spsk, stk osv.) — sammensæt fra alle billederne, undgå dubletter
 4. Estimér samlede makro for HELE opskriften (alle portioner), så divider med antal portioner for at få MAKRO PR PORTION.
 5. Brug danske kost-tabeller (Frida) som reference.
 
@@ -67,7 +68,7 @@ Returnér KUN JSON i dette format (intet andet, ingen markdown, ingen forklaring
   }
 }
 
-Hvis billedet ikke indeholder en opskrift, returnér:
+Hvis billedet/billederne ikke indeholder en opskrift, returnér:
 {"error": "Billedet indeholder ikke en madopskrift"}
 
 Vær realistisk i dine estimater. En portion kødfrikadeller med kartofler kan typisk være 400-600 kcal. En portion salat 150-400 kcal.`;
@@ -81,16 +82,31 @@ export const POST: RequestHandler = async ({ request }) => {
 	const uid = await verificerToken(auth.slice(7));
 	if (!uid) throw error(401, 'Ugyldig token');
 
-	let body: { billedeBase64: string; mediaType: string };
+	let body: {
+		billedeBase64?: string;
+		mediaType?: string;
+		billeder?: Array<{ billedeBase64: string; mediaType: string }>;
+	};
 	try {
 		body = await request.json();
 	} catch {
 		throw error(400, 'Ugyldig JSON');
 	}
-	if (!body.billedeBase64 || !body.mediaType) throw error(400, 'Mangler billede');
-	// Sanity-check størrelse — base64 er ~33% større end binær
-	const estStr = body.billedeBase64.length * 0.75;
-	if (estStr > MAX_IMAGE_BYTES) throw error(413, 'Billedet er for stort (max 5 MB)');
+	// Normalisér til array — accepterer både gammelt single-format og nyt array
+	const billeder: Array<{ billedeBase64: string; mediaType: string }> =
+		body.billeder && Array.isArray(body.billeder)
+			? body.billeder
+			: body.billedeBase64 && body.mediaType
+				? [{ billedeBase64: body.billedeBase64, mediaType: body.mediaType }]
+				: [];
+	if (billeder.length === 0) throw error(400, 'Mangler billede');
+	if (billeder.length > MAX_BILLEDER)
+		throw error(400, `Max ${MAX_BILLEDER} billeder pr opskrift`);
+	for (const b of billeder) {
+		if (!b.billedeBase64 || !b.mediaType) throw error(400, 'Ugyldig billede-data');
+		const estStr = b.billedeBase64.length * 0.75;
+		if (estStr > MAX_IMAGE_BYTES) throw error(413, 'Et billede er for stort (max 5 MB)');
+	}
 
 	// Premium-adgang
 	const userDoc = (await hentDoc(`users/${uid}`)) as
@@ -127,17 +143,20 @@ export const POST: RequestHandler = async ({ request }) => {
 				{
 					role: 'user',
 					content: [
-						{
+						...billeder.map((b) => ({
 							type: 'image',
 							source: {
 								type: 'base64',
-								media_type: body.mediaType,
-								data: body.billedeBase64
+								media_type: b.mediaType,
+								data: b.billedeBase64
 							}
-						},
+						})),
 						{
 							type: 'text',
-							text: 'Analysér denne opskrift og returnér det specificerede JSON.'
+							text:
+								billeder.length === 1
+									? 'Analysér denne opskrift og returnér det specificerede JSON.'
+									: `Disse ${billeder.length} billeder hører til samme opskrift. Læs dem i rækkefølge, kombinér til ét resultat, og returnér det specificerede JSON.`
 						}
 					]
 				}

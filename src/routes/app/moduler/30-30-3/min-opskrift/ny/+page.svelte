@@ -22,41 +22,67 @@
 	const userDoc = $derived(getUserDoc());
 	const harAdgang = $derived(harPremium(userDoc));
 
+	const MAX_BILLEDER = 3;
+
 	type Tilstand = 'vaelg' | 'analyserer' | 'redigerer' | 'gemmer' | 'fejl';
 	let tilstand = $state<Tilstand>('vaelg');
 	let fejlBesked = $state<string | null>(null);
+	let infoBesked = $state<string | null>(null);
 
-	let billedeFil = $state<File | null>(null);
-	let billedePreview = $state<string | null>(null);
+	let billedeFiler = $state<File[]>([]);
+	let billedePreviews = $state<string[]>([]);
 
 	let navn = $state('');
 	let antalPortioner = $state(4);
 	let ingredienser = $state<MinOpskriftIngrediens[]>([]);
 	let makro = $state<MinOpskriftMakro>({ ...DEFAULT_MAKRO });
 
-	async function handleFil(fil: File) {
-		if (!fil.type.startsWith('image/')) {
-			fejlBesked = 'Vælg venligst en billed-fil.';
-			tilstand = 'fejl';
-			return;
+	function tilfojFiler(filer: FileList | File[]) {
+		infoBesked = null;
+		const nye: File[] = [];
+		for (const fil of Array.from(filer)) {
+			if (!fil.type.startsWith('image/')) {
+				infoBesked = 'Kun billed-filer er tilladt.';
+				continue;
+			}
+			if (fil.size > 5 * 1024 * 1024) {
+				infoBesked = `${fil.name} er for stort (max 5 MB).`;
+				continue;
+			}
+			nye.push(fil);
 		}
-		if (fil.size > 5 * 1024 * 1024) {
-			fejlBesked = 'Billedet er for stort. Max 5 MB.';
-			tilstand = 'fejl';
-			return;
+		const samlet = [...billedeFiler, ...nye];
+		if (samlet.length > MAX_BILLEDER) {
+			infoBesked = `Max ${MAX_BILLEDER} billeder pr opskrift. De første ${MAX_BILLEDER} bliver brugt.`;
 		}
-		billedeFil = fil;
-		billedePreview = URL.createObjectURL(fil);
-		await analyserBillede(fil);
+		const trimmet = samlet.slice(0, MAX_BILLEDER);
+		// Frigiv preview-URLs for filer der fjernes
+		for (let i = trimmet.length; i < billedePreviews.length; i++) {
+			URL.revokeObjectURL(billedePreviews[i]);
+		}
+		billedeFiler = trimmet;
+		billedePreviews = trimmet.map((f) => URL.createObjectURL(f));
 	}
 
-	async function analyserBillede(fil: File) {
+	function fjernBillede(index: number) {
+		const url = billedePreviews[index];
+		if (url) URL.revokeObjectURL(url);
+		billedeFiler = billedeFiler.filter((_, i) => i !== index);
+		billedePreviews = billedePreviews.filter((_, i) => i !== index);
+	}
+
+	async function analyserOpskrift() {
 		const u = user;
-		if (!u) return;
+		if (!u || billedeFiler.length === 0) return;
 		tilstand = 'analyserer';
 		fejlBesked = null;
 		try {
-			const base64 = await filTilBase64(fil);
+			const billeder = await Promise.all(
+				billedeFiler.map(async (fil) => ({
+					billedeBase64: await filTilBase64(fil),
+					mediaType: fil.type
+				}))
+			);
 			const idToken = await u.getIdToken();
 			const res = await fetch('/api/analyser-opskrift', {
 				method: 'POST',
@@ -64,7 +90,7 @@
 					Authorization: `Bearer ${idToken}`,
 					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify({ billedeBase64: base64, mediaType: fil.type })
+				body: JSON.stringify({ billeder })
 			});
 			if (!res.ok) {
 				const e = await res.json().catch(() => ({}));
@@ -81,7 +107,7 @@
 			tilstand = 'redigerer';
 		} catch (e) {
 			console.error(e);
-			fejlBesked = e instanceof Error ? e.message : 'Kunne ikke analysere billedet.';
+			fejlBesked = e instanceof Error ? e.message : 'Kunne ikke analysere opskriften.';
 			tilstand = 'fejl';
 		}
 	}
@@ -110,15 +136,17 @@
 
 	async function gem() {
 		const u = user;
-		if (!u || !billedeFil) return;
+		if (!u || billedeFiler.length === 0) return;
 		tilstand = 'gemmer';
 		fejlBesked = null;
 		try {
-			// Upload billede til Firebase Storage
+			// Vi gemmer kun det første billede som thumbnail. AI har allerede
+			// udvundet alle data fra de øvrige, så de behøver ikke gemmes.
+			const forsteFil = billedeFiler[0];
 			const billedeId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 			const sti = `users/${u.uid}/opskrift-billeder/${billedeId}`;
 			const billedeRef = ref(storage, sti);
-			await uploadBytes(billedeRef, billedeFil);
+			await uploadBytes(billedeRef, forsteFil);
 			const billedeUrl = await getDownloadURL(billedeRef);
 
 			await opretMinOpskrift(u.uid, {
@@ -138,8 +166,9 @@
 
 	function handleFileInput(e: Event) {
 		const input = e.target as HTMLInputElement;
-		const fil = input.files?.[0];
-		if (fil) handleFil(fil);
+		if (input.files?.length) tilfojFiler(input.files);
+		// Nulstil så samme fil kan vælges igen efter fjernelse
+		input.value = '';
 	}
 </script>
 
@@ -162,34 +191,87 @@
 			<p class="hint">
 				Tag et billede af en opskrift, upload fra galleri, eller paste en
 				screenshot. AI'en læser opskriften og estimerer makro pr portion.
+				Du kan tilføje op til {MAX_BILLEDER} billeder hvis opskriften fylder over flere sider.
 			</p>
-			<label class="upload-knap">
-				<Icon name="plus" size={18} color="#fff" />
-				<span>Vælg billede</span>
-				<input
-					type="file"
-					accept="image/*"
-					capture="environment"
-					onchange={handleFileInput}
-				/>
-			</label>
-			<label class="upload-knap sekundaer">
-				<span>Upload fra galleri</span>
-				<input type="file" accept="image/*" onchange={handleFileInput} />
-			</label>
+
+			{#if billedePreviews.length > 0}
+				<div class="billede-grid">
+					{#each billedePreviews as preview, i (preview)}
+						<div class="billede-tile">
+							<img src={preview} alt="Billede {i + 1}" />
+							<div class="billede-tile-nr">{i + 1}</div>
+							<button
+								type="button"
+								class="billede-tile-slet"
+								onclick={() => fjernBillede(i)}
+								aria-label="Fjern billede {i + 1}"
+							>
+								×
+							</button>
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			{#if infoBesked}
+				<div class="info-besked">{infoBesked}</div>
+			{/if}
+
+			{#if billedeFiler.length < MAX_BILLEDER}
+				<label class="upload-knap">
+					<Icon name="plus" size={18} color="#fff" />
+					<span>
+						{billedeFiler.length === 0 ? 'Vælg billede' : 'Tilføj endnu et billede'}
+					</span>
+					<input
+						type="file"
+						accept="image/*"
+						capture="environment"
+						multiple
+						onchange={handleFileInput}
+					/>
+				</label>
+				<label class="upload-knap sekundaer">
+					<span>Vælg fra galleri</span>
+					<input type="file" accept="image/*" multiple onchange={handleFileInput} />
+				</label>
+			{/if}
+
+			{#if billedeFiler.length > 0}
+				<button class="analyser-knap" type="button" onclick={analyserOpskrift}>
+					Analysér {billedeFiler.length === 1 ? 'opskrift' : `${billedeFiler.length} billeder`}
+				</button>
+			{/if}
 		</div>
 	{:else if tilstand === 'analyserer'}
 		<div class="analyse-card">
-			{#if billedePreview}
-				<img class="preview-billede" src={billedePreview} alt="Opskrift" />
+			{#if billedePreviews.length > 0}
+				<div class="billede-grid kompakt">
+					{#each billedePreviews as preview, i (preview)}
+						<img src={preview} alt="Billede {i + 1}" />
+					{/each}
+				</div>
 			{/if}
-			<Loading tekst="AI analyserer opskriften..." />
-			<p class="hint center">Det tager typisk 5-15 sekunder.</p>
+			<Loading
+				tekst={billedeFiler.length === 1
+					? 'AI analyserer opskriften...'
+					: `AI analyserer ${billedeFiler.length} billeder...`}
+			/>
+			<p class="hint center">
+				{billedeFiler.length === 1
+					? 'Det tager typisk 5-15 sekunder.'
+					: 'Det tager typisk 10-25 sekunder for flere billeder.'}
+			</p>
 		</div>
 	{:else if tilstand === 'redigerer'}
 		<section class="card">
-			{#if billedePreview}
-				<img class="preview-billede" src={billedePreview} alt="Opskrift" />
+			{#if billedePreviews.length > 0}
+				<img class="preview-billede" src={billedePreviews[0]} alt="Opskrift" />
+				{#if billedePreviews.length > 1}
+					<div class="hint center small">
+						{billedePreviews.length} billeder brugt til analysen — kun det første gemmes som thumbnail.
+					</div>
+				{/if}
 			{/if}
 			<label class="felt">
 				<span class="felt-label">Opskriftens navn</span>
@@ -274,8 +356,9 @@
 			type="button"
 			onclick={() => {
 				tilstand = 'vaelg';
-				billedeFil = null;
-				billedePreview = null;
+				for (const url of billedePreviews) URL.revokeObjectURL(url);
+				billedeFiler = [];
+				billedePreviews = [];
 			}}
 		>
 			Start forfra
@@ -402,6 +485,86 @@
 		margin-bottom: 12px;
 	}
 
+	.billede-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 8px;
+		margin-bottom: 4px;
+	}
+
+	.billede-grid.kompakt img {
+		width: 100%;
+		aspect-ratio: 1 / 1;
+		object-fit: cover;
+		border-radius: 8px;
+	}
+
+	.billede-tile {
+		position: relative;
+		aspect-ratio: 1 / 1;
+		border-radius: 10px;
+		overflow: hidden;
+		background: var(--bg2);
+	}
+
+	.billede-tile img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.billede-tile-nr {
+		position: absolute;
+		top: 4px;
+		left: 4px;
+		background: rgba(0, 0, 0, 0.6);
+		color: #fff;
+		font-size: 11px;
+		font-weight: 700;
+		padding: 2px 6px;
+		border-radius: 6px;
+	}
+
+	.billede-tile-slet {
+		position: absolute;
+		top: 4px;
+		right: 4px;
+		background: rgba(0, 0, 0, 0.6);
+		color: #fff;
+		border: none;
+		border-radius: 50%;
+		width: 24px;
+		height: 24px;
+		font-size: 16px;
+		line-height: 1;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.info-besked {
+		padding: 10px 12px;
+		background: #fbf3e6;
+		border: 1px solid #ecd9b3;
+		border-radius: 10px;
+		color: #6b5024;
+		font-size: calc(12px * var(--fs-scale, 1));
+		text-align: center;
+	}
+
+	.analyser-knap {
+		padding: 14px;
+		background: var(--terra);
+		color: #fff;
+		font-size: max(16px, calc(14px * var(--fs-scale, 1)));
+		font-weight: 600;
+		border: none;
+		border-radius: 12px;
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
 	.hint {
 		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
@@ -412,6 +575,11 @@
 	.hint.center {
 		text-align: center;
 		margin-top: 10px;
+	}
+
+	.hint.small {
+		font-size: calc(11px * var(--fs-scale, 1));
+		margin-top: 6px;
 	}
 
 	.card {
