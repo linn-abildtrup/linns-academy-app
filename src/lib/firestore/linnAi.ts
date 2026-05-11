@@ -28,6 +28,33 @@ import { quotaNoegle, MAX_QUERIES_PR_DAG } from '$lib/content/linnAi';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
 
 // ==============================================
+// Konfiguration (admin)
+// ==============================================
+
+export interface LinnAiKonfiguration {
+	systemPrompt?: string;
+	opdateretAt?: Timestamp;
+}
+
+const KONFIG_PATH = 'linnAiKonfiguration/aktiv';
+
+export async function hentLinnAiKonfiguration(): Promise<LinnAiKonfiguration | null> {
+	const snap = await getDoc(doc(db, KONFIG_PATH));
+	if (!snap.exists()) return null;
+	return snap.data() as LinnAiKonfiguration;
+}
+
+export async function gemLinnAiKonfiguration(
+	systemPrompt: string
+): Promise<void> {
+	await setDoc(
+		doc(db, KONFIG_PATH),
+		{ systemPrompt, opdateretAt: Timestamp.now() },
+		{ merge: true }
+	);
+}
+
+// ==============================================
 // Videnbase (admin)
 // ==============================================
 

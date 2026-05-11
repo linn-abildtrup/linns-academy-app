@@ -110,7 +110,12 @@ export const POST: RequestHandler = async ({ request }) => {
 	}));
 
 	const kontekst = byggKontekst(videnbaseDokumenter, besked);
-	const systemPrompt = byggSystemPrompt(kontekst);
+
+	// Hent admin's custom system-prompt hvis sat
+	const konfig = (await hentDoc('linnAiKonfiguration/aktiv')) as
+		| { systemPrompt?: string }
+		| null;
+	const systemPrompt = byggSystemPrompt(kontekst, konfig?.systemPrompt);
 
 	// Byg messages-array til Anthropic
 	const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];

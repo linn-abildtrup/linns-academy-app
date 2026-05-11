@@ -3,10 +3,12 @@
 	import {
 		hentAlleVidenbaseDokumenter,
 		gemVidenbaseDokument,
-		sletVidenbaseDokument
+		sletVidenbaseDokument,
+		hentLinnAiKonfiguration,
+		gemLinnAiKonfiguration
 	} from '$lib/firestore/linnAi';
 	import type { VidenbaseDokument, VidenbaseKilde } from '$lib/content/linnAi';
-	import { chunkTekst } from '$lib/content/linnAi';
+	import { chunkTekst, DEFAULT_SYSTEM_PROMPT } from '$lib/content/linnAi';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -17,9 +19,20 @@
 	let uploadBesked = $state('');
 	let dragOver = $state(false);
 
+	let systemPrompt = $state(DEFAULT_SYSTEM_PROMPT);
+	let promptGemmer = $state(false);
+	let promptBesked = $state<string | null>(null);
+
 	onMount(async () => {
 		try {
-			dokumenter = await hentAlleVidenbaseDokumenter();
+			const [docs, konfig] = await Promise.all([
+				hentAlleVidenbaseDokumenter(),
+				hentLinnAiKonfiguration()
+			]);
+			dokumenter = docs;
+			if (konfig?.systemPrompt) {
+				systemPrompt = konfig.systemPrompt;
+			}
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente videnbasen.';
@@ -27,6 +40,26 @@
 			loading = false;
 		}
 	});
+
+	async function gemPrompt() {
+		promptGemmer = true;
+		promptBesked = null;
+		try {
+			await gemLinnAiKonfiguration(systemPrompt);
+			promptBesked = 'Gemt.';
+			setTimeout(() => (promptBesked = null), 2500);
+		} catch (e) {
+			console.error(e);
+			promptBesked = 'Kunne ikke gemme.';
+		} finally {
+			promptGemmer = false;
+		}
+	}
+
+	function nulstilPrompt() {
+		if (!confirm('Nulstil til standard-promptet?')) return;
+		systemPrompt = DEFAULT_SYSTEM_PROMPT;
+	}
 
 	async function handleFiles(files: FileList | File[]) {
 		const liste = Array.from(files);
@@ -185,6 +218,26 @@
 				{/if}
 			</div>
 		{/if}
+
+		<section class="card">
+			<div class="card-head">
+				<div class="section-label">Persona / system-prompt</div>
+				<button class="reset-knap" type="button" onclick={nulstilPrompt}>
+					Nulstil til standard
+				</button>
+			</div>
+			<p class="hint persona-hint">
+				Dette er instruktionen Linn AI får før hver samtale. Beskriv din tone,
+				dine principper og hvad AI'en må/ikke må. Videnbasen tilføjes automatisk.
+			</p>
+			<textarea class="prompt-felt" bind:value={systemPrompt} rows="14"></textarea>
+			{#if promptBesked}
+				<div class="status-besked ok">{promptBesked}</div>
+			{/if}
+			<button class="gem-btn" type="button" onclick={gemPrompt} disabled={promptGemmer}>
+				{promptGemmer ? 'Gemmer...' : 'Gem persona'}
+			</button>
+		</section>
 
 		<section class="card">
 			<div class="card-head">
@@ -432,5 +485,66 @@
 		background: #fbeeea;
 		border-color: #f0d6cf;
 		color: #8a4a3e;
+	}
+
+	.persona-hint {
+		margin-top: -4px;
+		margin-bottom: 10px;
+	}
+
+	.prompt-felt {
+		width: 100%;
+		padding: 12px 14px;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: var(--bg2);
+		color: var(--text);
+		font-family: var(--ff-b);
+		font-size: calc(13px * var(--fs-scale, 1));
+		line-height: 1.5;
+		resize: vertical;
+		outline: none;
+		box-sizing: border-box;
+	}
+
+	.prompt-felt:focus {
+		border-color: var(--terra);
+	}
+
+	.reset-knap {
+		padding: 4px 10px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 600;
+		font-family: var(--ff-b);
+		color: var(--text2);
+		cursor: pointer;
+	}
+
+	.reset-knap:hover {
+		border-color: var(--terra);
+		color: var(--terra);
+	}
+
+	.gem-btn {
+		display: block;
+		width: 100%;
+		margin-top: 10px;
+		padding: 12px;
+		background: var(--terra);
+		color: #fff;
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		border-radius: 10px;
+		border: none;
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.gem-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 </style>

@@ -181,12 +181,12 @@ function kildeLabel(kilde: VidenbaseKilde): string {
 // ==============================================
 
 /**
- * Bygger system-prompten der definerer Linn AI's persona, scope og guardrails.
- * Tager den dynamiske videnbase-kontekst som parameter. Senere kan dele af
- * persona-teksten gøres redigerbar via admin-UI.
+ * Default persona-tekst. Admin kan redigere via linnAiKonfiguration/aktiv-doc.
+ * Hvis admin har skrevet en custom version, bruges den i stedet for default.
+ *
+ * VIDENBASE-placeholder inkluderes automatisk når kontekst sendes til Claude.
  */
-export function byggSystemPrompt(videnbaseKontekst: string): string {
-	return `Du er Linn AI — en virtuel assistent der bygger på Linns ekspertise inden for ernæring, træning, motivation, livsstil, overgangsalder, hormoner, mental sundhed, stress og søvn. Du svarer som om du var Linn selv: varmt, personligt, jordnært og opmuntrende, og bruger 'jeg' når det giver mening.
+export const DEFAULT_SYSTEM_PROMPT = `Du er Linn AI — en virtuel assistent der bygger på Linns ekspertise inden for ernæring, træning, motivation, livsstil, overgangsalder, hormoner, mental sundhed, stress og søvn. Du svarer som om du var Linn selv: varmt, personligt, jordnært og opmuntrende, og bruger 'jeg' når det giver mening.
 
 VIGTIGT — sådan svarer du:
 - Brug Linns egne tidligere svar og materialer som primær kilde (se VIDENBASE nedenfor).
@@ -196,8 +196,20 @@ VIGTIGT — sådan svarer du:
 - Ved psykiske kriser eller alvorlige tilstande: henvis til professionel hjælp.
 - Skriv på dansk.
 
-VIDENBASE (Linns materialer + tidligere klient-svar):
-${videnbaseKontekst || '(Videnbasen er endnu tom — brug din almene viden indtil indhold tilføjes.)'}
-
 Når du svarer, skriv direkte og personligt — ikke 'Som AI vil jeg...'. Tal som Linn ville tale med en klient.`;
+
+/**
+ * Bygger den endelige system-prompt ved at kombinere persona-tekst med
+ * videnbase-kontekst. Hvis customPrompt er givet, bruges den som persona;
+ * ellers bruges DEFAULT_SYSTEM_PROMPT.
+ */
+export function byggSystemPrompt(
+	videnbaseKontekst: string,
+	customPrompt?: string
+): string {
+	const persona = customPrompt?.trim() || DEFAULT_SYSTEM_PROMPT;
+	const videnbase = videnbaseKontekst
+		? `\n\nVIDENBASE (Linns materialer + tidligere klient-svar):\n${videnbaseKontekst}`
+		: '\n\n(Videnbasen er endnu tom — brug din almene viden indtil indhold tilføjes.)';
+	return persona + videnbase;
 }

@@ -231,6 +231,13 @@ service cloud.firestore {
 			allow write: if isAdmin();
 		}
 
+		// Linn AI — admin-konfiguration (persona/system-prompt). Læses af
+		// worker'en for at hente brugerens custom prompt. Kun admin skriver.
+		match /linnAiKonfiguration/{docId} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
 		// Klientspørgsmål til Linn:
 		//   - Klienter kan oprette deres egne spørgsmål (uid skal matche)
 		//   - Klienter kan læse SINE egne spørgsmål (for at se Linns svar)
