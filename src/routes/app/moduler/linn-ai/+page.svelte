@@ -547,7 +547,7 @@
 		background: var(--bg2);
 		color: var(--text);
 		font-family: var(--ff-b);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: max(16px, calc(14px * var(--fs-scale, 1)));
 		resize: none;
 		outline: none;
 	}
