@@ -74,6 +74,11 @@
 		type IndkoebsItem,
 		type ValgteOpskrifter
 	} from '$lib/content/indkoebsliste';
+	import {
+		handlingsFarve,
+		type MaaltidDiff,
+		type OptimerSvar
+	} from '$lib/content/optimerMaaltider';
 
 	// Flytter overlay-elementet til document.body så det kommer ud af
 	// app-shellens stacking context (.app-shell har overflow: hidden) og
@@ -204,6 +209,17 @@
 	let dagbogMaaltider = $state<GemtMaaltid[]>([]);
 	let dagbogIndlaeser = $state(false);
 	let dagbogFejl = $state<string | null>(null);
+
+	// Optimér-min-mad-state (premium-feature)
+	let optimerIndlaeser = $state(false);
+	let optimerSvar = $state<OptimerSvar | null>(null);
+	let optimerFejl = $state<string | null>(null);
+	let anvenderOptimering = $state(false);
+	const kanOptimere = $derived(
+		harPremium(userDoc) &&
+			!!userDoc?.dagligeMaal &&
+			dagbogDato === formatDatoKey()
+	);
 
 	// Gem-måltid-modal state
 	let viserGemModal = $state(false);
@@ -721,6 +737,138 @@
 			kcal += m.totalKcal ?? 0;
 		}
 		return { protein: p, fiber: f, kh, fedt, kcal };
+	}
+
+	async function optimerMad() {
+		const u = user;
+		if (!u || !userDoc?.dagligeMaal) return;
+		optimerIndlaeser = true;
+		optimerFejl = null;
+		optimerSvar = null;
+		try {
+			const idToken = await u.getIdToken();
+			const res = await fetch('/api/optimer-maaltider', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${idToken}`
+				},
+				body: JSON.stringify({
+					maaltider: dagbogMaaltider,
+					maal: userDoc.dagligeMaal,
+					dietTags: []
+				})
+			});
+			if (!res.ok) {
+				const data = (await res.json().catch(() => ({}))) as { message?: string };
+				throw new Error(data.message ?? `Server-fejl ${res.status}`);
+			}
+			optimerSvar = (await res.json()) as OptimerSvar;
+		} catch (e) {
+			optimerFejl = e instanceof Error ? e.message : 'Noget gik galt. Prøv igen.';
+		} finally {
+			optimerIndlaeser = false;
+		}
+	}
+
+	function lukOptimerKort() {
+		optimerSvar = null;
+		optimerFejl = null;
+	}
+
+	/**
+	 * Anvender AI'ens diff på dagbogen ved at føje en manuel "AI-tilpasning"-
+	 * item til hvert berørt måltid og opdatere måltidets totaler med
+	 * makroDelta. For NY_-prefiksede maaltidId'er oprettes et nyt måltid.
+	 *
+	 * 'fjern' og 'byt' lægges også ind som manuelle items (med negative eller
+	 * netto-makro) så dagstotalerne stemmer. Bruger kan rydde manuelt op
+	 * bagefter hvis hun vil.
+	 */
+	async function anvendOptimering() {
+		const u = user;
+		if (!u || !optimerSvar) return;
+		anvenderOptimering = true;
+		try {
+			// Grupper diff pr måltid for at lave så få Firestore-writes som muligt
+			const grupperet = new Map<string, MaaltidDiff[]>();
+			for (const d of optimerSvar.diff) {
+				const liste = grupperet.get(d.maaltidId) ?? [];
+				liste.push(d);
+				grupperet.set(d.maaltidId, liste);
+			}
+
+			for (const [maaltidId, diffs] of grupperet) {
+				const erNyt = maaltidId.startsWith('NY_');
+				const eksisterende = erNyt
+					? null
+					: dagbogMaaltider.find((m) => m.id === maaltidId);
+
+				// Saml ny item-liste og totaler
+				const nyeItems: MaaltidsItem[] = diffs.map((d) => ({
+					foodId: '',
+					portion: 1,
+					manuel: {
+						navn: `${d.handling === 'fjern' ? '− ' : d.handling === 'byt' ? '↔ ' : '+ '}${d.tekst}`,
+						enhed: 'AI-justering'
+					}
+				}));
+				let totalP = (eksisterende?.totalP ?? 0);
+				let totalF = (eksisterende?.totalF ?? 0);
+				let totalKh = (eksisterende?.totalKh ?? 0);
+				let totalFedt = (eksisterende?.totalFedt ?? 0);
+				let totalKcal = (eksisterende?.totalKcal ?? 0);
+				for (const d of diffs) {
+					totalP += d.makroDelta.protein;
+					totalF += d.makroDelta.fiber;
+					totalKh += d.makroDelta.kh;
+					totalFedt += d.makroDelta.fedt;
+					totalKcal += d.makroDelta.kcal;
+				}
+				// Klippe til ikke-negative tal
+				totalP = Math.max(0, totalP);
+				totalF = Math.max(0, totalF);
+				totalKh = Math.max(0, totalKh);
+				totalFedt = Math.max(0, totalFedt);
+				totalKcal = Math.max(0, totalKcal);
+
+				if (erNyt) {
+					const første = diffs[0];
+					await gemMaaltid(u.uid, {
+						navn: første.maaltidNavn || 'AI-snack',
+						type: første.maaltidType,
+						dato: dagbogDato,
+						items: nyeItems,
+						totalP,
+						totalF,
+						totalKh,
+						totalFedt,
+						totalKcal
+					});
+				} else if (eksisterende) {
+					await opdaterMaaltid(u.uid, eksisterende.id, {
+						navn: eksisterende.navn,
+						type: eksisterende.type,
+						dato: eksisterende.dato,
+						items: [...eksisterende.items, ...nyeItems],
+						totalP,
+						totalF,
+						totalKh,
+						totalFedt,
+						totalKcal
+					});
+				}
+			}
+
+			// Genindlæs dagbog og luk kortet
+			await indlaesDagbog();
+			optimerSvar = null;
+		} catch (e) {
+			console.error(e);
+			optimerFejl = 'Kunne ikke anvende alle ændringer. Prøv igen.';
+		} finally {
+			anvenderOptimering = false;
+		}
 	}
 
 	function visningsDato(key: string): string {
@@ -1334,6 +1482,93 @@
 					</div>
 				{/if}
 
+				{#if kanOptimere}
+					<div class="optimer-rad">
+						{#if !optimerSvar}
+							<button
+								class="btn primary optimer-knap"
+								type="button"
+								onclick={() => void optimerMad()}
+								disabled={optimerIndlaeser}
+							>
+								{optimerIndlaeser ? 'AI analyserer dagen…' : 'Optimér min mad'}
+							</button>
+							{#if optimerFejl}
+								<div class="status-besked fejl">{optimerFejl}</div>
+							{/if}
+						{:else}
+							<div class="optimer-kort">
+								<div class="optimer-head">
+									<h3>Forslag til justeringer</h3>
+									<button
+										class="ikon-knap"
+										type="button"
+										onclick={lukOptimerKort}
+										aria-label="Luk"
+									>
+										×
+									</button>
+								</div>
+
+								<p class="optimer-samlet">{optimerSvar.samletBegrundelse}</p>
+
+								{#if optimerSvar.advarsel}
+									<div class="status-besked advarsel">{optimerSvar.advarsel}</div>
+								{/if}
+
+								{#if optimerSvar.diff.length === 0}
+									<div class="status-besked">Din dag ser allerede god ud — ingen ændringer foreslået.</div>
+								{:else}
+									<ul class="optimer-diff">
+										{#each optimerSvar.diff as d, i (i)}
+											<li class="optimer-item" style="--accent: {handlingsFarve(d.handling)}">
+												<div class="optimer-item-head">
+													<span class="optimer-maaltid">{MAALTIDSTYPE_LABELS[d.maaltidType]} · {d.maaltidNavn}</span>
+												</div>
+												<div class="optimer-item-body">{d.tekst}</div>
+												<div class="optimer-item-meta">{d.begrundelse}</div>
+												<div class="optimer-item-makro">
+													{d.makroDelta.protein >= 0 ? '+' : ''}{Math.round(d.makroDelta.protein * 10) / 10}g protein ·
+													{d.makroDelta.fiber >= 0 ? '+' : ''}{Math.round(d.makroDelta.fiber * 10) / 10}g fiber ·
+													{d.makroDelta.kcal >= 0 ? '+' : ''}{Math.round(d.makroDelta.kcal)} kcal
+												</div>
+											</li>
+										{/each}
+									</ul>
+
+									<div class="optimer-resultat">
+										<div class="optimer-resultat-titel">Forventet resultat</div>
+										<div class="optimer-resultat-tal">
+											{Math.round(optimerSvar.resultatMakro.protein)}g protein ·
+											{Math.round(optimerSvar.resultatMakro.fiber)}g fiber ·
+											{Math.round(optimerSvar.resultatMakro.kcal)} kcal
+										</div>
+									</div>
+
+									<div class="optimer-handlinger">
+										<button
+											class="btn ghost"
+											type="button"
+											onclick={lukOptimerKort}
+											disabled={anvenderOptimering}
+										>
+											Behold som det er
+										</button>
+										<button
+											class="btn primary"
+											type="button"
+											onclick={() => void anvendOptimering()}
+											disabled={anvenderOptimering}
+										>
+											{anvenderOptimering ? 'Anvender…' : 'Anvend ændringer'}
+										</button>
+									</div>
+								{/if}
+							</div>
+						{/if}
+					</div>
+				{/if}
+
 				<div class="dagbog-liste">
 					{#each MAALTIDSTYPER as type (type)}
 						{@const dette = dagbogMaaltider.filter((m) => m.type === type)}
@@ -1671,6 +1906,120 @@
 		color: #8a4a3e;
 		background: #fbeeea;
 		border-color: #f0d6cf;
+	}
+
+	.status-besked.advarsel {
+		color: #8a6a1a;
+		background: #fbf3dd;
+		border-color: #f0e2b1;
+	}
+
+	.optimer-rad {
+		margin-bottom: 14px;
+	}
+
+	.optimer-knap {
+		width: 100%;
+	}
+
+	.optimer-kort {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		padding: 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.optimer-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+	}
+
+	.optimer-head h3 {
+		margin: 0;
+		font-size: calc(16px * var(--fs-scale, 1));
+		color: var(--text);
+	}
+
+	.optimer-samlet {
+		margin: 0;
+		color: var(--text2);
+		font-size: calc(13px * var(--fs-scale, 1));
+		line-height: 1.45;
+	}
+
+	.optimer-diff {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.optimer-item {
+		border-left: 3px solid var(--accent);
+		background: var(--bg, #fafafa);
+		border-radius: 8px;
+		padding: 10px 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.optimer-maaltid {
+		font-size: calc(11px * var(--fs-scale, 1));
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: var(--text3);
+	}
+
+	.optimer-item-body {
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.optimer-item-meta {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text2);
+	}
+
+	.optimer-item-makro {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.optimer-resultat {
+		background: var(--bg-soft, #f4f4f1);
+		border-radius: 8px;
+		padding: 10px 12px;
+	}
+
+	.optimer-resultat-titel {
+		font-size: calc(11px * var(--fs-scale, 1));
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: var(--text3);
+		margin-bottom: 2px;
+	}
+
+	.optimer-resultat-tal {
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.optimer-handlinger {
+		display: flex;
+		gap: 8px;
+		justify-content: flex-end;
 	}
 
 	.tabs {
