@@ -386,7 +386,7 @@
 		<div class="status-besked fejl">{fejl}</div>
 	{:else if alle.length === 0}
 		<div class="status-besked">
-			Du har endnu ikke gemt nogen måltider. Brug 30-30-3 til at logge dine måltider, og kom tilbage her for at se din udvikling.
+			Du har endnu ikke gemt nogen måltider. Brug 30-30 til at logge dine måltider, og kom tilbage her for at se din udvikling.
 		</div>
 	{:else if aktivTab === 'syv'}
 		<section class="kort">

@@ -889,6 +889,9 @@
 		</a>
 		<div class="eyebrow">Kost</div>
 		<h1>30-30 beregner</h1>
+		<p class="page-sub">
+			Sigt efter mindst 30g protein og 30g fiber pr. måltid — det holder dig mæt længere og støtter et stabilt blodsukker gennem overgangsalderen.
+		</p>
 	</header>
 
 	{#if loading}
@@ -1890,6 +1893,13 @@
 		margin: 4px 0 0;
 		line-height: 1.05;
 		color: var(--text);
+	}
+
+	.page-sub {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text2);
+		margin: 8px 0 0;
+		line-height: 1.45;
 	}
 
 	.status-besked {

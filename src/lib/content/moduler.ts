@@ -14,7 +14,11 @@ export interface Modul {
 	statusTekst: string;
 	subTekst: string;
 	laasTekst: string | null;
+	/** Ekstern købs-URL — vises hvis modulet er låst og brugeren kan købe det. */
+	kobUrl?: string;
 }
+
+const KICKSTART_KOB_URL = 'https://linn.simplero.com/21dage';
 
 interface ModulBase {
 	id: string;
@@ -115,7 +119,8 @@ function modulbrugerStatus(base: ModulBase): Modul {
 			progress: null,
 			statusTekst: 'Låst',
 			subTekst: 'Findes kun i Kickstart-forløbet',
-			laasTekst: 'Få adgang via Kickstart'
+			laasTekst: 'Få adgang via Kickstart',
+			kobUrl: KICKSTART_KOB_URL
 		};
 	}
 
@@ -169,6 +174,7 @@ function udlobetStatus(base: ModulBase): Modul {
 		progress: null,
 		statusTekst: 'Låst',
 		subTekst: subMap[base.id] ?? 'Kræver aktivt abonnement eller forløb',
-		laasTekst: 'Få adgang igen'
+		laasTekst: 'Få adgang igen',
+		kobUrl: KICKSTART_KOB_URL
 	};
 }

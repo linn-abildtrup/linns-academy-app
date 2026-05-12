@@ -29,6 +29,10 @@
 		return RUTER[modul.id] ?? null;
 	}
 
+	function erEkstern(rute: string | null): boolean {
+		return rute !== null && /^https?:\/\//.test(rute);
+	}
+
 	const undertekst = $derived.by(() => {
 		if (!userState) return '';
 		if (userState === 'forlobskunde') {
@@ -55,7 +59,8 @@
 
 	<div class="modul-liste">
 		{#each moduler as modul (modul.id)}
-			{@const rute = ruteFor(modul)}
+			{@const rute = ruteFor(modul) ?? modul.kobUrl ?? null}
+			{@const ekstern = erEkstern(rute)}
 			<svelte:element
 				this={rute ? 'a' : 'article'}
 				class="modul-row"
@@ -63,6 +68,8 @@
 				class:laeseadgang={modul.status === 'laeseadgang'}
 				class:klikbar={!!rute}
 				href={rute ?? undefined}
+				target={ekstern ? '_blank' : undefined}
+				rel={ekstern ? 'noopener noreferrer' : undefined}
 			>
 				<div class="modul-icon" style="background: {modul.accent};">
 					<Icon name={modul.icon} size={18} color="#fff" />
