@@ -87,20 +87,19 @@ function mapDietTags(input: string[] | undefined): string[] {
 	return ud;
 }
 
+const KATEGORI_ALIASER: Record<string, string> = {
+	morgen: 'morgenmad',
+	middagsmad: 'frokost',
+	aften: 'aftensmad',
+	mellemmad: 'snack',
+	snacks: 'snack',
+	tilbehør: 'tilbehor',
+	salater: 'salat'
+};
+
 function mapKategori(rå: string): string | null {
 	const lower = rå.toLowerCase().trim();
-	const mapped =
-		lower === 'morgen'
-			? 'morgenmad'
-			: lower === 'aften' || lower === 'middagsmad'
-				? 'aftensmad'
-				: lower === 'mellemmad' || lower === 'snacks'
-					? 'snack'
-					: lower === 'tilbehør'
-						? 'tilbehor'
-						: lower === 'salater'
-							? 'salat'
-							: lower;
+	const mapped = KATEGORI_ALIASER[lower] ?? lower;
 	return KENDTE_KATEGORIER.has(mapped) ? mapped : null;
 }
 
