@@ -83,6 +83,12 @@
 
 	const idagDato = $derived(dagsDatoStr(new Date()));
 
+	// Dage før kontoen blev oprettet vises ikke — brugeren har ikke haft
+	// appen før det tidspunkt, så det giver ingen mening at åbne dem.
+	const tidligsteSyngligDato = $derived(
+		userDoc?.createdAt ? dagsDatoStr(new Date(userDoc.createdAt)) : null
+	);
+
 	const sidste7Datoer = $derived.by<{ dato: string; trænet: boolean }[]>(() => {
 		const traenetMap = new Map<string, boolean>();
 		for (const t of aboTraeninger) traenetMap.set(t.dato, true);
@@ -92,6 +98,7 @@
 			const cur = new Date(idag);
 			cur.setDate(cur.getDate() - i);
 			const datoStr = dagsDatoStr(cur);
+			if (tidligsteSyngligDato && datoStr < tidligsteSyngligDato) continue;
 			r.push({ dato: datoStr, trænet: traenetMap.has(datoStr) });
 		}
 		return r;
@@ -287,7 +294,9 @@
 
 		<section class="card">
 			<div class="card-head">
-				<div class="section-label">Sidste 7 dage</div>
+				<div class="section-label">
+					{sidste7Datoer.length < 7 ? 'Siden du startede' : 'Sidste 7 dage'}
+				</div>
 			</div>
 			<p class="hint">Tryk på en dag for at åbne den.</p>
 			<div class="dage-grid uge-grid-7">
