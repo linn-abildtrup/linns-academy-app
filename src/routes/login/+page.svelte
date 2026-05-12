@@ -103,9 +103,6 @@
 				<Button variant="outline" size="lg" full onclick={() => (view = 'signup')}>
 					Opret konto
 				</Button>
-				<p class="resume">
-					Allerede medlem? <span class="resume-link">Genoptag rejse</span>
-				</p>
 			</div>
 		</div>
 	{:else}
@@ -202,17 +199,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
-	}
-
-	.resume {
-		text-align: center;
-		font-size: calc(11px * var(--fs-scale, 1));
-		color: var(--text3);
-		margin: 6px 0 0;
-	}
-
-	.resume-link {
-		color: var(--terra);
 	}
 
 	/* === Formular-skærm === */
