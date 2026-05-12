@@ -114,8 +114,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		| null;
 	const erPremium =
 		userDoc?.accessLevel === 'premium' ||
-		userDoc?.adminKlientMode === 'premiumapp' ||
-		userDoc?.adminKlientMode === 'forlob';
+		userDoc?.adminKlientMode === 'premiumapp';
 	if (!erPremium) throw error(403, 'Funktionen kræver premium-adgang');
 
 	// Rate-limit (deler kvota med Linn AI)
