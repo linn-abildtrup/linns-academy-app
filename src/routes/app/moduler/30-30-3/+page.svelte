@@ -210,6 +210,16 @@
 	let dagbogIndlaeser = $state(false);
 	let dagbogFejl = $state<string | null>(null);
 
+	// Pre-valgt dato når brugeren klikker 'Byg måltid for denne dag' fra
+	// dagbog-fanen. Honoreres af aabnGemModal og nulstilles efter gem
+	// eller ved manuel skift til Byg måltid-fanen.
+	let forhaandsValgtDato = $state<string | null>(null);
+
+	function byggForDenneDag() {
+		forhaandsValgtDato = dagbogDato;
+		skiftTab('maaltid');
+	}
+
 	// Optimér-min-mad-state (premium-feature)
 	let optimerIndlaeser = $state(false);
 	let optimerSvar = $state<OptimerSvar | null>(null);
@@ -652,7 +662,7 @@
 		} else {
 			gemNavn = '';
 			gemType = gaetMaaltidstype();
-			gemDato = formatDatoKey();
+			gemDato = forhaandsValgtDato ?? formatDatoKey();
 			gemSomFavorit = false;
 		}
 		gemBesked = null;
@@ -711,6 +721,7 @@
 			maaltid = [];
 			localStorage.setItem(STORAGE_KEY, '[]');
 			viserGemModal = false;
+			forhaandsValgtDato = null;
 			// Skift til dagbog og indlæs
 			dagbogDato = gemDato;
 			await indlaesDagbog();
@@ -912,7 +923,10 @@
 				class="tab-knap"
 				class:aktiv={aktivTab === 'maaltid'}
 				type="button"
-				onclick={() => skiftTab('maaltid')}
+				onclick={() => {
+					forhaandsValgtDato = null;
+					skiftTab('maaltid');
+				}}
 			>
 				Byg måltid {maaltid.length > 0 ? `(${maaltid.length})` : ''}
 			</button>
@@ -1012,6 +1026,12 @@
 				{/if}
 			</div>
 		{:else if aktivTab === 'maaltid'}
+			{#if forhaandsValgtDato && !redigererFavorit && !redigererMaaltid}
+				<div class="dato-hint">
+					Du bygger måltid for <strong>{visningsDato(forhaandsValgtDato)}</strong>.
+					Gem-datoen er pre-valgt.
+				</div>
+			{/if}
 			{#if redigererFavorit}
 				<div class="rediger-banner">
 					<div class="rediger-banner-tekst">
@@ -1435,6 +1455,10 @@
 				</button>
 			</div>
 			<div class="dato-label">{visningsDato(dagbogDato)}</div>
+
+			<button class="byg-for-dag-knap" type="button" onclick={byggForDenneDag}>
+				+ Byg måltid for denne dag
+			</button>
 
 			{#if dagbogIndlaeser}
 				<Loading tekst="Henter dagbog..." kompakt />
@@ -3001,6 +3025,36 @@
 		color: var(--text);
 		text-align: center;
 		margin-bottom: 14px;
+	}
+
+	.byg-for-dag-knap {
+		display: block;
+		width: 100%;
+		padding: 12px 14px;
+		margin-bottom: 14px;
+		background: var(--terra);
+		color: #fff;
+		font-family: var(--ff-b);
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		border: none;
+		border-radius: 10px;
+		cursor: pointer;
+	}
+
+	.byg-for-dag-knap:hover {
+		filter: brightness(0.95);
+	}
+
+	.dato-hint {
+		padding: 10px 12px;
+		margin-bottom: 12px;
+		background: var(--tdim, #fbeeea);
+		border: 1px solid var(--tdim2, #f0d6cf);
+		border-radius: 10px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.4;
 	}
 
 	.dagbog-liste {
