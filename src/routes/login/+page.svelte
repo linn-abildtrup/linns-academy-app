@@ -50,7 +50,7 @@
 					error =
 						`Vi kan ikke finde et køb registreret på ${email}. ` +
 						'Tjek at du bruger samme email som ved købet på Simplero. ' +
-						'Spørgsmål? Skriv til linn@linnsacademy.dk.';
+						'Spørgsmål? Skriv til kontakt@linnsacademy.dk.';
 					return;
 				}
 				await createUserDoc(cred.user.uid, cred.user.email ?? email);

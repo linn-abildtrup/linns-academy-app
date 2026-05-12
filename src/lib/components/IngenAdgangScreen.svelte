@@ -65,7 +65,7 @@
 	</div>
 
 	<p class="kontakt">
-		Spørgsmål? Skriv til Linn på <a href="mailto:linn@linnsacademy.dk">linn@linnsacademy.dk</a>
+		Spørgsmål? Skriv til Linn på <a href="mailto:kontakt@linnsacademy.dk">kontakt@linnsacademy.dk</a>
 	</p>
 </div>
 
