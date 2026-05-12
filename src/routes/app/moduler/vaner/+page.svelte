@@ -88,6 +88,12 @@
 	const erIdagCheckin = $derived(erUgentligCheckinDag(new Date()));
 	const idagEntry = $derived(aboEntries.get(idag) ?? null);
 
+	// Dage før vanetrackeren blev oprettet vises ikke — brugeren har ikke haft
+	// appen før det tidspunkt, så det giver ingen mening at klikke der.
+	const tidligsteSyngligDato = $derived(
+		aboOpsaetning?.oprettetAt ? formaterDato(aboOpsaetning.oprettetAt.toDate()) : null
+	);
+
 	const sidste7Dage = $derived.by(() => {
 		const r: { dato: string; flower: FlowerNiveau }[] = [];
 		const d = new Date();
@@ -95,6 +101,7 @@
 			const cur = new Date(d);
 			cur.setDate(cur.getDate() - i);
 			const datoStr = formaterDato(cur);
+			if (tidligsteSyngligDato && datoStr < tidligsteSyngligDato) continue;
 			const entry = aboEntries.get(datoStr) ?? null;
 			r.push({
 				dato: datoStr,
@@ -111,11 +118,14 @@
 		const til = new Date();
 		const fra = new Date(til);
 		fra.setDate(fra.getDate() - 6);
+		const fraStr = formaterDato(fra);
+		const effFraStr =
+			tidligsteSyngligDato && fraStr < tidligsteSyngligDato ? tidligsteSyngligDato : fraStr;
 		return beregnAboFremgang(
 			aboOpsaetning.valgteVaner,
 			aboEntries,
 			aboBonusPulje,
-			formaterDato(fra),
+			effFraStr,
 			formaterDato(til)
 		);
 	});
@@ -503,13 +513,17 @@
 
 			<section class="card">
 				<div class="card-head">
-					<div class="section-label">Sidste 7 dage</div>
-					<div class="card-tael">{aboFremgang7.gennemforte} / 7</div>
+					<div class="section-label">
+						{aboFremgang7.iAlt < 7 ? 'Siden du startede' : 'Sidste 7 dage'}
+					</div>
+					<div class="card-tael">{aboFremgang7.gennemforte} / {aboFremgang7.iAlt}</div>
 				</div>
 				<div class="prog-bar">
 					<div
 						class="prog-fill"
-						style="width: {Math.round((aboFremgang7.gennemforte / 7) * 100)}%"
+						style="width: {aboFremgang7.iAlt > 0
+							? Math.round((aboFremgang7.gennemforte / aboFremgang7.iAlt) * 100)
+							: 0}%"
 					></div>
 				</div>
 				<div class="uge-grid uge-grid-7">
