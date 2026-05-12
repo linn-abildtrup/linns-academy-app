@@ -1399,9 +1399,9 @@
 
 	.maaned-knap.aaben {
 		background: var(--bg2);
-		margin: 0 -8px;
 		padding: 10px 8px;
 		border-top-color: transparent;
+		border-radius: 8px 8px 0 0;
 	}
 
 	.maaned-navn {
@@ -1420,11 +1420,10 @@
 		display: grid;
 		grid-template-columns: repeat(7, 1fr);
 		gap: 6px;
-		padding: 8px 0 12px;
-		margin: 0 -8px;
-		padding-left: 8px;
-		padding-right: 8px;
+		padding: 8px 8px 12px;
 		background: var(--bg2);
+		border-radius: 0 0 8px 8px;
+		box-sizing: border-box;
 	}
 
 	.maaned-dag {

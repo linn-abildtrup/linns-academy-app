@@ -260,6 +260,16 @@
 	const sorteredeGuideKats = $derived(sorterKategorier(guideKategorier));
 	const guideItemsPrKategori = $derived(grupperEfterKategori(kunUdgivne(guideItems)));
 
+	// Skjul Links-fanen hvis brugeren ikke har adgang til nogen guides — så
+	// vi ikke viser en tom fane uden indhold.
+	const visLinks = $derived(sorteredeGuideKats.some((k) => harGuidesIKategori(k.id)));
+
+	$effect(() => {
+		if (!loading && aktivTab === 'guides' && !visLinks) {
+			skiftTab(visFaq ? 'faq' : 'opskrifter');
+		}
+	});
+
 	function harFaqIKategori(kategoriId: string): boolean {
 		const liste = faqItemsPrKategori[kategoriId];
 		return !!liste && liste.length > 0;
@@ -477,14 +487,16 @@
 				FAQ
 			</button>
 		{/if}
-		<button
-			class="tab-knap"
-			class:aktiv={aktivTab === 'guides'}
-			type="button"
-			onclick={() => skiftTab('guides')}
-		>
-			Links
-		</button>
+		{#if visLinks}
+			<button
+				class="tab-knap"
+				class:aktiv={aktivTab === 'guides'}
+				type="button"
+				onclick={() => skiftTab('guides')}
+			>
+				Links
+			</button>
+		{/if}
 		{#each lektionTabIds as productId (productId)}
 			<button
 				class="tab-knap"
