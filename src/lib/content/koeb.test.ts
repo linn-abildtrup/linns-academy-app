@@ -1,35 +1,96 @@
 import { describe, it, expect } from 'vitest';
 import { getKoebForUser, formatUdlobsdato } from './koeb';
+import type { UserDoc } from '$lib/types';
+
+function lavUserDoc(overrides: Partial<UserDoc>): UserDoc {
+	return {
+		firstName: 'Test',
+		email: 'test@example.com',
+		state: 'modulbruger',
+		createdAt: Date.now(),
+		...overrides
+	};
+}
 
 describe('getKoebForUser', () => {
-	it('returnerer Kickstart aktiv for forløbskunde', () => {
-		const koeb = getKoebForUser('forlobskunde');
+	it('returnerer Basis-app for basisabo-bruger', () => {
+		const koeb = getKoebForUser(
+			lavUserDoc({
+				activeProduct: 'basisabo',
+				accessLevel: 'basis',
+				accessSource: 'abonnement'
+			})
+		);
+		expect(koeb).toHaveLength(1);
+		expect(koeb[0].kortNavn).toBe('Basis-app');
+		expect(koeb[0].status).toBe('aktiv');
+		expect(koeb[0].lobende).toBe(true);
+	});
+
+	it('returnerer Premium-app for premiumabo-bruger', () => {
+		const koeb = getKoebForUser(
+			lavUserDoc({
+				activeProduct: 'premiumabo',
+				accessLevel: 'premium',
+				accessSource: 'abonnement'
+			})
+		);
+		expect(koeb).toHaveLength(1);
+		expect(koeb[0].kortNavn).toBe('Premium-app');
+		expect(koeb[0].lobende).toBe(true);
+	});
+
+	it('returnerer Kickstart for kickstart-forløbskunde', () => {
+		const koeb = getKoebForUser(
+			lavUserDoc({
+				state: 'forlobskunde',
+				activeProduct: 'kickstart',
+				accessLevel: 'basis',
+				accessSource: 'forløb'
+			})
+		);
 		expect(koeb).toHaveLength(1);
 		expect(koeb[0].kortNavn).toBe('Kickstart');
 		expect(koeb[0].status).toBe('aktiv');
+		expect(koeb[0].lobende).toBe(false);
 	});
 
-	it('returnerer mikrotræning og kost for modulbruger', () => {
-		const koeb = getKoebForUser('modulbruger');
-		expect(koeb).toHaveLength(2);
-	});
-
-	it('alle modulbruger-køb er aktive', () => {
-		const koeb = getKoebForUser('modulbruger');
-		expect(koeb.every((k) => k.status === 'aktiv')).toBe(true);
-	});
-
-	it('returnerer Kickstart med læseadgang for udløbet', () => {
-		const koeb = getKoebForUser('udlobet');
+	it('returnerer Premium-forløb for premiumforløb-kunde', () => {
+		const koeb = getKoebForUser(
+			lavUserDoc({
+				state: 'forlobskunde',
+				activeProduct: 'premiumforløb',
+				accessLevel: 'premium',
+				accessSource: 'forløb'
+			})
+		);
 		expect(koeb).toHaveLength(1);
-		expect(koeb[0].kortNavn).toBe('Kickstart');
-		expect(koeb[0].status).toBe('laeseadgang');
+		expect(koeb[0].kortNavn).toBe('Premium-forløb');
 	});
 
-	it('udløbet-Kickstart har udløbsdato', () => {
-		const koeb = getKoebForUser('udlobet');
-		const kickstart = koeb.find((k) => k.kortNavn === 'Kickstart');
-		expect(kickstart?.udlobsdato).toBe('2026-11-15');
+	it('returnerer Kickstart med læseadgang når bruger er i bonus-periode efter forløb', () => {
+		const fremtid = Date.now() + 30 * 24 * 60 * 60 * 1000;
+		const koeb = getKoebForUser(
+			lavUserDoc({
+				state: 'udlobet',
+				activeProduct: 'kickstart',
+				accessLevel: 'none',
+				accessSource: 'forløb',
+				bonusPeriodEndsAt: fremtid
+			})
+		);
+		expect(koeb).toHaveLength(1);
+		expect(koeb[0].status).toBe('laeseadgang');
+		expect(koeb[0].udlobsdato).toBeDefined();
+	});
+
+	it('returnerer tom liste for bruger uden activeProduct', () => {
+		const koeb = getKoebForUser(lavUserDoc({}));
+		expect(koeb).toEqual([]);
+	});
+
+	it('returnerer tom liste for null userDoc', () => {
+		expect(getKoebForUser(null)).toEqual([]);
 	});
 });
 

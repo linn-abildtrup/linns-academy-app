@@ -175,7 +175,7 @@
 		return '';
 	});
 
-	const koeb = $derived(userState ? getKoebForUser(userState) : []);
+	const koeb = $derived(getKoebForUser(userDoc));
 
 	async function handleLogout() {
 		try {

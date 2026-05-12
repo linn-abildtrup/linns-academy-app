@@ -1,3 +1,12 @@
+// "Mine køb"-listen på profil-siden. Mapper userDoc.activeProduct til en
+// brugervenlig Koeb-entry — én pr. aktivt produkt. Tidligere version mappede
+// fra UserState (modulbruger → hardcoded "Mikrotræning + Kost-modul"), men
+// det er erstattet af det 4-produkt-model fra $lib/content/produkter.
+
+import type { UserDoc, ActiveProduct } from '$lib/types';
+import { PRODUKTER } from './produkter';
+import { erIBonusPeriode, BONUS_PERIODE_DAGE } from '$lib/utils/userAdgang';
+
 export type KoebType = 'forlob' | 'modul' | 'app';
 export type KoebStatus = 'aktiv' | 'udlobet' | 'laeseadgang';
 
@@ -11,62 +20,73 @@ export interface Koeb {
 	udlobsdato?: string;
 }
 
-import type { UserState } from '$lib/types';
-
-const KICKSTART_AKTIV: Koeb = {
-	id: 'kickstart-aktiv',
-	navn: 'Kickstart en sund overgangsalder',
-	kortNavn: 'Kickstart',
-	type: 'forlob',
-	status: 'aktiv',
-	lobende: false,
-	udlobsdato: '2026-05-18'
+const KORT_NAVN: Record<ActiveProduct, string> = {
+	basisabo: 'Basis-app',
+	premiumabo: 'Premium-app',
+	kickstart: 'Kickstart',
+	premiumforløb: 'Premium-forløb'
 };
 
-const KICKSTART_LAESEADGANG: Koeb = {
-	id: 'kickstart-laeseadgang',
-	navn: 'Kickstart en sund overgangsalder',
-	kortNavn: 'Kickstart',
-	type: 'forlob',
-	status: 'laeseadgang',
-	lobende: false,
-	udlobsdato: '2026-11-15'
+const VISNINGS_NAVN: Record<ActiveProduct, string> = {
+	basisabo: 'Basis-app',
+	premiumabo: 'Premium-app',
+	kickstart: 'Kickstart en sund overgangsalder',
+	premiumforløb: 'Premium-forløb'
 };
 
-const MIKROTRAENING: Koeb = {
-	id: 'mikrotraening',
-	navn: 'Mikrotræning',
-	kortNavn: 'Mikrotræning',
-	type: 'modul',
-	status: 'aktiv',
-	lobende: true
-};
+function isoDato(ms: number): string {
+	return new Date(ms).toISOString().slice(0, 10);
+}
 
-const KOST_MODUL: Koeb = {
-	id: 'kost-modul',
-	navn: 'Kost-modul',
-	kortNavn: 'Kost',
-	type: 'modul',
-	status: 'aktiv',
-	lobende: true
-};
+export function getKoebForUser(userDoc: UserDoc | null | undefined): Koeb[] {
+	if (!userDoc) return [];
 
-export function getKoebForUser(state: UserState): Koeb[] {
-	if (state === 'forlobskunde') {
-		return [KICKSTART_AKTIV];
+	const product = userDoc.activeProduct;
+
+	// Aktiv adgang: vis det nuværende produkt
+	if (product && userDoc.accessLevel && userDoc.accessLevel !== 'none') {
+		const produkt = PRODUKTER[product];
+		if (!produkt) return [];
+
+		const type: KoebType = produkt.accessSource === 'forløb' ? 'forlob' : 'app';
+		const udlobsdato =
+			produkt.accessSource === 'forløb' && userDoc.bonusPeriodEndsAt
+				? isoDato(userDoc.bonusPeriodEndsAt - BONUS_PERIODE_DAGE * 24 * 60 * 60 * 1000)
+				: undefined;
+
+		return [
+			{
+				id: product,
+				navn: VISNINGS_NAVN[product],
+				kortNavn: KORT_NAVN[product],
+				type,
+				status: 'aktiv',
+				lobende: produkt.activeSubscription,
+				udlobsdato
+			}
+		];
 	}
-	if (state === 'modulbruger') {
-		return [MIKROTRAENING, KOST_MODUL];
+
+	// Forløbskunde i bonus-periode efter forløb-slut: vis læseadgang
+	if (product && erIBonusPeriode(userDoc) && PRODUKTER[product]?.accessSource === 'forløb') {
+		return [
+			{
+				id: `${product}-laeseadgang`,
+				navn: VISNINGS_NAVN[product],
+				kortNavn: KORT_NAVN[product],
+				type: 'forlob',
+				status: 'laeseadgang',
+				lobende: false,
+				udlobsdato: userDoc.bonusPeriodEndsAt ? isoDato(userDoc.bonusPeriodEndsAt) : undefined
+			}
+		];
 	}
-	if (state === 'udlobet') {
-		return [KICKSTART_LAESEADGANG];
-	}
+
 	return [];
 }
 
 export function formatUdlobsdato(dato: string): string {
 	const d = new Date(dato);
-	const dage = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'];
 	const maaneder = [
 		'jan',
 		'feb',
