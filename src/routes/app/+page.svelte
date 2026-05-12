@@ -548,7 +548,6 @@
 			<section class="moduler-section">
 				<div class="moduler-header">
 					<div class="eyebrow eyebrow-muted">Mine moduler</div>
-					<div class="moduler-title">Hurtig adgang</div>
 				</div>
 				<div class="moduler-grid">
 					{#each moduler as modul (modul.navn)}
@@ -1248,13 +1247,6 @@
 		margin-bottom: 8px;
 	}
 
-	.moduler-title {
-		font-family: var(--ff-d);
-		font-size: calc(14px * var(--fs-scale, 1));
-		font-weight: 700;
-		font-style: italic;
-		color: var(--text);
-	}
 
 	.moduler-grid {
 		display: grid;
