@@ -9,6 +9,7 @@
 	} from 'firebase/auth';
 	import { auth } from '$lib/firebase';
 	import { createUserDoc } from '$lib/userDoc';
+	import { hentAllowedEmail } from '$lib/firestore/forlob';
 	import Button from '$lib/components/Button.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import Logo from '$lib/components/Logo.svelte';
@@ -34,6 +35,24 @@
 				await signInWithEmailAndPassword(auth, email, password);
 			} else if (view === 'signup') {
 				const cred = await createUserWithEmailAndPassword(auth, email, password);
+				// Tjek at email har et registreret køb i allowedEmails.
+				// Auth-kontoen er allerede oprettet, men vi sletter den igen
+				// hvis vi ikke kan finde et køb — så vi ikke får orphan-konti.
+				// hentAllowedEmail er tilladt af Firestore-rules for den
+				// netop-loggede-ind bruger (request.auth.token.email == email).
+				const allowed = await hentAllowedEmail(email);
+				if (!allowed) {
+					try {
+						await cred.user.delete();
+					} catch (delErr) {
+						console.warn('Kunne ikke slette uønsket signup-konto:', delErr);
+					}
+					error =
+						`Vi kan ikke finde et køb registreret på ${email}. ` +
+						'Tjek at du bruger samme email som ved købet på Simplero. ' +
+						'Spørgsmål? Skriv til linn@linnsacademy.dk.';
+					return;
+				}
 				await createUserDoc(cred.user.uid, cred.user.email ?? email);
 			}
 			await goto('/');

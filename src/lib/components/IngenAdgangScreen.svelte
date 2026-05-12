@@ -1,13 +1,26 @@
 <script lang="ts">
-	// Vises for brugere der ikke længere har adgang til appen — hverken
-	// aktivt abonnement, aktivt forløb eller bonus-periode efter forløb-slut.
-	// De kan stadig logge ind (Firebase Auth virker), men ser kun denne
-	// side med en venlig opfordring til at købe adgang igen.
+	// Vises for brugere der ikke (længere) har adgang til appen.
+	// To varianter:
+	//   - "Udløbet adgang": brugeren har tidligere haft et køb (har
+	//     simpleroCustomerId eller forlobIds), men adgangen er nu udløbet.
+	//   - "Intet køb registreret": brugeren har aldrig haft adgang (typisk
+	//     hvis hun har lavet konto med en email der ikke matcher hendes køb).
 	import { signOut } from 'firebase/auth';
 	import { auth } from '$lib/firebase';
 	import { goto } from '$app/navigation';
+	import type { UserDoc } from '$lib/types';
 	import Logo from '$lib/components/Logo.svelte';
 	import Button from '$lib/components/Button.svelte';
+
+	interface Props {
+		userDoc: UserDoc | null;
+	}
+
+	const { userDoc }: Props = $props();
+
+	const harTidligereHaftKob = $derived(
+		!!(userDoc?.simpleroCustomerId || (userDoc?.forlobIds && userDoc.forlobIds.length > 0))
+	);
 
 	async function logUd() {
 		try {
@@ -24,11 +37,20 @@
 		<Logo size="lg" />
 	</div>
 
-	<h1 class="titel">Velkommen tilbage</h1>
-	<p class="brodtekst">
-		Din adgang til Linn's Academy er udløbet. Køb et nyt forløb eller et abonnement for at få
-		adgang til mikrotræning, kost, vaner og dit personlige bibliotek igen.
-	</p>
+	{#if harTidligereHaftKob}
+		<h1 class="titel">Velkommen tilbage</h1>
+		<p class="brodtekst">
+			Din adgang til Linn's Academy er udløbet. Køb et nyt forløb eller et abonnement for at få
+			adgang til mikrotræning, kost, vaner og dit personlige bibliotek igen.
+		</p>
+	{:else}
+		<h1 class="titel">Vi kan ikke finde dit køb</h1>
+		<p class="brodtekst">
+			Vi kan ikke finde et køb registreret på{userDoc?.email ? ` ${userDoc.email}` : ' den email'}.
+			Tjek at du har brugt samme email som ved købet på Simplero. Hvis du ikke har købt endnu,
+			kan du komme i gang via Se tilbud.
+		</p>
+	{/if}
 
 	<div class="knapper">
 		<Button

@@ -164,9 +164,10 @@
 		<Loading tekst="Et øjeblik..." />
 	</div>
 {:else if userDoc && !isAdmin(user) && harIngenAdgang(userDoc)}
-	<!-- Bruger uden adgang (efter 90-dages bonus + ingen aktivt abonnement)
-	     ser kun denne side. Admin omgås tjekket så Linn altid kan komme ind. -->
-	<IngenAdgangScreen />
+	<!-- Bruger uden adgang (efter 90-dages bonus + ingen aktivt abonnement,
+	     eller email der aldrig blev whitelisted). Admin omgås tjekket så Linn
+	     altid kan komme ind. -->
+	<IngenAdgangScreen {userDoc} />
 {:else}
 	<div class="app-shell">
 		{#if userDoc?.adminKlientMode || userDoc?.adminKlientForlobId}
