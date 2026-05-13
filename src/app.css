@@ -121,10 +121,12 @@ body.html-fullscreen-aktiv .app-shell {
    ------------------------------------------------------------
    iOS Safari zoomer ind på input-feltet hvis dets font-size er
    under 16px. Hver enkelt komponent har sin egen styling, så vi
-   tvinger en hard minimum på alle tekst-baserede inputs. Den
-   reelle visuelle størrelse holdes under 16 ved at scale via
-   CSS-variabler i komponenten — hvilket ikke trigger zoom da
-   browseren ser den computed font-size som 16px.
+   tvinger en hard minimum på alle tekst-baserede inputs. !important
+   er nødvendigt fordi Svelte-scoped komponent-CSS ellers vinder
+   over global stil pga. højere specificity. Den reelle visuelle
+   størrelse holdes under 16 ved at scale via CSS-variabler i
+   komponenten — hvilket ikke trigger zoom da browseren ser den
+   computed font-size som 16px.
 
    Bruger ikke -webkit-text-size-adjust fordi det også påvirker
    omkringliggende tekst. Pinpoint på inputs er sikrere.
@@ -136,8 +138,13 @@ input[type='search'],
 input[type='tel'],
 input[type='url'],
 input[type='number'],
+input[type='date'],
+input[type='datetime-local'],
+input[type='time'],
+input[type='month'],
+input[type='week'],
 input:not([type]),
 textarea,
 select {
-	font-size: max(16px, calc(14px * var(--fs-scale, 1)));
+	font-size: max(16px, calc(14px * var(--fs-scale, 1))) !important;
 }
