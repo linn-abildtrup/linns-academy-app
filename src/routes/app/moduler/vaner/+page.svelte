@@ -157,7 +157,7 @@
 
 	const dageGruperetPrMaaned = $derived.by(() => {
 		const grupper = new Map<string, { dato: string; flower: FlowerNiveau }[]>();
-		const sorteret = [...aboEntries.values()].sort((a, b) => b.dato.localeCompare(a.dato));
+		const sorteret = [...aboEntries.values()].sort((a, b) => a.dato.localeCompare(b.dato));
 		for (const e of sorteret) {
 			const harSvar = aboOpsaetning?.valgteVaner.some((v) => e.checks?.[v.id]) ?? false;
 			if (!harSvar) continue;
