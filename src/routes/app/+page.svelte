@@ -12,12 +12,31 @@
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
-	import { hentMaaltiderIPeriode } from '$lib/firestore/kost';
-	import { hentAlleAboVanedage } from '$lib/firestore/aboVaner';
+	import {
+		hentMaaltiderIPeriode,
+		hentMaaltiderForDato
+	} from '$lib/firestore/kost';
+	import {
+		hentAboVaneOpsaetning,
+		hentAboBonusPulje,
+		hentAboVanedag,
+		hentAlleAboVanedage,
+		gemAboVanedag
+	} from '$lib/firestore/aboVaner';
 	import { hentAlleAboTraeninger } from '$lib/firestore/aboMikrotraening';
 	import { hentModulbrugerLektion } from '$lib/firestore/modulbrugerLektioner';
 	import type { ModulbrugerLektion } from '$lib/content/modulbrugerLektioner';
-	import { formaterDato } from '$lib/content/aboVaner';
+	import {
+		formaterDato,
+		dagensBonus,
+		erUgentligCheckinDag,
+		type AboBonusForslag,
+		type AboBonusSvar,
+		type AboVaneOpsaetning,
+		type AboVanedagEntry
+	} from '$lib/content/aboVaner';
+	import { CHECKIN_SPORGSMAAL, type VaneSvar, type CheckinSvar } from '$lib/content/vaner';
+	import type { GemtMaaltid } from '$lib/content/kost';
 	import Loading from '$lib/components/Loading.svelte';
 	import { effektivState } from '$lib/utils/userAdgang';
 
@@ -294,6 +313,10 @@
 	let modulbrugerValgtDato = $state<string | null>(null);
 	let modulbrugerStripEl = $state<HTMLDivElement | null>(null);
 	let modulbrugerLektion = $state<ModulbrugerLektion | null>(null);
+	let modulbrugerVaneOpsaetning = $state<AboVaneOpsaetning | null>(null);
+	let modulbrugerBonusPulje = $state<AboBonusForslag[]>([]);
+	let modulbrugerVanedag = $state<AboVanedagEntry | null>(null);
+	let modulbrugerMaaltider = $state<GemtMaaltid[]>([]);
 
 	const modulbrugerIDag = $derived(formaterDato(new Date()));
 	const modulbrugerAktivDato = $derived(modulbrugerValgtDato ?? modulbrugerIDag);
@@ -316,40 +339,6 @@
 		modulbrugerValgtDato = null;
 	}
 
-	type ModulbrugerAction = {
-		modul: 'kost' | 'traening' | 'vaner';
-		eyebrow: string;
-		titel: string;
-		meta: string;
-		href: string;
-	};
-
-	const modulbrugerActions = $derived.by<ModulbrugerAction[]>(() => {
-		const dato = modulbrugerAktivDato;
-		return [
-			{
-				modul: 'kost',
-				eyebrow: 'Mad',
-				titel: 'Log dagens måltider',
-				meta: '30-30 beregner, byg måltid og se opskrifter',
-				href: `/app/moduler/30-30-3?tab=dagbog&dato=${dato}`
-			},
-			{
-				modul: 'traening',
-				eyebrow: 'Træning',
-				titel: 'Dagens mikrotræning',
-				meta: 'Korte daglige sessioner',
-				href: `/app/moduler/traening/mikrotraening/abo/${dato}`
-			},
-			{
-				modul: 'vaner',
-				eyebrow: 'Vaner',
-				titel: 'Tjek dagens vaner',
-				meta: 'Refleksion og daglige checks',
-				href: `/app/moduler/vaner/abo/${dato}`
-			}
-		];
-	});
 
 	$effect(() => {
 		const u = user;
@@ -438,6 +427,134 @@
 			}
 		})();
 	});
+
+	// Hent vane-opsætning + bonus-pulje (kører én gang når bruger er modulbruger)
+	$effect(() => {
+		const u = user;
+		const ud = userDoc;
+		if (!u || ud?.state !== 'modulbruger') {
+			modulbrugerVaneOpsaetning = null;
+			modulbrugerBonusPulje = [];
+			return;
+		}
+		void (async () => {
+			try {
+				const opsaetning = await hentAboVaneOpsaetning(u.uid);
+				modulbrugerVaneOpsaetning = opsaetning;
+				if (opsaetning) {
+					modulbrugerBonusPulje = await hentAboBonusPulje(opsaetning.produktType);
+				}
+			} catch (e) {
+				console.warn('Kunne ikke hente vane-opsætning til forsiden:', e);
+			}
+		})();
+	});
+
+	// Hent dagens vanedag-entry og måltider når activeDato skifter
+	$effect(() => {
+		const u = user;
+		const ud = userDoc;
+		if (!u || ud?.state !== 'modulbruger') {
+			modulbrugerVanedag = null;
+			modulbrugerMaaltider = [];
+			return;
+		}
+		const dato = modulbrugerAktivDato;
+		void (async () => {
+			try {
+				const [vanedag, maaltider] = await Promise.all([
+					hentAboVanedag(u.uid, dato),
+					hentMaaltiderForDato(u.uid, dato)
+				]);
+				modulbrugerVanedag = vanedag;
+				modulbrugerMaaltider = maaltider;
+			} catch (e) {
+				console.warn('Kunne ikke hente dagens data:', e);
+			}
+		})();
+	});
+
+	const modulbrugerBonusIDag = $derived(
+		modulbrugerBonusPulje.length > 0
+			? dagensBonus(modulbrugerBonusPulje, modulbrugerAktivDato)
+			: null
+	);
+
+	const modulbrugerErCheckinDag = $derived.by(() => {
+		const [aar, m, d] = modulbrugerAktivDato.split('-').map(Number);
+		return erUgentligCheckinDag(new Date(aar, m - 1, d));
+	});
+
+	const modulbrugerMaaltidsTotaler = $derived.by(() => {
+		let p = 0;
+		let f = 0;
+		let kcal = 0;
+		for (const m of modulbrugerMaaltider) {
+			p += m.totalP ?? 0;
+			f += m.totalF ?? 0;
+			kcal += m.totalKcal ?? 0;
+		}
+		return { protein: p, fiber: f, kcal };
+	});
+
+	function tomVanedag(dato: string): AboVanedagEntry {
+		return { dato, checks: {}, bonus: null, checkin: {}, note: '' };
+	}
+
+	let gemmerSvar = $state(false);
+
+	async function gemVaneSvar(vaneId: string, svar: VaneSvar) {
+		const u = user;
+		if (!u || gemmerSvar) return;
+		gemmerSvar = true;
+		const aktuel = modulbrugerVanedag ?? tomVanedag(modulbrugerAktivDato);
+		const nyChecks = { ...aktuel.checks, [vaneId]: svar };
+		const ny: AboVanedagEntry = { ...aktuel, checks: nyChecks };
+		modulbrugerVanedag = ny;
+		try {
+			await gemAboVanedag(u.uid, ny);
+		} catch (e) {
+			console.error('Kunne ikke gemme vane-svar:', e);
+		} finally {
+			gemmerSvar = false;
+		}
+	}
+
+	async function gemBonusSvar(bonusId: string, svar: AboBonusSvar) {
+		const u = user;
+		if (!u || gemmerSvar) return;
+		gemmerSvar = true;
+		const aktuel = modulbrugerVanedag ?? tomVanedag(modulbrugerAktivDato);
+		const ny: AboVanedagEntry = {
+			...aktuel,
+			bonus: { id: bonusId, svar }
+		};
+		modulbrugerVanedag = ny;
+		try {
+			await gemAboVanedag(u.uid, ny);
+		} catch (e) {
+			console.error('Kunne ikke gemme bonus-svar:', e);
+		} finally {
+			gemmerSvar = false;
+		}
+	}
+
+	async function gemCheckinSvar(spId: string, vaerdi: number) {
+		const u = user;
+		if (!u || gemmerSvar) return;
+		gemmerSvar = true;
+		const aktuel = modulbrugerVanedag ?? tomVanedag(modulbrugerAktivDato);
+		const nyCheckin = { ...aktuel.checkin, [spId]: vaerdi } as CheckinSvar;
+		const ny: AboVanedagEntry = { ...aktuel, checkin: nyCheckin };
+		modulbrugerVanedag = ny;
+		try {
+			await gemAboVanedag(u.uid, ny);
+		} catch (e) {
+			console.error('Kunne ikke gemme check-in-svar:', e);
+		} finally {
+			gemmerSvar = false;
+		}
+	}
 
 	async function indlaesMineSpoergsmaal(uid: string) {
 		try {
@@ -708,79 +825,173 @@
 				</section>
 			{/if}
 
-			{#if modulbrugerLektion && modulbrugerLektion.titel}
-				<section class="lektion-section">
-					<div class="eyebrow eyebrow-terra">Dagens lektion</div>
-					<svelte:element
-						this={modulbrugerLektion.url ? 'a' : 'div'}
-						class="lektion-card"
-						data-tone="0"
-						href={modulbrugerLektion.url || undefined}
-						target={modulbrugerLektion.url ? '_blank' : undefined}
-						rel={modulbrugerLektion.url ? 'noopener noreferrer' : undefined}
-					>
-						<div class="lektion-decoration lektion-decoration-1"></div>
-						<div class="lektion-decoration lektion-decoration-2"></div>
-						<div class="lektion-content">
-							<div class="lektion-title">{modulbrugerLektion.titel}</div>
-							{#if modulbrugerLektion.beskrivelse}
-								<div class="lektion-description">{modulbrugerLektion.beskrivelse}</div>
-							{/if}
-							{#if modulbrugerLektion.url || (modulbrugerLektion.varighedMin ?? 0) > 0 || modulbrugerLektion.format}
-								<div class="lektion-actions">
-									{#if modulbrugerLektion.url}
-										<span class="lektion-button">
-											<Icon name="play" size={12} color="var(--terra)" filled />
-											Begynd
-										</span>
-									{/if}
-									{#if (modulbrugerLektion.varighedMin ?? 0) > 0 || modulbrugerLektion.format}
-										<span class="lektion-duration">
-											{(modulbrugerLektion.varighedMin ?? 0) > 0
-												? modulbrugerLektion.varighedMin + ' min'
-												: ''}{(modulbrugerLektion.varighedMin ?? 0) > 0 && modulbrugerLektion.format
-												? ' · '
-												: ''}{modulbrugerLektion.format ?? ''}
-										</span>
-									{/if}
-								</div>
-							{/if}
-						</div>
-					</svelte:element>
-				</section>
-			{/if}
-
 			<section class="actions-section">
+				<div class="actions-header">
+					<div class="eyebrow eyebrow-muted">Dagens lektioner</div>
+				</div>
+				<div class="actions-list">
+					{#if modulbrugerLektion && modulbrugerLektion.titel}
+						<svelte:element
+							this={modulbrugerLektion.url ? 'a' : 'div'}
+							class="lektion-card lektion-card-kompakt"
+							data-tone="0"
+							href={modulbrugerLektion.url || undefined}
+							target={modulbrugerLektion.url ? '_blank' : undefined}
+							rel={modulbrugerLektion.url ? 'noopener noreferrer' : undefined}
+						>
+							<div class="lektion-decoration lektion-decoration-1"></div>
+							<div class="lektion-decoration lektion-decoration-2"></div>
+							<div class="lektion-content">
+								<div class="lektion-title">{modulbrugerLektion.titel}</div>
+								{#if modulbrugerLektion.beskrivelse}
+									<div class="lektion-description">{modulbrugerLektion.beskrivelse}</div>
+								{/if}
+								{#if modulbrugerLektion.url || (modulbrugerLektion.varighedMin ?? 0) > 0 || modulbrugerLektion.format}
+									<div class="lektion-actions">
+										{#if modulbrugerLektion.url}
+											<span class="lektion-button">
+												<Icon name="play" size={12} color="var(--terra)" filled />
+												Begynd
+											</span>
+										{/if}
+										{#if (modulbrugerLektion.varighedMin ?? 0) > 0 || modulbrugerLektion.format}
+											<span class="lektion-duration">
+												{(modulbrugerLektion.varighedMin ?? 0) > 0
+													? modulbrugerLektion.varighedMin + ' min'
+													: ''}{(modulbrugerLektion.varighedMin ?? 0) > 0 && modulbrugerLektion.format
+													? ' · '
+													: ''}{modulbrugerLektion.format ?? ''}
+											</span>
+										{/if}
+									</div>
+								{/if}
+							</div>
+						</svelte:element>
+					{/if}
+					<a class="action-card" href={`/app/moduler/traening/mikrotraening/abo/${modulbrugerAktivDato}`}>
+						<div class="action-icon" style="background: var(--tdim)">
+							<Icon name="workout" size={15} color="var(--terra)" />
+						</div>
+						<div class="action-text">
+							<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
+							<div class="action-title">Dagens mikrotræning</div>
+							<div class="action-meta">Korte daglige sessioner</div>
+						</div>
+						<Icon name="chevron-r" size={14} color="var(--text3)" />
+					</a>
+				</div>
+			</section>
+
+			<section class="vaner-inline-section">
 				<div class="actions-header">
 					<div class="eyebrow eyebrow-muted">Dagens små skridt</div>
 				</div>
-				<div class="actions-list">
-					{#each modulbrugerActions as action (action.modul)}
-						<a class="action-card" href={action.href}>
-							<div
-								class="action-icon"
-								style="background: {getActionAccentDim(action.modul)}"
-							>
-								<Icon
-									name={getActionIcon(action.modul)}
-									size={15}
-									color={getActionAccent(action.modul)}
-								/>
-							</div>
-							<div class="action-text">
-								<div
-									class="action-eyebrow"
-									style="color: {getActionAccent(action.modul)}"
-								>
-									{action.eyebrow}
+				{#if !modulbrugerVaneOpsaetning}
+					<a class="vaner-cta" href="/app/moduler/vaner/opsaetning">
+						<div>
+							<div class="vaner-cta-titel">Vælg dine vaner</div>
+							<div class="vaner-cta-sub">Vælg 3 daglige vaner du vil arbejde med</div>
+						</div>
+						<Icon name="chevron-r" size={14} color="var(--text3)" />
+					</a>
+				{:else}
+					<div class="vaner-inline-liste">
+						{#each modulbrugerVaneOpsaetning.valgteVaner as vane (vane.id)}
+							{@const svar = modulbrugerVanedag?.checks?.[vane.id]}
+							<div class="vane-inline-row">
+								<div class="vane-inline-label">{vane.label}</div>
+								<div class="vane-svar-knapper">
+									{#each [{ v: 'ja' as VaneSvar, l: 'Ja' }, { v: 'delvist' as VaneSvar, l: 'Delvist' }, { v: 'nej' as VaneSvar, l: 'Nej' }] as opt (opt.v)}
+										<button
+											type="button"
+											class="svar-knap svar-knap-{opt.v}"
+											class:aktiv={svar === opt.v}
+											disabled={gemmerSvar}
+											onclick={() => gemVaneSvar(vane.id, opt.v)}
+										>
+											{opt.l}
+										</button>
+									{/each}
 								</div>
-								<div class="action-title">{action.titel}</div>
-								<div class="action-meta">{action.meta}</div>
 							</div>
-							<Icon name="chevron-r" size={14} color="var(--text3)" />
-						</a>
-					{/each}
-				</div>
+						{/each}
+
+						{#if modulbrugerBonusIDag}
+							<div class="vane-inline-row vane-inline-bonus">
+								<div class="vane-inline-label">{modulbrugerBonusIDag.label}</div>
+								<div class="vane-svar-knapper">
+									{#each modulbrugerBonusIDag.svarmuligheder as svarLabel, idx (idx)}
+										<button
+											type="button"
+											class="svar-knap"
+											class:aktiv={modulbrugerVanedag?.bonus?.svar === idx}
+											disabled={gemmerSvar}
+											onclick={() => gemBonusSvar(modulbrugerBonusIDag!.id, idx as AboBonusSvar)}
+										>
+											{svarLabel}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/if}
+
+						{#if modulbrugerErCheckinDag}
+							<div class="checkin-blok">
+								<div class="checkin-titel">Ugentligt check-in</div>
+								<div class="checkin-sub">Mærk efter — hvor er du på skalaen lige nu? (1 = lavt, 10 = højt)</div>
+								{#each CHECKIN_SPORGSMAAL as q (q.id)}
+									{@const aktuel = modulbrugerVanedag?.checkin?.[q.id as keyof CheckinSvar] ?? null}
+									<div class="checkin-row">
+										<div class="checkin-label">{q.label}</div>
+										<div class="checkin-skala-rad">
+											<input
+												class="checkin-slider"
+												type="range"
+												min="1"
+												max="10"
+												step="1"
+												value={aktuel ?? 5}
+												disabled={gemmerSvar}
+												onchange={(e) =>
+													gemCheckinSvar(
+														q.id,
+														parseInt((e.target as HTMLInputElement).value, 10)
+													)}
+											/>
+											<div class="checkin-vaerdi">{aktuel ?? '-'}</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/if}
+			</section>
+
+			<section class="mad-section">
+				<a
+					class="mad-card"
+					href={`/app/moduler/30-30-3?tab=dagbog&dato=${modulbrugerAktivDato}`}
+				>
+					<div class="mad-head">
+						<div class="mad-eyebrow">Mad</div>
+						<div class="mad-titel">Dagens måltider</div>
+					</div>
+					<div class="mad-totaler">
+						<div class="mad-total">
+							<span class="mad-tal">{Math.round(modulbrugerMaaltidsTotaler.protein)}g</span>
+							<span class="mad-lbl">protein</span>
+						</div>
+						<div class="mad-total">
+							<span class="mad-tal">{Math.round(modulbrugerMaaltidsTotaler.fiber)}g</span>
+							<span class="mad-lbl">fiber</span>
+						</div>
+					</div>
+					<div class="mad-link">
+						{modulbrugerMaaltider.length === 0 ? 'Log dagens måltider' : 'Se og rediger dagens måltider'}
+						<Icon name="chevron-r" size={12} color="var(--terra)" />
+					</div>
+				</a>
 			</section>
 
 			<section class="coaching-section">
@@ -1486,6 +1697,276 @@
 	.action-meta {
 		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text3);
+		margin-top: 2px;
+	}
+
+	.lektion-card-kompakt {
+		padding: 14px 16px;
+		min-height: unset;
+	}
+
+	.lektion-card-kompakt .lektion-title {
+		font-size: calc(15px * var(--fs-scale, 1));
+	}
+
+	.lektion-card-kompakt .lektion-description {
+		font-size: calc(12px * var(--fs-scale, 1));
+		margin-top: 4px;
+	}
+
+	/* ── Vaner inline ──────────────────────────────────────────── */
+
+	.vaner-inline-section {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.vaner-inline-liste {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		padding: 10px 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.vane-inline-row {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 6px 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.vane-inline-row:first-child {
+		border-top: none;
+		padding-top: 2px;
+	}
+
+	.vane-inline-row.vane-inline-bonus {
+		background: var(--tdim);
+		margin: 4px -12px -4px;
+		padding: 10px 12px;
+		border-top: 1px solid var(--tdim2);
+		border-radius: 0 0 11px 11px;
+	}
+
+	.vane-inline-label {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		font-weight: 500;
+		line-height: 1.3;
+	}
+
+	.vane-svar-knapper {
+		display: flex;
+		gap: 6px;
+	}
+
+	.svar-knap {
+		flex: 1;
+		padding: 7px 6px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		font-family: var(--ff-b);
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text2);
+		cursor: pointer;
+	}
+
+	.svar-knap:hover:not(:disabled) {
+		background: var(--bg2);
+	}
+
+	.svar-knap:disabled {
+		opacity: 0.5;
+		cursor: wait;
+	}
+
+	.svar-knap.aktiv {
+		background: var(--terra);
+		color: #fff;
+		border-color: var(--terra);
+	}
+
+	.svar-knap-ja.aktiv {
+		background: var(--sage);
+		border-color: var(--sage);
+	}
+
+	.svar-knap-delvist.aktiv {
+		background: #c9a07a;
+		border-color: #c9a07a;
+	}
+
+	.svar-knap-nej.aktiv {
+		background: #b87b6e;
+		border-color: #b87b6e;
+	}
+
+	.checkin-blok {
+		background: var(--bg2);
+		border-radius: 10px;
+		padding: 12px 12px 6px;
+		margin-top: 4px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.checkin-titel {
+		font-family: var(--ff-d);
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.checkin-sub {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-bottom: 4px;
+	}
+
+	.checkin-row {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 6px 0;
+	}
+
+	.checkin-label {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text2);
+	}
+
+	.checkin-skala-rad {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.checkin-slider {
+		flex: 1;
+		accent-color: var(--terra);
+	}
+
+	.checkin-vaerdi {
+		font-family: var(--ff-d);
+		font-weight: 600;
+		font-size: calc(14px * var(--fs-scale, 1));
+		color: var(--terra);
+		min-width: 22px;
+		text-align: right;
+	}
+
+	.vaner-cta {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 14px 16px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.vaner-cta:hover {
+		background: var(--bg2);
+	}
+
+	.vaner-cta-titel {
+		font-family: var(--ff-d);
+		font-weight: 600;
+		font-size: calc(14px * var(--fs-scale, 1));
+		color: var(--text);
+	}
+
+	.vaner-cta-sub {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
+	}
+
+	/* ── Mad-card med dags-summary ─────────────────────────────── */
+
+	.mad-section {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.mad-card {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 14px 16px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.mad-card:hover {
+		background: var(--bg2);
+	}
+
+	.mad-head {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.mad-eyebrow {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--sage);
+	}
+
+	.mad-titel {
+		font-family: var(--ff-d);
+		font-size: calc(15px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.mad-totaler {
+		display: flex;
+		gap: 18px;
+	}
+
+	.mad-total {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.mad-tal {
+		font-family: var(--ff-d);
+		font-size: calc(22px * var(--fs-scale, 1));
+		font-weight: 700;
+		color: var(--sage);
+		line-height: 1.1;
+	}
+
+	.mad-lbl {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
+	}
+
+	.mad-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--terra);
 		margin-top: 2px;
 	}
 
