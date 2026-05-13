@@ -842,27 +842,20 @@
 			{#if dagensDag && valgtDagDato}
 				<section class="mad-section">
 					<a
-						class="mad-card"
+						class="action-card"
 						href={`/app/moduler/30-30-3?tab=dagbog&dato=${valgtDagDato}`}
 					>
-						<div class="mad-head">
-							<div class="mad-eyebrow">Mad</div>
-							<div class="mad-titel">Dagens måltider</div>
+						<div class="action-icon" style="background: var(--sdim)">
+							<Icon name="leaf" size={15} color="var(--sage)" />
 						</div>
-						<div class="mad-totaler">
-							<div class="mad-total">
-								<span class="mad-tal">{Math.round(forlobMaaltidsTotaler.protein)}g</span>
-								<span class="mad-lbl">protein</span>
-							</div>
-							<div class="mad-total">
-								<span class="mad-tal">{Math.round(forlobMaaltidsTotaler.fiber)}g</span>
-								<span class="mad-lbl">fiber</span>
+						<div class="action-text">
+							<div class="action-eyebrow" style="color: var(--sage)">Mad</div>
+							<div class="action-title">Dagens tal</div>
+							<div class="action-meta">
+								{Math.round(forlobMaaltidsTotaler.protein)} gram protein · {Math.round(forlobMaaltidsTotaler.fiber)} gram fiber
 							</div>
 						</div>
-						<div class="mad-link">
-							{forlobMaaltider.length === 0 ? 'Log dagens måltider' : 'Se og rediger dagens måltider'}
-							<Icon name="chevron-r" size={12} color="var(--terra)" />
-						</div>
+						<Icon name="chevron-r" size={14} color="var(--text3)" />
 					</a>
 				</section>
 			{/if}
@@ -1098,27 +1091,20 @@
 
 			<section class="mad-section">
 				<a
-					class="mad-card"
+					class="action-card"
 					href={`/app/moduler/30-30-3?tab=dagbog&dato=${modulbrugerAktivDato}`}
 				>
-					<div class="mad-head">
-						<div class="mad-eyebrow">Mad</div>
-						<div class="mad-titel">Dagens måltider</div>
+					<div class="action-icon" style="background: var(--sdim)">
+						<Icon name="leaf" size={15} color="var(--sage)" />
 					</div>
-					<div class="mad-totaler">
-						<div class="mad-total">
-							<span class="mad-tal">{Math.round(modulbrugerMaaltidsTotaler.protein)}g</span>
-							<span class="mad-lbl">protein</span>
-						</div>
-						<div class="mad-total">
-							<span class="mad-tal">{Math.round(modulbrugerMaaltidsTotaler.fiber)}g</span>
-							<span class="mad-lbl">fiber</span>
+					<div class="action-text">
+						<div class="action-eyebrow" style="color: var(--sage)">Mad</div>
+						<div class="action-title">Dagens tal</div>
+						<div class="action-meta">
+							{Math.round(modulbrugerMaaltidsTotaler.protein)} gram protein · {Math.round(modulbrugerMaaltidsTotaler.fiber)} gram fiber
 						</div>
 					</div>
-					<div class="mad-link">
-						{modulbrugerMaaltider.length === 0 ? 'Log dagens måltider' : 'Se og rediger dagens måltider'}
-						<Icon name="chevron-r" size={12} color="var(--terra)" />
-					</div>
+					<Icon name="chevron-r" size={14} color="var(--text3)" />
 				</a>
 			</section>
 
@@ -1854,34 +1840,35 @@
 		background: var(--white);
 		border: 1px solid var(--border);
 		border-radius: 12px;
-		padding: 10px 12px;
+		padding: 4px 14px;
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
 	}
 
 	.vane-inline-row {
 		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		padding: 6px 0;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 10px 0;
 		border-top: 1px solid var(--border);
 	}
 
 	.vane-inline-row:first-child {
 		border-top: none;
-		padding-top: 2px;
 	}
 
 	.vane-inline-row.vane-inline-bonus {
 		background: var(--tdim);
-		margin: 4px -12px -4px;
-		padding: 10px 12px;
+		margin: 4px -14px -4px;
+		padding: 10px 14px;
 		border-top: 1px solid var(--tdim2);
 		border-radius: 0 0 11px 11px;
 	}
 
 	.vane-inline-label {
+		flex: 1;
+		min-width: 0;
 		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text);
 		font-weight: 500;
@@ -1890,12 +1877,12 @@
 
 	.vane-svar-knapper {
 		display: flex;
-		gap: 6px;
+		gap: 4px;
+		flex-shrink: 0;
 	}
 
 	.svar-knap {
-		flex: 1;
-		padding: 7px 6px;
+		padding: 6px 11px;
 		background: var(--white);
 		border: 1px solid var(--border);
 		border-radius: 8px;
@@ -2017,84 +2004,6 @@
 	.vaner-cta-sub {
 		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text3);
-		margin-top: 2px;
-	}
-
-	/* ── Mad-card med dags-summary ─────────────────────────────── */
-
-	.mad-section {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.mad-card {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-		padding: 14px 16px;
-		background: var(--white);
-		border: 1px solid var(--border);
-		border-radius: 12px;
-		text-decoration: none;
-		color: inherit;
-	}
-
-	.mad-card:hover {
-		background: var(--bg2);
-	}
-
-	.mad-head {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.mad-eyebrow {
-		font-size: calc(10px * var(--fs-scale, 1));
-		font-weight: 600;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		color: var(--sage);
-	}
-
-	.mad-titel {
-		font-family: var(--ff-d);
-		font-size: calc(15px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--text);
-	}
-
-	.mad-totaler {
-		display: flex;
-		gap: 18px;
-	}
-
-	.mad-total {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.mad-tal {
-		font-family: var(--ff-d);
-		font-size: calc(22px * var(--fs-scale, 1));
-		font-weight: 700;
-		color: var(--sage);
-		line-height: 1.1;
-	}
-
-	.mad-lbl {
-		font-size: calc(11px * var(--fs-scale, 1));
-		color: var(--text3);
-		margin-top: 2px;
-	}
-
-	.mad-link {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		font-size: calc(12px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--terra);
 		margin-top: 2px;
 	}
 
