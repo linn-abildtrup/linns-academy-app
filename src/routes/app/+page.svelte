@@ -13,6 +13,12 @@
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
 	import {
+		hentVaneprogramForForlob,
+		hentVanedag,
+		gemVanedag
+	} from '$lib/firestore/vaner';
+	import type { VaneProgramDag, VanedagEntry, BonusSvar } from '$lib/content/vaner';
+	import {
 		hentMaaltiderIPeriode,
 		hentMaaltiderForDato
 	} from '$lib/firestore/kost';
@@ -50,6 +56,9 @@
 	let forlob = $state<Forlob | null>(null);
 	let forlobsdage = $state<ForlobDag[]>([]);
 	let userProduct = $state<UserProduct | null>(null);
+	let vaneprogramDage = $state<VaneProgramDag[]>([]);
+	let forlobVanedag = $state<VanedagEntry | null>(null);
+	let forlobMaaltider = $state<GemtMaaltid[]>([]);
 	// Initialiseres fra ?dag=N query-param så valget bevares når brugeren
 	// går væk og tilbage (fx via history.back fra lektion-overlay).
 	let valgtDagNummer = $state<number | null>(dagFraQuery());
@@ -170,69 +179,6 @@
 		}
 	});
 
-	type ActionGenvej = {
-		modul: 'kost' | 'traening' | 'vaner';
-		eyebrow: string;
-		titel: string;
-		meta: string;
-		href: string;
-	};
-
-	// Genveje tilpasses den valgte dag i strippen:
-	//   Dag 0 (baseline): kun baseline check-in (under Vaner)
-	//   Dag 1-antalDage: Kost, Træning og Vaner. Vaner-href peger på den
-	//     specifikke dag så Linn kan rette tilbage i tidligere dages svar.
-	//   Andet (ingen forløb / efter forløbet): ingen genveje
-	const actions = $derived.by<ActionGenvej[]>(() => {
-		const n = valgtDagNummer ?? aktivDagNummer;
-		const antal = forlob?.antalDage ?? 21;
-		if (n === null) return [];
-
-		if (n === 0) {
-			return [
-				{
-					modul: 'vaner',
-					eyebrow: 'Vaner',
-					titel: 'Baseline check-in',
-					meta: 'Mærk dit udgangspunkt før forløbet starter',
-					href: '/app/moduler/vaner/0'
-				}
-			];
-		}
-
-		if (n >= 1 && n <= antal) {
-			const harProgramValg = !!userProduct?.programValg?.mikrotraening;
-			const traeningHrefForN = harProgramValg
-				? `/app/moduler/traening/mikrotraening/${n}`
-				: '/app/moduler/traening/mikrotraening';
-			return [
-				{
-					modul: 'kost',
-					eyebrow: 'Mad',
-					titel: 'Log dagens måltider',
-					meta: '30-30 beregner, byg måltid og se opskrifter',
-					href: '/app/moduler/30-30-3'
-				},
-				{
-					modul: 'traening',
-					eyebrow: 'Træning',
-					titel: 'Mikrotræning',
-					meta: 'Korte daglige sessioner',
-					href: traeningHrefForN
-				},
-				{
-					modul: 'vaner',
-					eyebrow: 'Vaner',
-					titel: 'Tjek dagens vaner',
-					meta: 'Refleksion og daglige checks',
-					href: `/app/moduler/vaner/${n}`
-				}
-			];
-		}
-
-		return [];
-	});
-
 
 	type TidligereKob = {
 		navn: string;
@@ -261,24 +207,6 @@
 			dim: 'rgba(111,158,126,.10)'
 		}
 	];
-
-	function getActionAccent(modul: 'kost' | 'traening' | 'vaner'): string {
-		if (modul === 'kost') return 'var(--sage)';
-		if (modul === 'traening') return 'var(--terra)';
-		return '#6F9E7E';
-	}
-
-	function getActionAccentDim(modul: 'kost' | 'traening' | 'vaner'): string {
-		if (modul === 'kost') return 'var(--sdim)';
-		if (modul === 'traening') return 'var(--tdim)';
-		return 'rgba(111,158,126,.10)';
-	}
-
-	function getActionIcon(modul: 'kost' | 'traening' | 'vaner') {
-		if (modul === 'kost') return 'leaf';
-		if (modul === 'traening') return 'workout';
-		return 'check';
-	}
 
 	$effect(() => {
 		// Kun for forløbskunder skal vi hente forløb og dagens lektion
@@ -571,15 +499,126 @@
 			userProduct = up;
 			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
 			if (!forlobId) return;
-			const [f, dage] = await Promise.all([
+			const [f, dage, vaneDage] = await Promise.all([
 				hentForlob(forlobId),
-				hentForlobsdage(forlobId)
+				hentForlobsdage(forlobId),
+				hentVaneprogramForForlob(forlobId).catch(() => [] as VaneProgramDag[])
 			]);
 			if (!f) return;
 			forlob = f;
 			forlobsdage = dage;
+			vaneprogramDage = vaneDage;
 		} catch (e) {
 			console.error('Kunne ikke hente forløb til forsiden:', e);
+		}
+	}
+
+	const aktivVaneprogramDag = $derived.by<VaneProgramDag | null>(() => {
+		if (vaneprogramDage.length === 0) return null;
+		const n = valgtDagNummer ?? aktivDagNummer;
+		if (n === null) return null;
+		return vaneprogramDage.find((d) => d.dagNummer === n) ?? null;
+	});
+
+	const valgtDagDato = $derived.by<string | null>(() => {
+		const d = dagensDag;
+		if (!d) return null;
+		const dato = stripDage[d.dagNummer]?.dato;
+		return dato ? formaterDato(dato) : null;
+	});
+
+	$effect(() => {
+		const u = user;
+		const ud = userDoc;
+		if (!u || ud?.state !== 'forlobskunde') {
+			forlobVanedag = null;
+			forlobMaaltider = [];
+			return;
+		}
+		const n = valgtDagNummer ?? aktivDagNummer;
+		const dato = valgtDagDato;
+		if (n === null) return;
+		void (async () => {
+			try {
+				const [vanedag, maaltider] = await Promise.all([
+					hentVanedag(u.uid, n, 'kickstart'),
+					dato ? hentMaaltiderForDato(u.uid, dato) : Promise.resolve([] as GemtMaaltid[])
+				]);
+				forlobVanedag = vanedag;
+				forlobMaaltider = maaltider;
+			} catch (e) {
+				console.warn('Kunne ikke hente forløbs-dag-data:', e);
+			}
+		})();
+	});
+
+	const forlobMaaltidsTotaler = $derived.by(() => {
+		let p = 0;
+		let f = 0;
+		let kcal = 0;
+		for (const m of forlobMaaltider) {
+			p += m.totalP ?? 0;
+			f += m.totalF ?? 0;
+			kcal += m.totalKcal ?? 0;
+		}
+		return { protein: p, fiber: f, kcal };
+	});
+
+	function tomForlobVanedag(dagNummer: number): VanedagEntry {
+		return { dagNummer, checks: {}, bonus: {}, checkin: {}, note: '' };
+	}
+
+	async function gemForlobVaneSvar(vaneId: string, svar: VaneSvar) {
+		const u = user;
+		const n = valgtDagNummer ?? aktivDagNummer;
+		if (!u || n === null || gemmerSvar) return;
+		gemmerSvar = true;
+		const aktuel = forlobVanedag ?? tomForlobVanedag(n);
+		const nyChecks = { ...aktuel.checks, [vaneId]: svar };
+		const ny: VanedagEntry = { ...aktuel, checks: nyChecks };
+		forlobVanedag = ny;
+		try {
+			await gemVanedag(u.uid, ny, 'kickstart');
+		} catch (e) {
+			console.error('Kunne ikke gemme forløbs-vane-svar:', e);
+		} finally {
+			gemmerSvar = false;
+		}
+	}
+
+	async function gemForlobBonusSvar(bonusId: string, svar: BonusSvar) {
+		const u = user;
+		const n = valgtDagNummer ?? aktivDagNummer;
+		if (!u || n === null || gemmerSvar) return;
+		gemmerSvar = true;
+		const aktuel = forlobVanedag ?? tomForlobVanedag(n);
+		const nyBonus = { ...aktuel.bonus, [bonusId]: svar };
+		const ny: VanedagEntry = { ...aktuel, bonus: nyBonus };
+		forlobVanedag = ny;
+		try {
+			await gemVanedag(u.uid, ny, 'kickstart');
+		} catch (e) {
+			console.error('Kunne ikke gemme forløbs-bonus-svar:', e);
+		} finally {
+			gemmerSvar = false;
+		}
+	}
+
+	async function gemForlobCheckinSvar(spId: string, vaerdi: number) {
+		const u = user;
+		const n = valgtDagNummer ?? aktivDagNummer;
+		if (!u || n === null || gemmerSvar) return;
+		gemmerSvar = true;
+		const aktuel = forlobVanedag ?? tomForlobVanedag(n);
+		const nyCheckin = { ...aktuel.checkin, [spId]: vaerdi } as CheckinSvar;
+		const ny: VanedagEntry = { ...aktuel, checkin: nyCheckin };
+		forlobVanedag = ny;
+		try {
+			await gemVanedag(u.uid, ny, 'kickstart');
+		} catch (e) {
+			console.error('Kunne ikke gemme forløbs-check-in-svar:', e);
+		} finally {
+			gemmerSvar = false;
 		}
 	}
 </script>
@@ -639,55 +678,6 @@
 				</section>
 			{/if}
 
-			{#if dagensDag && dagensDag.lektioner.length > 0}
-				{@const flere = dagensDag.lektioner.length > 1}
-				{@const langDato = formatLangDato(stripDage[dagensDag.dagNummer]?.dato ?? new Date())}
-				<section class="lektion-section">
-					<div class="eyebrow eyebrow-terra">
-						{#if valgtErIDag}
-							{flere ? 'Dagens lektioner' : 'Dagens lektion'}
-						{:else}
-							{flere ? 'Lektioner for ' + langDato : 'Lektion for ' + langDato}
-						{/if}
-					</div>
-					{#each dagensDag.lektioner as lektion, i (lektion.id)}
-						<a
-							class="lektion-card"
-							data-tone={i % 3}
-							href="/app/moduler/forlob?lektion={lektion.id}"
-						>
-							<div class="lektion-decoration lektion-decoration-1"></div>
-							<div class="lektion-decoration lektion-decoration-2"></div>
-							<div class="lektion-content">
-								<div class="lektion-meta">Dag {dagensDag.dagNummer} · uge {dagensDag.uge}</div>
-								<div class="lektion-title">{lektion.titel}</div>
-								{#if lektion.beskrivelse}
-									<div class="lektion-description">{lektion.beskrivelse}</div>
-								{/if}
-								<div class="lektion-actions">
-									<span class="lektion-button">
-										<Icon name="play" size={12} color="var(--terra)" filled />
-										Begynd
-									</span>
-									{#if lektion.varighedMin > 0 || lektion.format}
-										<span class="lektion-duration">
-											{lektion.varighedMin > 0 ? lektion.varighedMin + ' min' : ''}{lektion.varighedMin > 0 && lektion.format ? ' · ' : ''}{lektion.format}
-										</span>
-									{/if}
-								</div>
-							</div>
-						</a>
-					{/each}
-				</section>
-			{:else if dagensDag && !valgtErIDag}
-				<section class="lektion-section">
-					<div class="eyebrow eyebrow-muted">
-						Lektion for {formatLangDato(stripDage[dagensDag.dagNummer]?.dato ?? new Date())}
-					</div>
-					<div class="ingen-lektion">Ingen lektion lagt op for denne dag.</div>
-				</section>
-			{/if}
-
 			{#if nyestUbeskrevneSvar}
 				<section class="nyt-svar-section">
 					<a class="nyt-svar-card" href="/app/beskeder">
@@ -704,38 +694,176 @@
 				</section>
 			{/if}
 
-			{#if actions.length > 0}
+			{#if dagensDag}
+				{@const harProgramValg = !!userProduct?.programValg?.mikrotraening}
+				{@const traeningHref = harProgramValg
+					? `/app/moduler/traening/mikrotraening/${dagensDag.dagNummer}`
+					: '/app/moduler/traening/mikrotraening'}
 				<section class="actions-section">
 					<div class="actions-header">
-						<div class="eyebrow eyebrow-muted">Dagens små skridt</div>
+						<div class="eyebrow eyebrow-muted">Dagens lektioner</div>
 					</div>
 					<div class="actions-list">
-						{#each actions as action (action.modul)}
-							<a class="action-card" href={action.href}>
-								<div
-									class="action-icon"
-									style="background: {getActionAccentDim(action.modul)}"
+						{#if dagensDag.lektioner.length > 0}
+							{#each dagensDag.lektioner as lektion, i (lektion.id)}
+								<a
+									class="lektion-card lektion-card-kompakt"
+									data-tone={i % 3}
+									href="/app/moduler/forlob?lektion={lektion.id}"
 								>
-									<Icon
-										name={getActionIcon(action.modul)}
-										size={15}
-										color={getActionAccent(action.modul)}
-									/>
+									<div class="lektion-decoration lektion-decoration-1"></div>
+									<div class="lektion-decoration lektion-decoration-2"></div>
+									<div class="lektion-content">
+										<div class="lektion-meta">Dag {dagensDag.dagNummer} · uge {dagensDag.uge}</div>
+										<div class="lektion-title">{lektion.titel}</div>
+										{#if lektion.beskrivelse}
+											<div class="lektion-description">{lektion.beskrivelse}</div>
+										{/if}
+										<div class="lektion-actions">
+											<span class="lektion-button">
+												<Icon name="play" size={12} color="var(--terra)" filled />
+												Begynd
+											</span>
+											{#if lektion.varighedMin > 0 || lektion.format}
+												<span class="lektion-duration">
+													{lektion.varighedMin > 0 ? lektion.varighedMin + ' min' : ''}{lektion.varighedMin > 0 && lektion.format ? ' · ' : ''}{lektion.format}
+												</span>
+											{/if}
+										</div>
+									</div>
+								</a>
+							{/each}
+						{/if}
+						{#if dagensDag.dagNummer > 0}
+							<a class="action-card" href={traeningHref}>
+								<div class="action-icon" style="background: var(--tdim)">
+									<Icon name="workout" size={15} color="var(--terra)" />
 								</div>
 								<div class="action-text">
-									<div
-										class="action-eyebrow"
-										style="color: {getActionAccent(action.modul)}"
-									>
-										{action.eyebrow}
-									</div>
-									<div class="action-title">{action.titel}</div>
-									<div class="action-meta">{action.meta}</div>
+									<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
+									<div class="action-title">Mikrotræning</div>
+									<div class="action-meta">Korte daglige sessioner</div>
 								</div>
 								<Icon name="chevron-r" size={14} color="var(--text3)" />
 							</a>
-						{/each}
+						{/if}
 					</div>
+				</section>
+			{/if}
+
+			{#if aktivVaneprogramDag}
+				<section class="vaner-inline-section">
+					<div class="actions-header">
+						<div class="eyebrow eyebrow-muted">Dagens små skridt</div>
+					</div>
+					<div class="vaner-inline-liste">
+						{#if aktivVaneprogramDag.isBaseline}
+							<div class="vane-inline-row">
+								<div class="vane-inline-label">
+									Tag dit baseline-check-in nedenfor før forløbet starter.
+								</div>
+							</div>
+						{:else}
+							{#each aktivVaneprogramDag.checks as vane (vane.id)}
+								{@const svar = forlobVanedag?.checks?.[vane.id]}
+								<div class="vane-inline-row">
+									<div class="vane-inline-label">{vane.label}</div>
+									<div class="vane-svar-knapper">
+										{#each [{ v: 'ja' as VaneSvar, l: 'Ja' }, { v: 'delvist' as VaneSvar, l: 'Delvist' }, { v: 'nej' as VaneSvar, l: 'Nej' }] as opt (opt.v)}
+											<button
+												type="button"
+												class="svar-knap svar-knap-{opt.v}"
+												class:aktiv={svar === opt.v}
+												disabled={gemmerSvar}
+												onclick={() => gemForlobVaneSvar(vane.id, opt.v)}
+											>
+												{opt.l}
+											</button>
+										{/each}
+									</div>
+								</div>
+							{/each}
+						{/if}
+
+						{#if aktivVaneprogramDag.bonus}
+							<div class="vane-inline-row vane-inline-bonus">
+								<div class="vane-inline-label">{aktivVaneprogramDag.bonus.label}</div>
+								<div class="vane-svar-knapper">
+									{#each [{ v: 'ja' as BonusSvar, l: 'Ja' }, { v: 'nej' as BonusSvar, l: 'Nej' }] as opt (opt.v)}
+										<button
+											type="button"
+											class="svar-knap"
+											class:aktiv={forlobVanedag?.bonus?.[aktivVaneprogramDag.bonus!.id] === opt.v}
+											disabled={gemmerSvar}
+											onclick={() => gemForlobBonusSvar(aktivVaneprogramDag!.bonus!.id, opt.v)}
+										>
+											{opt.l}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/if}
+
+						{#if aktivVaneprogramDag.isCheckin || aktivVaneprogramDag.isBaseline}
+							<div class="checkin-blok">
+								<div class="checkin-titel">
+									{aktivVaneprogramDag.isBaseline ? 'Baseline check-in' : 'Ugentligt check-in'}
+								</div>
+								<div class="checkin-sub">Mærk efter — hvor er du på skalaen lige nu? (1 = lavt, 10 = højt)</div>
+								{#each CHECKIN_SPORGSMAAL as q (q.id)}
+									{@const aktuel = forlobVanedag?.checkin?.[q.id as keyof CheckinSvar] ?? null}
+									<div class="checkin-row">
+										<div class="checkin-label">{q.label}</div>
+										<div class="checkin-skala-rad">
+											<input
+												class="checkin-slider"
+												type="range"
+												min="1"
+												max="10"
+												step="1"
+												value={typeof aktuel === 'number' ? aktuel : 5}
+												disabled={gemmerSvar}
+												onchange={(e) =>
+													gemForlobCheckinSvar(
+														q.id,
+														parseInt((e.target as HTMLInputElement).value, 10)
+													)}
+											/>
+											<div class="checkin-vaerdi">{typeof aktuel === 'number' ? aktuel : '-'}</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				</section>
+			{/if}
+
+			{#if dagensDag && valgtDagDato}
+				<section class="mad-section">
+					<a
+						class="mad-card"
+						href={`/app/moduler/30-30-3?tab=dagbog&dato=${valgtDagDato}`}
+					>
+						<div class="mad-head">
+							<div class="mad-eyebrow">Mad</div>
+							<div class="mad-titel">Dagens måltider</div>
+						</div>
+						<div class="mad-totaler">
+							<div class="mad-total">
+								<span class="mad-tal">{Math.round(forlobMaaltidsTotaler.protein)}g</span>
+								<span class="mad-lbl">protein</span>
+							</div>
+							<div class="mad-total">
+								<span class="mad-tal">{Math.round(forlobMaaltidsTotaler.fiber)}g</span>
+								<span class="mad-lbl">fiber</span>
+							</div>
+						</div>
+						<div class="mad-link">
+							{forlobMaaltider.length === 0 ? 'Log dagens måltider' : 'Se og rediger dagens måltider'}
+							<Icon name="chevron-r" size={12} color="var(--terra)" />
+						</div>
+					</a>
 				</section>
 			{/if}
 
