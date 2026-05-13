@@ -10,7 +10,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { getCurrentDay, tomForlobDag } from '$lib/content/forlob';
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
-	import { hentUserProduct } from '$lib/firestore/mikrotraening';
+	import { hentUserProduct, hentForlobsProgram } from '$lib/firestore/mikrotraening';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
 	import {
 		hentVaneprogramForForlob,
@@ -29,7 +29,14 @@
 		hentAlleAboVanedage,
 		gemAboVanedag
 	} from '$lib/firestore/aboVaner';
-	import { hentAlleAboTraeninger } from '$lib/firestore/aboMikrotraening';
+	import {
+		hentAlleAboTraeninger,
+		hentAboFremgang,
+		hentAboMikrotraeningProgram
+	} from '$lib/firestore/aboMikrotraening';
+	import { hentExercises } from '$lib/firestore/mikrotraening';
+	import { aktuelAboDag } from '$lib/content/aboMikrotraening';
+	import { getVideoUrl } from '$lib/utils/storage';
 	import { hentModulbrugerLektion } from '$lib/firestore/modulbrugerLektioner';
 	import type { ModulbrugerLektion } from '$lib/content/modulbrugerLektioner';
 	import {
@@ -44,7 +51,7 @@
 	import { CHECKIN_SPORGSMAAL, type VaneSvar, type CheckinSvar } from '$lib/content/vaner';
 	import type { GemtMaaltid } from '$lib/content/kost';
 	import Loading from '$lib/components/Loading.svelte';
-	import { effektivState } from '$lib/utils/userAdgang';
+	import { effektivState, harPremium } from '$lib/utils/userAdgang';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const getUser = getContext<() => User | null>('user');
@@ -246,6 +253,8 @@
 	let modulbrugerVanedag = $state<AboVanedagEntry | null>(null);
 	let modulbrugerMaaltider = $state<GemtMaaltid[]>([]);
 	let modulbrugerTraeningsDatoer = $state<Set<string>>(new Set());
+	let modulbrugerTraeningsVideo = $state<string | null>(null);
+	let forlobTraeningsVideo = $state<string | null>(null);
 
 	const modulbrugerIDag = $derived(formaterDato(new Date()));
 	const modulbrugerAktivDato = $derived(modulbrugerValgtDato ?? modulbrugerIDag);
@@ -423,6 +432,36 @@
 		modulbrugerTraeningsDatoer.has(modulbrugerAktivDato)
 	);
 
+	// Hent thumbnail af dagens første træningsøvelse (best-effort, lazy)
+	$effect(() => {
+		const u = user;
+		const ud = userDoc;
+		if (!u || ud?.state !== 'modulbruger') {
+			modulbrugerTraeningsVideo = null;
+			return;
+		}
+		const produktType: 'basis' | 'premium' = harPremium(ud) ? 'premium' : 'basis';
+		void (async () => {
+			try {
+				const [program, fremgang] = await Promise.all([
+					hentAboMikrotraeningProgram(produktType),
+					hentAboFremgang(u.uid)
+				]);
+				if (!program) return;
+				const programDag = aktuelAboDag(fremgang);
+				const dag = program.dage.find((d) => d.dagNummer === programDag);
+				const firstExId = dag?.exercises?.[0]?.exerciseId;
+				if (!firstExId) return;
+				const exercises = await hentExercises([firstExId]);
+				const ex = exercises.get(firstExId);
+				if (!ex?.videoPath) return;
+				modulbrugerTraeningsVideo = await getVideoUrl(ex.videoPath);
+			} catch (e) {
+				console.warn('Kunne ikke hente trænings-video til thumbnail:', e);
+			}
+		})();
+	});
+
 	const modulbrugerMaaltidsTotaler = $derived.by(() => {
 		let p = 0;
 		let f = 0;
@@ -558,6 +597,38 @@
 				forlobMaaltider = maaltider;
 			} catch (e) {
 				console.warn('Kunne ikke hente forløbs-dag-data:', e);
+			}
+		})();
+	});
+
+	// Forløbs trænings-thumbnail
+	$effect(() => {
+		const u = user;
+		const ud = userDoc;
+		if (!u || ud?.state !== 'forlobskunde') {
+			forlobTraeningsVideo = null;
+			return;
+		}
+		const programId = userProduct?.programValg?.mikrotraening;
+		const forlobId = (userProduct as (UserProduct & { forlobId?: string }) | null)?.forlobId;
+		const n = valgtDagNummer ?? aktivDagNummer;
+		if (!programId || !forlobId || n === null || n === 0) {
+			forlobTraeningsVideo = null;
+			return;
+		}
+		void (async () => {
+			try {
+				const program = await hentForlobsProgram(forlobId, programId);
+				if (!program) return;
+				const dag = program.dage.find((d) => d.dagNummer === n);
+				const firstExId = dag?.exercises?.[0]?.exerciseId;
+				if (!firstExId) return;
+				const exercises = await hentExercises([firstExId]);
+				const ex = exercises.get(firstExId);
+				if (!ex?.videoPath) return;
+				forlobTraeningsVideo = await getVideoUrl(ex.videoPath);
+			} catch (e) {
+				console.warn('Kunne ikke hente forløbs-trænings-video til thumbnail:', e);
 			}
 		})();
 	});
@@ -754,16 +825,34 @@
 						{/if}
 						{#if dagensDag.dagNummer > 0}
 							<a class="action-card" href={traeningHref}>
-								<div
-									class="action-icon"
-									style="background: {forlobTraeningGennemfoert ? 'var(--sage)' : 'var(--tdim)'}"
-								>
-									<Icon
-										name={forlobTraeningGennemfoert ? 'check' : 'workout'}
-										size={15}
-										color={forlobTraeningGennemfoert ? '#fff' : 'var(--terra)'}
-									/>
-								</div>
+								{#if forlobTraeningsVideo}
+									<div class="traening-thumb">
+										<video
+											src={forlobTraeningsVideo}
+											autoplay
+											muted
+											loop
+											playsinline
+											preload="auto"
+										></video>
+										{#if forlobTraeningGennemfoert}
+											<div class="traening-thumb-check">
+												<Icon name="check" size={12} color="#fff" />
+											</div>
+										{/if}
+									</div>
+								{:else}
+									<div
+										class="action-icon"
+										style="background: {forlobTraeningGennemfoert ? 'var(--sage)' : 'var(--tdim)'}"
+									>
+										<Icon
+											name={forlobTraeningGennemfoert ? 'check' : 'workout'}
+											size={15}
+											color={forlobTraeningGennemfoert ? '#fff' : 'var(--terra)'}
+										/>
+									</div>
+								{/if}
 								<div class="action-text">
 									<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
 									<div class="action-title">Mikrotræning</div>
@@ -1020,16 +1109,34 @@
 						class="action-card"
 						href={`/app/moduler/traening/mikrotraening/abo/${modulbrugerAktivDato}`}
 					>
-						<div
-							class="action-icon"
-							style="background: {modulbrugerTraeningGennemfoert ? 'var(--sage)' : 'var(--tdim)'}"
-						>
-							<Icon
-								name={modulbrugerTraeningGennemfoert ? 'check' : 'workout'}
-								size={15}
-								color={modulbrugerTraeningGennemfoert ? '#fff' : 'var(--terra)'}
-							/>
-						</div>
+						{#if modulbrugerTraeningsVideo}
+							<div class="traening-thumb">
+								<video
+									src={modulbrugerTraeningsVideo}
+									autoplay
+									muted
+									loop
+									playsinline
+									preload="auto"
+								></video>
+								{#if modulbrugerTraeningGennemfoert}
+									<div class="traening-thumb-check">
+										<Icon name="check" size={12} color="#fff" />
+									</div>
+								{/if}
+							</div>
+						{:else}
+							<div
+								class="action-icon"
+								style="background: {modulbrugerTraeningGennemfoert ? 'var(--sage)' : 'var(--tdim)'}"
+							>
+								<Icon
+									name={modulbrugerTraeningGennemfoert ? 'check' : 'workout'}
+									size={15}
+									color={modulbrugerTraeningGennemfoert ? '#fff' : 'var(--terra)'}
+								/>
+							</div>
+						{/if}
 						<div class="action-text">
 							<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
 							<div class="action-title">Dagens mikrotræning</div>
@@ -1825,6 +1932,37 @@
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
+	}
+
+	.traening-thumb {
+		position: relative;
+		width: 46px;
+		height: 46px;
+		border-radius: 10px;
+		overflow: hidden;
+		flex-shrink: 0;
+		background: var(--bg2);
+	}
+
+	.traening-thumb video {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
+	.traening-thumb-check {
+		position: absolute;
+		right: 2px;
+		bottom: 2px;
+		width: 18px;
+		height: 18px;
+		border-radius: 50%;
+		background: var(--sage);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 1.5px solid #fff;
 	}
 
 	.action-text {
