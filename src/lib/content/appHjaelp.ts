@@ -57,7 +57,7 @@ Klik på et modul-kort eller en knap for at åbne den. Brug 'Tilbage'-pilen øve
 		indhold: `Forsiden viser:
 - En dato-strip øverst med dage fra du oprettede kontoen til 3 dage frem. Klik på en dag for at åbne den dags log. Dage du ikke har indtastet noget på er fadet. Fremtidige dage er fadet og kan ikke åbnes.
 - 'Dagens lektion' (hvis Linn har lagt en lektion op for den valgte dato) — klik for at åbne.
-- 'Dagens små skridt' med tre kort: Kost, Mikrotræning og Vaner. Klik på et kort for at logge dagens indhold.
+- 'Dagens små skridt' med tre kort: Mad, Mikrotræning og Vaner. Klik på et kort for at logge dagens indhold.
 - 'Personlig coaching' med knap til at booke 1:1-samtale med Linn.
 - 'App-hjælp' med spørgsmål til hvordan appen virker.`
 	},
@@ -68,7 +68,7 @@ Klik på et modul-kort eller en knap for at åbne den. Brug 'Tilbage'-pilen øve
 - Forløbs-badge øverst med dit aktuelle forløbs-navn og dagnummer.
 - En strip med alle dage i forløbet (typisk dag 0-21). Du kan klikke tilbage på tidligere dage. Dag 0 er baseline-check-in.
 - 'Dagens lektion' — den lektion der hører til dagen. Klik for at åbne i lektion-overlay.
-- 'Dagens små skridt' med Kost, Mikrotræning og Vaner-genveje.
+- 'Dagens små skridt' med Mad, Mikrotræning og Vaner-genveje.
 - 'Personlig coaching' med knap til at booke 1:1.
 - 'App-hjælp' med spørgsmål til hvordan appen virker.`
 	},
@@ -91,9 +91,9 @@ Hver dag er låst op i takt med forløbet — du kan ikke springe frem. Du kan a
 Du kan vælge program (med eller uden udstyr) under Profil → Mikrotræning — program.`
 	},
 	{
-		titel: 'Kost — 30-30 beregner og dagbog',
+		titel: 'Mad — 30-30 beregner og dagbog',
 		visFor: ALLE_PRODUKTER,
-		indhold: `Kost-modulet finder du under Moduler → Kost (30-30 beregner). Det er bygget op af faner:
+		indhold: `Mad-modulet finder du under Moduler → Mad (30-30 beregner). Det er bygget op af faner:
 
 - Slå op: søg i fødevarebanken og se protein/fiber-indhold pr 100g.
 - Byg måltid: sammensæt et måltid af enkelte fødevarer og se hvor meget protein og fiber det giver. Gem det i dagbogen når du er klar.
@@ -178,7 +178,7 @@ Linn AI er IKKE den samme som App-hjælp. App-hjælp svarer kun på spørgsmål 
 - Næring: hvordan dine protein/fiber-tal har udviklet sig dag for dag.
 - Du kan vælge mellem forskellige tidsperioder (7 dage, 30 dage, 90 dage osv).
 
-Det kræver at du har logget måltider i Kost-modulet over en periode for at se grafer.`
+Det kræver at du har logget måltider i Mad-modulet over en periode for at se grafer.`
 	},
 	{
 		titel: 'Profil — indstillinger',
@@ -193,7 +193,7 @@ Det kræver at du har logget måltider i Kost-modulet over en periode for at se 
 	{
 		titel: 'Min opskrift — gem og redigér egne opskrifter',
 		visFor: PREMIUM,
-		indhold: `Som premium-bruger kan du gemme dine egne opskrifter under Moduler → Kost → Mine. Du kan også uploade et foto af et måltid og lade AI'en estimere makronæring automatisk.
+		indhold: `Som premium-bruger kan du gemme dine egne opskrifter under Moduler → Mad → Mine. Du kan også uploade et foto af et måltid og lade AI'en estimere makronæring automatisk.
 
 Klik 'Læg ind som måltid' for hurtigt at lægge en gemt privat opskrift ind i dagbogen.`
 	},

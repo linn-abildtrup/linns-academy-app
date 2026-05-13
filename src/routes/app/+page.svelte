@@ -189,7 +189,7 @@
 			return [
 				{
 					modul: 'kost',
-					eyebrow: 'Kost',
+					eyebrow: 'Mad',
 					titel: 'Log dagens måltider',
 					meta: '30-30 beregner, byg måltid og se opskrifter',
 					href: '/app/moduler/30-30-3'
@@ -257,7 +257,7 @@
 
 	function getActionIcon(modul: 'kost' | 'traening' | 'vaner') {
 		if (modul === 'kost') return 'leaf';
-		if (modul === 'traening') return 'flame';
+		if (modul === 'traening') return 'workout';
 		return 'check';
 	}
 
@@ -329,7 +329,7 @@
 		return [
 			{
 				modul: 'kost',
-				eyebrow: 'Kost',
+				eyebrow: 'Mad',
 				titel: 'Log dagens måltider',
 				meta: '30-30 beregner, byg måltid og se opskrifter',
 				href: `/app/moduler/30-30-3?tab=dagbog&dato=${dato}`

@@ -41,11 +41,11 @@ const MODULER_BASE: ModulBase[] = [
 		navn: 'Træning',
 		beskrivelse: 'Mikrotræning og styrke for kroppen',
 		accent: '#B87B6E',
-		icon: 'flame'
+		icon: 'workout'
 	},
 	{
 		id: 'kost',
-		navn: 'Kost',
+		navn: 'Mad',
 		beskrivelse: '30-30 beregner og opskrifter',
 		accent: '#B8956A',
 		icon: 'leaf'

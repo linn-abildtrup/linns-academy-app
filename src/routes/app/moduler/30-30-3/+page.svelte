@@ -905,7 +905,7 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Moduler</span>
 		</a>
-		<div class="eyebrow">Kost</div>
+		<div class="eyebrow">Mad</div>
 		<h1>30-30 beregner</h1>
 		<p class="page-sub">
 			Sigt efter mindst 30g protein pr. måltid og 30g fiber i alt over dagen. Det holder dig mæt længere og støtter et stabilt blodsukker gennem overgangsalderen.

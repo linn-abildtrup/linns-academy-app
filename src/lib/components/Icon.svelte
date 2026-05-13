@@ -37,6 +37,7 @@
 		| 'unlock'
 		| 'kettlebell'
 		| 'stretch'
+		| 'workout'
 		| 'barcode';
 </script>
 
@@ -173,6 +174,11 @@
 		<path d="M12 6.5v7" />
 		<path d="M6 10l6-1.5 6 1.5" />
 		<path d="M9 20l3-6.5 3 6.5" />
+	{:else if name === 'workout'}
+		<circle cx="12" cy="4.5" r="1.8" />
+		<path d="M12 6.5v8" />
+		<path d="M12 8.5 L6.5 4.5 M12 8.5 L17.5 4.5" />
+		<path d="M12 14.5 L8 21 M12 14.5 L16 21" />
 	{:else if name === 'barcode'}
 		<rect x="3.5" y="5" width="1.4" height="14" fill={color} stroke="none" />
 		<rect x="6" y="5" width="2.4" height="14" fill={color} stroke="none" />
