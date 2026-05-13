@@ -644,7 +644,7 @@
 						<div class="coaching-ikon" aria-hidden="true">🎯</div>
 						<div class="coaching-tekst">
 							<div class="coaching-titel">Book 1:1 online coaching</div>
-							<div class="coaching-sub">Personlig træning med Linn</div>
+							<div class="coaching-sub">Personlig coaching med Linn</div>
 						</div>
 					</div>
 					<div class="coaching-arrow">
@@ -784,7 +784,7 @@
 						<div class="coaching-ikon" aria-hidden="true">🎯</div>
 						<div class="coaching-tekst">
 							<div class="coaching-titel">Book 1:1 online coaching</div>
-							<div class="coaching-sub">Personlig træning med Linn</div>
+							<div class="coaching-sub">Personlig coaching med Linn</div>
 						</div>
 					</div>
 					<div class="coaching-arrow">
@@ -850,7 +850,7 @@
 						<div class="coaching-ikon" aria-hidden="true">🎯</div>
 						<div class="coaching-tekst">
 							<div class="coaching-titel">Book 1:1 online coaching</div>
-							<div class="coaching-sub">Personlig træning med Linn</div>
+							<div class="coaching-sub">Personlig coaching med Linn</div>
 						</div>
 					</div>
 					<div class="coaching-arrow">
