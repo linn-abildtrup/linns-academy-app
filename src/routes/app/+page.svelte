@@ -12,8 +12,12 @@
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
+	import { hentMaaltiderIPeriode } from '$lib/firestore/kost';
+	import { hentAlleAboVanedage } from '$lib/firestore/aboVaner';
+	import { hentAlleAboTraeninger } from '$lib/firestore/aboMikrotraening';
+	import { formaterDato } from '$lib/content/aboVaner';
 	import Loading from '$lib/components/Loading.svelte';
-	import { effektivState, harPremium } from '$lib/utils/userAdgang';
+	import { effektivState } from '$lib/utils/userAdgang';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const getUser = getContext<() => User | null>('user');
@@ -208,61 +212,6 @@
 		return [];
 	});
 
-	type ModulGenvej = {
-		navn: string;
-		meta: string;
-		ikon: 'check' | 'flame' | 'leaf' | 'book' | 'sparkle';
-		accent: string;
-		dim: string;
-		href: string;
-	};
-
-	const moduler = $derived<ModulGenvej[]>([
-		{
-			navn: 'Vaner',
-			meta: 'Dagens checks',
-			ikon: 'check',
-			accent: '#6F9E7E',
-			dim: 'rgba(111,158,126,.10)',
-			href: '/app/moduler/vaner'
-		},
-		{
-			navn: 'Træning',
-			meta: 'Mikrotræning',
-			ikon: 'flame',
-			accent: 'var(--terra)',
-			dim: 'var(--tdim)',
-			href: '/app/moduler/traening'
-		},
-		{
-			navn: 'Kost',
-			meta: '30-30 beregner',
-			ikon: 'leaf',
-			accent: 'var(--sage)',
-			dim: 'var(--sdim)',
-			href: '/app/moduler/30-30-3'
-		},
-		{
-			navn: 'Bibliotek',
-			meta: 'FAQ og links',
-			ikon: 'book',
-			accent: '#5C7A8C',
-			dim: 'rgba(92,122,140,.10)',
-			href: '/app/moduler/bibliotek'
-		},
-		...(harPremium(userDoc)
-			? [
-					{
-						navn: 'Linn AI',
-						meta: 'Spørg mig',
-						ikon: 'sparkle' as const,
-						accent: '#8b5d54',
-						dim: 'rgba(139,93,84,.10)',
-						href: '/app/moduler/linn-ai'
-					}
-				]
-			: [])
-	]);
 
 	type TidligereKob = {
 		navn: string;
@@ -324,6 +273,149 @@
 		}
 		void indlaesForlob(u.uid);
 		void indlaesMineSpoergsmaal(u.uid);
+	});
+
+	// ============================================================
+	// Modulbruger-forside (basis-app + premium-app)
+	// ============================================================
+	// Strip fra kontooprettelse til 3 dage frem. Faded historik-dage uden
+	// indtastninger og fremtidige dage. Klik på en dag for at åbne 'Dagens
+	// små skridt' med dato-specifikke links til Kost, Vaner og Mikrotræning.
+	type ModulbrugerStripDag = {
+		dato: string;
+		erIDag: boolean;
+		erFremtid: boolean;
+		harData: boolean;
+	};
+
+	let modulbrugerDage = $state<ModulbrugerStripDag[]>([]);
+	let modulbrugerValgtDato = $state<string | null>(null);
+	let modulbrugerStripEl = $state<HTMLDivElement | null>(null);
+
+	const modulbrugerIDag = $derived(formaterDato(new Date()));
+	const modulbrugerAktivDato = $derived(modulbrugerValgtDato ?? modulbrugerIDag);
+	const modulbrugerErIDag = $derived(modulbrugerAktivDato === modulbrugerIDag);
+
+	function formatModulbrugerChipDato(dato: string): { dag: string; ugedag: string } {
+		const [aar, m, d] = dato.split('-').map(Number);
+		const dt = new Date(aar, m - 1, d);
+		return {
+			dag: dt.getDate() + '/' + (dt.getMonth() + 1),
+			ugedag: UGEDAGE_KORT[dt.getDay()]
+		};
+	}
+
+	function vaelgModulbrugerDato(dato: string) {
+		modulbrugerValgtDato = dato;
+	}
+
+	function nulstilModulbrugerTilIDag() {
+		modulbrugerValgtDato = null;
+	}
+
+	type ModulbrugerAction = {
+		modul: 'kost' | 'traening' | 'vaner';
+		eyebrow: string;
+		titel: string;
+		meta: string;
+		href: string;
+	};
+
+	const modulbrugerActions = $derived.by<ModulbrugerAction[]>(() => {
+		const dato = modulbrugerAktivDato;
+		return [
+			{
+				modul: 'kost',
+				eyebrow: 'Kost',
+				titel: 'Log dagens måltider',
+				meta: '30-30 beregner, byg måltid og se opskrifter',
+				href: `/app/moduler/30-30-3?tab=dagbog`
+			},
+			{
+				modul: 'traening',
+				eyebrow: 'Træning',
+				titel: 'Dagens mikrotræning',
+				meta: 'Korte daglige sessioner',
+				href: `/app/moduler/traening/mikrotraening/abo/${dato}`
+			},
+			{
+				modul: 'vaner',
+				eyebrow: 'Vaner',
+				titel: 'Tjek dagens vaner',
+				meta: 'Refleksion og daglige checks',
+				href: `/app/moduler/vaner/abo/${dato}`
+			}
+		];
+	});
+
+	$effect(() => {
+		const u = user;
+		const ud = userDoc;
+		if (!u || ud?.state !== 'modulbruger' || !ud.createdAt) {
+			modulbrugerDage = [];
+			modulbrugerValgtDato = null;
+			return;
+		}
+		void indlaesModulbrugerStrip(u.uid, ud.createdAt);
+	});
+
+	async function indlaesModulbrugerStrip(uid: string, createdAt: number) {
+		const idag = formaterDato(new Date());
+		const start = new Date(createdAt);
+		start.setHours(12, 0, 0, 0);
+		const slut = new Date();
+		slut.setHours(12, 0, 0, 0);
+		slut.setDate(slut.getDate() + 3);
+
+		// Hent datoer med aktivitet i baggrunden — best effort, fejler én
+		// query skal de andre stadig virke.
+		const fraStr = formaterDato(start);
+		const [maaltider, vaner, traeninger] = await Promise.all([
+			hentMaaltiderIPeriode(uid, fraStr, idag).catch((e) => {
+				console.warn('Kunne ikke hente måltider til strip:', e);
+				return [];
+			}),
+			hentAlleAboVanedage(uid).catch((e) => {
+				console.warn('Kunne ikke hente vaner til strip:', e);
+				return new Map();
+			}),
+			hentAlleAboTraeninger(uid).catch((e) => {
+				console.warn('Kunne ikke hente træninger til strip:', e);
+				return [];
+			})
+		]);
+
+		const dataSet = new Set<string>();
+		for (const m of maaltider) dataSet.add(m.dato);
+		for (const dato of vaner.keys()) dataSet.add(dato);
+		for (const t of traeninger) dataSet.add(t.dato);
+
+		const dage: ModulbrugerStripDag[] = [];
+		const cur = new Date(start);
+		while (cur <= slut) {
+			const dato = formaterDato(cur);
+			dage.push({
+				dato,
+				erIDag: dato === idag,
+				erFremtid: dato > idag,
+				harData: dataSet.has(dato)
+			});
+			cur.setDate(cur.getDate() + 1);
+		}
+		modulbrugerDage = dage;
+	}
+
+	// Auto-scroll modulbruger-strippen til i dag når den loades
+	$effect(() => {
+		if (!modulbrugerStripEl || modulbrugerDage.length === 0) return;
+		const target = modulbrugerStripEl.querySelector<HTMLElement>(
+			`[data-dato="${modulbrugerAktivDato}"]`
+		);
+		if (target) {
+			const left =
+				target.offsetLeft - modulbrugerStripEl.clientWidth / 2 + target.offsetWidth / 2;
+			modulbrugerStripEl.scrollLeft = Math.max(0, left);
+		}
 	});
 
 	async function indlaesMineSpoergsmaal(uid: string) {
@@ -545,17 +637,73 @@
 {:else if userState === 'modulbruger'}
 	<div class="forside-b1">
 		<div class="forside-body">
-			<section class="moduler-section">
-				<div class="moduler-header">
-					<div class="eyebrow eyebrow-muted">Mine moduler</div>
+			{#if modulbrugerDage.length > 0}
+				<section class="strip-section">
+					<div class="strip-head">
+						<div class="eyebrow eyebrow-muted">Din rejse</div>
+						{#if !modulbrugerErIDag}
+							<button
+								class="strip-tilbage"
+								type="button"
+								onclick={nulstilModulbrugerTilIDag}
+							>
+								Tilbage til i dag
+							</button>
+						{/if}
+					</div>
+					<div class="strip" bind:this={modulbrugerStripEl}>
+						{#each modulbrugerDage as chip (chip.dato)}
+							{@const fmt = formatModulbrugerChipDato(chip.dato)}
+							{@const erValgt = modulbrugerAktivDato === chip.dato}
+							{@const erFadet = chip.erFremtid || (!chip.erIDag && !chip.harData)}
+							<button
+								type="button"
+								class="strip-chip"
+								class:erValgt
+								class:erIDag={chip.erIDag}
+								class:erFremtid={chip.erFremtid}
+								class:erFadet
+								disabled={chip.erFremtid}
+								data-dato={chip.dato}
+								onclick={() => vaelgModulbrugerDato(chip.dato)}
+								aria-label={`${fmt.ugedag} ${fmt.dag}`}
+							>
+								<span class="chip-ugedag">{fmt.ugedag}</span>
+								<span class="chip-dag">{fmt.dag}</span>
+							</button>
+						{/each}
+					</div>
+				</section>
+			{/if}
+
+			<section class="actions-section">
+				<div class="actions-header">
+					<div class="eyebrow eyebrow-muted">Dagens små skridt</div>
 				</div>
-				<div class="moduler-grid">
-					{#each moduler as modul (modul.navn)}
-						<a class="modul-card" href={modul.href}>
-							<div class="modul-icon" style="background: {modul.dim}">
-								<Icon name={modul.ikon} size={15} color={modul.accent} />
+				<div class="actions-list">
+					{#each modulbrugerActions as action (action.modul)}
+						<a class="action-card" href={action.href}>
+							<div
+								class="action-icon"
+								style="background: {getActionAccentDim(action.modul)}"
+							>
+								<Icon
+									name={getActionIcon(action.modul)}
+									size={15}
+									color={getActionAccent(action.modul)}
+								/>
 							</div>
-							<div class="modul-name">{modul.navn}</div>
+							<div class="action-text">
+								<div
+									class="action-eyebrow"
+									style="color: {getActionAccent(action.modul)}"
+								>
+									{action.eyebrow}
+								</div>
+								<div class="action-title">{action.titel}</div>
+								<div class="action-meta">{action.meta}</div>
+							</div>
+							<Icon name="chevron-r" size={14} color="var(--text3)" />
 						</a>
 					{/each}
 				</div>
@@ -947,6 +1095,11 @@
 		background: var(--bg2);
 	}
 
+	.strip-chip.erFadet:not(.erFremtid):not(.erValgt) {
+		opacity: 0.55;
+		background: var(--bg2);
+	}
+
 	.strip-chip.erIDag {
 		border-color: var(--terra);
 	}
@@ -1237,60 +1390,6 @@
 		margin-top: 3px;
 		line-height: 1.45;
 	}
-
-	/* ── Mine moduler (B1) ─────────────────────────────────────── */
-
-	.moduler-header {
-		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		margin-bottom: 8px;
-	}
-
-
-	.moduler-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 8px;
-	}
-
-	.modul-card {
-		padding: 13px;
-		border-radius: 13px;
-		background: var(--white);
-		border: 1px solid var(--border);
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		min-height: 80px;
-		text-align: left;
-		font-family: var(--ff-b);
-		text-decoration: none;
-		color: inherit;
-		cursor: pointer;
-	}
-
-	.modul-card:hover {
-		background: var(--bg2);
-	}
-
-	.modul-icon {
-		width: 30px;
-		height: 30px;
-		border-radius: 9px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.modul-name {
-		font-family: var(--ff-d);
-		font-size: calc(13px * var(--fs-scale, 1));
-		font-weight: 700;
-		line-height: 1.1;
-		color: var(--text);
-	}
-
 
 	/* ── C1 tilbuds-card ───────────────────────────────────────── */
 
