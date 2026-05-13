@@ -2017,9 +2017,10 @@
 		background: var(--white);
 		border: 1px solid var(--border);
 		border-radius: 12px;
-		padding: 4px 14px;
+		padding: 2px 14px;
 		display: flex;
 		flex-direction: column;
+		font-family: var(--ff-b);
 	}
 
 	.vane-inline-row {
@@ -2027,7 +2028,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
-		padding: 10px 0;
+		padding: 11px 0;
 		border-top: 1px solid var(--border);
 	}
 
@@ -2035,21 +2036,14 @@
 		border-top: none;
 	}
 
-	.vane-inline-row.vane-inline-bonus {
-		background: var(--tdim);
-		margin: 4px -14px -4px;
-		padding: 10px 14px;
-		border-top: 1px solid var(--tdim2);
-		border-radius: 0 0 11px 11px;
-	}
-
 	.vane-inline-label {
 		flex: 1;
 		min-width: 0;
+		font-family: var(--ff-b);
 		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text);
-		font-weight: 500;
-		line-height: 1.3;
+		font-weight: 400;
+		line-height: 1.35;
 	}
 
 	.vane-svar-knapper {
@@ -2059,13 +2053,13 @@
 	}
 
 	.svar-knap {
-		padding: 6px 11px;
-		background: var(--white);
+		padding: 5px 11px;
+		background: transparent;
 		border: 1px solid var(--border);
-		border-radius: 8px;
+		border-radius: 999px;
 		font-family: var(--ff-b);
 		font-size: calc(11.5px * var(--fs-scale, 1));
-		font-weight: 600;
+		font-weight: 500;
 		color: var(--text2);
 		cursor: pointer;
 	}
