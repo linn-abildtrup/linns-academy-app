@@ -908,7 +908,7 @@
 									{#each [{ v: 'ja' as BonusSvar, l: 'Ja' }, { v: 'nej' as BonusSvar, l: 'Nej' }] as opt (opt.v)}
 										<button
 											type="button"
-											class="svar-knap"
+											class="svar-knap svar-knap-{opt.v}"
 											class:aktiv={forlobVanedag?.bonus?.[aktivVaneprogramDag.bonus!.id] === opt.v}
 											disabled={gemmerSvar}
 											onclick={() => gemForlobBonusSvar(aktivVaneprogramDag!.bonus!.id, opt.v)}
@@ -1188,9 +1188,10 @@
 								<div class="vane-inline-label">{modulbrugerBonusIDag.label}</div>
 								<div class="vane-svar-knapper">
 									{#each modulbrugerBonusIDag.svarmuligheder as svarLabel, idx (idx)}
+										{@const variant = idx === 0 ? 'ja' : idx === 1 ? 'delvist' : 'nej'}
 										<button
 											type="button"
-											class="svar-knap"
+											class="svar-knap svar-knap-{variant}"
 											class:aktiv={modulbrugerVanedag?.bonus?.svar === idx}
 											disabled={gemmerSvar}
 											onclick={() => gemBonusSvar(modulbrugerBonusIDag!.id, idx as AboBonusSvar)}
@@ -2068,9 +2069,13 @@
 		background: var(--bg2);
 	}
 
-	.svar-knap:disabled {
-		opacity: 0.5;
+	.svar-knap:disabled:not(.aktiv) {
+		opacity: 0.55;
 		cursor: wait;
+	}
+
+	.svar-knap:disabled.aktiv {
+		cursor: default;
 	}
 
 	.svar-knap.aktiv {
