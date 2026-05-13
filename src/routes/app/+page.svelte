@@ -50,6 +50,7 @@
 	} from '$lib/content/aboVaner';
 	import { CHECKIN_SPORGSMAAL, type VaneSvar, type CheckinSvar } from '$lib/content/vaner';
 	import type { GemtMaaltid } from '$lib/content/kost';
+	import { dagligeMalForBruger } from '$lib/content/naering';
 	import Loading from '$lib/components/Loading.svelte';
 	import { effektivState, harPremium } from '$lib/utils/userAdgang';
 
@@ -474,6 +475,14 @@
 		return { protein: p, fiber: f, kcal };
 	});
 
+	const dagligeMaal = $derived(dagligeMalForBruger(userDoc?.dagligeMaal));
+	const modulbrugerProteinPct = $derived(
+		Math.min(100, Math.round((modulbrugerMaaltidsTotaler.protein / dagligeMaal.protein) * 100))
+	);
+	const modulbrugerFiberPct = $derived(
+		Math.min(100, Math.round((modulbrugerMaaltidsTotaler.fiber / dagligeMaal.fiber) * 100))
+	);
+
 	function tomVanedag(dato: string): AboVanedagEntry {
 		return { dato, checks: {}, bonus: null, checkin: {}, note: '' };
 	}
@@ -652,6 +661,13 @@
 		}
 		return { protein: p, fiber: f, kcal };
 	});
+
+	const forlobProteinPct = $derived(
+		Math.min(100, Math.round((forlobMaaltidsTotaler.protein / dagligeMaal.protein) * 100))
+	);
+	const forlobFiberPct = $derived(
+		Math.min(100, Math.round((forlobMaaltidsTotaler.fiber / dagligeMaal.fiber) * 100))
+	);
 
 	function tomForlobVanedag(dagNummer: number): VanedagEntry {
 		return { dagNummer, checks: {}, bonus: {}, checkin: {}, note: '' };
@@ -958,7 +974,7 @@
 			{#if dagensDag && valgtDagDato}
 				<section class="mad-section">
 					<a
-						class="action-card"
+						class="action-card mad-action-card"
 						href={`/app/moduler/30-30-3?tab=dagbog&dato=${valgtDagDato}`}
 					>
 						<div class="action-icon" style="background: var(--sdim)">
@@ -967,8 +983,31 @@
 						<div class="action-text">
 							<div class="action-eyebrow" style="color: var(--sage)">Mad</div>
 							<div class="action-title">Dagens tal</div>
-							<div class="action-meta">
-								{Math.round(forlobMaaltidsTotaler.protein)} gram protein · {Math.round(forlobMaaltidsTotaler.fiber)} gram fiber
+							<div class="mad-progress">
+								<div class="mad-progress-row">
+									<span class="mad-progress-label">Protein</span>
+									<div class="mad-progress-track">
+										<div
+											class="mad-progress-fill mad-progress-protein"
+											style="width: {forlobProteinPct}%"
+										></div>
+									</div>
+									<span class="mad-progress-vaerdi">
+										{Math.round(forlobMaaltidsTotaler.protein)}/{dagligeMaal.protein} g
+									</span>
+								</div>
+								<div class="mad-progress-row">
+									<span class="mad-progress-label">Fiber</span>
+									<div class="mad-progress-track">
+										<div
+											class="mad-progress-fill mad-progress-fiber"
+											style="width: {forlobFiberPct}%"
+										></div>
+									</div>
+									<span class="mad-progress-vaerdi">
+										{Math.round(forlobMaaltidsTotaler.fiber)}/{dagligeMaal.fiber} g
+									</span>
+								</div>
 							</div>
 						</div>
 						<Icon name="chevron-r" size={14} color="var(--text3)" />
@@ -1238,7 +1277,7 @@
 
 			<section class="mad-section">
 				<a
-					class="action-card"
+					class="action-card mad-action-card"
 					href={`/app/moduler/30-30-3?tab=dagbog&dato=${modulbrugerAktivDato}`}
 				>
 					<div class="action-icon" style="background: var(--sdim)">
@@ -1247,8 +1286,31 @@
 					<div class="action-text">
 						<div class="action-eyebrow" style="color: var(--sage)">Mad</div>
 						<div class="action-title">Dagens tal</div>
-						<div class="action-meta">
-							{Math.round(modulbrugerMaaltidsTotaler.protein)} gram protein · {Math.round(modulbrugerMaaltidsTotaler.fiber)} gram fiber
+						<div class="mad-progress">
+							<div class="mad-progress-row">
+								<span class="mad-progress-label">Protein</span>
+								<div class="mad-progress-track">
+									<div
+										class="mad-progress-fill mad-progress-protein"
+										style="width: {modulbrugerProteinPct}%"
+									></div>
+								</div>
+								<span class="mad-progress-vaerdi">
+									{Math.round(modulbrugerMaaltidsTotaler.protein)}/{dagligeMaal.protein} g
+								</span>
+							</div>
+							<div class="mad-progress-row">
+								<span class="mad-progress-label">Fiber</span>
+								<div class="mad-progress-track">
+									<div
+										class="mad-progress-fill mad-progress-fiber"
+										style="width: {modulbrugerFiberPct}%"
+									></div>
+								</div>
+								<span class="mad-progress-vaerdi">
+									{Math.round(modulbrugerMaaltidsTotaler.fiber)}/{dagligeMaal.fiber} g
+								</span>
+							</div>
 						</div>
 					</div>
 					<Icon name="chevron-r" size={14} color="var(--text3)" />
@@ -1990,6 +2052,58 @@
 		font-size: calc(10px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
+	}
+
+	.mad-progress {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+		margin-top: 6px;
+	}
+
+	.mad-progress-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.mad-progress-label {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		font-weight: 500;
+		width: 42px;
+		flex-shrink: 0;
+	}
+
+	.mad-progress-track {
+		flex: 1;
+		height: 5px;
+		background: var(--bg2);
+		border-radius: 999px;
+		overflow: hidden;
+	}
+
+	.mad-progress-fill {
+		height: 100%;
+		border-radius: 999px;
+		transition: width 0.4s ease;
+	}
+
+	.mad-progress-protein {
+		background: var(--terra);
+	}
+
+	.mad-progress-fiber {
+		background: var(--sage);
+	}
+
+	.mad-progress-vaerdi {
+		font-size: calc(10px * var(--fs-scale, 1));
+		color: var(--text3);
+		font-variant-numeric: tabular-nums;
+		min-width: 56px;
+		text-align: right;
+		flex-shrink: 0;
 	}
 
 	.lektion-card-kompakt {
