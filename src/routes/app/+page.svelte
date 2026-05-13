@@ -651,6 +651,17 @@
 						<Icon name="arrow" size={14} color="#fff" />
 					</div>
 				</a>
+
+				<a class="hjaelp-knap" href="/app/app-hjaelp">
+					<div class="hjaelp-venstre">
+						<div class="hjaelp-ikon" aria-hidden="true">💬</div>
+						<div class="hjaelp-tekst">
+							<div class="hjaelp-titel">Har du spørgsmål til appen?</div>
+							<div class="hjaelp-sub">Stil dem her — jeg svarer med det samme</div>
+						</div>
+					</div>
+					<Icon name="chevron-r" size={14} color="var(--text3)" />
+				</a>
 			</section>
 
 		</div>
@@ -791,6 +802,17 @@
 						<Icon name="arrow" size={14} color="#fff" />
 					</div>
 				</a>
+
+				<a class="hjaelp-knap" href="/app/app-hjaelp">
+					<div class="hjaelp-venstre">
+						<div class="hjaelp-ikon" aria-hidden="true">💬</div>
+						<div class="hjaelp-tekst">
+							<div class="hjaelp-titel">Har du spørgsmål til appen?</div>
+							<div class="hjaelp-sub">Stil dem her — jeg svarer med det samme</div>
+						</div>
+					</div>
+					<Icon name="chevron-r" size={14} color="var(--text3)" />
+				</a>
 			</section>
 		</div>
 	</div>
@@ -856,6 +878,17 @@
 					<div class="coaching-arrow">
 						<Icon name="arrow" size={14} color="#fff" />
 					</div>
+				</a>
+
+				<a class="hjaelp-knap" href="/app/app-hjaelp">
+					<div class="hjaelp-venstre">
+						<div class="hjaelp-ikon" aria-hidden="true">💬</div>
+						<div class="hjaelp-tekst">
+							<div class="hjaelp-titel">Har du spørgsmål til appen?</div>
+							<div class="hjaelp-sub">Stil dem her — jeg svarer med det samme</div>
+						</div>
+					</div>
+					<Icon name="chevron-r" size={14} color="var(--text3)" />
 				</a>
 			</section>
 		</div>
@@ -954,6 +987,56 @@
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
+	}
+
+	.hjaelp-knap {
+		margin-top: 8px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		padding: 12px 14px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.hjaelp-knap:hover {
+		background: var(--bg2);
+		border-color: var(--border2);
+	}
+
+	.hjaelp-venstre {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-width: 0;
+	}
+
+	.hjaelp-ikon {
+		font-size: 20px;
+		flex-shrink: 0;
+	}
+
+	.hjaelp-tekst {
+		min-width: 0;
+	}
+
+	.hjaelp-titel {
+		font-family: var(--ff-d);
+		font-weight: 600;
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		color: var(--text);
+		line-height: 1.2;
+	}
+
+	.hjaelp-sub {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
+		line-height: 1.3;
 	}
 
 	.nyt-svar-section {
