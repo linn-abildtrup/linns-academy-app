@@ -245,6 +245,7 @@
 	let modulbrugerBonusPulje = $state<AboBonusForslag[]>([]);
 	let modulbrugerVanedag = $state<AboVanedagEntry | null>(null);
 	let modulbrugerMaaltider = $state<GemtMaaltid[]>([]);
+	let modulbrugerTraeningsDatoer = $state<Set<string>>(new Set());
 
 	const modulbrugerIDag = $derived(formaterDato(new Date()));
 	const modulbrugerAktivDato = $derived(modulbrugerValgtDato ?? modulbrugerIDag);
@@ -308,7 +309,12 @@
 		const dataSet = new Set<string>();
 		for (const m of maaltider) dataSet.add(m.dato);
 		for (const dato of vaner.keys()) dataSet.add(dato);
-		for (const t of traeninger) dataSet.add(t.dato);
+		const traeningsSet = new Set<string>();
+		for (const t of traeninger) {
+			dataSet.add(t.dato);
+			traeningsSet.add(t.dato);
+		}
+		modulbrugerTraeningsDatoer = traeningsSet;
 
 		const dage: ModulbrugerStripDag[] = [];
 		const cur = new Date(start);
@@ -412,6 +418,10 @@
 		const [aar, m, d] = modulbrugerAktivDato.split('-').map(Number);
 		return erUgentligCheckinDag(new Date(aar, m - 1, d));
 	});
+
+	const modulbrugerTraeningGennemfoert = $derived(
+		modulbrugerTraeningsDatoer.has(modulbrugerAktivDato)
+	);
 
 	const modulbrugerMaaltidsTotaler = $derived.by(() => {
 		let p = 0;
@@ -550,6 +560,14 @@
 				console.warn('Kunne ikke hente forløbs-dag-data:', e);
 			}
 		})();
+	});
+
+	const forlobTraeningGennemfoert = $derived.by<boolean>(() => {
+		const n = valgtDagNummer ?? aktivDagNummer;
+		if (n === null) return false;
+		type FremgangShape = { gennemforte?: number[] };
+		const f = userProduct?.fremgang?.mikrotraening as FremgangShape | undefined;
+		return f?.gennemforte?.includes(n) ?? false;
 	});
 
 	const forlobMaaltidsTotaler = $derived.by(() => {
@@ -736,13 +754,22 @@
 						{/if}
 						{#if dagensDag.dagNummer > 0}
 							<a class="action-card" href={traeningHref}>
-								<div class="action-icon" style="background: var(--tdim)">
-									<Icon name="workout" size={15} color="var(--terra)" />
+								<div
+									class="action-icon"
+									style="background: {forlobTraeningGennemfoert ? 'var(--sage)' : 'var(--tdim)'}"
+								>
+									<Icon
+										name={forlobTraeningGennemfoert ? 'check' : 'workout'}
+										size={15}
+										color={forlobTraeningGennemfoert ? '#fff' : 'var(--terra)'}
+									/>
 								</div>
 								<div class="action-text">
 									<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
 									<div class="action-title">Mikrotræning</div>
-									<div class="action-meta">Korte daglige sessioner</div>
+									<div class="action-meta">
+										{forlobTraeningGennemfoert ? 'Gennemført' : 'Korte daglige sessioner'}
+									</div>
 								</div>
 								<Icon name="chevron-r" size={14} color="var(--text3)" />
 							</a>
@@ -989,14 +1016,26 @@
 							</div>
 						</svelte:element>
 					{/if}
-					<a class="action-card" href={`/app/moduler/traening/mikrotraening/abo/${modulbrugerAktivDato}`}>
-						<div class="action-icon" style="background: var(--tdim)">
-							<Icon name="workout" size={15} color="var(--terra)" />
+					<a
+						class="action-card"
+						href={`/app/moduler/traening/mikrotraening/abo/${modulbrugerAktivDato}`}
+					>
+						<div
+							class="action-icon"
+							style="background: {modulbrugerTraeningGennemfoert ? 'var(--sage)' : 'var(--tdim)'}"
+						>
+							<Icon
+								name={modulbrugerTraeningGennemfoert ? 'check' : 'workout'}
+								size={15}
+								color={modulbrugerTraeningGennemfoert ? '#fff' : 'var(--terra)'}
+							/>
 						</div>
 						<div class="action-text">
 							<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
 							<div class="action-title">Dagens mikrotræning</div>
-							<div class="action-meta">Korte daglige sessioner</div>
+							<div class="action-meta">
+								{modulbrugerTraeningGennemfoert ? 'Gennemført' : 'Korte daglige sessioner'}
+							</div>
 						</div>
 						<Icon name="chevron-r" size={14} color="var(--text3)" />
 					</a>

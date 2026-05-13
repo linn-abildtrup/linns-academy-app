@@ -1013,6 +1013,18 @@
 				</button>
 			</div>
 
+			<button
+				class="markeer-knap"
+				type="button"
+				onclick={() => {
+					phase = 'done';
+					rem = 0;
+					paused = false;
+				}}
+			>
+				Tryk her for at markere træningen gennemført
+			</button>
+
 			<button class="fs-bund-knap" type="button" onclick={toggleFuldskaerm}>
 				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 					<path d="M3 9V3h6"></path>
@@ -1270,6 +1282,25 @@
 	.fs-bund-knap:hover {
 		border-color: var(--terra);
 		color: var(--terra);
+	}
+
+	.markeer-knap {
+		display: block;
+		width: 100%;
+		padding: 12px 16px;
+		margin-top: 8px;
+		background: var(--sage);
+		color: #fff;
+		border: none;
+		border-radius: 12px;
+		font-family: var(--ff-b);
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.markeer-knap:hover {
+		filter: brightness(0.95);
 	}
 
 	.video-omraade.fuldskaerm {
