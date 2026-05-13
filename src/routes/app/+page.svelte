@@ -332,7 +332,7 @@
 				eyebrow: 'Kost',
 				titel: 'Log dagens måltider',
 				meta: '30-30 beregner, byg måltid og se opskrifter',
-				href: `/app/moduler/30-30-3?tab=dagbog`
+				href: `/app/moduler/30-30-3?tab=dagbog&dato=${dato}`
 			},
 			{
 				modul: 'traening',

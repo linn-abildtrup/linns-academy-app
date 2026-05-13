@@ -105,6 +105,12 @@
 		return 'opslag';
 	}
 
+	function datoFraQuery(): string | null {
+		const d = page.url.searchParams.get('dato');
+		if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+		return null;
+	}
+
 	let aktivTab = $state<Tab>(tabFraQuery());
 
 	function skiftTab(ny: Tab) {
@@ -204,8 +210,9 @@
 		bevareteManuelle = [];
 	}
 
-	// Dagbog-state
-	let dagbogDato = $state<string>(formatDatoKey());
+	// Dagbog-state — initialiseres fra ?dato=YYYY-MM-DD query param hvis sat,
+	// så links fra forsiden kan pre-vælge en specifik dato.
+	let dagbogDato = $state<string>(datoFraQuery() ?? formatDatoKey());
 	let dagbogMaaltider = $state<GemtMaaltid[]>([]);
 	let dagbogIndlaeser = $state(false);
 	let dagbogFejl = $state<string | null>(null);
