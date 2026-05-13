@@ -2039,11 +2039,11 @@
 	.vane-inline-label {
 		flex: 1;
 		min-width: 0;
-		font-family: var(--ff-b);
+		font-family: var(--ff-d);
 		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text);
-		font-weight: 400;
-		line-height: 1.35;
+		font-weight: 700;
+		line-height: 1.25;
 	}
 
 	.vane-svar-knapper {
