@@ -228,6 +228,14 @@ service cloud.firestore {
 			}
 		}
 
+		// Modulbruger-lektioner — daglig lektion på modulbruger-forsiden.
+		// Doc-id er YYYY-MM-DD. Alle autentificerede kan læse (vises på
+		// forside). Kun admin (Linn) kan oprette/redigere/slette.
+		match /modulbrugerLektioner/{dato} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
 		// Linn AI — videnbase (PDFs, slides, klient-Q&A) som AI'en bruger.
 		// Alle autentificerede kan læse (worker'en læser for premium-brugere).
 		// Kun admin kan uploade og slette indhold.

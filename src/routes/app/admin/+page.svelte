@@ -65,6 +65,14 @@
 			rute: '/app/admin/linn-ai',
 			accent: '#5C7A8C',
 			icon: 'sparkle' as const
+		},
+		{
+			id: 'modulbruger-lektioner',
+			navn: 'Modulbruger-lektioner',
+			beskrivelse: 'Daglige lektioner der vises på basis/premium-app-brugernes forside',
+			rute: '/app/admin/modulbruger-lektioner',
+			accent: '#9D6358',
+			icon: 'book' as const
 		}
 	];
 </script>

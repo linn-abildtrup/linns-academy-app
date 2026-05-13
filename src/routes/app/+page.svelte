@@ -15,6 +15,8 @@
 	import { hentMaaltiderIPeriode } from '$lib/firestore/kost';
 	import { hentAlleAboVanedage } from '$lib/firestore/aboVaner';
 	import { hentAlleAboTraeninger } from '$lib/firestore/aboMikrotraening';
+	import { hentModulbrugerLektion } from '$lib/firestore/modulbrugerLektioner';
+	import type { ModulbrugerLektion } from '$lib/content/modulbrugerLektioner';
 	import { formaterDato } from '$lib/content/aboVaner';
 	import Loading from '$lib/components/Loading.svelte';
 	import { effektivState } from '$lib/utils/userAdgang';
@@ -291,6 +293,7 @@
 	let modulbrugerDage = $state<ModulbrugerStripDag[]>([]);
 	let modulbrugerValgtDato = $state<string | null>(null);
 	let modulbrugerStripEl = $state<HTMLDivElement | null>(null);
+	let modulbrugerLektion = $state<ModulbrugerLektion | null>(null);
 
 	const modulbrugerIDag = $derived(formaterDato(new Date()));
 	const modulbrugerAktivDato = $derived(modulbrugerValgtDato ?? modulbrugerIDag);
@@ -416,6 +419,24 @@
 				target.offsetLeft - modulbrugerStripEl.clientWidth / 2 + target.offsetWidth / 2;
 			modulbrugerStripEl.scrollLeft = Math.max(0, left);
 		}
+	});
+
+	// Hent lektion for valgt dato (hvis nogen) — opdateres når dato skifter
+	$effect(() => {
+		const ud = userDoc;
+		if (ud?.state !== 'modulbruger') {
+			modulbrugerLektion = null;
+			return;
+		}
+		const dato = modulbrugerAktivDato;
+		void (async () => {
+			try {
+				modulbrugerLektion = await hentModulbrugerLektion(dato);
+			} catch (e) {
+				console.warn('Kunne ikke hente lektion for', dato, e);
+				modulbrugerLektion = null;
+			}
+		})();
 	});
 
 	async function indlaesMineSpoergsmaal(uid: string) {
@@ -673,6 +694,48 @@
 							</button>
 						{/each}
 					</div>
+				</section>
+			{/if}
+
+			{#if modulbrugerLektion && modulbrugerLektion.titel}
+				<section class="lektion-section">
+					<div class="eyebrow eyebrow-terra">Dagens lektion</div>
+					<svelte:element
+						this={modulbrugerLektion.url ? 'a' : 'div'}
+						class="lektion-card"
+						data-tone="0"
+						href={modulbrugerLektion.url || undefined}
+						target={modulbrugerLektion.url ? '_blank' : undefined}
+						rel={modulbrugerLektion.url ? 'noopener noreferrer' : undefined}
+					>
+						<div class="lektion-decoration lektion-decoration-1"></div>
+						<div class="lektion-decoration lektion-decoration-2"></div>
+						<div class="lektion-content">
+							<div class="lektion-title">{modulbrugerLektion.titel}</div>
+							{#if modulbrugerLektion.beskrivelse}
+								<div class="lektion-description">{modulbrugerLektion.beskrivelse}</div>
+							{/if}
+							{#if modulbrugerLektion.url || (modulbrugerLektion.varighedMin ?? 0) > 0 || modulbrugerLektion.format}
+								<div class="lektion-actions">
+									{#if modulbrugerLektion.url}
+										<span class="lektion-button">
+											<Icon name="play" size={12} color="var(--terra)" filled />
+											Begynd
+										</span>
+									{/if}
+									{#if (modulbrugerLektion.varighedMin ?? 0) > 0 || modulbrugerLektion.format}
+										<span class="lektion-duration">
+											{(modulbrugerLektion.varighedMin ?? 0) > 0
+												? modulbrugerLektion.varighedMin + ' min'
+												: ''}{(modulbrugerLektion.varighedMin ?? 0) > 0 && modulbrugerLektion.format
+												? ' · '
+												: ''}{modulbrugerLektion.format ?? ''}
+										</span>
+									{/if}
+								</div>
+							{/if}
+						</div>
+					</svelte:element>
 				</section>
 			{/if}
 
