@@ -475,10 +475,10 @@ const exercises = [
 		id: 'good_morning',
 		data: {
 			name: 'Good morning',
-			desc: 'Hoftehængsel med hænderne bag hovedet. Træner baglår og baller, lærer dig at bruge hoften korrekt.',
+			desc: 'Hoftehængsel med hænderne ned langs siden. Træner baglår og baller, lærer dig at bruge hoften korrekt.',
 			how: [
 				'Stå med fødderne i hoftebredde, knæene let bøjede',
-				'Placer hænderne let bag hovedet eller ved tindingerne',
+				'Hold hænderne ned langs siden',
 				'Skub bagdelen bagud og bøj fremover i hoften',
 				'Hold ryggen lang, som en brædt der tipper',
 				'Gå ned til cirka parallel med gulvet eller så langt du kan',
