@@ -47,7 +47,6 @@
 	let aboProgram = $state<AboMikrotraeningProgramMedDage | null>(null);
 	let aboFremgang = $state<AboMikrotraeningFremgang | null>(null);
 	let aboTraeninger = $state<AboMikrotraeningTraening[]>([]);
-	let viserAlleTraeninger = $state(false);
 
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
@@ -185,22 +184,6 @@
 		aboTraeninger = traeninger;
 	}
 
-	function formatDatoLang(dato: string): string {
-		const [aar, m, d] = dato.split('-').map(Number);
-		const dt = new Date(aar, m - 1, d);
-		return dt.toLocaleDateString('da-DK', {
-			weekday: 'short',
-			day: 'numeric',
-			month: 'short'
-		});
-	}
-
-	const FEEDBACK_LABEL: Record<string, string> = {
-		let: 'Let',
-		tilpas: 'Tilpas',
-		udfordrende: 'Udfordrende'
-	};
-
 	function dagStatus(dagNummer: number): 'klaret' | 'naeste' | 'kommer' | 'fremtid' {
 		if (fremgang.gennemforte.includes(dagNummer)) return 'klaret';
 		if (aktivKalenderDag !== null && dagNummer > aktivKalenderDag) return 'fremtid';
@@ -295,7 +278,7 @@
 		<section class="card">
 			<div class="card-head">
 				<div class="section-label">
-					{sidste7Datoer.length < 7 ? 'Siden du startede' : 'Sidste 7 dage'}
+					{sidste7Datoer.length < 7 ? 'Seneste dage' : 'Sidste 7 dage'}
 				</div>
 			</div>
 			<p class="hint">Tryk på en dag for at åbne den.</p>
@@ -309,52 +292,28 @@
 					>
 						<span class="dag-uge">{kortDagLabel(d.dato)}</span>
 						<span class="dag-num">{dagINummer(d.dato)}</span>
-						{#if d.trænet}
-							<Icon name="check" size={9} color="#fff" />
-						{/if}
 					</a>
 				{/each}
 			</div>
-		</section>
 
-		<div class="stat-row solo">
-			<div class="stat-box">
-				<div class="stat-num">{aboFremgang?.totalGennemforte ?? 0}</div>
-				<div class="stat-lbl">træninger i alt</div>
-			</div>
-		</div>
-
-		{#if aboTraeninger.length > 0}
-			{@const synligeTraeninger = viserAlleTraeninger ? aboTraeninger : aboTraeninger.slice(0, 7)}
-			<section class="card historik-card">
-				<div class="card-head">
-					<div class="section-label">Tidligere træninger</div>
-					<div class="card-tael">{aboTraeninger.length} i alt</div>
+			<div class="farvekode">
+				<div class="farvekode-titel">Hvad betyder farverne?</div>
+				<div class="farvekode-liste">
+					<div class="farvekode-rad">
+						<span class="farvekode-prik prik-klaret"></span>
+						<span class="farvekode-tekst">Du trænede den dag</span>
+					</div>
+					<div class="farvekode-rad">
+						<span class="farvekode-prik prik-idag"></span>
+						<span class="farvekode-tekst">I dag</span>
+					</div>
+					<div class="farvekode-rad">
+						<span class="farvekode-prik prik-tom"></span>
+						<span class="farvekode-tekst">Ingen træning logget</span>
+					</div>
 				</div>
-				<ul class="historik-liste">
-					{#each synligeTraeninger as t (t.dato)}
-						<a class="historik-item" href="/app/moduler/traening/mikrotraening/abo/{t.dato}">
-							<div class="historik-tekst">
-								<div class="historik-dato">{formatDatoLang(t.dato)}</div>
-								{#if t.feedback}
-									<div class="historik-meta">{FEEDBACK_LABEL[t.feedback]}</div>
-								{/if}
-							</div>
-							<div class="historik-badge">✓</div>
-						</a>
-					{/each}
-				</ul>
-				{#if aboTraeninger.length > 7}
-					<button
-						class="historik-knap"
-						type="button"
-						onclick={() => (viserAlleTraeninger = !viserAlleTraeninger)}
-					>
-						{viserAlleTraeninger ? 'Vis færre' : `Vis alle ${aboTraeninger.length} træninger`}
-					</button>
-				{/if}
-			</section>
-		{/if}
+			</div>
+		</section>
 	{:else}
 		<div class="status-besked">
 			Mikrotræning kræver et basis-abo, premium-abo eller forløb.
@@ -566,6 +525,58 @@
 		color: rgba(255, 255, 255, 0.7);
 	}
 
+	.farvekode {
+		margin-top: 14px;
+		padding-top: 12px;
+		border-top: 1px solid var(--border);
+	}
+
+	.farvekode-titel {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		color: var(--text3);
+		margin-bottom: 8px;
+	}
+
+	.farvekode-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+	}
+
+	.farvekode-rad {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.farvekode-prik {
+		width: 14px;
+		height: 14px;
+		border-radius: 4px;
+		border: 1px solid var(--border);
+		flex-shrink: 0;
+		background: var(--white);
+	}
+
+	.farvekode-prik.prik-klaret {
+		background: var(--sage);
+		border-color: var(--sage);
+	}
+
+	.farvekode-prik.prik-idag {
+		background: var(--white);
+		border-color: var(--terra);
+		outline: 1px solid var(--terra);
+		outline-offset: -2px;
+	}
+
+	.farvekode-tekst {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text2);
+	}
+
 	.stat-row {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -597,85 +608,4 @@
 		margin-top: 2px;
 	}
 
-	.historik-card {
-		margin-top: 14px;
-	}
-
-	.historik-liste {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-	}
-
-	.historik-item {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		padding: 10px 0;
-		border-top: 1px solid var(--border);
-		text-decoration: none;
-		color: inherit;
-	}
-
-	.historik-item:first-child {
-		border-top: none;
-	}
-
-	.historik-item:hover {
-		background: var(--bg2);
-		margin: 0 -8px;
-		padding: 10px 8px;
-	}
-
-	.historik-tekst {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.historik-dato {
-		font-size: calc(13px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--text);
-		text-transform: capitalize;
-	}
-
-	.historik-meta {
-		font-size: calc(11px * var(--fs-scale, 1));
-		color: var(--text3);
-		margin-top: 2px;
-	}
-
-	.historik-badge {
-		width: 22px;
-		height: 22px;
-		border-radius: 50%;
-		background: var(--sage);
-		color: #fff;
-		font-size: calc(11px * var(--fs-scale, 1));
-		font-weight: 700;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-	}
-
-	.historik-knap {
-		display: block;
-		width: 100%;
-		margin-top: 10px;
-		padding: 9px;
-		background: var(--white);
-		color: var(--text2);
-		font-size: calc(12px * var(--fs-scale, 1));
-		font-weight: 600;
-		border-radius: 8px;
-		border: 1px solid var(--border);
-		cursor: pointer;
-		font-family: var(--ff-b);
-	}
-
-	.historik-knap:hover {
-		border-color: var(--terra);
-		color: var(--terra);
-	}
 </style>
