@@ -514,17 +514,8 @@
 			<section class="card">
 				<div class="card-head">
 					<div class="section-label">
-						{aboFremgang7.iAlt < 7 ? 'Siden du startede' : 'Sidste 7 dage'}
+						{aboFremgang7.iAlt < 7 ? 'Seneste dage' : 'Sidste 7 dage'}
 					</div>
-					<div class="card-tael">{aboFremgang7.gennemforte} / {aboFremgang7.iAlt}</div>
-				</div>
-				<div class="prog-bar">
-					<div
-						class="prog-fill"
-						style="width: {aboFremgang7.iAlt > 0
-							? Math.round((aboFremgang7.gennemforte / aboFremgang7.iAlt) * 100)
-							: 0}%"
-					></div>
 				</div>
 				<div class="uge-grid uge-grid-7">
 					{#each sidste7Dage as d (d.dato)}
@@ -536,6 +527,32 @@
 							<span class="dag-num">{kortDagLabel(d.dato)}</span>
 						</a>
 					{/each}
+				</div>
+
+				<div class="farvekode">
+					<div class="farvekode-titel">Hvad betyder farverne?</div>
+					<div class="farvekode-liste">
+						<div class="farvekode-rad">
+							<span class="farvekode-prik flower-excellent"></span>
+							<span class="farvekode-tekst">Alle vaner ramt</span>
+						</div>
+						<div class="farvekode-rad">
+							<span class="farvekode-prik flower-good"></span>
+							<span class="farvekode-tekst">Næsten alle ramt</span>
+						</div>
+						<div class="farvekode-rad">
+							<span class="farvekode-prik flower-medium"></span>
+							<span class="farvekode-tekst">Cirka halvdelen</span>
+						</div>
+						<div class="farvekode-rad">
+							<span class="farvekode-prik flower-low"></span>
+							<span class="farvekode-tekst">Få ramt</span>
+						</div>
+						<div class="farvekode-rad">
+							<span class="farvekode-prik flower-poor"></span>
+							<span class="farvekode-tekst">Næsten ingen</span>
+						</div>
+					</div>
 				</div>
 				<p class="hint">Klik på en dag for at åbne den</p>
 			</section>
@@ -1054,6 +1071,45 @@
 		background: #e0d0c0;
 		color: var(--text2);
 		border-color: #d4c0aa;
+	}
+
+	.farvekode {
+		margin-top: 14px;
+		padding-top: 12px;
+		border-top: 1px solid var(--border);
+	}
+
+	.farvekode-titel {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		color: var(--text3);
+		margin-bottom: 8px;
+	}
+
+	.farvekode-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+	}
+
+	.farvekode-rad {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.farvekode-prik {
+		width: 14px;
+		height: 14px;
+		border-radius: 4px;
+		border: 1px solid transparent;
+		flex-shrink: 0;
+	}
+
+	.farvekode-tekst {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text2);
 	}
 
 	.flower-none.status-empty {
