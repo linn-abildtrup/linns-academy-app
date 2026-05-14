@@ -53,6 +53,7 @@
 	import { dagligeMalForBruger } from '$lib/content/naering';
 	import Loading from '$lib/components/Loading.svelte';
 	import { effektivState, harPremium } from '$lib/utils/userAdgang';
+	import { videoThumbnail } from '$lib/content/bibliotek';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const getUser = getContext<() => User | null>('user');
@@ -863,13 +864,23 @@
 					<div class="actions-list">
 						{#if dagensDag.lektioner.length > 0}
 							{#each dagensDag.lektioner as lektion, i (lektion.id)}
+								{@const thumbUrl = videoThumbnail(lektion.url)}
 								<a
 									class="lektion-card lektion-card-kompakt"
+									class:lektion-card-medThumb={!!thumbUrl}
 									data-tone={i % 3}
 									href="/app/moduler/forlob?lektion={lektion.id}"
 								>
 									<div class="lektion-decoration lektion-decoration-1"></div>
 									<div class="lektion-decoration lektion-decoration-2"></div>
+									{#if thumbUrl}
+										<div class="lektion-thumb">
+											<img src={thumbUrl} alt="" loading="lazy" />
+											<div class="lektion-thumb-play">
+												<Icon name="play" size={14} color="#fff" filled />
+											</div>
+										</div>
+									{/if}
 									<div class="lektion-content">
 										<div class="lektion-meta">Dag {dagensDag.dagNummer} · uge {dagensDag.uge}</div>
 										<div class="lektion-title">{lektion.titel}</div>
@@ -1159,9 +1170,11 @@
 				</div>
 				<div class="actions-list">
 					{#if modulbrugerLektion && modulbrugerLektion.titel}
+						{@const modulThumbUrl = modulbrugerLektion.url ? videoThumbnail(modulbrugerLektion.url) : null}
 						<svelte:element
 							this={modulbrugerLektion.url ? 'a' : 'div'}
 							class="lektion-card lektion-card-kompakt"
+							class:lektion-card-medThumb={!!modulThumbUrl}
 							data-tone="0"
 							href={modulbrugerLektion.url || undefined}
 							target={modulbrugerLektion.url ? '_blank' : undefined}
@@ -1169,6 +1182,14 @@
 						>
 							<div class="lektion-decoration lektion-decoration-1"></div>
 							<div class="lektion-decoration lektion-decoration-2"></div>
+							{#if modulThumbUrl}
+								<div class="lektion-thumb">
+									<img src={modulThumbUrl} alt="" loading="lazy" />
+									<div class="lektion-thumb-play">
+										<Icon name="play" size={14} color="#fff" filled />
+									</div>
+								</div>
+							{/if}
 							<div class="lektion-content">
 								<div class="lektion-title">{modulbrugerLektion.titel}</div>
 								{#if modulbrugerLektion.beskrivelse}
@@ -2011,6 +2032,47 @@
 
 	.lektion-content {
 		position: relative;
+	}
+
+	/* Lektioner med video-thumbnail får et billede til venstre, så cardet
+	   bliver to-kolonnet i stedet for én. */
+	.lektion-card-medThumb {
+		display: flex;
+		gap: 12px;
+		align-items: stretch;
+		padding: 10px 12px;
+	}
+	.lektion-card-medThumb .lektion-content {
+		flex: 1;
+		min-width: 0;
+	}
+	.lektion-thumb {
+		position: relative;
+		flex-shrink: 0;
+		width: 110px;
+		border-radius: 10px;
+		overflow: hidden;
+		aspect-ratio: 16 / 10;
+		background: rgba(0, 0, 0, 0.2);
+	}
+	.lektion-thumb img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+	.lektion-thumb-play {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		background: rgba(0, 0, 0, 0.55);
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.lektion-meta {

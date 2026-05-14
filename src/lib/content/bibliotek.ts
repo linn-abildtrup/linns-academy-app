@@ -188,6 +188,23 @@ export function videoEmbedUrl(url: string): string | null {
 }
 
 /**
+ * Returnerer URL til et thumbnail-billede for en video. Bruges som forhåndsvisning
+ * på lektion-cards. Returnerer null hvis URL'en ikke er en kendt video-platform.
+ *
+ * - YouTube: officiel CDN (img.youtube.com)
+ * - Vimeo: vumbnail.com — statisk proxy så vi ikke skal lave async fetch
+ *   mod Vimeos oEmbed-API. Kvalitet er god nok til preview.
+ */
+export function videoThumbnail(url: string): string | null {
+	if (!url) return null;
+	const yt = youtubeId(url);
+	if (yt) return `https://img.youtube.com/vi/${yt}/hqdefault.jpg`;
+	const vm = vimeoId(url);
+	if (vm) return `https://vumbnail.com/${vm}.jpg`;
+	return null;
+}
+
+/**
  * Sorterer guides så nyeste dato vises øverst. Items uden dato falder
  * nederst og sorteres internt efter orden.
  */
