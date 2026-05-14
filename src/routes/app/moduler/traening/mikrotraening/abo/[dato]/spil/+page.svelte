@@ -4,12 +4,7 @@
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
-	import type {
-		DayExercise,
-		Exercise,
-		Feedback,
-		TrainingDay
-	} from '$lib/content/mikrotraening';
+	import type { DayExercise, Exercise, TrainingDay } from '$lib/content/mikrotraening';
 	import {
 		gemPause,
 		hentExercises,
@@ -79,7 +74,6 @@
 
 	let gemmer = $state(false);
 	let gemFejl = $state<string | null>(null);
-	let viserFeedback = $state(false);
 
 	let musikEl = $state<HTMLAudioElement | null>(null);
 	let musikUrl = $state<string | null>(null);
@@ -100,6 +94,15 @@
 	let traeningGennemfort = $state(false);
 	let fuldskaerm = $state(false);
 	let hovedvideoEl = $state<HTMLVideoElement | null>(null);
+
+	// Auto-gem træningen så snart phase = 'done' (uanset om brugeren færdiggjorde
+	// den naturligt eller trykkede "marker som gennemført"). Effekten kører kun
+	// én gang fordi traeningGennemfort sættes til true inde i gemTraening.
+	$effect(() => {
+		if (phase === 'done' && !traeningGennemfort && !gemmer && !gemFejl) {
+			void gemTraening();
+		}
+	});
 
 	const dag = $derived<TrainingDay | null>(
 		programData?.dage.find((d) => d.dagNummer === dagNummer) ?? null
@@ -660,7 +663,6 @@
 			} catch (e) {
 				console.warn('Kunne ikke slette pause efter gennemførsel:', e);
 			}
-			viserFeedback = true;
 		} catch (e) {
 			console.error(e);
 			gemFejl = 'Kunne ikke gemme træningen. Prøv igen.';
@@ -669,34 +671,6 @@
 		}
 	}
 
-	async function vaelgFeedback(feedback: Feedback) {
-		const u = user;
-		if (!u || gemmer) return;
-		gemmer = true;
-		gemFejl = null;
-		try {
-			const total = aboFremgang?.totalGennemforte ?? 0;
-			const opdateret = {
-				...(aboFremgang?.feedback ?? {}),
-				[`dag${dagNummer}`]: feedback
-			};
-			const runde = Math.floor((total - 1) / 14) + 1;
-
-			await Promise.all([
-				gemAboFremgang(u.uid, total, opdateret),
-				gemAboTraening(u.uid, dato, dagNummer, runde, feedback)
-			]);
-			goto(`/app/moduler/traening/mikrotraening/abo/${dato}`);
-		} catch (e) {
-			console.error(e);
-			gemFejl = 'Kunne ikke gemme feedback. Prøv igen.';
-			gemmer = false;
-		}
-	}
-
-	function springFeedbackOver() {
-		goto(`/app/moduler/traening/mikrotraening/abo/${dato}`);
-	}
 </script>
 
 <div class="player">
@@ -723,78 +697,11 @@
 			{#if gemFejl}
 				<div class="status-besked fejl">{gemFejl}</div>
 			{/if}
-			<button
-				class="ctrl primary fuld"
-				type="button"
-				onclick={gemTraening}
-				disabled={gemmer || viserFeedback}
-			>
-				{#if gemmer}
-					Gemmer...
-				{:else}
-					Gem træning
-					<Icon name="check" size={14} color="#fff" />
-				{/if}
-			</button>
-			<button class="ctrl ghost" type="button" onclick={stopOgForlad}>
-				Tilbage uden at gemme
+			<button class="ctrl primary fuld" type="button" onclick={stopOgForlad}>
+				Tilbage til oversigten
+				<Icon name="check" size={14} color="#fff" />
 			</button>
 		</div>
-
-		{#if viserFeedback}
-			<div
-				class="modal-bag"
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby="feedback-titel"
-			>
-				<div class="modal">
-					<div class="modal-greb"></div>
-					<div class="modal-titel" id="feedback-titel">Hvordan føltes træningen?</div>
-					<div class="modal-sub">Valgfrit — din feedback hjælper Linn</div>
-					{#if gemFejl}
-						<div class="status-besked fejl">{gemFejl}</div>
-					{/if}
-					<div class="feedback-rad">
-						<button
-							class="fb-knap"
-							type="button"
-							onclick={() => vaelgFeedback('let')}
-							disabled={gemmer}
-						>
-							<span class="fb-cirkel">😊</span>
-							<span class="fb-label">Let</span>
-						</button>
-						<button
-							class="fb-knap"
-							type="button"
-							onclick={() => vaelgFeedback('tilpas')}
-							disabled={gemmer}
-						>
-							<span class="fb-cirkel">💪</span>
-							<span class="fb-label">Tilpas</span>
-						</button>
-						<button
-							class="fb-knap"
-							type="button"
-							onclick={() => vaelgFeedback('udfordrende')}
-							disabled={gemmer}
-						>
-							<span class="fb-cirkel">🔥</span>
-							<span class="fb-label">Udfordrende</span>
-						</button>
-					</div>
-					<button
-						class="modal-spring"
-						type="button"
-						onclick={springFeedbackOver}
-						disabled={gemmer}
-					>
-						Spring over
-					</button>
-				</div>
-			</div>
-		{/if}
 	{:else if dag && aktuelOvelse && aktuelExercise}
 		{#if resumet && !fuldskaerm}
 			<div class="resume-banner">
@@ -1512,13 +1419,6 @@
 		width: 100%;
 	}
 
-	.ctrl.ghost {
-		background: transparent;
-		border: none;
-		color: var(--text3);
-		font-size: calc(13px * var(--fs-scale, 1));
-		font-weight: 500;
-	}
 
 	.finish-card {
 		background: var(--white);
@@ -1557,98 +1457,4 @@
 		line-height: 1.5;
 	}
 
-	.modal-bag {
-		position: fixed;
-		inset: 0;
-		background: rgba(42, 31, 23, 0.45);
-		display: flex;
-		align-items: flex-end;
-		justify-content: center;
-		z-index: 600;
-		padding: 0;
-	}
-
-	.modal {
-		background: var(--white);
-		border-radius: 20px 20px 0 0;
-		padding: 14px 22px 32px;
-		width: 100%;
-		max-width: 520px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 10px;
-		box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15);
-	}
-
-	.modal-greb {
-		width: 38px;
-		height: 4px;
-		border-radius: 2px;
-		background: var(--border2);
-		margin-bottom: 4px;
-	}
-
-	.modal-titel {
-		font-family: var(--ff-d);
-		font-size: calc(18px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--text);
-	}
-
-	.modal-sub {
-		font-size: calc(12.5px * var(--fs-scale, 1));
-		color: var(--text3);
-		text-align: center;
-	}
-
-	.feedback-rad {
-		display: flex;
-		gap: 14px;
-		margin-top: 10px;
-	}
-
-	.fb-knap {
-		background: none;
-		border: none;
-		cursor: pointer;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 6px;
-		padding: 4px 6px;
-	}
-
-	.fb-knap:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.fb-cirkel {
-		width: 56px;
-		height: 56px;
-		border-radius: 50%;
-		background: var(--sdim);
-		border: 2px solid var(--sage);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: calc(26px * var(--fs-scale, 1));
-	}
-
-	.fb-label {
-		font-size: calc(12px * var(--fs-scale, 1));
-		font-weight: 500;
-		color: var(--text2);
-	}
-
-	.modal-spring {
-		background: none;
-		border: none;
-		font-size: calc(13px * var(--fs-scale, 1));
-		color: var(--text3);
-		cursor: pointer;
-		padding: 6px 12px;
-		margin-top: 6px;
-	}
 </style>
