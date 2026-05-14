@@ -3,6 +3,7 @@
 	import type { User } from 'firebase/auth';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import StjerneRating from '$lib/components/StjerneRating.svelte';
 
 	type Besked = { rolle: 'user' | 'assistant'; indhold: string };
 
@@ -145,6 +146,19 @@
 						<div class="besked besked-{b.rolle}">
 							<div class="besked-indhold">{b.indhold}</div>
 						</div>
+						{#if b.rolle === 'assistant' && i > 0 && user}
+							{@const forrige = beskeder[i - 1]}
+							{#if forrige?.rolle === 'user'}
+								<div class="rating-wrap">
+									<StjerneRating
+										{user}
+										aiType="app-hjaelp"
+										sporgsmaal={forrige.indhold}
+										svar={b.indhold}
+									/>
+								</div>
+							{/if}
+						{/if}
 					{/each}
 					{#if sender}
 						<div class="besked besked-assistant">
@@ -336,6 +350,13 @@
 		background: var(--terra);
 		color: #fff;
 		border-bottom-right-radius: 4px;
+	}
+
+	.rating-wrap {
+		max-width: 80%;
+		align-self: flex-start;
+		margin-top: -4px;
+		padding-left: 14px;
 	}
 
 	.besked-assistant .besked-indhold {

@@ -236,6 +236,16 @@ service cloud.firestore {
 			allow write: if isAdmin();
 		}
 
+		// AI-ratings — brugere rater AI-svar 1-5 stjerner så Linn kan se
+		// hvilke svar der er gode/dårlige. Brugere kan oprette/opdatere
+		// deres egne ratings (uid skal matche). Admin kan læse alle.
+		match /aiRatings/{ratingId} {
+			allow read: if isAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
+			allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+			allow update: if request.auth != null && resource.data.uid == request.auth.uid;
+			allow delete: if isAdmin();
+		}
+
 		// Linn AI — videnbase (PDFs, slides, klient-Q&A) som AI'en bruger.
 		// Alle autentificerede kan læse (worker'en læser for premium-brugere).
 		// Kun admin kan uploade og slette indhold.

@@ -73,6 +73,14 @@
 			rute: '/app/admin/modulbruger-lektioner',
 			accent: '#9D6358',
 			icon: 'book' as const
+		},
+		{
+			id: 'ai-ratings',
+			navn: 'AI-ratings',
+			beskrivelse: 'Se klienternes ratings af Linn AI- og App-hjælp-svar',
+			rute: '/app/admin/ai-ratings',
+			accent: '#C9A07A',
+			icon: 'star' as const
 		}
 	];
 </script>

@@ -15,6 +15,7 @@
 	import { Timestamp } from 'firebase/firestore';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import StjerneRating from '$lib/components/StjerneRating.svelte';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -261,6 +262,19 @@
 									<div class="afsender">Linn AI</div>
 								{/if}
 								<div class="besked-indhold">{b.indhold}</div>
+								{#if b.rolle === 'assistant' && i > 0 && user && aktivSamtale}
+									{@const forrige = beskeder[i - 1]}
+									{#if forrige?.rolle === 'user'}
+										<StjerneRating
+											{user}
+											aiType="linn-ai"
+											sporgsmaal={forrige.indhold}
+											svar={b.indhold}
+											samtaleId={aktivSamtale.id}
+											beskedIdx={i}
+										/>
+									{/if}
+								{/if}
 							</div>
 						{/each}
 						{#if sender}
