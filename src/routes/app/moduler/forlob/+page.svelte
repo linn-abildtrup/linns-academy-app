@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getContext, onDestroy, onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { replaceState } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
 	import type { User } from 'firebase/auth';
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import type { Forlob } from '$lib/content/forlobAdgang';
@@ -24,6 +24,9 @@
 
 	let aabenLektion = $state<LektionItem | null>(null);
 	let lektionFraQueryParam = $state(false);
+	// dagNummer for den åbne lektion — bruges til at gå tilbage til forsiden
+	// med samme dag valgt (i stedet for at falde tilbage til i dag).
+	let aabenLektionDagNummer = $state<number | null>(null);
 
 	const aktivDagNr = $derived.by<number | null>(() => {
 		if (!forlob) return null;
@@ -71,9 +74,13 @@
 
 	function lukLektion() {
 		aabenLektion = null;
-		if (lektionFraQueryParam && typeof history !== 'undefined' && history.length > 1) {
+		if (lektionFraQueryParam) {
+			// Brugeren kom fra forsiden — gå direkte tilbage med samme dag valgt
+			// (i stedet for history.back som kan lande på forkert URL).
+			const dagN = aabenLektionDagNummer;
 			lektionFraQueryParam = false;
-			history.back();
+			aabenLektionDagNummer = null;
+			void goto(dagN !== null ? `/app?dag=${dagN}` : '/app');
 			return;
 		}
 		const url = new URL(page.url);
@@ -169,6 +176,7 @@
 					const fundet = dag.lektioner.find((l) => l.id === ønsketId);
 					if (fundet) {
 						lektionFraQueryParam = true;
+						aabenLektionDagNummer = dag.dagNummer;
 						aabnLektionItem(fundet);
 						break;
 					}
