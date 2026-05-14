@@ -873,6 +873,7 @@
 								{@const erLyd = erLydLektion(lektion.url)}
 								{@const erInspiration = erInspirationLektion(lektion.url)}
 								{@const visThumb = erVideoLektion(lektion.url) || erLyd || erInspiration}
+								{@const visFormat = erInspiration ? 'Inspiration' : lektion.format}
 								<a
 									class="lektion-card lektion-card-kompakt"
 									class:lektion-card-medThumb={visThumb}
@@ -910,9 +911,9 @@
 												<Icon name="play" size={12} color="var(--terra)" filled />
 												Begynd
 											</span>
-											{#if lektion.varighedMin > 0 || lektion.format}
+											{#if lektion.varighedMin > 0 || visFormat}
 												<span class="lektion-duration">
-													{lektion.varighedMin > 0 ? lektion.varighedMin + ' min' : ''}{lektion.varighedMin > 0 && lektion.format ? ' · ' : ''}{lektion.format}
+													{lektion.varighedMin > 0 ? lektion.varighedMin + ' min' : ''}{lektion.varighedMin > 0 && visFormat ? ' · ' : ''}{visFormat}
 												</span>
 											{/if}
 										</div>
@@ -1195,6 +1196,7 @@
 						{@const modulVisThumb =
 							!!modulbrugerLektion.url &&
 							(erVideoLektion(modulbrugerLektion.url) || modulErLyd || modulErInspiration)}
+						{@const modulVisFormat = modulErInspiration ? 'Inspiration' : (modulbrugerLektion.format ?? '')}
 						<svelte:element
 							this={modulbrugerLektion.url ? 'a' : 'div'}
 							class="lektion-card lektion-card-kompakt"
@@ -1237,13 +1239,13 @@
 												Begynd
 											</span>
 										{/if}
-										{#if (modulbrugerLektion.varighedMin ?? 0) > 0 || modulbrugerLektion.format}
+										{#if (modulbrugerLektion.varighedMin ?? 0) > 0 || modulVisFormat}
 											<span class="lektion-duration">
 												{(modulbrugerLektion.varighedMin ?? 0) > 0
 													? modulbrugerLektion.varighedMin + ' min'
-													: ''}{(modulbrugerLektion.varighedMin ?? 0) > 0 && modulbrugerLektion.format
+													: ''}{(modulbrugerLektion.varighedMin ?? 0) > 0 && modulVisFormat
 													? ' · '
-													: ''}{modulbrugerLektion.format ?? ''}
+													: ''}{modulVisFormat}
 											</span>
 										{/if}
 									</div>
