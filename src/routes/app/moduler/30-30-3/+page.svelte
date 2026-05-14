@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { replaceState } from '$app/navigation';
+	import { replaceState, goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import {
@@ -901,10 +901,20 @@
 
 <div class="page">
 	<header class="page-header">
-		<a class="back" href="/app/moduler">
+		<button
+			class="back"
+			type="button"
+			onclick={() => {
+				if (typeof window !== 'undefined' && window.history.length > 1) {
+					history.back();
+				} else {
+					void goto('/');
+				}
+			}}
+		>
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>Moduler</span>
-		</a>
+			<span>Tilbage</span>
+		</button>
 		<div class="eyebrow">Mad</div>
 		<h1>30-30 beregner</h1>
 		<p class="page-sub">
@@ -1906,6 +1916,11 @@
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
+		background: none;
+		border: none;
+		padding: 0;
+		font-family: var(--ff-b);
+		cursor: pointer;
 	}
 
 	.eyebrow {
