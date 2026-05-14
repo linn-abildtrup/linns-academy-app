@@ -11,14 +11,33 @@ import type { Timestamp } from 'firebase/firestore';
 // Typer
 // ==============================================
 
-export type OpskriftKategori =
-	| 'morgenmad'
-	| 'frokost'
-	| 'aftensmad'
-	| 'salat'
-	| 'snack'
-	| 'dessert'
-	| 'tilbehor';
+export type OpskriftKategori = 'morgenmad' | 'frokost' | 'aftensmad' | 'andet';
+
+/**
+ * Gamle kategori-ids der nu er slået sammen til 'andet'. Bruges ved
+ * indlæsning fra Firestore til at migrere ældre dokumenter.
+ */
+type LegacyKategori = 'salat' | 'snack' | 'dessert' | 'tilbehor';
+const LEGACY_KATEGORIER: Set<string> = new Set(['salat', 'snack', 'dessert', 'tilbehor']);
+
+/**
+ * Normaliserer kategori-arrayet fra Firestore: gamle ids (salat/snack/
+ * dessert/tilbehor) erstattes med 'andet', duplikater fjernes.
+ */
+export function normaliserKategorier(
+	kategorier: (OpskriftKategori | LegacyKategori | string)[] | undefined
+): OpskriftKategori[] {
+	if (!kategorier || kategorier.length === 0) return [];
+	const ud = new Set<OpskriftKategori>();
+	for (const k of kategorier) {
+		if (LEGACY_KATEGORIER.has(k)) {
+			ud.add('andet');
+		} else if (k === 'morgenmad' || k === 'frokost' || k === 'aftensmad' || k === 'andet') {
+			ud.add(k);
+		}
+	}
+	return Array.from(ud);
+}
 
 export interface Ingrediens {
 	navn: string;
@@ -51,20 +70,14 @@ export const KATEGORI_LABELS: Record<OpskriftKategori, string> = {
 	morgenmad: 'Morgenmad',
 	frokost: 'Frokost',
 	aftensmad: 'Aftensmad',
-	salat: 'Salater',
-	snack: 'Snack',
-	dessert: 'Dessert',
-	tilbehor: 'Tilbehør'
+	andet: 'Andet'
 };
 
 export const ALLE_KATEGORIER: OpskriftKategori[] = [
 	'morgenmad',
 	'frokost',
 	'aftensmad',
-	'salat',
-	'snack',
-	'dessert',
-	'tilbehor'
+	'andet'
 ];
 
 export const DIET_LABELS: Record<DietTag, string> = {

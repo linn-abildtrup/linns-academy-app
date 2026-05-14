@@ -11,7 +11,16 @@ import {
 	setDoc
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
-import type { Opskrift } from '$lib/content/opskrifter';
+import { normaliserKategorier, type Opskrift } from '$lib/content/opskrifter';
+
+function fraDoc(id: string, data: Record<string, unknown>): Opskrift {
+	const opskrift = { id, ...data } as Opskrift;
+	// Migrér gamle kategori-ids (salat/snack/dessert/tilbehor → andet).
+	opskrift.kategorier = normaliserKategorier(
+		opskrift.kategorier as unknown as string[] | undefined
+	);
+	return opskrift;
+}
 
 /**
  * Henter alle opskrifter sorteret alfabetisk efter titel.
@@ -19,7 +28,7 @@ import type { Opskrift } from '$lib/content/opskrifter';
  */
 export async function hentAlleOpskrifter(kunAktive: boolean = true): Promise<Opskrift[]> {
 	const snap = await getDocs(collection(db, 'opskrifter'));
-	let liste = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Opskrift);
+	let liste = snap.docs.map((d) => fraDoc(d.id, d.data()));
 	if (kunAktive) liste = liste.filter((o) => o.aktiv);
 	return liste.sort((a, b) => a.titel.localeCompare(b.titel, 'da'));
 }
@@ -31,7 +40,7 @@ export async function hentOpskrift(id: string): Promise<Opskrift | null> {
 	const ref = doc(db, 'opskrifter', id);
 	const snap = await getDoc(ref);
 	if (!snap.exists()) return null;
-	return { id: snap.id, ...snap.data() } as Opskrift;
+	return fraDoc(snap.id, snap.data());
 }
 
 /**

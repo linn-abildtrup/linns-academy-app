@@ -37,7 +37,7 @@ export function dagligeMalForBruger(maal: DagligeMaal | undefined): DagligeMaal 
 
 export const NAERING_LABELS = {
 	protein: 'Protein',
-	fiber: 'Fiber',
+	fiber: 'Fibre',
 	kh: 'Kulhydrater',
 	fedt: 'Fedt',
 	kcal: 'Kalorier'
