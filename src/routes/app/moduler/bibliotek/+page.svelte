@@ -11,6 +11,7 @@
 		GuideType
 	} from '$lib/content/bibliotek';
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
+	import { getCurrentDay } from '$lib/content/forlob';
 	import {
 		formatDanskDato,
 		GUIDE_TYPE_LABELS,
@@ -28,7 +29,7 @@
 		hentGuideKategorier,
 		hentGuideItems
 	} from '$lib/firestore/bibliotek';
-	import { hentForlobsdage } from '$lib/firestore/forlob';
+	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
@@ -391,9 +392,29 @@
 
 			// Lektioner per produkt-type — load forløbsdage særskilt fra det
 			// per-product mapping og aggregér til flat liste pr type.
+			//
+			// VIGTIGT: Hvis brugeren er aktiv på et forløb (accessSource='forløb'
+			// og det specifikke forløb stadig kører), filtreres fremtidige dage
+			// væk så hun ikke kan se forude. Når forløbet er færdigt vises alle
+			// dage (gennemført materiale beholdes som bibliotek).
+			const erAktivPaaForlob = userDoc?.accessSource === 'forløb';
+
+			async function dageMedFilter(forlobId: string): Promise<ForlobDag[]> {
+				const dage = await hentForlobsdage(forlobId);
+				if (!erAktivPaaForlob) return dage;
+				const forlob = await hentForlob(forlobId);
+				if (!forlob) return dage;
+				const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
+				const dagensDag = getCurrentDay({ startDato, antalDage: forlob.antalDage });
+				if (dagensDag === null) return [];
+				// Hvis forløbet er færdigt — vis alle dage.
+				if (dagensDag >= forlob.antalDage) return dage;
+				return dage.filter((d) => d.dagNummer <= dagensDag);
+			}
+
 			const lektionerPerProductEntries = await Promise.all(
 				Array.from(idsPerProduct.entries()).map(async ([productId, ids]) => {
-					const dageArrays = await Promise.all(ids.map((fId) => hentForlobsdage(fId)));
+					const dageArrays = await Promise.all(ids.map(dageMedFilter));
 					return [productId, dageArrays.flat()] as const;
 				})
 			);
@@ -404,7 +425,7 @@
 			// Fallback: hvis ingen userProducts har forlobId (legacy/test-bruger),
 			// vis lektioner under 'kickstart'-tab så vi ikke mister adgang.
 			if (Object.keys(nyForlobsdage).length === 0 && forlobIds.length > 0) {
-				const fallbackDage = await Promise.all(forlobIds.map((fId) => hentForlobsdage(fId)));
+				const fallbackDage = await Promise.all(forlobIds.map(dageMedFilter));
 				nyForlobsdage.kickstart = fallbackDage.flat();
 			}
 			forlobsdageEfterProduct = nyForlobsdage;
