@@ -71,6 +71,32 @@
 	// går væk og tilbage (fx via history.back fra lektion-overlay).
 	let valgtDagNummer = $state<number | null>(dagFraQuery());
 	let mineSpoergsmaal = $state<KlientSpoergsmaal[]>([]);
+	let tidligereForlob = $state<Forlob[]>([]);
+
+	// Antal dage tilbage af 90-dages bibliotek-bonus (null hvis ingen bonus).
+	const dageTilbageAfBonus = $derived.by<number | null>(() => {
+		if (!userDoc?.bonusPeriodEndsAt) return null;
+		const ms = userDoc.bonusPeriodEndsAt - Date.now();
+		if (ms <= 0) return 0;
+		return Math.ceil(ms / (24 * 60 * 60 * 1000));
+	});
+
+	const dageSidenForlobSlut = $derived.by<number | null>(() => {
+		if (!userDoc?.expiresAt) return null;
+		const ms = Date.now() - userDoc.expiresAt;
+		if (ms < 0) return null;
+		return Math.floor(ms / (24 * 60 * 60 * 1000));
+	});
+
+	// Tagline for udlobet-forsiden tilpasses hvor lang tid siden forløbet sluttede.
+	const taglineForUdlobet = $derived.by<string>(() => {
+		const dage = dageSidenForlobSlut;
+		const fornavn = userDoc?.firstName ? `, ${userDoc.firstName}` : '';
+		if (dage === null) return 'Det er længe siden — godt at se dig igen.';
+		if (dage <= 7) return `Godt klaret med dit forløb${fornavn}!`;
+		if (dage <= 30) return `Du er stadig velkommen til at bruge dit materiale${fornavn}.`;
+		return 'Det er længe siden — godt at se dig igen.';
+	});
 
 	function dagFraQuery(): number | null {
 		if (typeof window === 'undefined') return null;
@@ -230,6 +256,31 @@
 		}
 		void indlaesForlob(u.uid);
 		void indlaesMineSpoergsmaal(u.uid);
+	});
+
+	// Indlæs tidligere forløb (kun for udlobet-brugere — de bruges i "Mine køb").
+	$effect(() => {
+		if (userState !== 'udlobet') {
+			tidligereForlob = [];
+			return;
+		}
+		const ids = userDoc?.forlobIds ?? [];
+		if (ids.length === 0) {
+			tidligereForlob = [];
+			return;
+		}
+		void (async () => {
+			const liste: Forlob[] = [];
+			for (const id of ids) {
+				try {
+					const f = await hentForlob(id);
+					if (f) liste.push(f);
+				} catch (e) {
+					console.warn('Kunne ikke hente tidligere forløb:', id, e);
+				}
+			}
+			tidligereForlob = liste;
+		})();
 	});
 
 	// ============================================================
@@ -1383,8 +1434,27 @@
 	<div class="forside-c1">
 		<div class="forside-body">
 			<section class="c1-greeting">
-				<p class="c1-tagline">Det er længe siden — godt at se dig igen.</p>
+				<p class="c1-tagline">{taglineForUdlobet}</p>
 			</section>
+
+			{#if dageTilbageAfBonus !== null && dageTilbageAfBonus > 0}
+				<a class="bibliotek-cta" href="/app/moduler/bibliotek">
+					<div class="bibliotek-cta-ikon" aria-hidden="true">
+						<Icon name="book" size={20} color="#fff" />
+					</div>
+					<div class="bibliotek-cta-tekst">
+						<div class="bibliotek-cta-titel">Gå til dit bibliotek</div>
+						<div class="bibliotek-cta-sub">
+							{#if dageTilbageAfBonus === 1}
+								Du har 1 dag tilbage med adgang
+							{:else}
+								Du har {dageTilbageAfBonus} dage tilbage med adgang
+							{/if}
+						</div>
+					</div>
+					<Icon name="chevron-r" size={14} color="#fff" />
+				</a>
+			{/if}
 
 			<section class="tilbud-card">
 				<div class="tilbud-decoration"></div>
@@ -1399,27 +1469,42 @@
 				</div>
 			</section>
 
-			<section class="kob-section">
-				<div class="kob-header">
-					<div class="eyebrow eyebrow-muted">Mine køb</div>
-					<div class="kob-title">Stadig dine — i 2 måneder til</div>
-				</div>
-				<div class="kob-list">
-					{#each tidligereKob as kob (kob.navn)}
-						<button class="kob-card">
-							<div class="kob-icon" style="background: {kob.dim}">
-								<Icon name={kob.ikon} size={16} color={kob.accent} />
+			{#if tidligereForlob.length > 0}
+				<section class="kob-section">
+					<div class="kob-header">
+						<div class="eyebrow eyebrow-muted">Mine køb</div>
+						{#if dageTilbageAfBonus !== null && dageTilbageAfBonus > 0}
+							<div class="kob-title">
+								Stadig dine — i {dageTilbageAfBonus}
+								{dageTilbageAfBonus === 1 ? 'dag' : 'dage'} til
 							</div>
-							<div class="kob-text">
-								<div class="kob-name">{kob.navn}</div>
-								<div class="kob-meta">{kob.meta}</div>
-								<div class="kob-expires">{kob.expires}</div>
-							</div>
-							<Icon name="chevron-r" size={14} color="var(--text3)" />
-						</button>
-					{/each}
-				</div>
-			</section>
+						{:else}
+							<div class="kob-title">Tidligere forløb</div>
+						{/if}
+					</div>
+					<div class="kob-list">
+						{#each tidligereForlob as f (f.id)}
+							<a class="kob-card" href="/app/moduler/bibliotek">
+								<div class="kob-icon" style="background: rgba(157,99,88,.10)">
+									<Icon name="path" size={16} color="#9D6358" />
+								</div>
+								<div class="kob-text">
+									<div class="kob-name">{f.navn}</div>
+									<div class="kob-meta">Forløb · gennemført</div>
+									<div class="kob-expires">
+										{#if dageTilbageAfBonus !== null && dageTilbageAfBonus > 0}
+											Adgang til biblioteket
+										{:else}
+											Læseadgang udløbet
+										{/if}
+									</div>
+								</div>
+								<Icon name="chevron-r" size={14} color="var(--text3)" />
+							</a>
+						{/each}
+					</div>
+				</section>
+			{/if}
 
 			<div class="c1-disclaimer">Ingen forpligtelse — du bestemmer selv tempoet.</div>
 
@@ -1498,6 +1583,45 @@
 		justify-content: space-between;
 		gap: 12px;
 		text-decoration: none;
+	}
+
+	.bibliotek-cta {
+		background: var(--sage);
+		border-radius: 14px;
+		padding: 14px 16px;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		text-decoration: none;
+		margin-bottom: 18px;
+	}
+	.bibliotek-cta:active {
+		opacity: 0.9;
+	}
+	.bibliotek-cta-ikon {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.18);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	.bibliotek-cta-tekst {
+		flex: 1;
+		min-width: 0;
+		color: #fff;
+	}
+	.bibliotek-cta-titel {
+		font-family: var(--ff-b);
+		font-weight: 600;
+		font-size: calc(15px * var(--fs-scale, 1));
+	}
+	.bibliotek-cta-sub {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		opacity: 0.92;
+		margin-top: 2px;
 	}
 
 	.coaching-knap:active {
