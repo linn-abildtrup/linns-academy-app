@@ -21,14 +21,21 @@ import type { AccessLevel, AccessSource, UserDoc, UserState } from '$lib/types';
 /**
  * Returnerer den effektive UserState baseret på de nye adgangs-felter.
  * Hvis adgangs-felterne mangler bruger vi userDoc.state direkte (legacy).
+ *
+ * Hvis `expiresAt` er passeret betragtes brugeren som udløbet uanset
+ * accessLevel — så en forløbskunde automatisk skifter til udlobet-UI når
+ * forløbets slutdato er nået (med bibliotek-bonus i 90 dage efter via
+ * `bonusPeriodEndsAt`).
  */
 export function effektivState(userDoc: UserDoc | null | undefined): UserState | null {
 	if (!userDoc) return null;
+	const udloebet = !!(userDoc.expiresAt && userDoc.expiresAt < Date.now());
 	if (userDoc.accessLevel !== undefined) {
-		if (userDoc.accessLevel === 'none') return 'udlobet';
+		if (userDoc.accessLevel === 'none' || udloebet) return 'udlobet';
 		if (userDoc.accessSource === 'forløb') return 'forlobskunde';
 		return 'modulbruger';
 	}
+	if (udloebet) return 'udlobet';
 	return userDoc.state ?? null;
 }
 
@@ -47,13 +54,19 @@ export function erUdlobet(userDoc: UserDoc | null | undefined): boolean {
 	return effektivState(userDoc) === 'udlobet';
 }
 
-/** True hvis brugeren har premium-niveau. */
+function erUdloebet(userDoc: UserDoc | null | undefined): boolean {
+	return !!(userDoc?.expiresAt && userDoc.expiresAt < Date.now());
+}
+
+/** True hvis brugeren har premium-niveau (og adgangen ikke er udløbet). */
 export function harPremium(userDoc: UserDoc | null | undefined): boolean {
+	if (erUdloebet(userDoc)) return false;
 	return userDoc?.accessLevel === 'premium';
 }
 
-/** True hvis brugeren har mindst basis-niveau (basis eller premium). */
+/** True hvis brugeren har mindst basis-niveau (basis eller premium) og adgangen ikke er udløbet. */
 export function harBasisAdgang(userDoc: UserDoc | null | undefined): boolean {
+	if (erUdloebet(userDoc)) return false;
 	return userDoc?.accessLevel === 'basis' || userDoc?.accessLevel === 'premium';
 }
 

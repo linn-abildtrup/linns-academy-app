@@ -230,6 +230,36 @@ export async function synkroniserForlobskundeStatus(
 		if (current.state !== 'forlobskunde') {
 			opdateringer.state = 'forlobskunde';
 		}
+
+		// Beregn expiresAt = forløbets slutdato og bonusPeriodEndsAt = slut + 90
+		// dage ud fra forløb-dokumentet. Det er forudsætningen for at brugeren
+		// automatisk overgår til "udlobet med bibliotek-adgang" når forløbet
+		// slutter. Webhook-flow'et bruger sin egen mekanisme — her sætter vi
+		// kun felterne hvis de ikke allerede er på userDoc (eller hvis
+		// forløbet er ændret).
+		if (!current.expiresAt || !current.bonusPeriodEndsAt) {
+			try {
+				const forlobSnap = await getDoc(doc(db, 'forlob', allowed.forlobId));
+				if (forlobSnap.exists()) {
+					const data = forlobSnap.data() as {
+						startDato?: { toMillis?: () => number; seconds?: number };
+						antalDage?: number;
+					};
+					const startMs =
+						data.startDato?.toMillis?.() ?? (data.startDato?.seconds ?? 0) * 1000;
+					const antalDage = data.antalDage ?? 0;
+					if (startMs && antalDage > 0) {
+						const slutMs = startMs + antalDage * 24 * 60 * 60 * 1000;
+						if (!current.expiresAt) opdateringer.expiresAt = slutMs;
+						if (!current.bonusPeriodEndsAt) {
+							opdateringer.bonusPeriodEndsAt = slutMs + 90 * 24 * 60 * 60 * 1000;
+						}
+					}
+				}
+			} catch (e) {
+				console.warn('Kunne ikke hente forløb til at sætte expiresAt:', e);
+			}
+		}
 	}
 
 	// Abonnement/Simplero-flow: kopier access-felter over på userDoc.
