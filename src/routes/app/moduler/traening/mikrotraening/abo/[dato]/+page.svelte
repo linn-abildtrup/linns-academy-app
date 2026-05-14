@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount, onDestroy } from 'svelte';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { Exercise, TrainingDay } from '$lib/content/mikrotraening';
@@ -185,20 +184,10 @@
 
 <div class="page">
 	<header class="page-header">
-		<button
-			class="back"
-			type="button"
-			onclick={() => {
-				if (typeof window !== 'undefined' && window.history.length > 1) {
-					history.back();
-				} else {
-					void goto('/');
-				}
-			}}
-		>
+		<a class="back" href="/app">
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>Tilbage</span>
-		</button>
+			<span>Forside</span>
+		</a>
 		<div class="eyebrow">{datoLabel}</div>
 		<h1>Dagens øvelser</h1>
 		{#if dag?.indledning}

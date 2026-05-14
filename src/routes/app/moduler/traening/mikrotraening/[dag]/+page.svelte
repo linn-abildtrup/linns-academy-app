@@ -143,9 +143,9 @@
 
 <div class="page">
 	<header class="page-header">
-		<a class="back" href="/app/moduler/traening/mikrotraening">
+		<a class="back" href="/app">
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>Tilbage</span>
+			<span>Forside</span>
 		</a>
 		<div class="eyebrow">Dag {dagNummer} af {antalDage}</div>
 		<h1>Dagens øvelser</h1>
