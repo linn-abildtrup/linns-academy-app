@@ -8,11 +8,9 @@
 		beregnItem,
 		beregnMaaltid,
 		erManueltItem,
-		filtrerFodevarer,
 		formatDatoKey,
 		formatGram,
 		gaetMaaltidstype,
-		KATEGORI_LABELS as FODEVARE_KATEGORIER,
 		MAALTIDSTYPE_LABELS,
 		MAALTIDSTYPER,
 		maaltidstypeOrder,
@@ -24,8 +22,7 @@
 		type GemtMaaltid,
 		type Kategori,
 		type MaaltidsItem,
-		type Maaltidstype,
-		type SortMode
+		type Maaltidstype
 	} from '$lib/content/kost';
 	import {
 		gemFavorit,
@@ -98,13 +95,12 @@
 
 	const STORAGE_KEY = 'la_30303_maaltid_v1';
 
-	type Tab = 'opslag' | 'maaltid' | 'opskrifter' | 'mine' | 'dagbog';
+	type Tab = 'maaltid' | 'opskrifter' | 'mine' | 'dagbog';
 
 	function tabFraQuery(): Tab {
 		const t = page.url.searchParams.get('tab');
-		if (t === 'maaltid' || t === 'opskrifter' || t === 'mine' || t === 'dagbog' || t === 'opslag')
-			return t;
-		return 'opslag';
+		if (t === 'maaltid' || t === 'opskrifter' || t === 'mine' || t === 'dagbog') return t;
+		return 'maaltid';
 	}
 
 	function datoFraQuery(): string | null {
@@ -118,7 +114,7 @@
 	function skiftTab(ny: Tab) {
 		aktivTab = ny;
 		const url = new URL(page.url);
-		if (ny === 'opslag') {
+		if (ny === 'maaltid') {
 			url.searchParams.delete('tab');
 		} else {
 			url.searchParams.set('tab', ny);
@@ -133,18 +129,15 @@
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
-	// Slå op-state
-	type SlapTab = 'alle' | 'seneste' | 'mine' | 'basis';
-	let soegeord = $state('');
-	let slapTab = $state<SlapTab>('alle');
-	let sortMode = $state<SortMode>('alpha');
+	// Picker-state (åbnes fra Byg måltid via "Tilføj fødevare")
+	type PickerTab = 'alle' | 'seneste' | 'mine' | 'basis';
 	let senesteFodevareIds = $state<string[]>([]);
 
 	// Byg måltid-state — persisterer i localStorage
 	let maaltid = $state<MaaltidsItem[]>([]);
 	let viserPicker = $state(false);
 	let pickerSoeg = $state('');
-	let pickerKategori = $state<Kategori | 'all'>('all');
+	let pickerTab = $state<PickerTab>('alle');
 	let erstatterIndex = $state<number | null>(null);
 
 	// Stregkode-scanner og 'tilføj ny fødevare'-dialog
@@ -269,33 +262,30 @@
 	const favoritFodevareSet = $derived(new Set(userDoc?.favoritFodevarer ?? []));
 	const senesteSet = $derived(new Set(senesteFodevareIds));
 
-	// Filtrér foods i Slå op-fanen baseret på aktiv tab + søgeord.
-	// På Alle uden søgning vises favoritter (eller tomt hvis ingen).
-	// Seneste/Mine/Basis viser foods uden søge-krav, men søgeord filtrerer
-	// fortsat i den valgte sub-liste.
-	const filtreret = $derived.by<Fodevare[]>(() => {
-		const q = soegeord.trim().toLowerCase();
+	// Filtrér foods i pickeren baseret på aktiv tab + søgeord.
+	// Alle uden søgning viser favoritter (eller tom-state hvis ingen).
+	// Seneste/Mine/Basis viser foods uden søge-krav, søgeord filtrerer
+	// inden for den valgte sub-liste.
+	const filtretetPicker = $derived.by<Fodevare[]>(() => {
+		const q = pickerSoeg.trim().toLowerCase();
 		let base: Fodevare[];
-		if (slapTab === 'alle') {
+		if (pickerTab === 'alle') {
 			if (!q) {
 				base = foods.filter((f) => favoritFodevareSet.has(f.id));
 			} else {
 				base = foods;
 			}
-		} else if (slapTab === 'seneste') {
+		} else if (pickerTab === 'seneste') {
 			base = foods.filter((f) => senesteSet.has(f.id));
-		} else if (slapTab === 'mine') {
+		} else if (pickerTab === 'mine') {
 			base = foods.filter((f) => f.kilde === 'community' || f.kilde === 'custom');
 		} else {
 			base = foods.filter((f) => f.kilde === 'frida' || f.kilde === 'kickstart');
 		}
 		if (q) base = base.filter((f) => f.name.toLowerCase().includes(q));
-		return sorterFodevarer(base, sortMode);
+		return sorterFodevarer(base, 'alpha');
 	});
 
-	const filtretetPicker = $derived(
-		sorterFodevarer(filtrerFodevarer(foods, pickerSoeg, pickerKategori), 'alpha')
-	);
 	const filtreredeOpskrifter = $derived(
 		filtrerOpskrifter(opskrifter, opskriftSoeg, valgteOpskriftKategorier, valgteDietTags)
 	);
@@ -303,19 +293,6 @@
 	const totaler = $derived(beregnMaaltid(maaltid, foodMap));
 	const proteinPct = $derived(procentMod(PROTEIN_MAALTIDS_MAAL, totaler.protein));
 	const fiberPct = $derived(procentMod(FIBER_DAGS_MAAL, totaler.fiber));
-
-	// Beholder aktiveKategorier til picker-modal (Byg måltid) — Slå op bruger
-	// nu i stedet de nye Alle/Seneste/Mine/Basis-tabs.
-	const aktiveKategorier = $derived.by<Array<Kategori | 'all'>>(() => {
-		const sat = new Set<Kategori>();
-		for (const f of foods) sat.add(f.cat);
-		return [
-			'all',
-			...Array.from(sat).sort((a, b) =>
-				FODEVARE_KATEGORIER[a].localeCompare(FODEVARE_KATEGORIER[b], 'da')
-			)
-		];
-	});
 
 	async function toggleFavorit(food: Fodevare) {
 		const u = user;
@@ -529,7 +506,7 @@
 		viserPicker = true;
 		// Pre-udfyld søgefeltet med ingrediensens navn for hurtig matching
 		pickerSoeg = item?.manuel?.navn ?? '';
-		pickerKategori = 'all';
+		pickerTab = 'alle';
 	}
 
 	function fjernItem(index: number) {
@@ -558,7 +535,7 @@
 		erstatterIndex = null;
 		viserPicker = true;
 		pickerSoeg = '';
-		pickerKategori = 'all';
+		pickerTab = 'alle';
 	}
 
 	function aabnScanner() {
@@ -996,14 +973,6 @@
 		<div class="tabs">
 			<button
 				class="tab-knap"
-				class:aktiv={aktivTab === 'opslag'}
-				type="button"
-				onclick={() => skiftTab('opslag')}
-			>
-				Slå op
-			</button>
-			<button
-				class="tab-knap"
 				class:aktiv={aktivTab === 'maaltid'}
 				type="button"
 				onclick={() => {
@@ -1041,101 +1010,7 @@
 			</button>
 		</div>
 
-		{#if aktivTab === 'opslag'}
-			<input
-				type="search"
-				class="search"
-				placeholder="Søg fødevare (fx skyr, havregryn, kylling)..."
-				bind:value={soegeord}
-			/>
-
-			<div class="sort-rad">
-				<span class="sort-label">Sortér:</span>
-				<button
-					type="button"
-					class="sort-knap"
-					class:aktiv={sortMode === 'alpha'}
-					onclick={() => (sortMode = 'alpha')}>Alfabetisk</button
-				>
-				<button
-					type="button"
-					class="sort-knap"
-					class:aktiv={sortMode === 'protein'}
-					onclick={() => (sortMode = 'protein')}>Mest protein</button
-				>
-				<button
-					type="button"
-					class="sort-knap"
-					class:aktiv={sortMode === 'fiber'}
-					onclick={() => (sortMode = 'fiber')}>Mest fiber</button
-				>
-			</div>
-
-			<div class="slap-tabs">
-				{#each [{ id: 'alle' as SlapTab, l: 'Alle' }, { id: 'seneste' as SlapTab, l: 'Seneste' }, { id: 'mine' as SlapTab, l: 'Mine' }, { id: 'basis' as SlapTab, l: 'Basis' }] as t (t.id)}
-					<button
-						type="button"
-						class="slap-tab"
-						class:aktiv={slapTab === t.id}
-						onclick={() => (slapTab = t.id)}
-					>
-						{t.l}
-					</button>
-				{/each}
-			</div>
-
-			<div class="liste">
-				{#if filtreret.length === 0}
-					{#if slapTab === 'alle' && !soegeord.trim()}
-						<div class="status-besked tom-state">
-							<div>Søg efter en madvare for at komme i gang.</div>
-							<div class="tom-state-hint">Dine favoritter vises her efterhånden.</div>
-						</div>
-					{:else if slapTab === 'seneste'}
-						<div class="status-besked">Endnu ingen fødevarer brugt de seneste 30 dage.</div>
-					{:else if slapTab === 'mine'}
-						<div class="status-besked">Du har ikke tilføjet egne fødevarer endnu.</div>
-					{:else}
-						<div class="status-besked">Ingen fødevarer matcher.</div>
-					{/if}
-				{:else}
-					{#each filtreret as food (food.id)}
-						{@const erFavorit = favoritFodevareSet.has(food.id)}
-						<div class="food-row">
-							<button
-								class="favorit-stjerne"
-								class:aktiv={erFavorit}
-								type="button"
-								onclick={() => toggleFavorit(food)}
-								aria-label={erFavorit ? 'Fjern fra favoritter' : 'Tilføj til favoritter'}
-								title={erFavorit ? 'Fjern fra favoritter' : 'Tilføj til favoritter'}
-							>
-								<Icon
-									name="star"
-									size={16}
-									color={erFavorit ? 'var(--terra)' : 'var(--text3)'}
-									filled={erFavorit}
-								/>
-							</button>
-							<div class="food-tekst">
-								<div class="food-navn">{food.name}</div>
-								<div class="food-meta">
-									{food.p}g protein · {food.f}g fiber pr 100g
-								</div>
-							</div>
-							<button
-								class="tilfoej-knap"
-								type="button"
-								onclick={() => tilfoejTilMaaltid(food)}
-								aria-label="Tilføj til måltid"
-							>
-								+
-							</button>
-						</div>
-					{/each}
-				{/if}
-			</div>
-		{:else if aktivTab === 'maaltid'}
+		{#if aktivTab === 'maaltid'}
 			{#if forhaandsValgtDato && !redigererFavorit && !redigererMaaltid}
 				<div class="dato-hint">
 					Du bygger måltid for <strong>{visningsDato(forhaandsValgtDato)}</strong>.
@@ -1877,50 +1752,81 @@
 					</button>
 				</div>
 				<input type="search" class="search" placeholder="Søg..." bind:value={pickerSoeg} />
-				<div class="chips">
-					{#each aktiveKategorier as cat (cat)}
+				<div class="slap-tabs">
+					{#each [{ id: 'alle' as PickerTab, l: 'Alle' }, { id: 'seneste' as PickerTab, l: 'Seneste' }, { id: 'mine' as PickerTab, l: 'Mine' }, { id: 'basis' as PickerTab, l: 'Basis' }] as t (t.id)}
 						<button
 							type="button"
-							class="chip"
-							class:aktiv={pickerKategori === cat}
-							onclick={() => (pickerKategori = cat)}
+							class="slap-tab"
+							class:aktiv={pickerTab === t.id}
+							onclick={() => (pickerTab = t.id)}
 						>
-							{cat === 'all' ? 'Alle' : FODEVARE_KATEGORIER[cat]}
+							{t.l}
 						</button>
 					{/each}
 				</div>
 				<div class="picker-liste">
+					{#if filtretetPicker.length === 0}
+						{#if pickerTab === 'alle' && !pickerSoeg.trim()}
+							<div class="status-besked tom-state">
+								<div>Søg efter en madvare for at komme i gang.</div>
+								<div class="tom-state-hint">Dine favoritter vises her efterhånden.</div>
+							</div>
+						{:else if pickerTab === 'seneste'}
+							<div class="status-besked">Endnu ingen fødevarer brugt de seneste 30 dage.</div>
+						{:else if pickerTab === 'mine'}
+							<div class="status-besked">Du har ikke tilføjet egne fødevarer endnu.</div>
+						{:else}
+							<div class="status-besked">Ingen fødevarer matcher.</div>
+						{/if}
+					{/if}
 					{#each filtretetPicker as food (food.id)}
 						{@const erCommunity = food.kilde === 'community'}
 						{@const okAntal = food.okBy?.length ?? 0}
 						{@const ejAntal = food.ejBy?.length ?? 0}
 						{@const minStem = user && food.okBy?.includes(user.uid) ? 'ok' : user && food.ejBy?.includes(user.uid) ? 'ej' : null}
+						{@const erFavorit = favoritFodevareSet.has(food.id)}
 						<div class="picker-row-wrap">
-							<button
-								class="picker-row"
-								type="button"
-								onclick={() => tilfoejTilMaaltid(food)}
-							>
-								<div class="picker-tekst">
-									<div class="food-navn">
-										{food.name}
-										{#if erCommunity && food.verificeret}
-											<span class="badge badge-verificeret" title="Verificeret af fællesskabet">✓</span>
-										{:else if erCommunity && ejAntal > okAntal}
-											<span class="badge badge-mistaenkelig" title="Flere har stemt 'ej' end 'ok'">⚠</span>
-										{:else if erCommunity}
-											<span class="badge badge-ny" title="Tilføjet af bruger">Ny</span>
-										{/if}
+							<div class="picker-row-flex">
+								<button
+									class="favorit-stjerne"
+									type="button"
+									onclick={() => toggleFavorit(food)}
+									aria-label={erFavorit ? 'Fjern fra favoritter' : 'Tilføj til favoritter'}
+									title={erFavorit ? 'Fjern fra favoritter' : 'Tilføj til favoritter'}
+								>
+									<Icon
+										name="star"
+										size={16}
+										color={erFavorit ? 'var(--terra)' : 'var(--text3)'}
+										filled={erFavorit}
+									/>
+								</button>
+								<button
+									class="picker-row"
+									type="button"
+									onclick={() => tilfoejTilMaaltid(food)}
+								>
+									<div class="picker-tekst">
+										<div class="food-navn">
+											{food.name}
+											{#if erCommunity && food.verificeret}
+												<span class="badge badge-verificeret" title="Verificeret af fællesskabet">✓</span>
+											{:else if erCommunity && ejAntal > okAntal}
+												<span class="badge badge-mistaenkelig" title="Flere har stemt 'ej' end 'ok'">⚠</span>
+											{:else if erCommunity}
+												<span class="badge badge-ny" title="Tilføjet af bruger">Ny</span>
+											{/if}
+										</div>
+										<div class="food-meta">
+											{food.p}g protein · {food.f}g fiber pr 100g
+											{#if erCommunity && food.addedByName}
+												<span class="meta-by"> · af {food.addedByName}</span>
+											{/if}
+										</div>
 									</div>
-									<div class="food-meta">
-										{food.p}g protein · {food.f}g fiber pr 100g
-										{#if erCommunity && food.addedByName}
-											<span class="meta-by"> · af {food.addedByName}</span>
-										{/if}
-									</div>
-								</div>
-								<span class="picker-plus">+</span>
-							</button>
+									<span class="picker-plus">+</span>
+								</button>
+							</div>
 							{#if erCommunity && user && food.addedBy !== user.uid}
 								<div class="stem-rad">
 									<button
@@ -3060,6 +2966,18 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0;
+	}
+
+	.picker-row-flex {
+		display: flex;
+		align-items: stretch;
+		gap: 4px;
+	}
+	.picker-row-flex .favorit-stjerne {
+		align-self: center;
+	}
+	.picker-row-flex .picker-row {
+		flex: 1;
 	}
 
 	.badge {
