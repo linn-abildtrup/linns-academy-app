@@ -490,9 +490,11 @@
 			erstatterIndex = null;
 		} else {
 			const standardPortion = standardEnhed ? 1 : 100;
+			// Prepend så den nytilføjede fødevare ligger øverst i listen — nemmere
+			// at se hvad man lige har valgt uden at scrolle.
 			maaltid = [
-				...maaltid,
-				{ foodId: food.id, portion: standardPortion, enhedId: standardEnhed }
+				{ foodId: food.id, portion: standardPortion, enhedId: standardEnhed },
+				...maaltid
 			];
 			skiftTab('maaltid');
 		}
@@ -1137,8 +1139,13 @@
 
 			<div class="tilfoej-rad">
 				<button class="primary-knap tilfoej-fodevare-knap" type="button" onclick={aabnPicker}>
-					+ Tilføj fødevare
+					+ Tilføj/søg fødevare
 				</button>
+				{#if !redigererFavorit && maaltid.length > 0}
+					<button class="primary-knap sage gem-i-rad" type="button" onclick={aabnGemModal}>
+						Gem i dagbog
+					</button>
+				{/if}
 				{#if kanScanne}
 					<button
 						class="scan-knap-direkte"
@@ -1251,9 +1258,6 @@
 					Annullér redigering
 				</button>
 			{:else if maaltid.length > 0}
-				<button class="primary-knap sage" type="button" onclick={aabnGemModal}>
-					Gem måltidet i dagbog
-				</button>
 				<button class="ghost-knap" type="button" onclick={nulstilMaaltid}>Nulstil måltid</button>
 			{/if}
 		{:else if aktivTab === 'opskrifter'}
@@ -2809,7 +2813,18 @@
 		flex-direction: column;
 		gap: 4px;
 		overflow-y: auto;
-		flex: 1;
+		flex: 1 1 0;
+		min-height: 0;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	/* Hold modal-head, søgefelt og tabs fastlimet til toppen så de ikke
+	   scroller med picker-listen — ellers forsvinder søgefeltet når listen
+	   er lang. */
+	.modal > .modal-head,
+	.modal > .search,
+	.modal > .slap-tabs {
+		flex-shrink: 0;
 	}
 
 	.picker-row {
