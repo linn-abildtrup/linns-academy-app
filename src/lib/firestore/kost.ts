@@ -302,3 +302,18 @@ export async function opdaterFavorit(
 export async function sletFavorit(uid: string, favoritId: string): Promise<void> {
 	await deleteDoc(favoritDoc(uid, favoritId));
 }
+
+/**
+ * Toggler en fødevare som favorit på userDoc.favoritFodevarer.
+ * Bruger arrayUnion/arrayRemove så samtidige opdateringer er safe.
+ */
+export async function toggleFavoritFodevare(
+	uid: string,
+	foodId: string,
+	gørTilFavorit: boolean
+): Promise<void> {
+	const ref = doc(db, `${aktivBrugerBasisPath(uid)}`);
+	await updateDoc(ref, {
+		favoritFodevarer: gørTilFavorit ? arrayUnion(foodId) : arrayRemove(foodId)
+	});
+}

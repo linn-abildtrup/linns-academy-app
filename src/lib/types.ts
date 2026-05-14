@@ -127,6 +127,10 @@ export interface UserDoc {
 	// visUdvidetNaering = true.
 	dagligeMaal?: DagligeMaal;
 
+	// Brugerens favorit-fødevare-ids. Vises filtrerbart i 30-30-3 Slå op
+	// og markeres med en stjerne ved siden af fødevaren.
+	favoritFodevarer?: string[];
+
 	// Snapshot af det input klienten gav til 'Beregn mine mål'-wizarden.
 	// Bruges til at pre-udfylde wizarden næste gang den åbnes.
 	brugerProfil?: BrugerProfil;

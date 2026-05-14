@@ -433,6 +433,20 @@
 		modulbrugerTraeningsDatoer.has(modulbrugerAktivDato)
 	);
 
+	// Find brugerens "har du trænet"-vane (hvis valgt) ud fra label-heuristik.
+	// Når mikrotræning er gennemført, tvinges vanen til 'ja' og knapperne låses.
+	const modulbrugerTraeningsVane = $derived(
+		modulbrugerVaneOpsaetning?.valgteVaner.find((v) => v.label.toLowerCase().includes('træn')) ??
+			null
+	);
+
+	$effect(() => {
+		const vane = modulbrugerTraeningsVane;
+		if (!vane || !modulbrugerTraeningGennemfoert) return;
+		if (modulbrugerVanedag?.checks?.[vane.id] === 'ja') return;
+		void gemVaneSvar(vane.id, 'ja');
+	});
+
 	// Hent thumbnail af dagens første træningsøvelse (best-effort, lazy)
 	$effect(() => {
 		const u = user;
@@ -648,6 +662,18 @@
 		type FremgangShape = { gennemforte?: number[] };
 		const f = userProduct?.fremgang?.mikrotraening as FremgangShape | undefined;
 		return f?.gennemforte?.includes(n) ?? false;
+	});
+
+	// Auto-ja for trænings-vane i forløbet når dagens mikrotræning er gennemført.
+	const forlobTraeningsVane = $derived(
+		aktivVaneprogramDag?.checks?.find((v) => v.label.toLowerCase().includes('træn')) ?? null
+	);
+
+	$effect(() => {
+		const vane = forlobTraeningsVane;
+		if (!vane || !forlobTraeningGennemfoert) return;
+		if (forlobVanedag?.checks?.[vane.id] === 'ja') return;
+		void gemForlobVaneSvar(vane.id, 'ja');
 	});
 
 	const forlobMaaltidsTotaler = $derived.by(() => {
@@ -897,7 +923,9 @@
 							</div>
 						{:else}
 							{#each aktivVaneprogramDag.checks as vane (vane.id)}
-								{@const svar = forlobVanedag?.checks?.[vane.id]}
+								{@const erTraeningsVane =
+									vane.label.toLowerCase().includes('træn') && forlobTraeningGennemfoert}
+								{@const svar = erTraeningsVane ? 'ja' : forlobVanedag?.checks?.[vane.id]}
 								<div class="vane-inline-row">
 									<div class="vane-inline-label">{vane.label}</div>
 									<div class="vane-svar-knapper">
@@ -906,7 +934,10 @@
 												type="button"
 												class="svar-knap svar-knap-{opt.v}"
 												class:aktiv={svar === opt.v}
-												disabled={gemmerSvar}
+												disabled={gemmerSvar || erTraeningsVane}
+												title={erTraeningsVane
+													? 'Auto-markeret fordi du har gennemført dagens mikrotræning'
+													: undefined}
 												onclick={() => gemForlobVaneSvar(vane.id, opt.v)}
 											>
 												{opt.l}
@@ -1203,7 +1234,9 @@
 				{:else}
 					<div class="vaner-inline-liste">
 						{#each modulbrugerVaneOpsaetning.valgteVaner as vane (vane.id)}
-							{@const svar = modulbrugerVanedag?.checks?.[vane.id]}
+							{@const erTraeningsVane =
+								modulbrugerTraeningsVane?.id === vane.id && modulbrugerTraeningGennemfoert}
+							{@const svar = erTraeningsVane ? 'ja' : modulbrugerVanedag?.checks?.[vane.id]}
 							<div class="vane-inline-row">
 								<div class="vane-inline-label">{vane.label}</div>
 								<div class="vane-svar-knapper">
@@ -1212,7 +1245,10 @@
 											type="button"
 											class="svar-knap svar-knap-{opt.v}"
 											class:aktiv={svar === opt.v}
-											disabled={gemmerSvar}
+											disabled={gemmerSvar || erTraeningsVane}
+											title={erTraeningsVane
+												? 'Auto-markeret fordi du har gennemført dagens mikrotræning'
+												: undefined}
 											onclick={() => gemVaneSvar(vane.id, opt.v)}
 										>
 											{opt.l}

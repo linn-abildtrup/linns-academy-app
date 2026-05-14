@@ -32,11 +32,13 @@
 		gemMaaltid,
 		hentFavoritter,
 		hentMaaltiderForDato,
+		hentMaaltiderIPeriode,
 		opdaterFavorit,
 		opdaterMaaltid,
 		sletFavorit,
 		sletMaaltid,
-		stemPaaFodevare
+		stemPaaFodevare,
+		toggleFavoritFodevare
 	} from '$lib/firestore/kost';
 	import { lookupBarcode } from '$lib/content/openFoodFacts';
 	import BarcodeScanner from '$lib/components/BarcodeScanner.svelte';
@@ -132,9 +134,11 @@
 	let fejl = $state<string | null>(null);
 
 	// Slå op-state
+	type SlapTab = 'alle' | 'seneste' | 'mine' | 'basis';
 	let soegeord = $state('');
-	let aktivKategori = $state<Kategori | 'all'>('all');
+	let slapTab = $state<SlapTab>('alle');
 	let sortMode = $state<SortMode>('alpha');
+	let senesteFodevareIds = $state<string[]>([]);
 
 	// Byg måltid-state — persisterer i localStorage
 	let maaltid = $state<MaaltidsItem[]>([]);
@@ -262,9 +266,33 @@
 		dato: string;
 	} | null>(null);
 
-	const filtreret = $derived(
-		sorterFodevarer(filtrerFodevarer(foods, soegeord, aktivKategori), sortMode)
-	);
+	const favoritFodevareSet = $derived(new Set(userDoc?.favoritFodevarer ?? []));
+	const senesteSet = $derived(new Set(senesteFodevareIds));
+
+	// Filtrér foods i Slå op-fanen baseret på aktiv tab + søgeord.
+	// På Alle uden søgning vises favoritter (eller tomt hvis ingen).
+	// Seneste/Mine/Basis viser foods uden søge-krav, men søgeord filtrerer
+	// fortsat i den valgte sub-liste.
+	const filtreret = $derived.by<Fodevare[]>(() => {
+		const q = soegeord.trim().toLowerCase();
+		let base: Fodevare[];
+		if (slapTab === 'alle') {
+			if (!q) {
+				base = foods.filter((f) => favoritFodevareSet.has(f.id));
+			} else {
+				base = foods;
+			}
+		} else if (slapTab === 'seneste') {
+			base = foods.filter((f) => senesteSet.has(f.id));
+		} else if (slapTab === 'mine') {
+			base = foods.filter((f) => f.kilde === 'community' || f.kilde === 'custom');
+		} else {
+			base = foods.filter((f) => f.kilde === 'frida' || f.kilde === 'kickstart');
+		}
+		if (q) base = base.filter((f) => f.name.toLowerCase().includes(q));
+		return sorterFodevarer(base, sortMode);
+	});
+
 	const filtretetPicker = $derived(
 		sorterFodevarer(filtrerFodevarer(foods, pickerSoeg, pickerKategori), 'alpha')
 	);
@@ -276,6 +304,8 @@
 	const proteinPct = $derived(procentMod(PROTEIN_MAALTIDS_MAAL, totaler.protein));
 	const fiberPct = $derived(procentMod(FIBER_DAGS_MAAL, totaler.fiber));
 
+	// Beholder aktiveKategorier til picker-modal (Byg måltid) — Slå op bruger
+	// nu i stedet de nye Alle/Seneste/Mine/Basis-tabs.
 	const aktiveKategorier = $derived.by<Array<Kategori | 'all'>>(() => {
 		const sat = new Set<Kategori>();
 		for (const f of foods) sat.add(f.cat);
@@ -286,6 +316,40 @@
 			)
 		];
 	});
+
+	async function toggleFavorit(food: Fodevare) {
+		const u = user;
+		if (!u) return;
+		const erFavorit = favoritFodevareSet.has(food.id);
+		try {
+			await toggleFavoritFodevare(u.uid, food.id, !erFavorit);
+			// userDoc-snapshot opdaterer automatisk favoritFodevareSet via $derived.
+		} catch (e) {
+			console.warn('Kunne ikke ændre favorit-status:', e);
+		}
+	}
+
+	async function indlaesSenesteFodevarer(uid: string) {
+		// Henter de seneste 30 dages måltider og udleder hvilke fødevare-ids
+		// brugeren har brugt — det er listen der vises under Seneste-tabben.
+		const idag = new Date();
+		const fra = new Date(idag);
+		fra.setDate(fra.getDate() - 30);
+		const fraKey = formatDatoKey(fra);
+		const tilKey = formatDatoKey(idag);
+		try {
+			const maaltider = await hentMaaltiderIPeriode(uid, fraKey, tilKey);
+			const ids = new Set<string>();
+			for (const m of maaltider) {
+				for (const i of m.items) {
+					if (i.foodId) ids.add(i.foodId);
+				}
+			}
+			senesteFodevareIds = Array.from(ids);
+		} catch (e) {
+			console.warn('Kunne ikke hente seneste fødevarer:', e);
+		}
+	}
 
 	let initialiseret = $state(false);
 
@@ -319,9 +383,11 @@
 			initialiseret = true;
 		}
 
-		// Indlæs dagbog og favoritter i baggrunden
+		// Indlæs dagbog, favoritter og seneste fødevarer i baggrunden
 		void indlaesDagbog();
 		void indlaesFavoritter();
+		const u2 = user;
+		if (u2) void indlaesSenesteFodevarer(u2.uid);
 	});
 
 	async function indlaesFavoritter() {
@@ -1005,25 +1071,52 @@
 				>
 			</div>
 
-			<div class="chips">
-				{#each aktiveKategorier as cat (cat)}
+			<div class="slap-tabs">
+				{#each [{ id: 'alle' as SlapTab, l: 'Alle' }, { id: 'seneste' as SlapTab, l: 'Seneste' }, { id: 'mine' as SlapTab, l: 'Mine' }, { id: 'basis' as SlapTab, l: 'Basis' }] as t (t.id)}
 					<button
 						type="button"
-						class="chip"
-						class:aktiv={aktivKategori === cat}
-						onclick={() => (aktivKategori = cat)}
+						class="slap-tab"
+						class:aktiv={slapTab === t.id}
+						onclick={() => (slapTab = t.id)}
 					>
-						{cat === 'all' ? 'Alle' : FODEVARE_KATEGORIER[cat]}
+						{t.l}
 					</button>
 				{/each}
 			</div>
 
 			<div class="liste">
 				{#if filtreret.length === 0}
-					<div class="status-besked">Ingen fødevarer matcher.</div>
+					{#if slapTab === 'alle' && !soegeord.trim()}
+						<div class="status-besked tom-state">
+							<div>Søg efter en madvare for at komme i gang.</div>
+							<div class="tom-state-hint">Dine favoritter vises her efterhånden.</div>
+						</div>
+					{:else if slapTab === 'seneste'}
+						<div class="status-besked">Endnu ingen fødevarer brugt de seneste 30 dage.</div>
+					{:else if slapTab === 'mine'}
+						<div class="status-besked">Du har ikke tilføjet egne fødevarer endnu.</div>
+					{:else}
+						<div class="status-besked">Ingen fødevarer matcher.</div>
+					{/if}
 				{:else}
 					{#each filtreret as food (food.id)}
+						{@const erFavorit = favoritFodevareSet.has(food.id)}
 						<div class="food-row">
+							<button
+								class="favorit-stjerne"
+								class:aktiv={erFavorit}
+								type="button"
+								onclick={() => toggleFavorit(food)}
+								aria-label={erFavorit ? 'Fjern fra favoritter' : 'Tilføj til favoritter'}
+								title={erFavorit ? 'Fjern fra favoritter' : 'Tilføj til favoritter'}
+							>
+								<Icon
+									name="star"
+									size={16}
+									color={erFavorit ? 'var(--terra)' : 'var(--text3)'}
+									filled={erFavorit}
+								/>
+							</button>
 							<div class="food-tekst">
 								<div class="food-navn">{food.name}</div>
 								<div class="food-meta">
@@ -2161,6 +2254,58 @@
 		gap: 6px;
 		flex-wrap: wrap;
 		margin-bottom: 12px;
+	}
+
+	.slap-tabs {
+		display: flex;
+		gap: 4px;
+		margin-bottom: 14px;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+	}
+	.slap-tabs::-webkit-scrollbar {
+		display: none;
+	}
+	.slap-tab {
+		padding: 7px 14px;
+		font-size: calc(13px * var(--fs-scale, 1));
+		border-radius: 99px;
+		border: none;
+		background: transparent;
+		color: var(--text2);
+		cursor: pointer;
+		font-family: var(--ff-b);
+		font-weight: 500;
+		flex-shrink: 0;
+	}
+	.slap-tab.aktiv {
+		background: var(--bg2);
+		color: var(--text);
+	}
+
+	.tom-state {
+		text-align: left;
+		padding: 16px 12px;
+	}
+	.tom-state-hint {
+		margin-top: 8px;
+		font-style: italic;
+		color: var(--text3);
+	}
+
+	.favorit-stjerne {
+		background: none;
+		border: none;
+		padding: 4px;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	.favorit-stjerne:hover {
+		opacity: 0.7;
 	}
 
 	.diet-chips {
