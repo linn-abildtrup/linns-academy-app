@@ -2758,6 +2758,7 @@
 		padding: 14px 18px 0;
 		width: 100%;
 		max-width: 520px;
+		height: 85dvh;
 		max-height: 92dvh;
 		display: flex;
 		flex-direction: column;
@@ -2870,10 +2871,21 @@
 		display: flex;
 		gap: 8px;
 		align-items: stretch;
+		margin-bottom: 14px;
 	}
 
 	.tilfoej-fodevare-knap {
-		flex: 1;
+		flex: 1 1 0;
+		min-width: 0;
+		text-align: center;
+	}
+
+	/* "Gem i dagbog"-knappen står ved siden af tilføj-knappen og skal være
+	   samme størrelse. Override sage's margin-top som ellers gør den skæv. */
+	.gem-i-rad {
+		flex: 1 1 0;
+		min-width: 0;
+		margin-top: 0;
 		text-align: center;
 	}
 
