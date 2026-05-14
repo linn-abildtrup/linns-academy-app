@@ -243,12 +243,24 @@
 	let gemSomFavorit = $state(false);
 	let gemmer = $state(false);
 	let gemBesked = $state<{ tekst: string; type: 'ok' | 'fejl' } | null>(null);
+	// Pre-udfyldt navn når en favorit indlæses — gem-modalen bruger det som
+	// default i stedet for blank, så brugeren ikke skal genskrive navnet.
+	let pendingMaaltidsNavn = $state<string | null>(null);
+
+	// Kopier-måltid-modal state — bruges når brugeren klikker "kopier" på et
+	// dagbog-måltid og vælger en ny dato + type.
+	let kopierFra = $state<GemtMaaltid | null>(null);
+	let kopierDato = $state<string>(formatDatoKey());
+	let kopierType = $state<Maaltidstype>('morgenmad');
+	let kopierer = $state(false);
+	let kopierBesked = $state<{ tekst: string; type: 'ok' | 'fejl' } | null>(null);
 
 	// Favoritter
 	let favoritter = $state<FavoritMaaltid[]>([]);
 	let redigererFavorit = $state<{ id: string; navn: string } | null>(null);
 	let redigerNavn = $state('');
 	let opdaterer = $state(false);
+	let viserFavoritModal = $state(false);
 	let redigerBesked = $state<{ tekst: string; type: 'ok' | 'fejl' } | null>(null);
 
 	// Rediger-måltid-state — sat når brugeren klikker rediger på et dagbog-kort
@@ -396,6 +408,7 @@
 			if (!ok) return;
 		}
 		maaltid = fav.items.map((i) => ({ ...i }));
+		pendingMaaltidsNavn = fav.navn;
 		skiftTab('maaltid');
 	}
 
@@ -542,6 +555,7 @@
 
 	function nulstilMaaltid() {
 		maaltid = [];
+		pendingMaaltidsNavn = null;
 	}
 
 	function aabnPicker() {
@@ -692,6 +706,61 @@
 		}
 	}
 
+	function aabnKopierModal(m: GemtMaaltid) {
+		kopierFra = m;
+		kopierDato = m.dato;
+		kopierType = m.type;
+		kopierBesked = null;
+	}
+
+	function lukKopierModal() {
+		kopierFra = null;
+		kopierBesked = null;
+	}
+
+	function kopierGenvej(delta: number) {
+		const [aar, mnd, dag] = kopierDato.split('-').map(Number);
+		const d = new Date(aar, mnd - 1, dag);
+		d.setDate(d.getDate() + delta);
+		kopierDato = formatDatoKey(d);
+	}
+
+	async function udforKopier() {
+		const u = user;
+		const kilde = kopierFra;
+		if (!u || !kilde) return;
+		kopierer = true;
+		kopierBesked = null;
+		try {
+			const nyt: Omit<GemtMaaltid, 'id'> = {
+				navn: kilde.navn,
+				type: kopierType,
+				dato: kopierDato,
+				items: kilde.items.map((i) => ({ ...i })),
+				totalP: kilde.totalP,
+				totalF: kilde.totalF
+			};
+			if (kilde.totalKh !== undefined) nyt.totalKh = kilde.totalKh;
+			if (kilde.totalFedt !== undefined) nyt.totalFedt = kilde.totalFedt;
+			if (kilde.totalKcal !== undefined) nyt.totalKcal = kilde.totalKcal;
+			await gemMaaltid(u.uid, nyt);
+			// Hvis brugeren kopierer til den dato hun allerede ser, opdatér listen.
+			if (kopierDato === dagbogDato) {
+				dagbogMaaltider = await hentMaaltiderForDato(u.uid, dagbogDato);
+			}
+			kopierBesked = { tekst: `Kopieret til ${visningsDato(kopierDato)}.`, type: 'ok' };
+			setTimeout(() => {
+				kopierFra = null;
+				kopierBesked = null;
+			}, 1200);
+		} catch (e) {
+			console.error(e);
+			kopierBesked = { tekst: 'Kunne ikke kopiere måltidet.', type: 'fejl' };
+		} finally {
+			kopierer = false;
+		}
+	}
+
 	function startRedigerMaaltid(m: GemtMaaltid) {
 		if (maaltid.length > 0 && redigererMaaltid?.id !== m.id) {
 			const ok = confirm(
@@ -723,7 +792,7 @@
 			gemDato = redigererMaaltid.dato;
 			gemSomFavorit = false;
 		} else {
-			gemNavn = '';
+			gemNavn = pendingMaaltidsNavn ?? '';
 			gemType = gaetMaaltidstype();
 			gemDato = forhaandsValgtDato ?? formatDatoKey();
 			gemSomFavorit = false;
@@ -782,6 +851,7 @@
 			}
 			// Ryd måltid efter gem
 			maaltid = [];
+			pendingMaaltidsNavn = null;
 			localStorage.setItem(STORAGE_KEY, '[]');
 			viserGemModal = false;
 			forhaandsValgtDato = null;
@@ -1069,43 +1139,14 @@
 			{/if}
 
 			{#if favoritter.length > 0 && !redigererFavorit}
-				<div class="favorit-sektion">
-					<div class="favorit-overskrift">Mine favoritter</div>
-					<div class="favorit-rad">
-						{#each favoritter as f (f.id)}
-							<div class="favorit-kort">
-								<button
-									class="favorit-knap"
-									type="button"
-									onclick={() => indlaesFavoritIMaaltid(f)}
-								>
-									<span class="favorit-navn">{f.navn}</span>
-									<span class="favorit-antal">{f.items.length} ingredienser</span>
-								</button>
-								<div class="favorit-handlinger">
-									<button
-										class="favorit-mini"
-										type="button"
-										onclick={() => startRedigerFavorit(f)}
-										aria-label="Rediger favorit"
-										title="Rediger"
-									>
-										✎
-									</button>
-									<button
-										class="favorit-mini"
-										type="button"
-										onclick={() => sletFavoritKlik(f.id, f.navn)}
-										aria-label="Slet favorit"
-										title="Slet"
-									>
-										×
-									</button>
-								</div>
-							</div>
-						{/each}
-					</div>
-				</div>
+				<button
+					class="favorit-toggle-knap"
+					type="button"
+					onclick={() => (viserFavoritModal = true)}
+				>
+					<span>Mine favoritter ({favoritter.length})</span>
+					<Icon name="chevron-r" size={14} color="var(--text2)" />
+				</button>
 			{/if}
 
 			<div class="totaler">
@@ -1610,6 +1651,15 @@
 												<button
 													class="ikon-knap"
 													type="button"
+													onclick={() => aabnKopierModal(m)}
+													aria-label="Kopiér til anden dag"
+													title="Kopiér til anden dag"
+												>
+													⎘
+												</button>
+												<button
+													class="ikon-knap"
+													type="button"
 													onclick={() => startRedigerMaaltid(m)}
 													aria-label="Rediger måltid"
 												>
@@ -1648,6 +1698,158 @@
 				</div>
 			{/if}
 		{/if}
+	{/if}
+
+	{#if kopierFra}
+		<div
+			class="modal-bag"
+			role="dialog"
+			aria-modal="true"
+			use:portalToBody
+			onclick={(e) => {
+				if (e.target === e.currentTarget) lukKopierModal();
+			}}
+			onkeydown={(e) => {
+				if (e.key === 'Escape') lukKopierModal();
+			}}
+			tabindex="-1"
+		>
+			<div class="modal kopier-modal">
+				<div class="modal-head">
+					<div class="modal-titel">Kopiér måltid</div>
+					<button class="modal-luk" type="button" onclick={lukKopierModal} aria-label="Luk">
+						×
+					</button>
+				</div>
+				<div class="kopier-info">
+					<div class="kopier-info-navn">{kopierFra.navn}</div>
+					<div class="kopier-info-sub">
+						{MAALTIDSTYPE_LABELS[kopierFra.type]} · {visningsDato(kopierFra.dato)}
+					</div>
+				</div>
+
+				<div class="felt">
+					<div class="felt-label">Vælg dato</div>
+					<div class="kopier-genveje">
+						<button type="button" class="genvej-knap" onclick={() => kopierGenvej(-1)}>
+							I går
+						</button>
+						<button
+							type="button"
+							class="genvej-knap"
+							onclick={() => (kopierDato = formatDatoKey())}
+						>
+							I dag
+						</button>
+						<button type="button" class="genvej-knap" onclick={() => kopierGenvej(1)}>
+							I morgen
+						</button>
+					</div>
+					<input
+						type="date"
+						class="felt-input"
+						bind:value={kopierDato}
+						disabled={kopierer}
+					/>
+				</div>
+
+				<div class="felt">
+					<div class="felt-label">Måltidstype</div>
+					<select class="felt-input" bind:value={kopierType} disabled={kopierer}>
+						{#each MAALTIDSTYPER as type (type)}
+							<option value={type}>{MAALTIDSTYPE_LABELS[type]}</option>
+						{/each}
+					</select>
+				</div>
+
+				{#if kopierBesked}
+					<div class="gem-besked {kopierBesked.type}">{kopierBesked.tekst}</div>
+				{/if}
+
+				<button
+					class="primary-knap"
+					type="button"
+					onclick={udforKopier}
+					disabled={kopierer}
+				>
+					{kopierer ? 'Kopierer...' : 'Kopiér måltidet'}
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	{#if viserFavoritModal}
+		<div
+			class="modal-bag"
+			role="dialog"
+			aria-modal="true"
+			use:portalToBody
+			onclick={(e) => {
+				if (e.target === e.currentTarget) viserFavoritModal = false;
+			}}
+			onkeydown={(e) => {
+				if (e.key === 'Escape') viserFavoritModal = false;
+			}}
+			tabindex="-1"
+		>
+			<div class="modal">
+				<div class="modal-head">
+					<div class="modal-titel">Mine favoritter</div>
+					<button
+						class="modal-luk"
+						type="button"
+						onclick={() => (viserFavoritModal = false)}
+						aria-label="Luk"
+					>
+						×
+					</button>
+				</div>
+				<div class="picker-liste">
+					{#if favoritter.length === 0}
+						<div class="status-besked">Du har endnu ingen favorit-måltider.</div>
+					{:else}
+						{#each favoritter as f (f.id)}
+							<div class="favorit-modal-row">
+								<button
+									class="favorit-modal-vaelg"
+									type="button"
+									onclick={() => {
+										indlaesFavoritIMaaltid(f);
+										viserFavoritModal = false;
+									}}
+								>
+									<span class="favorit-navn">{f.navn}</span>
+									<span class="favorit-antal">{f.items.length} ingredienser</span>
+								</button>
+								<div class="favorit-handlinger">
+									<button
+										class="favorit-mini"
+										type="button"
+										onclick={() => {
+											startRedigerFavorit(f);
+											viserFavoritModal = false;
+										}}
+										aria-label="Rediger favorit"
+										title="Rediger"
+									>
+										✎
+									</button>
+									<button
+										class="favorit-mini"
+										type="button"
+										onclick={() => sletFavoritKlik(f.id, f.navn)}
+										aria-label="Slet favorit"
+										title="Slet"
+									>
+										×
+									</button>
+								</div>
+							</div>
+						{/each}
+					{/if}
+				</div>
+			</div>
+		</div>
 	{/if}
 
 	{#if viserGemModal}
@@ -3316,6 +3518,96 @@
 
 	.favorit-sektion {
 		margin-bottom: 16px;
+	}
+
+	.favorit-toggle-knap {
+		display: flex;
+		width: 100%;
+		align-items: center;
+		justify-content: space-between;
+		padding: 11px 14px;
+		margin-bottom: 12px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		color: var(--text2);
+		font-family: var(--ff-b);
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 500;
+		cursor: pointer;
+	}
+	.favorit-toggle-knap:hover {
+		background: var(--white);
+	}
+
+	.kopier-modal {
+		height: auto;
+		max-height: 80dvh;
+		padding-bottom: calc(14px + env(safe-area-inset-bottom));
+	}
+	.kopier-info {
+		padding: 10px 12px;
+		background: var(--bg2);
+		border-radius: 10px;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+	.kopier-info-navn {
+		font-family: var(--ff-b);
+		font-weight: 600;
+		color: var(--text);
+	}
+	.kopier-info-sub {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+	.kopier-genveje {
+		display: flex;
+		gap: 6px;
+		margin-bottom: 4px;
+	}
+	.genvej-knap {
+		flex: 1;
+		padding: 8px 10px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		color: var(--text2);
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 99px;
+		cursor: pointer;
+	}
+	.genvej-knap:hover {
+		background: var(--bg2);
+	}
+
+	.favorit-modal-row {
+		display: flex;
+		align-items: stretch;
+		gap: 6px;
+		padding: 6px 0;
+		border-bottom: 1px solid var(--border);
+	}
+	.favorit-modal-row:last-child {
+		border-bottom: none;
+	}
+	.favorit-modal-vaelg {
+		flex: 1;
+		text-align: left;
+		background: none;
+		border: none;
+		padding: 6px 8px;
+		font-family: var(--ff-b);
+		cursor: pointer;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		color: var(--text);
+	}
+	.favorit-modal-vaelg:hover {
+		background: var(--bg2);
+		border-radius: 8px;
 	}
 
 	.favorit-overskrift {
