@@ -132,6 +132,7 @@
 	// Picker-state (åbnes fra Byg måltid via "Tilføj/søg fødevare")
 	type PickerTab = 'alle' | 'seneste' | 'favorit';
 	let senesteFodevareIds = $state<string[]>([]);
+	let eksaktSog = $state(false);
 
 	// Byg måltid-state — persisterer i localStorage
 	let maaltid = $state<MaaltidsItem[]>([]);
@@ -274,11 +275,16 @@
 	const favoritFodevareSet = $derived(new Set(userDoc?.favoritFodevarer ?? []));
 	const senesteSet = $derived(new Set(senesteFodevareIds));
 
-	// Matcher kun fødevarenavne hvor søgeordet starter ét af ordene — så "æg"
-	// matcher "Æg" og "Blødkogte æg", men IKKE "Andepålæg" (hvor æg er suffix).
+	// Default: bred substring-søgning ("æg" matcher alt med "æg" i navnet).
+	// Med toggle "Kun hele ord" slået til: kun eksakt ord-match — "æg" matcher
+	// kun "Æg" eller fx "Pålæg med æg", ikke "Æggenudler".
 	function matcherSog(navn: string, q: string): boolean {
-		const ord = navn.toLowerCase().split(/[\s,\-/&()]+/);
-		return ord.some((w) => w.startsWith(q));
+		const lower = navn.toLowerCase();
+		if (eksaktSog) {
+			const ord = lower.split(/[\s,\-/&()]+/);
+			return ord.includes(q);
+		}
+		return lower.includes(q);
 	}
 
 	// Filtrér foods i pickeren baseret på aktiv tab + søgeord.
@@ -1969,6 +1975,10 @@
 					</button>
 				</div>
 				<input type="search" class="search" placeholder="Søg..." bind:value={pickerSoeg} />
+				<label class="eksakt-toggle" class:aktiv={eksaktSog}>
+					<input type="checkbox" bind:checked={eksaktSog} />
+					<span>Kun hele ord</span>
+				</label>
 				<div class="slap-tabs">
 					{#each [{ id: 'alle' as PickerTab, l: 'Alle' }, { id: 'seneste' as PickerTab, l: 'Seneste' }, { id: 'favorit' as PickerTab, l: 'Mine favoritter' }] as t (t.id)}
 						<button
@@ -3034,13 +3044,36 @@
 		-webkit-overflow-scrolling: touch;
 	}
 
-	/* Hold modal-head, søgefelt og tabs fastlimet til toppen så de ikke
-	   scroller med picker-listen — ellers forsvinder søgefeltet når listen
-	   er lang. */
+	/* Hold modal-head, søgefelt, toggle og tabs fastlimet til toppen så de
+	   ikke scroller med picker-listen — ellers forsvinder søgefeltet når
+	   listen er lang. */
 	.modal > .modal-head,
 	.modal > .search,
+	.modal > .eksakt-toggle,
 	.modal > .slap-tabs {
 		flex-shrink: 0;
+	}
+
+	.eksakt-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 0;
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		cursor: pointer;
+		user-select: none;
+		align-self: flex-start;
+	}
+	.eksakt-toggle input {
+		width: 14px;
+		height: 14px;
+		accent-color: var(--terra);
+		cursor: pointer;
+	}
+	.eksakt-toggle.aktiv {
+		color: var(--terra);
+		font-weight: 600;
 	}
 
 	.picker-row {
