@@ -443,7 +443,9 @@
 	$effect(() => {
 		const vane = modulbrugerTraeningsVane;
 		if (!vane || !modulbrugerTraeningGennemfoert) return;
-		if (modulbrugerVanedag?.checks?.[vane.id] === 'ja') return;
+		// Auto-ja KUN hvis brugeren ikke selv har valgt et svar. Så kan klienten
+		// stadig rette til delvist/nej hvis hun har lavet en fejl under træningen.
+		if (modulbrugerVanedag?.checks?.[vane.id] !== undefined) return;
 		void gemVaneSvar(vane.id, 'ja');
 	});
 
@@ -672,7 +674,8 @@
 	$effect(() => {
 		const vane = forlobTraeningsVane;
 		if (!vane || !forlobTraeningGennemfoert) return;
-		if (forlobVanedag?.checks?.[vane.id] === 'ja') return;
+		// Auto-ja KUN hvis brugeren ikke selv har valgt et svar.
+		if (forlobVanedag?.checks?.[vane.id] !== undefined) return;
 		void gemForlobVaneSvar(vane.id, 'ja');
 	});
 
@@ -923,9 +926,7 @@
 							</div>
 						{:else}
 							{#each aktivVaneprogramDag.checks as vane (vane.id)}
-								{@const erTraeningsVane =
-									vane.label.toLowerCase().includes('træn') && forlobTraeningGennemfoert}
-								{@const svar = erTraeningsVane ? 'ja' : forlobVanedag?.checks?.[vane.id]}
+								{@const svar = forlobVanedag?.checks?.[vane.id]}
 								<div class="vane-inline-row">
 									<div class="vane-inline-label">{vane.label}</div>
 									<div class="vane-svar-knapper">
@@ -934,10 +935,7 @@
 												type="button"
 												class="svar-knap svar-knap-{opt.v}"
 												class:aktiv={svar === opt.v}
-												disabled={gemmerSvar || erTraeningsVane}
-												title={erTraeningsVane
-													? 'Auto-markeret fordi du har gennemført dagens mikrotræning'
-													: undefined}
+												disabled={gemmerSvar}
 												onclick={() => gemForlobVaneSvar(vane.id, opt.v)}
 											>
 												{opt.l}
@@ -1006,7 +1004,7 @@
 				<section class="mad-section">
 					<a
 						class="action-card mad-action-card"
-						href={`/app/moduler/30-30-3?tab=dagbog&dato=${valgtDagDato}`}
+						href={`/app/moduler/30-30-3?dato=${valgtDagDato}`}
 					>
 						<div class="action-icon" style="background: var(--sdim)">
 							<Icon name="leaf" size={15} color="var(--sage)" />
@@ -1234,9 +1232,7 @@
 				{:else}
 					<div class="vaner-inline-liste">
 						{#each modulbrugerVaneOpsaetning.valgteVaner as vane (vane.id)}
-							{@const erTraeningsVane =
-								modulbrugerTraeningsVane?.id === vane.id && modulbrugerTraeningGennemfoert}
-							{@const svar = erTraeningsVane ? 'ja' : modulbrugerVanedag?.checks?.[vane.id]}
+							{@const svar = modulbrugerVanedag?.checks?.[vane.id]}
 							<div class="vane-inline-row">
 								<div class="vane-inline-label">{vane.label}</div>
 								<div class="vane-svar-knapper">
@@ -1245,10 +1241,7 @@
 											type="button"
 											class="svar-knap svar-knap-{opt.v}"
 											class:aktiv={svar === opt.v}
-											disabled={gemmerSvar || erTraeningsVane}
-											title={erTraeningsVane
-												? 'Auto-markeret fordi du har gennemført dagens mikrotræning'
-												: undefined}
+											disabled={gemmerSvar}
 											onclick={() => gemVaneSvar(vane.id, opt.v)}
 										>
 											{opt.l}
@@ -1314,7 +1307,7 @@
 			<section class="mad-section">
 				<a
 					class="action-card mad-action-card"
-					href={`/app/moduler/30-30-3?tab=dagbog&dato=${modulbrugerAktivDato}`}
+					href={`/app/moduler/30-30-3?dato=${modulbrugerAktivDato}`}
 				>
 					<div class="action-icon" style="background: var(--sdim)">
 						<Icon name="leaf" size={15} color="var(--sage)" />

@@ -980,7 +980,7 @@
 					skiftTab('maaltid');
 				}}
 			>
-				Byg måltid {maaltid.length > 0 ? `(${maaltid.length})` : ''}
+				Byg {maaltid.length > 0 ? `(${maaltid.length})` : ''}
 			</button>
 			<button
 				class="tab-knap"
@@ -1135,6 +1135,24 @@
 				</div>
 			{/if}
 
+			<div class="tilfoej-rad">
+				<button class="primary-knap tilfoej-fodevare-knap" type="button" onclick={aabnPicker}>
+					+ Tilføj fødevare
+				</button>
+				{#if kanScanne}
+					<button
+						class="scan-knap-direkte"
+						type="button"
+						onclick={aabnScanner}
+						disabled={scannerArbejder}
+						aria-label="Scan stregkode"
+					>
+						<Icon name="barcode" size={16} color="#fff" />
+						<span>Scan</span>
+					</button>
+				{/if}
+			</div>
+
 			<div class="maaltid-liste">
 				{#if maaltid.length === 0}
 					<div class="status-besked">
@@ -1214,24 +1232,6 @@
 							{/if}
 						</div>
 					{/each}
-				{/if}
-			</div>
-
-			<div class="tilfoej-rad">
-				<button class="primary-knap tilfoej-fodevare-knap" type="button" onclick={aabnPicker}>
-					+ Tilføj fødevare
-				</button>
-				{#if kanScanne}
-					<button
-						class="scan-knap-direkte"
-						type="button"
-						onclick={aabnScanner}
-						disabled={scannerArbejder}
-						aria-label="Scan stregkode"
-					>
-						<Icon name="barcode" size={16} color="#fff" />
-						<span>Scan</span>
-					</button>
 				{/if}
 			</div>
 
@@ -2079,7 +2079,8 @@
 
 	.tabs {
 		display: grid;
-		grid-template-columns: 1fr 1fr 1fr 1fr;
+		grid-auto-flow: column;
+		grid-auto-columns: 1fr;
 		background: var(--bg2);
 		padding: 4px;
 		border-radius: 12px;
@@ -2088,20 +2089,24 @@
 	}
 
 	.tab-knap {
-		padding: 10px 6px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
-		font-weight: 600;
-		border-radius: 8px;
-		border: none;
-		background: transparent;
-		color: var(--text2);
-		cursor: pointer;
+		padding: 9px 6px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-family: var(--ff-b);
+		font-weight: 500;
+		color: var(--text2);
+		background: transparent;
+		border: none;
+		border-radius: 9px;
+		cursor: pointer;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.tab-knap.aktiv {
 		background: var(--white);
-		color: var(--terra);
+		color: var(--text);
+		font-weight: 600;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 	}
 
@@ -2317,38 +2322,38 @@
 	}
 
 	.total-card {
-		padding: 14px;
+		padding: 9px 12px;
 		background: var(--white);
 		border: 1px solid var(--border);
-		border-radius: 14px;
+		border-radius: 12px;
 	}
 
 	.total-head {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		margin-bottom: 6px;
+		margin-bottom: 3px;
 	}
 
 	.total-label {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
-		letter-spacing: 0.08em;
+		letter-spacing: 0.06em;
 		text-transform: uppercase;
 		color: var(--text2);
 	}
 
 	.total-mål {
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(9.5px * var(--fs-scale, 1));
 		color: var(--text3);
 	}
 
 	.total-val {
 		font-family: var(--ff-d);
-		font-size: calc(26px * var(--fs-scale, 1));
+		font-size: calc(19px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
-		margin-bottom: 6px;
+		margin-bottom: 4px;
 	}
 
 	.total-bar {
