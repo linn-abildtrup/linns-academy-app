@@ -231,6 +231,19 @@ export function erLydLektion(url: string): boolean {
 }
 
 /**
+ * True hvis URL'en peger på en HTML-side (uploaded fra admin). Bruges til
+ * at vise et "Inspiration"-thumbnail med bog-ikon på lektion-cards.
+ */
+export function erInspirationLektion(url: string): boolean {
+	if (!url) return false;
+	const u = url.toLowerCase().split('?')[0];
+	if (/\.(html|htm)$/.test(u)) return true;
+	// Firebase Storage uploads har content-type i URL'en men ikke nødvendigvis
+	// .html-suffix. Tjek path-segmentet for /html/ som vores upload-helper bruger.
+	return /\/forlob\/[^/]+\/html\//.test(url);
+}
+
+/**
  * Sorterer guides så nyeste dato vises øverst. Items uden dato falder
  * nederst og sorteres internt efter orden.
  */

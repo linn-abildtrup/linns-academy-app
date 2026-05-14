@@ -53,7 +53,12 @@
 	import { dagligeMalForBruger } from '$lib/content/naering';
 	import Loading from '$lib/components/Loading.svelte';
 	import { effektivState, harPremium } from '$lib/utils/userAdgang';
-	import { erLydLektion, erVideoLektion, videoThumbnail } from '$lib/content/bibliotek';
+	import {
+		erInspirationLektion,
+		erLydLektion,
+		erVideoLektion,
+		videoThumbnail
+	} from '$lib/content/bibliotek';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const getUser = getContext<() => User | null>('user');
@@ -866,7 +871,8 @@
 							{#each dagensDag.lektioner as lektion, i (lektion.id)}
 								{@const thumbUrl = videoThumbnail(lektion.url)}
 								{@const erLyd = erLydLektion(lektion.url)}
-								{@const visThumb = erVideoLektion(lektion.url) || erLyd}
+								{@const erInspiration = erInspirationLektion(lektion.url)}
+								{@const visThumb = erVideoLektion(lektion.url) || erLyd || erInspiration}
 								<a
 									class="lektion-card lektion-card-kompakt"
 									class:lektion-card-medThumb={visThumb}
@@ -883,6 +889,11 @@
 												<div class="lektion-thumb-placeholder lektion-thumb-lyd">
 													<Icon name="headphones" size={26} color="#fff" />
 													<span>Lyd</span>
+												</div>
+											{:else if erInspiration}
+												<div class="lektion-thumb-placeholder lektion-thumb-inspiration">
+													<Icon name="book" size={26} color="#fff" />
+													<span>Inspiration</span>
 												</div>
 											{:else}
 												<div class="lektion-thumb-placeholder">Zoom</div>
@@ -1180,9 +1191,11 @@
 					{#if modulbrugerLektion && modulbrugerLektion.titel}
 						{@const modulThumbUrl = modulbrugerLektion.url ? videoThumbnail(modulbrugerLektion.url) : null}
 						{@const modulErLyd = !!modulbrugerLektion.url && erLydLektion(modulbrugerLektion.url)}
+						{@const modulErInspiration =
+							!!modulbrugerLektion.url && erInspirationLektion(modulbrugerLektion.url)}
 						{@const modulVisThumb =
 							!!modulbrugerLektion.url &&
-							(erVideoLektion(modulbrugerLektion.url) || modulErLyd)}
+							(erVideoLektion(modulbrugerLektion.url) || modulErLyd || modulErInspiration)}
 						<svelte:element
 							this={modulbrugerLektion.url ? 'a' : 'div'}
 							class="lektion-card lektion-card-kompakt"
@@ -1202,6 +1215,11 @@
 										<div class="lektion-thumb-placeholder lektion-thumb-lyd">
 											<Icon name="headphones" size={26} color="#fff" />
 											<span>Lyd</span>
+										</div>
+									{:else if modulErInspiration}
+										<div class="lektion-thumb-placeholder lektion-thumb-inspiration">
+											<Icon name="book" size={26} color="#fff" />
+											<span>Inspiration</span>
 										</div>
 									{:else}
 										<div class="lektion-thumb-placeholder">Zoom</div>
@@ -2097,6 +2115,10 @@
 	.lektion-thumb-lyd {
 		/* Mørk plum så den står tydeligt ud mod card-baggrunden (terra/sage/gold). */
 		background: linear-gradient(135deg, #5a4866 0%, #3d3148 100%);
+	}
+	.lektion-thumb-inspiration {
+		/* Dyb sage-grøn så den står ud mod terra-rubrikker uden at klashe. */
+		background: linear-gradient(135deg, #4a7a5e 0%, #2f5a44 100%);
 	}
 	.lektion-thumb-lyd span {
 		font-size: calc(11px * var(--fs-scale, 1));
