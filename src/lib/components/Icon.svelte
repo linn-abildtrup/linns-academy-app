@@ -9,6 +9,7 @@
 		| 'lock'
 		| 'check'
 		| 'mic'
+		| 'headphones'
 		| 'video'
 		| 'doc'
 		| 'quiz'
@@ -90,6 +91,10 @@
 	{:else if name === 'mic'}
 		<rect x="9" y="3" width="6" height="11" rx="3" />
 		<path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+	{:else if name === 'headphones'}
+		<path d="M4 14a8 8 0 0 1 16 0" />
+		<rect x="3" y="13" width="4" height="7" rx="1.5" />
+		<rect x="17" y="13" width="4" height="7" rx="1.5" />
 	{:else if name === 'video'}
 		<rect x="3" y="6" width="13" height="12" rx="2" />
 		<path d="M16 10l5-3v10l-5-3z" />

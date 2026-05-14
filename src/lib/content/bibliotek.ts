@@ -220,6 +220,17 @@ export function erVideoLektion(url: string): boolean {
 }
 
 /**
+ * True hvis URL'en peger på en lyd-lektion (mp3, m4a, wav osv.). Bruges til
+ * at vise et generisk lyd-thumbnail på lektion-cards så klienter kan se
+ * det er en podcast/audio og ikke en video.
+ */
+export function erLydLektion(url: string): boolean {
+	if (!url) return false;
+	const u = url.toLowerCase().split('?')[0];
+	return /\.(mp3|m4a|wav|aac|ogg)$/.test(u);
+}
+
+/**
  * Sorterer guides så nyeste dato vises øverst. Items uden dato falder
  * nederst og sorteres internt efter orden.
  */
