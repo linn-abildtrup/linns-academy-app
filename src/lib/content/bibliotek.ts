@@ -189,7 +189,8 @@ export function videoEmbedUrl(url: string): string | null {
 
 /**
  * Returnerer URL til et thumbnail-billede for en video. Bruges som forhåndsvisning
- * på lektion-cards. Returnerer null hvis URL'en ikke er en kendt video-platform.
+ * på lektion-cards. Returnerer null hvis URL'en ikke er en kendt video-platform
+ * eller (for Zoom) ikke kan auto-genereres.
  *
  * - YouTube: officiel CDN (img.youtube.com)
  * - Vimeo: vumbnail.com — statisk proxy så vi ikke skal lave async fetch
@@ -202,6 +203,20 @@ export function videoThumbnail(url: string): string | null {
 	const vm = vimeoId(url);
 	if (vm) return `https://vumbnail.com/${vm}.jpg`;
 	return null;
+}
+
+/**
+ * True hvis URL'en peger på en video-lektion (YouTube, Vimeo eller Zoom-
+ * optagelse). Bruges til at vise thumbnail-plads på lektion-cards selv
+ * hvis vi ikke kan hente et faktisk billede (fx Zoom).
+ */
+export function erVideoLektion(url: string): boolean {
+	if (!url) return false;
+	const u = url.toLowerCase();
+	if (u.includes('youtube.com/') || u.includes('youtu.be/')) return true;
+	if (u.includes('vimeo.com/')) return true;
+	if (u.includes('zoom.us/rec/')) return true;
+	return false;
 }
 
 /**
