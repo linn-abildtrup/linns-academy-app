@@ -23,6 +23,7 @@
 		| 'plus'
 		| 'star'
 		| 'sparkle'
+		| 'lightbulb'
 		| 'cal'
 		| 'settings'
 		| 'search'
@@ -131,6 +132,9 @@
 		/>
 	{:else if name === 'sparkle'}
 		<path d="M12 3v6M12 15v6M3 12h6M15 12h6M6 6l3 3M15 15l3 3M18 6l-3 3M9 15l-3 3" />
+	{:else if name === 'lightbulb'}
+		<path d="M9 18h6M10 21h4" />
+		<path d="M12 3a6 6 0 0 1 4 10.5c-.8.7-1 1.4-1 2.5H9c0-1.1-.2-1.8-1-2.5A6 6 0 0 1 12 3z" />
 	{:else if name === 'cal'}
 		<rect x="3" y="5" width="18" height="16" rx="2" />
 		<path d="M3 10h18M8 3v4M16 3v4" />

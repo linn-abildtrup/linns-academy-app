@@ -892,8 +892,7 @@
 												</div>
 											{:else if erInspiration}
 												<div class="lektion-thumb-placeholder lektion-thumb-inspiration">
-													<Icon name="book" size={26} color="#fff" />
-													<span>Inspiration</span>
+													<Icon name="lightbulb" size={32} color="#fff" />
 												</div>
 											{:else}
 												<div class="lektion-thumb-placeholder">Zoom</div>
@@ -1218,8 +1217,7 @@
 										</div>
 									{:else if modulErInspiration}
 										<div class="lektion-thumb-placeholder lektion-thumb-inspiration">
-											<Icon name="book" size={26} color="#fff" />
-											<span>Inspiration</span>
+											<Icon name="lightbulb" size={32} color="#fff" />
 										</div>
 									{:else}
 										<div class="lektion-thumb-placeholder">Zoom</div>
@@ -2117,8 +2115,8 @@
 		background: linear-gradient(135deg, #5a4866 0%, #3d3148 100%);
 	}
 	.lektion-thumb-inspiration {
-		/* Dyb sage-grøn så den står ud mod terra-rubrikker uden at klashe. */
-		background: linear-gradient(135deg, #4a7a5e 0%, #2f5a44 100%);
+		/* Varm gul-orange som passer til lyspære/inspiration-symbolet. */
+		background: linear-gradient(135deg, #e8b04a 0%, #c98a2e 100%);
 	}
 	.lektion-thumb-lyd span {
 		font-size: calc(11px * var(--fs-scale, 1));
