@@ -26,6 +26,8 @@
 		"importer:gammel-lektioner": "tsx scripts/importer-gammel-lektioner.ts",
 		"importer:gamle-html-lektioner": "tsx scripts/importer-gamle-html-lektioner.ts",
 		"omdoeb:format-skriftlig": "tsx scripts/omdoeb-format-skriftlig.ts",
+		"dump:vaneprogram": "tsx scripts/dump-vaneprogram.ts",
+		"importer:traeningsprogrammer": "tsx scripts/importer-traeningsprogrammer.ts",
 		"ryd:titler": "tsx scripts/ryd-opskriftstitler.ts",
 		"cleanup:vaneprogrammer": "tsx scripts/cleanup-vaneprogrammer.ts",
 		"list:forlob": "tsx scripts/list-forlob.ts",
