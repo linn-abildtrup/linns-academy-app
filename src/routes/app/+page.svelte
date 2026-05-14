@@ -2095,7 +2095,8 @@
 		letter-spacing: 0.04em;
 	}
 	.lektion-thumb-lyd {
-		background: linear-gradient(135deg, #c99587 0%, #9d6358 100%);
+		/* Mørk plum så den står tydeligt ud mod card-baggrunden (terra/sage/gold). */
+		background: linear-gradient(135deg, #5a4866 0%, #3d3148 100%);
 	}
 	.lektion-thumb-lyd span {
 		font-size: calc(11px * var(--fs-scale, 1));
@@ -2136,21 +2137,26 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		padding: 7px 14px;
+		padding: 6px 13px;
 		border-radius: 99px;
 		background: #fff;
 		color: var(--terra);
 		border: none;
-		font-size: calc(12px * var(--fs-scale, 1));
-		font-weight: 600;
 		font-family: var(--ff-b);
+		font-size: calc(9px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
 		cursor: pointer;
 	}
 
 	.lektion-duration {
-		font-size: calc(15px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		font-size: calc(9px * var(--fs-scale, 1));
 		font-weight: 600;
-		opacity: 0.95;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		opacity: 0.85;
 	}
 
 	/* ── Actions ───────────────────────────────────────────────── */
