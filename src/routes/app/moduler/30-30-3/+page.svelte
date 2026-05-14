@@ -129,8 +129,8 @@
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
-	// Picker-state (åbnes fra Byg måltid via "Tilføj fødevare")
-	type PickerTab = 'alle' | 'seneste' | 'mine' | 'basis';
+	// Picker-state (åbnes fra Byg måltid via "Tilføj/søg fødevare")
+	type PickerTab = 'alle' | 'seneste' | 'favorit';
 	let senesteFodevareIds = $state<string[]>([]);
 
 	// Byg måltid-state — persisterer i localStorage
@@ -262,27 +262,29 @@
 	const favoritFodevareSet = $derived(new Set(userDoc?.favoritFodevarer ?? []));
 	const senesteSet = $derived(new Set(senesteFodevareIds));
 
+	// Matcher kun fødevarenavne hvor søgeordet starter ét af ordene — så "æg"
+	// matcher "Æg" og "Blødkogte æg", men IKKE "Andepålæg" (hvor æg er suffix).
+	function matcherSog(navn: string, q: string): boolean {
+		const ord = navn.toLowerCase().split(/[\s,\-/&()]+/);
+		return ord.some((w) => w.startsWith(q));
+	}
+
 	// Filtrér foods i pickeren baseret på aktiv tab + søgeord.
-	// Alle uden søgning viser favoritter (eller tom-state hvis ingen).
-	// Seneste/Mine/Basis viser foods uden søge-krav, søgeord filtrerer
-	// inden for den valgte sub-liste.
+	// Alle: tom-state uden søgning, alle matchende foods med søgning.
+	// Seneste: de seneste 30 valgte fødevarer (alfabetisk).
+	// Favorit: brugerens favoritter (alfabetisk).
 	const filtretetPicker = $derived.by<Fodevare[]>(() => {
 		const q = pickerSoeg.trim().toLowerCase();
 		let base: Fodevare[];
 		if (pickerTab === 'alle') {
-			if (!q) {
-				base = foods.filter((f) => favoritFodevareSet.has(f.id));
-			} else {
-				base = foods;
-			}
+			if (!q) return [];
+			base = foods;
 		} else if (pickerTab === 'seneste') {
 			base = foods.filter((f) => senesteSet.has(f.id));
-		} else if (pickerTab === 'mine') {
-			base = foods.filter((f) => f.kilde === 'community' || f.kilde === 'custom');
 		} else {
-			base = foods.filter((f) => f.kilde === 'frida' || f.kilde === 'kickstart');
+			base = foods.filter((f) => favoritFodevareSet.has(f.id));
 		}
-		if (q) base = base.filter((f) => f.name.toLowerCase().includes(q));
+		if (q) base = base.filter((f) => matcherSog(f.name, q));
 		return sorterFodevarer(base, 'alpha');
 	});
 
@@ -307,22 +309,31 @@
 	}
 
 	async function indlaesSenesteFodevarer(uid: string) {
-		// Henter de seneste 30 dages måltider og udleder hvilke fødevare-ids
-		// brugeren har brugt — det er listen der vises under Seneste-tabben.
+		// Henter måltider fra de seneste 90 dage, sortér nyeste først, og
+		// udled de seneste 30 unikke fødevarer brugeren har valgt.
 		const idag = new Date();
 		const fra = new Date(idag);
-		fra.setDate(fra.getDate() - 30);
-		const fraKey = formatDatoKey(fra);
-		const tilKey = formatDatoKey(idag);
+		fra.setDate(fra.getDate() - 90);
 		try {
-			const maaltider = await hentMaaltiderIPeriode(uid, fraKey, tilKey);
-			const ids = new Set<string>();
+			const maaltider = await hentMaaltiderIPeriode(
+				uid,
+				formatDatoKey(fra),
+				formatDatoKey(idag)
+			);
+			maaltider.sort((a, b) => b.dato.localeCompare(a.dato));
+			const seen = new Set<string>();
+			const result: string[] = [];
 			for (const m of maaltider) {
 				for (const i of m.items) {
-					if (i.foodId) ids.add(i.foodId);
+					if (i.foodId && !seen.has(i.foodId)) {
+						seen.add(i.foodId);
+						result.push(i.foodId);
+						if (result.length >= 30) break;
+					}
 				}
+				if (result.length >= 30) break;
 			}
-			senesteFodevareIds = Array.from(ids);
+			senesteFodevareIds = result;
 		} catch (e) {
 			console.warn('Kunne ikke hente seneste fødevarer:', e);
 		}
@@ -1757,7 +1768,7 @@
 				</div>
 				<input type="search" class="search" placeholder="Søg..." bind:value={pickerSoeg} />
 				<div class="slap-tabs">
-					{#each [{ id: 'alle' as PickerTab, l: 'Alle' }, { id: 'seneste' as PickerTab, l: 'Seneste' }, { id: 'mine' as PickerTab, l: 'Mine' }, { id: 'basis' as PickerTab, l: 'Basis' }] as t (t.id)}
+					{#each [{ id: 'alle' as PickerTab, l: 'Alle' }, { id: 'seneste' as PickerTab, l: 'Seneste' }, { id: 'favorit' as PickerTab, l: 'Mine favoritter' }] as t (t.id)}
 						<button
 							type="button"
 							class="slap-tab"
@@ -1773,12 +1784,14 @@
 						{#if pickerTab === 'alle' && !pickerSoeg.trim()}
 							<div class="status-besked tom-state">
 								<div>Søg efter en madvare for at komme i gang.</div>
-								<div class="tom-state-hint">Dine favoritter vises her efterhånden.</div>
+								<div class="tom-state-hint">Dine favoritter vises under Mine favoritter.</div>
 							</div>
 						{:else if pickerTab === 'seneste'}
-							<div class="status-besked">Endnu ingen fødevarer brugt de seneste 30 dage.</div>
-						{:else if pickerTab === 'mine'}
-							<div class="status-besked">Du har ikke tilføjet egne fødevarer endnu.</div>
+							<div class="status-besked">Du har endnu ikke valgt nogen fødevarer.</div>
+						{:else if pickerTab === 'favorit'}
+							<div class="status-besked">
+								Ingen favoritter endnu — tryk på stjernen ved en fødevare for at gemme den.
+							</div>
 						{:else}
 							<div class="status-besked">Ingen fødevarer matcher.</div>
 						{/if}
@@ -2881,8 +2894,8 @@
 	}
 
 	/* "Gem i dagbog"-knappen står ved siden af tilføj-knappen og skal være
-	   samme størrelse. Override sage's margin-top som ellers gør den skæv. */
-	.gem-i-rad {
+	   samme størrelse. Override sage's margin-top via samme specificity. */
+	.primary-knap.gem-i-rad {
 		flex: 1 1 0;
 		min-width: 0;
 		margin-top: 0;
