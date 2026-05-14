@@ -214,34 +214,6 @@
 	});
 
 
-	type TidligereKob = {
-		navn: string;
-		meta: string;
-		expires: string;
-		ikon: 'path' | 'check';
-		accent: string;
-		dim: string;
-	};
-
-	const tidligereKob: TidligereKob[] = [
-		{
-			navn: 'Kickstart en sund overgangsalder',
-			meta: 'Forløb · købt okt. 2025',
-			expires: 'Adgang til 15. nov. 2026',
-			ikon: 'path',
-			accent: '#9D6358',
-			dim: 'rgba(157,99,88,.10)'
-		},
-		{
-			navn: 'Vanetracker',
-			meta: 'Modul · købt jan. 2026',
-			expires: 'Læseadgang · ingen tracking',
-			ikon: 'check',
-			accent: '#6F9E7E',
-			dim: 'rgba(111,158,126,.10)'
-		}
-	];
-
 	$effect(() => {
 		// Kun for forløbskunder skal vi hente forløb og dagens lektion
 		const u = user;
@@ -1456,19 +1428,6 @@
 				</a>
 			{/if}
 
-			<section class="tilbud-card">
-				<div class="tilbud-decoration"></div>
-				<div class="tilbud-content">
-					<div class="tilbud-eyebrow">
-						<Icon name="sparkle" size={10} color="#fff" />
-						KUN FOR DIG
-					</div>
-					<div class="tilbud-title">−30% den første måned</div>
-					<div class="tilbud-description">Fortsæt hvor du slap — alle moduler, fri adgang.</div>
-					<button class="tilbud-button">Se mit tilbud</button>
-				</div>
-			</section>
-
 			{#if tidligereForlob.length > 0}
 				<section class="kob-section">
 					<div class="kob-header">
@@ -2496,75 +2455,6 @@
 		color: var(--text2);
 		margin-top: 3px;
 		line-height: 1.45;
-	}
-
-	/* ── C1 tilbuds-card ───────────────────────────────────────── */
-
-	.tilbud-card {
-		border-radius: 16px;
-		overflow: hidden;
-		background: linear-gradient(160deg, #c99587 0%, #b87b6e 60%, #9d6358 100%);
-		color: #fff;
-		padding: 18px;
-		position: relative;
-	}
-
-	.tilbud-decoration {
-		position: absolute;
-		right: -30px;
-		top: -30px;
-		width: 130px;
-		height: 130px;
-		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.08);
-	}
-
-	.tilbud-content {
-		position: relative;
-	}
-
-	.tilbud-eyebrow {
-		display: inline-flex;
-		align-items: center;
-		gap: 5px;
-		padding: 3px 9px;
-		border-radius: 99px;
-		background: rgba(255, 255, 255, 0.22);
-		font-size: calc(9px * var(--fs-scale, 1));
-		font-weight: 700;
-		letter-spacing: 0.14em;
-		margin-bottom: 10px;
-	}
-
-	.tilbud-title {
-		font-family: var(--ff-d);
-		font-size: calc(22px * var(--fs-scale, 1));
-		font-weight: 700;
-		line-height: 1.1;
-		letter-spacing: -0.01em;
-	}
-
-	.tilbud-description {
-		font-size: calc(11.5px * var(--fs-scale, 1));
-		opacity: 0.9;
-		margin-top: 6px;
-		line-height: 1.45;
-	}
-
-	.tilbud-button {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 10px 18px;
-		border-radius: 99px;
-		background: #fff;
-		color: var(--terra);
-		border: none;
-		font-size: calc(12px * var(--fs-scale, 1));
-		font-weight: 600;
-		font-family: var(--ff-b);
-		margin-top: 14px;
-		cursor: pointer;
 	}
 
 	/* ── C1 mine køb ───────────────────────────────────────────── */
