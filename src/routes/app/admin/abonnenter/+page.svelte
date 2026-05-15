@@ -4,15 +4,40 @@
 	import Loading from '$lib/components/Loading.svelte';
 	import { hentAbonnentAllowedEmails } from '$lib/firestore/forlob';
 	import type { AllowedEmail } from '$lib/content/forlobAdgang';
+	import type { UserDoc } from '$lib/types';
+	import { collection, getDocs } from 'firebase/firestore';
+	import { db } from '$lib/firebase';
 
-	let abonnenter = $state<AllowedEmail[]>([]);
+	type RowData = {
+		allowed: AllowedEmail;
+		userDoc: UserDoc | null;
+		uid: string | null;
+	};
+
+	let rows = $state<RowData[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let filter = $state<'alle' | 'basis' | 'premium' | 'kun-aktive'>('alle');
+	let soegeord = $state('');
+	let aabnetEmail = $state<string | null>(null);
 
 	onMount(async () => {
 		try {
-			abonnenter = await hentAbonnentAllowedEmails();
+			const allowed = await hentAbonnentAllowedEmails();
+			const usersSnap = await getDocs(collection(db, 'users'));
+			const docsByEmail = new Map<string, { uid: string; data: UserDoc }>();
+			for (const d of usersSnap.docs) {
+				const data = d.data() as UserDoc;
+				if (data.email) docsByEmail.set(data.email.toLowerCase(), { uid: d.id, data });
+			}
+			rows = allowed.map((a) => {
+				const match = docsByEmail.get(a.email.toLowerCase());
+				return {
+					allowed: a,
+					userDoc: match?.data ?? null,
+					uid: match?.uid ?? null
+				};
+			});
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente abonnenter.';
@@ -21,26 +46,31 @@
 		}
 	});
 
-	const filtreret = $derived(
-		abonnenter.filter((a) => {
-			if (filter === 'basis') return a.accessLevel === 'basis';
-			if (filter === 'premium') return a.accessLevel === 'premium';
-			if (filter === 'kun-aktive') return a.activeSubscription === true;
-			return true;
-		})
-	);
+	const filtreret = $derived.by(() => {
+		const q = soegeord.trim().toLowerCase();
+		return rows.filter((r) => {
+			const a = r.allowed;
+			if (filter === 'basis' && a.accessLevel !== 'basis') return false;
+			if (filter === 'premium' && a.accessLevel !== 'premium') return false;
+			if (filter === 'kun-aktive' && !a.activeSubscription) return false;
+			if (!q) return true;
+			const fornavn = (r.userDoc?.firstName ?? a.firstName ?? '').toLowerCase();
+			const efternavn = (a.lastName ?? '').toLowerCase();
+			return a.email.toLowerCase().includes(q) || fornavn.includes(q) || efternavn.includes(q);
+		});
+	});
 
 	const aktiveBasis = $derived(
-		abonnenter.filter((a) => a.accessLevel === 'basis' && a.activeSubscription).length
+		rows.filter((r) => r.allowed.accessLevel === 'basis' && r.allowed.activeSubscription).length
 	);
 	const aktivePremium = $derived(
-		abonnenter.filter((a) => a.accessLevel === 'premium' && a.activeSubscription).length
+		rows.filter((r) => r.allowed.accessLevel === 'premium' && r.allowed.activeSubscription).length
 	);
 
-	function visDato(ts?: number): string {
-		if (!ts) return '';
+	function visDato(ts?: number | null): string {
+		if (!ts) return '—';
 		const d = new Date(ts);
-		return d.toLocaleDateString('da-DK', { day: '2-digit', month: 'short', year: '2-digit' });
+		return d.toLocaleDateString('da-DK', { day: '2-digit', month: 'short', year: 'numeric' });
 	}
 
 	function produktLabel(a: AllowedEmail): string {
@@ -51,6 +81,17 @@
 			premiumforløb: 'Premium-forløb'
 		};
 		return a.activeProduct ? (map[a.activeProduct] ?? a.activeProduct) : '—';
+	}
+
+	function fuldtNavn(r: RowData): string {
+		const f = r.userDoc?.firstName ?? r.allowed.firstName ?? '';
+		const l = r.allowed.lastName ?? '';
+		const samlet = [f, l].filter(Boolean).join(' ');
+		return samlet || '(uden navn)';
+	}
+
+	function toggleDetaljer(email: string) {
+		aabnetEmail = aabnetEmail === email ? null : email;
 	}
 </script>
 
@@ -63,9 +104,8 @@
 		<div class="eyebrow">Admin</div>
 		<h1>Abonnenter</h1>
 		<p class="page-sub">
-			Alle brugere med basis- eller premium-abonnement fra Simplero. Listen omfatter
-			whitelistede emails — brugeren ses kun i den fulde bruger-liste, når hun har
-			logget ind første gang.
+			Brugere med basis- eller premium-abonnement fra Simplero. Klik et kort for at
+			se hele kunde-profilen.
 		</p>
 	</header>
 
@@ -84,10 +124,17 @@
 				<div class="kpi-lbl">Aktive premium</div>
 			</div>
 			<div class="kpi">
-				<div class="kpi-tal">{abonnenter.length}</div>
+				<div class="kpi-tal">{rows.length}</div>
 				<div class="kpi-lbl">I alt</div>
 			</div>
 		</div>
+
+		<input
+			type="search"
+			class="search"
+			placeholder="Søg på navn eller email…"
+			bind:value={soegeord}
+		/>
 
 		<div class="chips">
 			{#each [{ id: 'alle' as const, l: 'Alle' }, { id: 'kun-aktive' as const, l: 'Kun aktive' }, { id: 'basis' as const, l: 'Basis' }, { id: 'premium' as const, l: 'Premium' }] as f (f.id)}
@@ -103,13 +150,24 @@
 		</div>
 
 		{#if filtreret.length === 0}
-			<div class="status-besked">Ingen abonnenter matcher filteret.</div>
+			<div class="status-besked">Ingen abonnenter matcher søgningen.</div>
 		{:else}
 			<div class="liste">
-				{#each filtreret as a (a.email)}
-					<div class="kort">
+				{#each filtreret as r (r.allowed.email)}
+					{@const a = r.allowed}
+					{@const u = r.userDoc}
+					{@const erAaben = aabnetEmail === a.email}
+					<button
+						class="kort"
+						type="button"
+						onclick={() => toggleDetaljer(a.email)}
+						aria-expanded={erAaben}
+					>
 						<div class="kort-top">
-							<div class="kort-email">{a.email}</div>
+							<div class="kort-tekst">
+								<div class="kort-navn">{fuldtNavn(r)}</div>
+								<div class="kort-email">{a.email}</div>
+							</div>
 							<span
 								class="badge"
 								class:badge-aktiv={a.activeSubscription}
@@ -123,16 +181,65 @@
 								{produktLabel(a)}
 							</span>
 							<span>
-								{a.status === 'registered' ? 'Tilmeldt appen ✓' : 'Ikke logget ind endnu'}
+								{a.status === 'registered' ? 'Tilmeldt ✓' : 'Ikke logget ind'}
 							</span>
-							{#if a.updatedAt}
-								<span>· opdateret {visDato(a.updatedAt)}</span>
-							{/if}
 						</div>
-						{#if a.simpleroCustomerId}
-							<div class="kort-id">Simplero-id: {a.simpleroCustomerId}</div>
-						{/if}
-					</div>
+					</button>
+
+					{#if erAaben}
+						<div class="detaljer">
+							<div class="detalje-grid">
+								<div class="detalje">
+									<div class="detalje-lbl">Email</div>
+									<div class="detalje-val">{a.email}</div>
+								</div>
+								<div class="detalje">
+									<div class="detalje-lbl">Navn</div>
+									<div class="detalje-val">{fuldtNavn(r)}</div>
+								</div>
+								<div class="detalje">
+									<div class="detalje-lbl">Produkt</div>
+									<div class="detalje-val">{produktLabel(a)}</div>
+								</div>
+								<div class="detalje">
+									<div class="detalje-lbl">Adgangsniveau</div>
+									<div class="detalje-val">{a.accessLevel ?? '—'}</div>
+								</div>
+								<div class="detalje">
+									<div class="detalje-lbl">Abonnement</div>
+									<div class="detalje-val">
+										{a.activeSubscription ? 'Aktivt' : 'Stoppet'}
+									</div>
+								</div>
+								<div class="detalje">
+									<div class="detalje-lbl">Tilmeldt appen</div>
+									<div class="detalje-val">
+										{a.status === 'registered' ? 'Ja' : 'Nej (kun whitelisted)'}
+									</div>
+								</div>
+								<div class="detalje">
+									<div class="detalje-lbl">Udløber</div>
+									<div class="detalje-val">{visDato(a.expiresAt ?? u?.expiresAt)}</div>
+								</div>
+								<div class="detalje">
+									<div class="detalje-lbl">Bibliotek-bonus indtil</div>
+									<div class="detalje-val">{visDato(u?.bonusPeriodEndsAt)}</div>
+								</div>
+								{#if a.simpleroCustomerId}
+									<div class="detalje detalje-fuld">
+										<div class="detalje-lbl">Simplero customer-id</div>
+										<div class="detalje-val mono">{a.simpleroCustomerId}</div>
+									</div>
+								{/if}
+								{#if r.uid}
+									<div class="detalje detalje-fuld">
+										<div class="detalje-lbl">Firebase Auth UID</div>
+										<div class="detalje-val mono">{r.uid}</div>
+									</div>
+								{/if}
+							</div>
+						</div>
+					{/if}
 				{/each}
 			</div>
 		{/if}
@@ -198,6 +305,18 @@
 		color: var(--text3);
 		margin-top: 2px;
 	}
+	.search {
+		width: 100%;
+		padding: 11px 14px;
+		font-size: calc(16px * var(--fs-scale, 1));
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: var(--bg2);
+		color: var(--text);
+		font-family: var(--ff-b);
+		outline: none;
+		margin-bottom: 10px;
+	}
 	.chips {
 		display: flex;
 		gap: 6px;
@@ -225,26 +344,43 @@
 		gap: 8px;
 	}
 	.kort {
+		display: block;
+		width: 100%;
+		text-align: left;
 		padding: 12px 14px;
 		background: var(--white);
 		border: 1px solid var(--border);
 		border-radius: 12px;
+		cursor: pointer;
+		font-family: inherit;
+	}
+	.kort:hover {
+		background: var(--bg2);
 	}
 	.kort-top {
 		display: flex;
-		align-items: center;
+		align-items: flex-start;
 		justify-content: space-between;
 		gap: 12px;
 		margin-bottom: 4px;
 	}
-	.kort-email {
+	.kort-tekst {
+		min-width: 0;
+		flex: 1;
+	}
+	.kort-navn {
 		font-family: var(--ff-b);
 		font-weight: 600;
 		font-size: calc(14px * var(--fs-scale, 1));
 		color: var(--text);
+	}
+	.kort-email {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		margin-top: 1px;
 	}
 	.badge {
 		font-size: calc(10px * var(--fs-scale, 1));
@@ -282,11 +418,39 @@
 		background: rgba(157, 99, 88, 0.12);
 		color: var(--terra);
 	}
-	.kort-id {
-		margin-top: 4px;
-		font-size: calc(10.5px * var(--fs-scale, 1));
+	.detaljer {
+		margin-top: -4px;
+		margin-bottom: 4px;
+		padding: 14px 16px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-top: none;
+		border-radius: 0 0 12px 12px;
+	}
+	.detalje-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+	}
+	.detalje-fuld {
+		grid-column: 1 / -1;
+	}
+	.detalje-lbl {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
 		color: var(--text3);
+		margin-bottom: 2px;
+	}
+	.detalje-val {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+	}
+	.detalje-val.mono {
 		font-family: 'SF Mono', Menlo, monospace;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text2);
 	}
 	.status-besked {
 		padding: 12px 14px;
