@@ -81,6 +81,14 @@
 			rute: '/app/admin/ai-ratings',
 			accent: '#C9A07A',
 			icon: 'star' as const
+		},
+		{
+			id: 'abonnenter',
+			navn: 'Abonnenter',
+			beskrivelse: 'Se alle basis- og premium-abonnenter (allowedEmails fra Simplero)',
+			rute: '/app/admin/abonnenter',
+			accent: '#7E9BB3',
+			icon: 'user' as const
 		}
 	];
 </script>
