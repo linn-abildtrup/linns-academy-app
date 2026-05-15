@@ -93,6 +93,13 @@
 		};
 	}
 
+	// Auto-fokus på input når picker-modalen åbnes, så brugeren kan begynde
+	// at skrive med det samme. Lille delay for at undgå konflikt med modal-
+	// animation på iOS.
+	function autofokus(node: HTMLInputElement) {
+		setTimeout(() => node.focus(), 50);
+	}
+
 	const STORAGE_KEY = 'la_30303_maaltid_v1';
 
 	type Tab = 'maaltid' | 'opskrifter' | 'mine' | 'dagbog';
@@ -1196,8 +1203,14 @@
 			{/if}
 
 			<div class="tilfoej-rad">
-				<button class="primary-knap tilfoej-fodevare-knap" type="button" onclick={aabnPicker}>
-					+ Tilføj/søg fødevare
+				<button
+					class="soeg-faux tilfoej-fodevare-knap"
+					type="button"
+					onclick={aabnPicker}
+					aria-label="Søg fødevare"
+				>
+					<Icon name="search" size={14} color="var(--text3)" />
+					<span class="soeg-faux-placeholder">Søg fødevare</span>
 				</button>
 				{#if !redigererFavorit && maaltid.length > 0}
 					<button class="primary-knap sage gem-i-rad" type="button" onclick={aabnGemModal}>
@@ -1219,11 +1232,7 @@
 			</div>
 
 			<div class="maaltid-liste">
-				{#if maaltid.length === 0}
-					<div class="status-besked">
-						Tryk på + for at tilføje din første fødevare.
-					</div>
-				{:else}
+				{#if maaltid.length > 0}
 					{#each maaltid as item, i (i)}
 						{@const food = foodMap.get(item.foodId)}
 						{@const manuel = erManueltItem(item)}
@@ -1974,7 +1983,13 @@
 						×
 					</button>
 				</div>
-				<input type="search" class="search" placeholder="Søg..." bind:value={pickerSoeg} />
+				<input
+					type="search"
+					class="search"
+					placeholder="Søg fødevare"
+					bind:value={pickerSoeg}
+					use:autofokus
+				/>
 				<label class="eksakt-toggle" class:aktiv={eksaktSog}>
 					<input type="checkbox" bind:checked={eksaktSog} />
 					<span>Kun hele ord</span>
@@ -3126,6 +3141,30 @@
 		flex: 1 1 0;
 		min-width: 0;
 		text-align: center;
+	}
+
+	/* Søgefelt-look: ligner et input, men er en knap der åbner picker-modalen.
+	   Når brugeren trykker landner hun i picker-modalen med søgefeltet i fokus. */
+	.soeg-faux {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 11px 14px;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: var(--bg2);
+		font-family: var(--ff-b);
+		font-size: calc(14px * var(--fs-scale, 1));
+		color: var(--text3);
+		cursor: pointer;
+		text-align: left;
+	}
+	.soeg-faux:hover {
+		background: var(--white);
+		border-color: var(--terra);
+	}
+	.soeg-faux-placeholder {
+		flex: 1;
 	}
 
 	/* "Gem i dagbog"-knappen står ved siden af tilføj-knappen og skal være
