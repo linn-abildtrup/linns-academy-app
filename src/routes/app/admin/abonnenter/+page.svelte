@@ -181,8 +181,11 @@
 								class="badge"
 								class:badge-aktiv={a.activeSubscription}
 								class:badge-inaktiv={!a.activeSubscription}
+								title={a.activeSubscription
+									? 'Simplero rapporterer at abonnementet stadig løber'
+									: 'Simplero rapporterer at abonnementet er stoppet'}
 							>
-								{a.activeSubscription ? 'Aktiv' : 'Stoppet'}
+								{a.activeSubscription ? 'Betaler' : 'Stoppet'}
 							</span>
 						</div>
 						<div class="kort-meta">
@@ -190,7 +193,7 @@
 								{produktLabel(a)}
 							</span>
 							<span>
-								{a.status === 'registered' ? 'Tilmeldt ✓' : 'Ikke logget ind'}
+								{r.uid || a.status === 'registered' ? 'Tilmeldt ✓' : 'Ikke logget ind'}
 							</span>
 						</div>
 					</button>
@@ -223,7 +226,7 @@
 								<div class="detalje">
 									<div class="detalje-lbl">Tilmeldt appen</div>
 									<div class="detalje-val">
-										{a.status === 'registered' ? 'Ja' : 'Nej (kun whitelisted)'}
+										{r.uid || a.status === 'registered' ? 'Ja' : 'Nej (kun whitelisted)'}
 									</div>
 								</div>
 								<div class="detalje">
