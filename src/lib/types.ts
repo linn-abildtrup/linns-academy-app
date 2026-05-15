@@ -76,6 +76,10 @@ export interface UserDoc {
 	state: UserState;
 
 	createdAt: number; // Unix timestamp i millisekunder
+	// Sidste gang brugeren loggede ind og synkroniserede sin userDoc.
+	// Opdateres af layout-init i +layout.svelte. Bruges af admin-siden til
+	// at se hvilke kunder der har været aktive.
+	lastLoginAt?: number;
 
 	// ============================================================
 	// Adgangs-model (drevet af Simplero-køb)

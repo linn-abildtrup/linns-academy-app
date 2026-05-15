@@ -2,7 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { onMount, setContext } from 'svelte';
 	import { onAuthStateChanged, type User } from 'firebase/auth';
-	import { auth } from '$lib/firebase';
+	import { auth, db } from '$lib/firebase';
+	import { doc as doc_ref, updateDoc } from 'firebase/firestore';
 	import {
 		createUserDoc,
 		getUserDoc,
@@ -137,6 +138,18 @@
 					doc = await synkroniserForlobskundeStatus(u.uid, u.email, doc);
 				} catch (e) {
 					console.warn('Forløbssync fejlede:', e);
+				}
+			}
+
+			// Registrer login-tidspunkt (bruges af admin-siden). Best-effort —
+			// fejl må ikke blokere login.
+			if (doc && u.uid) {
+				try {
+					const nu = Date.now();
+					await updateDoc(doc_ref(db, 'users', u.uid), { lastLoginAt: nu });
+					doc = { ...doc, lastLoginAt: nu };
+				} catch (e) {
+					console.warn('Kunne ikke opdatere lastLoginAt:', e);
 				}
 			}
 
