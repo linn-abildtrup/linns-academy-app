@@ -24,12 +24,21 @@
 	onMount(async () => {
 		try {
 			const allowed = await hentAbonnentAllowedEmails();
-			const usersSnap = await getDocs(collection(db, 'users'));
+
+			// Forsøg at hente users-collection — vi har brug for matching userDoc
+			// for at vise UID + bonusPeriodEndsAt. Hvis rules forhindrer det (admin
+			// har ikke read på alle users), fortsætter vi med kun allowedEmail-data.
 			const docsByEmail = new Map<string, { uid: string; data: UserDoc }>();
-			for (const d of usersSnap.docs) {
-				const data = d.data() as UserDoc;
-				if (data.email) docsByEmail.set(data.email.toLowerCase(), { uid: d.id, data });
+			try {
+				const usersSnap = await getDocs(collection(db, 'users'));
+				for (const d of usersSnap.docs) {
+					const data = d.data() as UserDoc;
+					if (data.email) docsByEmail.set(data.email.toLowerCase(), { uid: d.id, data });
+				}
+			} catch (userFejl) {
+				console.warn('Kunne ikke hente users-collection (rules?):', userFejl);
 			}
+
 			rows = allowed.map((a) => {
 				const match = docsByEmail.get(a.email.toLowerCase());
 				return {

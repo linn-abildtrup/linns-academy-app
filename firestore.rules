@@ -11,9 +11,12 @@ service cloud.firestore {
 				];
 		}
 
-		// Bruger-dokument: kun egen bruger kan læse og skrive
+		// Bruger-dokument:
+		//   - Ejeren kan læse og skrive sit eget
+		//   - Admin kan læse alle brugere (til admin-overblik i Abonnenter-siden)
 		match /users/{uid} {
-			allow read, write: if request.auth != null && request.auth.uid == uid;
+			allow read: if request.auth != null && (isAdmin() || request.auth.uid == uid);
+			allow write: if request.auth != null && request.auth.uid == uid;
 
 			// Bruger-produkter (køb, fremgang, valg): kun egen bruger
 			match /products/{productId} {
