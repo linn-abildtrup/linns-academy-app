@@ -871,6 +871,9 @@
 			// Skift til dagbog og indlæs
 			dagbogDato = gemDato;
 			await indlaesDagbog();
+			// Opdatér Seneste-fanen så de fødevarer hun lige har gemt kan findes
+			// i picker-modalen næste gang.
+			void indlaesSenesteFodevarer(u.uid);
 			skiftTab('dagbog');
 		} catch (e) {
 			console.error(e);
