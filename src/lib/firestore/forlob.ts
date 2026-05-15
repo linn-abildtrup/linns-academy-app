@@ -238,6 +238,18 @@ export async function hentAllowedEmailsForForlob(forlobId: string): Promise<Allo
 }
 
 /**
+ * Lister alle abonnement-allowedEmails (basis-/premium-abo).
+ * Sorteret efter senest opdaterede, så nye køb står øverst.
+ */
+export async function hentAbonnentAllowedEmails(): Promise<AllowedEmail[]> {
+	const q = query(collection(db, 'allowedEmails'), where('accessSource', '==', 'abonnement'));
+	const snap = await getDocs(q);
+	return snap.docs
+		.map((d) => d.data() as AllowedEmail)
+		.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+}
+
+/**
  * Opdaterer status='registered' og registreret-tidsstempel for en allowedEmail.
  * Bruges af login-flow når en bruger logger ind for første gang.
  */
