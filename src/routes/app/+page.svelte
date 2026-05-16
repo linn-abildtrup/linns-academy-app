@@ -36,7 +36,7 @@
 	} from '$lib/firestore/aboMikrotraening';
 	import { hentExercises } from '$lib/firestore/mikrotraening';
 	import { aktuelAboDag } from '$lib/content/aboMikrotraening';
-	import { getVideoUrl } from '$lib/utils/storage';
+	import { getVideoUrl, prefetchVideoer } from '$lib/utils/storage';
 	import { hentModulbrugerLektion } from '$lib/firestore/modulbrugerLektioner';
 	import type { ModulbrugerLektion } from '$lib/content/modulbrugerLektioner';
 	import {
@@ -496,12 +496,17 @@
 				if (!program) return;
 				const programDag = aktuelAboDag(fremgang);
 				const dag = program.dage.find((d) => d.dagNummer === programDag);
-				const firstExId = dag?.exercises?.[0]?.exerciseId;
-				if (!firstExId) return;
-				const exercises = await hentExercises([firstExId]);
-				const ex = exercises.get(firstExId);
-				if (!ex?.videoPath) return;
-				modulbrugerTraeningsVideo = await getVideoUrl(ex.videoPath);
+				const exerciseIds = (dag?.exercises ?? []).map((e) => e.exerciseId);
+				if (exerciseIds.length === 0) return;
+				const exercises = await hentExercises(exerciseIds);
+				const ex = exercises.get(exerciseIds[0]);
+				if (ex?.videoPath) modulbrugerTraeningsVideo = await getVideoUrl(ex.videoPath);
+				// Prefetch alle dagens videoer i baggrunden så de ligger klar
+				// når brugeren klikker dagens mikrotræning.
+				const videoPaths = exerciseIds
+					.map((id) => exercises.get(id)?.videoPath)
+					.filter((p): p is string => !!p);
+				void prefetchVideoer(videoPaths);
 			} catch (e) {
 				console.warn('Kunne ikke hente trænings-video til thumbnail:', e);
 			}
@@ -675,12 +680,17 @@
 				const program = await hentForlobsProgram(forlobId, programId);
 				if (!program) return;
 				const dag = program.dage.find((d) => d.dagNummer === n);
-				const firstExId = dag?.exercises?.[0]?.exerciseId;
-				if (!firstExId) return;
-				const exercises = await hentExercises([firstExId]);
-				const ex = exercises.get(firstExId);
-				if (!ex?.videoPath) return;
-				forlobTraeningsVideo = await getVideoUrl(ex.videoPath);
+				const exerciseIds = (dag?.exercises ?? []).map((e) => e.exerciseId);
+				if (exerciseIds.length === 0) return;
+				const exercises = await hentExercises(exerciseIds);
+				const ex = exercises.get(exerciseIds[0]);
+				if (ex?.videoPath) forlobTraeningsVideo = await getVideoUrl(ex.videoPath);
+				// Prefetch alle dagens videoer i baggrunden så de ligger klar
+				// når klienten klikker dagens mikrotræning.
+				const videoPaths = exerciseIds
+					.map((id) => exercises.get(id)?.videoPath)
+					.filter((p): p is string => !!p);
+				void prefetchVideoer(videoPaths);
 			} catch (e) {
 				console.warn('Kunne ikke hente forløbs-trænings-video til thumbnail:', e);
 			}

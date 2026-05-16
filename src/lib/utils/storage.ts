@@ -24,6 +24,35 @@ export async function getVideoUrl(filename: string): Promise<string> {
 }
 
 /**
+ * Prefetcher en liste af træningsvideoer i baggrunden så de ligger klar i
+ * browser-cachen når brugeren går til træningssiden. Best-effort: fejl logges
+ * men kaster ikke. Bruges fra forsiden og lignende entry-points.
+ *
+ * Storage-objekterne har Cache-Control: max-age=31536000 (1 år), så når de
+ * først er hentet bliver de liggende i cachen.
+ */
+export async function prefetchVideoer(filenames: string[]): Promise<void> {
+	if (typeof window === 'undefined' || filenames.length === 0) return;
+	// Hent URLs i parallel
+	const urls = await Promise.all(
+		filenames.map((f) =>
+			getVideoUrl(f).catch((e) => {
+				console.warn('Kunne ikke hente video-URL til prefetch:', f, e);
+				return null;
+			})
+		)
+	);
+	// Fetch hver URL for at varme browser-cachen. Vi læser ikke responsen,
+	// bare lader browseren downloade og gemme.
+	for (const url of urls) {
+		if (!url) continue;
+		fetch(url, { cache: 'force-cache' }).catch((e) =>
+			console.warn('Prefetch fejlede:', e)
+		);
+	}
+}
+
+/**
  * Returns a download URL for an audio file.
  * Audio files are stored at /audio/{filename} in Firebase Storage.
  *
