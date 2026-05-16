@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
-	import { signOut } from 'firebase/auth';
+	import {
+		EmailAuthProvider,
+		reauthenticateWithCredential,
+		signOut,
+		updatePassword
+	} from 'firebase/auth';
 	import { auth } from '$lib/firebase';
 	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
@@ -183,6 +188,58 @@
 			await goto('/login');
 		} catch (err) {
 			console.error('Log ud fejlede', err);
+		}
+	}
+
+	// Skift-adgangskode-state
+	let viserSkiftPassword = $state(false);
+	let nuPassword = $state('');
+	let nyPassword = $state('');
+	let bekraeftPassword = $state('');
+	let skifterPassword = $state(false);
+	let passwordBesked = $state<{ tekst: string; type: 'ok' | 'fejl' } | null>(null);
+
+	async function skiftPassword() {
+		passwordBesked = null;
+		const u = user;
+		if (!u || !u.email) {
+			passwordBesked = { tekst: 'Du skal være logget ind.', type: 'fejl' };
+			return;
+		}
+		if (nyPassword.length < 6) {
+			passwordBesked = { tekst: 'Adgangskoden skal være mindst 6 tegn.', type: 'fejl' };
+			return;
+		}
+		if (nyPassword !== bekraeftPassword) {
+			passwordBesked = { tekst: 'De to adgangskoder matcher ikke.', type: 'fejl' };
+			return;
+		}
+		skifterPassword = true;
+		try {
+			const cred = EmailAuthProvider.credential(u.email, nuPassword);
+			await reauthenticateWithCredential(u, cred);
+			await updatePassword(u, nyPassword);
+			passwordBesked = { tekst: 'Din adgangskode er skiftet.', type: 'ok' };
+			nuPassword = '';
+			nyPassword = '';
+			bekraeftPassword = '';
+			setTimeout(() => {
+				viserSkiftPassword = false;
+				passwordBesked = null;
+			}, 2000);
+		} catch (e) {
+			const fejlkode =
+				e && typeof e === 'object' && 'code' in e ? String((e as { code: string }).code) : '';
+			if (fejlkode === 'auth/wrong-password' || fejlkode === 'auth/invalid-credential') {
+				passwordBesked = { tekst: 'Nuværende adgangskode er forkert.', type: 'fejl' };
+			} else {
+				passwordBesked = {
+					tekst: 'Kunne ikke skifte adgangskode. Prøv igen.',
+					type: 'fejl'
+				};
+			}
+		} finally {
+			skifterPassword = false;
 		}
 	}
 
@@ -391,6 +448,64 @@
 		<div class="hjaelp">
 			Skriv til <a href="mailto:kontakt@linnsacademy.dk">kontakt@linnsacademy.dk</a>
 		</div>
+	</section>
+
+	<section class="sektion">
+		<h2 class="sektion-titel">Adgangskode</h2>
+		{#if !viserSkiftPassword}
+			<button class="ghost-knap" type="button" onclick={() => (viserSkiftPassword = true)}>
+				Skift adgangskode
+			</button>
+		{:else}
+			<div class="password-form">
+				<label class="field">
+					<span class="label">Nuværende adgangskode</span>
+					<input
+						type="password"
+						bind:value={nuPassword}
+						autocomplete="current-password"
+					/>
+				</label>
+				<label class="field">
+					<span class="label">Ny adgangskode (mindst 6 tegn)</span>
+					<input type="password" bind:value={nyPassword} autocomplete="new-password" />
+				</label>
+				<label class="field">
+					<span class="label">Bekræft ny adgangskode</span>
+					<input
+						type="password"
+						bind:value={bekraeftPassword}
+						autocomplete="new-password"
+					/>
+				</label>
+				{#if passwordBesked}
+					<div class="password-besked {passwordBesked.type}">{passwordBesked.tekst}</div>
+				{/if}
+				<div class="password-knapper">
+					<button
+						class="primary-knap"
+						type="button"
+						onclick={skiftPassword}
+						disabled={skifterPassword}
+					>
+						{skifterPassword ? 'Skifter…' : 'Skift adgangskode'}
+					</button>
+					<button
+						class="ghost-knap"
+						type="button"
+						onclick={() => {
+							viserSkiftPassword = false;
+							nuPassword = '';
+							nyPassword = '';
+							bekraeftPassword = '';
+							passwordBesked = null;
+						}}
+					>
+						Annullér
+					</button>
+				</div>
+			</div>
+		{/if}
 	</section>
 
 	<button class="logout" onclick={handleLogout}>Log ud</button>
@@ -930,5 +1045,92 @@
 	.logout:hover {
 		color: var(--text);
 		border-color: var(--text4, var(--text3));
+	}
+
+	.password-form {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	.password-form .field {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	.password-form .label {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+	.password-form input {
+		padding: 10px 12px;
+		font-size: calc(16px * var(--fs-scale, 1));
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: var(--bg2);
+		color: var(--text);
+		font-family: var(--ff-b);
+		outline: none;
+	}
+	.password-form input:focus {
+		border-color: var(--terra);
+	}
+	.password-besked {
+		padding: 10px 12px;
+		border-radius: 10px;
+		font-size: calc(13px * var(--fs-scale, 1));
+	}
+	.password-besked.ok {
+		background: #eef5ef;
+		color: #406a4e;
+	}
+	.password-besked.fejl {
+		background: #fbeeea;
+		color: #8a4a3e;
+	}
+	.password-knapper {
+		display: flex;
+		gap: 8px;
+	}
+	.password-knapper .primary-knap {
+		flex: 1;
+		padding: 12px;
+		background: var(--terra);
+		color: #fff;
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		border-radius: 10px;
+		border: none;
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+	.password-knapper .primary-knap:disabled {
+		opacity: 0.6;
+		cursor: wait;
+	}
+	.password-knapper .ghost-knap {
+		flex: 1;
+		padding: 12px;
+		background: transparent;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		color: var(--text2);
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		cursor: pointer;
+	}
+	.ghost-knap {
+		display: block;
+		width: 100%;
+		padding: 12px;
+		background: transparent;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		color: var(--text2);
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		cursor: pointer;
 	}
 </style>

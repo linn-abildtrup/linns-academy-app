@@ -4,6 +4,7 @@
 		createUserWithEmailAndPassword,
 		signInWithEmailAndPassword,
 		signOut,
+		sendPasswordResetEmail,
 		onAuthStateChanged,
 		type User
 	} from 'firebase/auth';
@@ -14,7 +15,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 
-	type View = 'welcome' | 'login' | 'signup';
+	type View = 'welcome' | 'login' | 'signup' | 'reset';
 
 	let view = $state<View>('welcome');
 	let email = $state('');
@@ -22,6 +23,7 @@
 	let error = $state('');
 	let loading = $state(false);
 	let user = $state<User | null>(null);
+	let resetSendt = $state(false);
 
 	onAuthStateChanged(auth, (u) => {
 		user = u;
@@ -74,6 +76,28 @@
 		error = '';
 		email = '';
 		password = '';
+		resetSendt = false;
+	}
+
+	async function handleResetSubmit() {
+		error = '';
+		if (!email.trim()) {
+			error = 'Indtast din email-adresse.';
+			return;
+		}
+		loading = true;
+		try {
+			await sendPasswordResetEmail(auth, email.trim());
+			resetSendt = true;
+		} catch (e) {
+			// For privatlivets skyld viser vi samme besked uanset om email findes
+			// eller ej — så uvedkommende ikke kan teste om en bestemt email er
+			// registreret.
+			console.warn('Reset-fejl:', e);
+			resetSendt = true;
+		} finally {
+			loading = false;
+		}
 	}
 </script>
 
@@ -103,6 +127,53 @@
 				<Button variant="outline" size="lg" full onclick={() => (view = 'signup')}>
 					Opret konto
 				</Button>
+			</div>
+		</div>
+	{:else if view === 'reset'}
+		<div class="form-screen">
+			<button class="back-btn" onclick={goBack} aria-label="Tilbage">
+				<Icon name="arrow-l" size={20} color="var(--text)" />
+			</button>
+
+			<div class="form-content">
+				<div class="form-header">
+					<h2 class="form-title">Glemt adgangskode</h2>
+					<p class="form-sub">
+						Indtast din email — vi sender dig et link til at nulstille din adgangskode.
+					</p>
+				</div>
+
+				{#if resetSendt}
+					<div class="form">
+						<div class="info-besked">
+							Hvis {email} er registreret, har vi sendt en email med et nulstillingslink.
+							Tjek også spam-mappen.
+						</div>
+						<Button variant="primary" size="lg" full onclick={() => (view = 'login')}>
+							Tilbage til login
+						</Button>
+					</div>
+				{:else}
+					<div class="form">
+						<label class="field">
+							<span class="label">Email</span>
+							<input
+								type="email"
+								bind:value={email}
+								placeholder="dig@eksempel.dk"
+								autocomplete="email"
+							/>
+						</label>
+
+						{#if error}
+							<p class="error">{error}</p>
+						{/if}
+
+						<Button variant="primary" size="lg" full onclick={handleResetSubmit}>
+							{loading ? 'Sender...' : 'Send nulstillingslink'}
+						</Button>
+					</div>
+				{/if}
 			</div>
 		</div>
 	{:else}
@@ -149,6 +220,20 @@
 					<Button variant="primary" size="lg" full onclick={handleSubmit}>
 						{loading ? 'Vent...' : view === 'login' ? 'Log ind' : 'Opret konto'}
 					</Button>
+
+					{#if view === 'login'}
+						<button
+							class="glemt-link"
+							type="button"
+							onclick={() => {
+								view = 'reset';
+								password = '';
+								error = '';
+							}}
+						>
+							Glemt adgangskode?
+						</button>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -309,6 +394,32 @@
 		border-radius: var(--r);
 		font-family: var(--ff-b);
 		font-size: calc(13px * var(--fs-scale, 1));
+	}
+
+	.info-besked {
+		padding: 12px 14px;
+		background: #eef5ef;
+		color: #406a4e;
+		border-radius: var(--r);
+		font-family: var(--ff-b);
+		font-size: calc(13px * var(--fs-scale, 1));
+		line-height: 1.5;
+	}
+
+	.glemt-link {
+		background: none;
+		border: none;
+		padding: 6px 0;
+		color: var(--text2);
+		font-family: var(--ff-b);
+		font-size: calc(13px * var(--fs-scale, 1));
+		text-decoration: underline;
+		cursor: pointer;
+		align-self: center;
+		margin-top: 4px;
+	}
+	.glemt-link:hover {
+		color: var(--terra);
 	}
 
 	/* === Logget ind === */
