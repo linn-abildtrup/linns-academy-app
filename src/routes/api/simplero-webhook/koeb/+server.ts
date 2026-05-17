@@ -10,6 +10,7 @@ import {
 	uddragEmail,
 	uddragProduktId,
 	uddragKundeId,
+	uddragNavn,
 	gemILog,
 	opdaterBrugerEllerWhitelist
 } from '$lib/server/simpleroWebhook';
@@ -52,6 +53,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		updatedAt: Date.now()
 	};
 	if (kundeId) opdatering.simpleroCustomerId = kundeId;
+	const navn = uddragNavn(payload);
+	if (navn.firstName) opdatering.firstName = navn.firstName;
+	if (navn.lastName) opdatering.lastName = navn.lastName;
 
 	// Forløbs-køb giver 90 dages bibliotek-bonus efter forløb-slut.
 	if (adgang.accessSource === 'forløb') {

@@ -21,20 +21,24 @@ export interface SimpleroPayload {
 	period_ends_at?: string | null;
 	event?: string;
 	type?: string;
+	// Simplero sender first_names + last_name på top-niveau
+	first_names?: string;
+	last_name?: string;
 	data?: {
-		customer?: { email?: string; id?: string | number };
+		customer?: { email?: string; id?: string | number; first_names?: string; last_name?: string };
 		product?: { id?: string | number; title?: string; name?: string };
 		purchase?: {
 			id?: string | number;
 			product_id?: string | number;
 			customer_email?: string;
 			customer_id?: string | number;
+			name?: string;
 		};
 		[key: string]: unknown;
 	};
-	customer?: { email?: string; id?: string | number };
+	customer?: { email?: string; id?: string | number; first_names?: string; last_name?: string };
 	product?: { id?: string | number; title?: string };
-	purchase?: { email?: string; product_id?: string | number };
+	purchase?: { email?: string; product_id?: string | number; name?: string };
 	[key: string]: unknown;
 }
 
@@ -86,6 +90,33 @@ export function uddragKundeId(payload: SimpleroPayload): string | null {
 		payload.data?.purchase?.customer_id ??
 		payload.customer?.id;
 	return id ? String(id) : null;
+}
+
+/**
+ * Udvinder kundens for- og efternavn fra Simplero-payload. Simplero bruger
+ * 'first_names' (med s) på top-niveau, og purchase.name som fallback for
+ * et samlet navn der splittes på første mellemrum.
+ */
+export function uddragNavn(payload: SimpleroPayload): { firstName: string; lastName: string } {
+	const first =
+		payload.first_names?.trim() ??
+		payload.data?.customer?.first_names?.trim() ??
+		payload.customer?.first_names?.trim() ??
+		'';
+	const last =
+		payload.last_name?.trim() ??
+		payload.data?.customer?.last_name?.trim() ??
+		payload.customer?.last_name?.trim() ??
+		'';
+	if (first || last) return { firstName: first, lastName: last };
+	// Fallback: split purchase.name på første mellemrum
+	const samlet = (payload.purchase?.name ?? payload.data?.purchase?.name ?? '').trim();
+	if (samlet) {
+		const idx = samlet.indexOf(' ');
+		if (idx === -1) return { firstName: samlet, lastName: '' };
+		return { firstName: samlet.slice(0, idx).trim(), lastName: samlet.slice(idx + 1).trim() };
+	}
+	return { firstName: '', lastName: '' };
 }
 
 // Firestore document-ids må ikke indeholde '/'

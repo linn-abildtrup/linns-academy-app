@@ -17,6 +17,7 @@ import {
 	uddragEmail,
 	uddragProduktId,
 	uddragKundeId,
+	uddragNavn,
 	gemILog,
 	opdaterBrugerEllerWhitelist,
 	type SimpleroPayload
@@ -83,6 +84,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		updatedAt: Date.now()
 	};
 	if (kundeId) opdatering.simpleroCustomerId = kundeId;
+	const navn = uddragNavn(payload);
+	if (navn.firstName) opdatering.firstName = navn.firstName;
+	if (navn.lastName) opdatering.lastName = navn.lastName;
 
 	if (adgang.accessSource === 'forløb') {
 		const periodEndsAt = payload.period_ends_at;
