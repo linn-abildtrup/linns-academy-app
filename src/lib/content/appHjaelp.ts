@@ -46,13 +46,13 @@ export const APP_HJAELP_SEKTIONER: AppHjaelpSektion[] = [
 - Forside: dagens overblik
 - Moduler: liste over alle dine moduler
 - Udvikling: din udvikling i kost-tal over tid
-- Beskeder: kun synligt for forløbskunder (Kickstart + Premium-forløb)
+- Beskeder: kun synligt for forløbskunder
 - Profil: kontoindstillinger, tekstskalering, log ud
 
 Klik på et modul-kort eller en knap for at åbne den. Brug 'Tilbage'-pilen øverst til venstre på undersider for at komme tilbage.`
 	},
 	{
-		titel: 'Forsiden — modulbrugere (Basis-app + Premium-app)',
+		titel: 'Forsiden — modulbrugere',
 		visFor: MODULBRUGERE,
 		indhold: `Forsiden viser:
 - En dato-strip øverst med dage fra du oprettede kontoen til 3 dage frem. Klik på en dag for at åbne den dags log. Dage du ikke har indtastet noget på er fadet. Fremtidige dage er fadet og kan ikke åbnes.
@@ -62,7 +62,7 @@ Klik på et modul-kort eller en knap for at åbne den. Brug 'Tilbage'-pilen øve
 - 'App-hjælp' med spørgsmål til hvordan appen virker.`
 	},
 	{
-		titel: 'Forsiden — forløbskunder (Kickstart + Premium-forløb)',
+		titel: 'Forsiden — forløbskunder',
 		visFor: FORLOBSKUNDER,
 		indhold: `Forsiden viser:
 - Forløbs-badge øverst med dit aktuelle forløbs-navn og dagnummer.
@@ -126,7 +126,7 @@ Du har desuden adgang til udvidet næringsdata og kan se hvordan dine vaner og k
 Resten af vanetrackeren virker som basis: tjek ind dagligt, se farvekoder for hvor mange vaner du ramte, og scroll i månedsarkivet for historik.`
 	},
 	{
-		titel: 'Mit forløb (Kickstart og Premium-forløb)',
+		titel: 'Mit forløb',
 		visFor: FORLOBSKUNDER,
 		indhold: `Mit forløb finder du under Moduler → Mit forløb. Her ser du:
 - Alle dage i forløbet (typisk 21 dage) med status: gennemført, i gang eller låst.
@@ -181,13 +181,31 @@ Linn AI er IKKE den samme som App-hjælp. App-hjælp svarer kun på spørgsmål 
 Det kræver at du har logget måltider i Mad-modulet over en periode for at se grafer.`
 	},
 	{
-		titel: 'Profil — indstillinger',
-		visFor: ALLE_PRODUKTER,
+		titel: 'Profil — indstillinger (basis-app)',
+		visFor: ['basisabo'],
 		indhold: `Profil-fanen i TabBar viser:
 - Dit fornavn og initialer.
-- Dine køb (Basis-app, Premium-app, Kickstart osv) med status.
+- Dit Basis-app-køb med status.
 - Tekstskalering (Normal/Stor/Ekstra stor) — gør hele appens tekst større hvis du har svært ved at læse.
-- Mikrotræning-program (kun forløbskunder) — vælg om du træner med eller uden udstyr.
+- Log ud-knappen nederst.`
+	},
+	{
+		titel: 'Profil — indstillinger (premium-app)',
+		visFor: ['premiumabo'],
+		indhold: `Profil-fanen i TabBar viser:
+- Dit fornavn og initialer.
+- Dit Premium-app-køb med status.
+- Tekstskalering (Normal/Stor/Ekstra stor) — gør hele appens tekst større hvis du har svært ved at læse.
+- Log ud-knappen nederst.`
+	},
+	{
+		titel: 'Profil — indstillinger (forløb)',
+		visFor: FORLOBSKUNDER,
+		indhold: `Profil-fanen i TabBar viser:
+- Dit fornavn og initialer.
+- Dine forløbs-køb med status.
+- Tekstskalering (Normal/Stor/Ekstra stor) — gør hele appens tekst større hvis du har svært ved at læse.
+- Mikrotræning-program — vælg om du træner med eller uden udstyr.
 - Log ud-knappen nederst.`
 	},
 	{
@@ -215,25 +233,43 @@ Klik 'Læg ind som måltid' for hurtigt at lægge en gemt privat opskrift ind i 
 // PROMPT-BYGNING
 // =============================================================================
 
-const APP_HJAELP_SYSTEM_PROMPT = `Du er App-hjælp — en assistent der svarer på spørgsmål om hvordan Linn's Academy-appen virker. Dit ENESTE formål er at hjælpe brugeren med at navigere og bruge appen.
+function fagligRedirect(activeProduct: ActiveProduct | undefined): string {
+	const erPremium = activeProduct === 'premiumabo' || activeProduct === 'premiumforløb';
+	const erForlob = activeProduct === 'kickstart' || activeProduct === 'premiumforløb';
+	if (erPremium && erForlob) {
+		return 'henvis til Linn AI (premium-feature i Moduler) eller til Beskeder-fanen';
+	}
+	if (erPremium) {
+		return 'henvis til Linn AI (premium-feature i Moduler)';
+	}
+	if (erForlob) {
+		return 'henvis til Beskeder-fanen';
+	}
+	return 'foreslå at hun skriver til kontakt@linnsacademy.dk';
+}
+
+function byggSystemPromptBase(activeProduct: ActiveProduct | undefined): string {
+	return `Du er App-hjælp — en assistent der svarer på spørgsmål om hvordan Linn's Academy-appen virker. Dit ENESTE formål er at hjælpe brugeren med at navigere og bruge appen.
 
 VIGTIGE REGLER:
 - Du må KUN svare på spørgsmål om appen og dens features.
-- Hvis brugeren spørger om noget fagligt (kost, træning, helbred, overgangsalder, hormoner, motivation, livsstil etc.) — afvis venligt og henvis til Linn AI (hvis premium) eller til Beskeder-fanen (hvis forløbskunde).
+- Hvis brugeren spørger om noget fagligt (kost, træning, helbred, overgangsalder, hormoner, motivation, livsstil etc.) — afvis venligt og ${fagligRedirect(activeProduct)}.
 - Hvis brugeren spørger om en feature der ikke findes i din videnbase nedenfor — sig at du ikke ved det, og foreslå at hun skriver til kontakt@linnsacademy.dk.
-- Du ved kun om de features brugeren faktisk har adgang til (se VIDENBASE nedenfor). Nævn ikke features hun ikke har — det skaber forvirring.
+- Du ved kun om de features brugeren faktisk har adgang til (se VIDENBASE nedenfor). Nævn ALDRIG features, produkter, abonnementer eller forløb hun ikke har — det skaber forvirring og er imod hendes interesse. Sammenlign aldrig med andre produkt-typer.
 - Svar kort, konkret og praktisk. Brug 'du' og 'din'. Skriv på dansk.
 - Brug ikke tegn som em-dash (—), semikolon (;) eller engelsk-stil typografi. Skriv almindeligt dansk med bindestreger og punktum.
 
 VIDENBASE — sådan virker appen for DENNE bruger:`;
+}
 
 /**
  * Bygger system-prompten med kun de sektioner brugerens produkt giver adgang til.
  */
 export function byggAppHjaelpSystemPrompt(activeProduct: ActiveProduct | undefined): string {
+	const base = byggSystemPromptBase(activeProduct);
 	if (!activeProduct) {
 		return (
-			APP_HJAELP_SYSTEM_PROMPT +
+			base +
 			'\n\n(Brugerens adgang kunne ikke afgøres — svar generelt om appens grundlæggende navigation.)'
 		);
 	}
@@ -241,5 +277,5 @@ export function byggAppHjaelpSystemPrompt(activeProduct: ActiveProduct | undefin
 	const videnbase = synlige
 		.map((s) => `\n## ${s.titel}\n${s.indhold}`)
 		.join('\n');
-	return APP_HJAELP_SYSTEM_PROMPT + videnbase;
+	return base + videnbase;
 }

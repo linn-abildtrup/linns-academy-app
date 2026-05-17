@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { getContext, tick } from 'svelte';
 	import type { User } from 'firebase/auth';
+	import type { UserDoc } from '$lib/types';
+	import { effektivState, harPremium } from '$lib/utils/userAdgang';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import StjerneRating from '$lib/components/StjerneRating.svelte';
@@ -8,7 +10,12 @@
 	type Besked = { rolle: 'user' | 'assistant'; indhold: string };
 
 	const getUser = getContext<() => User | null>('user');
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
+	const userDoc = $derived(getUserDoc());
+
+	const erPremium = $derived(harPremium(userDoc));
+	const erForlob = $derived(effektivState(userDoc) === 'forlobskunde');
 
 	let beskeder = $state<Besked[]>([]);
 	let inputBesked = $state('');
@@ -18,12 +25,28 @@
 	let queriesMaks = $state<number | null>(null);
 	let chatRef = $state<HTMLDivElement | null>(null);
 
-	const FORSLAG = [
-		'Hvor finder jeg vanetrackeren?',
-		'Hvordan logger jeg et måltid?',
-		'Kan jeg ændre mine vaner?',
-		'Hvad er forskellen på Basis-app og Premium-app?'
-	];
+	const FORSLAG = $derived.by(() => {
+		const liste = [
+			'Hvor finder jeg vanetrackeren?',
+			'Hvordan logger jeg et måltid?',
+			'Kan jeg ændre mine vaner?'
+		];
+		if (erForlob) {
+			liste.push('Hvordan skriver jeg til Linn?');
+		} else if (erPremium) {
+			liste.push('Hvad kan Linn AI hjælpe mig med?');
+		} else {
+			liste.push('Hvordan ændrer jeg tekststørrelsen?');
+		}
+		return liste;
+	});
+
+	const fagligRedirectTekst = $derived.by(() => {
+		if (erPremium && erForlob) return 'brug Linn AI eller Beskeder';
+		if (erPremium) return 'brug Linn AI';
+		if (erForlob) return 'brug Beskeder-fanen';
+		return 'skriv til kontakt@linnsacademy.dk';
+	});
 
 	async function scrollTilBund() {
 		await tick();
@@ -116,8 +139,7 @@
 		<h1>App-hjælp</h1>
 		<p class="page-sub">
 			Stil spørgsmål om hvordan appen virker. Jeg svarer kun på spørgsmål om appen
-			selv — for faglige spørgsmål om kost, træning eller overgangsalder, brug Linn AI
-			(premium) eller Beskeder (forløbskunde).
+			selv — for faglige spørgsmål om kost, træning eller overgangsalder, {fagligRedirectTekst}.
 		</p>
 	</header>
 
