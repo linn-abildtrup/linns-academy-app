@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { replaceState } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
+	import { doc as doc_ref, updateDoc } from 'firebase/firestore';
+	import { db } from '$lib/firebase';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { Forlob } from '$lib/content/forlobAdgang';
@@ -285,6 +287,39 @@
 	let modulbrugerTraeningsDatoer = $state<Set<string>>(new Set());
 	let modulbrugerTraeningsVideo = $state<string | null>(null);
 	let forlobTraeningsVideo = $state<string | null>(null);
+
+	// Variant-modal: vises første gang en abo-bruger klikker dagens
+	// mikrotræning og endnu ikke har valgt mellem kettlebell og no-kettlebell.
+	let visVariantModal = $state(false);
+	let pendingTraeningHref = $state<string | null>(null);
+	let gemmerVariant = $state(false);
+
+	async function gemVariant(variant: 'kettlebell' | 'no_kettlebell') {
+		const u = user;
+		if (!u || gemmerVariant) return;
+		gemmerVariant = true;
+		try {
+			await updateDoc(doc_ref(db, 'users', u.uid), { mikrotraeningVariant: variant });
+		} catch (e) {
+			console.warn('Kunne ikke gemme variant:', e);
+		} finally {
+			gemmerVariant = false;
+			visVariantModal = false;
+			const naviger = pendingTraeningHref;
+			pendingTraeningHref = null;
+			if (naviger) await goto(naviger);
+		}
+	}
+
+	function maaskeAabneVariantModal(href: string, e: MouseEvent) {
+		const ud = userDoc;
+		if (!ud || ud.accessSource !== 'abonnement') return;
+		if (ud.mikrotraeningVariant) return;
+		// Ingen variant valgt — fang klikket og åbn modal i stedet.
+		e.preventDefault();
+		pendingTraeningHref = href;
+		visVariantModal = true;
+	}
 
 	const modulbrugerIDag = $derived(formaterDato(new Date()));
 	const modulbrugerAktivDato = $derived(modulbrugerValgtDato ?? modulbrugerIDag);
@@ -1267,6 +1302,11 @@
 					<a
 						class="action-card"
 						href={`/app/moduler/traening/mikrotraening/abo/${modulbrugerAktivDato}`}
+						onclick={(e) =>
+							maaskeAabneVariantModal(
+								`/app/moduler/traening/mikrotraening/abo/${modulbrugerAktivDato}`,
+								e
+							)}
 					>
 						{#if modulbrugerTraeningsVideo}
 							<div class="traening-thumb">
@@ -1575,6 +1615,47 @@
 {:else}
 	<div class="placeholder-page">
 		<Loading tekst="Et øjeblik..." />
+	</div>
+{/if}
+
+{#if visVariantModal}
+	<div
+		class="variant-modal-bag"
+		role="dialog"
+		aria-modal="true"
+		onclick={(e) => {
+			if (e.target === e.currentTarget) visVariantModal = false;
+		}}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') visVariantModal = false;
+		}}
+		tabindex="-1"
+	>
+		<div class="variant-modal">
+			<div class="variant-modal-titel">Har du kettlebells?</div>
+			<p class="variant-modal-sub">
+				Dit daglige mikrotrænings-program tilpasses derefter. Du kan altid skifte
+				igen senere.
+			</p>
+			<button
+				class="variant-knap"
+				type="button"
+				onclick={() => gemVariant('kettlebell')}
+				disabled={gemmerVariant}
+			>
+				<div class="variant-knap-titel">Ja, jeg har kettlebells</div>
+				<div class="variant-knap-sub">Program med kettlebell-øvelser</div>
+			</button>
+			<button
+				class="variant-knap"
+				type="button"
+				onclick={() => gemVariant('no_kettlebell')}
+				disabled={gemmerVariant}
+			>
+				<div class="variant-knap-titel">Nej, jeg træner uden udstyr</div>
+				<div class="variant-knap-sub">Bodyweight-øvelser</div>
+			</button>
+		</div>
 	</div>
 {/if}
 
@@ -2700,4 +2781,68 @@
 		text-align: center;
 	}
 
+	/* ── Variant-valg-modal (kettlebell / no-kettlebell) ─────────── */
+
+	.variant-modal-bag {
+		position: fixed;
+		inset: 0;
+		background: rgba(42, 31, 23, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 700;
+		padding: 18px;
+	}
+	.variant-modal {
+		background: var(--white);
+		border-radius: 16px;
+		padding: 22px 20px;
+		width: 100%;
+		max-width: 380px;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+	}
+	.variant-modal-titel {
+		font-family: var(--ff-d);
+		font-size: calc(20px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+	.variant-modal-sub {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.45;
+		margin: 0 0 4px;
+	}
+	.variant-knap {
+		display: block;
+		width: 100%;
+		text-align: left;
+		padding: 14px 16px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+	.variant-knap:hover {
+		background: var(--bg2);
+		border-color: var(--terra);
+	}
+	.variant-knap:disabled {
+		opacity: 0.6;
+		cursor: wait;
+	}
+	.variant-knap-titel {
+		font-weight: 600;
+		font-size: calc(14px * var(--fs-scale, 1));
+		color: var(--text);
+	}
+	.variant-knap-sub {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
+	}
 </style>
