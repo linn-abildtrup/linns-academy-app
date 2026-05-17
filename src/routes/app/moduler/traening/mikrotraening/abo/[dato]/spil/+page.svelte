@@ -173,9 +173,10 @@
 			return;
 		}
 
+		const variant = userDoc?.mikrotraeningVariant ?? 'no_kettlebell';
 		try {
 			const [data, fremgang, traeninger] = await Promise.all([
-				hentAboMikrotraeningProgram(produktType),
+				hentAboMikrotraeningProgram(produktType, variant),
 				hentAboFremgang(u.uid),
 				hentAlleAboTraeninger(u.uid)
 			]);

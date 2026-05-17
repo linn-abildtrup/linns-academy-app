@@ -131,6 +131,11 @@ export interface UserDoc {
 	// og markeres med en stjerne ved siden af fødevaren.
 	favoritFodevarer?: string[];
 
+	// Hvilken mikrotræning-variant brugeren har valgt (kettlebell eller
+	// uden udstyr). Bruges af aboMikrotraening-systemet til at hente det
+	// rigtige program. Hvis ikke sat, bruges 'no_kettlebell' som default.
+	mikrotraeningVariant?: 'kettlebell' | 'no_kettlebell';
+
 	// Snapshot af det input klienten gav til 'Beregn mine mål'-wizarden.
 	// Bruges til at pre-udfylde wizarden næste gang den åbnes.
 	brugerProfil?: BrugerProfil;

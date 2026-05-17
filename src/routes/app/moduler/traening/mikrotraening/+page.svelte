@@ -170,8 +170,9 @@
 
 	async function indlaesAboData(uid: string) {
 		const produktType = userDoc?.accessLevel === 'premium' ? 'premium' : 'basis';
+		const variant = userDoc?.mikrotraeningVariant ?? 'no_kettlebell';
 		const [program, fremgang, traeninger] = await Promise.all([
-			hentAboMikrotraeningProgram(produktType),
+			hentAboMikrotraeningProgram(produktType, variant),
 			hentAboFremgang(uid),
 			hentAlleAboTraeninger(uid)
 		]);

@@ -35,15 +35,32 @@ export interface AboMikrotraeningProgramMedDage {
 // Program (admin)
 // ==============================================
 
+export type MikrotraeningVariant = 'kettlebell' | 'no_kettlebell';
+
+/**
+ * Henter abo-mikrotræningsprogrammet for en bestemt produkt-type + variant.
+ * Programmer ligger på aboMikrotraening/{produktType}_{variant} med dage som
+ * subcollection. Hvis variant ikke angives, bruges 'no_kettlebell' som default.
+ *
+ * Backwards-compat: hvis det nye `{produktType}_{variant}`-doc ikke findes,
+ * falder vi tilbage til det gamle `{produktType}`-doc (uden variant-suffix).
+ */
 export async function hentAboMikrotraeningProgram(
-	produktType: ProduktType
+	produktType: ProduktType,
+	variant: MikrotraeningVariant = 'no_kettlebell'
 ): Promise<AboMikrotraeningProgramMedDage | null> {
-	const programRef = doc(db, 'aboMikrotraening', produktType);
-	const programSnap = await getDoc(programRef);
-	if (!programSnap.exists()) return null;
+	const nyDocId = `${produktType}_${variant}`;
+	let programSnap = await getDoc(doc(db, 'aboMikrotraening', nyDocId));
+	let docId = nyDocId;
+	if (!programSnap.exists()) {
+		// Fallback til den gamle docId uden variant-suffix
+		programSnap = await getDoc(doc(db, 'aboMikrotraening', produktType));
+		docId = produktType;
+		if (!programSnap.exists()) return null;
+	}
 	const program = { id: programSnap.id, ...programSnap.data() } as AboMikrotraeningProgram;
 
-	const dageSnap = await getDocs(collection(db, 'aboMikrotraening', produktType, 'days'));
+	const dageSnap = await getDocs(collection(db, 'aboMikrotraening', docId, 'days'));
 	const dage = dageSnap.docs
 		.map((d) => d.data() as TrainingDay)
 		.sort((a, b) => a.dagNummer - b.dagNummer);

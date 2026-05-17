@@ -487,10 +487,11 @@
 			return;
 		}
 		const produktType: 'basis' | 'premium' = harPremium(ud) ? 'premium' : 'basis';
+		const variant = ud.mikrotraeningVariant ?? 'no_kettlebell';
 		void (async () => {
 			try {
 				const [program, fremgang] = await Promise.all([
-					hentAboMikrotraeningProgram(produktType),
+					hentAboMikrotraeningProgram(produktType, variant),
 					hentAboFremgang(u.uid)
 				]);
 				if (!program) return;
