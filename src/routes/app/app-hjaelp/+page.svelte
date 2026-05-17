@@ -2,7 +2,7 @@
 	import { getContext, tick } from 'svelte';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
-	import { effektivState, harPremium } from '$lib/utils/userAdgang';
+	import { harPremium } from '$lib/utils/userAdgang';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import StjerneRating from '$lib/components/StjerneRating.svelte';
@@ -15,7 +15,6 @@
 	const userDoc = $derived(getUserDoc());
 
 	const erPremium = $derived(harPremium(userDoc));
-	const erForlob = $derived(effektivState(userDoc) === 'forlobskunde');
 
 	let beskeder = $state<Besked[]>([]);
 	let inputBesked = $state('');
@@ -31,9 +30,7 @@
 			'Hvordan logger jeg et måltid?',
 			'Kan jeg ændre mine vaner?'
 		];
-		if (erForlob) {
-			liste.push('Hvordan skriver jeg til Linn?');
-		} else if (erPremium) {
+		if (erPremium) {
 			liste.push('Hvad kan Linn AI hjælpe mig med?');
 		} else {
 			liste.push('Hvordan ændrer jeg tekststørrelsen?');
@@ -42,10 +39,8 @@
 	});
 
 	const fagligRedirectTekst = $derived.by(() => {
-		if (erPremium && erForlob) return 'brug Linn AI eller Beskeder';
 		if (erPremium) return 'brug Linn AI';
-		if (erForlob) return 'brug Beskeder-fanen';
-		return 'skriv til kontakt@linnsacademy.dk';
+		return null;
 	});
 
 	async function scrollTilBund() {
@@ -139,7 +134,8 @@
 		<h1>App-hjælp</h1>
 		<p class="page-sub">
 			Stil spørgsmål om hvordan appen virker. Jeg svarer kun på spørgsmål om appen
-			selv — for faglige spørgsmål om kost, træning eller overgangsalder, {fagligRedirectTekst}.
+			selv{#if fagligRedirectTekst} — for faglige spørgsmål om kost, træning eller
+			overgangsalder, {fagligRedirectTekst}{/if}.
 		</p>
 	</header>
 

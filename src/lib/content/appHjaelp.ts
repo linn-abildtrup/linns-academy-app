@@ -158,9 +158,7 @@ Forløbskunder ser også en FAQ-fane med svar på de typiske spørgsmål for for
 	{
 		titel: 'FAQ-fanen i bibliotek',
 		visFor: FORLOBSKUNDER,
-		indhold: `Som forløbskunde har du en FAQ-fane i biblioteket med typiske spørgsmål om forløbet — fx 'Hvad gør jeg hvis jeg falder fra?', 'Kan jeg starte forfra?' osv. Klik på spørgsmålet for at folde svaret ud.
-
-Hvis dit spørgsmål ikke står i FAQ, så stil det i Beskeder-fanen.`
+		indhold: `Som forløbskunde har du en FAQ-fane i biblioteket med typiske spørgsmål om forløbet — fx 'Hvad gør jeg hvis jeg falder fra?', 'Kan jeg starte forfra?' osv. Klik på spørgsmålet for at folde svaret ud.`
 	},
 	{
 		titel: 'Linn AI',
@@ -223,9 +221,7 @@ Klik 'Læg ind som måltid' for hurtigt at lægge en gemt privat opskrift ind i 
 	{
 		titel: 'Hvis du ikke kan finde noget',
 		visFor: ALLE_PRODUKTER,
-		indhold: `Hvis du leder efter en feature der ikke er nævnt her, eller noget ikke virker som forventet, kan du:
-- Skrive til kontakt@linnsacademy.dk
-- Forløbskunder kan stille spørgsmål direkte til Linn under Beskeder-fanen.`
+		indhold: `Hvis du leder efter en feature der ikke er nævnt her, så findes den sandsynligvis ikke i appen endnu. Prøv at lukke og åbne appen igen hvis noget ikke virker som forventet.`
 	}
 ];
 
@@ -235,17 +231,10 @@ Klik 'Læg ind som måltid' for hurtigt at lægge en gemt privat opskrift ind i 
 
 function fagligRedirect(activeProduct: ActiveProduct | undefined): string {
 	const erPremium = activeProduct === 'premiumabo' || activeProduct === 'premiumforløb';
-	const erForlob = activeProduct === 'kickstart' || activeProduct === 'premiumforløb';
-	if (erPremium && erForlob) {
-		return 'henvis til Linn AI (premium-feature i Moduler) eller til Beskeder-fanen';
-	}
 	if (erPremium) {
 		return 'henvis til Linn AI (premium-feature i Moduler)';
 	}
-	if (erForlob) {
-		return 'henvis til Beskeder-fanen';
-	}
-	return 'foreslå at hun skriver til kontakt@linnsacademy.dk';
+	return 'forklar venligt at App-hjælp kun svarer på spørgsmål om hvordan appen virker';
 }
 
 function byggSystemPromptBase(activeProduct: ActiveProduct | undefined): string {
@@ -254,7 +243,8 @@ function byggSystemPromptBase(activeProduct: ActiveProduct | undefined): string 
 VIGTIGE REGLER:
 - Du må KUN svare på spørgsmål om appen og dens features.
 - Hvis brugeren spørger om noget fagligt (kost, træning, helbred, overgangsalder, hormoner, motivation, livsstil etc.) — afvis venligt og ${fagligRedirect(activeProduct)}.
-- Hvis brugeren spørger om en feature der ikke findes i din videnbase nedenfor — sig at du ikke ved det, og foreslå at hun skriver til kontakt@linnsacademy.dk.
+- Hvis brugeren spørger om en feature der ikke findes i din videnbase nedenfor — sig venligt at du ikke ved det, og at featuren sandsynligvis ikke findes i appen endnu.
+- ABSOLUT REGEL: Foreslå ALDRIG under nogen omstændigheder at brugeren kontakter Linn — hverken via Beskeder-fanen, e-mail, support-mail, kontaktformular eller anden form. Dette gælder ALLE brugere, INKLUSIV forløbskunder. Også selvom du ikke kan svare på spørgsmålet, så sig det venligt uden at foreslå nogen form for kontakt-vej til Linn. Den eneste tilladte 'next step' er Linn AI (kun hvis premium-bruger).
 - Du ved kun om de features brugeren faktisk har adgang til (se VIDENBASE nedenfor). Nævn ALDRIG features, produkter, abonnementer eller forløb hun ikke har — det skaber forvirring og er imod hendes interesse. Sammenlign aldrig med andre produkt-typer.
 - Svar kort, konkret og praktisk. Brug 'du' og 'din'. Skriv på dansk.
 - Brug ikke tegn som em-dash (—), semikolon (;) eller engelsk-stil typografi. Skriv almindeligt dansk med bindestreger og punktum.
