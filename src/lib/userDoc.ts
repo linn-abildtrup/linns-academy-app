@@ -270,7 +270,11 @@ export async function synkroniserForlobskundeStatus(
 	// Abonnement/Simplero-flow: kopier access-felter over på userDoc.
 	// Disse har forrang over forløbs-state hvis begge er sat — fordi
 	// accessLevel/accessSource er den autoritative kilde i den nye model.
-	if (allowed.accessLevel) {
+	// Undtagelse: hvis allowed.adgangFra er sat og endnu ikke passeret, så
+	// ignorerer vi abo-felterne — bruges fx ved migration hvor kunden er
+	// på et forløb i dag men først aktiveres som abonnent ved midnat.
+	const aboAktivNu = !allowed.adgangFra || allowed.adgangFra <= Date.now();
+	if (allowed.accessLevel && aboAktivNu) {
 		opdateringer.accessLevel = allowed.accessLevel;
 		if (allowed.accessSource) opdateringer.accessSource = allowed.accessSource;
 		if (allowed.activeProduct) opdateringer.activeProduct = allowed.activeProduct;

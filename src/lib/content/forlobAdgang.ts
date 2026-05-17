@@ -50,6 +50,10 @@ export interface AllowedEmail {
 	simpleroCustomerId?: string;
 	expiresAt?: number | null;
 	updatedAt?: number;
+	// Hvis sat, ignorerer sync abo-felterne (accessLevel/activeProduct/etc)
+	// indtil tidspunktet er passeret. Bruges fx når kunden har købt basis-abo
+	// men adgangen først skal aktiveres når et eksisterende forløb udløber.
+	adgangFra?: number;
 }
 
 export interface CsvRow {
