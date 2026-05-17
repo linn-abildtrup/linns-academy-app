@@ -284,47 +284,38 @@
 			{/each}
 
 			{#if bonus}
+				{@const synligeSvar = bonus.svarmuligheder
+					.map((s, i) => ({ s, i }))
+					.filter((x) => x.s.trim() !== '')}
+				{@const erBonusskridt = synligeSvar.length === 1}
 				<div class="check-row bonus-row">
 					<div class="check-label">
 						<span class="bonus-tag">Bonus · {bonus.kategori}</span>
 						{bonus.label}
 					</div>
-					<div class="check-knapper bonus-knapper-3">
-						<button
-							class="ja-knap"
-							class:aktiv={bonusSvarIdx === 0}
-							type="button"
-							onclick={() => vaelgBonusSvar(0)}
-							{disabled}
-						>
-							{bonus.svarmuligheder[0]}
-						</button>
-						<button
-							class="delvist-knap"
-							class:aktiv={bonusSvarIdx === 1}
-							type="button"
-							onclick={() => vaelgBonusSvar(1)}
-							{disabled}
-						>
-							{bonus.svarmuligheder[1]}
-						</button>
-						<button
-							class="nej-knap"
-							class:aktiv={bonusSvarIdx === 2}
-							type="button"
-							onclick={() => vaelgBonusSvar(2)}
-							{disabled}
-						>
-							{bonus.svarmuligheder[2]}
-						</button>
+					<div class="check-knapper" class:bonus-knapper-3={!erBonusskridt}>
+						{#each synligeSvar as { s, i } (i)}
+							{@const knapKlasse = i === 0 ? 'ja-knap' : i === 1 ? 'delvist-knap' : 'nej-knap'}
+							<button
+								class={knapKlasse}
+								class:aktiv={bonusSvarIdx === i}
+								type="button"
+								onclick={() => vaelgBonusSvar(i as 0 | 1 | 2)}
+								{disabled}
+							>
+								{erBonusskridt && bonusSvarIdx === i ? '✓ ' : ''}{s}
+							</button>
+						{/each}
 					</div>
-					<input
-						type="text"
-						class="bonus-note"
-						placeholder="Vil du tilføje noget? (valgfrit)"
-						bind:value={bonusNote}
-						{disabled}
-					/>
+					{#if !erBonusskridt}
+						<input
+							type="text"
+							class="bonus-note"
+							placeholder="Vil du tilføje noget? (valgfrit)"
+							bind:value={bonusNote}
+							{disabled}
+						/>
+					{/if}
 				</div>
 			{/if}
 
