@@ -6,7 +6,8 @@
 		signOut,
 		updatePassword
 	} from 'firebase/auth';
-	import { auth } from '$lib/firebase';
+	import { auth, db } from '$lib/firebase';
+	import { doc as doc_ref, updateDoc } from 'firebase/firestore';
 	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
@@ -162,6 +163,29 @@
 			mtFejl = 'Kunne ikke skifte program. Prøv igen.';
 		} finally {
 			mtGemmer = null;
+		}
+	}
+
+	// Variant-valg for abo-brugere (basis/premium): kettlebell vs no-kettlebell.
+	// Skifter aboMikrotraening-programmet med det samme — alle abonnentens
+	// program-views henter variant fra userDoc.mikrotraeningVariant.
+	const erAbonnent = $derived(userDoc?.accessSource === 'abonnement');
+	let varGemmer = $state<'kettlebell' | 'no_kettlebell' | null>(null);
+	let varFejl = $state<string | null>(null);
+
+	async function vaelgVariant(variant: 'kettlebell' | 'no_kettlebell') {
+		const u = user;
+		if (!u || varGemmer) return;
+		if ((userDoc?.mikrotraeningVariant ?? 'no_kettlebell') === variant) return;
+		varGemmer = variant;
+		varFejl = null;
+		try {
+			await updateDoc(doc_ref(db, 'users', u.uid), { mikrotraeningVariant: variant });
+		} catch (e) {
+			console.error(e);
+			varFejl = 'Kunne ikke skifte variant. Prøv igen.';
+		} finally {
+			varGemmer = null;
 		}
 	}
 
@@ -343,6 +367,47 @@
 		<section class="sektion">
 			<h2 class="sektion-titel">Mikrotræning — program</h2>
 			<div class="status-besked">Henter dine programvalg...</div>
+		</section>
+	{/if}
+
+	{#if erAbonnent}
+		{@const aktivVariant = userDoc?.mikrotraeningVariant ?? 'no_kettlebell'}
+		<section class="sektion">
+			<h2 class="sektion-titel">Mikrotræning — program</h2>
+			<p class="sektion-sub">
+				Vælg om du træner med eller uden udstyr. Dit program opdateres med det samme.
+			</p>
+			{#if varFejl}
+				<div class="status-besked fejl">{varFejl}</div>
+			{/if}
+			<div class="program-liste">
+				{#each [{ id: 'kettlebell' as const, navn: 'Mikrotræning med kettlebell', sub: 'Program med kettlebell-øvelser' }, { id: 'no_kettlebell' as const, navn: 'Mikrotræning uden udstyr', sub: 'Bodyweight-øvelser' }] as v (v.id)}
+					{@const aktiv = aktivVariant === v.id}
+					{@const gemmerDenne = varGemmer === v.id}
+					<button
+						class="program-knap"
+						class:aktiv
+						type="button"
+						onclick={() => vaelgVariant(v.id)}
+						disabled={varGemmer !== null}
+					>
+						<span class="program-ikon" class:aktiv>
+							<Icon name={v.id === 'kettlebell' ? 'kettlebell' : 'stretch'} size={18} />
+						</span>
+						<span class="program-tekst">
+							<span class="program-navn">{v.navn}</span>
+							<span class="program-sub">{v.sub}</span>
+						</span>
+						<span class="program-status">
+							{#if gemmerDenne}
+								<span class="program-gemmer">Gemmer...</span>
+							{:else if aktiv}
+								<Icon name="check" size={18} color="var(--sage, #6f9e7e)" />
+							{/if}
+						</span>
+					</button>
+				{/each}
+			</div>
 		</section>
 	{/if}
 
