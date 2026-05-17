@@ -7,18 +7,13 @@
 	import {
 		beregnAboDagsStatus,
 		dagensBonus,
-		erUgentligCheckinDag,
 		parseDato,
 		type AboBonusForslag,
 		type AboBonusSvar,
 		type AboVaneOpsaetning,
 		type AboVanedagEntry
 	} from '$lib/content/aboVaner';
-	import {
-		CHECKIN_SPORGSMAAL,
-		type CheckinSvar,
-		type VaneSvar
-	} from '$lib/content/vaner';
+	import { type CheckinSvar, type VaneSvar } from '$lib/content/vaner';
 	import {
 		hentAboBonusPulje,
 		hentAboVaneOpsaetning,
@@ -37,7 +32,6 @@
 	const dato = $derived(page.params.dato ?? '');
 	const datoObj = $derived(/^\d{4}-\d{2}-\d{2}$/.test(dato) ? parseDato(dato) : null);
 	const erIFremtiden = $derived(datoObj ? datoObj > new Date() : false);
-	const erCheckinDag = $derived(datoObj ? erUgentligCheckinDag(datoObj) : false);
 
 	let opsaetning = $state<AboVaneOpsaetning | null>(null);
 	let bonus = $state<AboBonusForslag | null>(null);
@@ -75,7 +69,7 @@
 
 	const aktuelStatus = $derived(
 		opsaetning
-			? beregnAboDagsStatus(opsaetning.valgteVaner, bonus, erCheckinDag, {
+			? beregnAboDagsStatus(opsaetning.valgteVaner, bonus, false, {
 					dato,
 					checks,
 					bonus: aktuelBonus,
@@ -163,21 +157,6 @@
 		checks = { ...checks, [id]: val };
 	}
 
-	function setSlider(id: keyof CheckinSvar, val: string | number) {
-		const n = typeof val === 'string' ? parseInt(val, 10) : val;
-		if (Number.isFinite(n)) {
-			checkin = { ...checkin, [id]: n };
-		}
-	}
-
-	function setGenerelTekst(val: string) {
-		checkin = { ...checkin, generelTekst: val };
-	}
-
-	function harSliderSvar(id: keyof CheckinSvar): boolean {
-		return typeof checkin[id] === 'number';
-	}
-
 	function vaelgBonusSvar(idx: AboBonusSvar) {
 		bonusSvarIdx = bonusSvarIdx === idx ? null : idx;
 	}
@@ -193,18 +172,6 @@
 		gemFejl = null;
 		gemmer = true;
 		try {
-			if (erCheckinDag) {
-				type SliderId = Exclude<keyof CheckinSvar, 'generelTekst'>;
-				const fyldt: CheckinSvar = { ...checkin };
-				for (const q of CHECKIN_SPORGSMAAL) {
-					const id = q.id as SliderId;
-					if (typeof fyldt[id] !== 'number') {
-						fyldt[id] = 5;
-					}
-				}
-				checkin = fyldt;
-			}
-
 			const bonusEntry = aktuelBonus;
 			await gemAboVanedag(u.uid, {
 				dato,
@@ -325,49 +292,6 @@
 			<div class="prog-tael">{fremgangAntal.ja} af {fremgangAntal.total} vaner gennemført</div>
 		</section>
 
-		{#if erCheckinDag}
-			<section class="card">
-				<div class="section-label">Ugentligt check-in</div>
-				<p class="reflection">
-					Fem spørgsmål om din uge. Mærk efter på en skala 1-10, hvor 1 er meget dårligt
-					og 10 er rigtig godt.
-				</p>
-
-				{#each CHECKIN_SPORGSMAAL as q (q.id)}
-					{@const id = q.id as keyof CheckinSvar}
-					{@const val = harSliderSvar(id) ? (checkin[id] as number) : 5}
-					<div class="slider-row">
-						<div class="slider-head">
-							<div class="slider-label">{q.label}</div>
-							<div class="slider-val">{val}</div>
-						</div>
-						<input
-							type="range"
-							min="1"
-							max="10"
-							step="1"
-							value={val}
-							{disabled}
-							oninput={(e) => setSlider(id, (e.target as HTMLInputElement).value)}
-						/>
-						<div class="slider-skala"><span>1</span><span>5</span><span>10</span></div>
-					</div>
-				{/each}
-
-				<div class="generel-felt">
-					<div class="generel-label">Hvordan har jeg det generelt lige nu?</div>
-					<textarea
-						class="textarea"
-						placeholder="Skriv dit svar her..."
-						value={checkin.generelTekst ?? ''}
-						oninput={(e) => setGenerelTekst((e.target as HTMLTextAreaElement).value)}
-						{disabled}
-						rows="3"
-					></textarea>
-				</div>
-			</section>
-		{/if}
-
 		{#if gemFejl}
 			<div class="fejl-besked">{gemFejl}</div>
 		{/if}
@@ -477,37 +401,6 @@
 		text-transform: uppercase;
 		color: var(--text3);
 		margin-bottom: 12px;
-	}
-
-	.reflection {
-		font-size: calc(13px * var(--fs-scale, 1));
-		color: var(--text2);
-		line-height: 1.5;
-		margin: 0 0 12px;
-	}
-
-	.textarea {
-		width: 100%;
-		padding: 10px 12px;
-		border-radius: 10px;
-		border: 1px solid var(--border);
-		background: var(--bg2);
-		color: var(--text);
-		font-family: var(--ff-b);
-		font-size: calc(16px * var(--fs-scale, 1));
-		line-height: 1.5;
-		outline: none;
-		resize: vertical;
-		box-sizing: border-box;
-	}
-
-	.textarea:focus {
-		border-color: var(--terra);
-	}
-
-	.textarea:disabled {
-		opacity: 0.7;
-		cursor: not-allowed;
 	}
 
 	.check-row {
@@ -638,61 +531,6 @@
 		color: var(--text3);
 		margin-top: 6px;
 		text-align: right;
-	}
-
-	.slider-row {
-		padding: 10px 0;
-		border-top: 1px solid var(--border);
-	}
-
-	.slider-row:first-of-type {
-		border-top: none;
-	}
-
-	.slider-head {
-		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-		margin-bottom: 6px;
-	}
-
-	.slider-label {
-		font-size: calc(13px * var(--fs-scale, 1));
-		color: var(--text);
-		font-weight: 500;
-	}
-
-	.slider-val {
-		font-family: var(--ff-d);
-		font-size: calc(16px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--terra);
-	}
-
-	.slider-row input[type='range'] {
-		width: 100%;
-		accent-color: var(--terra);
-	}
-
-	.slider-skala {
-		display: flex;
-		justify-content: space-between;
-		font-size: calc(10px * var(--fs-scale, 1));
-		color: var(--text4);
-		margin-top: 2px;
-	}
-
-	.generel-felt {
-		margin-top: 14px;
-		padding-top: 14px;
-		border-top: 1px solid var(--border);
-	}
-
-	.generel-label {
-		font-size: calc(13px * var(--fs-scale, 1));
-		color: var(--text);
-		font-weight: 500;
-		margin-bottom: 6px;
 	}
 
 	.bund-knapper {

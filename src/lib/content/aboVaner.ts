@@ -353,9 +353,8 @@ export function beregnAboFremgang(
 	const cur = new Date(fra);
 	while (cur <= til) {
 		const datoStr = formaterDato(cur);
-		const isCheckin = erUgentligCheckinDag(cur);
 		const bonus = dagensBonus(bonusPulje, datoStr);
-		const status = beregnAboDagsStatus(valgteVaner, bonus, isCheckin, entries.get(datoStr) ?? null);
+		const status = beregnAboDagsStatus(valgteVaner, bonus, false, entries.get(datoStr) ?? null);
 		if (status === 'completed') gennemforte++;
 		iAlt++;
 		cur.setDate(cur.getDate() + 1);

@@ -44,7 +44,6 @@
 	import {
 		formaterDato,
 		dagensBonus,
-		erUgentligCheckinDag,
 		type AboBonusForslag,
 		type AboBonusSvar,
 		type AboVaneOpsaetning,
@@ -488,11 +487,6 @@
 			: null
 	);
 
-	const modulbrugerErCheckinDag = $derived.by(() => {
-		const [aar, m, d] = modulbrugerAktivDato.split('-').map(Number);
-		return erUgentligCheckinDag(new Date(aar, m - 1, d));
-	});
-
 	const modulbrugerTraeningGennemfoert = $derived(
 		modulbrugerTraeningsDatoer.has(modulbrugerAktivDato)
 	);
@@ -606,23 +600,6 @@
 			await gemAboVanedag(u.uid, ny);
 		} catch (e) {
 			console.error('Kunne ikke gemme bonus-svar:', e);
-		} finally {
-			gemmerSvar = false;
-		}
-	}
-
-	async function gemCheckinSvar(spId: string, vaerdi: number) {
-		const u = user;
-		if (!u || gemmerSvar) return;
-		gemmerSvar = true;
-		const aktuel = modulbrugerVanedag ?? tomVanedag(modulbrugerAktivDato);
-		const nyCheckin = { ...aktuel.checkin, [spId]: vaerdi } as CheckinSvar;
-		const ny: AboVanedagEntry = { ...aktuel, checkin: nyCheckin };
-		modulbrugerVanedag = ny;
-		try {
-			await gemAboVanedag(u.uid, ny);
-		} catch (e) {
-			console.error('Kunne ikke gemme check-in-svar:', e);
 		} finally {
 			gemmerSvar = false;
 		}
@@ -1175,10 +1152,10 @@
 
 				<a class="hjaelp-knap" href="/app/app-hjaelp">
 					<div class="hjaelp-venstre">
-						<div class="hjaelp-ikon" aria-hidden="true">💬</div>
+						<div class="hjaelp-ikon" aria-hidden="true">🤖</div>
 						<div class="hjaelp-tekst">
-							<div class="hjaelp-titel">Har du spørgsmål til appen?</div>
-							<div class="hjaelp-sub">Stil dem her — jeg svarer med det samme</div>
+							<div class="hjaelp-eyebrow">AI-hjælp til appen</div>
+							<div class="hjaelp-sub">Spørg løs — vores AI svarer med det samme</div>
 						</div>
 					</div>
 					<Icon name="chevron-r" size={14} color="var(--text3)" />
@@ -1406,35 +1383,6 @@
 							</div>
 						{/if}
 
-						{#if modulbrugerErCheckinDag}
-							<div class="checkin-blok">
-								<div class="checkin-titel">Ugentligt check-in</div>
-								<div class="checkin-sub">Mærk efter — hvor er du på skalaen lige nu? (1 = lavt, 10 = højt)</div>
-								{#each CHECKIN_SPORGSMAAL as q (q.id)}
-									{@const aktuel = modulbrugerVanedag?.checkin?.[q.id as keyof CheckinSvar] ?? null}
-									<div class="checkin-row">
-										<div class="checkin-label">{q.label}</div>
-										<div class="checkin-skala-rad">
-											<input
-												class="checkin-slider"
-												type="range"
-												min="1"
-												max="10"
-												step="1"
-												value={aktuel ?? 5}
-												disabled={gemmerSvar}
-												onchange={(e) =>
-													gemCheckinSvar(
-														q.id,
-														parseInt((e.target as HTMLInputElement).value, 10)
-													)}
-											/>
-											<div class="checkin-vaerdi">{aktuel ?? '-'}</div>
-										</div>
-									</div>
-								{/each}
-							</div>
-						{/if}
 					</div>
 				{/if}
 			</section>
@@ -1503,10 +1451,10 @@
 
 				<a class="hjaelp-knap" href="/app/app-hjaelp">
 					<div class="hjaelp-venstre">
-						<div class="hjaelp-ikon" aria-hidden="true">💬</div>
+						<div class="hjaelp-ikon" aria-hidden="true">🤖</div>
 						<div class="hjaelp-tekst">
-							<div class="hjaelp-titel">Har du spørgsmål til appen?</div>
-							<div class="hjaelp-sub">Stil dem her — jeg svarer med det samme</div>
+							<div class="hjaelp-eyebrow">AI-hjælp til appen</div>
+							<div class="hjaelp-sub">Spørg løs — vores AI svarer med det samme</div>
 						</div>
 					</div>
 					<Icon name="chevron-r" size={14} color="var(--text3)" />
@@ -1601,10 +1549,10 @@
 
 				<a class="hjaelp-knap" href="/app/app-hjaelp">
 					<div class="hjaelp-venstre">
-						<div class="hjaelp-ikon" aria-hidden="true">💬</div>
+						<div class="hjaelp-ikon" aria-hidden="true">🤖</div>
 						<div class="hjaelp-tekst">
-							<div class="hjaelp-titel">Har du spørgsmål til appen?</div>
-							<div class="hjaelp-sub">Stil dem her — jeg svarer med det samme</div>
+							<div class="hjaelp-eyebrow">AI-hjælp til appen</div>
+							<div class="hjaelp-sub">Spørg løs — vores AI svarer med det samme</div>
 						</div>
 					</div>
 					<Icon name="chevron-r" size={14} color="var(--text3)" />
@@ -1823,18 +1771,21 @@
 		min-width: 0;
 	}
 
-	.hjaelp-titel {
-		font-family: var(--ff-d);
-		font-weight: 600;
-		font-size: calc(13.5px * var(--fs-scale, 1));
-		color: var(--text);
+	.hjaelp-eyebrow {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--terra);
 		line-height: 1.2;
 	}
 
 	.hjaelp-sub {
-		font-size: calc(11.5px * var(--fs-scale, 1));
-		color: var(--text3);
-		margin-top: 2px;
+		font-family: var(--ff-d);
+		font-weight: 600;
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		color: var(--text);
+		margin-top: 4px;
 		line-height: 1.3;
 	}
 
