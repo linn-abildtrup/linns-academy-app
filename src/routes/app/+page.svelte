@@ -1342,19 +1342,23 @@
 						{/each}
 
 						{#if modulbrugerBonusIDag}
-							<div class="vane-inline-row vane-inline-bonus">
+							{@const synligeSvar = modulbrugerBonusIDag.svarmuligheder
+								.map((s, i) => ({ s, i }))
+								.filter((x) => x.s.trim() !== '')}
+							{@const erBonusskridt = synligeSvar.length === 1}
+							<div class="vane-inline-row vane-inline-bonus" class:bonusskridt={erBonusskridt}>
 								<div class="vane-inline-label">{modulbrugerBonusIDag.label}</div>
-								<div class="vane-svar-knapper">
-									{#each modulbrugerBonusIDag.svarmuligheder as svarLabel, idx (idx)}
-										{@const variant = idx === 0 ? 'ja' : idx === 1 ? 'delvist' : 'nej'}
+								<div class="vane-svar-knapper" class:enkel={erBonusskridt}>
+									{#each synligeSvar as { s, i } (i)}
+										{@const variant = i === 0 ? 'ja' : i === 1 ? 'delvist' : 'nej'}
 										<button
 											type="button"
 											class="svar-knap svar-knap-{variant}"
-											class:aktiv={modulbrugerVanedag?.bonus?.svar === idx}
+											class:aktiv={modulbrugerVanedag?.bonus?.svar === i}
 											disabled={gemmerSvar}
-											onclick={() => gemBonusSvar(modulbrugerBonusIDag!.id, idx as AboBonusSvar)}
+											onclick={() => gemBonusSvar(modulbrugerBonusIDag!.id, i as AboBonusSvar)}
 										>
-											{svarLabel}
+											{erBonusskridt && modulbrugerVanedag?.bonus?.svar === i ? '✓ ' : ''}{s}
 										</button>
 									{/each}
 								</div>
@@ -2404,6 +2408,21 @@
 		display: flex;
 		gap: 4px;
 		flex-shrink: 0;
+	}
+	.vane-svar-knapper.enkel .svar-knap {
+		padding: 6px 16px;
+		font-size: calc(12px * var(--fs-scale, 1));
+	}
+	/* Bonusskridt-rækken får mere plads til label-teksten + lader knappen flyde
+	   til højre. Da der kun er én knap, skal labelet have plads til at wrappe. */
+	.vane-inline-row.bonusskridt {
+		align-items: flex-start;
+		gap: 10px;
+	}
+	.vane-inline-row.bonusskridt .vane-inline-label {
+		flex: 1;
+		white-space: normal;
+		line-height: 1.35;
 	}
 
 	.svar-knap {
