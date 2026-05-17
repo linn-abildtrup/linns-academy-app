@@ -28,6 +28,7 @@
 		"omdoeb:format-skriftlig": "tsx scripts/omdoeb-format-skriftlig.ts",
 		"dump:vaneprogram": "tsx scripts/dump-vaneprogram.ts",
 		"importer:traeningsprogrammer": "tsx scripts/importer-traeningsprogrammer.ts",
+		"migrate:expires-end-of-day": "tsx scripts/migrate-expires-end-of-day.ts",
 		"ryd:titler": "tsx scripts/ryd-opskriftstitler.ts",
 		"cleanup:vaneprogrammer": "tsx scripts/cleanup-vaneprogrammer.ts",
 		"list:forlob": "tsx scripts/list-forlob.ts",

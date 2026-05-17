@@ -249,10 +249,15 @@ export async function synkroniserForlobskundeStatus(
 						data.startDato?.toMillis?.() ?? (data.startDato?.seconds ?? 0) * 1000;
 					const antalDage = data.antalDage ?? 0;
 					if (startMs && antalDage > 0) {
-						const slutMs = startMs + antalDage * 24 * 60 * 60 * 1000;
+						// Forløbet løber fra Dag 0 (startDato) til og med Dag {antalDage}
+						// kl. 23:59. expiresAt sættes til midnatten EFTER sidste dag, så
+						// `expiresAt > now` returnerer true så længe vi er inden for
+						// Dag {antalDage}. Bonus-periode er 90 dage efter forløbet slutter.
+						const dayMs = 24 * 60 * 60 * 1000;
+						const slutMs = startMs + (antalDage + 1) * dayMs;
 						if (!current.expiresAt) opdateringer.expiresAt = slutMs;
 						if (!current.bonusPeriodEndsAt) {
-							opdateringer.bonusPeriodEndsAt = slutMs + 90 * 24 * 60 * 60 * 1000;
+							opdateringer.bonusPeriodEndsAt = slutMs + 90 * dayMs;
 						}
 					}
 				}
