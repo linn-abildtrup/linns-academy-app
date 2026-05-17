@@ -146,17 +146,32 @@ export async function gemILog(
 	}
 }
 
-// Skriver opdateringen til users/{uid} hvis brugeren findes (slået op via email-
-// feltet), ellers til allowedEmails/{email} som whitelist når hun logger ind.
+// Skriver opdateringen til BÅDE users/{uid} (hvis brugeren findes) OG
+// allowedEmails/{email}. Tidligere blev allowedEmails sprunget over når en
+// users-doc fandtes, men det betyder at admin-tællingen mister fortegnelser
+// for migrerede kunder der senere køber basis-abo (deres users-doc får abo-
+// felterne, men allowedEmails er stadig kun migrations-defaults). Nu holdes
+// begge dokumenter altid i sync.
+//
 // Hvis nytForlobId er givet merges det ind i forlobIds-arrayet på users uden
-// at overskrive tidligere forløb; for allowedEmails gemmes det i forlobId-feltet
-// og aggregeres over på userDoc første gang brugeren logger ind.
+// at overskrive tidligere forløb; for allowedEmails gemmes det i forlobId-
+// feltet.
 export async function opdaterBrugerEllerWhitelist(
 	email: string,
 	opdatering: Record<string, unknown>,
 	nytForlobId?: string
 ): Promise<void> {
 	const brugere = await hentDocsHvorFeltLig('users', 'email', email);
+
+	// Skriv altid til allowedEmails så admin-tællinger og whitelist-flow er konsistente.
+	const whitelistOpdatering: Record<string, unknown> = {
+		email,
+		...opdatering
+	};
+	if (nytForlobId) whitelistOpdatering.forlobId = nytForlobId;
+	await gemDocMerge(`allowedEmails/${loggerSafePath(email)}`, whitelistOpdatering);
+
+	// Skriv også til users-doc hvis brugeren har logget ind.
 	if (brugere.length > 0) {
 		for (const b of brugere) {
 			const opd = { ...opdatering };
@@ -166,14 +181,7 @@ export async function opdaterBrugerEllerWhitelist(
 			}
 			await gemDocMerge(`users/${b.id}`, opd);
 		}
-		return;
 	}
-	const whitelistOpdatering: Record<string, unknown> = {
-		email,
-		...opdatering
-	};
-	if (nytForlobId) whitelistOpdatering.forlobId = nytForlobId;
-	await gemDocMerge(`allowedEmails/${loggerSafePath(email)}`, whitelistOpdatering);
 }
 
 // Læser raw body, verificerer signatur og parser JSON. Returnerer enten
