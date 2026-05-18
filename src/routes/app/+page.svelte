@@ -586,14 +586,16 @@
 		}
 	}
 
-	async function gemBonusSvar(bonusId: string, svar: AboBonusSvar) {
+	// svar=null fjerner bonus-svaret igen (toggle/undo). Bruges når klienten
+	// klikker på den allerede aktive knap for at fortryde dagens bonus-skridt.
+	async function gemBonusSvar(bonusId: string, svar: AboBonusSvar | null) {
 		const u = user;
 		if (!u || gemmerSvar) return;
 		gemmerSvar = true;
 		const aktuel = modulbrugerVanedag ?? tomVanedag(modulbrugerAktivDato);
 		const ny: AboVanedagEntry = {
 			...aktuel,
-			bonus: { id: bonusId, svar }
+			bonus: svar === null ? null : { id: bonusId, svar }
 		};
 		modulbrugerVanedag = ny;
 		try {
@@ -603,6 +605,11 @@
 		} finally {
 			gemmerSvar = false;
 		}
+	}
+
+	function vaelgEllerFjernBonus(bonusId: string, svar: AboBonusSvar) {
+		const aktiv = modulbrugerVanedag?.bonus?.svar === svar;
+		void gemBonusSvar(bonusId, aktiv ? null : svar);
 	}
 
 	async function indlaesMineSpoergsmaal(uid: string) {
@@ -772,13 +779,17 @@
 		}
 	}
 
-	async function gemForlobBonusSvar(bonusId: string, svar: BonusSvar) {
+	// svar=null fjerner bonus-svaret igen (toggle/undo) — klienten klikker
+	// på den allerede aktive knap for at fortryde.
+	async function gemForlobBonusSvar(bonusId: string, svar: BonusSvar | null) {
 		const u = user;
 		const n = valgtDagNummer ?? aktivDagNummer;
 		if (!u || n === null || gemmerSvar) return;
 		gemmerSvar = true;
 		const aktuel = forlobVanedag ?? tomForlobVanedag(n);
-		const nyBonus = { ...aktuel.bonus, [bonusId]: svar };
+		const nyBonus = { ...aktuel.bonus };
+		if (svar === null) delete nyBonus[bonusId];
+		else nyBonus[bonusId] = svar;
 		const ny: VanedagEntry = { ...aktuel, bonus: nyBonus };
 		forlobVanedag = ny;
 		try {
@@ -788,6 +799,11 @@
 		} finally {
 			gemmerSvar = false;
 		}
+	}
+
+	function vaelgEllerFjernForlobBonus(bonusId: string, svar: BonusSvar) {
+		const aktiv = forlobVanedag?.bonus?.[bonusId] === svar;
+		void gemForlobBonusSvar(bonusId, aktiv ? null : svar);
 	}
 
 	async function gemForlobCheckinSvar(spId: string, vaerdi: number) {
@@ -1032,7 +1048,7 @@
 											class="svar-knap svar-knap-{opt.v}"
 											class:aktiv={forlobVanedag?.bonus?.[aktivVaneprogramDag.bonus!.id] === opt.v}
 											disabled={gemmerSvar}
-											onclick={() => gemForlobBonusSvar(aktivVaneprogramDag!.bonus!.id, opt.v)}
+											onclick={() => vaelgEllerFjernForlobBonus(aktivVaneprogramDag!.bonus!.id, opt.v)}
 										>
 											{opt.l}
 										</button>
@@ -1374,7 +1390,7 @@
 											class="svar-knap svar-knap-{variant}"
 											class:aktiv={modulbrugerVanedag?.bonus?.svar === i}
 											disabled={gemmerSvar}
-											onclick={() => gemBonusSvar(modulbrugerBonusIDag!.id, i as AboBonusSvar)}
+											onclick={() => vaelgEllerFjernBonus(modulbrugerBonusIDag!.id, i as AboBonusSvar)}
 										>
 											{erBonusskridt && modulbrugerVanedag?.bonus?.svar === i ? '✓ ' : ''}{s}
 										</button>
