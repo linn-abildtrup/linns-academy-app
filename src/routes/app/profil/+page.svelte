@@ -215,6 +215,57 @@
 		}
 	}
 
+	let nulstillerApp = $state(false);
+
+	async function handleNulstilApp() {
+		const bekraeftet = confirm(
+			'Nulstil app? Du bliver logget ud, og gemte indstillinger på denne enhed slettes (fx hvilken dato du sidst kiggede på).\n\nDine data i appen rører vi ikke — du kan logge ind igen som normalt bagefter.'
+		);
+		if (!bekraeftet || nulstillerApp) return;
+		nulstillerApp = true;
+		try {
+			// 1. Log ud af Firebase Auth — fjerner tokens i IndexedDB
+			try {
+				await signOut(auth);
+			} catch (e) {
+				console.warn('signOut fejlede:', e);
+			}
+
+			// 2. Ryd al localStorage og sessionStorage
+			try {
+				localStorage.clear();
+				sessionStorage.clear();
+			} catch (e) {
+				console.warn('Storage-ryd fejlede:', e);
+			}
+
+			// 3. Unregister service workers (hvis nogen)
+			if ('serviceWorker' in navigator) {
+				try {
+					const regs = await navigator.serviceWorker.getRegistrations();
+					for (const reg of regs) await reg.unregister();
+				} catch (e) {
+					console.warn('SW-unregister fejlede:', e);
+				}
+			}
+
+			// 4. Ryd cache-storage
+			if ('caches' in window) {
+				try {
+					const navne = await caches.keys();
+					await Promise.all(navne.map((n) => caches.delete(n)));
+				} catch (e) {
+					console.warn('Cache-ryd fejlede:', e);
+				}
+			}
+
+			// 5. Hård reload til login
+			window.location.href = '/login';
+		} finally {
+			nulstillerApp = false;
+		}
+	}
+
 	// Skift-adgangskode-state
 	let viserSkiftPassword = $state(false);
 	let nuPassword = $state('');
@@ -571,6 +622,18 @@
 				</div>
 			</div>
 		{/if}
+	</section>
+
+	<section class="sektion">
+		<h2 class="sektion-titel">Problemer med appen?</h2>
+		<p class="sektion-sub">
+			Hvis appen opfører sig mærkeligt — fx hvis du ikke kan logge ind, eller dine
+			data ser forkerte ud — så prøv at nulstille appen på din enhed. Det rydder
+			cache og gemte indstillinger på telefonen. Dine data i appen er ikke berørt.
+		</p>
+		<button class="nulstil-app" type="button" onclick={handleNulstilApp} disabled={nulstillerApp}>
+			{nulstillerApp ? 'Nulstiller…' : '🔄 Nulstil appen på denne enhed'}
+		</button>
 	</section>
 
 	<button class="logout" onclick={handleLogout}>Log ud</button>
@@ -1090,6 +1153,32 @@
 
 	.hjaelp a:hover {
 		text-decoration: underline;
+	}
+
+	.nulstil-app {
+		display: block;
+		width: 100%;
+		padding: 12px 14px;
+		margin-top: 6px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		color: var(--text2);
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		font-family: inherit;
+		text-align: center;
+		cursor: pointer;
+	}
+
+	.nulstil-app:hover:not(:disabled) {
+		background: var(--bg2);
+		color: var(--text);
+	}
+
+	.nulstil-app:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	.logout {
