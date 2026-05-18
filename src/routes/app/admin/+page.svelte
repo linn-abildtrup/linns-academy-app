@@ -89,6 +89,14 @@
 			rute: '/app/admin/abonnenter',
 			accent: '#7E9BB3',
 			icon: 'user' as const
+		},
+		{
+			id: 'nulstil-adgang',
+			navn: 'Nulstil adgangskode',
+			beskrivelse: 'Sæt midlertidig adgangskode for en kunde (virker for alle typer)',
+			rute: '/app/admin/nulstil-adgang',
+			accent: '#9D6358',
+			icon: 'lock' as const
 		}
 	];
 </script>
