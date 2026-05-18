@@ -819,6 +819,45 @@
 		gemBesked = null;
 	}
 
+	// Hurtig-gem til snack-flow: når der kun er én ingrediens i måltidet,
+	// kan kunden trykke 'Gem i dagbog' og få det lagt direkte i dagbogen
+	// som en snack med fødevarens navn — uden at åbne navn/type/dato-modalen.
+	// Kunden kan stadig åbne modalen via 'Rediger detaljer'-linket hvis hun
+	// vil ændre noget.
+	async function hurtigGem() {
+		const u = user;
+		if (!u || maaltid.length !== 1 || gemmer) return;
+		const item = maaltid[0];
+		const navn = (item.manuel?.navn ?? foodMap.get(item.foodId)?.name ?? 'Snack').trim();
+		const dato = forhaandsValgtDato ?? formatDatoKey();
+		gemmer = true;
+		try {
+			await gemMaaltid(u.uid, {
+				navn,
+				type: 'snack',
+				dato,
+				items: maaltid,
+				totalP: Math.round(totaler.protein * 10) / 10,
+				totalF: Math.round(totaler.fiber * 10) / 10,
+				totalKh: Math.round(totaler.kh * 10) / 10,
+				totalFedt: Math.round(totaler.fedt * 10) / 10,
+				totalKcal: Math.round(totaler.kcal)
+			});
+			maaltid = [];
+			pendingMaaltidsNavn = null;
+			localStorage.setItem(STORAGE_KEY, '[]');
+			forhaandsValgtDato = null;
+			dagbogDato = dato;
+			await indlaesDagbog();
+			void indlaesSenesteFodevarer(u.uid);
+			skiftTab('dagbog');
+		} catch (e) {
+			console.error('Kunne ikke hurtig-gemme måltid:', e);
+		} finally {
+			gemmer = false;
+		}
+	}
+
 	async function gemMaaltidet() {
 		const u = user;
 		if (!u) {
@@ -1216,8 +1255,13 @@
 					<span class="soeg-faux-placeholder">Søg fødevare</span>
 				</button>
 				{#if !redigererFavorit && maaltid.length > 0}
-					<button class="primary-knap sage gem-i-rad" type="button" onclick={aabnGemModal}>
-						Gem i dagbog
+					<button
+						class="primary-knap sage gem-i-rad"
+						type="button"
+						onclick={maaltid.length === 1 ? hurtigGem : aabnGemModal}
+						disabled={gemmer}
+					>
+						{gemmer && maaltid.length === 1 ? 'Gemmer…' : 'Gem i dagbog'}
 					</button>
 				{/if}
 				{#if kanScanne}
@@ -1233,6 +1277,14 @@
 					</button>
 				{/if}
 			</div>
+
+			{#if !redigererFavorit && maaltid.length === 1}
+				<div class="rediger-detaljer-rad">
+					<button class="rediger-detaljer-link" type="button" onclick={aabnGemModal} disabled={gemmer}>
+						Rediger detaljer (navn, type, dato)
+					</button>
+				</div>
+			{/if}
 
 			<div class="maaltid-liste">
 				{#if maaltid.length > 0}
@@ -3177,6 +3229,33 @@
 		min-width: 0;
 		margin-top: 0;
 		text-align: center;
+	}
+
+	.rediger-detaljer-rad {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: 4px;
+	}
+
+	.rediger-detaljer-link {
+		background: none;
+		border: none;
+		padding: 4px 8px;
+		font-family: var(--ff-b);
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		text-decoration: underline;
+		text-underline-offset: 2px;
+		cursor: pointer;
+	}
+
+	.rediger-detaljer-link:hover:not(:disabled) {
+		color: var(--terra);
+	}
+
+	.rediger-detaljer-link:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	.scan-knap-direkte {
