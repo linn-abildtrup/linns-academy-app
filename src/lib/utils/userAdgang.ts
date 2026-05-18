@@ -22,14 +22,21 @@ import type { AccessLevel, AccessSource, UserDoc, UserState } from '$lib/types';
  * Returnerer den effektive UserState baseret på de nye adgangs-felter.
  * Hvis adgangs-felterne mangler bruger vi userDoc.state direkte (legacy).
  *
- * Hvis `expiresAt` er passeret betragtes brugeren som udløbet uanset
- * accessLevel — så en forløbskunde automatisk skifter til udlobet-UI når
- * forløbets slutdato er nået (med bibliotek-bonus i 90 dage efter via
- * `bonusPeriodEndsAt`).
+ * `expiresAt` har FORSKELLIG semantik afhængigt af accessSource:
+ * - Forløb: forløbets slutdato — passeret = udlobet (med 90 dages bibliotek-
+ *   bonus efter via `bonusPeriodEndsAt`).
+ * - Abonnement: næste fornyelse — passeret betyder IKKE udløb. Et abonnement
+ *   udløber kun når `activeSubscription` bliver false (cancel-webhook).
+ *
+ * Det er vigtigt fordi migrerede kunder kan have et expiresAt fra deres
+ * forløb selv om de senere er overgået til et abonnement.
  */
 export function effektivState(userDoc: UserDoc | null | undefined): UserState | null {
 	if (!userDoc) return null;
-	const udloebet = !!(userDoc.expiresAt && userDoc.expiresAt < Date.now());
+	const erAktivAbonnent =
+		userDoc.accessSource === 'abonnement' && userDoc.activeSubscription === true;
+	const udloebet =
+		!erAktivAbonnent && !!(userDoc.expiresAt && userDoc.expiresAt < Date.now());
 	if (userDoc.accessLevel !== undefined) {
 		if (userDoc.accessLevel === 'none' || udloebet) return 'udlobet';
 		if (userDoc.accessSource === 'forløb') return 'forlobskunde';
@@ -55,6 +62,12 @@ export function erUdlobet(userDoc: UserDoc | null | undefined): boolean {
 }
 
 function erUdloebet(userDoc: UserDoc | null | undefined): boolean {
+	// Aktive abonnenter er aldrig udløbet via expiresAt — det felt repræsenterer
+	// næste fornyelse for dem, ikke adgangs-slut. Cancel-webhook sætter
+	// activeSubscription=false når abonnementet ophører.
+	const erAktivAbonnent =
+		userDoc?.accessSource === 'abonnement' && userDoc?.activeSubscription === true;
+	if (erAktivAbonnent) return false;
 	return !!(userDoc?.expiresAt && userDoc.expiresAt < Date.now());
 }
 
