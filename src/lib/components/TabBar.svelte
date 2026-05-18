@@ -19,6 +19,7 @@
 		onAction?: () => void;
 		dot?: boolean;
 		lockedFor?: UserState[];
+		hideFor?: UserState[];
 	};
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -134,9 +135,11 @@
 			href: beskederHref,
 			dot: true,
 			// Beskeder er en del af forløbskunde-relationen til Linn — ikke
-			// inkluderet i basis/modulbruger-abonnementet. Admin overrides
-			// nedenfor så vi (Linn) altid kan svare på spørgsmål.
-			lockedFor: ['udlobet', 'modulbruger']
+			// inkluderet i basis/modulbruger-abonnementet. Skjult helt for
+			// modulbrugere og udløbede så de ikke ser en låst fane de ikke
+			// kan bruge. Admin (i admin-mode) ser den altid via override
+			// nedenfor.
+			hideFor: ['udlobet', 'modulbruger']
 		},
 		...(adminIndstillinger ? [adminIndstillinger] : []),
 		...(klientToggle ? [klientToggle] : []),
@@ -156,18 +159,30 @@
 		return item.lockedFor.includes(state);
 	}
 
+	function isHidden(item: NavItem, state: UserState | undefined): boolean {
+		if (!state || !item.hideFor) return false;
+		return item.hideFor.includes(state);
+	}
+
 	const items = $derived(
-		NAV_ITEMS.map((item) => ({
-			...item,
-			active: isActive(item, page.url.pathname),
-			// Admin (i admin-mode) skal aldrig have låste tabs — selv om Linns
-			// egen state er 'modulbruger' skal hun stadig kunne åbne admin-
-			// spørgsmål-fanen. I klient-mode honoreres låsene normalt.
-			locked:
-				erAdmin && !erIKlientMode
-					? false
-					: isLocked(item, effektivState(userDoc) ?? undefined)
-		}))
+		NAV_ITEMS
+			// Admin (i admin-mode) ser alle tabs uanset hideFor. I klient-mode
+			// honoreres skjul-listen normalt så hun kan teste klient-oplevelsen.
+			.filter((item) => {
+				if (erAdmin && !erIKlientMode) return true;
+				return !isHidden(item, effektivState(userDoc) ?? undefined);
+			})
+			.map((item) => ({
+				...item,
+				active: isActive(item, page.url.pathname),
+				// Admin (i admin-mode) skal aldrig have låste tabs — selv om Linns
+				// egen state er 'modulbruger' skal hun stadig kunne åbne admin-
+				// spørgsmål-fanen. I klient-mode honoreres låsene normalt.
+				locked:
+					erAdmin && !erIKlientMode
+						? false
+						: isLocked(item, effektivState(userDoc) ?? undefined)
+			}))
 	);
 </script>
 

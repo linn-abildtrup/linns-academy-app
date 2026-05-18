@@ -412,7 +412,7 @@
 					{#if harPremium(userDoc)}
 						Vælg op til 7 vaner du vil arbejde med dagligt.
 					{:else}
-						Vælg de 3 vaner du vil arbejde med dagligt.
+						Vælg op til 3 vaner du vil arbejde med dagligt.
 					{/if}
 					Dine vaner er låst i 21 dage så du har tid til at danne dem som vaner.
 				</p>

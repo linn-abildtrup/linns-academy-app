@@ -101,13 +101,8 @@
 				const label = e.label.trim();
 				if (label) valgte.push({ id: e.tempId, label, kilde: 'egen' });
 			}
-			if (valgte.length === 0) {
-				fejl = 'Vælg mindst én vane.';
-				gemmer = false;
-				return;
-			}
-			if (produktType === 'basis' && valgte.length !== 3) {
-				fejl = 'Basis-abo skal vælge præcis 3 vaner.';
+			if (valgte.length > maks) {
+				fejl = `Du kan højst vælge ${maks} ${maks === 1 ? 'vane' : 'vaner'}.`;
 				gemmer = false;
 				return;
 			}
@@ -131,11 +126,11 @@
 		<h1>Vælg dine vaner</h1>
 		<p class="page-sub">
 			{#if produktType === 'basis'}
-				Vælg præcis 3 vaner du vil arbejde med dagligt. Du kan vælge fra forslagene eller
-				skrive dine egne.
+				Vælg op til 3 vaner du vil arbejde med dagligt. Du kan vælge fra forslagene eller
+				skrive dine egne — eller du kan gemme uden at vælge nogen og komme tilbage senere.
 			{:else}
 				Vælg op til 7 vaner du vil arbejde med dagligt. Du kan vælge fra forslagene eller
-				skrive dine egne.
+				skrive dine egne — eller du kan gemme uden at vælge nogen og komme tilbage senere.
 			{/if}
 		</p>
 	</header>
@@ -216,7 +211,7 @@
 			<div class="status-besked fejl">{fejl}</div>
 		{/if}
 
-		<button class="gem-btn" onclick={gem} disabled={gemmer || antalValgt === 0}>
+		<button class="gem-btn" onclick={gem} disabled={gemmer}>
 			{gemmer ? 'Gemmer...' : opsaetning ? 'Opdater vaner' : 'Gem vaner'}
 		</button>
 	{/if}

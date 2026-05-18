@@ -1333,7 +1333,7 @@
 					<a class="vaner-cta" href="/app/moduler/vaner/opsaetning">
 						<div>
 							<div class="vaner-cta-titel">Vælg dine vaner</div>
-							<div class="vaner-cta-sub">Vælg 3 daglige vaner du vil arbejde med</div>
+							<div class="vaner-cta-sub">Vælg op til 3 daglige vaner du vil arbejde med</div>
 						</div>
 						<Icon name="chevron-r" size={14} color="var(--text3)" />
 					</a>
