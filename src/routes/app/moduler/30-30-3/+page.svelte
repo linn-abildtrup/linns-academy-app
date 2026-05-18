@@ -805,13 +805,29 @@
 			gemDato = redigererMaaltid.dato;
 			gemSomFavorit = false;
 		} else {
-			gemNavn = pendingMaaltidsNavn ?? '';
 			gemType = gaetMaaltidstype();
+			// Pre-fill navn med måltidstypens label så feltet ikke er tomt
+			// — kunden behøver ikke skrive noget hvis hun er tilfreds med
+			// fx 'Morgenmad' som navn.
+			gemNavn = pendingMaaltidsNavn?.trim() || MAALTIDSTYPE_LABELS[gemType];
 			gemDato = forhaandsValgtDato ?? formatDatoKey();
 			gemSomFavorit = false;
 		}
 		gemBesked = null;
 		viserGemModal = true;
+	}
+
+	// Når kunden klikker en måltidstype-chip auto-fylder vi navn-feltet med
+	// typens label — men kun hvis navnet enten er tomt eller allerede svarer
+	// til en af de kendte typer (dvs. hun har ikke selv skrevet et navn).
+	function vaelgGemType(t: Maaltidstype) {
+		const aktuel = gemNavn.trim();
+		const kendteLabels = Object.values(MAALTIDSTYPE_LABELS);
+		const matcherKendtType = kendteLabels.includes(aktuel);
+		gemType = t;
+		if (!aktuel || matcherKendtType) {
+			gemNavn = MAALTIDSTYPE_LABELS[t];
+		}
 	}
 
 	function lukGemModal() {
@@ -1966,7 +1982,7 @@
 									type="button"
 									class="type-chip"
 									class:aktiv={gemType === t}
-									onclick={() => (gemType = t)}
+									onclick={() => vaelgGemType(t)}
 									disabled={gemmer}
 								>
 									{MAALTIDSTYPE_LABELS[t]}
