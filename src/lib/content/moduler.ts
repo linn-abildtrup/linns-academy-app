@@ -19,6 +19,7 @@ export interface Modul {
 }
 
 const KICKSTART_KOB_URL = 'https://linn.simplero.com/21dage';
+const KROPSRO_KOB_URL = 'https://linn.simplero.com/12uger';
 
 interface ModulBase {
 	id: string;
@@ -113,14 +114,17 @@ function modulbrugerStatus(base: ModulBase): Modul {
 	const erKoebt = koebt.includes(base.id);
 
 	if (!erKoebt) {
+		// 'forlob'-modulet: basis-app-kunderne er typisk gennemførte Kickstart-
+		// kunder. Inviter dem til næste skridt (Kropsro 12-ugers forløb) i
+		// stedet for at sige 'find adgang via Kickstart' som de allerede har gjort.
 		return {
 			...base,
 			status: 'laast',
 			progress: null,
 			statusTekst: 'Låst',
-			subTekst: 'Findes kun i Kickstart-forløbet',
-			laasTekst: 'Få adgang via Kickstart',
-			kobUrl: KICKSTART_KOB_URL
+			subTekst: 'Du har gennemført Kickstart',
+			laasTekst: 'Tag næste skridt — Kropsro',
+			kobUrl: KROPSRO_KOB_URL
 		};
 	}
 

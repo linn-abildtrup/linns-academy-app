@@ -46,10 +46,11 @@ describe('getModulerForUser', () => {
 			expect(moduler).toHaveLength(5);
 		});
 
-		it('har Mit forløb låst', () => {
+		it('har Mit forløb låst med Kropsro-CTA', () => {
 			const forlob = moduler.find((m) => m.id === 'forlob');
 			expect(forlob?.status).toBe('laast');
-			expect(forlob?.laasTekst).toBe('Få adgang via Kickstart');
+			expect(forlob?.laasTekst).toBe('Tag næste skridt — Kropsro');
+			expect(forlob?.kobUrl).toBe('https://linn.simplero.com/12uger');
 		});
 
 		it('har Bibliotek aktivt (personligt fra tidligere forløb)', () => {
@@ -71,10 +72,10 @@ describe('getModulerForUser', () => {
 			expect(traening?.statusTekst).toBe('Løbende');
 		});
 
-		it('viser Kickstart-laasebeskrivelse på låste moduler', () => {
+		it('viser Kropsro-CTA på låste moduler (basis-app-kunder har gennemført Kickstart)', () => {
 			const laaste = moduler.filter((m) => m.status === 'laast');
 			laaste.forEach((m) => {
-				expect(m.laasTekst).toContain('Kickstart');
+				expect(m.laasTekst).toContain('Kropsro');
 			});
 		});
 	});
