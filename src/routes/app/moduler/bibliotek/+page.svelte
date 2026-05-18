@@ -35,6 +35,8 @@
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
 	import type { UserDoc } from '$lib/types';
 	import { erForlobsklient, harGennemfoertForlob } from '$lib/utils/userAdgang';
+	import { PRODUKTER } from '$lib/content/produkter';
+	import type { ActiveProduct } from '$lib/types';
 	import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
 	import type { Exercise } from '$lib/content/mikrotraening';
@@ -94,11 +96,16 @@
 	 * Henter brugerens forlobIds grupperet efter produkt-type. Bruges til
 	 * at gruppere lektioner per type (Kickstart vs Premium-forløb) så
 	 * hver type får sin egen fane i biblioteket.
+	 *
+	 * Kun forløb-produkter (accessSource='forløb' i produkter.ts) regnes
+	 * med — abo-produkter har ingen lektioner og må aldrig vise som fane.
 	 */
 	async function hentForlobIdsPerProduct(uid: string): Promise<Map<string, string[]>> {
 		const productsSnap = await getDocs(collection(db, 'users', uid, 'products'));
 		const map = new Map<string, string[]>();
 		for (const p of productsSnap.docs) {
+			const produktDef = PRODUKTER[p.id as ActiveProduct];
+			if (!produktDef || produktDef.accessSource !== 'forløb') continue;
 			const fId = (p.data() as { forlobId?: string }).forlobId;
 			if (!fId) continue;
 			const liste = map.get(p.id) ?? [];
