@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { getContext, onMount } from 'svelte';
+	import type { User } from 'firebase/auth';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import { hentAbonnentAllowedEmails } from '$lib/firestore/forlob';
@@ -14,12 +15,94 @@
 		uid: string | null;
 	};
 
+	const getUser = getContext<() => User | null>('user');
+	const user = $derived(getUser());
+
 	let rows = $state<RowData[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let filter = $state<'alle' | 'basis' | 'premium' | 'kun-aktive'>('alle');
 	let soegeord = $state('');
 	let aabnetEmail = $state<string | null>(null);
+
+	// State til "Ny kode"-flow
+	let bekraeftEmail = $state<string | null>(null);
+	let bekraeftNavn = $state<string>('');
+	let opretter = $state(false);
+	let opretFejl = $state<string | null>(null);
+	let tempPassword = $state<string | null>(null);
+	let tempNavn = $state<string>('');
+	let kopieret = $state(false);
+
+	async function startNyKode(email: string, navn: string) {
+		bekraeftEmail = email;
+		bekraeftNavn = navn;
+		opretFejl = null;
+	}
+
+	function annullerBekraeft() {
+		bekraeftEmail = null;
+		bekraeftNavn = '';
+		opretFejl = null;
+	}
+
+	async function bekraeftNyKode() {
+		const u = user;
+		const email = bekraeftEmail;
+		if (!u || !email || opretter) return;
+		opretter = true;
+		opretFejl = null;
+		try {
+			const idToken = await u.getIdToken(true);
+			const res = await fetch('/api/admin/set-temp-password', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${idToken}`
+				},
+				body: JSON.stringify({ email })
+			});
+			if (!res.ok) {
+				const errBody = await res.text();
+				let melding = 'Kunne ikke sætte ny adgangskode.';
+				try {
+					const parsed = JSON.parse(errBody);
+					if (parsed.message) melding = parsed.message;
+				} catch {
+					if (errBody) melding = errBody;
+				}
+				opretFejl = melding;
+				return;
+			}
+			const data = (await res.json()) as { tempPassword: string };
+			tempPassword = data.tempPassword;
+			tempNavn = bekraeftNavn || email;
+			bekraeftEmail = null;
+			bekraeftNavn = '';
+		} catch (e) {
+			console.error(e);
+			opretFejl = 'Kunne ikke kontakte serveren. Prøv igen.';
+		} finally {
+			opretter = false;
+		}
+	}
+
+	async function kopierKode() {
+		if (!tempPassword) return;
+		try {
+			await navigator.clipboard.writeText(tempPassword);
+			kopieret = true;
+			setTimeout(() => (kopieret = false), 2000);
+		} catch (e) {
+			console.warn('Clipboard fejlede:', e);
+		}
+	}
+
+	function lukKodeModal() {
+		tempPassword = null;
+		tempNavn = '';
+		kopieret = false;
+	}
 
 	onMount(async () => {
 		try {
@@ -250,6 +333,17 @@
 									</div>
 								{/if}
 							</div>
+							{#if r.uid}
+								<div class="detalje-handlinger">
+									<button
+										class="ny-kode-knap"
+										type="button"
+										onclick={() => startNyKode(a.email, fuldtNavn(r))}
+									>
+										🔑 Sæt ny midlertidig adgangskode
+									</button>
+								</div>
+							{/if}
 						</div>
 					{/if}
 				{/each}
@@ -257,6 +351,89 @@
 		{/if}
 	{/if}
 </div>
+
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key !== 'Escape') return;
+		if (tempPassword) lukKodeModal();
+		else if (bekraeftEmail) annullerBekraeft();
+	}}
+/>
+
+{#if bekraeftEmail}
+	<div class="modal-overlay" role="presentation" onclick={annullerBekraeft}>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div
+			class="modal"
+			role="dialog"
+			tabindex="-1"
+			aria-modal="true"
+			aria-labelledby="bekraeft-titel"
+			onclick={(e) => e.stopPropagation()}
+		>
+			<h2 id="bekraeft-titel" class="modal-titel">Sæt midlertidig adgangskode?</h2>
+			<p class="modal-tekst">
+				Der oprettes en ny midlertidig adgangskode for
+				<strong>{bekraeftEmail}</strong>.
+			</p>
+			<p class="modal-tekst">
+				Hendes nuværende kode bliver overskrevet. Du får den nye kode vist på skærmen
+				og skal sende den til hende manuelt (fx Messenger eller SMS).
+			</p>
+			<p class="modal-tekst muted">
+				Hun bør skifte koden under <em>Profil → Skift adgangskode</em> så snart hun er
+				logget ind.
+			</p>
+			{#if opretFejl}
+				<div class="modal-fejl">{opretFejl}</div>
+			{/if}
+			<div class="modal-knapper">
+				<button class="modal-knap ghost" type="button" onclick={annullerBekraeft} disabled={opretter}>
+					Annullér
+				</button>
+				<button class="modal-knap primary" type="button" onclick={bekraeftNyKode} disabled={opretter}>
+					{opretter ? 'Opretter…' : 'Generér ny kode'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if tempPassword}
+	<div class="modal-overlay" role="presentation" onclick={lukKodeModal}>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div
+			class="modal"
+			role="dialog"
+			tabindex="-1"
+			aria-modal="true"
+			aria-labelledby="kode-titel"
+			onclick={(e) => e.stopPropagation()}
+		>
+			<h2 id="kode-titel" class="modal-titel">Midlertidig adgangskode oprettet 🔑</h2>
+			<p class="modal-tekst">Send denne kode til <strong>{tempNavn}</strong> via Messenger eller SMS:</p>
+
+			<div class="kode-kort">
+				<div class="kode-label">Midlertidig kode</div>
+				<div class="kode-vaerdi">{tempPassword}</div>
+				<button class="kopier-knap" type="button" onclick={kopierKode}>
+					{kopieret ? '✓ Kopieret!' : '📋 Kopiér kode'}
+				</button>
+			</div>
+
+			<div class="instruktioner-titel">Husk at fortælle hende:</div>
+			<ul class="instruktioner">
+				<li>Log ind med denne kode på <strong>app.linnsacademy.dk</strong></li>
+				<li>Gå derefter til Profil → Skift adgangskode og lav sin egen kode</li>
+				<li>Den midlertidige kode bør ikke gemmes nogen steder</li>
+			</ul>
+
+			<div class="modal-knapper">
+				<button class="modal-knap primary" type="button" onclick={lukKodeModal}>Luk</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.page {
@@ -474,5 +651,169 @@
 	.status-besked.fejl {
 		background: #fbeeea;
 		color: #8a4a3e;
+	}
+
+	.detalje-handlinger {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: 12px;
+	}
+
+	.ny-kode-knap {
+		padding: 10px 14px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		font-family: var(--ff-b);
+		border-radius: 10px;
+		border: 1px solid var(--terra);
+		background: var(--white);
+		color: var(--terra);
+		cursor: pointer;
+	}
+
+	.ny-kode-knap:hover {
+		background: var(--terra);
+		color: #fff;
+	}
+
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.45);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 18px;
+		z-index: 100;
+	}
+
+	.modal {
+		background: var(--white);
+		border-radius: 14px;
+		padding: 22px;
+		max-width: 460px;
+		width: 100%;
+		max-height: 90vh;
+		overflow-y: auto;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+	}
+
+	.modal-titel {
+		font-family: var(--ff-d);
+		font-size: calc(18px * var(--fs-scale, 1));
+		font-weight: 600;
+		margin: 0 0 12px;
+		color: var(--text);
+	}
+
+	.modal-tekst {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.5;
+		margin: 0 0 10px;
+	}
+
+	.modal-tekst.muted {
+		color: var(--text3);
+	}
+
+	.modal-fejl {
+		padding: 10px 14px;
+		background: #fbeeea;
+		color: #8a4a3e;
+		border-radius: 8px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		margin: 10px 0;
+	}
+
+	.modal-knapper {
+		display: flex;
+		gap: 10px;
+		justify-content: flex-end;
+		margin-top: 16px;
+	}
+
+	.modal-knap {
+		padding: 11px 16px;
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		font-family: var(--ff-b);
+		border-radius: 10px;
+		cursor: pointer;
+		border: 1px solid var(--border);
+	}
+
+	.modal-knap.ghost {
+		background: var(--white);
+		color: var(--text2);
+	}
+
+	.modal-knap.primary {
+		background: var(--terra);
+		color: #fff;
+		border-color: var(--terra);
+	}
+
+	.modal-knap:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.kode-kort {
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		padding: 16px;
+		margin: 14px 0;
+		text-align: center;
+	}
+
+	.kode-label {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-bottom: 8px;
+	}
+
+	.kode-vaerdi {
+		font-family: 'SF Mono', Menlo, monospace;
+		font-size: calc(22px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		color: var(--terra);
+		user-select: all;
+		margin-bottom: 12px;
+		word-break: break-all;
+	}
+
+	.kopier-knap {
+		padding: 9px 16px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		font-family: var(--ff-b);
+		border-radius: 8px;
+		background: var(--terra);
+		color: #fff;
+		border: none;
+		cursor: pointer;
+	}
+
+	.instruktioner-titel {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		margin-top: 14px;
+		margin-bottom: 6px;
+	}
+
+	.instruktioner {
+		list-style: disc inside;
+		padding: 0;
+		margin: 0 0 8px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.6;
 	}
 </style>
