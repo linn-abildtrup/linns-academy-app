@@ -170,6 +170,7 @@
 	// Skifter aboMikrotraening-programmet med det samme — alle abonnentens
 	// program-views henter variant fra userDoc.mikrotraeningVariant.
 	const erAbonnent = $derived(userDoc?.accessSource === 'abonnement');
+	const erForlobskunde = $derived(userDoc?.accessSource === 'forløb');
 	let varGemmer = $state<'kettlebell' | 'no_kettlebell' | null>(null);
 	let varFejl = $state<string | null>(null);
 
@@ -374,7 +375,7 @@
 		</section>
 	{/if}
 
-	{#if mtProgrammer.length > 0}
+	{#if erForlobskunde && mtProgrammer.length > 0}
 		<section class="sektion">
 			<h2 class="sektion-titel">Mikrotræning — program</h2>
 			<p class="sektion-sub">
@@ -414,7 +415,7 @@
 				{/each}
 			</div>
 		</section>
-	{:else if mtIndlaeser}
+	{:else if erForlobskunde && mtIndlaeser}
 		<section class="sektion">
 			<h2 class="sektion-titel">Mikrotræning — program</h2>
 			<div class="status-besked">Henter dine programvalg...</div>
@@ -627,9 +628,11 @@
 	<section class="sektion">
 		<h2 class="sektion-titel">Problemer med appen?</h2>
 		<p class="sektion-sub">
-			Hvis appen opfører sig mærkeligt — fx hvis du ikke kan logge ind, eller dine
-			data ser forkerte ud — så prøv at nulstille appen på din enhed. Det rydder
-			cache og gemte indstillinger på telefonen. Dine data i appen er ikke berørt.
+			Hvis appen opfører sig mærkeligt — fx hvis dine data ser forkerte ud, hvis
+			noget ikke vil indlæse, eller hvis appen viser den gamle version efter en
+			opdatering — så prøv at nulstille den på din enhed. Det rydder gemte
+			indstillinger og cache på telefonen. Dine data (måltider, vaner, træninger)
+			er gemt i skyen og bliver IKKE rørt.
 		</p>
 		<button class="nulstil-app" type="button" onclick={handleNulstilApp} disabled={nulstillerApp}>
 			{nulstillerApp ? 'Nulstiller…' : '🔄 Nulstil appen på denne enhed'}
