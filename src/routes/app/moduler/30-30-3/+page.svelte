@@ -1351,20 +1351,21 @@
 									oninput={(e) =>
 										opdaterPortion(i, (e.target as HTMLInputElement).value)}
 								/>
+								{@const basisEnhed = food?.liquid ? 'ml' : 'g'}
 								{#if food?.units && food.units.length > 0}
 									<select
 										class="enhed-select"
-										value={item.enhedId ?? 'g'}
+										value={item.enhedId ?? basisEnhed}
 										onchange={(e) =>
 											opdaterEnhed(i, (e.target as HTMLSelectElement).value)}
 									>
-										<option value="g">g</option>
+										<option value={basisEnhed}>{basisEnhed}</option>
 										{#each food.units as u (u.u)}
 											<option value={u.u}>{u.label}</option>
 										{/each}
 									</select>
 								{:else}
-									<span class="enhed-static">g</span>
+									<span class="enhed-static">{basisEnhed}</span>
 								{/if}
 								<button
 									class="ikon-knap"

@@ -220,7 +220,11 @@ export const KATEGORI_LABELS: Record<Kategori, string> = {
  * så portion-tallet selv er gram-tallet.
  */
 export function gramForEnhed(food: Fodevare | undefined, enhedId?: string): number {
-	if (!enhedId || enhedId === 'g') return 1;
+	// 'g' og 'ml' er begge basis-enheder (1 enhed = 1 gram) — 'ml' bruges
+	// blot som display-label for væsker så det ikke står '200 g mælk'.
+	// Vandbaserede væsker har ~1g/ml; for olie og sukkersirup er det en
+	// vejledende afrunding, men det matcher den gamle apps adfærd.
+	if (!enhedId || enhedId === 'g' || enhedId === 'ml') return 1;
 	const enhed = food?.units?.find((u) => u.u === enhedId);
 	return enhed?.g ?? 1;
 }
