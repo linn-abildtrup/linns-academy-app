@@ -13,9 +13,11 @@ import {
 	doc,
 	getDoc,
 	getDocs,
+	query,
 	serverTimestamp,
 	setDoc,
-	Timestamp
+	Timestamp,
+	where
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type {
@@ -146,11 +148,20 @@ export async function gemAboVanedag(
 }
 
 /**
- * Henter alle abo-vanedage for en bruger. Bruges af forsiden og Udvikling-tab.
+ * Henter abo-vanedage for en bruger. Bruges af forsiden og Udvikling-tab.
  * Returnerer Map fra dato (YYYY-MM-DD) til entry.
+ *
+ * fraDato (YYYY-MM-DD) begrænser hentningen til dage på/efter den dato.
+ * Bruges af forsiden og Udvikling-tab så vi ikke henter års-historik for
+ * langtidskunder ved hver page-mount.
  */
-export async function hentAlleAboVanedage(uid: string): Promise<Map<string, AboVanedagEntry>> {
-	const snap = await getDocs(vanedageCollection(uid));
+export async function hentAlleAboVanedage(
+	uid: string,
+	fraDato?: string
+): Promise<Map<string, AboVanedagEntry>> {
+	const ref = vanedageCollection(uid);
+	const q = fraDato ? query(ref, where('dato', '>=', fraDato)) : ref;
+	const snap = await getDocs(q);
 	const map = new Map<string, AboVanedagEntry>();
 	for (const d of snap.docs) {
 		const data = d.data() as AboVanedagEntry;

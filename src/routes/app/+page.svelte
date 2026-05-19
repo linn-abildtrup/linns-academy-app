@@ -355,25 +355,33 @@
 
 	async function indlaesModulbrugerStrip(uid: string, createdAt: number) {
 		const idag = formaterDato(new Date());
-		const start = new Date(createdAt);
-		start.setHours(12, 0, 0, 0);
+		// Strip viser max 90 dage tilbage — for langtidskunder ville createdAt
+		// betyde 300+ chips og 300+ Firestore-reads. 90 dage er rigeligt til
+		// at se den aktuelle uge/måned. Ældre data ses via udvikling-tab.
+		const niDageSiden = new Date();
+		niDageSiden.setDate(niDageSiden.getDate() - 90);
+		niDageSiden.setHours(12, 0, 0, 0);
+		const startFraCreated = new Date(createdAt);
+		startFraCreated.setHours(12, 0, 0, 0);
+		const start = startFraCreated > niDageSiden ? startFraCreated : niDageSiden;
 		const slut = new Date();
 		slut.setHours(12, 0, 0, 0);
 		slut.setDate(slut.getDate() + 3);
 
 		// Hent datoer med aktivitet i baggrunden — best effort, fejler én
-		// query skal de andre stadig virke.
+		// query skal de andre stadig virke. Vi sender fraStr-cutoff til
+		// vanedage + træninger så langtidskunder ikke henter års-historik.
 		const fraStr = formaterDato(start);
 		const [maaltider, vaner, traeninger] = await Promise.all([
 			hentMaaltiderIPeriode(uid, fraStr, idag).catch((e) => {
 				console.warn('Kunne ikke hente måltider til strip:', e);
 				return [];
 			}),
-			hentAlleAboVanedage(uid).catch((e) => {
+			hentAlleAboVanedage(uid, fraStr).catch((e) => {
 				console.warn('Kunne ikke hente vaner til strip:', e);
 				return new Map();
 			}),
-			hentAlleAboTraeninger(uid).catch((e) => {
+			hentAlleAboTraeninger(uid, fraStr).catch((e) => {
 				console.warn('Kunne ikke hente træninger til strip:', e);
 				return [];
 			})

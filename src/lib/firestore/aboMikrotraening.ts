@@ -10,8 +10,10 @@ import {
 	doc,
 	getDoc,
 	getDocs,
+	query,
 	serverTimestamp,
-	setDoc
+	setDoc,
+	where
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type {
@@ -162,11 +164,19 @@ export async function gemAboTraening(
 }
 
 /**
- * Henter alle træninger sorteret nyeste først. Bruges af historik-listen
- * på mikrotræning-forsiden.
+ * Henter træninger sorteret nyeste først. Bruges af historik-listen på
+ * mikrotræning-forsiden og strip på forsiden.
+ *
+ * fraDato (YYYY-MM-DD) begrænser til træninger på/efter den dato.
+ * Bruges fx på forsiden så vi ikke henter års-historik ved hver mount.
  */
-export async function hentAlleAboTraeninger(uid: string): Promise<AboMikrotraeningTraening[]> {
-	const snap = await getDocs(traeningCollection(uid));
+export async function hentAlleAboTraeninger(
+	uid: string,
+	fraDato?: string
+): Promise<AboMikrotraeningTraening[]> {
+	const ref = traeningCollection(uid);
+	const q = fraDato ? query(ref, where('dato', '>=', fraDato)) : ref;
+	const snap = await getDocs(q);
 	return snap.docs
 		.map((d) => d.data() as AboMikrotraeningTraening)
 		.sort((a, b) => b.dato.localeCompare(a.dato));

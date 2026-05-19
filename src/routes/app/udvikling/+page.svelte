@@ -76,11 +76,20 @@
 		loading = true;
 		try {
 			const { fraDato, tilDato } = dageBack(30);
+			// Træninger og vanedage hentes for 90 dage tilbage — udvikling-
+			// tabbens views (7d/30d/Mål) ligger inden for det vindue. Hindrer
+			// at langtidskunder henter års-historik på hver tab-åbning.
+			const niDageSiden = new Date();
+			niDageSiden.setDate(niDageSiden.getDate() - 90);
+			const yyyy = niDageSiden.getFullYear();
+			const mm = String(niDageSiden.getMonth() + 1).padStart(2, '0');
+			const dd = String(niDageSiden.getDate()).padStart(2, '0');
+			const cutoff = `${yyyy}-${mm}-${dd}`;
 			const promiser: Promise<unknown>[] = [hentMaaltiderIPeriode(u.uid, fraDato, tilDato)];
 			if (visAbo) {
-				promiser.push(hentAlleAboTraeninger(u.uid));
+				promiser.push(hentAlleAboTraeninger(u.uid, cutoff));
 				promiser.push(hentAboVaneOpsaetning(u.uid));
-				promiser.push(hentAlleAboVanedage(u.uid));
+				promiser.push(hentAlleAboVanedage(u.uid, cutoff));
 			}
 			const r = await Promise.all(promiser);
 			alle = r[0] as GemtMaaltid[];
