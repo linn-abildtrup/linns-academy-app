@@ -51,7 +51,7 @@
 		type Opskrift,
 		type OpskriftKategori
 	} from '$lib/content/opskrifter';
-	import { hentAlleFodevarer } from '$lib/firestore/kost';
+	import { hentAlleFodevarer, hentPopulaereFodevarer } from '$lib/firestore/kost';
 
 	const getUser = getContext<() => User | null>('user');
 	import { harPremium } from '$lib/utils/userAdgang';
@@ -377,6 +377,14 @@
 			console.warn('Kunne ikke læse gemt måltid:', e);
 		}
 
+		// Trin 1: Populære fødevarer ØJEBLIKKELIGT fra bundle — så picker'en
+		// kan vises uden ventetid. Resten hentes parallelt i baggrunden.
+		const populaere = hentPopulaereFodevarer();
+		foods = populaere;
+		foodMap = new Map(populaere.map((f) => [f.id, f]));
+		loading = false;
+		initialiseret = true;
+
 		try {
 			const u = user;
 			const [allFoods, allOpskrifter, mine] = await Promise.all([
@@ -390,10 +398,8 @@
 			mineOpskrifter = mine;
 		} catch (e) {
 			console.error(e);
-			fejl = 'Kunne ikke hente data.';
-		} finally {
-			loading = false;
-			initialiseret = true;
+			// Vi har stadig de populære fødevarer — vis ikke en hård fejl
+			console.warn('Kunne ikke hente komplet liste, fortsætter med populære:', e);
 		}
 
 		// Indlæs dagbog, favoritter og seneste fødevarer i baggrunden

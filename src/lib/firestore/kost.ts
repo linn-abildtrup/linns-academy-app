@@ -19,6 +19,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { FavoritMaaltid, Fodevare, GemtMaaltid, Kategori } from '$lib/content/kost';
+import { POPULAERE_FODEVARER } from '$lib/content/populaere-fodevarer.generated';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
 
 /**
@@ -42,14 +43,60 @@ function favoritDoc(uid: string, favId: string) {
 }
 
 /**
- * Henter hele fødevaredatabasen sorteret alfabetisk.
- * Bruges af beregneren — alle fødevarer caches på klienten ved første load.
+ * In-memory cache af hele fødevaredatabasen pr session. Sættes ved første
+ * succesfulde load og deles på tværs af alle steder i appen der bruger
+ * `hentAlleFodevarer()` — kost-modul, opskrift-side, admin osv.
+ *
+ * Firestore IndexedDB-cache (sat op i firebase.ts) dækker repeat-loads
+ * på tværs af sessions; denne in-memory cache dækker pr-session lookups
+ * uden at gå gennem Firestore SDK overhovedet.
+ */
+let cachedAlleFodevarer: Fodevare[] | null = null;
+let cachedAllePromise: Promise<Fodevare[]> | null = null;
+
+/**
+ * Returnerer de mest brugte 200 fødevarer ØJEBLIKKELIGT fra appens bundle —
+ * 0 Firestore-reads, 0 ms latency. Bruges som første-paint på Mad-modulet
+ * mens den fulde liste hentes i baggrunden.
+ *
+ * Listen genereres af scripts/byg-populaere-fodevarer.ts.
+ */
+export function hentPopulaereFodevarer(): Fodevare[] {
+	return [...POPULAERE_FODEVARER].sort((a, b) => a.name.localeCompare(b.name, 'da'));
+}
+
+/**
+ * Henter hele fødevaredatabasen sorteret alfabetisk. In-memory cached pr
+ * session — efterfølgende kald er øjeblikkelige. Firestore-SDK'ens IndexedDB-
+ * cache (sat op i firebase.ts) sørger desuden for at det første kald i en
+ * ny session typisk også er hurtigt (henter fra IndexedDB hvis tilgængelig).
  */
 export async function hentAlleFodevarer(): Promise<Fodevare[]> {
-	const snap = await getDocs(collection(db, 'fodevarer'));
-	return snap.docs
-		.map((d) => ({ id: d.id, ...d.data() }) as Fodevare)
-		.sort((a, b) => a.name.localeCompare(b.name, 'da'));
+	if (cachedAlleFodevarer) return cachedAlleFodevarer;
+	if (cachedAllePromise) return cachedAllePromise;
+	cachedAllePromise = (async () => {
+		try {
+			const snap = await getDocs(collection(db, 'fodevarer'));
+			const liste = snap.docs
+				.map((d) => ({ id: d.id, ...d.data() }) as Fodevare)
+				.sort((a, b) => a.name.localeCompare(b.name, 'da'));
+			cachedAlleFodevarer = liste;
+			return liste;
+		} catch (e) {
+			cachedAllePromise = null;
+			throw e;
+		}
+	})();
+	return cachedAllePromise;
+}
+
+/**
+ * Invaliderer in-memory fødevare-cachen. Bruges efter admin tilføjer/sletter
+ * en fødevare så næste `hentAlleFodevarer()` får frisk data.
+ */
+export function ryAlleFodevarerCache(): void {
+	cachedAlleFodevarer = null;
+	cachedAllePromise = null;
 }
 
 /**

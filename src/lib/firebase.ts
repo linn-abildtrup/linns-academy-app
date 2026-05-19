@@ -4,7 +4,12 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, initializeFirestore } from 'firebase/firestore';
+import {
+	getFirestore,
+	initializeFirestore,
+	persistentLocalCache,
+	persistentMultipleTabManager
+} from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 import {
@@ -35,7 +40,21 @@ export const auth = getAuth(app);
 // felter (fx MaaltidsItem.enhedId og .manuel) — uden det fejler setDoc med
 // "Function setDoc() called with invalid data. Unsupported field value: undefined"
 // så snart en bruger gemmer et dokument hvor et optional felt ikke er sat.
+//
+// localCache: persistentLocalCache med multi-tab-manager cacher hver doc i
+// browserens IndexedDB. Repeat-loads serves fra cache i 0-2 ms i stedet for
+// 100-300 ms over netværk. Firebase håndterer cache-invalidation automatisk.
+// Cross-tab: ændringer i ét fanen propageres til andre.
+//
+// Hvis IndexedDB ikke er tilgængelig (private mode, kvota-fuld) falder
+// Firebase SDK stille tilbage til memory-only cache — vi behøver ikke
+// håndtere fejlen eksplicit.
 export const db = erFoerste
-	? initializeFirestore(app, { ignoreUndefinedProperties: true })
+	? initializeFirestore(app, {
+			ignoreUndefinedProperties: true,
+			localCache: persistentLocalCache({
+				tabManager: persistentMultipleTabManager()
+			})
+		})
 	: getFirestore(app);
 export const storage = getStorage(app);
