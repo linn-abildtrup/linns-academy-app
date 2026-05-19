@@ -14,6 +14,8 @@ import { env } from '$env/dynamic/private';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
 import { MAX_QUERIES_PR_DAG, quotaNoegle } from '$lib/content/linnAi';
+import { harPremium } from '$lib/utils/userAdgang';
+import type { UserDoc } from '$lib/types';
 
 const MODEL = 'claude-sonnet-4-5-20250929';
 const MAX_TOKENS = 2048;
@@ -108,13 +110,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		if (estStr > MAX_IMAGE_BYTES) throw error(413, 'Et billede er for stort (max 5 MB)');
 	}
 
-	// Premium-adgang
-	const userDoc = (await hentDoc(`users/${uid}`)) as
-		| { accessLevel?: string; adminKlientMode?: string }
-		| null;
+	// Premium-adgang. harPremium håndterer udlobet/bonus-periode korrekt.
+	const userDoc = (await hentDoc(`users/${uid}`)) as UserDoc | null;
 	const erPremium =
-		userDoc?.accessLevel === 'premium' ||
-		userDoc?.adminKlientMode === 'premiumapp';
+		harPremium(userDoc) || userDoc?.adminKlientMode === 'premiumapp';
 	if (!erPremium) throw error(403, 'Funktionen kræver premium-adgang');
 
 	// Rate-limit (deler kvota med Linn AI)

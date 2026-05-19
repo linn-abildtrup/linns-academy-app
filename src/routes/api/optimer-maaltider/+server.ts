@@ -18,8 +18,9 @@ import {
 	valierOptimerSvar,
 	type OptimerSvar
 } from '$lib/content/optimerMaaltider';
-import type { DagligeMaal } from '$lib/types';
+import type { DagligeMaal, UserDoc } from '$lib/types';
 import type { GemtMaaltid } from '$lib/content/kost';
+import { harPremium } from '$lib/utils/userAdgang';
 
 const MODEL = 'claude-sonnet-4-5-20250929';
 const MAX_TOKENS = 2048;
@@ -149,13 +150,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!Array.isArray(body.maaltider)) throw error(400, 'maaltider mangler');
 	if (!body.maal || typeof body.maal !== 'object') throw error(400, 'maal mangler');
 
-	// Premium-adgang
-	const userDoc = (await hentDoc(`users/${uid}`)) as
-		| { accessLevel?: string; adminKlientMode?: string }
-		| null;
+	// Premium-adgang. harPremium håndterer udlobet/bonus-periode korrekt.
+	const userDoc = (await hentDoc(`users/${uid}`)) as UserDoc | null;
 	const erPremium =
-		userDoc?.accessLevel === 'premium' ||
-		userDoc?.adminKlientMode === 'premiumapp';
+		harPremium(userDoc) || userDoc?.adminKlientMode === 'premiumapp';
 	if (!erPremium) throw error(403, 'Funktionen kræver premium-adgang');
 
 	// Rate-limit (deler kvota med Linn AI + analyser-opskrift)

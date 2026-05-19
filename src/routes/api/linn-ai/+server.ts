@@ -16,6 +16,8 @@ import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentAlleDocs, hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
 import { byggKontekst, byggSystemPrompt, MAX_QUERIES_PR_DAG, quotaNoegle } from '$lib/content/linnAi';
 import type { VidenbaseDokument } from '$lib/content/linnAi';
+import { harPremium } from '$lib/utils/userAdgang';
+import type { UserDoc } from '$lib/types';
 
 const ANTHROPIC_MODEL = 'claude-sonnet-4-5-20250929';
 const MAX_TOKENS = 1024;
@@ -79,13 +81,13 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!besked) throw error(400, 'Tom besked');
 	const historik = body.samtaleHistorik ?? [];
 
-	// Tjek bruger-adgang: skal være premium for at bruge AI'en
-	const userDoc = (await hentDoc(`users/${uid}`)) as
-		| { accessLevel?: string; adminKlientMode?: string }
-		| null;
+	// Tjek bruger-adgang: skal være premium for at bruge AI'en.
+	// harPremium håndterer udlobet/bonus-periode korrekt — en premium-
+	// forløb-kunde hvis forløb er slut har stadig accessLevel='premium'
+	// men ikke længere aktiv adgang.
+	const userDoc = (await hentDoc(`users/${uid}`)) as UserDoc | null;
 	const erPremium =
-		userDoc?.accessLevel === 'premium' ||
-		userDoc?.adminKlientMode === 'premiumapp';
+		harPremium(userDoc) || userDoc?.adminKlientMode === 'premiumapp';
 	if (!erPremium) {
 		throw error(403, 'Linn AI kræver premium-adgang');
 	}
