@@ -51,7 +51,13 @@
 		type Opskrift,
 		type OpskriftKategori
 	} from '$lib/content/opskrifter';
-	import { hentAlleFodevarer, hentPopulaereFodevarer } from '$lib/firestore/kost';
+	import {
+		hentAlleFodevarer,
+		hentPopulaereFodevarer,
+		hentMineCustomFodevarer,
+		gemMinCustomFodevare,
+		sletMinCustomFodevare
+	} from '$lib/firestore/kost';
 
 	const getUser = getContext<() => User | null>('user');
 	import { harPremium } from '$lib/utils/userAdgang';
@@ -133,6 +139,16 @@
 	let foodMap = $state<Map<string, Fodevare>>(new Map());
 	let opskrifter = $state<Opskrift[]>([]);
 	let mineOpskrifter = $state<MinOpskrift[]>([]);
+	let mineCustomFodevarer = $state<Fodevare[]>([]);
+
+	// Egne fødevarer — opret/redigér-modal
+	let viserEgenModal = $state(false);
+	let egenNavn = $state('');
+	let egenProtein = $state(0);
+	let egenFiber = $state(0);
+	let egenErVaeske = $state(false);
+	let egenFejl = $state<string | null>(null);
+	let gemmerEgen = $state(false);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
@@ -387,13 +403,18 @@
 
 		try {
 			const u = user;
-			const [allFoods, allOpskrifter, mine] = await Promise.all([
+			const [allFoods, allOpskrifter, mine, mineCustom] = await Promise.all([
 				hentAlleFodevarer(),
 				hentAlleOpskrifter(true),
-				u && harPremium(userDoc) ? hentMineOpskrifter(u.uid) : Promise.resolve([])
+				u && harPremium(userDoc) ? hentMineOpskrifter(u.uid) : Promise.resolve([]),
+				u ? hentMineCustomFodevarer(u.uid).catch(() => [] as Fodevare[]) : Promise.resolve([] as Fodevare[])
 			]);
-			foods = allFoods;
-			foodMap = new Map(allFoods.map((f) => [f.id, f]));
+			// Merge egne fødevarer ind i den globale liste så de kan søges
+			// + bruges som almindelige fødevarer i picker.
+			mineCustomFodevarer = mineCustom;
+			const samlet = [...allFoods, ...mineCustom];
+			foods = samlet;
+			foodMap = new Map(samlet.map((f) => [f.id, f]));
 			opskrifter = allOpskrifter;
 			mineOpskrifter = mine;
 		} catch (e) {
@@ -582,6 +603,74 @@
 		viserPicker = true;
 		pickerSoeg = '';
 		pickerTab = 'alle';
+	}
+
+	function aabnEgenModal() {
+		egenNavn = '';
+		egenProtein = 0;
+		egenFiber = 0;
+		egenErVaeske = false;
+		egenFejl = null;
+		viserEgenModal = true;
+	}
+
+	function lukEgenModal() {
+		viserEgenModal = false;
+		egenFejl = null;
+	}
+
+	async function gemEgenFodevare() {
+		const u = user;
+		if (!u || gemmerEgen) return;
+		const navn = egenNavn.trim();
+		if (!navn) {
+			egenFejl = 'Skriv et navn.';
+			return;
+		}
+		const p = Number(egenProtein);
+		const f = Number(egenFiber);
+		if (!Number.isFinite(p) || p < 0 || !Number.isFinite(f) || f < 0) {
+			egenFejl = 'Protein og fiber skal være tal (gram pr 100 g).';
+			return;
+		}
+		gemmerEgen = true;
+		egenFejl = null;
+		try {
+			const id = await gemMinCustomFodevare(u.uid, {
+				name: navn,
+				cat: 'andet',
+				p,
+				f,
+				liquid: egenErVaeske,
+				kilde: 'custom'
+			});
+			const nyFodevare: Fodevare = {
+				id,
+				name: navn,
+				cat: 'andet',
+				p,
+				f,
+				liquid: egenErVaeske,
+				kilde: 'custom'
+			};
+			mineCustomFodevarer = [...mineCustomFodevarer, nyFodevare].sort((a, b) =>
+				a.name.localeCompare(b.name, 'da')
+			);
+			const samlet = [...foods.filter((x) => x.id !== id), nyFodevare];
+			foods = samlet;
+			foodMap = new Map(samlet.map((x) => [x.id, x]));
+			viserEgenModal = false;
+			// Tilføj direkte til måltidet hvis vi var i picker-flow
+			if (viserPicker) {
+				tilfoejTilMaaltid(nyFodevare);
+				viserPicker = false;
+			}
+		} catch (e) {
+			console.error(e);
+			egenFejl = 'Kunne ikke gemme. Prøv igen.';
+		} finally {
+			gemmerEgen = false;
+		}
 	}
 
 	function aabnScanner() {
@@ -2181,6 +2270,10 @@
 						<Icon name="plus" size={12} color="var(--terra)" />
 						Tilføj fødevare manuelt
 					</button>
+					<button class="manuel-link" type="button" onclick={aabnEgenModal}>
+						<Icon name="plus" size={12} color="var(--terra)" />
+						Tilføj som egen (kun for mig)
+					</button>
 				</div>
 			</div>
 		</div>
@@ -2202,6 +2295,85 @@
 		onDetected={efterScan}
 		onClose={() => (viserScanner = false)}
 	/>
+{/if}
+
+{#if viserEgenModal}
+	<div
+		class="modal-bag"
+		role="dialog"
+		aria-modal="true"
+		use:portalToBody
+		onclick={(e) => {
+			if (e.target === e.currentTarget) lukEgenModal();
+		}}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') lukEgenModal();
+		}}
+		tabindex="-1"
+	>
+		<div class="modal">
+			<div class="modal-head">
+				<div class="modal-titel">Tilføj egen fødevare</div>
+				<button class="modal-luk" type="button" onclick={lukEgenModal} aria-label="Luk">×</button>
+			</div>
+			<div class="modal-body">
+				<p class="modal-sub">
+					Egne fødevarer gemmes kun for dig — de er ikke synlige for andre kunder.
+					Skriv næringsindhold pr 100 g.
+				</p>
+				<label class="felt">
+					<span class="felt-label">Navn</span>
+					<input
+						type="text"
+						class="felt-input"
+						placeholder="fx Bodylab icetea"
+						bind:value={egenNavn}
+						disabled={gemmerEgen}
+						use:autofokus
+					/>
+				</label>
+				<div class="dobbelt-rad">
+					<label class="felt">
+						<span class="felt-label">Protein (g pr 100 g)</span>
+						<input
+							type="number"
+							class="felt-input"
+							min="0"
+							step="0.1"
+							bind:value={egenProtein}
+							disabled={gemmerEgen}
+						/>
+					</label>
+					<label class="felt">
+						<span class="felt-label">Fiber (g pr 100 g)</span>
+						<input
+							type="number"
+							class="felt-input"
+							min="0"
+							step="0.1"
+							bind:value={egenFiber}
+							disabled={gemmerEgen}
+						/>
+					</label>
+				</div>
+				<label class="favorit-toggle" class:on={egenErVaeske}>
+					<input type="checkbox" bind:checked={egenErVaeske} disabled={gemmerEgen} />
+					<div class="favorit-toggle-tekst">
+						<div class="favorit-toggle-lbl">Det er en væske</div>
+						<div class="favorit-toggle-sub">Vis ml som basis-enhed i stedet for g</div>
+					</div>
+				</label>
+				{#if egenFejl}
+					<div class="gem-besked fejl">{egenFejl}</div>
+				{/if}
+			</div>
+			<div class="modal-footer">
+				<button class="primary-knap" type="button" onclick={gemEgenFodevare} disabled={gemmerEgen}>
+					{gemmerEgen ? 'Gemmer…' : 'Gem'}
+				</button>
+			</div>
+		</div>
+	</div>
 {/if}
 
 {#if nyDialog && user}
@@ -3635,6 +3807,19 @@
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
 		color: var(--text3);
+	}
+
+	.modal-sub {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		line-height: 1.5;
+		margin: 0 0 14px;
+	}
+
+	.dobbelt-rad {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
 	}
 
 	.felt-input {

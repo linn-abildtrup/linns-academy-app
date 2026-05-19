@@ -42,6 +42,14 @@ function favoritDoc(uid: string, favId: string) {
 	return doc(db, `${aktivBrugerBasisPath(uid)}/favoritmaaltider/${favId}`);
 }
 
+function customFodevarerCollection(uid: string) {
+	return collection(db, `${aktivBrugerBasisPath(uid)}/customFodevarer`);
+}
+
+function customFodevareDoc(uid: string, id: string) {
+	return doc(db, `${aktivBrugerBasisPath(uid)}/customFodevarer/${id}`);
+}
+
 /**
  * In-memory cache af hele fødevaredatabasen pr session. Sættes ved første
  * succesfulde load og deles på tværs af alle steder i appen der bruger
@@ -363,4 +371,47 @@ export async function toggleFavoritFodevare(
 	await updateDoc(ref, {
 		favoritFodevarer: gørTilFavorit ? arrayUnion(foodId) : arrayRemove(foodId)
 	});
+}
+
+// ============================================================
+// Egne fødevarer — pr-kunde private fødevarer
+// ============================================================
+
+/**
+ * Henter brugerens egne fødevarer. Returnerer dem som almindelige Fodevare-
+ * objekter så de kan mixes ind i picker-listen sammen med globale fødevarer.
+ * Hver entry markeres med kilde='custom' så UI kan skelne hvis ønsket.
+ */
+export async function hentMineCustomFodevarer(uid: string): Promise<Fodevare[]> {
+	const snap = await getDocs(customFodevarerCollection(uid));
+	return snap.docs
+		.map((d) => ({ id: d.id, ...d.data() }) as Fodevare)
+		.sort((a, b) => a.name.localeCompare(b.name, 'da'));
+}
+
+/**
+ * Opretter eller opdaterer en egen fødevare. Hvis fodevare.id er sat,
+ * opdateres det eksisterende dokument. Ellers oprettes et nyt med auto-id.
+ * Returnerer det endelige dokument-id.
+ */
+export async function gemMinCustomFodevare(
+	uid: string,
+	fodevare: Omit<Fodevare, 'id'> & { id?: string }
+): Promise<string> {
+	const { id: ind_id, ...data } = fodevare;
+	if (ind_id) {
+		await setDoc(customFodevareDoc(uid, ind_id), data, { merge: true });
+		return ind_id;
+	}
+	const ref = doc(customFodevarerCollection(uid));
+	await setDoc(ref, data);
+	return ref.id;
+}
+
+/**
+ * Sletter en egen fødevare. Eksisterende måltider der refererer til den
+ * vil derefter vise den som manuel-item (navnet bevares via items[].manuel).
+ */
+export async function sletMinCustomFodevare(uid: string, id: string): Promise<void> {
+	await deleteDoc(customFodevareDoc(uid, id));
 }
