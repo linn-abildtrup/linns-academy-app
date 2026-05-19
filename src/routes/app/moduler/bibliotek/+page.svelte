@@ -344,17 +344,16 @@
 		}
 
 		try {
-			// Opskrifter er globale — hent dem parallelt med forløbs-data.
-			// De er tilgængelige selv hvis brugeren ikke har været på et forløb.
+			// Step 1 — kør de tre øverste queries PARALLELT i stedet for
+			// sekventielt: opskrifter, forløbsIds, og ids-per-produkt har
+			// ingen indbyrdes afhængigheder. Sparer 2 round-trips på cold-load.
 			const opskrifterPromise = hentAlleOpskrifter().then((alle) =>
 				alle.filter((o) => o.aktiv).sort((a, b) => a.titel.localeCompare(b.titel, 'da'))
 			);
-
-			// Hent alle forløb brugeren har været på — først fra userDoc.forlobIds
-			// (autoritativ kilde), ellers fald tilbage til at scanne userProducts.
-			// Bibliotek aggregerer materiale fra alle forløb så historik bevares
-			// selv hvis brugeren skifter abonnementstype undervejs.
-			const forlobIds = await hentBrugerensForlobIds(u.uid);
+			const [forlobIds, idsPerProduct] = await Promise.all([
+				hentBrugerensForlobIds(u.uid),
+				hentForlobIdsPerProduct(u.uid)
+			]);
 
 			if (forlobIds.length === 0) {
 				// Ingen forløb endnu — vis kun opskrifter (globale)
@@ -367,11 +366,6 @@
 				loading = false;
 				return;
 			}
-
-			// Load FAQ + Guides + Træningsøvelser aggregeret across ALLE forløb,
-			// og lektioner grupperet per produkt-type så hver type får sin
-			// egen fane.
-			const idsPerProduct = await hentForlobIdsPerProduct(u.uid);
 
 			const resultater = await Promise.all(
 				forlobIds.map((forlobId) =>
@@ -407,9 +401,13 @@
 			const erAktivPaaForlob = userDoc?.accessSource === 'forløb';
 
 			async function dageMedFilter(forlobId: string): Promise<ForlobDag[]> {
-				const dage = await hentForlobsdage(forlobId);
+				// Parallel: dage + forlob har ingen indbyrdes afhængighed
+				// før dagensDag-beregningen, så vi henter dem samtidig.
+				const [dage, forlob] = await Promise.all([
+					hentForlobsdage(forlobId),
+					erAktivPaaForlob ? hentForlob(forlobId) : Promise.resolve(null)
+				]);
 				if (!erAktivPaaForlob) return dage;
-				const forlob = await hentForlob(forlobId);
 				if (!forlob) return dage;
 				const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
 				const dagensDag = getCurrentDay({ startDato, antalDage: forlob.antalDage });
