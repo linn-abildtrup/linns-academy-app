@@ -225,7 +225,7 @@
 		// Kun for forløbskunder skal vi hente forløb og dagens lektion
 		const u = user;
 		const ud = userDoc;
-		if (!u || ud?.state !== 'forlobskunde') {
+		if (!u || userState !== 'forlobskunde') {
 			forlob = null;
 			forlobsdage = [];
 			userProduct = null;
@@ -345,7 +345,7 @@
 	$effect(() => {
 		const u = user;
 		const ud = userDoc;
-		if (!u || ud?.state !== 'modulbruger' || !ud.createdAt) {
+		if (!u || userState !== 'modulbruger' || !ud?.createdAt) {
 			modulbrugerDage = [];
 			modulbrugerValgtDato = null;
 			return;
@@ -428,7 +428,7 @@
 	// Hent lektion for valgt dato (hvis nogen) — opdateres når dato skifter
 	$effect(() => {
 		const ud = userDoc;
-		if (ud?.state !== 'modulbruger') {
+		if (userState !== 'modulbruger') {
 			modulbrugerLektion = null;
 			return;
 		}
@@ -447,7 +447,7 @@
 	$effect(() => {
 		const u = user;
 		const ud = userDoc;
-		if (!u || ud?.state !== 'modulbruger') {
+		if (!u || userState !== 'modulbruger') {
 			modulbrugerVaneOpsaetning = null;
 			modulbrugerBonusPulje = [];
 			return;
@@ -469,7 +469,7 @@
 	$effect(() => {
 		const u = user;
 		const ud = userDoc;
-		if (!u || ud?.state !== 'modulbruger') {
+		if (!u || userState !== 'modulbruger') {
 			modulbrugerVanedag = null;
 			modulbrugerMaaltider = [];
 			return;
@@ -519,12 +519,12 @@
 	$effect(() => {
 		const u = user;
 		const ud = userDoc;
-		if (!u || ud?.state !== 'modulbruger') {
+		if (!u || userState !== 'modulbruger') {
 			modulbrugerTraeningsVideo = null;
 			return;
 		}
 		const produktType: 'basis' | 'premium' = harPremium(ud) ? 'premium' : 'basis';
-		const variant = ud.mikrotraeningVariant ?? 'no_kettlebell';
+		const variant = ud?.mikrotraeningVariant ?? 'no_kettlebell';
 		void (async () => {
 			try {
 				const [program, fremgang] = await Promise.all([
@@ -666,7 +666,7 @@
 	$effect(() => {
 		const u = user;
 		const ud = userDoc;
-		if (!u || ud?.state !== 'forlobskunde') {
+		if (!u || userState !== 'forlobskunde') {
 			forlobVanedag = null;
 			forlobMaaltider = [];
 			return;
@@ -692,7 +692,7 @@
 	$effect(() => {
 		const u = user;
 		const ud = userDoc;
-		if (!u || ud?.state !== 'forlobskunde') {
+		if (!u || userState !== 'forlobskunde') {
 			forlobTraeningsVideo = null;
 			return;
 		}
