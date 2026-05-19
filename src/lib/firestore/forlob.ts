@@ -42,14 +42,45 @@ export async function hentAlleForlob(): Promise<Forlob[]> {
 		});
 }
 
+// In-memory cache pr session af forløb og forløbsdage. Forløb-templates
+// ændres ikke under en session, så vi cacher dem aggressivt og deler på
+// tværs af alle steder der bruger dem (bibliotek, forløb-modul, admin).
+const forlobCache = new Map<string, Forlob | null>();
+const forlobPromises = new Map<string, Promise<Forlob | null>>();
+const forlobsdageCache = new Map<string, ForlobDag[]>();
+const forlobsdagePromises = new Map<string, Promise<ForlobDag[]>>();
+
 /**
  * Henter et enkelt forløb. Returnerer null hvis det ikke findes.
+ * In-memory cached pr session.
  */
 export async function hentForlob(forlobId: string): Promise<Forlob | null> {
-	const ref = doc(db, 'forlob', forlobId);
-	const snap = await getDoc(ref);
-	if (!snap.exists()) return null;
-	return { id: snap.id, ...snap.data() } as Forlob;
+	if (forlobCache.has(forlobId)) return forlobCache.get(forlobId) ?? null;
+	const aktiv = forlobPromises.get(forlobId);
+	if (aktiv) return aktiv;
+	const p = (async () => {
+		try {
+			const ref = doc(db, 'forlob', forlobId);
+			const snap = await getDoc(ref);
+			const v = snap.exists() ? ({ id: snap.id, ...snap.data() } as Forlob) : null;
+			forlobCache.set(forlobId, v);
+			return v;
+		} finally {
+			forlobPromises.delete(forlobId);
+		}
+	})();
+	forlobPromises.set(forlobId, p);
+	return p;
+}
+
+/**
+ * Invaliderer forløb-cachen. Bruges efter admin opretter/redigerer.
+ */
+export function ryForlobCache(): void {
+	forlobCache.clear();
+	forlobPromises.clear();
+	forlobsdageCache.clear();
+	forlobsdagePromises.clear();
 }
 
 /**
@@ -350,12 +381,27 @@ export async function gemAllowedEmailsBatch(
 
 /**
  * Henter alle forløbsdage for et forløb sorteret efter dagNummer.
+ * In-memory cached pr session — forløbsdage ændres kun via admin.
  */
 export async function hentForlobsdage(forlobId: string): Promise<ForlobDag[]> {
-	const snap = await getDocs(collection(db, 'forlob', forlobId, 'forlobsdage'));
-	return snap.docs
-		.map((d) => d.data() as ForlobDag)
-		.sort((a, b) => a.dagNummer - b.dagNummer);
+	const cached = forlobsdageCache.get(forlobId);
+	if (cached) return cached;
+	const aktiv = forlobsdagePromises.get(forlobId);
+	if (aktiv) return aktiv;
+	const p = (async () => {
+		try {
+			const snap = await getDocs(collection(db, 'forlob', forlobId, 'forlobsdage'));
+			const dage = snap.docs
+				.map((d) => d.data() as ForlobDag)
+				.sort((a, b) => a.dagNummer - b.dagNummer);
+			forlobsdageCache.set(forlobId, dage);
+			return dage;
+		} finally {
+			forlobsdagePromises.delete(forlobId);
+		}
+	})();
+	forlobsdagePromises.set(forlobId, p);
+	return p;
 }
 
 /**

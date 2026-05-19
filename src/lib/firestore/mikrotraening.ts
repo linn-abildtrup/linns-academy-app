@@ -282,20 +282,39 @@ export async function sletPause(
 	await deleteDoc(pauseDocRef(uid, pauseId(programId, dag)));
 }
 
+// In-memory cache pr session af enkelte øvelser. Bibliotek + mikrotræning-
+// spil + forløb-lektioner refererer alle til de samme øvelser; vi cacher
+// pr exerciseId så samme øvelse aldrig hentes mere end én gang.
+const exerciseCache = new Map<string, Exercise | null>();
+const exercisePromises = new Map<string, Promise<Exercise | null>>();
+
 /**
  * Henter en enkelt øvelse fra øvelsesbiblioteket.
- * Returnerer null hvis øvelsen ikke findes.
+ * Returnerer null hvis øvelsen ikke findes. In-memory cached pr session.
  */
 export async function hentExercise(exerciseId: string): Promise<Exercise | null> {
-	const ref = doc(db, 'exercises', exerciseId);
-	const snap = await getDoc(ref);
-	if (!snap.exists()) return null;
-	return { id: snap.id, ...snap.data() } as Exercise;
+	if (exerciseCache.has(exerciseId)) return exerciseCache.get(exerciseId) ?? null;
+	const aktivPromise = exercisePromises.get(exerciseId);
+	if (aktivPromise) return aktivPromise;
+	const p = (async () => {
+		try {
+			const ref = doc(db, 'exercises', exerciseId);
+			const snap = await getDoc(ref);
+			const ex = snap.exists() ? ({ id: snap.id, ...snap.data() } as Exercise) : null;
+			exerciseCache.set(exerciseId, ex);
+			return ex;
+		} finally {
+			exercisePromises.delete(exerciseId);
+		}
+	})();
+	exercisePromises.set(exerciseId, p);
+	return p;
 }
 
 /**
  * Henter flere øvelser ad gangen baseret på en liste af ID'er.
  * Returnerer et map fra exerciseId til Exercise. Manglende øvelser udelades.
+ * Bruger den fælles exercise-cache pr session.
  */
 export async function hentExercises(exerciseIds: string[]): Promise<Map<string, Exercise>> {
 	const unikkeIds = Array.from(new Set(exerciseIds));
@@ -305,6 +324,14 @@ export async function hentExercises(exerciseIds: string[]): Promise<Map<string, 
 		if (ex) map.set(unikkeIds[i], ex);
 	});
 	return map;
+}
+
+/**
+ * Invaliderer exercise-cachen. Bruges efter admin opretter/redigerer/sletter.
+ */
+export function ryExerciseCache(): void {
+	exerciseCache.clear();
+	exercisePromises.clear();
 }
 
 /**
