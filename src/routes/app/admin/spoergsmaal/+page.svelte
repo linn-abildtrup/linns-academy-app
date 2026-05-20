@@ -40,6 +40,30 @@
 	let svarSender = $state<string | null>(null);
 	let aabenSvarId = $state<string | null>(null);
 
+	// Hele-samtalen-pop-up: hvis sat, vises alle spørgsmål fra denne uid
+	// kronologisk i en modal med samme svar-funktionalitet som hovedlisten.
+	let visSamtaleForUid = $state<string | null>(null);
+	const samtaleSpoergsmaal = $derived.by(() => {
+		if (!visSamtaleForUid) return [] as KlientSpoergsmaal[];
+		return alle
+			.filter((q) => q.uid === visSamtaleForUid)
+			.slice()
+			.sort((a, b) => {
+				const at = a.oprettet?.toDate?.()?.getTime() ?? 0;
+				const bt = b.oprettet?.toDate?.()?.getTime() ?? 0;
+				return at - bt;
+			});
+	});
+	const samtaleEmail = $derived(samtaleSpoergsmaal[0]?.email ?? '');
+
+	function aabnSamtale(uid: string) {
+		visSamtaleForUid = uid;
+	}
+
+	function lukSamtale() {
+		visSamtaleForUid = null;
+	}
+
 	function passerForlobFilter(q: KlientSpoergsmaal): boolean {
 		if (aktivtForlobFilter === 'alle') return true;
 		if (aktivtForlobFilter === 'modulbrugere') return q.kundeType === 'modulbruger';
@@ -379,6 +403,9 @@
 								{q.svar ? 'Rediger svar' : 'Svar klienten'}
 							</button>
 						{/if}
+						<button type="button" class="ghost-knap sm" onclick={() => aabnSamtale(q.uid)}>
+							💬 Vis hele samtalen
+						</button>
 						{#if q.status !== 'laest'}
 							<button type="button" class="ghost-knap sm" onclick={() => aendreStatus(q.id, 'laest')}>
 								Markér som læst
@@ -407,6 +434,114 @@
 		<div class="toast" role="status">{toast}</div>
 	{/if}
 </div>
+
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape' && visSamtaleForUid) lukSamtale();
+	}}
+/>
+
+{#if visSamtaleForUid}
+	<div class="modal-overlay" role="presentation" onclick={lukSamtale}>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div
+			class="samtale-modal"
+			role="dialog"
+			tabindex="-1"
+			aria-modal="true"
+			aria-labelledby="samtale-titel"
+			onclick={(e) => e.stopPropagation()}
+		>
+			<div class="samtale-head">
+				<div>
+					<div class="samtale-eyebrow">Hele samtalen</div>
+					<h2 id="samtale-titel" class="samtale-titel">{samtaleEmail || 'ukendt klient'}</h2>
+					<div class="samtale-sub">
+						{samtaleSpoergsmaal.length}
+						{samtaleSpoergsmaal.length === 1 ? 'spørgsmål' : 'spørgsmål'} i kronologisk rækkefølge
+					</div>
+				</div>
+				<button class="samtale-luk" type="button" onclick={lukSamtale} aria-label="Luk">×</button>
+			</div>
+
+			<div class="samtale-body">
+				{#each samtaleSpoergsmaal as q (q.id)}
+					<article class="samtale-kort spq-status-{q.status}">
+						<div class="spq-meta">
+							<span class="spq-pill spq-pill-{q.status}">{STATUS_LABELS[q.status]}</span>
+							<span>·</span>
+							<span>{formaterDato(q.oprettet)}</span>
+							{#if q.forlobNavn}
+								<span>·</span>
+								<span class="spq-forlob">{q.forlobNavn}</span>
+							{:else if q.kundeType === 'modulbruger'}
+								<span>·</span>
+								<span class="spq-forlob">Modulbruger</span>
+							{/if}
+						</div>
+						<div class="spq-tekst">{q.spoergsmaal}</div>
+
+						{#if q.svar && aabenSvarId !== q.id}
+							<div class="svar-vist">
+								<div class="svar-label">Svar fra Linn</div>
+								<div class="svar-tekst">{q.svar}</div>
+							</div>
+						{/if}
+
+						{#if aabenSvarId === q.id}
+							<div class="svar-form">
+								<label class="svar-label" for="samtale-svar-{q.id}">Svar til klienten</label>
+								<textarea
+									id="samtale-svar-{q.id}"
+									class="svar-input"
+									rows="4"
+									placeholder="Skriv dit svar her..."
+									bind:value={svarUdkast[q.id]}
+									disabled={svarSender === q.id}
+								></textarea>
+								<div class="svar-knapper">
+									<button
+										type="button"
+										class="primary-knap sm"
+										onclick={() => sendSvar(q.id)}
+										disabled={svarSender === q.id}
+									>
+										{svarSender === q.id ? 'Sender...' : q.svar ? 'Opdater svar' : 'Send svar'}
+									</button>
+									<button
+										type="button"
+										class="ghost-knap sm"
+										onclick={lukSvar}
+										disabled={svarSender === q.id}
+									>
+										Annullér
+									</button>
+								</div>
+							</div>
+						{/if}
+
+						<div class="spq-knapper">
+							{#if aabenSvarId !== q.id}
+								<button type="button" class="primary-knap sm" onclick={() => aabnSvar(q)}>
+									{q.svar ? 'Rediger svar' : 'Svar klienten'}
+								</button>
+							{/if}
+							{#if q.status !== 'besvaret' && q.svar}
+								<button
+									type="button"
+									class="ghost-knap sm"
+									onclick={() => aendreStatus(q.id, 'besvaret')}
+								>
+									Markér som besvaret
+								</button>
+							{/if}
+						</div>
+					</article>
+				{/each}
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.page {
@@ -746,5 +881,82 @@
 		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 500;
 		z-index: 1000;
+	}
+
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 18px;
+		z-index: 900;
+	}
+
+	.samtale-modal {
+		background: var(--white);
+		border-radius: 14px;
+		width: 100%;
+		max-width: 640px;
+		max-height: 90vh;
+		display: flex;
+		flex-direction: column;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+	}
+
+	.samtale-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		padding: 18px 20px 14px;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.samtale-eyebrow {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.samtale-titel {
+		font-family: var(--ff-d);
+		font-size: calc(18px * var(--fs-scale, 1));
+		font-weight: 600;
+		margin: 4px 0 2px;
+		color: var(--text);
+		word-break: break-all;
+	}
+
+	.samtale-sub {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.samtale-luk {
+		background: none;
+		border: none;
+		font-size: 22px;
+		color: var(--text2);
+		cursor: pointer;
+		padding: 0 4px;
+		line-height: 1;
+	}
+
+	.samtale-body {
+		overflow-y: auto;
+		padding: 14px 20px 20px;
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+
+	.samtale-kort {
+		padding: 14px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 12px;
 	}
 </style>
