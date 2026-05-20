@@ -680,49 +680,80 @@
 	{/if}
 
 	{#if harForlobsHistorik && checkinDage.length > 0}
+		{@const grafBredde = 320}
+		{@const grafHojde = 120}
+		{@const padX = 26}
+		{@const padY = 10}
+		{@const innerW = grafBredde - padX * 2}
+		{@const innerH = grafHojde - padY * 2}
+		{@const n = checkinDage.length}
+		{@const baselineKommentar = checkinDage.find((d) => d.dagNummer === 0)?.entry.checkin?.generelTekst}
 		<div class="sektion-titel">Baseline + check-ins</div>
 		<section class="kort">
 			<div class="kort-titel">Din udvikling siden Kickstart-baseline</div>
 			<p class="kort-sub">
-				Sammenlign dine 5 baseline-svar (dag 0) med dine ugentlige check-ins
-				(dag 7, 14, 21). Skala 1-10, hvor 10 er bedst.
+				Sammenlign dine 5 baseline-svar (dag 0) med dine ugentlige check-ins.
+				Skala 1-10, hvor 10 er bedst.
 			</p>
-			{#each CHECKIN_SPORGSMAAL as q (q.id)}
-				{@const baseline = checkinDage.find((d) => d.dagNummer === 0)?.entry.checkin}
-				{@const baseVal = baseline ? (baseline[q.id as keyof CheckinSvar] as number | undefined) : undefined}
-				<div class="checkin-rad">
-					<div class="checkin-rad-label">
-						<span class="checkin-prik" style="background:{SLIDER_FARVER[q.id]}"></span>
-						{q.label}
+
+			<div class="checkin-graf-wrap">
+				<svg viewBox="0 0 {grafBredde} {grafHojde}" class="checkin-graf" preserveAspectRatio="xMidYMid meet">
+					<!-- Y-akse grid: 1, 5, 10 -->
+					<line x1={padX} y1={padY} x2={grafBredde - padX} y2={padY} stroke="var(--border)" stroke-width="0.5" />
+					<line x1={padX} y1={padY + innerH / 2} x2={grafBredde - padX} y2={padY + innerH / 2} stroke="var(--border)" stroke-width="0.5" stroke-dasharray="2 2" />
+					<line x1={padX} y1={padY + innerH} x2={grafBredde - padX} y2={padY + innerH} stroke="var(--border)" stroke-width="0.5" />
+					<!-- Y-akse labels -->
+					<text x={padX - 4} y={padY + 4} text-anchor="end" class="graf-y-label">10</text>
+					<text x={padX - 4} y={padY + innerH / 2 + 4} text-anchor="end" class="graf-y-label">5</text>
+					<text x={padX - 4} y={padY + innerH + 4} text-anchor="end" class="graf-y-label">1</text>
+
+					<!-- X-akse labels (dag-numre) -->
+					{#each checkinDage as d, i (d.dagNummer)}
+						{@const x = n === 1 ? padX + innerW / 2 : padX + (i / (n - 1)) * innerW}
+						<text x={x} y={grafHojde - 2} text-anchor="middle" class="graf-x-label">
+							{d.dagNummer === 0 ? 'Base' : `D${d.dagNummer}`}
+						</text>
+					{/each}
+
+					<!-- Linjer pr slider -->
+					{#each CHECKIN_SPORGSMAAL as q (q.id)}
+						{@const punkter = checkinDage.map((d, i) => {
+							const v = d.entry.checkin[q.id as keyof CheckinSvar] as number | undefined;
+							if (typeof v !== 'number') return null;
+							const x = n === 1 ? padX + innerW / 2 : padX + (i / (n - 1)) * innerW;
+							const y = padY + ((10 - v) / 9) * innerH;
+							return { x, y, v };
+						}).filter((p): p is { x: number; y: number; v: number } => p !== null)}
+						{#if punkter.length > 0}
+							<path
+								d={'M ' + punkter.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ')}
+								stroke={SLIDER_FARVER[q.id]}
+								stroke-width="2"
+								fill="none"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+							{#each punkter as p (p.x)}
+								<circle cx={p.x} cy={p.y} r="3" fill={SLIDER_FARVER[q.id]} />
+							{/each}
+						{/if}
+					{/each}
+				</svg>
+			</div>
+
+			<div class="graf-legend">
+				{#each CHECKIN_SPORGSMAAL as q (q.id)}
+					<div class="graf-legend-item">
+						<span class="graf-legend-prik" style="background:{SLIDER_FARVER[q.id]}"></span>
+						<span class="graf-legend-label">{q.label}</span>
 					</div>
-					<div class="checkin-rad-vaerdier">
-						{#each checkinDage as d (d.dagNummer)}
-							{@const v = d.entry.checkin[q.id as keyof CheckinSvar] as number | undefined}
-							{@const delta =
-								typeof v === 'number' && typeof baseVal === 'number' && d.dagNummer !== 0
-									? v - baseVal
-									: null}
-							<div class="checkin-punkt" class:erBaseline={d.dagNummer === 0}>
-								<div class="checkin-dag">
-									{d.dagNummer === 0 ? 'Baseline' : `Dag ${d.dagNummer}`}
-								</div>
-								<div class="checkin-vaerdi">{typeof v === 'number' ? v : '–'}</div>
-								{#if delta !== null}
-									<div class="checkin-delta {delta > 0 ? 'op' : delta < 0 ? 'ned' : 'nul'}">
-										{delta > 0 ? `+${delta}` : delta === 0 ? '±0' : delta}
-									</div>
-								{/if}
-							</div>
-						{/each}
-					</div>
-				</div>
-			{/each}
-			{#if checkinDage.find((d) => d.dagNummer === 0)?.entry.checkin?.generelTekst}
+				{/each}
+			</div>
+
+			{#if baselineKommentar}
 				<div class="checkin-tekst">
 					<div class="checkin-tekst-label">Din baseline-kommentar (dag 0)</div>
-					<div class="checkin-tekst-body">
-						{checkinDage.find((d) => d.dagNummer === 0)?.entry.checkin?.generelTekst}
-					</div>
+					<div class="checkin-tekst-body">{baselineKommentar}</div>
 				</div>
 			{/if}
 		</section>
@@ -1000,98 +1031,50 @@
 		margin: 22px 0 10px;
 	}
 
-	.checkin-rad {
+	.checkin-graf-wrap {
+		margin: 8px 0 4px;
+	}
+
+	.checkin-graf {
+		width: 100%;
+		height: auto;
+		display: block;
+	}
+
+	:global(.checkin-graf .graf-y-label),
+	:global(.checkin-graf .graf-x-label) {
+		font-size: 9px;
+		fill: var(--text4);
+		font-family: var(--ff-b);
+	}
+
+	.graf-legend {
 		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		padding: 12px 0;
-		border-top: 1px solid var(--border);
-	}
-
-	.checkin-rad:first-of-type {
-		border-top: none;
-	}
-
-	.checkin-rad-label {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		font-size: calc(13px * var(--fs-scale, 1));
-		font-weight: 500;
-		color: var(--text);
-	}
-
-	.checkin-prik {
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
-		flex-shrink: 0;
-	}
-
-	.checkin-rad-vaerdier {
-		display: flex;
-		gap: 6px;
 		flex-wrap: wrap;
+		gap: 6px 12px;
+		margin-top: 6px;
 	}
 
-	.checkin-punkt {
-		flex: 1 1 0;
-		min-width: 70px;
-		text-align: center;
-		padding: 8px 6px;
-		background: var(--bg2);
-		border-radius: 8px;
+	.graf-legend-item {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
 	}
 
-	.checkin-punkt.erBaseline {
-		background: var(--tdim);
-		border: 1px solid var(--border);
+	.graf-legend-prik {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
 	}
 
-	.checkin-dag {
-		font-size: calc(10px * var(--fs-scale, 1));
-		font-weight: 700;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--text3);
-		margin-bottom: 4px;
-	}
-
-	.checkin-vaerdi {
-		font-family: var(--ff-d);
-		font-size: calc(20px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--terra);
-		line-height: 1;
-	}
-
-	.checkin-delta {
-		display: inline-block;
-		margin-top: 4px;
-		font-size: calc(10.5px * var(--fs-scale, 1));
-		font-weight: 600;
-		padding: 1px 6px;
-		border-radius: 99px;
-	}
-
-	.checkin-delta.op {
-		background: var(--sdim);
-		color: #4a6b54;
-	}
-
-	.checkin-delta.ned {
-		background: #fbeeea;
-		color: #8a4a3e;
-	}
-
-	.checkin-delta.nul {
-		background: var(--white);
-		color: var(--text3);
+	.graf-legend-label {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text2);
 	}
 
 	.checkin-tekst {
-		margin-top: 14px;
-		padding: 12px 14px;
+		margin-top: 12px;
+		padding: 10px 12px;
 		background: var(--bg2);
 		border-radius: 10px;
 	}
@@ -1102,11 +1085,11 @@
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--text3);
-		margin-bottom: 6px;
+		margin-bottom: 4px;
 	}
 
 	.checkin-tekst-body {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1));
 		color: var(--text);
 		line-height: 1.5;
 		white-space: pre-wrap;
