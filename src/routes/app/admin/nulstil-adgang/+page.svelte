@@ -1,25 +1,98 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
+	import { getContext, onMount } from 'svelte';
 	import type { User } from 'firebase/auth';
+	import { collection, getDocs } from 'firebase/firestore';
+	import { db } from '$lib/firebase';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const getUser = getContext<() => User | null>('user');
 	const user = $derived(getUser());
 
+	type Kunde = { email: string; firstName: string; lastName: string };
+
+	let soeg = $state('');
 	let email = $state('');
 	let opretter = $state(false);
 	let fejl = $state<string | null>(null);
+	let alleKunder = $state<Kunde[]>([]);
+	let indlaeserKunder = $state(true);
 
 	let tempPassword = $state<string | null>(null);
 	let tempEmail = $state('');
 	let kopieret = $state(false);
+
+	const matches = $derived.by<Kunde[]>(() => {
+		const q = soeg.trim().toLowerCase();
+		if (q.length < 2) return [];
+		return alleKunder
+			.filter((k) => {
+				const fuldt = `${k.firstName} ${k.lastName}`.trim().toLowerCase();
+				return (
+					k.email.toLowerCase().includes(q) ||
+					k.firstName.toLowerCase().includes(q) ||
+					k.lastName.toLowerCase().includes(q) ||
+					fuldt.includes(q)
+				);
+			})
+			.slice(0, 30);
+	});
+
+	onMount(async () => {
+		try {
+			const map = new Map<string, Kunde>();
+			// allowedEmails har firstName + lastName for alle kunder fra Simplero
+			const allowedSnap = await getDocs(collection(db, 'allowedEmails'));
+			for (const d of allowedSnap.docs) {
+				const data = d.data() as { email?: string; firstName?: string; lastName?: string };
+				const e = (data.email ?? '').toLowerCase();
+				if (!e) continue;
+				map.set(e, {
+					email: e,
+					firstName: data.firstName ?? '',
+					lastName: data.lastName ?? ''
+				});
+			}
+			// users-collection som fallback for navne der ikke er i allowedEmails
+			try {
+				const usersSnap = await getDocs(collection(db, 'users'));
+				for (const d of usersSnap.docs) {
+					const data = d.data() as { email?: string; firstName?: string; lastName?: string };
+					const e = (data.email ?? '').toLowerCase();
+					if (!e) continue;
+					if (!map.has(e)) {
+						map.set(e, {
+							email: e,
+							firstName: data.firstName ?? '',
+							lastName: data.lastName ?? ''
+						});
+					} else if (data.firstName && !map.get(e)!.firstName) {
+						map.get(e)!.firstName = data.firstName;
+					}
+				}
+			} catch (e) {
+				console.warn('Kunne ikke hente users-collection:', e);
+			}
+			alleKunder = Array.from(map.values()).sort((a, b) =>
+				(a.firstName || a.email).localeCompare(b.firstName || b.email, 'da')
+			);
+		} catch (e) {
+			console.error('Kunne ikke hente kundeliste:', e);
+		} finally {
+			indlaeserKunder = false;
+		}
+	});
+
+	function vaelgKunde(k: Kunde) {
+		email = k.email;
+		soeg = `${k.firstName} ${k.lastName}`.trim() || k.email;
+	}
 
 	async function nulstil() {
 		const u = user;
 		if (!u || opretter) return;
 		const trimmet = email.trim().toLowerCase();
 		if (!trimmet || !trimmet.includes('@')) {
-			fejl = 'Skriv en gyldig email.';
+			fejl = 'Vælg en kunde fra listen eller skriv en gyldig email.';
 			return;
 		}
 		fejl = null;
@@ -100,18 +173,50 @@
 
 	<section class="card">
 		<label class="felt">
-			<span class="felt-label">Kundens email</span>
+			<span class="felt-label">Søg på navn eller email</span>
 			<input
-				type="email"
+				type="text"
 				class="felt-input"
-				placeholder="kunde@eksempel.dk"
-				bind:value={email}
-				disabled={opretter}
+				placeholder={indlaeserKunder ? 'Indlæser kunder…' : 'Fx Pia, Mette Drustrup, mie@…'}
+				bind:value={soeg}
+				disabled={opretter || indlaeserKunder}
 				autocomplete="off"
 				autocapitalize="none"
 				spellcheck="false"
 			/>
 		</label>
+
+		{#if soeg.trim().length >= 2 && matches.length > 0 && email !== matches[0]?.email}
+			<div class="resultater">
+				{#each matches as k (k.email)}
+					{@const navn = `${k.firstName} ${k.lastName}`.trim()}
+					{@const erValgt = k.email === email}
+					<button
+						type="button"
+						class="resultat-rad"
+						class:valgt={erValgt}
+						onclick={() => vaelgKunde(k)}
+					>
+						<div class="resultat-navn">{navn || '(uden navn)'}</div>
+						<div class="resultat-email">{k.email}</div>
+						{#if erValgt}<span class="resultat-check">✓</span>{/if}
+					</button>
+				{/each}
+			</div>
+		{:else if soeg.trim().length >= 2 && matches.length === 0 && !indlaeserKunder}
+			<div class="ingen-match">
+				Ingen kunder matcher søgningen. Skriv den fulde email hvis hun ikke står i listen.
+			</div>
+		{/if}
+
+		{#if email}
+			<div class="valgt-kunde">
+				Valgt: <strong>{email}</strong>
+				<button type="button" class="ryd-knap" onclick={() => { email = ''; soeg = ''; }}>
+					ryd
+				</button>
+			</div>
+		{/if}
 
 		{#if fejl}
 			<div class="fejl">{fejl}</div>
@@ -369,5 +474,90 @@
 		background: var(--terra);
 		color: #fff;
 		border-color: var(--terra);
+	}
+
+	.resultater {
+		max-height: 280px;
+		overflow-y: auto;
+		margin-top: 6px;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: var(--white);
+	}
+
+	.resultat-rad {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		width: 100%;
+		padding: 10px 14px;
+		background: none;
+		border: none;
+		border-bottom: 1px solid var(--border);
+		cursor: pointer;
+		text-align: left;
+		font-family: inherit;
+	}
+
+	.resultat-rad:last-child {
+		border-bottom: none;
+	}
+
+	.resultat-rad:hover {
+		background: var(--bg2);
+	}
+
+	.resultat-rad.valgt {
+		background: var(--sdim);
+	}
+
+	.resultat-navn {
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		flex: 1;
+	}
+
+	.resultat-email {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.resultat-check {
+		color: var(--sage);
+		font-size: calc(14px * var(--fs-scale, 1));
+	}
+
+	.ingen-match {
+		margin-top: 8px;
+		padding: 10px 14px;
+		background: var(--bg2);
+		border-radius: 8px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.valgt-kunde {
+		margin-top: 12px;
+		padding: 10px 14px;
+		background: var(--sdim);
+		border-radius: 8px;
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.ryd-knap {
+		background: none;
+		border: none;
+		color: var(--text3);
+		font-size: calc(12px * var(--fs-scale, 1));
+		text-decoration: underline;
+		cursor: pointer;
+		padding: 0;
+		font-family: inherit;
 	}
 </style>
