@@ -19,6 +19,9 @@
 	import type { AboMikrotraeningTraening } from '$lib/content/aboMikrotraening';
 	import { hentAboVaneOpsaetning, hentAlleAboVanedage } from '$lib/firestore/aboVaner';
 	import type { AboVaneOpsaetning, AboVanedagEntry } from '$lib/content/aboVaner';
+	import { hentAlleVanedage } from '$lib/firestore/vaner';
+	import type { VanedagEntry, CheckinSvar } from '$lib/content/vaner';
+	import { CHECKIN_SPORGSMAAL } from '$lib/content/vaner';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -49,10 +52,37 @@
 	let aboTraeninger = $state<AboMikrotraeningTraening[]>([]);
 	let aboVaneOpsaetning = $state<AboVaneOpsaetning | null>(null);
 	let aboVanedage = $state<Map<string, AboVanedagEntry>>(new Map());
+	let forlobsVanedage = $state<Map<number, VanedagEntry>>(new Map());
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
 	const visAbo = $derived(erModulbruger(userDoc));
+	// Vis baseline + check-in-historik hvis brugeren har gennemført forløb
+	// (uanset om hun aktiv basis/premium/forløb eller udløbet i bonus).
+	const harForlobsHistorik = $derived((userDoc?.forlobIds?.length ?? 0) > 0);
+
+	// Find dage med checkin-data (baseline + ugentlige check-ins). For
+	// Kickstart-forløb er det typisk dag 0, 7, 14, 21.
+	const checkinDage = $derived.by(() => {
+		const liste: { dagNummer: number; entry: VanedagEntry }[] = [];
+		for (const [dagNummer, entry] of forlobsVanedage) {
+			const c = entry.checkin as CheckinSvar | undefined;
+			if (!c) continue;
+			const harSlider = CHECKIN_SPORGSMAAL.some(
+				(q) => typeof c[q.id as keyof CheckinSvar] === 'number'
+			);
+			if (harSlider) liste.push({ dagNummer, entry });
+		}
+		return liste.sort((a, b) => a.dagNummer - b.dagNummer);
+	});
+
+	const SLIDER_FARVER: Record<string, string> = {
+		energi: '#b87b6e',
+		mave: '#6f9e7e',
+		cravings: '#c9a07a',
+		humor: '#7e9bb3',
+		sovn: '#9d6358'
+	};
 
 	function dageBack(antal: number): { fraDato: string; tilDato: string; dage: string[] } {
 		const idag = new Date();
@@ -91,12 +121,22 @@
 				promiser.push(hentAboVaneOpsaetning(u.uid));
 				promiser.push(hentAlleAboVanedage(u.uid, cutoff));
 			}
+			// Forløbs-vanedage (baseline + ugentlige check-ins) hentes for
+			// kunder der har gennemført et forløb — uanset deres nuværende
+			// adgangsniveau. Bruges til 'Min udvikling siden baseline'-sektionen.
+			if (harForlobsHistorik) {
+				promiser.push(hentAlleVanedage(u.uid, 'kickstart'));
+			}
 			const r = await Promise.all(promiser);
 			alle = r[0] as GemtMaaltid[];
+			let idx = 1;
 			if (visAbo) {
-				aboTraeninger = r[1] as AboMikrotraeningTraening[];
-				aboVaneOpsaetning = r[2] as AboVaneOpsaetning | null;
-				aboVanedage = r[3] as Map<string, AboVanedagEntry>;
+				aboTraeninger = r[idx++] as AboMikrotraeningTraening[];
+				aboVaneOpsaetning = r[idx++] as AboVaneOpsaetning | null;
+				aboVanedage = r[idx++] as Map<string, AboVanedagEntry>;
+			}
+			if (harForlobsHistorik) {
+				forlobsVanedage = r[idx++] as Map<number, VanedagEntry>;
 			}
 		} catch (e) {
 			console.error(e);
@@ -638,6 +678,55 @@
 			{/if}
 		{/if}
 	{/if}
+
+	{#if harForlobsHistorik && checkinDage.length > 0}
+		<div class="sektion-titel">Baseline + check-ins</div>
+		<section class="kort">
+			<div class="kort-titel">Din udvikling siden Kickstart-baseline</div>
+			<p class="kort-sub">
+				Sammenlign dine 5 baseline-svar (dag 0) med dine ugentlige check-ins
+				(dag 7, 14, 21). Skala 1-10, hvor 10 er bedst.
+			</p>
+			{#each CHECKIN_SPORGSMAAL as q (q.id)}
+				{@const baseline = checkinDage.find((d) => d.dagNummer === 0)?.entry.checkin}
+				{@const baseVal = baseline ? (baseline[q.id as keyof CheckinSvar] as number | undefined) : undefined}
+				<div class="checkin-rad">
+					<div class="checkin-rad-label">
+						<span class="checkin-prik" style="background:{SLIDER_FARVER[q.id]}"></span>
+						{q.label}
+					</div>
+					<div class="checkin-rad-vaerdier">
+						{#each checkinDage as d (d.dagNummer)}
+							{@const v = d.entry.checkin[q.id as keyof CheckinSvar] as number | undefined}
+							{@const delta =
+								typeof v === 'number' && typeof baseVal === 'number' && d.dagNummer !== 0
+									? v - baseVal
+									: null}
+							<div class="checkin-punkt" class:erBaseline={d.dagNummer === 0}>
+								<div class="checkin-dag">
+									{d.dagNummer === 0 ? 'Baseline' : `Dag ${d.dagNummer}`}
+								</div>
+								<div class="checkin-vaerdi">{typeof v === 'number' ? v : '–'}</div>
+								{#if delta !== null}
+									<div class="checkin-delta {delta > 0 ? 'op' : delta < 0 ? 'ned' : 'nul'}">
+										{delta > 0 ? `+${delta}` : delta === 0 ? '±0' : delta}
+									</div>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/each}
+			{#if checkinDage.find((d) => d.dagNummer === 0)?.entry.checkin?.generelTekst}
+				<div class="checkin-tekst">
+					<div class="checkin-tekst-label">Din baseline-kommentar (dag 0)</div>
+					<div class="checkin-tekst-body">
+						{checkinDage.find((d) => d.dagNummer === 0)?.entry.checkin?.generelTekst}
+					</div>
+				</div>
+			{/if}
+		</section>
+	{/if}
 </div>
 
 <style>
@@ -909,5 +998,117 @@
 		font-weight: 600;
 		color: var(--text);
 		margin: 22px 0 10px;
+	}
+
+	.checkin-rad {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: 12px 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.checkin-rad:first-of-type {
+		border-top: none;
+	}
+
+	.checkin-rad-label {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 500;
+		color: var(--text);
+	}
+
+	.checkin-prik {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+
+	.checkin-rad-vaerdier {
+		display: flex;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+
+	.checkin-punkt {
+		flex: 1 1 0;
+		min-width: 70px;
+		text-align: center;
+		padding: 8px 6px;
+		background: var(--bg2);
+		border-radius: 8px;
+	}
+
+	.checkin-punkt.erBaseline {
+		background: var(--tdim);
+		border: 1px solid var(--border);
+	}
+
+	.checkin-dag {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-bottom: 4px;
+	}
+
+	.checkin-vaerdi {
+		font-family: var(--ff-d);
+		font-size: calc(20px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--terra);
+		line-height: 1;
+	}
+
+	.checkin-delta {
+		display: inline-block;
+		margin-top: 4px;
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		padding: 1px 6px;
+		border-radius: 99px;
+	}
+
+	.checkin-delta.op {
+		background: var(--sdim);
+		color: #4a6b54;
+	}
+
+	.checkin-delta.ned {
+		background: #fbeeea;
+		color: #8a4a3e;
+	}
+
+	.checkin-delta.nul {
+		background: var(--white);
+		color: var(--text3);
+	}
+
+	.checkin-tekst {
+		margin-top: 14px;
+		padding: 12px 14px;
+		background: var(--bg2);
+		border-radius: 10px;
+	}
+
+	.checkin-tekst-label {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-bottom: 6px;
+	}
+
+	.checkin-tekst-body {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		line-height: 1.5;
+		white-space: pre-wrap;
 	}
 </style>
