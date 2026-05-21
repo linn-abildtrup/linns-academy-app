@@ -91,6 +91,14 @@
 			icon: 'user' as const
 		},
 		{
+			id: 'kunde-tildeling',
+			navn: 'Kunde-tildeling',
+			beskrivelse: 'Tildel træningsprogrammer og custom-builder-adgang til kunder eller forløb',
+			rute: '/app/admin/kunde-tildeling',
+			accent: '#6F9E7E',
+			icon: 'flame' as const
+		},
+		{
 			id: 'nulstil-adgang',
 			navn: 'Nulstil adgangskode',
 			beskrivelse: 'Sæt midlertidig adgangskode for en kunde (virker for alle typer)',
