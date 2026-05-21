@@ -3,7 +3,7 @@
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
-	import { erForlobsklient, harPremium } from '$lib/utils/userAdgang';
+	import { erForlobsklient, erModulbruger, harPremium } from '$lib/utils/userAdgang';
 	import { hentAlleProgrammerPaaTvaers, hentTildelingerForBruger, type ProgramMedForlob } from '$lib/firestore/tildelinger';
 	import type { ProgramTildeling } from '$lib/content/tildelinger';
 	import { alleProdukter } from '$lib/content/produkter';
@@ -14,6 +14,7 @@
 	const userDoc = $derived(getUserDoc());
 
 	const erPremium = $derived(harPremium(userDoc));
+	const erAppKunde = $derived(erModulbruger(userDoc));
 
 	const programmer = [
 		{
@@ -27,8 +28,12 @@
 
 	let tildelteProgrammer = $state<ProgramTildeling[]>([]);
 	let alleProgrammerPaaTvaers = $state<ProgramMedForlob[]>([]);
-	let harCustomBuilder = $state(false);
+	let harCustomBuilderTildelt = $state(false);
 	let indlaeserNyt = $state(false);
+
+	// App-kunder har altid custom-builder. Forløbskunder kun hvis admin har tildelt
+	// adgang (pr forløb eller pr kunde).
+	const visCustomBuilder = $derived(erAppKunde || harCustomBuilderTildelt);
 
 	onMount(async () => {
 		if (!erPremium || !user || !userDoc) return;
@@ -39,7 +44,7 @@
 				hentAlleProgrammerPaaTvaers()
 			]);
 			tildelteProgrammer = tildelinger.programmer;
-			harCustomBuilder = tildelinger.harCustomBuilder;
+			harCustomBuilderTildelt = tildelinger.harCustomBuilder;
 			alleProgrammerPaaTvaers = allePaaTvaers;
 		} catch (e) {
 			console.error('Kunne ikke hente tildelinger:', e);
@@ -116,7 +121,7 @@
 				</div>
 			{/if}
 
-			{#if harCustomBuilder}
+			{#if visCustomBuilder}
 				<a class="byg-eget" href="/app/moduler/traening/byg-eget">
 					<div class="byg-eget-icon">
 						<Icon name="flame" size={18} color="#fff" />
