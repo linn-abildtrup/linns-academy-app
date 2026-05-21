@@ -22,6 +22,10 @@ import type {
 	ModtagerType,
 	ProgramTildeling
 } from '$lib/content/tildelinger';
+import {
+	harCustomBuilderAdgang,
+	tildelingerForKunde
+} from '$lib/content/tildelinger';
 import { alleProdukter } from '$lib/content/produkter';
 import type { TrainingProgram } from '$lib/content/mikrotraening';
 import { hentForlobsProgrammer } from './mikrotraening';
@@ -138,4 +142,32 @@ export async function tildelCustomBuilder(
 
 export async function fjernCustomBuilderTildeling(tildelingId: string): Promise<void> {
 	await deleteDoc(doc(db, CUSTOM_BUILDER_COL, tildelingId));
+}
+
+// ==============================================
+// Kunde-side helpers
+// ==============================================
+
+export interface KundeTildelinger {
+	programmer: ProgramTildeling[];
+	harCustomBuilder: boolean;
+}
+
+/**
+ * Henter alle tildelinger der gælder for en specifik kunde — både direkte
+ * tildelinger og dem hun arver via sine forløb. Bruges af kunde-siden af
+ * træning-modulet.
+ */
+export async function hentTildelingerForBruger(
+	uid: string,
+	forlobIds: string[]
+): Promise<KundeTildelinger> {
+	const [alleProgTilds, alleCbTilds] = await Promise.all([
+		hentAlleProgramTildelinger(),
+		hentAlleCustomBuilderTildelinger()
+	]);
+	return {
+		programmer: tildelingerForKunde(uid, forlobIds, alleProgTilds),
+		harCustomBuilder: harCustomBuilderAdgang(uid, forlobIds, alleCbTilds)
+	};
 }
