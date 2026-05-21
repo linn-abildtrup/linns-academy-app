@@ -39,6 +39,9 @@
 	const idagDato = $derived(dagsDatoStr(new Date()));
 	const datoErGyldig = $derived(/^\d{4}-\d{2}-\d{2}$/.test(dato));
 
+	// Hvor mange dage tilbage en kunde må gå og stadig kunne starte træningen.
+	// 14 dage = 2 uger, så hun kan fange op på en sygdom/ferie-uge.
+	const FORTID_NAER_DAGE = 14;
 	const datoStatus = $derived.by<'i_dag' | 'fortid_naer' | 'fortid_lang' | 'fremtid'>(() => {
 		if (!datoErGyldig) return 'fremtid';
 		if (dato === idagDato) return 'i_dag';
@@ -48,7 +51,7 @@
 		const b = new Date(dato);
 		const diffMs = a.getTime() - b.getTime();
 		const dageSiden = Math.round(diffMs / (1000 * 60 * 60 * 24));
-		return dageSiden <= 3 ? 'fortid_naer' : 'fortid_lang';
+		return dageSiden <= FORTID_NAER_DAGE ? 'fortid_naer' : 'fortid_lang';
 	});
 
 	let programData = $state<AboMikrotraeningProgramMedDage | null>(null);
