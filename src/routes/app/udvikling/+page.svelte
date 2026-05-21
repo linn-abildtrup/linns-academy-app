@@ -17,6 +17,8 @@
 	import { erModulbruger, harPremium } from '$lib/utils/userAdgang';
 	import { hentAlleAboTraeninger } from '$lib/firestore/aboMikrotraening';
 	import type { AboMikrotraeningTraening } from '$lib/content/aboMikrotraening';
+	import { hentHistorikSidenDato } from '$lib/firestore/traeningHistorik';
+	import type { TraeningHistorikEntry } from '$lib/content/traeningHistorik';
 	import { hentAboVaneOpsaetning, hentAlleAboVanedage } from '$lib/firestore/aboVaner';
 	import type { AboVaneOpsaetning, AboVanedagEntry } from '$lib/content/aboVaner';
 	import { hentAlleVanedage } from '$lib/firestore/vaner';
@@ -50,6 +52,7 @@
 
 	let alle = $state<GemtMaaltid[]>([]);
 	let aboTraeninger = $state<AboMikrotraeningTraening[]>([]);
+	let traeningHistorik = $state<TraeningHistorikEntry[]>([]);
 	let aboVaneOpsaetning = $state<AboVaneOpsaetning | null>(null);
 	let aboVanedage = $state<Map<string, AboVanedagEntry>>(new Map());
 	let forlobsVanedage = $state<Map<number, VanedagEntry>>(new Map());
@@ -115,7 +118,10 @@
 			const mm = String(niDageSiden.getMonth() + 1).padStart(2, '0');
 			const dd = String(niDageSiden.getDate()).padStart(2, '0');
 			const cutoff = `${yyyy}-${mm}-${dd}`;
-			const promiser: Promise<unknown>[] = [hentMaaltiderIPeriode(u.uid, fraDato, tilDato)];
+			const promiser: Promise<unknown>[] = [
+				hentMaaltiderIPeriode(u.uid, fraDato, tilDato),
+				hentHistorikSidenDato(u.uid, cutoff)
+			];
 			if (visAbo) {
 				promiser.push(hentAlleAboTraeninger(u.uid, cutoff));
 				promiser.push(hentAboVaneOpsaetning(u.uid));
@@ -129,7 +135,8 @@
 			}
 			const r = await Promise.all(promiser);
 			alle = r[0] as GemtMaaltid[];
-			let idx = 1;
+			traeningHistorik = r[1] as TraeningHistorikEntry[];
+			let idx = 2;
 			if (visAbo) {
 				aboTraeninger = r[idx++] as AboMikrotraeningTraening[];
 				aboVaneOpsaetning = r[idx++] as AboVaneOpsaetning | null;
@@ -217,7 +224,15 @@
 	});
 
 	// === Træning: 0/1 pr dag ===
-	const traenetDatoer = $derived(new Set(aboTraeninger.map((t) => t.dato)));
+	// Unionér datoer fra abo-mikrotræning OG den samlede traeningHistorik.
+	// Set dedupliker automatisk hvis samme dato logges fra begge kilder
+	// (sker for modulbruger-mikrotræning der logges begge steder).
+	const traenetDatoer = $derived.by(() => {
+		const set = new Set<string>();
+		for (const t of aboTraeninger) set.add(t.dato);
+		for (const h of traeningHistorik) set.add(h.dato);
+		return set;
+	});
 
 	const syvDageTraening = $derived(
 		syvDageMeta.dage.map((d) => (traenetDatoer.has(d) ? 1 : 0))
@@ -247,10 +262,13 @@
 	}
 
 	const traeningPrUge = $derived.by(() => {
-		const map = new Map<string, number>();
-		for (const t of aboTraeninger) {
-			const noegle = ugeNoegle(new Date(t.dato + 'T12:00:00'));
-			map.set(noegle, (map.get(noegle) ?? 0) + 1);
+		// Tæl distinkte datoer pr uge — så vi ikke dobbeltæller når både
+		// abo-mikrotræning og traeningHistorik logger samme dato.
+		const ugerMedDatoer = new Map<string, Set<string>>();
+		for (const dato of traenetDatoer) {
+			const noegle = ugeNoegle(new Date(dato + 'T12:00:00'));
+			if (!ugerMedDatoer.has(noegle)) ugerMedDatoer.set(noegle, new Set());
+			ugerMedDatoer.get(noegle)!.add(dato);
 		}
 		// Seneste 8 uger
 		const r: { ugeStart: string; antal: number }[] = [];
@@ -260,7 +278,7 @@
 			const d = new Date(idag);
 			d.setDate(idag.getDate() - i * 7);
 			const noegle = ugeNoegle(d);
-			r.push({ ugeStart: noegle, antal: map.get(noegle) ?? 0 });
+			r.push({ ugeStart: noegle, antal: ugerMedDatoer.get(noegle)?.size ?? 0 });
 		}
 		// Dedupe sidste hvis samme uge som forrige
 		const unik: typeof r = [];

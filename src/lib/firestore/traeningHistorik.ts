@@ -43,3 +43,20 @@ export async function hentHistorikForDato(
 		...(d.data() as Omit<TraeningHistorikEntry, 'id'>)
 	}));
 }
+
+/**
+ * Henter alle træning-entries siden en cutoff-dato (inklusiv).
+ * Bruges af Udvikling-fanen til at vise samlet historik for fx 30 eller
+ * 90 dage tilbage.
+ */
+export async function hentHistorikSidenDato(
+	uid: string,
+	cutoffDato: string
+): Promise<TraeningHistorikEntry[]> {
+	const q = query(historikCol(uid), where('dato', '>=', cutoffDato));
+	const snap = await getDocs(q);
+	return snap.docs.map((d) => ({
+		id: d.id,
+		...(d.data() as Omit<TraeningHistorikEntry, 'id'>)
+	}));
+}
