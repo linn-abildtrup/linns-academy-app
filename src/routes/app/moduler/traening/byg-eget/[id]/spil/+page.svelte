@@ -5,7 +5,13 @@
 	import type { User } from 'firebase/auth';
 	import type { Exercise } from '$lib/content/mikrotraening';
 	import { hentExercises } from '$lib/firestore/mikrotraening';
-	import { hentMitProgram } from '$lib/firestore/mineProgrammer';
+	import {
+		gemSpilPause,
+		hentMitProgram,
+		hentSpilPause,
+		sletSpilPause,
+		tilfoejGennemfoersel
+	} from '$lib/firestore/mineProgrammer';
 	import type {
 		CustomProgram,
 		CustomProgramOevelse
@@ -54,6 +60,9 @@
 
 	let fuldskaerm = $state(false);
 	let hovedvideoEl = $state<HTMLVideoElement | null>(null);
+
+	let resumet = $state(false);
+	let traeningGennemfoert = $state(false);
 
 	const oevelser = $derived<CustomProgramOevelse[]>(program?.oevelser ?? []);
 	const aktuelOvelse = $derived<CustomProgramOevelse | null>(oevelser[ei] ?? null);
@@ -144,6 +153,21 @@
 			musikUrl = musik;
 			nedtaellingGoUrl = goLyd;
 			nedtaellingPauseUrl = pauseLyd;
+
+			// Forsøg at genoptage hvor brugeren slap
+			try {
+				const gemt = await hentSpilPause(u.uid, 'eget', programId);
+				if (gemt && erGyldigPause(gemt, p.oevelser)) {
+					ei = gemt.ei;
+					si = gemt.si;
+					phase = gemt.phase;
+					rem = gemt.rem;
+					phaseTotal = phaseTotalForResume(gemt, p.oevelser);
+					resumet = true;
+				}
+			} catch (e) {
+				console.warn('Kunne ikke hente gemt pause:', e);
+			}
 
 			document.addEventListener('visibilitychange', onVisibilityChange);
 			startTimer();
@@ -430,6 +454,81 @@
 		}
 	}
 
+	function erGyldigPause(
+		gemt: { ei: number; si: number; phase: string; rem: number },
+		oev: CustomProgramOevelse[]
+	): boolean {
+		if (gemt.ei < 0 || gemt.ei >= oev.length) return false;
+		if (gemt.si < 1) return false;
+		if (gemt.rem < 0) return false;
+		return ['prep', 'work', 'rest', 'switch'].includes(gemt.phase);
+	}
+
+	function phaseTotalForResume(
+		gemt: { phase: string; ei: number },
+		oev: CustomProgramOevelse[]
+	): number {
+		const o = oev[gemt.ei];
+		if (gemt.phase === 'prep') return PREP_SEC;
+		if (gemt.phase === 'switch') return SWITCH_SEC;
+		if (gemt.phase === 'work') return o?.arbejdsSec ?? 30;
+		if (gemt.phase === 'rest') return o?.pauseSec ?? 15;
+		return PREP_SEC;
+	}
+
+	function gemAktivPause() {
+		const u = user;
+		if (!u) return;
+		if (phase === 'done' || traeningGennemfoert) return;
+		if (loading || fejl) return;
+		void gemSpilPause(u.uid, {
+			kilde: 'eget',
+			programId,
+			ei,
+			si,
+			phase: phase as 'prep' | 'work' | 'rest' | 'switch',
+			rem: Math.max(0, rem),
+			savedAt: Date.now()
+		}).catch((e) => console.warn('Kunne ikke gemme pause:', e));
+	}
+
+	function startForfra() {
+		const u = user;
+		if (u) {
+			void sletSpilPause(u.uid, 'eget', programId).catch((e) =>
+				console.warn('Kunne ikke slette pause:', e)
+			);
+		}
+		ei = 0;
+		si = 1;
+		phase = 'prep';
+		rem = PREP_SEC;
+		phaseTotal = PREP_SEC;
+		paused = false;
+		resumet = false;
+		sidsteCountdownNoegle = null;
+	}
+
+	// Gem pause-state ved phase-skift
+	$effect(() => {
+		void phase;
+		void ei;
+		void si;
+		gemAktivPause();
+	});
+
+	// Når træningen er done: slet pause, tilføj gennemførsel
+	$effect(() => {
+		if (phase !== 'done' || traeningGennemfoert) return;
+		const u = user;
+		if (!u) return;
+		traeningGennemfoert = true;
+		void sletSpilPause(u.uid, 'eget', programId).catch(() => undefined);
+		void tilfoejGennemfoersel(u.uid, 'eget', programId).catch((e) =>
+			console.warn('Kunne ikke gemme gennemførsel:', e)
+		);
+	});
+
 	function togglePause() {
 		paused = !paused;
 	}
@@ -471,6 +570,12 @@
 			</button>
 		</div>
 	{:else if aktuelOvelse && aktuelExercise && program}
+		{#if resumet && !fuldskaerm}
+			<div class="resume-banner">
+				<span>Du fortsætter hvor du slap.</span>
+				<button class="resume-link" type="button" onclick={startForfra}>Start forfra</button>
+			</div>
+		{/if}
 		<div
 			class="video-omraade"
 			class:hviler={phase === 'rest'}
@@ -697,6 +802,34 @@
 		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		cursor: pointer;
+	}
+
+	.resume-banner {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		padding: 10px 14px;
+		background: var(--tdim);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text2);
+	}
+
+	.resume-link {
+		background: none;
+		border: none;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--terra);
+		cursor: pointer;
+		padding: 4px 8px;
+		font-family: var(--ff-b);
+	}
+
+	.resume-link:hover {
+		text-decoration: underline;
 	}
 
 	.video-omraade {

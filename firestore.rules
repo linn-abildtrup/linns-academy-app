@@ -100,6 +100,16 @@ service cloud.firestore {
 			match /mineProgrammer/{programId} {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
 			}
+
+			// Spil-pause — gemt state så kunden kan genoptage en træning hvor hun slap
+			match /spilPauser/{pauseId} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
+
+			// Program-fremgang — historik over gennemførte træninger pr program
+			match /programFremgang/{fremgangId} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
 		}
 
 		// Øvelsesbibliotek: alle autentificerede kan læse, kun admin kan skrive
