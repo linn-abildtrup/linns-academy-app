@@ -264,6 +264,17 @@
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
 
+		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/tildelte-vaner">
+			<div class="indhold-icon" style="background: #7E9BB3;">
+				<Icon name="flower" size={16} color="#fff" />
+			</div>
+			<div class="indhold-tekst">
+				<div class="indhold-navn">Tildelte vaner</div>
+				<div class="indhold-sub">Vaner alle deltagere får oveni deres egne 3 selvvalgte</div>
+			</div>
+			<Icon name="chevron-r" size={14} color="var(--text3)" />
+		</a>
+
 		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/traening">
 			<div class="indhold-icon" style="background: #C9A07A;">
 				<Icon name="flame" size={16} color="#fff" />

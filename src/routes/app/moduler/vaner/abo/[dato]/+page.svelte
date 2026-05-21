@@ -15,6 +15,10 @@
 	} from '$lib/content/aboVaner';
 	import { type CheckinSvar, type VaneSvar } from '$lib/content/vaner';
 	import {
+		hentAdminVanerForKunde,
+		type AdminTildeltVane
+	} from '$lib/firestore/admintildelteVaner';
+	import {
 		hentAboBonusPulje,
 		hentAboVaneOpsaetning,
 		hentAboVanedag,
@@ -34,6 +38,7 @@
 	const erIFremtiden = $derived(datoObj ? datoObj > new Date() : false);
 
 	let opsaetning = $state<AboVaneOpsaetning | null>(null);
+	let adminVaner = $state<AdminTildeltVane[]>([]);
 	let bonus = $state<AboBonusForslag | null>(null);
 
 	let checks = $state<Record<string, VaneSvar>>({});
@@ -124,6 +129,13 @@
 				return;
 			}
 			opsaetning = o;
+
+			// Hent admin-tildelte vaner fra kundens forløb (hvis nogen)
+			try {
+				adminVaner = await hentAdminVanerForKunde(userDoc?.forlobIds ?? []);
+			} catch (e) {
+				console.warn('Kunne ikke hente admin-vaner:', e);
+			}
 
 			const pulje = await hentAboBonusPulje(o.produktType);
 			bonus = dagensBonus(pulje, dato);
@@ -218,6 +230,44 @@
 				{@const val = checks[v.id]}
 				<div class="check-row">
 					<div class="check-label">{v.label}</div>
+					<div class="check-knapper">
+						<button
+							class="ja-knap"
+							class:aktiv={val === 'ja'}
+							type="button"
+							onclick={() => setCheck(v.id, 'ja')}
+							{disabled}
+						>
+							Ja
+						</button>
+						<button
+							class="delvist-knap"
+							class:aktiv={val === 'delvist'}
+							type="button"
+							onclick={() => setCheck(v.id, 'delvist')}
+							{disabled}
+						>
+							Delvist
+						</button>
+						<button
+							class="nej-knap"
+							class:aktiv={val === 'nej'}
+							type="button"
+							onclick={() => setCheck(v.id, 'nej')}
+							{disabled}
+						>
+							Nej
+						</button>
+					</div>
+				</div>
+			{/each}
+			{#each adminVaner as v (v.id)}
+				{@const val = checks[v.id]}
+				<div class="check-row">
+					<div class="check-label">
+						{v.label}
+						<span class="fra-forlob-tag">Fra forløb</span>
+					</div>
 					<div class="check-knapper">
 						<button
 							class="ja-knap"
@@ -428,6 +478,20 @@
 		font-size: calc(13.5px * var(--fs-scale, 1));
 		color: var(--text);
 		font-weight: 500;
+	}
+
+	.fra-forlob-tag {
+		display: inline-block;
+		font-size: calc(9.5px * var(--fs-scale, 1));
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		padding: 2px 7px;
+		border-radius: 99px;
+		background: var(--tdim);
+		color: var(--terra);
+		margin-left: 6px;
+		vertical-align: middle;
+		font-weight: 600;
 	}
 
 	.bonus-tag {

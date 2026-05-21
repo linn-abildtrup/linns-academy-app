@@ -34,6 +34,10 @@
 		hentAlleAboVanedage
 	} from '$lib/firestore/aboVaner';
 	import {
+		hentAdminVanerForKunde,
+		type AdminTildeltVane
+	} from '$lib/firestore/admintildelteVaner';
+	import {
 		erForlobsklient,
 		erModulbruger,
 		harPremium
@@ -59,6 +63,7 @@
 
 	// === Abo-state ===
 	let aboOpsaetning = $state<AboVaneOpsaetning | null>(null);
+	let adminVaner = $state<AdminTildeltVane[]>([]);
 	let aboBonusPulje = $state<AboBonusForslag[]>([]);
 	let aboEntries = $state<Map<string, AboVanedagEntry>>(new Map());
 
@@ -235,6 +240,11 @@
 	async function indlaesAboData(uid: string) {
 		const o = await hentAboVaneOpsaetning(uid);
 		aboOpsaetning = o;
+		try {
+			adminVaner = await hentAdminVanerForKunde(userDoc?.forlobIds ?? []);
+		} catch (e) {
+			console.warn('Kunne ikke hente admin-vaner:', e);
+		}
 		if (o) {
 			[aboBonusPulje, aboEntries] = await Promise.all([
 				hentAboBonusPulje(o.produktType),
@@ -561,6 +571,13 @@
 							{#if v.kilde === 'egen'}
 								<span class="egen-tag">Egen</span>
 							{/if}
+						</li>
+					{/each}
+					{#each adminVaner as v (v.id)}
+						<li class="vane-item">
+							<span class="vane-prik"></span>
+							{v.label}
+							<span class="fra-forlob-tag">Fra forløb</span>
 						</li>
 					{/each}
 				</ul>
@@ -1009,6 +1026,18 @@
 		text-transform: uppercase;
 		background: var(--bg2);
 		color: var(--text3);
+		padding: 2px 7px;
+		border-radius: 99px;
+		font-weight: 600;
+		margin-left: auto;
+	}
+
+	.fra-forlob-tag {
+		font-size: calc(9.5px * var(--fs-scale, 1));
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		background: var(--tdim);
+		color: var(--terra);
 		padding: 2px 7px;
 		border-radius: 99px;
 		font-weight: 600;
