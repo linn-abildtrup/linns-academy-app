@@ -9,7 +9,13 @@
 
 export type Subskala = 'somatisk' | 'psykologisk' | 'urogenital';
 
-export type MaalePunkt = 'baseline' | 'midtvejs' | 'afslutning';
+/**
+ * Et målepunkt-tag på en udfyldelse. Legacy-værdier ('baseline', 'midtvejs',
+ * 'afslutning') bevares for backwards compat med tidligere data. Nye
+ * udfyldelser bruger 'forste' eller 'opfoelgning' baseret på om det er
+ * kundens første udfyldelse eller en planlagt opfølgning.
+ */
+export type MaalePunkt = 'baseline' | 'midtvejs' | 'afslutning' | 'forste' | 'opfoelgning';
 
 export interface MrsItem {
 	id: number;
@@ -139,7 +145,9 @@ export const SUBSCALES: Record<Subskala, SubskalaDef> = {
 export const MAALEPUNKT_LABEL: Record<MaalePunkt, string> = {
 	baseline: 'Startpunkt (dag 0)',
 	midtvejs: 'Midtvejs (dag 10-11)',
-	afslutning: 'Afslutning (dag 21)'
+	afslutning: 'Afslutning (dag 21)',
+	forste: 'Første udfyldelse',
+	opfoelgning: 'Opfølgning'
 };
 
 /** Et færdigt udfyldt MRS-skema som lagres i Firestore. */
@@ -260,6 +268,75 @@ export function getSubskalaFortolkning(
 		svaer: 'Svære gener'
 	};
 	return { label: labels[niveau], niveau };
+}
+
+// ==============================================
+// Skema — hvornår skal kunden udfylde MRS?
+// ==============================================
+
+/**
+ * Beregner næste dato kunden bør udfylde MRS.
+ *
+ * Regler:
+ * - App-kunde (accessSource='abonnement'): første gang ved login, derefter hver 30. dag
+ * - Forløbskunde på Kickstart: ved start, derefter hver søndag
+ * - Forløbskunde på Premium-forløb (Kropsro): ved start, derefter hver 4. uge
+ *
+ * @param sidsteUdfyldelseAt unix-ms for sidste udfyldelse, eller null hvis aldrig
+ * @returns Date — hvornår næste udfyldelse er due. Returnerer 'nu' (Date()) hvis kunden
+ *          aldrig har udfyldt.
+ */
+export function naesteUdfyldelseDato(
+	accessSource: 'abonnement' | 'forløb' | undefined,
+	activeProduct: string | undefined,
+	sidsteUdfyldelseAt: number | null
+): Date {
+	if (sidsteUdfyldelseAt === null) return new Date();
+	const sidste = new Date(sidsteUdfyldelseAt);
+
+	if (accessSource === 'forløb' && activeProduct === 'kickstart') {
+		return naesteSoendagEfter(sidste);
+	}
+	if (accessSource === 'forløb' && activeProduct === 'premiumforløb') {
+		const due = new Date(sidste);
+		due.setDate(due.getDate() + 28);
+		return due;
+	}
+	// App-kunde (modulbruger) eller ukendt → månedligt
+	const due = new Date(sidste);
+	due.setDate(due.getDate() + 30);
+	return due;
+}
+
+/**
+ * Returnerer den næste søndag EFTER en given dato (mindst 1 dag frem).
+ * Hvis datoen selv er søndag, returneres næste søndag (7 dage frem).
+ */
+export function naesteSoendagEfter(efter: Date): Date {
+	const d = new Date(efter);
+	d.setHours(0, 0, 0, 0);
+	// Søndag = 0. Antal dage til næste søndag er (7 - getDay()) % 7,
+	// men hvis det er 0 (søndag selv), tager vi 7 dage frem.
+	const dage = (7 - d.getDay()) % 7 || 7;
+	d.setDate(d.getDate() + dage);
+	return d;
+}
+
+/**
+ * True hvis kunden skal udfylde MRS nu (forfaldsdatoen er passeret eller i dag).
+ */
+export function skalUdfyldeNu(
+	accessSource: 'abonnement' | 'forløb' | undefined,
+	activeProduct: string | undefined,
+	sidsteUdfyldelseAt: number | null
+): boolean {
+	const due = naesteUdfyldelseDato(accessSource, activeProduct, sidsteUdfyldelseAt);
+	// Sammenlign på lokal dato — tæl en dag som "due" når vi rammer den
+	const idag = new Date();
+	idag.setHours(0, 0, 0, 0);
+	const dueDato = new Date(due);
+	dueDato.setHours(0, 0, 0, 0);
+	return dueDato.getTime() <= idag.getTime();
 }
 
 /** Returnerer en fejlbesked eller null hvis scores-objektet er gyldigt. */

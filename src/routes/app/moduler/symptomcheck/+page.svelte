@@ -1,16 +1,17 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
 	import type { User } from 'firebase/auth';
+	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import {
-		calculateSubscales,
-		calculateTotal,
 		getInterpretation,
 		getSubskalaFortolkning,
 		MAALEPUNKT_LABEL,
 		MRS_ITEMS,
+		naesteUdfyldelseDato,
 		SEVERITY,
+		skalUdfyldeNu,
 		SUBSCALES,
 		validerScores,
 		type MaalePunkt,
@@ -19,7 +20,9 @@
 	import { gemMrsScore, hentAlleMrsScores } from '$lib/firestore/mrs';
 
 	const getUser = getContext<() => User | null>('user');
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
+	const userDoc = $derived(getUserDoc());
 
 	type Visning = 'forside' | 'udfyld' | 'resultat';
 
@@ -50,8 +53,9 @@
 		}
 	});
 
-	function startNyUdfyldelse(m: MaalePunkt) {
-		valgtMaalepunkt = m;
+	function startNyUdfyldelse() {
+		// Første gang = 'forste', ellers en planlagt opfølgning
+		valgtMaalepunkt = tidligereScores.length === 0 ? 'forste' : 'opfoelgning';
 		scores = {};
 		netop_gemt = null;
 		fejl = null;
@@ -59,21 +63,13 @@
 		if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
 	}
 
-	/**
-	 * Klik på et målepunkt: hvis kunden allerede har udfyldt det, vis hendes
-	 * seneste resultat. Ellers start en frisk udfyldelse.
-	 */
-	function aabnMaalepunkt(m: MaalePunkt) {
-		const senest = maalepunktSenestUdfyldt(m);
-		if (senest) {
-			valgtMaalepunkt = m;
-			netop_gemt = senest;
-			fejl = null;
-			visning = 'resultat';
-			if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
-		} else {
-			startNyUdfyldelse(m);
-		}
+	/** Åbner en specifik tidligere udfyldelse i resultat-visningen. */
+	function aabnTidligere(s: MrsScore) {
+		valgtMaalepunkt = s.measurePoint;
+		netop_gemt = s;
+		fejl = null;
+		visning = 'resultat';
+		if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
 	}
 
 	function tilbageTilForside() {
@@ -127,14 +123,55 @@
 		netop_gemt ? getInterpretation(netop_gemt.total) : null
 	);
 
-	function maalepunktSenestUdfyldt(m: MaalePunkt): MrsScore | undefined {
-		return tidligereScores.filter((s) => s.measurePoint === m).at(-1);
-	}
+	const sidsteUdfyldelseAt = $derived(
+		tidligereScores.length > 0
+			? tidligereScores[tidligereScores.length - 1].timestamp
+			: null
+	);
+
+	const skalUdfylde = $derived(
+		skalUdfyldeNu(
+			userDoc?.accessSource,
+			userDoc?.activeProduct,
+			sidsteUdfyldelseAt
+		)
+	);
+
+	const naesteCheckDato = $derived(
+		sidsteUdfyldelseAt !== null
+			? naesteUdfyldelseDato(
+					userDoc?.accessSource,
+					userDoc?.activeProduct,
+					sidsteUdfyldelseAt
+				)
+			: null
+	);
+
+	const kadenceTekst = $derived.by<string>(() => {
+		if (userDoc?.accessSource === 'forløb' && userDoc.activeProduct === 'kickstart') {
+			return 'På Kickstart udfylder du hver søndag — så du kan se din udvikling uge for uge.';
+		}
+		if (
+			userDoc?.accessSource === 'forløb' &&
+			userDoc.activeProduct === 'premiumforløb'
+		) {
+			return 'På Kropsro udfylder du hver 4. uge gennem dit forløb.';
+		}
+		return 'Du udfylder en symptomcheck én gang om måneden, så du kan følge din udvikling over tid.';
+	});
 
 	function formaterDatoTekst(timestamp: number): string {
 		const d = new Date(timestamp);
 		return `${d.getDate()}/${d.getMonth() + 1}-${d.getFullYear()}`;
 	}
+
+	function formaterDato(d: Date): string {
+		return `${d.getDate()}/${d.getMonth() + 1}-${d.getFullYear()}`;
+	}
+
+	const tidligereSorteret = $derived(
+		[...tidligereScores].sort((a, b) => b.timestamp - a.timestamp)
+	);
 </script>
 
 <div class="page">
@@ -154,11 +191,7 @@
 			{/if}
 		</h1>
 		{#if visning === 'forside'}
-			<p class="page-sub">
-				Mærk efter og udfyld den 11-punkts symptomtjekliste tre gange undervejs: ved
-				start, midtvejs og ved afslutning. Det giver dig et sort-på-hvidt overblik
-				over din udvikling.
-			</p>
+			<p class="page-sub">{kadenceTekst}</p>
 		{:else if visning === 'udfyld'}
 			<p class="page-sub">
 				Vælg den sværhedsgrad der passer bedst for hvert symptom. Der er ingen rigtige
@@ -174,56 +207,98 @@
 	{#if loading}
 		<Loading tekst="Henter…" />
 	{:else if visning === 'forside'}
-		<section class="card">
-			<div class="card-titel">Vælg målepunkt</div>
-			<div class="maalepunkt-liste">
-				{#each (['baseline', 'midtvejs', 'afslutning'] as MaalePunkt[]) as m (m)}
-					{@const senest = maalepunktSenestUdfyldt(m)}
-					<button
-						type="button"
-						class="maalepunkt-rad"
-						class:gennemfoert={!!senest}
-						onclick={() => aabnMaalepunkt(m)}
-					>
-						<div class="maalepunkt-tekst">
-							<div class="maalepunkt-navn">{MAALEPUNKT_LABEL[m]}</div>
-							{#if senest}
-								<div class="maalepunkt-sub">
-									Udfyldt {formaterDatoTekst(senest.timestamp)} · score {senest.total}/44
-								</div>
-							{:else}
-								<div class="maalepunkt-sub">Ikke udfyldt endnu</div>
-							{/if}
-						</div>
-						{#if senest}
-							<span class="status-prik" title="Gennemført">✓</span>
-						{/if}
-						<Icon name="chevron-r" size={14} color="var(--text3)" />
-					</button>
-				{/each}
-			</div>
-		</section>
+		{#if skalUdfylde}
+			<button type="button" class="cta-knap due" onclick={startNyUdfyldelse}>
+				<div class="cta-tekst">
+					<div class="cta-eyebrow">
+						{tidligereScores.length === 0 ? 'Første udfyldelse' : 'Tid til opfølgning'}
+					</div>
+					<div class="cta-titel">Tag symptomcheck nu</div>
+				</div>
+				<Icon name="chevron-r" size={14} color="#fff" />
+			</button>
+		{:else}
+			<button type="button" class="cta-knap" onclick={startNyUdfyldelse}>
+				<div class="cta-tekst">
+					{#if naesteCheckDato}
+						<div class="cta-eyebrow">Næste udfyldelse {formaterDato(naesteCheckDato)}</div>
+					{/if}
+					<div class="cta-titel">Tag en check nu</div>
+				</div>
+				<Icon name="chevron-r" size={14} color="var(--terra)" />
+			</button>
+		{/if}
 
-		{#if tidligereScores.length >= 2}
+		{#if tidligereSorteret.length >= 2}
+			{@const sorteretGammelForst = [...tidligereSorteret].reverse()}
+			{@const grafPunkter = sorteretGammelForst.map((s, i) => {
+				const n = sorteretGammelForst.length;
+				const x = (i / Math.max(1, n - 1)) * 300 + 10;
+				const y = 110 - (s.total / 44) * 100;
+				return { x, y, score: s };
+			})}
+			{@const grafPath = grafPunkter
+				.map((p, i) => (i === 0 ? `M ${p.x},${p.y}` : `L ${p.x},${p.y}`))
+				.join(' ')}
 			<section class="card">
 				<div class="card-titel">Din udvikling</div>
-				<p class="card-sub">Sammenligning af dine udfyldelser indtil nu.</p>
-				<div class="udvikling-rad">
-					{#each tidligereScores as s (s.id)}
-						{@const interp = getInterpretation(s.total)}
-						<div class="udvikling-kort" style="border-color: {interp.color}33;">
-							<div class="udvikling-label">{MAALEPUNKT_LABEL[s.measurePoint]}</div>
-							<div class="udvikling-score" style="color: {interp.color};">
-								{s.total}<span class="udvikling-max">/44</span>
-							</div>
-							<div class="udvikling-fortolkning" style="color: {interp.color};">
-								{interp.label}
-							</div>
-						</div>
+				<p class="card-sub">Total-score fra første til seneste udfyldelse.</p>
+				<svg class="udvikling-graf" viewBox="0 0 320 120" preserveAspectRatio="none">
+					<line x1="10" y1="10" x2="10" y2="110" stroke="var(--border)" stroke-width="1" />
+					<line
+						x1="10"
+						y1="110"
+						x2="310"
+						y2="110"
+						stroke="var(--border)"
+						stroke-width="1"
+					/>
+					<path
+						d={grafPath}
+						fill="none"
+						stroke="var(--terra)"
+						stroke-width="2.5"
+						stroke-linejoin="round"
+					/>
+					{#each grafPunkter as p (p.score.id)}
+						<circle cx={p.x} cy={p.y} r="4" fill="var(--terra)" />
 					{/each}
+				</svg>
+				<div class="graf-akse">
+					<span>{formaterDatoTekst(tidligereSorteret[tidligereSorteret.length - 1].timestamp)}</span>
+					<span>{formaterDatoTekst(tidligereSorteret[0].timestamp)}</span>
 				</div>
 			</section>
 		{/if}
+
+		<section class="card">
+			<div class="card-titel">Tidligere udfyldelser ({tidligereScores.length})</div>
+			{#if tidligereSorteret.length === 0}
+				<p class="hint">Du har ikke udfyldt en symptomcheck endnu.</p>
+			{:else}
+				<div class="historik-liste">
+					{#each tidligereSorteret as s (s.id)}
+						{@const interp = getInterpretation(s.total)}
+						<button
+							type="button"
+							class="historik-rad"
+							onclick={() => aabnTidligere(s)}
+						>
+							<div class="historik-dato">{formaterDatoTekst(s.timestamp)}</div>
+							<div class="historik-info">
+								<div class="historik-score" style="color: {interp.color};">
+									{s.total}<span class="historik-max">/44</span>
+								</div>
+								<div class="historik-label" style="color: {interp.color};">
+									{interp.label}
+								</div>
+							</div>
+							<Icon name="chevron-r" size={14} color="var(--text3)" />
+						</button>
+					{/each}
+				</div>
+			{/if}
+		</section>
 
 		<div class="info-blok">
 			Denne symptomtjekliste er baseret på Menopause Rating Scale (MRS), som bruges i
@@ -360,7 +435,7 @@
 		<button
 			type="button"
 			class="annuller-knap"
-			onclick={() => startNyUdfyldelse(score.measurePoint)}
+			onclick={() => startNyUdfyldelse()}
 		>
 			Udfyld igen
 		</button>
@@ -452,107 +527,127 @@
 		line-height: 1.4;
 	}
 
-	.maalepunkt-liste {
+	.cta-knap {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		width: 100%;
+		padding: 16px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		cursor: pointer;
+		font-family: var(--ff-b);
+		text-align: left;
+		margin-bottom: 14px;
+		color: inherit;
+	}
+
+	.cta-knap.due {
+		background: var(--terra);
+		border-color: var(--terra);
+		color: #fff;
+	}
+
+	.cta-tekst {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.cta-eyebrow {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		opacity: 0.85;
+		margin-bottom: 4px;
+	}
+
+	.cta-titel {
+		font-family: var(--ff-d);
+		font-size: calc(18px * var(--fs-scale, 1));
+		font-weight: 600;
+		line-height: 1.15;
+	}
+
+	.udvikling-graf {
+		display: block;
+		width: 100%;
+		height: 120px;
+		margin-top: 8px;
+	}
+
+	.graf-akse {
+		display: flex;
+		justify-content: space-between;
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 6px;
+	}
+
+	.historik-liste {
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
 	}
 
-	.maalepunkt-rad {
+	.historik-rad {
 		display: flex;
 		align-items: center;
 		gap: 12px;
-		padding: 14px;
+		padding: 12px 14px;
 		background: var(--bg2);
 		border: 1px solid var(--border);
-		border-radius: 12px;
+		border-radius: 10px;
 		cursor: pointer;
 		font-family: var(--ff-b);
 		text-align: left;
 		color: inherit;
 	}
 
-	.maalepunkt-rad:hover {
+	.historik-rad:hover {
 		background: var(--white);
 		border-color: var(--terra);
 	}
 
-	.maalepunkt-rad.gennemfoert {
-		background: #f5f3ee;
+	.historik-dato {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text2);
+		width: 95px;
+		flex-shrink: 0;
 	}
 
-	.maalepunkt-tekst {
+	.historik-info {
 		flex: 1;
 		min-width: 0;
-	}
-
-	.maalepunkt-navn {
-		font-size: calc(14px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--text);
-	}
-
-	.maalepunkt-sub {
-		font-size: calc(11.5px * var(--fs-scale, 1));
-		color: var(--text3);
-		margin-top: 2px;
-	}
-
-	.status-prik {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 22px;
-		height: 22px;
-		border-radius: 50%;
-		background: var(--sage);
-		color: #fff;
-		font-size: calc(12px * var(--fs-scale, 1));
-		font-weight: 600;
-	}
-
-	.udvikling-rad {
 		display: flex;
-		gap: 8px;
+		align-items: baseline;
+		gap: 10px;
 		flex-wrap: wrap;
 	}
 
-	.udvikling-kort {
-		flex: 1;
-		min-width: 0;
-		background: var(--bg2);
-		border: 1px solid var(--border);
-		border-radius: 10px;
-		padding: 12px;
-		text-align: center;
-	}
-
-	.udvikling-label {
-		font-size: calc(10.5px * var(--fs-scale, 1));
-		color: var(--text3);
-		letter-spacing: 0.04em;
-		margin-bottom: 6px;
-		line-height: 1.3;
-	}
-
-	.udvikling-score {
+	.historik-score {
 		font-family: var(--ff-d);
-		font-size: calc(22px * var(--fs-scale, 1));
+		font-size: calc(18px * var(--fs-scale, 1));
 		font-weight: 600;
 		line-height: 1;
 	}
 
-	.udvikling-max {
+	.historik-max {
 		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		font-family: var(--ff-b);
 	}
 
-	.udvikling-fortolkning {
-		font-size: calc(11px * var(--fs-scale, 1));
+	.historik-label {
+		font-size: calc(11.5px * var(--fs-scale, 1));
 		font-weight: 500;
-		margin-top: 6px;
-		line-height: 1.3;
+	}
+
+	.hint {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin: 0;
 	}
 
 	.info-blok {

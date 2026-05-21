@@ -5,6 +5,9 @@ import {
 	getInterpretation,
 	getSubskalaFortolkning,
 	MRS_ITEMS,
+	naesteSoendagEfter,
+	naesteUdfyldelseDato,
+	skalUdfyldeNu,
 	SUBSCALES,
 	validerScores
 } from './mrs';
@@ -157,6 +160,83 @@ describe('getSubskalaFortolkning', () => {
 				expect(getSubskalaFortolkning(sub, i).label).toBeTruthy();
 			}
 		}
+	});
+});
+
+describe('naesteSoendagEfter', () => {
+	it('mandag → samme uges søndag', () => {
+		const mandag = new Date(2026, 4, 18); // 18. maj 2026 er mandag
+		const ud = naesteSoendagEfter(mandag);
+		expect(ud.getDay()).toBe(0);
+		expect(ud.getDate()).toBe(24);
+	});
+
+	it('søndag → næste uges søndag (7 dage frem)', () => {
+		const soendag = new Date(2026, 4, 24); // 24. maj 2026 er søndag
+		const ud = naesteSoendagEfter(soendag);
+		expect(ud.getDay()).toBe(0);
+		expect(ud.getDate()).toBe(31);
+	});
+
+	it('lørdag → næste dags søndag', () => {
+		const loerdag = new Date(2026, 4, 23); // 23. maj 2026 er lørdag
+		const ud = naesteSoendagEfter(loerdag);
+		expect(ud.getDay()).toBe(0);
+		expect(ud.getDate()).toBe(24);
+	});
+});
+
+describe('naesteUdfyldelseDato', () => {
+	it('ingen tidligere → returnerer i dag (sammen med nu)', () => {
+		const ud = naesteUdfyldelseDato('abonnement', 'basisabo', null);
+		const nu = Date.now();
+		expect(Math.abs(ud.getTime() - nu)).toBeLessThan(1000);
+	});
+
+	it('app-kunde → 30 dage efter sidste', () => {
+		const sidste = new Date(2026, 4, 1).getTime();
+		const ud = naesteUdfyldelseDato('abonnement', 'basisabo', sidste);
+		expect(ud.getDate()).toBe(31);
+		expect(ud.getMonth()).toBe(4); // maj
+	});
+
+	it('Kickstart-kunde → næste søndag', () => {
+		// 1. maj 2026 er fredag
+		const sidste = new Date(2026, 4, 1).getTime();
+		const ud = naesteUdfyldelseDato('forløb', 'kickstart', sidste);
+		expect(ud.getDay()).toBe(0); // søndag
+	});
+
+	it('Kropsro-kunde (premiumforløb) → 28 dage efter', () => {
+		const sidste = new Date(2026, 4, 1).getTime();
+		const ud = naesteUdfyldelseDato('forløb', 'premiumforløb', sidste);
+		expect(ud.getDate()).toBe(29);
+		expect(ud.getMonth()).toBe(4);
+	});
+});
+
+describe('skalUdfyldeNu', () => {
+	it('aldrig udfyldt → true', () => {
+		expect(skalUdfyldeNu('abonnement', 'basisabo', null)).toBe(true);
+	});
+
+	it('app-kunde udfyldt for 31 dage siden → true', () => {
+		const sidste = Date.now() - 31 * 24 * 60 * 60 * 1000;
+		expect(skalUdfyldeNu('abonnement', 'basisabo', sidste)).toBe(true);
+	});
+
+	it('app-kunde udfyldt i dag → false', () => {
+		expect(skalUdfyldeNu('abonnement', 'basisabo', Date.now())).toBe(false);
+	});
+
+	it('Kropsro udfyldt for 29 dage siden → true', () => {
+		const sidste = Date.now() - 29 * 24 * 60 * 60 * 1000;
+		expect(skalUdfyldeNu('forløb', 'premiumforløb', sidste)).toBe(true);
+	});
+
+	it('Kropsro udfyldt for 7 dage siden → false', () => {
+		const sidste = Date.now() - 7 * 24 * 60 * 60 * 1000;
+		expect(skalUdfyldeNu('forløb', 'premiumforløb', sidste)).toBe(false);
 	});
 });
 

@@ -16,6 +16,8 @@
 	import { hentMitProgram, hentProgramFremgang } from '$lib/firestore/mineProgrammer';
 	import { hentHistorikForDato } from '$lib/firestore/traeningHistorik';
 	import { senesteEntry, type TraeningHistorikEntry } from '$lib/content/traeningHistorik';
+	import { hentAlleMrsScores } from '$lib/firestore/mrs';
+	import { skalUdfyldeNu as skalUdfyldeMrsNu } from '$lib/content/mrs';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
 	import {
 		hentVaneprogramForForlob,
@@ -445,6 +447,42 @@
 			}
 		})();
 	});
+
+	// MRS-symptomcheck CTA — vises på forsiden når kunden skal udfylde
+	// (første gang, eller når kadencen er nået: app-kunde månedligt,
+	// Kickstart hver søndag, Kropsro hver 4. uge).
+	let mrsSidsteUdfyldelseAt = $state<number | null>(null);
+	let mrsLoaded = $state(false);
+
+	$effect(() => {
+		const u = user;
+		if (!u) {
+			mrsSidsteUdfyldelseAt = null;
+			mrsLoaded = false;
+			return;
+		}
+		(async () => {
+			try {
+				const scores = await hentAlleMrsScores(u.uid);
+				mrsSidsteUdfyldelseAt =
+					scores.length > 0 ? scores[scores.length - 1].timestamp : null;
+			} catch (e) {
+				console.warn('Kunne ikke hente MRS-scorer:', e);
+				mrsSidsteUdfyldelseAt = null;
+			} finally {
+				mrsLoaded = true;
+			}
+		})();
+	});
+
+	const skalUdfyldeMrs = $derived(
+		mrsLoaded &&
+			skalUdfyldeMrsNu(
+				userDoc?.accessSource,
+				userDoc?.activeProduct,
+				mrsSidsteUdfyldelseAt
+			)
+	);
 
 	function formatModulbrugerChipDato(dato: string): { dag: string; ugedag: string } {
 		const [aar, m, d] = dato.split('-').map(Number);
@@ -1021,6 +1059,25 @@
 				</section>
 			{/if}
 
+			{#if skalUdfyldeMrs}
+				<section class="mrs-cta-section">
+					<a class="mrs-cta-kort" href="/app/moduler/symptomcheck">
+						<div class="mrs-cta-icon">
+							<Icon name="flower" size={18} color="#fff" />
+						</div>
+						<div class="mrs-cta-tekst">
+							<div class="mrs-cta-eyebrow">
+								{mrsSidsteUdfyldelseAt === null
+									? 'Første udfyldelse'
+									: 'Tid til opfølgning'}
+							</div>
+							<div class="mrs-cta-titel">Tag din symptomcheck</div>
+						</div>
+						<Icon name="chevron-r" size={14} color="#fff" />
+					</a>
+				</section>
+			{/if}
+
 			{#if nyestUbeskrevneSvar}
 				<section class="nyt-svar-section">
 					<a class="nyt-svar-card" href="/app/beskeder">
@@ -1389,6 +1446,25 @@
 							</button>
 						{/each}
 					</div>
+				</section>
+			{/if}
+
+			{#if skalUdfyldeMrs}
+				<section class="mrs-cta-section">
+					<a class="mrs-cta-kort" href="/app/moduler/symptomcheck">
+						<div class="mrs-cta-icon">
+							<Icon name="flower" size={18} color="#fff" />
+						</div>
+						<div class="mrs-cta-tekst">
+							<div class="mrs-cta-eyebrow">
+								{mrsSidsteUdfyldelseAt === null
+									? 'Første udfyldelse'
+									: 'Tid til opfølgning'}
+							</div>
+							<div class="mrs-cta-titel">Tag din symptomcheck</div>
+						</div>
+						<Icon name="chevron-r" size={14} color="#fff" />
+					</a>
 				</section>
 			{/if}
 
@@ -1987,6 +2063,56 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
+	}
+
+	.mrs-cta-section {
+		margin-bottom: 14px;
+	}
+
+	.mrs-cta-kort {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 14px 16px;
+		background: var(--terra);
+		color: #fff;
+		border-radius: 14px;
+		text-decoration: none;
+	}
+
+	.mrs-cta-kort:hover {
+		opacity: 0.95;
+	}
+
+	.mrs-cta-icon {
+		width: 38px;
+		height: 38px;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		background: rgba(255, 255, 255, 0.2);
+	}
+
+	.mrs-cta-tekst {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.mrs-cta-eyebrow {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		opacity: 0.85;
+	}
+
+	.mrs-cta-titel {
+		font-family: var(--ff-d);
+		font-size: calc(17px * var(--fs-scale, 1));
+		font-weight: 600;
+		margin-top: 2px;
 	}
 
 	.nyt-svar-card {
