@@ -326,7 +326,14 @@
 	const modulbrugerMikroHref = $derived(
 		`/app/moduler/traening/mikrotraening/abo/${modulbrugerAktivDato}`
 	);
+	const modulbrugerErIDag = $derived(modulbrugerAktivDato === modulbrugerIDag);
 	const modulbrugerTraeningHref = $derived.by(() => {
+		// Historisk dato → vis altid mikrotraening for den dato. Eget/tildelt
+		// programs har ingen dato-koncept, så det er forvirrende at klikke
+		// "i går" og lande på et tidløst eget-program.
+		if (!modulbrugerErIDag) {
+			return modulbrugerMikroHref;
+		}
 		const aktivt = userDoc?.aktivtTraeningsprogram;
 		if (aktivt?.kilde === 'eget' && aktivt.programId) {
 			return `/app/moduler/traening/byg-eget/${aktivt.programId}/lav`;
@@ -339,7 +346,6 @@
 	const modulbrugerErMikro = $derived(
 		modulbrugerTraeningHref === modulbrugerMikroHref
 	);
-	const modulbrugerErIDag = $derived(modulbrugerAktivDato === modulbrugerIDag);
 
 	// Navn på aktivt træningsprogram. Hentet asynkront når aktivtTraeningsprogram
 	// peger på et eget eller tildelt program. null for mikrotræning eller når
@@ -584,9 +590,14 @@
 	);
 
 	// Når kunden har valgt eget/tildelt som aktivt program, bruger vi
-	// programFremgang. Ellers fald tilbage til mikrotræning-fremgangen.
+	// programFremgang for I DAG. Hvis hun ser på en historisk dato, vises
+	// mikrotraening-fremgangen for den dato (samme logik som mad/skridt).
 	const modulbrugerGennemfoertCheck = $derived(
-		brugerAktivtProgram ? aktivtProgramGennemfoertIDag : modulbrugerTraeningGennemfoert
+		!modulbrugerErIDag
+			? modulbrugerTraeningGennemfoert
+			: brugerAktivtProgram
+				? aktivtProgramGennemfoertIDag
+				: modulbrugerTraeningGennemfoert
 	);
 
 	// Find brugerens "har du trænet"-vane (hvis valgt) ud fra label-heuristik.
@@ -997,16 +1008,18 @@
 			{#if dagensDag}
 				{@const harProgramValg = !!userProduct?.programValg?.mikrotraening}
 				{@const aktivtProgram = userDoc?.aktivtTraeningsprogram}
-				{@const traeningHref =
-					aktivtProgram?.kilde === 'eget' && aktivtProgram.programId
+				{@const mikroHrefForDag = harProgramValg
+					? `/app/moduler/traening/mikrotraening/${dagensDag.dagNummer}`
+					: '/app/moduler/traening/mikrotraening'}
+				{@const traeningHref = !valgtErIDag
+					? mikroHrefForDag
+					: aktivtProgram?.kilde === 'eget' && aktivtProgram.programId
 						? `/app/moduler/traening/byg-eget/${aktivtProgram.programId}/lav`
 						: aktivtProgram?.kilde === 'tildelt' &&
 							  aktivtProgram.forlobId &&
 							  aktivtProgram.programId
 							? `/app/moduler/traening/program/${aktivtProgram.forlobId}/${aktivtProgram.programId}`
-							: harProgramValg
-								? `/app/moduler/traening/mikrotraening/${dagensDag.dagNummer}`
-								: '/app/moduler/traening/mikrotraening'}
+							: mikroHrefForDag}
 				<section class="actions-section">
 					<div class="actions-header">
 						<div class="eyebrow eyebrow-muted">Dagens lektioner</div>
@@ -1067,9 +1080,11 @@
 							{/each}
 						{/if}
 						{#if dagensDag.dagNummer > 0}
-							{@const forlobGennemfoertCheck = brugerAktivtProgram
-								? aktivtProgramGennemfoertIDag
-								: forlobTraeningGennemfoert}
+							{@const forlobGennemfoertCheck = !valgtErIDag
+								? forlobTraeningGennemfoert
+								: brugerAktivtProgram
+									? aktivtProgramGennemfoertIDag
+									: forlobTraeningGennemfoert}
 							<a class="action-card" href={traeningHref}>
 								{#if forlobTraeningsVideo}
 									<div class="traening-thumb">
@@ -1101,7 +1116,9 @@
 								{/if}
 								<div class="action-text">
 									<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
-									<div class="action-title">{aktivtProgramNavn ?? 'Mikrotræning'}</div>
+									<div class="action-title">
+										{valgtErIDag ? (aktivtProgramNavn ?? 'Mikrotræning') : 'Mikrotræning'}
+									</div>
 									<div class="action-meta">
 										{forlobGennemfoertCheck ? 'Gennemført' : 'Korte daglige sessioner'}
 									</div>
@@ -1440,7 +1457,9 @@
 						{/if}
 						<div class="action-text">
 							<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
-							<div class="action-title">{aktivtProgramNavn ?? 'Dagens mikrotræning'}</div>
+							<div class="action-title">
+								{modulbrugerErIDag ? (aktivtProgramNavn ?? 'Dagens mikrotræning') : 'Mikrotræning'}
+							</div>
 							<div class="action-meta">
 								{modulbrugerGennemfoertCheck ? 'Gennemført' : 'Korte daglige sessioner'}
 							</div>
