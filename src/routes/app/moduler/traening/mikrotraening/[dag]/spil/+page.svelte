@@ -21,6 +21,8 @@
 		sletPause,
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
+	import { logTraening } from '$lib/firestore/traeningHistorik';
+	import { formaterHistorikDato } from '$lib/content/traeningHistorik';
 	import { getAudioUrl, getVideoUrl } from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
@@ -647,6 +649,17 @@
 					console.warn('Kunne ikke slette pause efter gennemførsel:', e);
 				}
 			}
+			// Log til den samlede træning-historik så forsiden kan vise det
+			// rigtige program når kunden går tilbage til en historisk dato
+			const forlobId = (userProduct as UserProduct & { forlobId?: string } | null)?.forlobId;
+			void logTraening(u.uid, {
+				dato: formaterHistorikDato(new Date()),
+				kilde: 'mikrotraening',
+				programId: programId ?? undefined,
+				programNavn: programData?.program.navn ?? 'Mikrotræning',
+				...(forlobId ? { forlobId } : {}),
+				gennemfoertAt: Date.now()
+			}).catch((e) => console.warn('Kunne ikke logge træning-historik:', e));
 		} catch (e) {
 			console.error(e);
 			gemFejl = 'Kunne ikke gemme træningen. Prøv igen.';

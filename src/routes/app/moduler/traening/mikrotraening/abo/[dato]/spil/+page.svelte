@@ -25,6 +25,7 @@
 		type AboMikrotraeningProgramMedDage
 	} from '$lib/firestore/aboMikrotraening';
 	import { harPremium } from '$lib/utils/userAdgang';
+	import { logTraening } from '$lib/firestore/traeningHistorik';
 	import { getAudioUrl, getVideoUrl } from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
@@ -664,6 +665,15 @@
 			} catch (e) {
 				console.warn('Kunne ikke slette pause efter gennemførsel:', e);
 			}
+			// Log til samlet træning-historik så forsiden kan vise det rigtige
+			// program når kunden går tilbage til en historisk dato
+			void logTraening(u.uid, {
+				dato,
+				kilde: 'mikrotraening',
+				programId,
+				programNavn: programData?.program.navn ?? 'Mikrotræning',
+				gennemfoertAt: Date.now()
+			}).catch((e) => console.warn('Kunne ikke logge træning-historik:', e));
 		} catch (e) {
 			console.error(e);
 			gemFejl = 'Kunne ikke gemme træningen. Prøv igen.';
