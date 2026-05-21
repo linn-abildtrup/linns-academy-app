@@ -99,6 +99,11 @@
 	{:else if indlaeser}
 		<div class="besked">Henter dit program…</div>
 	{:else if program}
+		<a class="start-knap top" href={`/app/moduler/traening/byg-eget/${programId}/spil`}>
+			<Icon name="play" size={14} color="#fff" filled />
+			<span>Start træning</span>
+		</a>
+
 		<div class="oevelse-liste">
 			{#each program.oevelser as o, i (i)}
 				{@const ex = exerciseMap.get(o.exerciseId)}
@@ -156,6 +161,11 @@
 				</div>
 			{/each}
 		</div>
+
+		<a class="start-knap" href={`/app/moduler/traening/byg-eget/${programId}/spil`}>
+			<Icon name="play" size={14} color="#fff" filled />
+			<span>Start træning</span>
+		</a>
 	{/if}
 </div>
 
@@ -370,5 +380,30 @@
 		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		text-align: center;
+	}
+
+	.start-knap {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 14px 18px;
+		background: var(--terra);
+		color: #fff;
+		border-radius: 12px;
+		text-decoration: none;
+		font-size: calc(15px * var(--fs-scale, 1));
+		font-weight: 600;
+		font-family: var(--ff-b);
+		margin: 16px 0;
+	}
+
+	.start-knap.top {
+		margin-top: 0;
+		margin-bottom: 16px;
+	}
+
+	.start-knap:hover {
+		opacity: 0.93;
 	}
 </style>
