@@ -137,8 +137,8 @@
 							</div>
 							<div class="stat-skille"></div>
 							<div class="stat">
-								<div class="stat-tal">{o.reps}</div>
-								<div class="stat-label">reps</div>
+								<div class="stat-tal">{o.arbejdsSec}s</div>
+								<div class="stat-label">arbejde</div>
 							</div>
 							<div class="stat-skille"></div>
 							<div class="stat">

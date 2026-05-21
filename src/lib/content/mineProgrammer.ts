@@ -1,15 +1,13 @@
 // "Mine programmer" — kundens egne træningsprogrammer bygget med custom-builder.
 //
-// Modsat forløbs-mikrotræningen (time-intervaller) bruger custom-builder
-// klassisk sæt × reps med pause-sekunder mellem sæt. Det matcher v27-specifikationen
-// hvor kunden vælger: øvelser fra katalog, antal sæt, antal reps, pause.
-//
-// Gemmes pr kunde under users/{uid}/mineProgrammer/{programId}.
+// Bruger samme tids-baserede mønster som mikrotræning: hvert sæt har en
+// arbejdstid (arbejdsSec) og en pause efter (pauseSec). Reps angives ikke —
+// klienten arbejder i den givne arbejdstid og pauser i den givne pause.
 
 export interface CustomProgramOevelse {
 	exerciseId: string;
 	saet: number;
-	reps: number;
+	arbejdsSec: number;
 	pauseSec: number;
 }
 
@@ -27,8 +25,8 @@ export interface CustomProgram {
 /** Standard-værdier for en ny øvelse tilføjet til et program. */
 export const STANDARD_OEVELSE: Omit<CustomProgramOevelse, 'exerciseId'> = {
 	saet: 3,
-	reps: 10,
-	pauseSec: 60
+	arbejdsSec: 30,
+	pauseSec: 15
 };
 
 /**
@@ -43,7 +41,9 @@ export function validerProgram(program: Pick<CustomProgram, 'navn' | 'oevelser'>
 	for (const o of program.oevelser) {
 		if (!o.exerciseId) return 'En øvelse mangler reference.';
 		if (o.saet < 1 || o.saet > 20) return 'Antal sæt skal være mellem 1 og 20.';
-		if (o.reps < 1 || o.reps > 100) return 'Antal reps skal være mellem 1 og 100.';
+		if (o.arbejdsSec < 5 || o.arbejdsSec > 600) {
+			return 'Arbejdstid skal være mellem 5 og 600 sekunder.';
+		}
 		if (o.pauseSec < 0 || o.pauseSec > 600) {
 			return 'Pause skal være mellem 0 og 600 sekunder.';
 		}
@@ -52,14 +52,13 @@ export function validerProgram(program: Pick<CustomProgram, 'navn' | 'oevelser'>
 }
 
 /**
- * Beregner samlet anslået varighed af programmet i minutter. Bruger en grov
- * tommelfingerregel: 3 sekunder pr rep + pause-sekunder mellem hvert sæt.
- * Det er kun til visning og behøver ikke være præcist.
+ * Beregner samlet anslået varighed af programmet i minutter. Lægger
+ * arbejdstid + pauser sammen.
  */
 export function anslaaetVarighedMinutter(program: Pick<CustomProgram, 'oevelser'>): number {
 	let totalSec = 0;
 	for (const o of program.oevelser) {
-		const arbejdSec = o.saet * o.reps * 3;
+		const arbejdSec = o.saet * o.arbejdsSec;
 		const pauseSec = Math.max(0, o.saet - 1) * o.pauseSec;
 		totalSec += arbejdSec + pauseSec;
 	}

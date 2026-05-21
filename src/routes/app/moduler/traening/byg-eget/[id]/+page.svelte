@@ -245,12 +245,13 @@
 									/>
 								</label>
 								<label class="lille-felt">
-									<span class="lille-felt-label">Reps</span>
+									<span class="lille-felt-label">Tid (sek)</span>
 									<input
 										type="number"
-										min="1"
-										max="100"
-										bind:value={o.reps}
+										min="5"
+										max="600"
+										step="5"
+										bind:value={o.arbejdsSec}
 										disabled={gemmer}
 									/>
 								</label>

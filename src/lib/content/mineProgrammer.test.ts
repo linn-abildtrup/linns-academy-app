@@ -8,8 +8,8 @@ import {
 const gyldigt: Pick<CustomProgram, 'navn' | 'oevelser'> = {
 	navn: 'Mit ben-program',
 	oevelser: [
-		{ exerciseId: 'squat', saet: 3, reps: 10, pauseSec: 60 },
-		{ exerciseId: 'lunges', saet: 3, reps: 12, pauseSec: 45 }
+		{ exerciseId: 'squat', saet: 3, arbejdsSec: 30, pauseSec: 15 },
+		{ exerciseId: 'lunges', saet: 3, arbejdsSec: 40, pauseSec: 20 }
 	]
 };
 
@@ -34,7 +34,7 @@ describe('validerProgram', () => {
 		expect(
 			validerProgram({
 				...gyldigt,
-				oevelser: [{ exerciseId: '', saet: 3, reps: 10, pauseSec: 60 }]
+				oevelser: [{ exerciseId: '', saet: 3, arbejdsSec: 30, pauseSec: 15 }]
 			})
 		).toMatch(/reference/);
 	});
@@ -43,37 +43,43 @@ describe('validerProgram', () => {
 		expect(
 			validerProgram({
 				...gyldigt,
-				oevelser: [{ exerciseId: 'squat', saet: 0, reps: 10, pauseSec: 60 }]
+				oevelser: [{ exerciseId: 'squat', saet: 0, arbejdsSec: 30, pauseSec: 15 }]
 			})
 		).toMatch(/sæt/);
 		expect(
 			validerProgram({
 				...gyldigt,
-				oevelser: [{ exerciseId: 'squat', saet: 21, reps: 10, pauseSec: 60 }]
+				oevelser: [{ exerciseId: 'squat', saet: 21, arbejdsSec: 30, pauseSec: 15 }]
 			})
 		).toMatch(/sæt/);
 	});
 
-	it('afviser ugyldigt antal reps', () => {
+	it('afviser ugyldig arbejdstid', () => {
 		expect(
 			validerProgram({
 				...gyldigt,
-				oevelser: [{ exerciseId: 'squat', saet: 3, reps: 0, pauseSec: 60 }]
+				oevelser: [{ exerciseId: 'squat', saet: 3, arbejdsSec: 4, pauseSec: 15 }]
 			})
-		).toMatch(/reps/);
+		).toMatch(/[Aa]rbejdstid/);
+		expect(
+			validerProgram({
+				...gyldigt,
+				oevelser: [{ exerciseId: 'squat', saet: 3, arbejdsSec: 601, pauseSec: 15 }]
+			})
+		).toMatch(/[Aa]rbejdstid/);
 	});
 
 	it('afviser ugyldig pause', () => {
 		expect(
 			validerProgram({
 				...gyldigt,
-				oevelser: [{ exerciseId: 'squat', saet: 3, reps: 10, pauseSec: -1 }]
+				oevelser: [{ exerciseId: 'squat', saet: 3, arbejdsSec: 30, pauseSec: -1 }]
 			})
 		).toMatch(/[Pp]ause/);
 		expect(
 			validerProgram({
 				...gyldigt,
-				oevelser: [{ exerciseId: 'squat', saet: 3, reps: 10, pauseSec: 601 }]
+				oevelser: [{ exerciseId: 'squat', saet: 3, arbejdsSec: 30, pauseSec: 601 }]
 			})
 		).toMatch(/[Pp]ause/);
 	});
@@ -82,7 +88,7 @@ describe('validerProgram', () => {
 		expect(
 			validerProgram({
 				...gyldigt,
-				oevelser: [{ exerciseId: 'squat', saet: 3, reps: 10, pauseSec: 0 }]
+				oevelser: [{ exerciseId: 'squat', saet: 3, arbejdsSec: 30, pauseSec: 0 }]
 			})
 		).toBeNull();
 	});
@@ -92,28 +98,28 @@ describe('anslaaetVarighedMinutter', () => {
 	it('returnerer mindst 1 minut for et lille program', () => {
 		expect(
 			anslaaetVarighedMinutter({
-				oevelser: [{ exerciseId: 'squat', saet: 1, reps: 1, pauseSec: 0 }]
+				oevelser: [{ exerciseId: 'squat', saet: 1, arbejdsSec: 5, pauseSec: 0 }]
 			})
 		).toBeGreaterThanOrEqual(1);
 	});
 
-	it('beregner længere program', () => {
-		// 3 sæt × 10 reps × 3s = 90s arbejde + 2 pauser × 60s = 210s = 3.5 min
+	it('beregner længere program korrekt', () => {
+		// 3 sæt × 30s arbejde = 90s + 2 pauser × 15s = 120s = 2 min
 		expect(
 			anslaaetVarighedMinutter({
-				oevelser: [{ exerciseId: 'squat', saet: 3, reps: 10, pauseSec: 60 }]
+				oevelser: [{ exerciseId: 'squat', saet: 3, arbejdsSec: 30, pauseSec: 15 }]
 			})
-		).toBeGreaterThan(2);
+		).toBe(2);
 	});
 
 	it('summerer flere øvelser', () => {
 		const eet = anslaaetVarighedMinutter({
-			oevelser: [{ exerciseId: 'squat', saet: 3, reps: 10, pauseSec: 60 }]
+			oevelser: [{ exerciseId: 'squat', saet: 3, arbejdsSec: 30, pauseSec: 15 }]
 		});
 		const to = anslaaetVarighedMinutter({
 			oevelser: [
-				{ exerciseId: 'squat', saet: 3, reps: 10, pauseSec: 60 },
-				{ exerciseId: 'lunges', saet: 3, reps: 10, pauseSec: 60 }
+				{ exerciseId: 'squat', saet: 3, arbejdsSec: 30, pauseSec: 15 },
+				{ exerciseId: 'lunges', saet: 3, arbejdsSec: 30, pauseSec: 15 }
 			]
 		});
 		expect(to).toBeGreaterThan(eet);
