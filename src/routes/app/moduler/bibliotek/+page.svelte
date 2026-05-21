@@ -35,8 +35,12 @@
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
 	import type { UserDoc } from '$lib/types';
 	import { erForlobsklient, harGennemfoertForlob } from '$lib/utils/userAdgang';
-	import { PRODUKTER } from '$lib/content/produkter';
-	import type { ActiveProduct } from '$lib/types';
+	import {
+		gemLektionNote,
+		hentLektionNote,
+		hentNoterForForlob
+	} from '$lib/firestore/lektionNoter';
+	import { validerNote, type LektionNote } from '$lib/content/lektionNoter';
 	import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
 	import type { Exercise } from '$lib/content/mikrotraening';
@@ -92,29 +96,6 @@
 		return Array.from(new Set(fraProducts));
 	}
 
-	/**
-	 * Henter brugerens forlobIds grupperet efter produkt-type. Bruges til
-	 * at gruppere lektioner per type (Kickstart vs Premium-forløb) så
-	 * hver type får sin egen fane i biblioteket.
-	 *
-	 * Kun forløb-produkter (accessSource='forløb' i produkter.ts) regnes
-	 * med — abo-produkter har ingen lektioner og må aldrig vise som fane.
-	 */
-	async function hentForlobIdsPerProduct(uid: string): Promise<Map<string, string[]>> {
-		const productsSnap = await getDocs(collection(db, 'users', uid, 'products'));
-		const map = new Map<string, string[]>();
-		for (const p of productsSnap.docs) {
-			const produktDef = PRODUKTER[p.id as ActiveProduct];
-			if (!produktDef || produktDef.accessSource !== 'forløb') continue;
-			const fId = (p.data() as { forlobId?: string }).forlobId;
-			if (!fId) continue;
-			const liste = map.get(p.id) ?? [];
-			liste.push(fId);
-			map.set(p.id, liste);
-		}
-		return map;
-	}
-
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
@@ -129,17 +110,10 @@
 	type Tab = string;
 	const visOevelser = $derived(harGennemfoertForlob(userDoc));
 
-	// Visningsnavne for lektion-faner per produkt-type. Fallback bruger
-	// productId capitalized hvis vi ikke har et eksplicit navn.
-	const LEKTION_TAB_LABELS: Record<string, string> = {
-		kickstart: 'Kickstart lektioner',
-		premiumforløb: 'Premium lektioner'
-	};
-	function lektionTabLabel(productId: string): string {
-		return (
-			LEKTION_TAB_LABELS[productId] ??
-			`${productId.charAt(0).toUpperCase()}${productId.slice(1)} lektioner`
-		);
+	// Visningsnavn for hver forløbs-instance — bruges som tab-label.
+	// Falder tilbage til forlobId hvis vi ikke har navnet endnu.
+	function lektionTabLabel(forlobId: string): string {
+		return forlobNavne[forlobId] ?? forlobId;
 	}
 
 	function tabFraQuery(): Tab {
@@ -178,10 +152,15 @@
 	// hver type får sin egen fane. Hver entry er aggregeret over alle
 	// instanser af samme type (fx hvis brugeren har gennemført Kickstart Maj
 	// 2026 + Kickstart Sept 2026 → samme tab indeholder begge).
-	let forlobsdageEfterProduct = $state<Record<string, ForlobDag[]>>({});
+	// Per v27: hver gennemført forløb-instance er sin egen fane.
+	// Tidligere grupperede vi pr productType (kickstart, premiumforløb), nu
+	// pr forlobId så Kickstart maj 2026 og Kickstart juni 2026 har separate
+	// faner med hver deres lektioner og kundens noter.
+	let forlobsdageEfterForlob = $state<Record<string, ForlobDag[]>>({});
+	let forlobNavne = $state<Record<string, string>>({});
 	const lektionTabIds = $derived(
-		Object.keys(forlobsdageEfterProduct).filter(
-			(p) => forlobsdageEfterProduct[p].length > 0
+		Object.keys(forlobsdageEfterForlob).filter(
+			(fId) => forlobsdageEfterForlob[fId].length > 0
 		)
 	);
 	let loading = $state(true);
@@ -190,6 +169,21 @@
 
 	let aabenGuide = $state<GuideItem | null>(null);
 	let aabenLektion = $state<LektionItem | null>(null);
+	// Hvilken forløbs-instance den åbne lektion hører til. Sættes når
+	// aabnLektion kaldes så vi kan gemme noter med korrekt forlobId.
+	let aabenLektionForlobId = $state<string | null>(null);
+
+	// Noter-state: kundens noter pr forløb (forlobId → Set af lektionIds
+	// der har noter) til at vise indikator i lektion-listen.
+	let lektionIdsMedNoter = $state<Map<string, Set<string>>>(new Map());
+
+	// Den åbne lektions note-tekst — bind til textarea i modalen.
+	let aabenNoteTekst = $state('');
+	let aabenNoteHentet = $state(false);
+	let noteFejl = $state<string | null>(null);
+	let noteGemmer = $state(false);
+	let noteGemt = $state(false);
+	let noteGemTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// Træningsøvelser fra alle brugerens forløb. Aggregeres ved load.
 	let oevelser = $state<Exercise[]>([]);
@@ -243,8 +237,8 @@
 
 	type LektionMedDag = LektionItem & { dagNummer: number; uge: number };
 
-	function lektionerForProduct(productId: string): LektionMedDag[] {
-		const dage = forlobsdageEfterProduct[productId] ?? [];
+	function lektionerForForlob(forlobId: string): LektionMedDag[] {
+		const dage = forlobsdageEfterForlob[forlobId] ?? [];
 		const ud: LektionMedDag[] = [];
 		for (const dag of dage) {
 			for (const l of dag.lektioner) {
@@ -255,11 +249,11 @@
 		return ud.sort((a, b) => a.dagNummer - b.dagNummer);
 	}
 
-	const aktivLektionsProduct = $derived(
+	const aktivLektionsForlob = $derived(
 		aktivTab.startsWith('lektioner-') ? aktivTab.slice('lektioner-'.length) : null
 	);
 	const aktiveLektioner = $derived(
-		aktivLektionsProduct ? lektionerForProduct(aktivLektionsProduct) : []
+		aktivLektionsForlob ? lektionerForForlob(aktivLektionsForlob) : []
 	);
 
 	const sorterede = $derived(sorterKategorier(faqKategorier));
@@ -318,21 +312,107 @@
 		aabenGuide = null;
 	}
 
-	function aabnLektion(it: LektionMedDag) {
-		if (!it.url) {
-			aabenLektion = it;
-			return;
-		}
-		const t = detekterGuideType(it.url);
-		if (t === 'pdf' || t === 'link') {
-			window.open(it.url, '_blank', 'noopener,noreferrer');
-			return;
+	async function aabnLektion(it: LektionMedDag) {
+		if (it.url) {
+			const t = detekterGuideType(it.url);
+			if (t === 'pdf' || t === 'link') {
+				window.open(it.url, '_blank', 'noopener,noreferrer');
+				return;
+			}
 		}
 		aabenLektion = it;
+		aabenLektionForlobId = aktivLektionsForlob;
+		aabenNoteTekst = '';
+		aabenNoteHentet = false;
+		noteFejl = null;
+		noteGemt = false;
+		noteGemmer = false;
+		if (noteGemTimer !== null) {
+			clearTimeout(noteGemTimer);
+			noteGemTimer = null;
+		}
+		// Hent eksisterende note (hvis nogen)
+		const u = user;
+		const fId = aktivLektionsForlob;
+		if (u && fId) {
+			try {
+				const note = await hentLektionNote(u.uid, fId, it.id);
+				if (aabenLektion?.id === it.id) {
+					aabenNoteTekst = note?.tekst ?? '';
+					aabenNoteHentet = true;
+				}
+			} catch (e) {
+				console.warn('Kunne ikke hente lektion-note:', e);
+				aabenNoteHentet = true;
+			}
+		} else {
+			aabenNoteHentet = true;
+		}
 	}
 
 	function lukLektion() {
+		// Force-flush evt ventende gem før vi lukker
+		if (noteGemTimer !== null) {
+			clearTimeout(noteGemTimer);
+			noteGemTimer = null;
+			gemAktiveNote();
+		}
 		aabenLektion = null;
+		aabenLektionForlobId = null;
+		aabenNoteTekst = '';
+		aabenNoteHentet = false;
+		noteFejl = null;
+		noteGemt = false;
+		noteGemmer = false;
+	}
+
+	async function gemAktiveNote() {
+		const u = user;
+		const lekt = aabenLektion;
+		const fId = aabenLektionForlobId;
+		if (!u || !lekt || !fId) return;
+		const fejl = validerNote(aabenNoteTekst);
+		if (fejl) {
+			noteFejl = fejl;
+			return;
+		}
+		noteFejl = null;
+		noteGemmer = true;
+		try {
+			await gemLektionNote(u.uid, fId, lekt.id, aabenNoteTekst);
+			// Opdater "har noter"-indikatoren for denne lektion
+			const trimmet = aabenNoteTekst.trim();
+			const ny = new Map(lektionIdsMedNoter);
+			const set = new Set(ny.get(fId) ?? []);
+			if (trimmet) set.add(lekt.id);
+			else set.delete(lekt.id);
+			ny.set(fId, set);
+			lektionIdsMedNoter = ny;
+			noteGemt = true;
+			setTimeout(() => {
+				if (noteGemt) noteGemt = false;
+			}, 1500);
+		} catch (e) {
+			console.error('Kunne ikke gemme note:', e);
+			noteFejl = 'Kunne ikke gemme — prøv igen.';
+		} finally {
+			noteGemmer = false;
+		}
+	}
+
+	function noteInput() {
+		// Debounce 1s — gem når brugeren holder pause i skrivningen
+		if (noteGemTimer !== null) clearTimeout(noteGemTimer);
+		noteGemt = false;
+		noteFejl = null;
+		noteGemTimer = setTimeout(() => {
+			noteGemTimer = null;
+			gemAktiveNote();
+		}, 1000);
+	}
+
+	function harNoterPaaLektion(forlobId: string, lektionId: string): boolean {
+		return lektionIdsMedNoter.get(forlobId)?.has(lektionId) ?? false;
 	}
 
 	onMount(async () => {
@@ -350,10 +430,7 @@
 			const opskrifterPromise = hentAlleOpskrifter().then((alle) =>
 				alle.filter((o) => o.aktiv).sort((a, b) => a.titel.localeCompare(b.titel, 'da'))
 			);
-			const [forlobIds, idsPerProduct] = await Promise.all([
-				hentBrugerensForlobIds(u.uid),
-				hentForlobIdsPerProduct(u.uid)
-			]);
+			const forlobIds = await hentBrugerensForlobIds(u.uid);
 
 			if (forlobIds.length === 0) {
 				// Ingen forløb endnu — vis kun opskrifter (globale)
@@ -417,23 +494,52 @@
 				return dage.filter((d) => d.dagNummer <= dagensDag);
 			}
 
-			const lektionerPerProductEntries = await Promise.all(
-				Array.from(idsPerProduct.entries()).map(async ([productId, ids]) => {
-					const dageArrays = await Promise.all(ids.map(dageMedFilter));
-					return [productId, dageArrays.flat()] as const;
+			// V27: hver forløbs-instance får sin egen fane. Hent dage pr
+			// forlobId i stedet for grupperet pr productType.
+			const lektionerPerForlobEntries = await Promise.all(
+				forlobIds.map(async (fId) => {
+					const dage = await dageMedFilter(fId);
+					return [fId, dage] as const;
 				})
 			);
 			const nyForlobsdage: Record<string, ForlobDag[]> = {};
-			for (const [pid, dage] of lektionerPerProductEntries) {
-				if (dage.length > 0) nyForlobsdage[pid] = dage;
+			for (const [fId, dage] of lektionerPerForlobEntries) {
+				if (dage.length > 0) nyForlobsdage[fId] = dage;
 			}
-			// Fallback: hvis ingen userProducts har forlobId (legacy/test-bruger),
-			// vis lektioner under 'kickstart'-tab så vi ikke mister adgang.
-			if (Object.keys(nyForlobsdage).length === 0 && forlobIds.length > 0) {
-				const fallbackDage = await Promise.all(forlobIds.map(dageMedFilter));
-				nyForlobsdage.kickstart = fallbackDage.flat();
-			}
-			forlobsdageEfterProduct = nyForlobsdage;
+			forlobsdageEfterForlob = nyForlobsdage;
+
+			// Hent navne på forløbene så faner kan vise "Kickstart maj 2026"
+			// i stedet for productId.
+			const navneEntries = await Promise.all(
+				forlobIds.map(async (fId) => {
+					try {
+						const f = await hentForlob(fId);
+						return [fId, f?.navn ?? fId] as const;
+					} catch {
+						return [fId, fId] as const;
+					}
+				})
+			);
+			const nyNavne: Record<string, string> = {};
+			for (const [fId, navn] of navneEntries) nyNavne[fId] = navn;
+			forlobNavne = nyNavne;
+
+			// Hent noter-oversigt: for hvert forløb laver vi et Set af de
+			// lektion-ids hvor kunden har skrevet en note. Bruges til at
+			// vise en indikator-prik i lektion-listen.
+			const noterEntries = await Promise.all(
+				forlobIds.map(async (fId) => {
+					try {
+						const noter = await hentNoterForForlob(u.uid, fId);
+						return [fId, new Set(noter.map((n: LektionNote) => n.lektionId))] as const;
+					} catch {
+						return [fId, new Set<string>()] as const;
+					}
+				})
+			);
+			const nyNoterMap = new Map<string, Set<string>>();
+			for (const [fId, set] of noterEntries) nyNoterMap.set(fId, set);
+			lektionIdsMedNoter = nyNoterMap;
 
 			opskrifter = await opskrifterPromise;
 		} catch (e) {
@@ -672,7 +778,7 @@
 				</div>
 			{/if}
 		{/if}
-	{:else if aktivLektionsProduct}
+	{:else if aktivLektionsForlob}
 		{#if loading}
 			<Loading tekst="Henter lektioner..." kompakt />
 		{:else if fejl}
@@ -692,7 +798,12 @@
 						</div>
 						<div class="lektion-body-bib">
 							<div class="lektion-uge-bib">Uge {l.uge}</div>
-							<div class="lektion-titel-bib">{l.titel}</div>
+							<div class="lektion-titel-bib">
+								{l.titel}
+								{#if aktivLektionsForlob && harNoterPaaLektion(aktivLektionsForlob, l.id)}
+									<span class="noter-prik" title="Du har skrevet noter til denne lektion">●</span>
+								{/if}
+							</div>
 							{#if l.beskrivelse}
 								<div class="lektion-beskrivelse-bib">{l.beskrivelse}</div>
 							{/if}
@@ -974,6 +1085,37 @@
 		{#if aabenLektion.varighedMin > 0 || aabenLektion.format}
 			<div class="overlay-dato">
 				{aabenLektion.varighedMin > 0 ? aabenLektion.varighedMin + ' min' : ''}{aabenLektion.varighedMin > 0 && aabenLektion.format ? ' · ' : ''}{aabenLektion.format}
+			</div>
+		{/if}
+
+		{#if aabenLektionForlobId}
+			<div class="noter-blok">
+				<div class="noter-label">
+					<span>Mine noter</span>
+					{#if noteGemmer}
+						<span class="noter-status">Gemmer…</span>
+					{:else if noteGemt}
+						<span class="noter-status">Gemt</span>
+					{/if}
+				</div>
+				<textarea
+					class="noter-textarea"
+					bind:value={aabenNoteTekst}
+					oninput={noteInput}
+					onblur={() => {
+						if (noteGemTimer !== null) {
+							clearTimeout(noteGemTimer);
+							noteGemTimer = null;
+							void gemAktiveNote();
+						}
+					}}
+					placeholder={aabenNoteHentet ? 'Skriv dine refleksioner fra lektionen…' : 'Henter…'}
+					disabled={!aabenNoteHentet}
+					rows="4"
+				></textarea>
+				{#if noteFejl}
+					<div class="noter-fejl">{noteFejl}</div>
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -1441,6 +1583,71 @@
 		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		letter-spacing: 0.04em;
+	}
+
+	.noter-blok {
+		margin-top: 16px;
+		padding-top: 16px;
+		border-top: 1px dashed var(--border);
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.noter-label {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.noter-status {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 500;
+		color: var(--terra);
+		letter-spacing: 0.04em;
+		text-transform: none;
+	}
+
+	.noter-textarea {
+		width: 100%;
+		min-height: 80px;
+		padding: 10px 12px;
+		font-family: var(--ff-b);
+		font-size: calc(14px * var(--fs-scale, 1));
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: var(--bg2);
+		color: var(--text);
+		outline: none;
+		resize: vertical;
+		line-height: 1.5;
+		box-sizing: border-box;
+	}
+
+	.noter-textarea:focus {
+		border-color: var(--terra);
+	}
+
+	.noter-textarea:disabled {
+		opacity: 0.6;
+	}
+
+	.noter-fejl {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: #8a4a3e;
+	}
+
+	.noter-prik {
+		display: inline-block;
+		margin-left: 6px;
+		color: var(--terra);
+		font-size: calc(9px * var(--fs-scale, 1));
+		vertical-align: middle;
 	}
 
 	.overlay-fallback {
