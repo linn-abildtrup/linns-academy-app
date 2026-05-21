@@ -59,6 +59,13 @@ const MODULER_BASE: ModulBase[] = [
 		icon: 'check'
 	},
 	{
+		id: 'symptomcheck',
+		navn: 'Symptomcheck',
+		beskrivelse: 'Mål hvor du står med dine overgangsalder-symptomer',
+		accent: '#C4624A',
+		icon: 'flower'
+	},
+	{
 		id: 'bibliotek',
 		navn: 'Biblioteket',
 		beskrivelse: 'Lektioner, videoer og pdf samlet ét sted',
@@ -92,14 +99,15 @@ function forlobskundeStatus(base: ModulBase): Modul {
 		traening: '3 af 7 sessioner',
 		kost: 'Uge 4 af 6',
 		vaner: '3 dage i træk',
-		bibliotek: 'Alt fra dit forløb'
+		bibliotek: 'Alt fra dit forløb',
+		symptomcheck: 'Følg din udvikling gennem forløbet'
 	};
-	const isLibrary = base.id === 'bibliotek';
+	const noProgress = base.id === 'bibliotek' || base.id === 'symptomcheck';
 	return {
 		...base,
 		status: 'aktiv',
-		progress: isLibrary ? null : progressMap[base.id],
-		statusTekst: isLibrary ? 'Åbent' : 'I gang',
+		progress: noProgress ? null : progressMap[base.id],
+		statusTekst: noProgress ? 'Åbent' : 'I gang',
 		subTekst: subMap[base.id],
 		laasTekst: null
 	};
@@ -110,7 +118,7 @@ function modulbrugerStatus(base: ModulBase): Modul {
 	// deres personlige bibliotek (materiale fra forløb de har gennemført —
 	// tomt indtil de har været på et forløb). 'forlob'-modulet er kun for
 	// aktive forløbskunder.
-	const koebt = ['traening', 'kost', 'vaner', 'bibliotek'];
+	const koebt = ['traening', 'kost', 'vaner', 'bibliotek', 'symptomcheck'];
 	const erKoebt = koebt.includes(base.id);
 
 	if (!erKoebt) {
@@ -137,14 +145,15 @@ function modulbrugerStatus(base: ModulBase): Modul {
 		traening: '3 af 7 sessioner',
 		kost: 'Uge 4 af 6',
 		vaner: '3 dage i træk',
-		bibliotek: 'Dit personlige bibliotek'
+		bibliotek: 'Dit personlige bibliotek',
+		symptomcheck: 'Mål dine symptomer over tid'
 	};
-	const isLibrary = base.id === 'bibliotek';
+	const noProgress = base.id === 'bibliotek' || base.id === 'symptomcheck';
 	return {
 		...base,
 		status: 'aktiv',
-		progress: isLibrary ? null : progressMap[base.id],
-		statusTekst: isLibrary ? 'Åbent' : 'Løbende',
+		progress: noProgress ? null : progressMap[base.id],
+		statusTekst: noProgress ? 'Åbent' : 'Løbende',
 		subTekst: subMap[base.id],
 		laasTekst: null
 	};

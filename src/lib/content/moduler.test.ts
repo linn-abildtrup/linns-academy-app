@@ -5,13 +5,13 @@ describe('getModulerForUser', () => {
 	describe('forløbskunde', () => {
 		const moduler = getModulerForUser('forlobskunde');
 
-		it('returnerer 5 moduler', () => {
-			expect(moduler).toHaveLength(5);
+		it('returnerer 6 moduler', () => {
+			expect(moduler).toHaveLength(6);
 		});
 
 		it('har alle moduler aktive', () => {
 			const aktive = moduler.filter((m) => m.status === 'aktiv');
-			expect(aktive).toHaveLength(5);
+			expect(aktive).toHaveLength(6);
 		});
 
 		it('har Mit forløb med progress over nul', () => {
@@ -42,8 +42,8 @@ describe('getModulerForUser', () => {
 	describe('modulbruger', () => {
 		const moduler = getModulerForUser('modulbruger');
 
-		it('returnerer 5 moduler', () => {
-			expect(moduler).toHaveLength(5);
+		it('returnerer 6 moduler', () => {
+			expect(moduler).toHaveLength(6);
 		});
 
 		it('har Mit forløb låst med Kropsro-CTA', () => {
@@ -83,8 +83,8 @@ describe('getModulerForUser', () => {
 	describe('udlobet', () => {
 		const moduler = getModulerForUser('udlobet');
 
-		it('returnerer 5 moduler', () => {
-			expect(moduler).toHaveLength(5);
+		it('returnerer 6 moduler', () => {
+			expect(moduler).toHaveLength(6);
 		});
 
 		it('har bibliotek aktivt (forevigt)', () => {

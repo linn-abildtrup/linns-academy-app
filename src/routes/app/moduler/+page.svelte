@@ -21,7 +21,8 @@
 		traening: '/app/moduler/traening',
 		vaner: '/app/moduler/vaner',
 		kost: '/app/moduler/30-30-3',
-		bibliotek: '/app/moduler/bibliotek'
+		bibliotek: '/app/moduler/bibliotek',
+		symptomcheck: '/app/moduler/symptomcheck'
 	};
 
 	function ruteFor(modul: Modul): string | null {
