@@ -173,15 +173,93 @@ export function calculateTotal(scores: Record<number, number>): number {
 export interface Fortolkning {
 	label: string;
 	color: string;
+	/** Længere beskrivelse vist under label på resultat-siden. */
+	beskrivelse: string;
 }
 
-/** Mapper totalscore til en menneskelig fortolkning + farve. */
+/**
+ * Mapper totalscore til en menneskelig fortolkning + farve.
+ *
+ * Cutoffs følger Heinemann et al. (2003), Health Qual Life Outcomes 1:28 —
+ * international konsensus om severity-niveauer for MRS total score (0-44):
+ *  0-4 = none/very few · 5-8 = little · 9-16 = moderate ·
+ *  17-24 = severe · 25+ = very severe.
+ */
 export function getInterpretation(total: number): Fortolkning {
-	if (total <= 4) return { label: 'Ingen eller meget få gener', color: '#1D9E75' };
-	if (total <= 8) return { label: 'Lette gener', color: '#639922' };
-	if (total <= 16) return { label: 'Mærkbare gener', color: '#BA7517' };
-	if (total <= 24) return { label: 'Tydelige gener i hverdagen', color: '#C4624A' };
-	return { label: 'Kraftige gener der fylder meget', color: '#A32D2D' };
+	if (total <= 4)
+		return {
+			label: 'Ingen eller meget få gener',
+			color: '#1D9E75',
+			beskrivelse:
+				'Du oplever stort set ingen overgangsalder-symptomer lige nu. Det er en stærk udgangsposition.'
+		};
+	if (total <= 8)
+		return {
+			label: 'Lette gener',
+			color: '#639922',
+			beskrivelse:
+				'Du mærker enkelte symptomer, men de fylder ikke meget i din hverdag. Det her er et godt sted at sætte ind med små justeringer.'
+		};
+	if (total <= 16)
+		return {
+			label: 'Mærkbare gener',
+			color: '#BA7517',
+			beskrivelse:
+				'Du har symptomer der mærker dig flere gange om ugen. De påvirker din hverdag — og det er typisk her, kvinder begynder at søge hjælp.'
+		};
+	if (total <= 24)
+		return {
+			label: 'Tydelige gener i hverdagen',
+			color: '#C4624A',
+			beskrivelse:
+				'Symptomerne fylder dagligt og påvirker dit velvære, søvn eller relationer. Det er ikke noget du behøver leve med — der er meget at gøre.'
+		};
+	return {
+		label: 'Kraftige gener der fylder meget',
+		color: '#A32D2D',
+		beskrivelse:
+			'Symptomerne fylder meget i dit liv og forringer din livskvalitet markant. Det er værd at tale med din læge om mulighederne — og dette forløb er designet til at hjælpe.'
+	};
+}
+
+/**
+ * Subskala-fortolkning ud fra Heinemann et al.'s officielle cutoffs.
+ * Hver subskala har sin egen skala fordi de har forskelligt antal items.
+ *  somatisk (max 16): 0-2 none/little · 3-4 moderate · 5-8 severe · 9+ very severe
+ *  psykologisk (max 16): 0-1 none/little · 2-3 moderate · 4-6 severe · 7+ very severe
+ *  urogenital (max 12): 0 none/little · 1-2 moderate · 3+ severe · 6+ very severe
+ */
+export type SubskalaNiveau = 'ingen' | 'mild' | 'moderat' | 'svaer';
+
+export function getSubskalaFortolkning(
+	subskala: Subskala,
+	score: number
+): { label: string; niveau: SubskalaNiveau } {
+	let niveau: SubskalaNiveau;
+	if (subskala === 'somatisk') {
+		if (score <= 2) niveau = 'ingen';
+		else if (score <= 4) niveau = 'mild';
+		else if (score <= 8) niveau = 'moderat';
+		else niveau = 'svaer';
+	} else if (subskala === 'psykologisk') {
+		if (score <= 1) niveau = 'ingen';
+		else if (score <= 3) niveau = 'mild';
+		else if (score <= 6) niveau = 'moderat';
+		else niveau = 'svaer';
+	} else {
+		// urogenital
+		if (score === 0) niveau = 'ingen';
+		else if (score <= 2) niveau = 'mild';
+		else if (score <= 5) niveau = 'moderat';
+		else niveau = 'svaer';
+	}
+	const labels: Record<SubskalaNiveau, string> = {
+		ingen: 'Ingen til lette gener',
+		mild: 'Milde gener',
+		moderat: 'Moderate gener',
+		svaer: 'Svære gener'
+	};
+	return { label: labels[niveau], niveau };
 }
 
 /** Returnerer en fejlbesked eller null hvis scores-objektet er gyldigt. */

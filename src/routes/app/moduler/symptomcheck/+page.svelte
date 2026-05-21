@@ -7,6 +7,7 @@
 		calculateSubscales,
 		calculateTotal,
 		getInterpretation,
+		getSubskalaFortolkning,
 		MAALEPUNKT_LABEL,
 		MRS_ITEMS,
 		SEVERITY,
@@ -56,6 +57,23 @@
 		fejl = null;
 		visning = 'udfyld';
 		if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
+	}
+
+	/**
+	 * Klik på et målepunkt: hvis kunden allerede har udfyldt det, vis hendes
+	 * seneste resultat. Ellers start en frisk udfyldelse.
+	 */
+	function aabnMaalepunkt(m: MaalePunkt) {
+		const senest = maalepunktSenestUdfyldt(m);
+		if (senest) {
+			valgtMaalepunkt = m;
+			netop_gemt = senest;
+			fejl = null;
+			visning = 'resultat';
+			if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
+		} else {
+			startNyUdfyldelse(m);
+		}
 	}
 
 	function tilbageTilForside() {
@@ -165,7 +183,7 @@
 						type="button"
 						class="maalepunkt-rad"
 						class:gennemfoert={!!senest}
-						onclick={() => startNyUdfyldelse(m)}
+						onclick={() => aabnMaalepunkt(m)}
 					>
 						<div class="maalepunkt-tekst">
 							<div class="maalepunkt-navn">{MAALEPUNKT_LABEL[m]}</div>
@@ -266,7 +284,10 @@
 		</button>
 	{:else if visning === 'resultat' && netop_gemt && resultatFortolkning}
 		{@const score = netop_gemt}
-		<div class="maalepunkt-pill">{MAALEPUNKT_LABEL[score.measurePoint]}</div>
+		<div class="resultat-header">
+			<div class="maalepunkt-pill">{MAALEPUNKT_LABEL[score.measurePoint]}</div>
+			<div class="udfyldt-dato">Udfyldt {formaterDatoTekst(score.timestamp)}</div>
+		</div>
 
 		<section
 			class="total-blok"
@@ -279,9 +300,11 @@
 			<div class="total-label" style="color: {resultatFortolkning.color};">
 				{resultatFortolkning.label}
 			</div>
-			<p class="total-forklaring">
+			<p class="total-forklaring">{resultatFortolkning.beskrivelse}</p>
+			<p class="total-forklaring sekundaer">
 				Din samlede score lægger alle 11 svar sammen. Skalaen går fra 0 (ingen gener)
-				til 44 (kraftige gener). Jo lavere tal, jo færre gener oplever du.
+				til 44 (kraftige gener). Niveauerne følger international konsensus
+				(Heinemann et al.).
 			</p>
 		</section>
 
@@ -290,6 +313,10 @@
 			{#each Object.entries(SUBSCALES) as [key, sub] (key)}
 				{@const subScore = score.subscales[key as keyof typeof score.subscales]}
 				{@const max = sub.items.length * 4}
+				{@const subForto = getSubskalaFortolkning(
+					key as 'somatisk' | 'psykologisk' | 'urogenital',
+					subScore
+				)}
 				<div
 					class="subskala-kort"
 					style="background: {sub.bg}; border: 1px solid {sub.color}20;"
@@ -297,6 +324,7 @@
 					<div class="subskala-tal" style="color: {sub.color};">{subScore}</div>
 					<div class="subskala-max">af {max}</div>
 					<div class="subskala-navn" style="color: {sub.color};">{sub.label}</div>
+					<div class="subskala-niveau" style="color: {sub.color};">{subForto.label}</div>
 					<div class="subskala-beskrivelse">{sub.beskrivelse}</div>
 				</div>
 			{/each}
@@ -328,6 +356,13 @@
 
 		<button type="button" class="primary-knap klar" onclick={tilbageTilForside}>
 			Tilbage til oversigten
+		</button>
+		<button
+			type="button"
+			class="annuller-knap"
+			onclick={() => startNyUdfyldelse(score.measurePoint)}
+		>
+			Udfyld igen
 		</button>
 	{/if}
 </div>
@@ -544,7 +579,6 @@
 		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.04em;
-		margin-bottom: 14px;
 	}
 
 	.subskala-blok {
@@ -681,11 +715,39 @@
 	}
 
 	.total-forklaring {
-		font-size: calc(12px * var(--fs-scale, 1));
-		color: var(--text2);
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
 		line-height: 1.6;
 		margin: 14px 0 0;
 		text-align: left;
+	}
+
+	.total-forklaring.sekundaer {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 10px;
+	}
+
+	.resultat-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-bottom: 14px;
+	}
+
+	.udfyldt-dato {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		letter-spacing: 0.02em;
+	}
+
+	.subskala-niveau {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		margin-top: 6px;
+		letter-spacing: 0.02em;
 	}
 
 	.subskala-titel {

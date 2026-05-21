@@ -3,6 +3,7 @@ import {
 	calculateSubscales,
 	calculateTotal,
 	getInterpretation,
+	getSubskalaFortolkning,
 	MRS_ITEMS,
 	SUBSCALES,
 	validerScores
@@ -106,6 +107,55 @@ describe('getInterpretation', () => {
 	it('alle returnerer en hex-farve', () => {
 		for (let i = 0; i <= 44; i++) {
 			expect(getInterpretation(i).color).toMatch(/^#[0-9A-F]{6}$/i);
+		}
+	});
+
+	it('alle niveauer har en beskrivelse', () => {
+		for (const total of [0, 5, 9, 17, 25]) {
+			expect(getInterpretation(total).beskrivelse).toBeTruthy();
+			expect(getInterpretation(total).beskrivelse.length).toBeGreaterThan(20);
+		}
+	});
+});
+
+describe('getSubskalaFortolkning', () => {
+	it('somatisk: 0-2 = ingen, 3-4 = mild, 5-8 = moderat, 9+ = svaer', () => {
+		expect(getSubskalaFortolkning('somatisk', 0).niveau).toBe('ingen');
+		expect(getSubskalaFortolkning('somatisk', 2).niveau).toBe('ingen');
+		expect(getSubskalaFortolkning('somatisk', 3).niveau).toBe('mild');
+		expect(getSubskalaFortolkning('somatisk', 4).niveau).toBe('mild');
+		expect(getSubskalaFortolkning('somatisk', 5).niveau).toBe('moderat');
+		expect(getSubskalaFortolkning('somatisk', 8).niveau).toBe('moderat');
+		expect(getSubskalaFortolkning('somatisk', 9).niveau).toBe('svaer');
+		expect(getSubskalaFortolkning('somatisk', 16).niveau).toBe('svaer');
+	});
+
+	it('psykologisk: 0-1 = ingen, 2-3 = mild, 4-6 = moderat, 7+ = svaer', () => {
+		expect(getSubskalaFortolkning('psykologisk', 0).niveau).toBe('ingen');
+		expect(getSubskalaFortolkning('psykologisk', 1).niveau).toBe('ingen');
+		expect(getSubskalaFortolkning('psykologisk', 2).niveau).toBe('mild');
+		expect(getSubskalaFortolkning('psykologisk', 3).niveau).toBe('mild');
+		expect(getSubskalaFortolkning('psykologisk', 4).niveau).toBe('moderat');
+		expect(getSubskalaFortolkning('psykologisk', 6).niveau).toBe('moderat');
+		expect(getSubskalaFortolkning('psykologisk', 7).niveau).toBe('svaer');
+		expect(getSubskalaFortolkning('psykologisk', 16).niveau).toBe('svaer');
+	});
+
+	it('urogenital: 0 = ingen, 1-2 = mild, 3-5 = moderat, 6+ = svaer', () => {
+		expect(getSubskalaFortolkning('urogenital', 0).niveau).toBe('ingen');
+		expect(getSubskalaFortolkning('urogenital', 1).niveau).toBe('mild');
+		expect(getSubskalaFortolkning('urogenital', 2).niveau).toBe('mild');
+		expect(getSubskalaFortolkning('urogenital', 3).niveau).toBe('moderat');
+		expect(getSubskalaFortolkning('urogenital', 5).niveau).toBe('moderat');
+		expect(getSubskalaFortolkning('urogenital', 6).niveau).toBe('svaer');
+		expect(getSubskalaFortolkning('urogenital', 12).niveau).toBe('svaer');
+	});
+
+	it('alle returnerer en label', () => {
+		for (const sub of ['somatisk', 'psykologisk', 'urogenital'] as const) {
+			for (let i = 0; i <= 16; i++) {
+				expect(getSubskalaFortolkning(sub, i).label).toBeTruthy();
+			}
 		}
 	});
 });
