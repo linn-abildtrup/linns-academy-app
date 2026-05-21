@@ -146,11 +146,6 @@
 				</article>
 			{/each}
 		</div>
-
-		<a class="start-knap" href={`/app/moduler/traening/byg-eget/${programId}/spil`}>
-			Start træning
-			<Icon name="arrow" size={14} color="#fff" />
-		</a>
 	{/if}
 </div>
 
