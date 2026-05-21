@@ -14,6 +14,8 @@
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct, hentForlobsProgram } from '$lib/firestore/mikrotraening';
 	import { hentMitProgram, hentProgramFremgang } from '$lib/firestore/mineProgrammer';
+	import { hentHistorikForDato } from '$lib/firestore/traeningHistorik';
+	import { senesteEntry, type TraeningHistorikEntry } from '$lib/content/traeningHistorik';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
 	import {
 		hentVaneprogramForForlob,
@@ -328,10 +330,17 @@
 	);
 	const modulbrugerErIDag = $derived(modulbrugerAktivDato === modulbrugerIDag);
 	const modulbrugerTraeningHref = $derived.by(() => {
-		// Historisk dato → vis altid mikrotraening for den dato. Eget/tildelt
-		// programs har ingen dato-koncept, så det er forvirrende at klikke
-		// "i går" og lande på et tidløst eget-program.
+		// Historisk dato → kig i traeningHistorik og link til det program
+		// kunden faktisk trænede. Fald tilbage til mikrotraening hvis ingen
+		// entry for datoen.
 		if (!modulbrugerErIDag) {
+			const h = historikForValgtDato;
+			if (h?.kilde === 'eget' && h.programId) {
+				return `/app/moduler/traening/byg-eget/${h.programId}/lav`;
+			}
+			if (h?.kilde === 'tildelt' && h.programId && h.forlobId) {
+				return `/app/moduler/traening/program/${h.forlobId}/${h.programId}`;
+			}
 			return modulbrugerMikroHref;
 		}
 		const aktivt = userDoc?.aktivtTraeningsprogram;
@@ -413,6 +422,29 @@
 		!!userDoc?.aktivtTraeningsprogram &&
 			userDoc.aktivtTraeningsprogram.kilde !== 'mikrotraening'
 	);
+
+	// Træning-historik for den valgte dato på forsidens datostrip. Bruges når
+	// kunden vælger en historisk dato — så vi linker til det program hun
+	// faktisk trænede den dag (i stedet for hendes aktive program nu).
+	let historikForValgtDato = $state<TraeningHistorikEntry | null>(null);
+
+	$effect(() => {
+		const u = user;
+		const dato = userState === 'forlobskunde' ? valgtDagDato : modulbrugerAktivDato;
+		if (!u || !dato) {
+			historikForValgtDato = null;
+			return;
+		}
+		(async () => {
+			try {
+				const entries = await hentHistorikForDato(u.uid, dato);
+				historikForValgtDato = senesteEntry(entries);
+			} catch (e) {
+				console.warn('Kunne ikke hente træning-historik for dato:', e);
+				historikForValgtDato = null;
+			}
+		})();
+	});
 
 	function formatModulbrugerChipDato(dato: string): { dag: string; ugedag: string } {
 		const [aar, m, d] = dato.split('-').map(Number);
@@ -1012,7 +1044,13 @@
 					? `/app/moduler/traening/mikrotraening/${dagensDag.dagNummer}`
 					: '/app/moduler/traening/mikrotraening'}
 				{@const traeningHref = !valgtErIDag
-					? mikroHrefForDag
+					? (historikForValgtDato?.kilde === 'eget' && historikForValgtDato.programId
+						? `/app/moduler/traening/byg-eget/${historikForValgtDato.programId}/lav`
+						: historikForValgtDato?.kilde === 'tildelt' &&
+								  historikForValgtDato.programId &&
+								  historikForValgtDato.forlobId
+							? `/app/moduler/traening/program/${historikForValgtDato.forlobId}/${historikForValgtDato.programId}`
+							: mikroHrefForDag)
 					: aktivtProgram?.kilde === 'eget' && aktivtProgram.programId
 						? `/app/moduler/traening/byg-eget/${aktivtProgram.programId}/lav`
 						: aktivtProgram?.kilde === 'tildelt' &&
@@ -1117,7 +1155,13 @@
 								<div class="action-text">
 									<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
 									<div class="action-title">
-										{valgtErIDag ? (aktivtProgramNavn ?? 'Mikrotræning') : 'Mikrotræning'}
+										{#if valgtErIDag}
+											{aktivtProgramNavn ?? 'Mikrotræning'}
+										{:else if historikForValgtDato}
+											{historikForValgtDato.programNavn}
+										{:else}
+											Mikrotræning
+										{/if}
 									</div>
 									<div class="action-meta">
 										{forlobGennemfoertCheck ? 'Gennemført' : 'Korte daglige sessioner'}
@@ -1458,7 +1502,13 @@
 						<div class="action-text">
 							<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
 							<div class="action-title">
-								{modulbrugerErIDag ? (aktivtProgramNavn ?? 'Dagens mikrotræning') : 'Mikrotræning'}
+								{#if modulbrugerErIDag}
+									{aktivtProgramNavn ?? 'Dagens mikrotræning'}
+								{:else if historikForValgtDato}
+									{historikForValgtDato.programNavn}
+								{:else}
+									Mikrotræning
+								{/if}
 							</div>
 							<div class="action-meta">
 								{modulbrugerGennemfoertCheck ? 'Gennemført' : 'Korte daglige sessioner'}

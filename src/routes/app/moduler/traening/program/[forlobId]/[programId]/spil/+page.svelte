@@ -19,6 +19,8 @@
 		sletSpilPause,
 		tilfoejGennemfoersel
 	} from '$lib/firestore/mineProgrammer';
+	import { logTraening } from '$lib/firestore/traeningHistorik';
+	import { formaterHistorikDato } from '$lib/content/traeningHistorik';
 	import { getAudioUrl, getVideoUrl } from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
@@ -527,7 +529,7 @@
 		gemAktivPause();
 	});
 
-	// Når træningen er done: slet pause, tilføj gennemførsel
+	// Når træningen er done: slet pause, tilføj gennemførsel, log historik
 	$effect(() => {
 		if (phase !== 'done' || traeningGennemfoert) return;
 		const u = user;
@@ -537,6 +539,14 @@
 		void tilfoejGennemfoersel(u.uid, 'tildelt', programId, forlobId).catch((e) =>
 			console.warn('Kunne ikke gemme gennemførsel:', e)
 		);
+		void logTraening(u.uid, {
+			dato: formaterHistorikDato(new Date()),
+			kilde: 'tildelt',
+			programId,
+			programNavn: programData?.program.navn ?? 'Tildelt program',
+			forlobId,
+			gennemfoertAt: Date.now()
+		}).catch((e) => console.warn('Kunne ikke logge træning-historik:', e));
 	});
 
 	function togglePause() {

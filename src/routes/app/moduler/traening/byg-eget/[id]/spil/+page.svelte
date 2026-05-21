@@ -16,6 +16,8 @@
 		CustomProgram,
 		CustomProgramOevelse
 	} from '$lib/content/mineProgrammer';
+	import { logTraening } from '$lib/firestore/traeningHistorik';
+	import { formaterHistorikDato } from '$lib/content/traeningHistorik';
 	import { getAudioUrl, getVideoUrl } from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
@@ -517,7 +519,7 @@
 		gemAktivPause();
 	});
 
-	// Når træningen er done: slet pause, tilføj gennemførsel
+	// Når træningen er done: slet pause, tilføj gennemførsel, log historik
 	$effect(() => {
 		if (phase !== 'done' || traeningGennemfoert) return;
 		const u = user;
@@ -527,6 +529,13 @@
 		void tilfoejGennemfoersel(u.uid, 'eget', programId).catch((e) =>
 			console.warn('Kunne ikke gemme gennemførsel:', e)
 		);
+		void logTraening(u.uid, {
+			dato: formaterHistorikDato(new Date()),
+			kilde: 'eget',
+			programId,
+			programNavn: program?.navn ?? 'Eget program',
+			gennemfoertAt: Date.now()
+		}).catch((e) => console.warn('Kunne ikke logge træning-historik:', e));
 	});
 
 	function togglePause() {
