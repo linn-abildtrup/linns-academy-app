@@ -13,6 +13,7 @@
 	import { getCurrentDay, tomForlobDag } from '$lib/content/forlob';
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct, hentForlobsProgram } from '$lib/firestore/mikrotraening';
+	import { hentMitProgram } from '$lib/firestore/mineProgrammer';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
 	import {
 		hentVaneprogramForForlob,
@@ -328,7 +329,7 @@
 	const modulbrugerTraeningHref = $derived.by(() => {
 		const aktivt = userDoc?.aktivtTraeningsprogram;
 		if (aktivt?.kilde === 'eget' && aktivt.programId) {
-			return `/app/moduler/traening/byg-eget/${aktivt.programId}`;
+			return `/app/moduler/traening/byg-eget/${aktivt.programId}/lav`;
 		}
 		if (aktivt?.kilde === 'tildelt' && aktivt.forlobId && aktivt.programId) {
 			return `/app/moduler/traening/program/${aktivt.forlobId}/${aktivt.programId}`;
@@ -339,6 +340,40 @@
 		modulbrugerTraeningHref === modulbrugerMikroHref
 	);
 	const modulbrugerErIDag = $derived(modulbrugerAktivDato === modulbrugerIDag);
+
+	// Navn på aktivt træningsprogram. Hentet asynkront når aktivtTraeningsprogram
+	// peger på et eget eller tildelt program. null for mikrotræning eller når
+	// brugeren ikke har valgt et program.
+	let aktivtProgramNavn = $state<string | null>(null);
+
+	$effect(() => {
+		const aktivt = userDoc?.aktivtTraeningsprogram;
+		const u = user;
+		if (!aktivt || aktivt.kilde === 'mikrotraening') {
+			aktivtProgramNavn = null;
+			return;
+		}
+		(async () => {
+			try {
+				if (aktivt.kilde === 'eget' && aktivt.programId && u) {
+					const program = await hentMitProgram(u.uid, aktivt.programId);
+					aktivtProgramNavn = program?.navn ?? null;
+				} else if (
+					aktivt.kilde === 'tildelt' &&
+					aktivt.forlobId &&
+					aktivt.programId
+				) {
+					const program = await hentForlobsProgram(aktivt.forlobId, aktivt.programId);
+					aktivtProgramNavn = program?.program.navn ?? null;
+				} else {
+					aktivtProgramNavn = null;
+				}
+			} catch (e) {
+				console.error('Kunne ikke hente navn på aktivt program:', e);
+				aktivtProgramNavn = null;
+			}
+		})();
+	});
 
 	function formatModulbrugerChipDato(dato: string): { dag: string; ugedag: string } {
 		const [aar, m, d] = dato.split('-').map(Number);
@@ -925,7 +960,7 @@
 				{@const aktivtProgram = userDoc?.aktivtTraeningsprogram}
 				{@const traeningHref =
 					aktivtProgram?.kilde === 'eget' && aktivtProgram.programId
-						? `/app/moduler/traening/byg-eget/${aktivtProgram.programId}`
+						? `/app/moduler/traening/byg-eget/${aktivtProgram.programId}/lav`
 						: aktivtProgram?.kilde === 'tildelt' &&
 							  aktivtProgram.forlobId &&
 							  aktivtProgram.programId
@@ -1024,7 +1059,7 @@
 								{/if}
 								<div class="action-text">
 									<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
-									<div class="action-title">Mikrotræning</div>
+									<div class="action-title">{aktivtProgramNavn ?? 'Mikrotræning'}</div>
 									<div class="action-meta">
 										{forlobTraeningGennemfoert ? 'Gennemført' : 'Korte daglige sessioner'}
 									</div>
@@ -1363,7 +1398,7 @@
 						{/if}
 						<div class="action-text">
 							<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
-							<div class="action-title">Dagens mikrotræning</div>
+							<div class="action-title">{aktivtProgramNavn ?? 'Dagens mikrotræning'}</div>
 							<div class="action-meta">
 								{modulbrugerTraeningGennemfoert ? 'Gennemført' : 'Korte daglige sessioner'}
 							</div>

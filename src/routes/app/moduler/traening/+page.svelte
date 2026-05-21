@@ -206,7 +206,7 @@
 					<a
 						class="program-row"
 						class:aktiv={erAktivt('eget', p.id)}
-						href={`/app/moduler/traening/byg-eget/${p.id}`}
+						href={`/app/moduler/traening/byg-eget/${p.id}/lav`}
 					>
 						<div class="program-icon">
 							<Icon name="flame" size={18} color="#fff" />
