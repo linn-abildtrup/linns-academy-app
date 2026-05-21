@@ -2,7 +2,7 @@
 	import { getContext, onMount } from 'svelte';
 	import type { User } from 'firebase/auth';
 	import { page } from '$app/state';
-	import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+	import { doc, getDoc } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
 	import Icon from '$lib/components/Icon.svelte';
 	import { alleProdukter } from '$lib/content/produkter';
@@ -21,76 +21,84 @@
 		type ProgramMedForlob
 	} from '$lib/firestore/tildelinger';
 
-	type Deltager = {
+	type KundeInfo = {
 		uid: string;
 		email: string;
 		firstName: string;
 		lastName: string;
+		forlobIds: string[];
 	};
 
 	const getUser = getContext<() => User | null>('user');
 	const adminUser = $derived(getUser());
 
-	const forlobId = $derived(page.params.forlobId ?? '');
+	const uid = $derived(page.params.uid ?? '');
+	const forlobId = $derived(page.params.id ?? '');
 
-	let forlobNavn = $state('');
-	let deltagere = $state<Deltager[]>([]);
+	let kunde = $state<KundeInfo | null>(null);
 	let alleProgrammer = $state<ProgramMedForlob[]>([]);
 	let programTildelinger = $state<ProgramTildeling[]>([]);
 	let customBuilderTildelinger = $state<CustomBuilderTildeling[]>([]);
 	let indlaeser = $state(true);
 	let fejl = $state<string | null>(null);
 
-	let valgtProgramKey = $state('');
+	// Form state
+	let valgtProgramKey = $state(''); // "forlobId::programId"
 	let gemmer = $state(false);
 
+	const direkteProgramTildelinger = $derived(
+		programTildelinger.filter((t) => t.modtagerType === 'kunde' && t.modtagerId === uid)
+	);
 	const forlobsProgramTildelinger = $derived(
 		programTildelinger.filter(
-			(t) => t.modtagerType === 'forlob' && t.modtagerId === forlobId
+			(t) =>
+				t.modtagerType === 'forlob' &&
+				(kunde?.forlobIds ?? []).includes(t.modtagerId)
 		)
+	);
+	const direkteCustomBuilder = $derived(
+		customBuilderTildelinger.find(
+			(t) => t.modtagerType === 'kunde' && t.modtagerId === uid
+		) ?? null
 	);
 	const forlobsCustomBuilder = $derived(
 		customBuilderTildelinger.find(
-			(t) => t.modtagerType === 'forlob' && t.modtagerId === forlobId
+			(t) =>
+				t.modtagerType === 'forlob' &&
+				(kunde?.forlobIds ?? []).includes(t.modtagerId)
 		) ?? null
 	);
+	const forlobNavne = $derived.by(() => {
+		const map = new Map<string, string>();
+		for (const p of alleProdukter()) {
+			if (p.forlobId) map.set(p.forlobId, p.navn);
+		}
+		return map;
+	});
 
 	async function indlaesData() {
 		indlaeser = true;
 		fejl = null;
 		try {
-			// Forløbs-navn fra produkter (eller fra forløbs-doc hvis det findes)
-			const produkt = alleProdukter().find((p) => p.forlobId === forlobId);
-			forlobNavn = produkt?.navn ?? forlobId;
-			const forlobSnap = await getDoc(doc(db, 'forlob', forlobId));
-			if (forlobSnap.exists()) {
-				const data = forlobSnap.data() as { navn?: string };
-				if (data.navn) forlobNavn = data.navn;
+			const userSnap = await getDoc(doc(db, 'users', uid));
+			if (!userSnap.exists()) {
+				fejl = 'Kunden findes ikke.';
+				kunde = null;
+				return;
 			}
-
-			// Deltagere — alle brugere hvis forlobIds inkluderer dette forløb
-			const usersSnap = await getDocs(collection(db, 'users'));
-			deltagere = usersSnap.docs
-				.filter((d) => {
-					const data = d.data() as { forlobIds?: string[] };
-					return (data.forlobIds ?? []).includes(forlobId);
-				})
-				.map((d) => {
-					const data = d.data() as {
-						email?: string;
-						firstName?: string;
-						lastName?: string;
-					};
-					return {
-						uid: d.id,
-						email: data.email ?? '',
-						firstName: data.firstName ?? '',
-						lastName: data.lastName ?? ''
-					};
-				})
-				.sort((a, b) =>
-					(a.firstName || a.email).localeCompare(b.firstName || b.email, 'da')
-				);
+			const data = userSnap.data() as {
+				email?: string;
+				firstName?: string;
+				lastName?: string;
+				forlobIds?: string[];
+			};
+			kunde = {
+				uid,
+				email: data.email ?? '',
+				firstName: data.firstName ?? '',
+				lastName: data.lastName ?? '',
+				forlobIds: data.forlobIds ?? []
+			};
 
 			[alleProgrammer, programTildelinger, customBuilderTildelinger] = await Promise.all([
 				hentAlleProgrammerPaaTvaers(),
@@ -109,17 +117,18 @@
 
 	async function tildelValgtProgram() {
 		if (!valgtProgramKey || !adminUser || gemmer) return;
-		const [progForlobId, programId] = valgtProgramKey.split('::');
-		if (!progForlobId || !programId) return;
+		const [forlobId, programId] = valgtProgramKey.split('::');
+		if (!forlobId || !programId) return;
 		gemmer = true;
 		try {
 			const ny = await tildelProgram({
 				programId,
-				forlobId: progForlobId,
-				modtagerType: 'forlob',
-				modtagerId: forlobId,
+				forlobId,
+				modtagerType: 'kunde',
+				modtagerId: uid,
 				tildeltAf: adminUser.uid
 			});
+			// Tilføj kun hvis ikke allerede i listen (dublet-beskyttelsen returnerer eksisterende)
 			if (!programTildelinger.some((t) => t.id === ny.id)) {
 				programTildelinger = [...programTildelinger, ny];
 			}
@@ -150,15 +159,15 @@
 		if (!adminUser || gemmer) return;
 		gemmer = true;
 		try {
-			if (forlobsCustomBuilder) {
-				await fjernCustomBuilderTildeling(forlobsCustomBuilder.id!);
+			if (direkteCustomBuilder) {
+				await fjernCustomBuilderTildeling(direkteCustomBuilder.id!);
 				customBuilderTildelinger = customBuilderTildelinger.filter(
-					(t) => t.id !== forlobsCustomBuilder.id
+					(t) => t.id !== direkteCustomBuilder.id
 				);
 			} else {
 				const ny = await tildelCustomBuilder({
-					modtagerType: 'forlob',
-					modtagerId: forlobId,
+					modtagerType: 'kunde',
+					modtagerId: uid,
 					tildeltAf: adminUser.uid
 				});
 				if (!customBuilderTildelinger.some((t) => t.id === ny.id)) {
@@ -173,30 +182,36 @@
 		}
 	}
 
-	function programNavn(progForlobId: string, programId: string): string {
+	function programNavn(forlobId: string, programId: string): string {
 		const p = alleProgrammer.find(
-			(pr) => pr.forlobId === progForlobId && pr.program.id === programId
+			(pr) => pr.forlobId === forlobId && pr.program.id === programId
 		);
 		return p ? p.program.navn : programId;
 	}
 
-	function forlobNavnFor(id: string): string {
-		const produkt = alleProdukter().find((p) => p.forlobId === id);
-		return produkt?.navn ?? id;
-	}
+	const fuldtNavn = $derived(
+		kunde ? `${kunde.firstName} ${kunde.lastName}`.trim() || kunde.email : ''
+	);
 </script>
 
 <div class="page">
 	<header class="page-header">
-		<a class="back" href="/app/admin/kunde-tildeling">
+		<a class="back" href="/app/admin/forlob/{forlobId}/traening">
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>Kunde-tildeling</span>
+			<span>Træning</span>
 		</a>
-		<div class="eyebrow">Admin — forløb</div>
-		<h1>{forlobNavn}</h1>
-		<p class="page-sub">
-			Tildelinger på dette niveau gælder alle deltagere på forløbet.
-		</p>
+		<div class="eyebrow">Admin · Træning</div>
+		<h1>{fuldtNavn || 'Kunde'}</h1>
+		{#if kunde}
+			<p class="page-sub">{kunde.email}</p>
+			{#if kunde.forlobIds.length > 0}
+				<p class="page-sub">
+					Forløb: {kunde.forlobIds.map((id) => forlobNavne.get(id) ?? id).join(', ')}
+				</p>
+			{:else}
+				<p class="page-sub">Ingen aktive forløb.</p>
+			{/if}
+		{/if}
 	</header>
 
 	{#if fejl}
@@ -205,57 +220,59 @@
 
 	{#if indlaeser}
 		<div class="status">Indlæser…</div>
-	{:else}
-		<section class="card">
-			<div class="card-titel">Deltagere ({deltagere.length})</div>
-			{#if deltagere.length === 0}
-				<p class="card-sub">Ingen deltagere på dette forløb endnu.</p>
-			{:else}
-				<div class="liste">
-					{#each deltagere as d (d.uid)}
-						{@const navn = `${d.firstName} ${d.lastName}`.trim()}
-						<a class="rad" href={`/app/admin/kunde-tildeling/kunde/${d.uid}`}>
-							<div class="rad-tekst">
-								<div class="rad-navn">{navn || '(uden navn)'}</div>
-								<div class="rad-sub">{d.email}</div>
-							</div>
-							<Icon name="chevron-r" size={14} color="var(--text3)" />
-						</a>
-					{/each}
-				</div>
-			{/if}
-		</section>
-
+	{:else if kunde}
 		<section class="card">
 			<div class="card-titel">Program-tildelinger</div>
-			<p class="card-sub">Gælder alle deltagere på forløbet.</p>
 
-			{#if forlobsProgramTildelinger.length === 0}
-				<p class="card-sub">Ingen programmer tildelt forløbet endnu.</p>
-			{:else}
-				<div class="liste">
-					{#each forlobsProgramTildelinger as t (t.id)}
-						<div class="rad">
-							<div class="rad-tekst">
-								<div class="rad-navn">{programNavn(t.forlobId, t.programId)}</div>
-								<div class="rad-sub">Fra {forlobNavnFor(t.forlobId)}</div>
+			{#if direkteProgramTildelinger.length === 0 && forlobsProgramTildelinger.length === 0}
+				<p class="card-sub">Ingen programmer tildelt endnu.</p>
+			{/if}
+
+			{#if direkteProgramTildelinger.length > 0}
+				<div class="undergruppe">
+					<div class="undergruppe-label">Direkte til {fuldtNavn}</div>
+					<div class="liste">
+						{#each direkteProgramTildelinger as t (t.id)}
+							<div class="rad">
+								<div class="rad-tekst">
+									<div class="rad-navn">{programNavn(t.forlobId, t.programId)}</div>
+									<div class="rad-sub">{forlobNavne.get(t.forlobId) ?? t.forlobId}</div>
+								</div>
+								<button
+									type="button"
+									class="fjern-knap"
+									onclick={() => fjernTildeling(t.id!)}
+									disabled={gemmer}
+								>
+									Fjern
+								</button>
 							</div>
-							<button
-								type="button"
-								class="fjern-knap"
-								onclick={() => fjernTildeling(t.id!)}
-								disabled={gemmer}
-							>
-								Fjern
-							</button>
-						</div>
-					{/each}
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			{#if forlobsProgramTildelinger.length > 0}
+				<div class="undergruppe">
+					<div class="undergruppe-label">Arvet via forløb</div>
+					<div class="liste">
+						{#each forlobsProgramTildelinger as t (t.id)}
+							<div class="rad arvet">
+								<div class="rad-tekst">
+									<div class="rad-navn">{programNavn(t.forlobId, t.programId)}</div>
+									<div class="rad-sub">
+										Tildelt hele {forlobNavne.get(t.modtagerId) ?? t.modtagerId}
+									</div>
+								</div>
+							</div>
+						{/each}
+					</div>
 				</div>
 			{/if}
 
 			<div class="tildel-form">
 				<label class="felt">
-					<span class="felt-label">Tildel et nyt program til hele forløbet</span>
+					<span class="felt-label">Tildel et nyt program</span>
 					<select class="felt-input" bind:value={valgtProgramKey} disabled={gemmer}>
 						<option value="">Vælg et program…</option>
 						{#each alleProgrammer as p (`${p.forlobId}::${p.program.id}`)}
@@ -271,7 +288,7 @@
 					onclick={tildelValgtProgram}
 					disabled={!valgtProgramKey || gemmer}
 				>
-					{gemmer ? 'Gemmer…' : 'Tildel til hele forløbet'}
+					{gemmer ? 'Gemmer…' : 'Tildel'}
 				</button>
 			</div>
 		</section>
@@ -279,14 +296,20 @@
 		<section class="card">
 			<div class="card-titel">Custom-builder-adgang</div>
 			<p class="card-sub">
-				Når aktiveret kan alle deltagere på forløbet bygge eget træningsprogram.
+				Med custom-builder-adgang kan kunden bygge sit eget træningsprogram (vælge øvelser,
+				sæt, reps og pause).
 			</p>
 
 			<div class="status-rad">
 				<div class="status-tekst">
 					Status:
-					{#if forlobsCustomBuilder}
-						<strong>Aktiv for alle deltagere</strong>
+					{#if direkteCustomBuilder}
+						<strong>Aktiv (direkte)</strong>
+					{:else if forlobsCustomBuilder}
+						<strong>
+							Aktiv (via {forlobNavne.get(forlobsCustomBuilder.modtagerId) ??
+								forlobsCustomBuilder.modtagerId})
+						</strong>
 					{:else}
 						<strong>Ikke aktiv</strong>
 					{/if}
@@ -295,11 +318,27 @@
 					type="button"
 					class="sekundaer-knap"
 					onclick={toggleCustomBuilder}
-					disabled={gemmer}
+					disabled={gemmer || (forlobsCustomBuilder !== null && !direkteCustomBuilder)}
+					title={forlobsCustomBuilder && !direkteCustomBuilder
+						? 'Adgangen kommer fra forløbet og kan kun fjernes der.'
+						: ''}
 				>
-					{forlobsCustomBuilder ? 'Fjern adgang' : 'Aktivér for hele forløbet'}
+					{#if direkteCustomBuilder}
+						Fjern direkte adgang
+					{:else if forlobsCustomBuilder}
+						Aktiv via forløb
+					{:else}
+						Aktivér for denne kunde
+					{/if}
 				</button>
 			</div>
+
+			{#if forlobsCustomBuilder && !direkteCustomBuilder}
+				<p class="hint">
+					Kunden har allerede adgang via forløbet. Hvis du fjerner forløbets adgang
+					mister hun den — medmindre du også tildeler hende direkte først.
+				</p>
+			{/if}
 		</section>
 	{/if}
 </div>
@@ -372,6 +411,19 @@
 		line-height: 1.4;
 	}
 
+	.undergruppe {
+		margin-bottom: 14px;
+	}
+
+	.undergruppe-label {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--text3);
+		margin-bottom: 6px;
+	}
+
 	.liste {
 		border: 1px solid var(--border);
 		border-radius: 10px;
@@ -384,15 +436,13 @@
 		gap: 12px;
 		padding: 12px 14px;
 		border-top: 1px solid var(--border);
-		text-decoration: none;
-		color: inherit;
 	}
 
 	.rad:first-child {
 		border-top: none;
 	}
 
-	a.rad:hover {
+	.rad.arvet {
 		background: var(--bg2);
 	}
 
@@ -504,6 +554,13 @@
 	.status-tekst {
 		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
+	}
+
+	.hint {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin: 10px 0 0;
+		line-height: 1.5;
 	}
 
 	.status {

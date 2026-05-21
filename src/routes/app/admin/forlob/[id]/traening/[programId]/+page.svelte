@@ -129,7 +129,7 @@
 
 <div class="page">
 	<header class="page-header">
-		<a class="back" href="/app/admin/forlob/{forlobId}/mikrotraening">
+		<a class="back" href="/app/admin/forlob/{forlobId}/traening">
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Programmer</span>
 		</a>
