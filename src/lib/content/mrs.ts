@@ -106,6 +106,8 @@ export interface SubskalaDef {
 	items: number[];
 	color: string;
 	bg: string;
+	/** Kort forklaring vist under subskala-scoren på resultat-siden. */
+	beskrivelse: string;
 }
 
 export const SUBSCALES: Record<Subskala, SubskalaDef> = {
@@ -113,19 +115,24 @@ export const SUBSCALES: Record<Subskala, SubskalaDef> = {
 		label: 'Krop og søvn',
 		items: [1, 2, 3, 11],
 		color: '#C4624A',
-		bg: '#FDF4F7'
+		bg: '#FDF4F7',
+		beskrivelse:
+			'Hedeture, hjertebanken, søvn og led-/muskelsmerter. 4 spørgsmål, max 16.'
 	},
 	psykologisk: {
 		label: 'Humør og energi',
 		items: [4, 5, 6, 7],
 		color: '#2A0F1E',
-		bg: '#F3EDF1'
+		bg: '#F3EDF1',
+		beskrivelse:
+			'Nedtrykthed, irritabilitet, uro og træthed/hjernetåge. 4 spørgsmål, max 16.'
 	},
 	urogenital: {
 		label: 'Underliv og blære',
 		items: [8, 9, 10],
 		color: '#8B5E3C',
-		bg: '#F5F0EB'
+		bg: '#F5F0EB',
+		beskrivelse: 'Sexlyst, blære og tørhed nedadtil. 3 spørgsmål, max 12.'
 	}
 };
 

@@ -279,8 +279,13 @@
 			<div class="total-label" style="color: {resultatFortolkning.color};">
 				{resultatFortolkning.label}
 			</div>
+			<p class="total-forklaring">
+				Din samlede score lægger alle 11 svar sammen. Skalaen går fra 0 (ingen gener)
+				til 44 (kraftige gener). Jo lavere tal, jo færre gener oplever du.
+			</p>
 		</section>
 
+		<div class="subskala-titel">De tre symptom-områder</div>
 		<div class="subskala-grid">
 			{#each Object.entries(SUBSCALES) as [key, sub] (key)}
 				{@const subScore = score.subscales[key as keyof typeof score.subscales]}
@@ -292,6 +297,7 @@
 					<div class="subskala-tal" style="color: {sub.color};">{subScore}</div>
 					<div class="subskala-max">af {max}</div>
 					<div class="subskala-navn" style="color: {sub.color};">{sub.label}</div>
+					<div class="subskala-beskrivelse">{sub.beskrivelse}</div>
 				</div>
 			{/each}
 		</div>
@@ -674,6 +680,21 @@
 		font-weight: 500;
 	}
 
+	.total-forklaring {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.6;
+		margin: 14px 0 0;
+		text-align: left;
+	}
+
+	.subskala-titel {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin: 0 0 10px;
+		font-weight: 500;
+	}
+
 	.subskala-grid {
 		display: flex;
 		gap: 12px;
@@ -704,6 +725,14 @@
 	.subskala-navn {
 		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 500;
+	}
+
+	.subskala-beskrivelse {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		margin-top: 8px;
+		line-height: 1.45;
+		opacity: 0.85;
 	}
 
 	.bars-titel {
