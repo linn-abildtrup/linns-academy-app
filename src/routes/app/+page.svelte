@@ -322,6 +322,22 @@
 
 	const modulbrugerIDag = $derived(formaterDato(new Date()));
 	const modulbrugerAktivDato = $derived(modulbrugerValgtDato ?? modulbrugerIDag);
+	const modulbrugerMikroHref = $derived(
+		`/app/moduler/traening/mikrotraening/abo/${modulbrugerAktivDato}`
+	);
+	const modulbrugerTraeningHref = $derived.by(() => {
+		const aktivt = userDoc?.aktivtTraeningsprogram;
+		if (aktivt?.kilde === 'eget' && aktivt.programId) {
+			return `/app/moduler/traening/byg-eget/${aktivt.programId}`;
+		}
+		if (aktivt?.kilde === 'tildelt' && aktivt.forlobId && aktivt.programId) {
+			return `/app/moduler/traening/program/${aktivt.forlobId}/${aktivt.programId}`;
+		}
+		return modulbrugerMikroHref;
+	});
+	const modulbrugerErMikro = $derived(
+		modulbrugerTraeningHref === modulbrugerMikroHref
+	);
 	const modulbrugerErIDag = $derived(modulbrugerAktivDato === modulbrugerIDag);
 
 	function formatModulbrugerChipDato(dato: string): { dag: string; ugedag: string } {
@@ -906,9 +922,17 @@
 
 			{#if dagensDag}
 				{@const harProgramValg = !!userProduct?.programValg?.mikrotraening}
-				{@const traeningHref = harProgramValg
-					? `/app/moduler/traening/mikrotraening/${dagensDag.dagNummer}`
-					: '/app/moduler/traening/mikrotraening'}
+				{@const aktivtProgram = userDoc?.aktivtTraeningsprogram}
+				{@const traeningHref =
+					aktivtProgram?.kilde === 'eget' && aktivtProgram.programId
+						? `/app/moduler/traening/byg-eget/${aktivtProgram.programId}`
+						: aktivtProgram?.kilde === 'tildelt' &&
+							  aktivtProgram.forlobId &&
+							  aktivtProgram.programId
+							? `/app/moduler/traening/program/${aktivtProgram.forlobId}/${aktivtProgram.programId}`
+							: harProgramValg
+								? `/app/moduler/traening/mikrotraening/${dagensDag.dagNummer}`
+								: '/app/moduler/traening/mikrotraening'}
 				<section class="actions-section">
 					<div class="actions-header">
 						<div class="eyebrow eyebrow-muted">Dagens lektioner</div>
@@ -1302,12 +1326,12 @@
 					{/if}
 					<a
 						class="action-card"
-						href={`/app/moduler/traening/mikrotraening/abo/${modulbrugerAktivDato}`}
-						onclick={(e) =>
-							maaskeAabneVariantModal(
-								`/app/moduler/traening/mikrotraening/abo/${modulbrugerAktivDato}`,
-								e
-							)}
+						href={modulbrugerTraeningHref}
+						onclick={(e) => {
+							if (modulbrugerErMikro) {
+								maaskeAabneVariantModal(modulbrugerMikroHref, e);
+							}
+						}}
 					>
 						{#if modulbrugerTraeningsVideo}
 							<div class="traening-thumb">

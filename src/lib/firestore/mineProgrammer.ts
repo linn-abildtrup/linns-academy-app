@@ -12,10 +12,12 @@ import {
 	getDocs,
 	orderBy,
 	query,
-	setDoc
+	setDoc,
+	updateDoc
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { CustomProgram } from '$lib/content/mineProgrammer';
+import type { UserDoc } from '$lib/types';
 
 function mineProgrammerCol(uid: string) {
 	return collection(db, 'users', uid, 'mineProgrammer');
@@ -72,4 +74,16 @@ export async function opdaterMitProgram(
 
 export async function sletMitProgram(uid: string, programId: string): Promise<void> {
 	await deleteDoc(doc(db, 'users', uid, 'mineProgrammer', programId));
+}
+
+/**
+ * Sætter hvilket træningsprogram brugeren har valgt som sit aktive.
+ * Bruges af træning-modulet og forsiden til at bestemme hvilket program
+ * der vises og startes som default.
+ */
+export async function gemAktivtTraeningsprogram(
+	uid: string,
+	aktivt: NonNullable<UserDoc['aktivtTraeningsprogram']>
+): Promise<void> {
+	await updateDoc(doc(db, 'users', uid), { aktivtTraeningsprogram: aktivt });
 }

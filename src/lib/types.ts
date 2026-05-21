@@ -167,4 +167,21 @@ export interface UserDoc {
 	 * Webhook + sync-funktion bruger arrayUnion for at bevare historik.
 	 */
 	forlobIds?: string[];
+
+	/**
+	 * Hvilket træningsprogram brugeren har valgt som sit aktive program.
+	 * Vises på forsiden og bestemmer hvilket program der startes når hun
+	 * klikker på træning-modulet.
+	 *
+	 * kilde='mikrotraening' = det eksisterende abo-mikrotræningsprogram
+	 * kilde='eget' = et selvbygget program (programId peger på users/{uid}/mineProgrammer/{programId})
+	 * kilde='tildelt' = et admin-tildelt forløbsprogram (programId + forlobId)
+	 *
+	 * Hvis feltet ikke er sat, defaultes til mikrotræning (backwards-compat).
+	 */
+	aktivtTraeningsprogram?: {
+		kilde: 'mikrotraening' | 'eget' | 'tildelt';
+		programId?: string;
+		forlobId?: string;
+	};
 }
