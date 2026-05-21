@@ -13,7 +13,7 @@
 	import { getCurrentDay, tomForlobDag } from '$lib/content/forlob';
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct, hentForlobsProgram } from '$lib/firestore/mikrotraening';
-	import { hentMitProgram } from '$lib/firestore/mineProgrammer';
+	import { hentMitProgram, hentProgramFremgang } from '$lib/firestore/mineProgrammer';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
 	import {
 		hentVaneprogramForForlob,
@@ -345,35 +345,68 @@
 	// peger på et eget eller tildelt program. null for mikrotræning eller når
 	// brugeren ikke har valgt et program.
 	let aktivtProgramNavn = $state<string | null>(null);
+	// Senest-gennemført-timestamp for det aktive eget/tildelte program.
+	// Bruges til at vise grønt flueben på forsidens træning-kort når træningen
+	// er gennemført i dag.
+	let aktivtProgramSenestGennemfoert = $state<number | null>(null);
 
 	$effect(() => {
 		const aktivt = userDoc?.aktivtTraeningsprogram;
 		const u = user;
 		if (!aktivt || aktivt.kilde === 'mikrotraening') {
 			aktivtProgramNavn = null;
+			aktivtProgramSenestGennemfoert = null;
 			return;
 		}
 		(async () => {
 			try {
 				if (aktivt.kilde === 'eget' && aktivt.programId && u) {
-					const program = await hentMitProgram(u.uid, aktivt.programId);
+					const [program, fremgang] = await Promise.all([
+						hentMitProgram(u.uid, aktivt.programId),
+						hentProgramFremgang(u.uid, 'eget', aktivt.programId)
+					]);
 					aktivtProgramNavn = program?.navn ?? null;
+					aktivtProgramSenestGennemfoert = fremgang?.senestGennemfort ?? null;
 				} else if (
 					aktivt.kilde === 'tildelt' &&
 					aktivt.forlobId &&
-					aktivt.programId
+					aktivt.programId &&
+					u
 				) {
-					const program = await hentForlobsProgram(aktivt.forlobId, aktivt.programId);
+					const [program, fremgang] = await Promise.all([
+						hentForlobsProgram(aktivt.forlobId, aktivt.programId),
+						hentProgramFremgang(u.uid, 'tildelt', aktivt.programId, aktivt.forlobId)
+					]);
 					aktivtProgramNavn = program?.program.navn ?? null;
+					aktivtProgramSenestGennemfoert = fremgang?.senestGennemfort ?? null;
 				} else {
 					aktivtProgramNavn = null;
+					aktivtProgramSenestGennemfoert = null;
 				}
 			} catch (e) {
 				console.error('Kunne ikke hente navn på aktivt program:', e);
 				aktivtProgramNavn = null;
+				aktivtProgramSenestGennemfoert = null;
 			}
 		})();
 	});
+
+	// True hvis det aktive eget/tildelte program er gennemført i dag.
+	const aktivtProgramGennemfoertIDag = $derived.by<boolean>(() => {
+		if (aktivtProgramSenestGennemfoert === null) return false;
+		const dt = new Date(aktivtProgramSenestGennemfoert);
+		const iDagISO = formaterDato(new Date());
+		const senestISO = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+		return senestISO === iDagISO;
+	});
+
+	// Når kunden har valgt eget/tildelt som aktivt, bruger vi programFremgang
+	// til at vise det grønne flueben. Ellers fald tilbage til den eksisterende
+	// mikrotræning-check (forlobTraening/modulbrugerTraening).
+	const brugerAktivtProgram = $derived(
+		!!userDoc?.aktivtTraeningsprogram &&
+			userDoc.aktivtTraeningsprogram.kilde !== 'mikrotraening'
+	);
 
 	function formatModulbrugerChipDato(dato: string): { dag: string; ugedag: string } {
 		const [aar, m, d] = dato.split('-').map(Number);
@@ -548,6 +581,12 @@
 
 	const modulbrugerTraeningGennemfoert = $derived(
 		modulbrugerTraeningsDatoer.has(modulbrugerAktivDato)
+	);
+
+	// Når kunden har valgt eget/tildelt som aktivt program, bruger vi
+	// programFremgang. Ellers fald tilbage til mikrotræning-fremgangen.
+	const modulbrugerGennemfoertCheck = $derived(
+		brugerAktivtProgram ? aktivtProgramGennemfoertIDag : modulbrugerTraeningGennemfoert
 	);
 
 	// Find brugerens "har du trænet"-vane (hvis valgt) ud fra label-heuristik.
@@ -1028,6 +1067,9 @@
 							{/each}
 						{/if}
 						{#if dagensDag.dagNummer > 0}
+							{@const forlobGennemfoertCheck = brugerAktivtProgram
+								? aktivtProgramGennemfoertIDag
+								: forlobTraeningGennemfoert}
 							<a class="action-card" href={traeningHref}>
 								{#if forlobTraeningsVideo}
 									<div class="traening-thumb">
@@ -1039,7 +1081,7 @@
 											playsinline
 											preload="auto"
 										></video>
-										{#if forlobTraeningGennemfoert}
+										{#if forlobGennemfoertCheck}
 											<div class="traening-thumb-check">
 												<Icon name="check" size={12} color="#fff" />
 											</div>
@@ -1048,12 +1090,12 @@
 								{:else}
 									<div
 										class="action-icon"
-										style="background: {forlobTraeningGennemfoert ? 'var(--sage)' : 'var(--tdim)'}"
+										style="background: {forlobGennemfoertCheck ? 'var(--sage)' : 'var(--tdim)'}"
 									>
 										<Icon
-											name={forlobTraeningGennemfoert ? 'check' : 'workout'}
+											name={forlobGennemfoertCheck ? 'check' : 'workout'}
 											size={15}
-											color={forlobTraeningGennemfoert ? '#fff' : 'var(--terra)'}
+											color={forlobGennemfoertCheck ? '#fff' : 'var(--terra)'}
 										/>
 									</div>
 								{/if}
@@ -1061,7 +1103,7 @@
 									<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
 									<div class="action-title">{aktivtProgramNavn ?? 'Mikrotræning'}</div>
 									<div class="action-meta">
-										{forlobTraeningGennemfoert ? 'Gennemført' : 'Korte daglige sessioner'}
+										{forlobGennemfoertCheck ? 'Gennemført' : 'Korte daglige sessioner'}
 									</div>
 								</div>
 								<Icon name="chevron-r" size={14} color="var(--text3)" />
@@ -1378,7 +1420,7 @@
 									playsinline
 									preload="auto"
 								></video>
-								{#if modulbrugerTraeningGennemfoert}
+								{#if modulbrugerGennemfoertCheck}
 									<div class="traening-thumb-check">
 										<Icon name="check" size={12} color="#fff" />
 									</div>
@@ -1387,12 +1429,12 @@
 						{:else}
 							<div
 								class="action-icon"
-								style="background: {modulbrugerTraeningGennemfoert ? 'var(--sage)' : 'var(--tdim)'}"
+								style="background: {modulbrugerGennemfoertCheck ? 'var(--sage)' : 'var(--tdim)'}"
 							>
 								<Icon
-									name={modulbrugerTraeningGennemfoert ? 'check' : 'workout'}
+									name={modulbrugerGennemfoertCheck ? 'check' : 'workout'}
 									size={15}
-									color={modulbrugerTraeningGennemfoert ? '#fff' : 'var(--terra)'}
+									color={modulbrugerGennemfoertCheck ? '#fff' : 'var(--terra)'}
 								/>
 							</div>
 						{/if}
@@ -1400,7 +1442,7 @@
 							<div class="action-eyebrow" style="color: var(--terra)">Træning</div>
 							<div class="action-title">{aktivtProgramNavn ?? 'Dagens mikrotræning'}</div>
 							<div class="action-meta">
-								{modulbrugerTraeningGennemfoert ? 'Gennemført' : 'Korte daglige sessioner'}
+								{modulbrugerGennemfoertCheck ? 'Gennemført' : 'Korte daglige sessioner'}
 							</div>
 						</div>
 						<Icon name="chevron-r" size={14} color="var(--text3)" />
