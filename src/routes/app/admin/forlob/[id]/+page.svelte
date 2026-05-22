@@ -275,6 +275,17 @@
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
 
+		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/buddymakker">
+			<div class="indhold-icon" style="background: #9D6358;">
+				<Icon name="user" size={16} color="#fff" />
+			</div>
+			<div class="indhold-tekst">
+				<div class="indhold-navn">Buddymakker</div>
+				<div class="indhold-sub">Deltagere der ønsker en buddymakker (kun Kropsro)</div>
+			</div>
+			<Icon name="chevron-r" size={14} color="var(--text3)" />
+		</a>
+
 		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/traening">
 			<div class="indhold-icon" style="background: #C9A07A;">
 				<Icon name="flame" size={16} color="#fff" />
