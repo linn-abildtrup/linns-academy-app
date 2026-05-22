@@ -310,6 +310,15 @@ Hvis du svarer ja, matcher Linn dig manuelt med en anden deltager. Du kan altid 
 Du bliver kun spurgt én gang ved første login. Hvis du har sagt ja eller nej, popper modalen ikke op igen.`
 	},
 	{
+		titel: 'Facebook-gruppe på Kropsro',
+		visFor: ['premiumforløb'],
+		indhold: `På dag 0 eller derefter bliver du spurgt om du er kommet ind i Kropsros Facebook-gruppe. Gruppen er hvor deltagerne mødes, deler oplevelser og stiller spørgsmål til Linn.
+
+Svar Ja hvis du er inde — så spørger vi ikke igen. Svar "Ikke endnu" hvis du stadig leder efter linket (du finder det i din velkomst-mail fra Linn).
+
+Modalen vises kun én gang, så når du har svaret er den væk.`
+	},
+	{
 		titel: 'Forsidens "Dagens træning"-kort',
 		visFor: ALLE_PRODUKTER,
 		indhold: `På forsiden vises et "Træning"-kort der viser:

@@ -303,13 +303,31 @@
 	let visBuddyModal = $state(false);
 	let gemmerBuddy = $state(false);
 
+	// Facebook-modal: vises på dag 0 eller senere for Kropsro-kunder der
+	// endnu ikke har svaret om de er kommet ind i Facebook-gruppen.
+	let visFacebookModal = $state(false);
+	let gemmerFacebook = $state(false);
+
 	$effect(() => {
 		const ud = userDoc;
 		if (!ud) return;
 		const erKropsro =
 			ud.accessSource === 'forløb' && ud.activeProduct === 'premiumforløb';
-		if (erKropsro && ud.kropsroBuddyOensker === undefined) {
+		if (!erKropsro) return;
+
+		// Buddy-modalen har precedens — vises før Facebook-spørgsmålet
+		if (ud.kropsroBuddyOensker === undefined) {
 			visBuddyModal = true;
+			return;
+		}
+
+		// Facebook-modalen kræver desuden at vi er på dag 0 eller senere.
+		// Bruger forløbets startDato fra det allerede-hentede forlob-doc.
+		if (ud.kropsroFacebookGruppe === undefined && forlob) {
+			const startMs = forlob.startDato.toMillis?.() ?? 0;
+			if (startMs && Date.now() >= startMs) {
+				visFacebookModal = true;
+			}
 		}
 	});
 
@@ -324,6 +342,22 @@
 		} finally {
 			gemmerBuddy = false;
 			visBuddyModal = false;
+		}
+	}
+
+	async function gemFacebookSvar(erInde: boolean) {
+		const u = user;
+		if (!u || gemmerFacebook) return;
+		gemmerFacebook = true;
+		try {
+			await updateDoc(doc_ref(db, 'users', u.uid), {
+				kropsroFacebookGruppe: erInde
+			});
+		} catch (e) {
+			console.warn('Kunne ikke gemme Facebook-svar:', e);
+		} finally {
+			gemmerFacebook = false;
+			visFacebookModal = false;
 		}
 	}
 
@@ -1937,6 +1971,41 @@
 			>
 				<div class="variant-knap-titel">Nej tak, jeg klarer det selv</div>
 				<div class="variant-knap-sub">Du kan altid skifte mening senere</div>
+			</button>
+		</div>
+	</div>
+{/if}
+
+{#if visFacebookModal}
+	<div
+		class="variant-modal-bag"
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div class="variant-modal">
+			<div class="variant-modal-titel">Er du kommet ind i Facebook-gruppen?</div>
+			<p class="variant-modal-sub">
+				Facebook-gruppen er hvor Kropsro-deltagerne mødes, deler oplevelser og
+				stiller spørgsmål til Linn. Det er en vigtig del af forløbet.
+			</p>
+			<button
+				class="variant-knap"
+				type="button"
+				onclick={() => gemFacebookSvar(true)}
+				disabled={gemmerFacebook}
+			>
+				<div class="variant-knap-titel">Ja, jeg er inde</div>
+				<div class="variant-knap-sub">Tak — vi spørger ikke igen</div>
+			</button>
+			<button
+				class="variant-knap"
+				type="button"
+				onclick={() => gemFacebookSvar(false)}
+				disabled={gemmerFacebook}
+			>
+				<div class="variant-knap-titel">Ikke endnu</div>
+				<div class="variant-knap-sub">Tjek din velkomst-mail fra Linn for linket</div>
 			</button>
 		</div>
 	</div>

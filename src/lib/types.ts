@@ -141,6 +141,11 @@ export interface UserDoc {
 	// gemmes her. true = ja vil have, false = nej, undefined = ikke spurgt.
 	kropsroBuddyOensker?: boolean;
 
+	// For Kropsro-kunder: er hun kommet ind i Facebook-gruppen? Spørges på
+	// dag 0 eller senere som modal. true = ja er inde, false = nej endnu
+	// ikke, undefined = ikke spurgt endnu.
+	kropsroFacebookGruppe?: boolean;
+
 	// Snapshot af det input klienten gav til 'Beregn mine mål'-wizarden.
 	// Bruges til at pre-udfylde wizarden næste gang den åbnes.
 	brugerProfil?: BrugerProfil;
