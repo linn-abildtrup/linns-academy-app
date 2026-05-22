@@ -1948,11 +1948,14 @@
 		tabindex="-1"
 	>
 		<div class="variant-modal">
-			<div class="variant-modal-titel">Ønsker du en buddymakker?</div>
+			<div class="variant-modal-titel">Buddy-gruppe på Kropsro</div>
 			<p class="variant-modal-sub">
-				En buddymakker er en anden Kropsro-deltager du kan følges med gennem
-				forløbet — heppe på hinanden, dele udfordringer og holde hinanden i
-				gang. Linn matcher dig hvis du siger ja. Du kan ændre svaret senere.
+				På Kropsro bliver der mulighed for at vælge at være med i en
+				buddy-gruppe på fire til fem personer fra forløbet, der holder
+				hinanden oppe i hverdagen. En slags minifællesskab indenfor det
+				store fællesskab. I skriver sammen, deler hvad der er svært, fejrer
+				jeres små wins og holder hinanden ansvarlig. Det er frivilligt at
+				deltage.
 			</p>
 			<button
 				class="variant-knap"
@@ -1960,8 +1963,8 @@
 				onclick={() => gemBuddyOensker(true)}
 				disabled={gemmerBuddy}
 			>
-				<div class="variant-knap-titel">Ja, jeg ønsker en buddymakker</div>
-				<div class="variant-knap-sub">Linn matcher dig med en anden deltager</div>
+				<div class="variant-knap-titel">Ja, jeg vil gerne være med</div>
+				<div class="variant-knap-sub">Linn sætter dig sammen med en gruppe</div>
 			</button>
 			<button
 				class="variant-knap"
@@ -1969,7 +1972,7 @@
 				onclick={() => gemBuddyOensker(false)}
 				disabled={gemmerBuddy}
 			>
-				<div class="variant-knap-titel">Nej tak, jeg klarer det selv</div>
+				<div class="variant-knap-titel">Nej tak</div>
 				<div class="variant-knap-sub">Du kan altid skifte mening senere</div>
 			</button>
 		</div>
