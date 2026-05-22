@@ -6,6 +6,7 @@ import {
 	getSubskalaFortolkning,
 	MRS_ITEMS,
 	naesteSoendagEfter,
+	naesteSoendagPaaEllerEfter,
 	naesteUdfyldelseDato,
 	skalUdfyldeNu,
 	SUBSCALES,
@@ -188,6 +189,29 @@ describe('naesteSoendagEfter', () => {
 	});
 });
 
+describe('naesteSoendagPaaEllerEfter', () => {
+	it('søndag → samme søndag (0 dage frem)', () => {
+		const soendag = new Date(2026, 4, 24); // 24. maj 2026 er søndag
+		const ud = naesteSoendagPaaEllerEfter(soendag);
+		expect(ud.getDay()).toBe(0);
+		expect(ud.getDate()).toBe(24);
+	});
+
+	it('mandag → samme uges søndag', () => {
+		const mandag = new Date(2026, 4, 25); // 25. maj 2026 er mandag
+		const ud = naesteSoendagPaaEllerEfter(mandag);
+		expect(ud.getDay()).toBe(0);
+		expect(ud.getDate()).toBe(31);
+	});
+
+	it('lørdag → næste dags søndag', () => {
+		const loerdag = new Date(2026, 4, 23); // 23. maj 2026 er lørdag
+		const ud = naesteSoendagPaaEllerEfter(loerdag);
+		expect(ud.getDay()).toBe(0);
+		expect(ud.getDate()).toBe(24);
+	});
+});
+
 describe('naesteUdfyldelseDato', () => {
 	it('ingen tidligere → returnerer i dag (sammen med nu)', () => {
 		const ud = naesteUdfyldelseDato('abonnement', 'basisabo', null);
@@ -195,11 +219,22 @@ describe('naesteUdfyldelseDato', () => {
 		expect(Math.abs(ud.getTime() - nu)).toBeLessThan(1000);
 	});
 
-	it('app-kunde → 30 dage efter sidste', () => {
+	it('app-kunde: sidste på søndag → præcis 4 søndage frem (28 dage)', () => {
+		// 3. maj 2026 er søndag → +28 dage = 31. maj 2026 (også søndag)
+		const sidste = new Date(2026, 4, 3).getTime();
+		const ud = naesteUdfyldelseDato('abonnement', 'basisabo', sidste);
+		expect(ud.getDay()).toBe(0);
+		expect(ud.getDate()).toBe(31);
+		expect(ud.getMonth()).toBe(4);
+	});
+
+	it('app-kunde: sidste på fredag → +28 dage rundet op til næste søndag', () => {
+		// 1. maj 2026 er fredag → +28 dage = 29. maj 2026 (fredag) → næste søndag = 31. maj
 		const sidste = new Date(2026, 4, 1).getTime();
 		const ud = naesteUdfyldelseDato('abonnement', 'basisabo', sidste);
+		expect(ud.getDay()).toBe(0);
 		expect(ud.getDate()).toBe(31);
-		expect(ud.getMonth()).toBe(4); // maj
+		expect(ud.getMonth()).toBe(4);
 	});
 
 	it('Kickstart-kunde → næste søndag', () => {
@@ -209,11 +244,21 @@ describe('naesteUdfyldelseDato', () => {
 		expect(ud.getDay()).toBe(0); // søndag
 	});
 
-	it('Kropsro-kunde (premiumforløb) → 28 dage efter', () => {
-		const sidste = new Date(2026, 4, 1).getTime();
+	it('Kropsro: sidste på søndag → præcis 4 søndage frem (28 dage)', () => {
+		const sidste = new Date(2026, 4, 3).getTime(); // søndag
 		const ud = naesteUdfyldelseDato('forløb', 'premiumforløb', sidste);
-		expect(ud.getDate()).toBe(29);
+		expect(ud.getDay()).toBe(0);
+		expect(ud.getDate()).toBe(31);
 		expect(ud.getMonth()).toBe(4);
+	});
+
+	it('Kropsro: sidste på mandag → +28 rundet op til næste søndag', () => {
+		const sidste = new Date(2026, 4, 4).getTime(); // mandag
+		const ud = naesteUdfyldelseDato('forløb', 'premiumforløb', sidste);
+		expect(ud.getDay()).toBe(0);
+		// +28 dage = 1. juni 2026 (mandag) → næste søndag = 7. juni
+		expect(ud.getDate()).toBe(7);
+		expect(ud.getMonth()).toBe(5);
 	});
 });
 
@@ -254,17 +299,17 @@ describe('skalUdfyldeNu', () => {
 		expect(skalUdfyldeNu('abonnement', 'basisabo', null)).toBe(true);
 	});
 
-	it('app-kunde udfyldt for 31 dage siden → true', () => {
-		const sidste = Date.now() - 31 * 24 * 60 * 60 * 1000;
+	it('app-kunde udfyldt for 40 dage siden → true (over en 4-ugers cyklus + buffer)', () => {
+		const sidste = Date.now() - 40 * 24 * 60 * 60 * 1000;
 		expect(skalUdfyldeNu('abonnement', 'basisabo', sidste)).toBe(true);
 	});
 
-	it('app-kunde udfyldt i dag → false', () => {
+	it('app-kunde udfyldt i dag → false (næste søndag er minst 28 dage frem)', () => {
 		expect(skalUdfyldeNu('abonnement', 'basisabo', Date.now())).toBe(false);
 	});
 
-	it('Kropsro udfyldt for 29 dage siden → true', () => {
-		const sidste = Date.now() - 29 * 24 * 60 * 60 * 1000;
+	it('Kropsro udfyldt for 40 dage siden → true', () => {
+		const sidste = Date.now() - 40 * 24 * 60 * 60 * 1000;
 		expect(skalUdfyldeNu('forløb', 'premiumforløb', sidste)).toBe(true);
 	});
 

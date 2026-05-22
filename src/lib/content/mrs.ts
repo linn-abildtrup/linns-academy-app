@@ -324,9 +324,12 @@ export function getSubskalaFortolkning(
  * Beregner næste dato kunden bør udfylde MRS.
  *
  * Regler:
- * - App-kunde (accessSource='abonnement'): første gang ved login, derefter hver 30. dag
- * - Forløbskunde på Kickstart: ved start, derefter hver søndag
- * - Forløbskunde på Premium-forløb (Kropsro): ved start, derefter hver 4. uge
+ * - Forløbskunde på Kickstart: dag 0 (søndag) som baseline, derefter hver søndag
+ * - Forløbskunde på Kropsro: dag 0 (søndag) som baseline, derefter hver 4. søndag
+ * - App-kunde der TIDLIGERE har været på forløb: cyklus arves fra sidste udfyldelse
+ *   (som typisk allerede ligger på en søndag) → hver 4. søndag
+ * - Helt ny app-kunde uden forløbs-historik: udfyld straks (baseline kan tages
+ *   på vilkårlig dag), derefter hver 4. søndag
  *
  * @param sidsteUdfyldelseAt unix-ms for sidste udfyldelse, eller null hvis aldrig
  * @returns Date — hvornår næste udfyldelse er due. Returnerer 'nu' (Date()) hvis kunden
@@ -341,17 +344,18 @@ export function naesteUdfyldelseDato(
 	const sidste = new Date(sidsteUdfyldelseAt);
 
 	if (accessSource === 'forløb' && activeProduct === 'kickstart') {
+		// Ugentlig kadence: næste søndag efter sidste udfyldelse
 		return naesteSoendagEfter(sidste);
 	}
-	if (accessSource === 'forløb' && activeProduct === 'premiumforløb') {
-		const due = new Date(sidste);
-		due.setDate(due.getDate() + 28);
-		return due;
-	}
-	// App-kunde (modulbruger) eller ukendt → månedligt
-	const due = new Date(sidste);
-	due.setDate(due.getDate() + 30);
-	return due;
+
+	// Kropsro + alle app-kunder: hver 4. søndag.
+	// Vi tager 'sidste + 28 dage' og runder op til næste søndag på eller efter
+	// den dato — så hvis sidste udfyldelse selv var en søndag, lander næste
+	// præcis 28 dage frem (også søndag). Hvis sidste lå på en hverdag (fx
+	// fordi en søndag blev misset), skubbes næste til den førstkommende søndag.
+	const min = new Date(sidste);
+	min.setDate(min.getDate() + 28);
+	return naesteSoendagPaaEllerEfter(min);
 }
 
 /**
@@ -364,6 +368,19 @@ export function naesteSoendagEfter(efter: Date): Date {
 	// Søndag = 0. Antal dage til næste søndag er (7 - getDay()) % 7,
 	// men hvis det er 0 (søndag selv), tager vi 7 dage frem.
 	const dage = (7 - d.getDay()) % 7 || 7;
+	d.setDate(d.getDate() + dage);
+	return d;
+}
+
+/**
+ * Returnerer den førstkommende søndag PÅ ELLER EFTER en given dato.
+ * Hvis datoen selv er søndag, returneres samme dato. Bruges til 4-ugers-
+ * kadencen så en søndag-til-søndag-cyklus bevarer præcis 28 dages interval.
+ */
+export function naesteSoendagPaaEllerEfter(fra: Date): Date {
+	const d = new Date(fra);
+	d.setHours(0, 0, 0, 0);
+	const dage = (7 - d.getDay()) % 7;
 	d.setDate(d.getDate() + dage);
 	return d;
 }

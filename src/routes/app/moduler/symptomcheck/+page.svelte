@@ -170,15 +170,15 @@
 
 	const kadenceTekst = $derived.by<string>(() => {
 		if (userDoc?.accessSource === 'forløb' && userDoc.activeProduct === 'kickstart') {
-			return 'På Kickstart udfylder du hver søndag — så du kan se din udvikling uge for uge.';
+			return 'På Kickstart udfylder du hver søndag, så du kan se din udvikling uge for uge.';
 		}
 		if (
 			userDoc?.accessSource === 'forløb' &&
 			userDoc.activeProduct === 'premiumforløb'
 		) {
-			return 'På Kropsro udfylder du hver 4. uge gennem dit forløb.';
+			return 'På Kropsro udfylder du hver 4. søndag gennem dit forløb.';
 		}
-		return 'Du udfylder en symptomcheck én gang om måneden, så du kan følge din udvikling over tid.';
+		return 'Du udfylder en symptomcheck hver 4. søndag, så du kan følge din udvikling over tid. Første gang må du gerne tage den med det samme som baseline.';
 	});
 
 	function formaterDatoTekst(timestamp: number): string {

@@ -283,10 +283,11 @@ Klik 'Læg ind som måltid' for hurtigt at lægge en gemt privat opskrift ind i 
 - 5-slider velvære-check (energi, mave, cravings, humør, søvn) på skala 1-10
 - 11-punkts symptomtjekliste (Menopause Rating Scale / MRS) der måler overgangsalder-symptomer i tre områder: krop og søvn, humør og energi, underliv og blære
 
-Hvor ofte:
-- App-kunde: første gang ved login, derefter hver måned.
-- Kickstart-kunde: ved start (dag 0), derefter hver søndag gennem forløbet.
-- Kropsro-kunde: ved start, derefter hver 4. uge.
+Hvor ofte (altid om søndagen efter første udfyldelse):
+- App-kunde uden tidligere forløb: første udfyldelse må tages med det samme som baseline, derefter hver 4. søndag.
+- App-kunde der TIDLIGERE har været på forløb: cyklen arves fra forløbet (sidste udfyldelse lå allerede på en søndag), så fremtidige udfyldelser bliver automatisk hver 4. søndag.
+- Kickstart-kunde: dag 0 (søndag), derefter hver søndag gennem forløbet.
+- Kropsro-kunde: dag 0 (søndag), derefter hver 4. søndag gennem forløbet.
 
 Når det er tid til at udfylde, vises et terra "Tag din symptomcheck"-kort på din forside. Klik for at åbne modulet. Når du har udfyldt, viser kortet i stedet datoen for næste udfyldelse — du kan ikke tage en ny check før den dato, så grafen forbliver retvisende.
 
