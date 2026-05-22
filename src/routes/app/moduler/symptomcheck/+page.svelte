@@ -193,6 +193,12 @@
 	const tidligereSorteret = $derived(
 		[...tidligereScores].sort((a, b) => b.timestamp - a.timestamp)
 	);
+
+	// Til sliders-grafen: kun entries der faktisk har sliders-data (post-22-maj
+	// 2026). Gamle MRS-udfyldelser uden sliders falder fra.
+	const tidligereMedSliders = $derived(
+		tidligereSorteret.filter((s) => s.sliders !== undefined)
+	);
 </script>
 
 <div class="page">
@@ -288,6 +294,56 @@
 				<div class="graf-akse">
 					<span>{formaterDatoTekst(tidligereSorteret[tidligereSorteret.length - 1].timestamp)}</span>
 					<span>{formaterDatoTekst(tidligereSorteret[0].timestamp)}</span>
+				</div>
+			</section>
+		{/if}
+
+		{#if tidligereMedSliders.length >= 2}
+			{@const slidersAeldsteFoerst = [...tidligereMedSliders].reverse()}
+			<section class="card">
+				<div class="card-titel">Din velvære over tid</div>
+				<p class="card-sub">
+					Sliders fra hver udfyldelse — 1 = lavest, 10 = højest.
+				</p>
+				{#each SLIDER_SPORGSMAAL as spm (spm.id)}
+					{@const punkter = slidersAeldsteFoerst.map((s, i) => {
+						const n = slidersAeldsteFoerst.length;
+						const v = s.sliders ? s.sliders[spm.id] : 5;
+						const x = (i / Math.max(1, n - 1)) * 300 + 10;
+						const y = 70 - ((v - 1) / 9) * 60;
+						return { x, y, score: s };
+					})}
+					{@const path = punkter
+						.map((p, i) => (i === 0 ? `M ${p.x},${p.y}` : `L ${p.x},${p.y}`))
+						.join(' ')}
+					<div class="mini-graf-blok">
+						<div class="mini-graf-label">{spm.label}</div>
+						<svg class="mini-graf" viewBox="0 0 320 80" preserveAspectRatio="none">
+							<line x1="10" y1="10" x2="10" y2="70" stroke="var(--border)" stroke-width="1" />
+							<line
+								x1="10"
+								y1="70"
+								x2="310"
+								y2="70"
+								stroke="var(--border)"
+								stroke-width="1"
+							/>
+							<path
+								d={path}
+								fill="none"
+								stroke="var(--terra)"
+								stroke-width="2"
+								stroke-linejoin="round"
+							/>
+							{#each punkter as p (p.score.id)}
+								<circle cx={p.x} cy={p.y} r="3" fill="var(--terra)" />
+							{/each}
+						</svg>
+					</div>
+				{/each}
+				<div class="graf-akse">
+					<span>{formaterDatoTekst(tidligereMedSliders[tidligereMedSliders.length - 1].timestamp)}</span>
+					<span>{formaterDatoTekst(tidligereMedSliders[0].timestamp)}</span>
 				</div>
 			</section>
 		{/if}
@@ -686,6 +742,23 @@
 		width: 100%;
 		height: 120px;
 		margin-top: 8px;
+	}
+
+	.mini-graf-blok {
+		margin-bottom: 12px;
+	}
+
+	.mini-graf-label {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		margin-bottom: 4px;
+		font-weight: 500;
+	}
+
+	.mini-graf {
+		display: block;
+		width: 100%;
+		height: 80px;
 	}
 
 	.graf-akse {
