@@ -329,7 +329,27 @@
 	{:else if visning === 'udfyld'}
 		<div class="maalepunkt-pill">{MAALEPUNKT_LABEL[valgtMaalepunkt]}</div>
 
-		<section class="subskala-blok">
+		<div class="intro-blok">
+			<p>
+				Symptomchecken har to dele:
+			</p>
+			<ol class="intro-liste">
+				<li>
+					<strong>Din generelle velvære</strong> — 5 sliders der måler hvordan du
+					har det lige nu (energi, mave, cravings, humør, søvn).
+				</li>
+				<li>
+					<strong>Dine overgangsalder-symptomer</strong> — 11 spørgsmål fra den
+					internationale MRS-skala der zoomer ind på specifikke symptomer.
+				</li>
+			</ol>
+			<p class="intro-fodnote">
+				Tag dig god tid og mærk efter. Det tager 2-3 minutter i alt.
+			</p>
+		</div>
+
+		<section class="subskala-blok del-1">
+			<div class="del-eyebrow">Del 1 af 2</div>
 			<div
 				class="subskala-label"
 				style="background: var(--tdim); color: var(--terra);"
@@ -359,6 +379,22 @@
 				</div>
 			{/each}
 		</section>
+
+		<div class="del-skille">
+			<div class="del-skille-linje"></div>
+			<div class="del-skille-label">Del 2 af 2</div>
+			<div class="del-skille-linje"></div>
+		</div>
+
+		<div class="mrs-intro">
+			<h2>Dine overgangsalder-symptomer</h2>
+			<p>
+				Den her del er den internationalt anerkendte MRS-skala (Menopause Rating
+				Scale). Den måler 11 typiske symptomer i tre grupper. For hvert symptom
+				vælger du hvor meget det fylder for dig lige nu — fra <em>Ingen</em> til
+				<em>Voldsomt</em>. Der er ingen rigtige eller forkerte svar.
+			</p>
+		</div>
 
 		{#each ['somatisk', 'psykologisk', 'urogenital'] as subKey ((subKey))}
 			{@const sub = SUBSCALES[subKey as keyof typeof SUBSCALES]}
@@ -749,6 +785,101 @@
 		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.04em;
+	}
+
+	.intro-blok {
+		background: var(--tdim);
+		border-radius: 12px;
+		padding: 16px 18px;
+		margin-bottom: 22px;
+	}
+
+	.intro-blok p {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		line-height: 1.55;
+		margin: 0 0 10px;
+	}
+
+	.intro-blok p:last-child {
+		margin-bottom: 0;
+	}
+
+	.intro-liste {
+		margin: 0 0 10px;
+		padding-left: 22px;
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		line-height: 1.5;
+	}
+
+	.intro-liste li {
+		margin-bottom: 6px;
+	}
+
+	.intro-liste li:last-child {
+		margin-bottom: 0;
+	}
+
+	.intro-fodnote {
+		font-size: calc(11.5px * var(--fs-scale, 1)) !important;
+		color: var(--text3) !important;
+	}
+
+	.del-eyebrow {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-bottom: 10px;
+	}
+
+	.del-skille {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin: 32px 0 22px;
+	}
+
+	.del-skille-linje {
+		flex: 1;
+		height: 1px;
+		background: var(--border);
+	}
+
+	.del-skille-label {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.mrs-intro {
+		margin-bottom: 22px;
+	}
+
+	.mrs-intro h2 {
+		font-family: var(--ff-d);
+		font-size: calc(22px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		color: var(--text);
+		margin: 0 0 8px;
+		line-height: 1.2;
+	}
+
+	.mrs-intro p {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.55;
+		margin: 0;
+	}
+
+	.mrs-intro em {
+		font-style: italic;
+		color: var(--text);
 	}
 
 	.subskala-blok {
