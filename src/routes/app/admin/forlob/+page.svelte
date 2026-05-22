@@ -211,7 +211,7 @@
 						disabled={opretter}
 					>
 						<div class="type-titel">Kropsro</div>
-						<div class="type-sub">12 uger · med buddymakker</div>
+						<div class="type-sub">12 uger · med buddy-gruppe</div>
 					</button>
 				</div>
 			</div>

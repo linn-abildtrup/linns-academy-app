@@ -74,12 +74,13 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Forløb</span>
 		</a>
-		<div class="eyebrow">Admin · Buddymakker</div>
-		<h1>Buddymakker-matches</h1>
+		<div class="eyebrow">Admin · Buddy-gruppe</div>
+		<h1>Buddy-gruppe-matches</h1>
 		<p class="page-sub">
-			Liste over deltagere på {forlob?.navn ?? 'forløbet'} der ønsker en buddymakker.
-			Ved første login bliver Kropsro-kunder spurgt — svaret gemmes på deres
-			userDoc. Du matcher dem manuelt ved at sende dem en mail.
+			Liste over deltagere på {forlob?.navn ?? 'forløbet'} der vil være med i en
+			buddy-gruppe på 4-5 personer. Ved første login bliver Kropsro-kunder spurgt,
+			og svaret gemmes på deres userDoc. Du sætter grupperne sammen manuelt og
+			kontakter dem på mail.
 		</p>
 	</header>
 
@@ -89,10 +90,10 @@
 		<div class="status-besked">Henter…</div>
 	{:else}
 		<section class="card">
-			<div class="card-titel">Ønsker en buddymakker ({onskerBuddy.length})</div>
+			<div class="card-titel">Vil være med i buddy-gruppe ({onskerBuddy.length})</div>
 			{#if onskerBuddy.length === 0}
 				<p class="hint">
-					Ingen deltagere har sagt ja til en buddymakker endnu. De skal være
+					Ingen deltagere har sagt ja til en buddy-gruppe endnu. De skal være
 					logget ind mindst én gang for at have svaret.
 				</p>
 			{:else}

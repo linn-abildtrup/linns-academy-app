@@ -260,7 +260,7 @@
 						disabled={gemmer}
 					>
 						<div class="type-titel">Kropsro</div>
-						<div class="type-sub">12 uger · med buddymakker</div>
+						<div class="type-sub">12 uger · med buddy-gruppe</div>
 					</button>
 				</div>
 			</div>
@@ -316,8 +316,8 @@
 					<Icon name="user" size={16} color="#fff" />
 				</div>
 				<div class="indhold-tekst">
-					<div class="indhold-navn">Buddymakker</div>
-					<div class="indhold-sub">Deltagere der ønsker en buddymakker</div>
+					<div class="indhold-navn">Buddy-gruppe</div>
+					<div class="indhold-sub">Deltagere der vil være med i en buddy-gruppe</div>
 				</div>
 				<Icon name="chevron-r" size={14} color="var(--text3)" />
 			</a>
