@@ -268,8 +268,12 @@
 				.map((p, i) => (i === 0 ? `M ${p.x},${p.y}` : `L ${p.x},${p.y}`))
 				.join(' ')}
 			<section class="card">
-				<div class="card-titel">Din udvikling</div>
-				<p class="card-sub">Total-score fra første til seneste udfyldelse.</p>
+				<div class="card-titel">MRS-symptomscore over tid</div>
+				<p class="card-sub">
+					Den internationale Menopause Rating Scale (0-44). Jo
+					<strong>lavere</strong> tal, jo færre overgangsalder-symptomer. En
+					faldende kurve er et godt tegn.
+				</p>
 				<svg class="udvikling-graf" viewBox="0 0 320 120" preserveAspectRatio="none">
 					<line x1="10" y1="10" x2="10" y2="110" stroke="var(--border)" stroke-width="1" />
 					<line
@@ -301,9 +305,12 @@
 		{#if tidligereMedSliders.length >= 2}
 			{@const slidersAeldsteFoerst = [...tidligereMedSliders].reverse()}
 			<section class="card">
-				<div class="card-titel">Din velvære over tid</div>
+				<div class="card-titel">Din velvære over tid (Linns Academy)</div>
 				<p class="card-sub">
-					Sliders fra hver udfyldelse — 1 = lavest, 10 = højest.
+					Dine 5 selvvurderinger fra symptomchecken (1-10). Jo
+					<strong>højere</strong> tal, jo bedre velvære. En stigende kurve er et
+					godt tegn. Dette er Linns Academys egen kvalitative måling — det
+					modsatte af MRS-grafen ovenfor, hvor lave tal er bedst.
 				</p>
 				{#each SLIDER_SPORGSMAAL as spm (spm.id)}
 					{@const punkter = slidersAeldsteFoerst.map((s, i) => {
