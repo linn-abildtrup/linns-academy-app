@@ -73,6 +73,17 @@ Klik på et modul-kort eller en knap for at åbne den. Brug 'Tilbage'-pilen øve
 - 'App-hjælp' med spørgsmål til hvordan appen virker.`
 	},
 	{
+		titel: 'Træning — overblik og vælg dit aktive program',
+		visFor: ALLE_PRODUKTER,
+		indhold: `Træning finder du under Moduler → Træning. Her ser du en samlet liste over alle dine programmer:
+
+- Mikrotræning (det program der er knyttet til dit abonnement eller forløb).
+- Tildelte programmer (programmer Linn har tildelt dig direkte eller via dit forløb) — vises under mikrotræning hvis Linn har givet dig adgang.
+- Dine egne byggede programmer (custom-builder) — kun premium-funktioner.
+
+Hvert program har en "Vælg"-knap. Det program du markerer som aktiv, vises på forsidens "Dagens træning"-kort. Klik på programmet for at se dets øvelser og starte træningen.`
+	},
+	{
 		titel: 'Mikrotræning — abonnenter',
 		visFor: MODULBRUGERE,
 		indhold: `Mikrotræning finder du under Moduler → Træning → Mikrotræning. Programmet er løbende (14 dage i rotation), så du starter forfra når du har gennemført alle dage.
@@ -89,6 +100,44 @@ Under 'Seneste dage'-griddet kan du se hvilke dage du har trænet (grøn). I dag
 Hver dag er låst op i takt med forløbet — du kan ikke springe frem. Du kan altid gå tilbage til tidligere dage. Når du har gennemført alle 21 dage, er du færdig med programmet.
 
 Du kan vælge program (med eller uden udstyr) under Profil → Mikrotræning — program.`
+	},
+	{
+		titel: 'Byg dit eget træningsprogram',
+		visFor: PREMIUM,
+		indhold: `Som premium-bruger kan du bygge dit eget træningsprogram. Du finder funktionen som det grønne kort nederst på Moduler → Træning ("Byg dit eget program").
+
+I builderen:
+- Skriv et navn på programmet (fx 'Ben og balder').
+- Klik 'Tilføj øvelse' og søg/vælg fra øvelses-katalog (samme øvelser som mikrotræning).
+- For hver øvelse sætter du Sæt, Tid (sekunder pr sæt) og Pause (sekunder mellem sæt).
+- Brug op/ned-pilene til at omarrangere rækkefølgen.
+
+Når du gemmer, dukker programmet op på Moduler → Træning. Klik 'Vælg' for at sætte det som dit aktive program — så viser forsidens "Dagens træning" det. Klik selve programmet for at se en oversigt og trykke 'Start træning'. Spil-flowet matcher mikrotræning (ring-timer, lyde, nedtælling de sidste 3 sek).
+
+Du kan altid redigere eller slette et program du har bygget.`
+	},
+	{
+		titel: 'Tildelte træningsprogrammer',
+		visFor: FORLOBSKUNDER,
+		indhold: `Hvis Linn har tildelt dig et træningsprogram (enten direkte eller via dit forløb), dukker det op under Moduler → Træning sammen med dine andre programmer.
+
+Klik på det for at se dagens øvelser med en stor 'Start træning'-knap. Spil-flowet er det samme som mikrotræning — ring-timer, lyde, fuldskærm-mulighed. Du kan til enhver tid trykke pause, lukke appen og fortsætte hvor du slap.
+
+Hvis du sætter et tildelt program som dit aktive program, bliver det forsidens "Dagens træning".`
+	},
+	{
+		titel: 'Pause og genoptag træning',
+		visFor: ALLE_PRODUKTER,
+		indhold: `Mens du er midt i en træning kan du:
+- Trykke Pause for at fryse timeren.
+- Slå lyd til/fra (musik og nedtælling).
+- Slå skærm-vågen til/fra.
+- Skifte til fuldskærm for stort video-billede.
+- Trykke Stop for at forlade træningen — den gemmes som "i gang".
+
+Når du kommer tilbage til samme træning senere, bliver du spurgt "Du fortsætter hvor du slap" og kan vælge at fortsætte eller starte forfra.
+
+På forsidens "Dagens træning"-kort vises et grønt flueben når du har gennemført dagens træning.`
 	},
 	{
 		titel: 'Mad — 30-30 beregner og dagbog',
@@ -126,6 +175,13 @@ Du har desuden adgang til udvidet næringsdata og kan se hvordan dine vaner og k
 Resten af vanetrackeren virker som basis: tjek ind dagligt, se farvekoder for hvor mange vaner du ramte, og scroll i månedsarkivet for historik.`
 	},
 	{
+		titel: 'Vaner fra dit forløb (Linn-tildelte)',
+		visFor: FORLOBSKUNDER,
+		indhold: `Ud over dine selvvalgte vaner kan Linn tildele ekstra vaner til alle deltagere på dit forløb. Du genkender dem på et lille "Fra forløb"-tag ved siden af navnet.
+
+Disse vaner kommer oveni dine egne tre — de tæller IKKE med i din tre-grænse, så du kan stadig vælge tre selv. Du kan ikke fjerne dem (de er låste), men du tjekker ja/delvist/nej på dem hver dag på samme måde som dine egne.`
+	},
+	{
 		titel: 'Mit forløb',
 		visFor: FORLOBSKUNDER,
 		indhold: `Mit forløb finder du under Moduler → Mit forløb. Her ser du:
@@ -149,11 +205,13 @@ Brug 'Stil et nyt spørgsmål'-knappen øverst. Du kan se alle dine tidligere sp
 		visFor: ALLE_PRODUKTER,
 		indhold: `Biblioteket finder du under Moduler → Biblioteket. Det indeholder forskellige faner afhængigt af din adgang:
 - Links: små links til relevante artikler/værktøjer.
-- Lektioner: indhold fra forløb du har gennemført. Tom hvis du ikke har været på et forløb.
+- En tab pr forløb du har været på (fx "Kickstart maj 2026", "Kropsro"). Indeholder alle lektionerne fra det forløb.
 - Træningsøvelser: bibliotek over alle øvelser med video og vejledning.
 - Opskrifter: alle opskrifter — klik for at se ingredienser og næring.
 
-Forløbskunder ser også en FAQ-fane med svar på de typiske spørgsmål for forløbet.`
+Forløbskunder ser også en FAQ-fane med svar på de typiske spørgsmål for forløbet.
+
+Lektion-noter: når du åbner en lektion, kan du skrive personlige refleksioner i 'Mine noter'-feltet nederst. Det gemmes automatisk efter du holder en kort pause i skrivningen. En lille terra-prik ved siden af lektion-titlen viser hvilke lektioner du har skrevet noter til.`
 	},
 	{
 		titel: 'FAQ-fanen i bibliotek',
@@ -217,6 +275,37 @@ Klik 'Læg ind som måltid' for hurtigt at lægge en gemt privat opskrift ind i 
 		titel: 'Optimér min mad — AI-forslag',
 		visFor: PREMIUM,
 		indhold: `Som premium-bruger har du en 'Optimér min mad'-knap på dagbog-fanen. Den lader AI'en kigge på dagens måltider og foreslå små bytter eller tilføjelser så du rammer dit protein/fiber-mål inden for dit kcal-budget. Klik 'Anvend ændringer' for at føje forslagene ind i dagbogen automatisk.`
+	},
+	{
+		titel: 'Symptomcheck (MRS) — mål dine symptomer over tid',
+		visFor: ALLE_PRODUKTER,
+		indhold: `Symptomcheck finder du under Moduler → Symptomcheck. Det er en 11-punkts symptomtjekliste (Menopause Rating Scale) der måler overgangsalder-symptomer i tre områder: krop og søvn, humør og energi, underliv og blære.
+
+Hvor ofte:
+- App-kunde: første gang ved login, derefter hver måned.
+- Kickstart-kunde: ved start (dag 0), derefter hver søndag gennem forløbet.
+- Kropsro-kunde: ved start, derefter hver 4. uge.
+
+Når det er tid til at udfylde, vises et terra "Tag din symptomcheck"-kort på din forside. Klik for at åbne modulet.
+
+I selve checken vælger du sværhedsgrad pr symptom (Ingen / Lidt / En del / Meget / Voldsomt). Resultatet viser:
+- Din total-score (0-44) med fortolkning fra internationalt anerkendt MRS-skala.
+- Score pr de tre symptom-områder med deres egen fortolkning.
+- Bar-visualisering pr enkelt symptom.
+
+Når du har udfyldt 2+ gange, vises en udviklings-graf på forsiden af modulet så du kan se hvordan dine symptomer udvikler sig over tid. Du kan altid klikke på en tidligere udfyldelse for at se den.`
+	},
+	{
+		titel: 'Forsidens "Dagens træning"-kort',
+		visFor: ALLE_PRODUKTER,
+		indhold: `På forsiden vises et "Træning"-kort der viser:
+- Navnet på det program du har valgt som aktiv (Mikrotræning som default, eller dit eget/tildelt program).
+- Et grønt flueben hvis du har trænet i dag.
+- Klik åbner det aktive program direkte.
+
+Hvis du har valgt en historisk dato i datostripen øverst, viser kortet det program du faktisk trænede den dag — også hvis du siden har skiftet aktivt program.
+
+For at skifte aktivt program: gå til Moduler → Træning og klik "Vælg" ved siden af det program du vil have som default.`
 	},
 	{
 		titel: 'Hvis du ikke kan finde noget',
