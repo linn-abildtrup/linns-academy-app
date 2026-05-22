@@ -274,7 +274,15 @@
 					<strong>lavere</strong> tal, jo færre overgangsalder-symptomer. En
 					faldende kurve er et godt tegn.
 				</p>
-				<svg class="udvikling-graf" viewBox="0 0 320 120" preserveAspectRatio="none">
+				<div class="graf-wrapper">
+					<div class="y-akse stor">
+						<span>44</span>
+						<span>33</span>
+						<span>22</span>
+						<span>11</span>
+						<span>0</span>
+					</div>
+					<svg class="udvikling-graf" viewBox="0 0 320 120" preserveAspectRatio="none">
 					<line x1="10" y1="10" x2="10" y2="110" stroke="var(--border)" stroke-width="1" />
 					<line
 						x1="10"
@@ -295,7 +303,8 @@
 						<circle cx={p.x} cy={p.y} r="4" fill="var(--terra)" />
 					{/each}
 				</svg>
-				<div class="graf-akse">
+				</div>
+				<div class="graf-akse med-y-akse">
 					<span>{formaterDatoTekst(tidligereSorteret[tidligereSorteret.length - 1].timestamp)}</span>
 					<span>{formaterDatoTekst(tidligereSorteret[0].timestamp)}</span>
 				</div>
@@ -325,30 +334,37 @@
 						.join(' ')}
 					<div class="mini-graf-blok">
 						<div class="mini-graf-label">{spm.label}</div>
-						<svg class="mini-graf" viewBox="0 0 320 80" preserveAspectRatio="none">
-							<line x1="10" y1="10" x2="10" y2="70" stroke="var(--border)" stroke-width="1" />
-							<line
-								x1="10"
-								y1="70"
-								x2="310"
-								y2="70"
-								stroke="var(--border)"
-								stroke-width="1"
-							/>
-							<path
-								d={path}
-								fill="none"
-								stroke="var(--terra)"
-								stroke-width="2"
-								stroke-linejoin="round"
-							/>
-							{#each punkter as p (p.score.id)}
-								<circle cx={p.x} cy={p.y} r="3" fill="var(--terra)" />
-							{/each}
-						</svg>
+						<div class="graf-wrapper">
+							<div class="y-akse lille">
+								<span>10</span>
+								<span>5</span>
+								<span>1</span>
+							</div>
+							<svg class="mini-graf" viewBox="0 0 320 80" preserveAspectRatio="none">
+								<line x1="10" y1="10" x2="10" y2="70" stroke="var(--border)" stroke-width="1" />
+								<line
+									x1="10"
+									y1="70"
+									x2="310"
+									y2="70"
+									stroke="var(--border)"
+									stroke-width="1"
+								/>
+								<path
+									d={path}
+									fill="none"
+									stroke="var(--terra)"
+									stroke-width="2"
+									stroke-linejoin="round"
+								/>
+								{#each punkter as p (p.score.id)}
+									<circle cx={p.x} cy={p.y} r="3" fill="var(--terra)" />
+								{/each}
+							</svg>
+						</div>
 					</div>
 				{/each}
-				<div class="graf-akse">
+				<div class="graf-akse med-y-akse">
 					<span>{formaterDatoTekst(tidligereMedSliders[tidligereMedSliders.length - 1].timestamp)}</span>
 					<span>{formaterDatoTekst(tidligereMedSliders[0].timestamp)}</span>
 				</div>
@@ -764,7 +780,45 @@
 
 	.mini-graf {
 		display: block;
-		width: 100%;
+		flex: 1;
+		min-width: 0;
+		height: 80px;
+	}
+
+	.graf-wrapper {
+		display: flex;
+		gap: 6px;
+		align-items: stretch;
+		margin-top: 8px;
+	}
+
+	.graf-wrapper .udvikling-graf {
+		flex: 1;
+		min-width: 0;
+		margin-top: 0;
+	}
+
+	.y-akse {
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		font-size: calc(10px * var(--fs-scale, 1));
+		color: var(--text3);
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+		flex-shrink: 0;
+		min-width: 18px;
+	}
+
+	.y-akse span {
+		line-height: 1;
+	}
+
+	.y-akse.stor {
+		height: 120px;
+	}
+
+	.y-akse.lille {
 		height: 80px;
 	}
 
@@ -774,6 +828,12 @@
 		font-size: calc(10.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 6px;
+	}
+
+	/* Når y-aksen er til venstre, skal dato-aksen rykkes så den starter
+	 * efter y-akse-bredden. */
+	.graf-akse.med-y-akse {
+		padding-left: 24px;
 	}
 
 	.historik-liste {
