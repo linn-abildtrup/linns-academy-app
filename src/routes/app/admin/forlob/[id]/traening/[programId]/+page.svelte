@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import type { Exercise, TrainingDay } from '$lib/content/mikrotraening';
-	import { filtrerOvelserTilProgram, genererStandardProgram } from '$lib/content/mikrotraening';
+	import type { Exercise, GenererConfig, TrainingDay } from '$lib/content/mikrotraening';
+	import { filtrerOvelserTilProgram, genererProgramMedConfig } from '$lib/content/mikrotraening';
 	import {
 		gemForlobsDage,
 		gemForlobsProgram,
@@ -21,6 +21,19 @@
 	let fejl = $state<string | null>(null);
 	let genererStatus = $state<'klar' | 'arbejder' | 'gemt' | 'fejl'>('klar');
 	let genererBesked = $state<string>('');
+
+	const STANDARD_CONFIG: GenererConfig = {
+		antalOvelser: 3,
+		sets: 3,
+		workSec: 30,
+		restSec: 10
+	};
+	let genConfig = $state<GenererConfig>({ ...STANDARD_CONFIG });
+
+	function setConfig(felt: keyof GenererConfig, val: number) {
+		if (!Number.isFinite(val) || val < 0) return;
+		genConfig = { ...genConfig, [felt]: val };
+	}
 
 	// Metadata-redigering
 	let formNavn = $state('');
@@ -105,7 +118,11 @@
 
 		try {
 			const filtrerede = filtrerOvelserTilProgram(alleOvelser, programData.program.udstyr);
-			const nyeDage = genererStandardProgram(programData.program.antalDage, filtrerede);
+			const nyeDage = genererProgramMedConfig(
+				programData.program.antalDage,
+				filtrerede,
+				genConfig
+			);
 			await gemForlobsDage(forlobId, programId, nyeDage);
 			programData = { ...programData, dage: nyeDage };
 			genererStatus = 'gemt';
@@ -171,7 +188,58 @@
 		</section>
 
 		<section class="actions-card">
-			<div class="section-label">Hurtige handlinger</div>
+			<div class="section-label">Indstillinger til auto-gen</div>
+			<div class="config-grid">
+				<label class="config-felt">
+					<span class="config-lbl">Antal øvelser pr dag</span>
+					<input
+						type="number"
+						min="1"
+						max="6"
+						step="1"
+						value={genConfig.antalOvelser}
+						oninput={(e) =>
+							setConfig('antalOvelser', parseInt((e.target as HTMLInputElement).value, 10))}
+					/>
+				</label>
+				<label class="config-felt">
+					<span class="config-lbl">Sæt pr øvelse</span>
+					<input
+						type="number"
+						min="1"
+						max="6"
+						step="1"
+						value={genConfig.sets}
+						oninput={(e) =>
+							setConfig('sets', parseInt((e.target as HTMLInputElement).value, 10))}
+					/>
+				</label>
+				<label class="config-felt">
+					<span class="config-lbl">Arbejdstid (sek)</span>
+					<input
+						type="number"
+						min="10"
+						max="120"
+						step="5"
+						value={genConfig.workSec}
+						oninput={(e) =>
+							setConfig('workSec', parseInt((e.target as HTMLInputElement).value, 10))}
+					/>
+				</label>
+				<label class="config-felt">
+					<span class="config-lbl">Hviletid (sek)</span>
+					<input
+						type="number"
+						min="0"
+						max="60"
+						step="5"
+						value={genConfig.restSec}
+						oninput={(e) =>
+							setConfig('restSec', parseInt((e.target as HTMLInputElement).value, 10))}
+					/>
+				</label>
+			</div>
+
 			<button
 				class="btn primary"
 				type="button"
@@ -181,14 +249,15 @@
 				{#if genererStatus === 'arbejder'}
 					Genererer...
 				{:else if altErTomt}
-					Auto-generér standardprogram
+					Auto-generér program
 				{:else}
 					Auto-generér igen (overskriver)
 				{/if}
 			</button>
 			<p class="hint">
-				Genererer 1 ben-, 1 overkrop- og 1 core/stabilitet-øvelse pr. dag, alle 3 sæt × 30s arbejde
-				× 10s hvile. Du kan justere hver dag bagefter.
+				Genererer {genConfig.antalOvelser} øvelser pr dag (skiftende mellem ben, overkrop og core/stabilitet),
+				hver med {genConfig.sets} sæt × {genConfig.workSec}s arbejde × {genConfig.restSec}s hvile.
+				Du kan justere hver dag bagefter.
 			</p>
 			{#if genererStatus === 'gemt'}
 				<div class="besked ok">{genererBesked}</div>
@@ -313,6 +382,41 @@
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
 		color: var(--text3);
+	}
+
+	.config-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+	}
+
+	.config-felt {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.config-lbl {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		font-weight: 500;
+	}
+
+	.config-felt input {
+		padding: 9px 10px;
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--white);
+		color: var(--text);
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.config-felt input:focus {
+		outline: 2px solid var(--terra);
+		outline-offset: -1px;
 	}
 
 	.felt {
