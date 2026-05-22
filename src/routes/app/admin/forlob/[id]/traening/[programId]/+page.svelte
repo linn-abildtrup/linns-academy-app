@@ -209,7 +209,7 @@
 					<a
 						class="dag-row"
 						class:tom={dag.exercises.length === 0}
-						href="/app/admin/forlob/{forlobId}/mikrotraening/{programId}/{dag.dagNummer}"
+						href="/app/admin/forlob/{forlobId}/traening/{programId}/{dag.dagNummer}"
 					>
 						<div class="dag-num">{dag.dagNummer}</div>
 						<div class="dag-tekst">
