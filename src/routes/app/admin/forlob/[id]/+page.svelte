@@ -321,6 +321,17 @@
 				</div>
 				<Icon name="chevron-r" size={14} color="var(--text3)" />
 			</a>
+
+			<a class="indhold-row" href="/app/admin/forlob/{forlobId}/facebook-gruppe">
+				<div class="indhold-icon" style="background: #4267B2;">
+					<Icon name="community" size={16} color="#fff" />
+				</div>
+				<div class="indhold-tekst">
+					<div class="indhold-navn">Facebook-gruppe</div>
+					<div class="indhold-sub">Hvem er kommet ind og hvem mangler</div>
+				</div>
+				<Icon name="chevron-r" size={14} color="var(--text3)" />
+			</a>
 		{/if}
 
 		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/traening">
