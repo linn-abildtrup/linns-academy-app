@@ -785,6 +785,11 @@
 		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: 0.04em;
+		margin-bottom: 18px;
+	}
+
+	.resultat-header .maalepunkt-pill {
+		margin-bottom: 0;
 	}
 
 	.intro-blok {
