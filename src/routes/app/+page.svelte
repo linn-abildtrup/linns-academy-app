@@ -298,6 +298,35 @@
 	let pendingTraeningHref = $state<string | null>(null);
 	let gemmerVariant = $state(false);
 
+	// Buddy-modal: vises ved første login for Kropsro-kunder (premiumforløb)
+	// der endnu ikke har svaret om de ønsker en buddymakker.
+	let visBuddyModal = $state(false);
+	let gemmerBuddy = $state(false);
+
+	$effect(() => {
+		const ud = userDoc;
+		if (!ud) return;
+		const erKropsro =
+			ud.accessSource === 'forløb' && ud.activeProduct === 'premiumforløb';
+		if (erKropsro && ud.kropsroBuddyOensker === undefined) {
+			visBuddyModal = true;
+		}
+	});
+
+	async function gemBuddyOensker(oensker: boolean) {
+		const u = user;
+		if (!u || gemmerBuddy) return;
+		gemmerBuddy = true;
+		try {
+			await updateDoc(doc_ref(db, 'users', u.uid), { kropsroBuddyOensker: oensker });
+		} catch (e) {
+			console.warn('Kunne ikke gemme buddy-valg:', e);
+		} finally {
+			gemmerBuddy = false;
+			visBuddyModal = false;
+		}
+	}
+
 	async function gemVariant(variant: 'kettlebell' | 'no_kettlebell') {
 		const u = user;
 		if (!u || gemmerVariant) return;
@@ -1872,6 +1901,42 @@
 			>
 				<div class="variant-knap-titel">Nej, jeg træner uden udstyr</div>
 				<div class="variant-knap-sub">Bodyweight-øvelser</div>
+			</button>
+		</div>
+	</div>
+{/if}
+
+{#if visBuddyModal}
+	<div
+		class="variant-modal-bag"
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div class="variant-modal">
+			<div class="variant-modal-titel">Ønsker du en buddymakker?</div>
+			<p class="variant-modal-sub">
+				En buddymakker er en anden Kropsro-deltager du kan følges med gennem
+				forløbet — heppe på hinanden, dele udfordringer og holde hinanden i
+				gang. Linn matcher dig hvis du siger ja. Du kan ændre svaret senere.
+			</p>
+			<button
+				class="variant-knap"
+				type="button"
+				onclick={() => gemBuddyOensker(true)}
+				disabled={gemmerBuddy}
+			>
+				<div class="variant-knap-titel">Ja, jeg ønsker en buddymakker</div>
+				<div class="variant-knap-sub">Linn matcher dig med en anden deltager</div>
+			</button>
+			<button
+				class="variant-knap"
+				type="button"
+				onclick={() => gemBuddyOensker(false)}
+				disabled={gemmerBuddy}
+			>
+				<div class="variant-knap-titel">Nej tak, jeg klarer det selv</div>
+				<div class="variant-knap-sub">Du kan altid skifte mening senere</div>
 			</button>
 		</div>
 	</div>

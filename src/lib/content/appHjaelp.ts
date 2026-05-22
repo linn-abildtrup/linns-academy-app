@@ -301,6 +301,15 @@ Når du har udfyldt 2+ gange, vises en udviklings-graf på forsiden af modulet s
 Bemærk: Den ugentlige slider-check inde i Vaner-modulet (om søndagen) fortsætter uændret. Symptomcheck er en separat dybere vurdering der inkluderer både sliders OG MRS.`
 	},
 	{
+		titel: 'Buddymakker på Kropsro',
+		visFor: ['premiumforløb'],
+		indhold: `Ved første login på Kropsro bliver du spurgt om du ønsker en buddymakker — en anden Kropsro-deltager du kan følges med gennem forløbet, heppe på hinanden og dele udfordringer.
+
+Hvis du svarer ja, matcher Linn dig manuelt med en anden deltager. Du kan altid skifte mening senere.
+
+Du bliver kun spurgt én gang ved første login. Hvis du har sagt ja eller nej, popper modalen ikke op igen.`
+	},
+	{
 		titel: 'Forsidens "Dagens træning"-kort',
 		visFor: ALLE_PRODUKTER,
 		indhold: `På forsiden vises et "Træning"-kort der viser:

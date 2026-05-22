@@ -136,6 +136,11 @@ export interface UserDoc {
 	// rigtige program. Hvis ikke sat, bruges 'no_kettlebell' som default.
 	mikrotraeningVariant?: 'kettlebell' | 'no_kettlebell';
 
+	// For Kropsro-kunder (premiumforløb): ønsker hun en buddymakker hun kan
+	// følges med gennem forløbet? Spørges ved første login som modal og
+	// gemmes her. true = ja vil have, false = nej, undefined = ikke spurgt.
+	kropsroBuddyOensker?: boolean;
+
 	// Snapshot af det input klienten gav til 'Beregn mine mål'-wizarden.
 	// Bruges til at pre-udfylde wizarden næste gang den åbnes.
 	brugerProfil?: BrugerProfil;
