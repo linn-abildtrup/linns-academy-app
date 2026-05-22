@@ -1,0 +1,552 @@
+{
+  "Lune havreklapper med skyr og bær": {
+    "blåbær": { "maengde": 50, "enhed": "g" },
+    "kanel": { "maengde": 0.5, "enhed": "tsk" },
+    "kardemomme": { "maengde": 0.25, "enhed": "tsk" }
+  },
+  "Krydret tomatpande med bønner og æg": {
+    "hakkede tomater": { "maengde": 200, "enhed": "g" },
+    "feta": { "maengde": 30, "enhed": "g" },
+    "spidskommen": { "maengde": 0.5, "enhed": "tsk" },
+    "røget paprika": { "maengde": 0.5, "enhed": "tsk" }
+  },
+  "Fyldig svampeomelet med hytteost": {
+    "champignon": { "maengde": 100, "enhed": "g" },
+    "frisk timian": { "maengde": 1, "enhed": "tsk" },
+    "chiliflager": { "maengde": 0.25, "enhed": "tsk" }
+  },
+  "Ovnbagt æggekage med grønt og parmesan": {
+    "frisk spinat": { "maengde": 50, "enhed": "g" },
+    "soltørrede tomater": { "maengde": 20, "enhed": "g" },
+    "oregano": { "maengde": 0.5, "enhed": "tsk" }
+  },
+  "Bløde røræg med laks og avocado": {
+    "frisk dild": { "maengde": 1, "enhed": "spsk" },
+    "citronzest": { "maengde": 0.5, "enhed": "tsk" }
+  },
+  "Cremet morgengrød med æg og valnødder": {
+    "mælk": { "maengde": 1.5, "enhed": "dl" },
+    "knuste valnødder": { "maengde": 15, "enhed": "g" },
+    "kanel": { "maengde": 0.5, "enhed": "tsk" },
+    "revet æble": { "maengde": 0.5, "enhed": "stk" }
+  },
+  "Morgenwrap med chorizo og sorte bønner": {
+    "Fuldkornstortilla": { "maengde": 1, "enhed": "stk" },
+    "chorizo": { "maengde": 30, "enhed": "g" },
+    "rucola": { "maengde": 20, "enhed": "g" },
+    "lime": { "maengde": 0.5, "enhed": "stk" }
+  },
+  "Grøntsagsmuffins med ost og havre": {
+    "broccoli": { "maengde": 80, "enhed": "g" },
+    "rød peberfrugt": { "maengde": 0.5, "enhed": "stk" },
+    "muskatnød": { "maengde": 0.25, "enhed": "tsk" }
+  },
+  "Grove boller med hytteost og frø": {
+    "havregryn": { "maengde": 50, "enhed": "g" },
+    "solsikkefrø": { "maengde": 1, "enhed": "spsk" },
+    "knuste hørfrø": { "maengde": 1, "enhed": "spsk" },
+    "honning": { "maengde": 1, "enhed": "tsk" },
+    "skinke til": { "maengde": 30, "enhed": "g" }
+  },
+  "Tyktflydende skyr med knust hørfrø og æble": {
+    "revet æble": { "maengde": 0.5, "enhed": "stk" },
+    "kanel": { "maengde": 0.5, "enhed": "tsk" },
+    "valnødder": { "maengde": 15, "enhed": "g" }
+  },
+  "Spinattærte med laks og dild": {
+    "Laks": { "maengde": 100, "enhed": "g" },
+    "spinat": { "maengde": 80, "enhed": "g" },
+    "æg": { "maengde": 2, "enhed": "stk" },
+    "fuldkornsmel": { "maengde": 50, "enhed": "g" },
+    "mælk": { "maengde": 1, "enhed": "dl" },
+    "frisk dild": { "maengde": 1, "enhed": "spsk" },
+    "citronsaft": { "maengde": 1, "enhed": "spsk" },
+    "grøn salat med avocado til": { "maengde": 80, "enhed": "g" }
+  },
+  "Frisk tunsalat med æg og kikærter": {
+    "Tun på dåse": { "maengde": 80, "enhed": "g" },
+    "bladsalat": { "maengde": 60, "enhed": "g" },
+    "sennepsdressing": { "maengde": 1, "enhed": "spsk" },
+    "kapers": { "maengde": 1, "enhed": "tsk" }
+  },
+  "Klassisk rugbrød med tun og hytteost": {
+    "tun": { "maengde": 60, "enhed": "g" },
+    "hytteost": { "maengde": 80, "enhed": "g" },
+    "agurk": { "maengde": 50, "enhed": "g" },
+    "radiser": { "maengde": 3, "enhed": "stk" },
+    "karse": { "maengde": 1, "enhed": "spsk" },
+    "citron": { "maengde": 0.25, "enhed": "stk" },
+    "gulerodsstave til": { "maengde": 80, "enhed": "g" }
+  },
+  "Kyllingewrap med hummus og sprødt grønt": {
+    "Fuldkornstortilla": { "maengde": 1, "enhed": "stk" },
+    "kylling": { "maengde": 100, "enhed": "g" },
+    "hummus": { "maengde": 2, "enhed": "spsk" },
+    "rødkål": { "maengde": 40, "enhed": "g" },
+    "gulerod": { "maengde": 0.5, "enhed": "stk" },
+    "sesamfrø": { "maengde": 1, "enhed": "tsk" },
+    "edamame": { "maengde": 60, "enhed": "g" }
+  },
+  "Kikærtebowl med feta og ristede mandler": {
+    "feta": { "maengde": 40, "enhed": "g" },
+    "mandler": { "maengde": 20, "enhed": "g" },
+    "tomat": { "maengde": 1, "enhed": "stk" },
+    "agurk": { "maengde": 50, "enhed": "g" },
+    "citronvinaigrette": { "maengde": 1, "enhed": "spsk" },
+    "frisk mynte": { "maengde": 1, "enhed": "spsk" },
+    "quinoa": { "maengde": 60, "enhed": "g" }
+  },
+  "Linsesalat med blødkogt æg og sennep": {
+    "radiser": { "maengde": 3, "enhed": "stk" },
+    "persille": { "maengde": 1, "enhed": "spsk" },
+    "grov sennepsvinaigrette": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Asiatisk nudelsalat med edamame": {
+    "Fuldkornsnudler": { "maengde": 70, "enhed": "g" },
+    "gulerod": { "maengde": 0.5, "enhed": "stk" },
+    "koriander": { "maengde": 1, "enhed": "spsk" },
+    "peanutdressing": { "maengde": 1, "enhed": "spsk" },
+    "riseddike": { "maengde": 1, "enhed": "tsk" }
+  },
+  "Bagt sød kartoffel med bønnefyld": {
+    "Sød kartoffel": { "maengde": 200, "enhed": "g" },
+    "revet cheddar": { "maengde": 20, "enhed": "g" },
+    "avocado": { "maengde": 0.5, "enhed": "stk" },
+    "limesaft": { "maengde": 1, "enhed": "tsk" },
+    "koriander": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Kyllingesalat med sprød bacon og ærteskud": {
+    "Kylling": { "maengde": 120, "enhed": "g" },
+    "bacon": { "maengde": 20, "enhed": "g" },
+    "ærteskud": { "maengde": 20, "enhed": "g" },
+    "cherrytomat": { "maengde": 6, "enhed": "stk" },
+    "let dressing": { "maengde": 1, "enhed": "spsk" },
+    "solsikkekerner": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Grøntsagsfrittata med feta og urter": {
+    "squash": { "maengde": 80, "enhed": "g" },
+    "peberfrugt": { "maengde": 0.5, "enhed": "stk" },
+    "feta": { "maengde": 40, "enhed": "g" },
+    "rødløg": { "maengde": 0.25, "enhed": "stk" },
+    "basilikum": { "maengde": 1, "enhed": "spsk" },
+    "persille": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Linsemadpandekager med laks og avocado": {
+    "Røde linser": { "maengde": 80, "enhed": "g" },
+    "æg": { "maengde": 1, "enhed": "stk" },
+    "røget laks": { "maengde": 60, "enhed": "g" },
+    "dild": { "maengde": 1, "enhed": "spsk" },
+    "rødløg": { "maengde": 0.25, "enhed": "stk" }
+  },
+  "Quinoasalat med kylling og grillet squash": {
+    "Quinoa": { "maengde": 60, "enhed": "g" },
+    "kyllingebryst": { "maengde": 120, "enhed": "g" },
+    "grillet squash": { "maengde": 100, "enhed": "g" },
+    "feta": { "maengde": 30, "enhed": "g" },
+    "rucola": { "maengde": 30, "enhed": "g" },
+    "citrondressing": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Rugbrødsbowl med æg hummus og grønt": {
+    "hummus": { "maengde": 2, "enhed": "spsk" },
+    "agurk": { "maengde": 50, "enhed": "g" },
+    "tomat": { "maengde": 1, "enhed": "stk" },
+    "chiliflager": { "maengde": 0.25, "enhed": "tsk" }
+  },
+  "Rejesalat med mango og ingefærdressing": {
+    "Rejer": { "maengde": 100, "enhed": "g" },
+    "mango": { "maengde": 80, "enhed": "g" },
+    "bladsalat": { "maengde": 60, "enhed": "g" },
+    "ingefær": { "maengde": 1, "enhed": "tsk" },
+    "lime": { "maengde": 0.5, "enhed": "stk" },
+    "sesamfrø": { "maengde": 1, "enhed": "tsk" },
+    "rødløg": { "maengde": 0.25, "enhed": "stk" },
+    "quinoa": { "maengde": 60, "enhed": "g" }
+  },
+  "Tortilla med kylling og sorte bønner": {
+    "Fuldkornstortilla": { "maengde": 1, "enhed": "stk" },
+    "kylling": { "maengde": 100, "enhed": "g" },
+    "salsa": { "maengde": 2, "enhed": "spsk" },
+    "ost": { "maengde": 20, "enhed": "g" },
+    "iceberg": { "maengde": 40, "enhed": "g" }
+  },
+  "Æggesalat på rugbrød med radiser": {
+    "mayo": { "maengde": 1, "enhed": "spsk" },
+    "sennep": { "maengde": 1, "enhed": "tsk" },
+    "radiser": { "maengde": 3, "enhed": "stk" },
+    "karse": { "maengde": 1, "enhed": "spsk" },
+    "dild": { "maengde": 1, "enhed": "spsk" },
+    "gulerodsstave": { "maengde": 80, "enhed": "g" }
+  },
+  "Lun broccolisalat med kylling og mandler": {
+    "Broccoli": { "maengde": 150, "enhed": "g" },
+    "kyllingebryst": { "maengde": 120, "enhed": "g" },
+    "mandler": { "maengde": 15, "enhed": "g" },
+    "solsikkekerner": { "maengde": 1, "enhed": "spsk" },
+    "yoghurtdressing": { "maengde": 2, "enhed": "spsk" },
+    "quinoa": { "maengde": 60, "enhed": "g" }
+  },
+  "Tun i fuldkornspita med hytteost": {
+    "Fuldkornspita": { "maengde": 1, "enhed": "stk" },
+    "tun": { "maengde": 70, "enhed": "g" },
+    "hytteost": { "maengde": 60, "enhed": "g" },
+    "rucola": { "maengde": 30, "enhed": "g" },
+    "tomat": { "maengde": 1, "enhed": "stk" },
+    "agurk": { "maengde": 50, "enhed": "g" },
+    "citron": { "maengde": 0.25, "enhed": "stk" },
+    "edamame": { "maengde": 60, "enhed": "g" }
+  },
+  "Grøn salat med linser rødbeder og valnødder": {
+    "bagte rødbeder": { "maengde": 80, "enhed": "g" },
+    "valnødder": { "maengde": 15, "enhed": "g" },
+    "feta": { "maengde": 30, "enhed": "g" },
+    "rucola": { "maengde": 40, "enhed": "g" },
+    "balsamico": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Kyllingebowl med havreris og edamame": {
+    "Kylling": { "maengde": 120, "enhed": "g" },
+    "havreris": { "maengde": 70, "enhed": "g" },
+    "gulerod": { "maengde": 0.5, "enhed": "stk" },
+    "sojasauce": { "maengde": 1, "enhed": "spsk" },
+    "sesamfrø": { "maengde": 1, "enhed": "tsk" },
+    "ingefær": { "maengde": 1, "enhed": "tsk" }
+  },
+  "Sprød falafel i pitabrød med tahindressing": {
+    "Kikærter": { "maengde": 150, "enhed": "g" },
+    "persille": { "maengde": 1, "enhed": "spsk" },
+    "spidskommen": { "maengde": 0.5, "enhed": "tsk" },
+    "fuldkornspita": { "maengde": 1, "enhed": "stk" },
+    "tomat": { "maengde": 1, "enhed": "stk" },
+    "agurk": { "maengde": 50, "enhed": "g" },
+    "rødløg": { "maengde": 0.25, "enhed": "stk" },
+    "tahini": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Lun laksesalat med søde kartofler og sennep": {
+    "Laks": { "maengde": 120, "enhed": "g" },
+    "søde kartofler": { "maengde": 150, "enhed": "g" },
+    "bladsalat": { "maengde": 60, "enhed": "g" },
+    "rødløg": { "maengde": 0.25, "enhed": "stk" },
+    "sennepsdressing": { "maengde": 1, "enhed": "spsk" },
+    "knuste hørfrø": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Edamamebowl med æg og sesamdressing": {
+    "gulerod": { "maengde": 0.5, "enhed": "stk" },
+    "agurk": { "maengde": 50, "enhed": "g" },
+    "avocado": { "maengde": 0.5, "enhed": "stk" },
+    "sesamfrø": { "maengde": 1, "enhed": "tsk" },
+    "sojasauce": { "maengde": 1, "enhed": "spsk" },
+    "riseddike": { "maengde": 1, "enhed": "tsk" },
+    "fuldkornsris": { "maengde": 70, "enhed": "g" }
+  },
+  "Hytteost-pandekager med røget laks": {
+    "havregryn": { "maengde": 30, "enhed": "g" },
+    "røget laks": { "maengde": 60, "enhed": "g" },
+    "agurk": { "maengde": 50, "enhed": "g" },
+    "dild": { "maengde": 1, "enhed": "spsk" },
+    "citron": { "maengde": 0.25, "enhed": "stk" },
+    "knuste hørfrø": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Mexicansk bønnesalat med kylling og lime": {
+    "Kylling": { "maengde": 120, "enhed": "g" },
+    "majs": { "maengde": 60, "enhed": "g" },
+    "tomat": { "maengde": 1, "enhed": "stk" },
+    "rødløg": { "maengde": 0.25, "enhed": "stk" },
+    "lime": { "maengde": 0.5, "enhed": "stk" },
+    "koriander": { "maengde": 1, "enhed": "spsk" },
+    "spidskommen": { "maengde": 0.5, "enhed": "tsk" }
+  },
+  "Rugbrødssandwich med kylling og pesto": {
+    "kyllingebryst": { "maengde": 100, "enhed": "g" },
+    "grøn pesto": { "maengde": 1, "enhed": "spsk" },
+    "mozzarella": { "maengde": 30, "enhed": "g" },
+    "soltørrede tomater": { "maengde": 20, "enhed": "g" },
+    "rucola": { "maengde": 20, "enhed": "g" }
+  },
+  "Grøn suppe med spinat og hvide bønner": {
+    "Spinat": { "maengde": 100, "enhed": "g" },
+    "løg": { "maengde": 0.5, "enhed": "stk" },
+    "hvidløg": { "maengde": 1, "enhed": "stk" },
+    "bouillon": { "maengde": 3, "enhed": "dl" },
+    "parmesan": { "maengde": 15, "enhed": "g" },
+    "citron": { "maengde": 0.25, "enhed": "stk" },
+    "rugbrød til": { "maengde": 1, "enhed": "skive" }
+  },
+  "Warm bowl med ristede kikærter og tahini": {
+    "sød kartoffel": { "maengde": 150, "enhed": "g" },
+    "spinat": { "maengde": 60, "enhed": "g" },
+    "quinoa": { "maengde": 60, "enhed": "g" },
+    "tahini": { "maengde": 1, "enhed": "spsk" },
+    "citron": { "maengde": 0.25, "enhed": "stk" },
+    "hvidløg": { "maengde": 1, "enhed": "stk" },
+    "røget paprika": { "maengde": 0.5, "enhed": "tsk" }
+  },
+  "Omelett med rejer og grønt": {
+    "rejer": { "maengde": 80, "enhed": "g" },
+    "peberfrugt": { "maengde": 0.5, "enhed": "stk" },
+    "forårsløg": { "maengde": 1, "enhed": "stk" },
+    "feta": { "maengde": 30, "enhed": "g" }
+  },
+  "Bulgursalat med kylling og bagte grøntsager": {
+    "Bulgur": { "maengde": 60, "enhed": "g" },
+    "kyllingebryst": { "maengde": 120, "enhed": "g" },
+    "aubergine": { "maengde": 80, "enhed": "g" },
+    "peberfrugt": { "maengde": 0.5, "enhed": "stk" },
+    "cherrytomater": { "maengde": 6, "enhed": "stk" },
+    "persille": { "maengde": 1, "enhed": "spsk" },
+    "citrondressing": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Krydret ovnkylling med linser og tomat": {
+    "Kyllingelår": { "maengde": 180, "enhed": "g" },
+    "cherrytomat": { "maengde": 8, "enhed": "stk" },
+    "rosmarin": { "maengde": 1, "enhed": "tsk" },
+    "parmesan": { "maengde": 15, "enhed": "g" },
+    "hvidløg": { "maengde": 1, "enhed": "stk" }
+  },
+  "Ovnbagt laks med rodfrugter og spidskål": {
+    "Laksefillet": { "maengde": 130, "enhed": "g" },
+    "gulerødder": { "maengde": 100, "enhed": "g" },
+    "pastinakker": { "maengde": 80, "enhed": "g" },
+    "spidskål": { "maengde": 100, "enhed": "g" },
+    "olivenolie": { "maengde": 1, "enhed": "spsk" },
+    "timian": { "maengde": 1, "enhed": "tsk" }
+  },
+  "Cremet kikærte- og linsegryde med kylling": {
+    "røde linser": { "maengde": 60, "enhed": "g" },
+    "kokosmælk": { "maengde": 1, "enhed": "dl" },
+    "tomat": { "maengde": 1, "enhed": "stk" },
+    "karry": { "maengde": 1, "enhed": "tsk" },
+    "kyllingestykker": { "maengde": 120, "enhed": "g" },
+    "koriander": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Krydret tomatpande med aubergine og æg": {
+    "aubergine": { "maengde": 150, "enhed": "g" },
+    "tomatsauce": { "maengde": 200, "enhed": "g" },
+    "feta": { "maengde": 30, "enhed": "g" },
+    "persille": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Linsegryde med kylling og frisk koriander": {
+    "kyllingebryst": { "maengde": 120, "enhed": "g" },
+    "løg": { "maengde": 0.5, "enhed": "stk" },
+    "tomat": { "maengde": 1, "enhed": "stk" },
+    "karry": { "maengde": 1, "enhed": "tsk" },
+    "yoghurt": { "maengde": 2, "enhed": "spsk" },
+    "koriander": { "maengde": 1, "enhed": "spsk" },
+    "spidskommen": { "maengde": 0.5, "enhed": "tsk" }
+  },
+  "Grøntsagsfad med halloumi og kikærter": {
+    "Halloumi": { "maengde": 80, "enhed": "g" },
+    "gulerødder": { "maengde": 100, "enhed": "g" },
+    "squash": { "maengde": 100, "enhed": "g" },
+    "røget paprika": { "maengde": 0.5, "enhed": "tsk" },
+    "timian": { "maengde": 1, "enhed": "tsk" }
+  },
+  "Rød linsesuppe med tomat og ristede kerner": {
+    "Tomater": { "maengde": 200, "enhed": "g" },
+    "ristede græskarkerner": { "maengde": 1, "enhed": "spsk" },
+    "løg": { "maengde": 0.5, "enhed": "stk" },
+    "hvidløg": { "maengde": 1, "enhed": "stk" },
+    "chili": { "maengde": 0.25, "enhed": "tsk" },
+    "spidskommen": { "maengde": 0.5, "enhed": "tsk" }
+  },
+  "Ovnbagt torsk med hvide bønner og pesto": {
+    "Torskefilet": { "maengde": 130, "enhed": "g" },
+    "grøn pesto": { "maengde": 1, "enhed": "spsk" },
+    "cherrytomater": { "maengde": 6, "enhed": "stk" },
+    "spinat": { "maengde": 60, "enhed": "g" },
+    "citron": { "maengde": 0.25, "enhed": "stk" }
+  },
+  "Blomkålskarry med kylling og spinat": {
+    "Blomkål": { "maengde": 150, "enhed": "g" },
+    "spinat": { "maengde": 60, "enhed": "g" },
+    "kokosmælk": { "maengde": 1, "enhed": "dl" },
+    "karry": { "maengde": 1, "enhed": "tsk" },
+    "kylling": { "maengde": 120, "enhed": "g" },
+    "ingefær": { "maengde": 1, "enhed": "tsk" }
+  },
+  "Stegt laks på grønne linser med yoghurt": {
+    "laksefillet": { "maengde": 130, "enhed": "g" },
+    "yoghurt": { "maengde": 2, "enhed": "spsk" },
+    "dild": { "maengde": 1, "enhed": "spsk" },
+    "citron": { "maengde": 0.25, "enhed": "stk" },
+    "rødløg": { "maengde": 0.25, "enhed": "stk" },
+    "olivenolie": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Fiskegryde med torsk og grøntsager": {
+    "Torsk": { "maengde": 130, "enhed": "g" },
+    "gulerødder": { "maengde": 80, "enhed": "g" },
+    "porre": { "maengde": 50, "enhed": "g" },
+    "selleri": { "maengde": 50, "enhed": "g" },
+    "fløde": { "maengde": 0.5, "enhed": "dl" },
+    "dild": { "maengde": 1, "enhed": "spsk" },
+    "citron": { "maengde": 0.25, "enhed": "stk" },
+    "kartofler": { "maengde": 150, "enhed": "g" },
+    "broccoli": { "maengde": 80, "enhed": "g" }
+  },
+  "Kylling i cremet sennepssauce med broccoli": {
+    "Kyllingebryst": { "maengde": 130, "enhed": "g" },
+    "grov sennep": { "maengde": 1, "enhed": "spsk" },
+    "creme fraiche 18%": { "maengde": 2, "enhed": "spsk" },
+    "broccoli": { "maengde": 150, "enhed": "g" },
+    "hvidløg": { "maengde": 1, "enhed": "stk" },
+    "timian": { "maengde": 1, "enhed": "tsk" },
+    "fuldkornsris": { "maengde": 70, "enhed": "g" }
+  },
+  "Chili med linser og svinemørbrad": {
+    "Svinemørbrad": { "maengde": 120, "enhed": "g" },
+    "kidneybønner": { "maengde": 100, "enhed": "g" },
+    "tomat": { "maengde": 200, "enhed": "g" },
+    "chili": { "maengde": 0.5, "enhed": "tsk" },
+    "spidskommen": { "maengde": 1, "enhed": "tsk" },
+    "peberfrugt": { "maengde": 0.5, "enhed": "stk" }
+  },
+  "Rejepande med hvidløg og fuldkornspasta": {
+    "Rejer": { "maengde": 100, "enhed": "g" },
+    "fuldkornspasta": { "maengde": 80, "enhed": "g" },
+    "hvidløg": { "maengde": 2, "enhed": "stk" },
+    "cherrytomater": { "maengde": 8, "enhed": "stk" },
+    "chili": { "maengde": 0.25, "enhed": "tsk" },
+    "persille": { "maengde": 1, "enhed": "spsk" },
+    "olivenolie": { "maengde": 1, "enhed": "spsk" },
+    "broccoli": { "maengde": 80, "enhed": "g" }
+  },
+  "Bagt kyllingelår med rodfrugter og timian": {
+    "Kyllingelår": { "maengde": 180, "enhed": "g" },
+    "gulerødder": { "maengde": 100, "enhed": "g" },
+    "pastinakker": { "maengde": 80, "enhed": "g" },
+    "kartofler": { "maengde": 150, "enhed": "g" },
+    "timian": { "maengde": 1, "enhed": "tsk" },
+    "olivenolie": { "maengde": 1, "enhed": "spsk" },
+    "grønkål": { "maengde": 50, "enhed": "g" }
+  },
+  "Torskefilet med sprød persilletopping": {
+    "Torsk": { "maengde": 130, "enhed": "g" },
+    "persille": { "maengde": 2, "enhed": "spsk" },
+    "rasp": { "maengde": 1, "enhed": "spsk" },
+    "citron": { "maengde": 0.25, "enhed": "stk" },
+    "smør": { "maengde": 1, "enhed": "tsk" },
+    "ovnbagte grøntsager": { "maengde": 200, "enhed": "g" }
+  },
+  "Lun fiskesalat med rejer og dild": {
+    "Torsk": { "maengde": 100, "enhed": "g" },
+    "rejer": { "maengde": 60, "enhed": "g" },
+    "gulerødder": { "maengde": 80, "enhed": "g" },
+    "porre": { "maengde": 50, "enhed": "g" },
+    "creme fraiche": { "maengde": 2, "enhed": "spsk" },
+    "dild": { "maengde": 1, "enhed": "spsk" },
+    "citron": { "maengde": 0.25, "enhed": "stk" }
+  },
+  "Mexibowl med oksekød og sorte bønner": {
+    "Hakket oksekød": { "maengde": 100, "enhed": "g" },
+    "majs": { "maengde": 60, "enhed": "g" },
+    "tomat": { "maengde": 1, "enhed": "stk" },
+    "avocado": { "maengde": 0.5, "enhed": "stk" },
+    "lime": { "maengde": 0.5, "enhed": "stk" },
+    "spidskommen": { "maengde": 0.5, "enhed": "tsk" }
+  },
+  "Kyllingewok med grønne bønner og sesam": {
+    "Kyllingebryst": { "maengde": 130, "enhed": "g" },
+    "grønne bønner": { "maengde": 100, "enhed": "g" },
+    "peberfrugt": { "maengde": 0.5, "enhed": "stk" },
+    "sojasauce": { "maengde": 1, "enhed": "spsk" },
+    "sesamolie": { "maengde": 1, "enhed": "tsk" },
+    "ingefær": { "maengde": 1, "enhed": "tsk" },
+    "fuldkornsris": { "maengde": 70, "enhed": "g" }
+  },
+  "Koteletter i fad med svampe og porrer": {
+    "Svinekotelet": { "maengde": 130, "enhed": "g" },
+    "champignon": { "maengde": 100, "enhed": "g" },
+    "porre": { "maengde": 60, "enhed": "g" },
+    "bouillon": { "maengde": 1, "enhed": "dl" },
+    "fløde": { "maengde": 0.5, "enhed": "dl" },
+    "rosmarin": { "maengde": 1, "enhed": "tsk" },
+    "kartofler": { "maengde": 150, "enhed": "g" },
+    "broccoli": { "maengde": 80, "enhed": "g" }
+  },
+  "Fiskefrikadeller med grøn salat og citron": {
+    "Torskefars": { "maengde": 150, "enhed": "g" },
+    "æg": { "maengde": 1, "enhed": "stk" },
+    "løg": { "maengde": 0.25, "enhed": "stk" },
+    "fuldkornsmel": { "maengde": 1, "enhed": "spsk" },
+    "dild": { "maengde": 1, "enhed": "spsk" },
+    "bladsalat": { "maengde": 60, "enhed": "g" },
+    "citrondressing": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Kyllingebryst med ovnbagt blomkål og tahindressing": {
+    "Kyllingebryst": { "maengde": 130, "enhed": "g" },
+    "blomkål": { "maengde": 150, "enhed": "g" },
+    "tahini": { "maengde": 1, "enhed": "spsk" },
+    "citron": { "maengde": 0.25, "enhed": "stk" },
+    "persille": { "maengde": 1, "enhed": "spsk" },
+    "hvidløg": { "maengde": 1, "enhed": "stk" }
+  },
+  "Marokkansk gryderet med kikærter og grøntsager": {
+    "søde kartofler": { "maengde": 150, "enhed": "g" },
+    "tomat": { "maengde": 1, "enhed": "stk" },
+    "kanel": { "maengde": 0.5, "enhed": "tsk" },
+    "spidskommen": { "maengde": 1, "enhed": "tsk" },
+    "kyllingelår": { "maengde": 180, "enhed": "g" },
+    "koriander": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Lakseburgere med avocadocreme": {
+    "Laksefars": { "maengde": 150, "enhed": "g" },
+    "avocado": { "maengde": 0.5, "enhed": "stk" },
+    "lime": { "maengde": 0.5, "enhed": "stk" },
+    "rødløg": { "maengde": 0.25, "enhed": "stk" },
+    "fuldkornsbolle": { "maengde": 1, "enhed": "stk" },
+    "salat": { "maengde": 30, "enhed": "g" },
+    "tomat": { "maengde": 1, "enhed": "stk" },
+    "edamame": { "maengde": 60, "enhed": "g" }
+  },
+  "Oksegryde med rodfrugter og timian": {
+    "Oksekød i tern": { "maengde": 120, "enhed": "g" },
+    "gulerødder": { "maengde": 80, "enhed": "g" },
+    "selleri": { "maengde": 60, "enhed": "g" },
+    "løg": { "maengde": 0.5, "enhed": "stk" },
+    "bouillon": { "maengde": 2, "enhed": "dl" },
+    "timian": { "maengde": 1, "enhed": "tsk" },
+    "kartofler": { "maengde": 150, "enhed": "g" },
+    "persillerod": { "maengde": 50, "enhed": "g" }
+  },
+  "Varm salat med kylling og quinoa": {
+    "Kyllingebryst": { "maengde": 130, "enhed": "g" },
+    "quinoa": { "maengde": 60, "enhed": "g" },
+    "bagte peberfrugter": { "maengde": 80, "enhed": "g" },
+    "spinat": { "maengde": 50, "enhed": "g" },
+    "feta": { "maengde": 30, "enhed": "g" },
+    "olivenolie": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Ovnbagt rødspætte med kartofler og persillesauce": {
+    "Rødspættefilet": { "maengde": 130, "enhed": "g" },
+    "kartofler": { "maengde": 200, "enhed": "g" },
+    "persille": { "maengde": 2, "enhed": "spsk" },
+    "smør": { "maengde": 1, "enhed": "tsk" },
+    "mælk": { "maengde": 0.5, "enhed": "dl" },
+    "citron": { "maengde": 0.25, "enhed": "stk" },
+    "broccoli": { "maengde": 100, "enhed": "g" }
+  },
+  "Gul karry med rejer og grøntsager": {
+    "Rejer": { "maengde": 100, "enhed": "g" },
+    "kokosmælk": { "maengde": 1, "enhed": "dl" },
+    "gul karrypasta": { "maengde": 1, "enhed": "spsk" },
+    "broccoli": { "maengde": 100, "enhed": "g" },
+    "peberfrugt": { "maengde": 0.5, "enhed": "stk" },
+    "bambusskud": { "maengde": 50, "enhed": "g" },
+    "fuldkornsris": { "maengde": 70, "enhed": "g" }
+  },
+  "Ørredfilet med lun linsesalat": {
+    "Ørredfilet": { "maengde": 130, "enhed": "g" },
+    "cherrytomater": { "maengde": 8, "enhed": "stk" },
+    "rødløg": { "maengde": 0.25, "enhed": "stk" },
+    "persille": { "maengde": 1, "enhed": "spsk" },
+    "citronvinaigrette": { "maengde": 1, "enhed": "spsk" }
+  },
+  "Kalkunfrikadeller med grønkålssalat": {
+    "Kalkunkød": { "maengde": 150, "enhed": "g" },
+    "løg": { "maengde": 0.25, "enhed": "stk" },
+    "æg": { "maengde": 1, "enhed": "stk" },
+    "grønkål": { "maengde": 50, "enhed": "g" },
+    "granatæble": { "maengde": 30, "enhed": "g" },
+    "valnødder": { "maengde": 15, "enhed": "g" },
+    "citrondressing": { "maengde": 1, "enhed": "spsk" },
+    "quinoa": { "maengde": 60, "enhed": "g" }
+  }
+}
