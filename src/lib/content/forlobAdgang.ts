@@ -19,6 +19,16 @@ import type { Timestamp } from 'firebase/firestore';
 // Typer
 // ==============================================
 
+/**
+ * Hvilken type forløb det er. Bruges til at adskille Kickstart-runder
+ * fra Kropsro-runder så vi kan vise korrekte features pr type (fx
+ * buddymakker-modalen vises kun for Kropsro-deltagere).
+ *
+ * Tilføjet 22. maj 2026. Eksisterende forløb uden type behandles som
+ * 'kickstart' for bagudkompat.
+ */
+export type ForlobType = 'kickstart' | 'kropsro';
+
 export interface Forlob {
 	id: string;
 	navn: string;
@@ -27,6 +37,7 @@ export interface Forlob {
 	vaneProgramId: string | null;
 	aktiv: boolean;
 	oprettet: Timestamp;
+	type?: ForlobType;
 }
 
 export type AllowedEmailStatus = 'invited' | 'registered';

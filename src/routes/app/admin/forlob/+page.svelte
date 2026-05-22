@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { Timestamp } from 'firebase/firestore';
-	import type { Forlob } from '$lib/content/forlobAdgang';
+	import type { Forlob, ForlobType } from '$lib/content/forlobAdgang';
 	import {
 		hentAlleForlob,
 		kopierForlobIndhold,
@@ -20,6 +20,7 @@
 	let formAntalDage = $state(21);
 	let formId = $state('');
 	let formAktiv = $state(true);
+	let formType = $state<ForlobType>('kickstart');
 	let formKopierFra = $state<string>('');
 	let opretterFejl = $state<string | null>(null);
 	let opretter = $state(false);
@@ -47,6 +48,7 @@
 			.replace(/^_|_$/g, '');
 	}
 
+
 	function visForm() {
 		viserForm = true;
 		formNavn = '';
@@ -54,6 +56,7 @@
 		formAntalDage = 21;
 		formId = '';
 		formAktiv = true;
+		formType = 'kickstart';
 		formKopierFra = '';
 		opretterFejl = null;
 	}
@@ -93,7 +96,8 @@
 				startDato: Timestamp.fromDate(startDate),
 				antalDage: formAntalDage,
 				vaneProgramId: null,
-				aktiv: formAktiv
+				aktiv: formAktiv,
+				type: formType
 			});
 
 			if (formKopierFra) {
@@ -185,6 +189,32 @@
 				<input type="checkbox" bind:checked={formAktiv} disabled={opretter} />
 				<span>Aktivt forløb (nye køb tilknyttes automatisk)</span>
 			</label>
+
+			<div class="felt">
+				<span class="felt-label">Forløbs-type</span>
+				<div class="type-toggle">
+					<button
+						type="button"
+						class="type-knap"
+						class:aktiv={formType === 'kickstart'}
+						onclick={() => (formType = 'kickstart')}
+						disabled={opretter}
+					>
+						<div class="type-titel">Kickstart</div>
+						<div class="type-sub">21 dage · basis-niveau</div>
+					</button>
+					<button
+						type="button"
+						class="type-knap"
+						class:aktiv={formType === 'kropsro'}
+						onclick={() => (formType = 'kropsro')}
+						disabled={opretter}
+					>
+						<div class="type-titel">Kropsro</div>
+						<div class="type-sub">12 uger · med buddymakker</div>
+					</button>
+				</div>
+			</div>
 
 			<label class="felt">
 				<span class="felt-label">Indhold</span>
@@ -418,6 +448,54 @@
 		width: 16px;
 		height: 16px;
 		accent-color: var(--terra);
+	}
+
+	.type-toggle {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+		margin-top: 6px;
+	}
+
+	.type-knap {
+		padding: 12px 14px;
+		background: var(--white);
+		border: 1.5px solid var(--border);
+		border-radius: 10px;
+		cursor: pointer;
+		text-align: left;
+		font-family: var(--ff-b);
+		color: inherit;
+	}
+
+	.type-knap:hover {
+		border-color: var(--terra);
+	}
+
+	.type-knap.aktiv {
+		border-color: var(--terra);
+		background: var(--tdim);
+	}
+
+	.type-knap:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.type-titel {
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.type-knap.aktiv .type-titel {
+		color: var(--terra);
+	}
+
+	.type-sub {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
 	}
 
 	.fejl-besked {

@@ -3,7 +3,12 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { Timestamp } from 'firebase/firestore';
-	import type { AllowedEmail, CsvParseResult, Forlob } from '$lib/content/forlobAdgang';
+	import type {
+		AllowedEmail,
+		CsvParseResult,
+		Forlob,
+		ForlobType
+	} from '$lib/content/forlobAdgang';
 	import { parseSimpleroCsv } from '$lib/content/forlobAdgang';
 	import {
 		gemAllowedEmailsBatch,
@@ -26,6 +31,7 @@
 	let formStartDato = $state('');
 	let formAntalDage = $state(21);
 	let formAktiv = $state(true);
+	let formType = $state<ForlobType>('kickstart');
 	let gemmer = $state(false);
 	let gemFejl = $state<string | null>(null);
 	let gemKvit = $state(false);
@@ -88,6 +94,7 @@
 			formStartDato = f.startDato.toDate().toISOString().slice(0, 10);
 			formAntalDage = f.antalDage;
 			formAktiv = f.aktiv;
+			formType = f.type ?? 'kickstart';
 
 			emails = await hentAllowedEmailsForForlob(forlobId);
 		} catch (e) {
@@ -121,7 +128,8 @@
 				navn: trimmedNavn,
 				startDato: Timestamp.fromDate(startDate),
 				antalDage: formAntalDage,
-				aktiv: formAktiv
+				aktiv: formAktiv,
+				type: formType
 			});
 			if (forlob) {
 				forlob = {
@@ -129,7 +137,8 @@
 					navn: trimmedNavn,
 					startDato: Timestamp.fromDate(startDate),
 					antalDage: formAntalDage,
-					aktiv: formAktiv
+					aktiv: formAktiv,
+					type: formType
 				};
 			}
 			gemKvit = true;
@@ -230,6 +239,32 @@
 				<span>Aktivt forløb (nye køb tilknyttes automatisk)</span>
 			</label>
 
+			<div class="felt">
+				<span class="felt-label">Forløbs-type</span>
+				<div class="type-toggle">
+					<button
+						type="button"
+						class="type-knap"
+						class:aktiv={formType === 'kickstart'}
+						onclick={() => (formType = 'kickstart')}
+						disabled={gemmer}
+					>
+						<div class="type-titel">Kickstart</div>
+						<div class="type-sub">21 dage · basis-niveau</div>
+					</button>
+					<button
+						type="button"
+						class="type-knap"
+						class:aktiv={formType === 'kropsro'}
+						onclick={() => (formType = 'kropsro')}
+						disabled={gemmer}
+					>
+						<div class="type-titel">Kropsro</div>
+						<div class="type-sub">12 uger · med buddymakker</div>
+					</button>
+				</div>
+			</div>
+
 			{#if gemFejl}
 				<div class="fejl-besked">{gemFejl}</div>
 			{/if}
@@ -275,16 +310,18 @@
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
 
-		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/buddymakker">
-			<div class="indhold-icon" style="background: #9D6358;">
-				<Icon name="user" size={16} color="#fff" />
-			</div>
-			<div class="indhold-tekst">
-				<div class="indhold-navn">Buddymakker</div>
-				<div class="indhold-sub">Deltagere der ønsker en buddymakker (kun Kropsro)</div>
-			</div>
-			<Icon name="chevron-r" size={14} color="var(--text3)" />
-		</a>
+		{#if forlob?.type === 'kropsro'}
+			<a class="indhold-row" href="/app/admin/forlob/{forlobId}/buddymakker">
+				<div class="indhold-icon" style="background: #9D6358;">
+					<Icon name="user" size={16} color="#fff" />
+				</div>
+				<div class="indhold-tekst">
+					<div class="indhold-navn">Buddymakker</div>
+					<div class="indhold-sub">Deltagere der ønsker en buddymakker</div>
+				</div>
+				<Icon name="chevron-r" size={14} color="var(--text3)" />
+			</a>
+		{/if}
 
 		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/traening">
 			<div class="indhold-icon" style="background: #C9A07A;">
@@ -665,6 +702,54 @@
 		width: 16px;
 		height: 16px;
 		accent-color: var(--terra);
+	}
+
+	.type-toggle {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+		margin-top: 6px;
+	}
+
+	.type-knap {
+		padding: 12px 14px;
+		background: var(--white);
+		border: 1.5px solid var(--border);
+		border-radius: 10px;
+		cursor: pointer;
+		text-align: left;
+		font-family: var(--ff-b);
+		color: inherit;
+	}
+
+	.type-knap:hover {
+		border-color: var(--terra);
+	}
+
+	.type-knap.aktiv {
+		border-color: var(--terra);
+		background: var(--tdim);
+	}
+
+	.type-knap:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.type-titel {
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.type-knap.aktiv .type-titel {
+		color: var(--terra);
+	}
+
+	.type-sub {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
 	}
 
 	.fejl-besked {
