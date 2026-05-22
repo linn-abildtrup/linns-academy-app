@@ -245,15 +245,15 @@
 				<Icon name="chevron-r" size={14} color="#fff" />
 			</button>
 		{:else}
-			<button type="button" class="cta-knap" onclick={startNyUdfyldelse}>
+			<div class="cta-info">
 				<div class="cta-tekst">
+					<div class="cta-eyebrow">Du har lige udfyldt</div>
+					<div class="cta-titel">Næste symptomcheck</div>
 					{#if naesteCheckDato}
-						<div class="cta-eyebrow">Næste udfyldelse {formaterDato(naesteCheckDato)}</div>
+						<div class="cta-info-dato">{formaterDato(naesteCheckDato)}</div>
 					{/if}
-					<div class="cta-titel">Tag en check nu</div>
 				</div>
-				<Icon name="chevron-r" size={14} color="var(--terra)" />
-			</button>
+			</div>
 		{/if}
 
 		{#if tidligereSorteret.length >= 2}
@@ -758,6 +758,38 @@
 		font-size: calc(18px * var(--fs-scale, 1));
 		font-weight: 600;
 		line-height: 1.15;
+	}
+
+	.cta-info {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		width: 100%;
+		padding: 16px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		margin-bottom: 14px;
+		color: var(--text);
+	}
+
+	.cta-info .cta-eyebrow {
+		color: var(--text3);
+		opacity: 1;
+	}
+
+	.cta-info .cta-titel {
+		color: var(--text2);
+		font-size: calc(15px * var(--fs-scale, 1));
+		margin-bottom: 4px;
+	}
+
+	.cta-info-dato {
+		font-family: var(--ff-d);
+		font-size: calc(20px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		letter-spacing: -0.01em;
 	}
 
 	.udvikling-graf {

@@ -288,7 +288,7 @@ Hvor ofte:
 - Kickstart-kunde: ved start (dag 0), derefter hver søndag gennem forløbet.
 - Kropsro-kunde: ved start, derefter hver 4. uge.
 
-Når det er tid til at udfylde, vises et terra "Tag din symptomcheck"-kort på din forside. Klik for at åbne modulet.
+Når det er tid til at udfylde, vises et terra "Tag din symptomcheck"-kort på din forside. Klik for at åbne modulet. Når du har udfyldt, viser kortet i stedet datoen for næste udfyldelse — du kan ikke tage en ny check før den dato, så grafen forbliver retvisende.
 
 I selve checken udfylder du først de 5 sliders (træk fra 1-10), så de 11 MRS-spørgsmål (Ingen / Lidt / En del / Meget / Voldsomt). I alt 16 svar. Resultatet viser:
 - Din MRS total-score (0-44) med fortolkning fra internationalt anerkendt MRS-skala.
