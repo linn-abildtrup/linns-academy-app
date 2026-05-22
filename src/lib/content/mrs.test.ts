@@ -9,7 +9,9 @@ import {
 	naesteUdfyldelseDato,
 	skalUdfyldeNu,
 	SUBSCALES,
-	validerScores
+	validerScores,
+	validerSliders,
+	type MrsSliders
 } from './mrs';
 
 const alleNul: Record<number, number> = Object.fromEntries(
@@ -212,6 +214,38 @@ describe('naesteUdfyldelseDato', () => {
 		const ud = naesteUdfyldelseDato('forløb', 'premiumforløb', sidste);
 		expect(ud.getDate()).toBe(29);
 		expect(ud.getMonth()).toBe(4);
+	});
+});
+
+describe('validerSliders', () => {
+	const gyldig: MrsSliders = { energi: 7, mave: 6, cravings: 8, humor: 5, sovn: 7 };
+
+	it('godkender gyldigt sliders-objekt', () => {
+		expect(validerSliders(gyldig)).toBeNull();
+	});
+
+	it('godkender alle yderpunkter (1 og 10)', () => {
+		expect(
+			validerSliders({ energi: 1, mave: 10, cravings: 1, humor: 10, sovn: 5 })
+		).toBeNull();
+	});
+
+	it('afviser manglende svar', () => {
+		const u = { ...gyldig } as Partial<MrsSliders>;
+		delete u.mave;
+		expect(validerSliders(u)).toMatch(/[Mm]angler/);
+	});
+
+	it('afviser værdi under 1', () => {
+		expect(validerSliders({ ...gyldig, energi: 0 })).toMatch(/[Uu]gyldigt/);
+	});
+
+	it('afviser værdi over 10', () => {
+		expect(validerSliders({ ...gyldig, sovn: 11 })).toMatch(/[Uu]gyldigt/);
+	});
+
+	it('afviser ikke-heltal', () => {
+		expect(validerSliders({ ...gyldig, humor: 5.5 })).toMatch(/[Uu]gyldigt/);
 	});
 });
 

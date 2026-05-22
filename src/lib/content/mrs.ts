@@ -150,6 +150,37 @@ export const MAALEPUNKT_LABEL: Record<MaalePunkt, string> = {
 	opfoelgning: 'Opfølgning'
 };
 
+/**
+ * 5-slider velvære-check der følger MRS-udfyldelsen. Samme spørgsmål som
+ * vaner-modulets ugentlige check-in (energi/mave/cravings/humor/sovn) på
+ * skala 1-10. Cravings er omvendt: 1=mange, 10=ingen.
+ *
+ * Linn besluttede 22. maj 2026 at integrere sliders i MRS-flowet så vi
+ * fanger både den klinisk-validerede MRS OG den bredere subjektive
+ * velvære-måling (mave/cravings dækkes ikke af MRS). Den separate
+ * ugentlige slider-check i vaner-modulet fortsætter uændret.
+ */
+export interface MrsSliders {
+	energi: number;
+	mave: number;
+	cravings: number;
+	humor: number;
+	sovn: number;
+}
+
+export interface SliderSpoergsmaal {
+	id: keyof MrsSliders;
+	label: string;
+}
+
+export const SLIDER_SPORGSMAAL: readonly SliderSpoergsmaal[] = [
+	{ id: 'energi', label: 'Min energi' },
+	{ id: 'mave', label: 'Min mave og fordøjelse' },
+	{ id: 'cravings', label: 'Mine cravings (1 = mange → 10 = ingen)' },
+	{ id: 'humor', label: 'Mit humør og overskud' },
+	{ id: 'sovn', label: 'Min søvn' }
+] as const;
+
 /** Et færdigt udfyldt MRS-skema som lagres i Firestore. */
 export interface MrsScore {
 	id?: string;
@@ -160,6 +191,21 @@ export interface MrsScore {
 	scores: Record<number, number>;
 	subscales: { somatisk: number; psykologisk: number; urogenital: number };
 	total: number;
+	/** 5-slider velvære-check udfyldt sammen med MRS. Optional fordi gamle
+	 *  data fra før 22. maj 2026 ikke har feltet. */
+	sliders?: MrsSliders;
+}
+
+/** Returnerer en fejlbesked eller null hvis sliders er gyldige. */
+export function validerSliders(sliders: Partial<MrsSliders>): string | null {
+	for (const spm of SLIDER_SPORGSMAAL) {
+		const v = sliders[spm.id];
+		if (v === undefined) return `Mangler svar på "${spm.label}".`;
+		if (typeof v !== 'number' || !Number.isInteger(v) || v < 1 || v > 10) {
+			return `Ugyldigt svar på "${spm.label}": skal være 1-10.`;
+		}
+	}
+	return null;
 }
 
 /** Beregner subskala-scoren for hver gruppe ud fra individuelle svar. */

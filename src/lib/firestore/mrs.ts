@@ -14,7 +14,8 @@ import {
 	calculateSubscales,
 	calculateTotal,
 	type MaalePunkt,
-	type MrsScore
+	type MrsScore,
+	type MrsSliders
 } from '$lib/content/mrs';
 
 function mrsCol(uid: string) {
@@ -33,7 +34,8 @@ export async function gemMrsScore(
 	uid: string,
 	email: string,
 	measurePoint: MaalePunkt,
-	scores: Record<number, number>
+	scores: Record<number, number>,
+	sliders?: MrsSliders
 ): Promise<MrsScore> {
 	const subscales = calculateSubscales(scores);
 	const total = calculateTotal(scores);
@@ -44,7 +46,8 @@ export async function gemMrsScore(
 		timestamp: Date.now(),
 		scores,
 		subscales,
-		total
+		total,
+		...(sliders ? { sliders } : {})
 	};
 	const ref = await addDoc(mrsCol(uid), data);
 	return { id: ref.id, ...data };

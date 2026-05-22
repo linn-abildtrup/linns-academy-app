@@ -277,9 +277,11 @@ Klik 'Læg ind som måltid' for hurtigt at lægge en gemt privat opskrift ind i 
 		indhold: `Som premium-bruger har du en 'Optimér min mad'-knap på dagbog-fanen. Den lader AI'en kigge på dagens måltider og foreslå små bytter eller tilføjelser så du rammer dit protein/fiber-mål inden for dit kcal-budget. Klik 'Anvend ændringer' for at føje forslagene ind i dagbogen automatisk.`
 	},
 	{
-		titel: 'Symptomcheck (MRS) — mål dine symptomer over tid',
+		titel: 'Symptomcheck (MRS + sliders) — mål dine symptomer og velvære over tid',
 		visFor: ALLE_PRODUKTER,
-		indhold: `Symptomcheck finder du under Moduler → Symptomcheck. Det er en 11-punkts symptomtjekliste (Menopause Rating Scale) der måler overgangsalder-symptomer i tre områder: krop og søvn, humør og energi, underliv og blære.
+		indhold: `Symptomcheck finder du under Moduler → Symptomcheck. Den kombinerer:
+- 5-slider velvære-check (energi, mave, cravings, humør, søvn) på skala 1-10
+- 11-punkts symptomtjekliste (Menopause Rating Scale / MRS) der måler overgangsalder-symptomer i tre områder: krop og søvn, humør og energi, underliv og blære
 
 Hvor ofte:
 - App-kunde: første gang ved login, derefter hver måned.
@@ -288,12 +290,15 @@ Hvor ofte:
 
 Når det er tid til at udfylde, vises et terra "Tag din symptomcheck"-kort på din forside. Klik for at åbne modulet.
 
-I selve checken vælger du sværhedsgrad pr symptom (Ingen / Lidt / En del / Meget / Voldsomt). Resultatet viser:
-- Din total-score (0-44) med fortolkning fra internationalt anerkendt MRS-skala.
+I selve checken udfylder du først de 5 sliders (træk fra 1-10), så de 11 MRS-spørgsmål (Ingen / Lidt / En del / Meget / Voldsomt). I alt 16 svar. Resultatet viser:
+- Din MRS total-score (0-44) med fortolkning fra internationalt anerkendt MRS-skala.
 - Score pr de tre symptom-områder med deres egen fortolkning.
 - Bar-visualisering pr enkelt symptom.
+- Dine 5 sliders-værdier som bars nederst.
 
-Når du har udfyldt 2+ gange, vises en udviklings-graf på forsiden af modulet så du kan se hvordan dine symptomer udvikler sig over tid. Du kan altid klikke på en tidligere udfyldelse for at se den.`
+Når du har udfyldt 2+ gange, vises en udviklings-graf på forsiden af modulet så du kan se hvordan dine symptomer udvikler sig over tid. Du kan altid klikke på en tidligere udfyldelse for at se den.
+
+Bemærk: Den ugentlige slider-check inde i Vaner-modulet (om søndagen) fortsætter uændret. Symptomcheck er en separat dybere vurdering der inkluderer både sliders OG MRS.`
 	},
 	{
 		titel: 'Forsidens "Dagens træning"-kort',

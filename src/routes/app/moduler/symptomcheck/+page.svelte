@@ -12,10 +12,13 @@
 		naesteUdfyldelseDato,
 		SEVERITY,
 		skalUdfyldeNu,
+		SLIDER_SPORGSMAAL,
 		SUBSCALES,
 		validerScores,
+		validerSliders,
 		type MaalePunkt,
-		type MrsScore
+		type MrsScore,
+		type MrsSliders
 	} from '$lib/content/mrs';
 	import { gemMrsScore, hentAlleMrsScores } from '$lib/firestore/mrs';
 
@@ -29,14 +32,21 @@
 	let visning = $state<Visning>('forside');
 	let valgtMaalepunkt = $state<MaalePunkt>('baseline');
 	let scores = $state<Record<number, number>>({});
+	let sliders = $state<Partial<MrsSliders>>({});
 	let tidligereScores = $state<MrsScore[]>([]);
 	let netop_gemt = $state<MrsScore | null>(null);
 	let loading = $state(true);
 	let gemmer = $state(false);
 	let fejl = $state<string | null>(null);
 
-	const antalBesvaret = $derived(Object.keys(scores).length);
-	const klarTilSubmit = $derived(antalBesvaret === MRS_ITEMS.length);
+	const antalMrsBesvaret = $derived(Object.keys(scores).length);
+	const antalSlidersBesvaret = $derived(
+		SLIDER_SPORGSMAAL.filter((s) => sliders[s.id] !== undefined).length
+	);
+	const klarTilSubmit = $derived(
+		antalMrsBesvaret === MRS_ITEMS.length &&
+			antalSlidersBesvaret === SLIDER_SPORGSMAAL.length
+	);
 
 	onMount(async () => {
 		if (!user) {
@@ -57,10 +67,15 @@
 		// Første gang = 'forste', ellers en planlagt opfølgning
 		valgtMaalepunkt = tidligereScores.length === 0 ? 'forste' : 'opfoelgning';
 		scores = {};
+		sliders = {};
 		netop_gemt = null;
 		fejl = null;
 		visning = 'udfyld';
 		if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
+	}
+
+	function setSlider(id: keyof MrsSliders, value: number) {
+		sliders = { ...sliders, [id]: value };
 	}
 
 	/** Åbner en specifik tidligere udfyldelse i resultat-visningen. */
@@ -83,6 +98,11 @@
 
 	async function submit() {
 		if (!user || gemmer) return;
+		const slidersFejl = validerSliders(sliders);
+		if (slidersFejl) {
+			fejl = slidersFejl;
+			return;
+		}
 		const valFejl = validerScores(scores);
 		if (valFejl) {
 			fejl = valFejl;
@@ -95,7 +115,8 @@
 				user.uid,
 				user.email ?? '',
 				valgtMaalepunkt,
-				scores
+				scores,
+				sliders as MrsSliders
 			);
 			netop_gemt = ny;
 			tidligereScores = [...tidligereScores, ny];
@@ -308,6 +329,37 @@
 	{:else if visning === 'udfyld'}
 		<div class="maalepunkt-pill">{MAALEPUNKT_LABEL[valgtMaalepunkt]}</div>
 
+		<section class="subskala-blok">
+			<div
+				class="subskala-label"
+				style="background: var(--tdim); color: var(--terra);"
+			>
+				Hvordan har du det generelt?
+			</div>
+			<p class="slider-intro">
+				Træk i hver slider — 1 = lavest, 10 = højest. Bruges sammen med dine
+				symptom-svar nedenfor til at give det fulde billede.
+			</p>
+			{#each SLIDER_SPORGSMAAL as spm (spm.id)}
+				{@const v = sliders[spm.id]}
+				<div class="slider-rad">
+					<div class="slider-label">{spm.label}</div>
+					<input
+						type="range"
+						min="1"
+						max="10"
+						step="1"
+						value={v ?? 5}
+						oninput={(e) =>
+							setSlider(spm.id, parseInt((e.target as HTMLInputElement).value, 10))}
+					/>
+					<div class="slider-vaerdi">
+						{v !== undefined ? v : '–'}
+					</div>
+				</div>
+			{/each}
+		</section>
+
 		{#each ['somatisk', 'psykologisk', 'urogenital'] as subKey ((subKey))}
 			{@const sub = SUBSCALES[subKey as keyof typeof SUBSCALES]}
 			<section class="subskala-blok">
@@ -343,7 +395,9 @@
 			</section>
 		{/each}
 
-		<p class="progress">{antalBesvaret} af {MRS_ITEMS.length} besvaret</p>
+		<p class="progress">
+			{antalSlidersBesvaret + antalMrsBesvaret} af {SLIDER_SPORGSMAAL.length + MRS_ITEMS.length} besvaret
+		</p>
 		<button
 			type="button"
 			class="primary-knap"
@@ -420,6 +474,27 @@
 				</div>
 			{/each}
 		</div>
+
+		{#if score.sliders}
+			{@const slidersVal = score.sliders}
+			<div class="bars-titel" style="margin-top: 18px;">Hvordan du har det generelt</div>
+			<div class="bars-liste">
+				{#each SLIDER_SPORGSMAAL as spm (spm.id)}
+					{@const val = slidersVal[spm.id]}
+					{@const pct = (val / 10) * 100}
+					<div class="bar-row">
+						<span class="bar-label">{spm.label}</span>
+						<div class="bar-track">
+							<div
+								class="bar-fill"
+								style="width: {pct}%; background: var(--terra);"
+							></div>
+						</div>
+						<span class="bar-val" style="color: var(--terra);">{val}</span>
+					</div>
+				{/each}
+			</div>
+		{/if}
 
 		<div class="info-blok kompakt">
 			<strong>Hvad er dette?</strong><br />
@@ -678,6 +753,48 @@
 
 	.subskala-blok {
 		margin-bottom: 16px;
+	}
+
+	.slider-intro {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		margin: 0 0 14px;
+		line-height: 1.5;
+	}
+
+	.slider-rad {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		align-items: center;
+		gap: 6px 14px;
+		padding: 12px 14px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		margin-bottom: 10px;
+	}
+
+	.slider-label {
+		grid-column: 1 / -1;
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-weight: 500;
+		color: var(--text);
+	}
+
+	.slider-rad input[type='range'] {
+		grid-column: 1;
+		width: 100%;
+		accent-color: var(--terra);
+	}
+
+	.slider-vaerdi {
+		grid-column: 2;
+		font-family: var(--ff-d);
+		font-size: calc(20px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--terra);
+		min-width: 24px;
+		text-align: right;
 	}
 
 	.subskala-label {
