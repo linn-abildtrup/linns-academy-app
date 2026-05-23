@@ -3951,22 +3951,14 @@
 		text-decoration: underline;
 	}
 
-	/* Wrap-container der gør picker-row + stem-rad til én visuel kort-enhed:
-	   begge dele bor inde i en kantet boks og deler border + radius. Den
-	   indre .picker-row mister sin egen kant så det hele ser samlet ud. */
+	/* Container der grupperer favorit-stjerne + picker-row på samme linje.
+	   picker-row beholder sin egen border/baggrund (defineret i .picker-row).
+	   Stem-rad (community-fødevarer) renderes som søsken-element under og
+	   styles separat så det visuelt hører sammen med picker-row over. */
 	.picker-row-wrap {
 		display: flex;
 		flex-direction: column;
 		gap: 0;
-		background: var(--bg2);
-		border: 1px solid var(--border);
-		border-radius: 10px;
-		overflow: hidden;
-		transition: border-color 0.15s;
-	}
-
-	.picker-row-wrap:has(.picker-row:hover) {
-		border-color: var(--terra);
 	}
 
 	.picker-row-flex {
@@ -3979,13 +3971,15 @@
 	}
 	.picker-row-flex .picker-row {
 		flex: 1;
-		background: transparent;
-		border: none;
-		border-radius: 0;
 	}
-	.picker-row-flex .picker-row:hover {
-		background: var(--white);
-		border: none;
+
+	/* Community-fødevarer har stem-rad under picker-row — kobler dem visuelt
+	   sammen ved at fjerne bottom-border-radius og border på picker-row, og
+	   give stem-rad en matching styling der ligner en footer på samme kort. */
+	.picker-row-wrap:has(.stem-rad) .picker-row {
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
+		border-bottom: none;
 	}
 
 	.badge {
@@ -4032,8 +4026,10 @@
 		display: flex;
 		gap: 8px;
 		padding: 6px 10px 8px;
-		background: rgba(0, 0, 0, 0.02);
-		border-top: 1px solid var(--border);
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-top: 1px dashed var(--border);
+		border-radius: 0 0 10px 10px;
 		justify-content: flex-end;
 	}
 
