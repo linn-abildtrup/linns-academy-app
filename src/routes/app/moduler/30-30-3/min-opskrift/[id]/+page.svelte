@@ -209,7 +209,8 @@
 					{
 						foodId: '',
 						portion: portioner,
-						manuel: { navn: opskrift.navn, enhed: portionTekst }
+						manuel: { navn: opskrift.navn, enhed: portionTekst },
+						opskriftRef: { id: opskrift.id, erEgen: true }
 					}
 				],
 				totalP: m.protein,
