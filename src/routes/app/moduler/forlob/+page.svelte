@@ -8,7 +8,14 @@
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
 	import { dagStatus, getCurrentDay, tomForlobDag } from '$lib/content/forlob';
-	import { detekterGuideType, videoEmbedUrl } from '$lib/content/bibliotek';
+	import {
+		detekterGuideType,
+		erInspirationLektion,
+		erLydLektion,
+		erVideoLektion,
+		videoEmbedUrl,
+		videoThumbnail
+	} from '$lib/content/bibliotek';
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
@@ -234,24 +241,54 @@
 				{:else}
 					<div class="lektion-liste">
 						{#each aktivDag.lektioner as l (l.id)}
-							<button class="lektion-card" type="button" onclick={() => aabnLektionItem(l)}>
-								<div class="lektion-meta">
-									Dag {aktivDag.dagNummer} · uge {aktivDag.uge}
-								</div>
-								<div class="lektion-titel">{l.titel}</div>
-								{#if l.beskrivelse}
-									<div class="lektion-beskrivelse">{l.beskrivelse}</div>
+							{@const thumbUrl = videoThumbnail(l.url)}
+							{@const erLyd = erLydLektion(l.url)}
+							{@const erInspiration = erInspirationLektion(l.url)}
+							{@const visThumb = erVideoLektion(l.url) || erLyd || erInspiration}
+							{@const visFormat = erInspiration ? 'Inspiration' : l.format}
+							<button
+								class="lektion-card"
+								class:lektion-card-medThumb={visThumb}
+								type="button"
+								onclick={() => aabnLektionItem(l)}
+							>
+								{#if visThumb}
+									<div class="lektion-thumb">
+										{#if thumbUrl}
+											<img src={thumbUrl} alt="" loading="lazy" />
+										{:else if erLyd}
+											<div class="lektion-thumb-placeholder lektion-thumb-lyd">
+												<Icon name="headphones" size={26} color="#fff" />
+												<span>Lyd</span>
+											</div>
+										{:else if erInspiration}
+											<div class="lektion-thumb-placeholder lektion-thumb-inspiration">
+												<Icon name="lightbulb" size={32} color="#fff" />
+											</div>
+										{:else}
+											<div class="lektion-thumb-placeholder">Zoom</div>
+										{/if}
+									</div>
 								{/if}
-								<div class="lektion-footer">
-									<span class="lektion-pille">
-										<Icon name="play" size={11} color="var(--terra)" filled />
-										Begynd
-									</span>
-									{#if l.varighedMin > 0 || l.format}
-										<span class="lektion-duration">
-											{l.varighedMin > 0 ? l.varighedMin + ' min' : ''}{l.varighedMin > 0 && l.format ? ' · ' : ''}{l.format}
-										</span>
+								<div class="lektion-content">
+									<div class="lektion-meta">
+										Dag {aktivDag.dagNummer} · uge {aktivDag.uge}
+									</div>
+									<div class="lektion-titel">{l.titel}</div>
+									{#if l.beskrivelse}
+										<div class="lektion-beskrivelse">{l.beskrivelse}</div>
 									{/if}
+									<div class="lektion-footer">
+										<span class="lektion-pille">
+											<Icon name="play" size={11} color="var(--terra)" filled />
+											Begynd
+										</span>
+										{#if l.varighedMin > 0 || visFormat}
+											<span class="lektion-duration">
+												{l.varighedMin > 0 ? l.varighedMin + ' min' : ''}{l.varighedMin > 0 && visFormat ? ' · ' : ''}{visFormat}
+											</span>
+										{/if}
+									</div>
 								</div>
 							</button>
 						{/each}
@@ -499,10 +536,62 @@
 		text-align: left;
 		font-family: inherit;
 		cursor: pointer;
+		overflow: hidden;
 	}
 
 	.lektion-card:hover {
 		border-color: var(--terra);
+	}
+
+	.lektion-card-medThumb {
+		padding: 0;
+		gap: 0;
+	}
+
+	.lektion-thumb {
+		width: 100%;
+		aspect-ratio: 16 / 9;
+		background: var(--cream);
+		overflow: hidden;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.lektion-thumb img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
+	.lektion-thumb-placeholder {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		color: #fff;
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		background: linear-gradient(135deg, var(--terra), #8a4f3a);
+	}
+
+	.lektion-thumb-lyd {
+		background: linear-gradient(135deg, #6b8e7f, #4a6b5e);
+	}
+
+	.lektion-thumb-inspiration {
+		background: linear-gradient(135deg, #c9a06b, #a07d4d);
+	}
+
+	.lektion-card-medThumb .lektion-content {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 14px 16px 16px;
 	}
 
 	.lektion-meta {
