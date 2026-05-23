@@ -31,6 +31,14 @@
 	const user = $derived(getUser());
 
 	const programId = $derived(page.params.id ?? '');
+	// For 14-dages programmer: hvilken dag spilles? Læses fra ?dag=N. Hvis
+	// ikke sat eller programmet er simpelt (uden dage), bruges hele program.oevelser.
+	const dagNummer = $derived.by(() => {
+		const v = page.url.searchParams.get('dag');
+		if (!v) return null;
+		const n = parseInt(v, 10);
+		return Number.isFinite(n) && n >= 1 ? n : null;
+	});
 
 	let program = $state<CustomProgram | null>(null);
 	let exerciseMap = $state<Map<string, Exercise>>(new Map());
@@ -66,7 +74,16 @@
 	let resumet = $state(false);
 	let traeningGennemfoert = $state(false);
 
-	const oevelser = $derived<CustomProgramOevelse[]>(program?.oevelser ?? []);
+	// Hvis program har dage og en specifik dag er valgt, brug dens øvelser.
+	// Ellers fald tilbage til program.oevelser (simpel-mode bagudkompatibilitet).
+	const oevelser = $derived.by<CustomProgramOevelse[]>(() => {
+		if (!program) return [];
+		if (program.dage && dagNummer) {
+			const dag = program.dage.find((d) => d.dagNummer === dagNummer);
+			if (dag) return dag.oevelser;
+		}
+		return program.oevelser ?? [];
+	});
 	const aktuelOvelse = $derived<CustomProgramOevelse | null>(oevelser[ei] ?? null);
 	const aktuelExercise = $derived<Exercise | null>(
 		aktuelOvelse ? (exerciseMap.get(aktuelOvelse.exerciseId) ?? null) : null

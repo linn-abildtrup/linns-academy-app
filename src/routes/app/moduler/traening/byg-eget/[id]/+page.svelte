@@ -8,9 +8,12 @@
 	import type { Exercise } from '$lib/content/mikrotraening';
 	import { hentAlleExercises } from '$lib/firestore/mikrotraening';
 	import {
+		aktuelDag,
+		anslaaetDagVarighedMin,
 		anslaaetVarighedMinutter,
 		STANDARD_OEVELSE,
 		validerProgram,
+		type CustomProgram,
 		type CustomProgramOevelse
 	} from '$lib/content/mineProgrammer';
 	import {
@@ -28,10 +31,14 @@
 
 	let navn = $state('');
 	let oevelser = $state<CustomProgramOevelse[]>([]);
+	let program = $state<CustomProgram | null>(null);
 	let alleOevelser = $state<Exercise[]>([]);
 	let indlaeser = $state(true);
 	let gemmer = $state(false);
 	let fejl = $state<string | null>(null);
+
+	const erFlerdages = $derived((program?.dage?.length ?? 0) > 0);
+	const dagIDag = $derived(program ? aktuelDag(program) : 1);
 
 	// Picker-modal state
 	let pickerAaben = $state(false);
@@ -58,8 +65,28 @@
 			if (!erNyt) {
 				const eksisterende = await hentMitProgram(user.uid, programId);
 				if (eksisterende) {
+					program = eksisterende;
 					navn = eksisterende.navn;
 					oevelser = eksisterende.oevelser;
+					// Første gang programmet åbnes, sæt startetDato så vi kan
+					// beregne 'I dag: Dag X' fremover. Sker kun for flerdages.
+					if (
+						eksisterende.dage &&
+						eksisterende.dage.length > 0 &&
+						!eksisterende.startetDato
+					) {
+						const idag = new Date();
+						const yyyy = idag.getFullYear();
+						const mm = String(idag.getMonth() + 1).padStart(2, '0');
+						const dd = String(idag.getDate()).padStart(2, '0');
+						const startetDato = `${yyyy}-${mm}-${dd}`;
+						try {
+							await opdaterMitProgram(user.uid, programId, { startetDato });
+							program = { ...eksisterende, startetDato };
+						} catch (e) {
+							console.warn('Kunne ikke gemme startetDato:', e);
+						}
+					}
 				} else {
 					fejl = 'Programmet findes ikke.';
 				}
@@ -165,9 +192,13 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Mine programmer</span>
 		</a>
-		<div class="eyebrow">Custom-builder</div>
+		<div class="eyebrow">{erFlerdages ? 'Mit 14-dages program' : 'Custom-builder'}</div>
 		<h1>{erNyt ? 'Nyt program' : navn || 'Rediger program'}</h1>
-		{#if oevelser.length > 0}
+		{#if erFlerdages && program?.dage}
+			<p class="page-sub">
+				{program.dage.length} dage · ca. {anslaaetDagVarighedMin(program.dage[0])} min pr dag
+			</p>
+		{:else if oevelser.length > 0}
 			<p class="page-sub">
 				{oevelser.length} øvelse{oevelser.length === 1 ? '' : 'r'} · ca. {anslaaetMin} min
 			</p>
@@ -180,6 +211,43 @@
 
 	{#if indlaeser}
 		<div class="besked">Henter…</div>
+	{:else if erFlerdages && program?.dage}
+		<!-- 14-dages read-only visning med dag-grid -->
+		<section class="i-dag-kort">
+			<div class="i-dag-label">I dag</div>
+			<div class="i-dag-tal">Dag {dagIDag} af {program.dage.length}</div>
+			<a
+				class="start-knap"
+				href={`/app/moduler/traening/byg-eget/${programId}/spil?dag=${dagIDag}`}
+			>
+				▶ Start dagens træning
+			</a>
+		</section>
+
+		<section class="sektion">
+			<div class="sektion-titel">Alle dage</div>
+			<div class="dag-grid">
+				{#each program.dage as d (d.dagNummer)}
+					<a
+						class="dag-celle"
+						class:i-dag={d.dagNummer === dagIDag}
+						href={`/app/moduler/traening/byg-eget/${programId}/spil?dag=${d.dagNummer}`}
+					>
+						<div class="dag-num">{d.dagNummer}</div>
+						<div class="dag-meta">{d.oevelser.length} øv · {anslaaetDagVarighedMin(d)} min</div>
+					</a>
+				{/each}
+			</div>
+		</section>
+
+		<button
+			type="button"
+			class="slet-knap"
+			onclick={aabnSletBekraeft}
+			disabled={gemmer}
+		>
+			Slet programmet
+		</button>
 	{:else}
 		<label class="felt">
 			<span class="felt-label">Navn på programmet</span>
@@ -667,6 +735,88 @@
 	.slet-knap:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	/* 14-dages visning */
+	.i-dag-kort {
+		background: linear-gradient(135deg, var(--terra) 0%, #a06b60 100%);
+		color: #fff;
+		border-radius: 14px;
+		padding: 18px 20px;
+		margin-bottom: 16px;
+		text-align: center;
+		box-shadow: 0 4px 16px rgba(184, 123, 110, 0.25);
+	}
+
+	.i-dag-label {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		opacity: 0.85;
+	}
+
+	.i-dag-tal {
+		font-family: var(--ff-d);
+		font-size: calc(26px * var(--fs-scale, 1));
+		font-weight: 600;
+		margin: 4px 0 14px;
+	}
+
+	.start-knap {
+		display: inline-block;
+		padding: 12px 22px;
+		background: #fff;
+		color: var(--terra);
+		border-radius: 99px;
+		font-weight: 700;
+		text-decoration: none;
+		font-size: calc(14px * var(--fs-scale, 1));
+	}
+
+	.start-knap:hover {
+		opacity: 0.92;
+	}
+
+	.dag-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+		gap: 8px;
+	}
+
+	.dag-celle {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		padding: 10px 6px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.dag-celle:hover {
+		border-color: var(--terra);
+	}
+
+	.dag-celle.i-dag {
+		background: var(--terra);
+		border-color: var(--terra);
+		color: #fff;
+	}
+
+	.dag-num {
+		font-family: var(--ff-d);
+		font-size: calc(17px * var(--fs-scale, 1));
+		font-weight: 600;
+	}
+
+	.dag-meta {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		opacity: 0.8;
+		font-variant-numeric: tabular-nums;
 	}
 
 	/* Picker modal */

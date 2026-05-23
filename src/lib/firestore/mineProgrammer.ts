@@ -63,7 +63,7 @@ export async function opretMitProgram(
 export async function opdaterMitProgram(
 	uid: string,
 	programId: string,
-	data: Pick<CustomProgram, 'navn' | 'oevelser'>
+	data: Partial<Pick<CustomProgram, 'navn' | 'oevelser' | 'dage' | 'config' | 'startetDato'>>
 ): Promise<void> {
 	const nu = Date.now();
 	await setDoc(
