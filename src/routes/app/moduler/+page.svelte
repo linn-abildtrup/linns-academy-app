@@ -3,7 +3,7 @@
 	import type { UserDoc } from '$lib/types';
 	import { getModulerForUser, type Modul } from '$lib/content/moduler';
 	import Icon from '$lib/components/Icon.svelte';
-	import { effektivState } from '$lib/utils/userAdgang';
+	import { effektivState, harGennemfoertForlob } from '$lib/utils/userAdgang';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const userDoc = $derived(getUserDoc());
@@ -11,7 +11,9 @@
 
 	const moduler = $derived.by<Modul[]>(() => {
 		if (!userState) return [];
-		return getModulerForUser(userState);
+		return getModulerForUser(userState, {
+			harGennemfoertForlob: harGennemfoertForlob(userDoc)
+		});
 	});
 
 	// Modul-id til rute. Kun moduler der har en bygget side er klikbare.

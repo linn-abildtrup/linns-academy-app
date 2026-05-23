@@ -74,13 +74,22 @@ const MODULER_BASE: ModulBase[] = [
 	}
 ];
 
-export function getModulerForUser(state: UserState): Modul[] {
+export interface ModulerOptions {
+	/**
+	 * True hvis brugeren tidligere har været på et forløb (forlobIds.length > 0).
+	 * Bruges af modulbruger-flow til at vælge mellem 'Du har gennemført
+	 * Kickstart, næste skridt Kropsro' og 'Start dit forløb — Kickstart'.
+	 */
+	harGennemfoertForlob?: boolean;
+}
+
+export function getModulerForUser(state: UserState, options: ModulerOptions = {}): Modul[] {
 	return MODULER_BASE.map((base) => {
 		if (state === 'forlobskunde') {
 			return forlobskundeStatus(base);
 		}
 		if (state === 'modulbruger') {
-			return modulbrugerStatus(base);
+			return modulbrugerStatus(base, options.harGennemfoertForlob ?? false);
 		}
 		return udlobetStatus(base);
 	});
@@ -113,7 +122,7 @@ function forlobskundeStatus(base: ModulBase): Modul {
 	};
 }
 
-function modulbrugerStatus(base: ModulBase): Modul {
+function modulbrugerStatus(base: ModulBase, harGennemfoertForlob: boolean): Modul {
 	// Modulbrugere (basis-app) har adgang til mikrotræning, kost, vaner og
 	// deres personlige bibliotek (materiale fra forløb de har gennemført —
 	// tomt indtil de har været på et forløb). 'forlob'-modulet er kun for
@@ -122,17 +131,29 @@ function modulbrugerStatus(base: ModulBase): Modul {
 	const erKoebt = koebt.includes(base.id);
 
 	if (!erKoebt) {
-		// 'forlob'-modulet: basis-app-kunderne er typisk gennemførte Kickstart-
-		// kunder. Inviter dem til næste skridt (Kropsro 12-ugers forløb) i
-		// stedet for at sige 'find adgang via Kickstart' som de allerede har gjort.
+		// 'forlob'-modulet er låst for modulbrugere. Teksten tilpasses efter
+		// om brugeren tidligere har været på et forløb:
+		//   - Har gennemført forløb: vis at næste skridt er Kropsro
+		//   - Aldrig været på forløb: vis at hun kan starte med Kickstart
+		if (harGennemfoertForlob) {
+			return {
+				...base,
+				status: 'laast',
+				progress: null,
+				statusTekst: 'Låst',
+				subTekst: 'Du har gennemført Kickstart',
+				laasTekst: 'Tag næste skridt — Kropsro',
+				kobUrl: KROPSRO_KOB_URL
+			};
+		}
 		return {
 			...base,
 			status: 'laast',
 			progress: null,
 			statusTekst: 'Låst',
-			subTekst: 'Du har gennemført Kickstart',
-			laasTekst: 'Tag næste skridt — Kropsro',
-			kobUrl: KROPSRO_KOB_URL
+			subTekst: 'Strukturerede forløb gennem overgangsalderen',
+			laasTekst: 'Start dit forløb — Kickstart',
+			kobUrl: KICKSTART_KOB_URL
 		};
 	}
 

@@ -39,8 +39,8 @@ describe('getModulerForUser', () => {
 		});
 	});
 
-	describe('modulbruger', () => {
-		const moduler = getModulerForUser('modulbruger');
+	describe('modulbruger med gennemført forløb', () => {
+		const moduler = getModulerForUser('modulbruger', { harGennemfoertForlob: true });
 
 		it('returnerer 6 moduler', () => {
 			expect(moduler).toHaveLength(6);
@@ -50,6 +50,7 @@ describe('getModulerForUser', () => {
 			const forlob = moduler.find((m) => m.id === 'forlob');
 			expect(forlob?.status).toBe('laast');
 			expect(forlob?.laasTekst).toBe('Tag næste skridt — Kropsro');
+			expect(forlob?.subTekst).toBe('Du har gennemført Kickstart');
 			expect(forlob?.kobUrl).toBe('https://linn.simplero.com/12uger');
 		});
 
@@ -72,11 +73,32 @@ describe('getModulerForUser', () => {
 			expect(traening?.statusTekst).toBe('Løbende');
 		});
 
-		it('viser Kropsro-CTA på låste moduler (basis-app-kunder har gennemført Kickstart)', () => {
+		it('viser Kropsro-CTA på låste moduler', () => {
 			const laaste = moduler.filter((m) => m.status === 'laast');
 			laaste.forEach((m) => {
 				expect(m.laasTekst).toContain('Kropsro');
 			});
+		});
+	});
+
+	describe('modulbruger UDEN gennemført forløb', () => {
+		const moduler = getModulerForUser('modulbruger');
+
+		it('har Mit forløb låst med Kickstart-CTA (ikke Kropsro)', () => {
+			const forlob = moduler.find((m) => m.id === 'forlob');
+			expect(forlob?.status).toBe('laast');
+			expect(forlob?.laasTekst).toBe('Start dit forløb — Kickstart');
+			expect(forlob?.subTekst).not.toContain('gennemført');
+			expect(forlob?.kobUrl).toBe('https://linn.simplero.com/21dage');
+		});
+
+		it('har samme 5 aktive moduler', () => {
+			const aktive = moduler.filter((m) => m.status === 'aktiv').map((m) => m.id);
+			expect(aktive).toContain('traening');
+			expect(aktive).toContain('kost');
+			expect(aktive).toContain('vaner');
+			expect(aktive).toContain('bibliotek');
+			expect(aktive).toContain('symptomcheck');
 		});
 	});
 
