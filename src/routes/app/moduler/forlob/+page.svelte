@@ -7,7 +7,14 @@
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
-	import { dagStatus, getCurrentDay, tomForlobDag } from '$lib/content/forlob';
+	import {
+		dagStatus,
+		forlobSlutMs,
+		getCurrentDay,
+		getCurrentDayMedNulDage,
+		nulDageDatoer,
+		tomForlobDag
+	} from '$lib/content/forlob';
 	import {
 		detekterGuideType,
 		erInspirationLektion,
@@ -29,8 +36,11 @@
 
 	let forlob = $state<Forlob | null>(null);
 	let forlobsdage = $state<ForlobDag[]>([]);
+	let userProduct = $state<UserProduct | null>(null);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
+
+	const nulDatoer = $derived(nulDageDatoer(userProduct?.nulDage?.intervaller ?? []));
 
 	let aabenLektion = $state<LektionItem | null>(null);
 	let lektionFraQueryParam = $state(false);
@@ -41,7 +51,10 @@
 	const aktivDagNr = $derived.by<number | null>(() => {
 		if (!forlob) return null;
 		const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
-		return getCurrentDay({ startDato, antalDage: forlob.antalDage });
+		return getCurrentDayMedNulDage(
+			{ startDato, antalDage: forlob.antalDage },
+			nulDatoer
+		);
 	});
 
 	const dagsmap = $derived.by<Map<number, ForlobDag>>(() => {
@@ -169,15 +182,23 @@
 				loading = false;
 				return;
 			}
-			const forløbsData = await Promise.all(ids.map((id) => hentForlob(id)));
+			const [forløbsData, kickstartUp, kropsroUp] = await Promise.all([
+				Promise.all(ids.map((id) => hentForlob(id))),
+				hentUserProduct(u.uid, 'kickstart'),
+				hentUserProduct(u.uid, 'premiumforløb')
+			]);
 			const idagMs = Date.now();
 			let aktivt: Forlob | null = null;
+			let aktivtUp: UserProduct | null = null;
 			for (const f of forløbsData) {
 				if (!f) continue;
+				const up = f.type === 'kropsro' ? kropsroUp : kickstartUp;
+				const nulBrugt = nulDageDatoer(up?.nulDage?.intervaller ?? []).length;
 				const startMs = f.startDato.toMillis();
-				const slutMs = startMs + f.antalDage * 24 * 60 * 60 * 1000;
+				const slutMs = forlobSlutMs(startMs, f.antalDage, nulBrugt);
 				if (idagMs >= startMs && idagMs < slutMs) {
 					aktivt = f;
+					aktivtUp = up;
 					break;
 				}
 			}
@@ -186,6 +207,7 @@
 				loading = false;
 				return;
 			}
+			if (aktivtUp) userProduct = aktivtUp;
 			const dage = await hentForlobsdage(aktivt.id);
 			const f = aktivt;
 			forlob = f;

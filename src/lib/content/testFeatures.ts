@@ -32,6 +32,12 @@ export const TEST_FEATURES: TestFeature[] = [
 		navn: 'Byg dit eget program',
 		beskrivelse:
 			'Custom-builder hvor kunden selv vælger øvelser, sæt, reps og pause. Inkluderer 14-dages auto-byg-flow. Skjuler både CTA og kundens egne programmer på Træning-modul-siden samt root-ruten for ikke-testere.'
+	},
+	{
+		key: 'nul-dage',
+		navn: 'Nul-dage (pause-dage)',
+		beskrivelse:
+			'Klienten kan markere et interval (fra-til dato) som nul-dage og skubbe forløbet uden aktivitet på de dage. Pulje på 21 pr Kropsro-forløb. Slutdatoen rykkes automatisk. Kun samme-dag-fortryd. Profil-siden viser kontroller og forbrug.'
 	}
 ];
 

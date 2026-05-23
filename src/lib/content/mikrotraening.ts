@@ -102,7 +102,18 @@ export interface UserProduct {
 	udloberDato: Timestamp | null;
 	programValg: Record<string, string>;
 	fremgang: Record<string, MikrotraeningFremgang | unknown>;
+	/**
+	 * Nul-dage = dage kunden skubber forloebet uden aktivitet (ferie/syg).
+	 * Hvert interval er én transaktion — bruges til fortryd-tjek (kun samme
+	 * dag som satMs kan fortrydes). Pulje er hardcoded 21 pr forloeb og
+	 * gaelder kun Kropsro indtil videre.
+	 */
+	nulDage?: {
+		intervaller: { fra: string; til: string; satMs: number }[];
+	};
 }
+
+export const MAX_NUL_DAGE_PR_FORLOB = 21;
 
 export interface MikrotraeningFremgang {
 	gennemforte: number[];

@@ -5,6 +5,12 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { effektivState, harGennemfoertForlob } from '$lib/utils/userAdgang';
 	import { hentForlob } from '$lib/firestore/forlob';
+	import { hentUserProduct } from '$lib/firestore/mikrotraening';
+	import { forlobSlutMs, nulDageDatoer } from '$lib/content/forlob';
+	import type { User } from 'firebase/auth';
+
+	const getUser = getContext<() => User | null>('user');
+	const user = $derived(getUser());
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const userDoc = $derived(getUserDoc());
@@ -17,21 +23,32 @@
 
 	onMount(async () => {
 		const ud = userDoc;
-		if (!ud) return;
+		const u = user;
+		if (!ud || !u) return;
 		const forlobIds = ud.forlobIds ?? [];
 		if (forlobIds.length === 0) return;
 		try {
-			const forløbsData = await Promise.all(forlobIds.map((id) => hentForlob(id)));
+			const [forløbsData, kickstartUp, kropsroUp] = await Promise.all([
+				Promise.all(forlobIds.map((id) => hentForlob(id))),
+				hentUserProduct(u.uid, 'kickstart'),
+				hentUserProduct(u.uid, 'premiumforløb')
+			]);
 			const idagMs = Date.now();
 			for (const f of forløbsData) {
 				if (!f) continue;
+				const up = f.type === 'kropsro' ? kropsroUp : kickstartUp;
+				const nulBrugt = nulDageDatoer(up?.nulDage?.intervaller ?? []).length;
 				const startMs = f.startDato.toMillis();
-				const slutMs = startMs + f.antalDage * 24 * 60 * 60 * 1000;
+				const slutMs = forlobSlutMs(startMs, f.antalDage, nulBrugt);
 				if (idagMs >= startMs && idagMs < slutMs) {
-					const dagNummer = Math.max(
-						1,
-						Math.floor((idagMs - startMs) / (24 * 60 * 60 * 1000)) + 1
-					);
+					// Faktisk dag-nummer: kalenderdage siden start minus nul-dage
+					// hvis dato <= idag.
+					const idagIso = new Date().toISOString().slice(0, 10);
+					const nulDatoerFør = (up?.nulDage?.intervaller ?? [])
+						? nulDageDatoer(up?.nulDage?.intervaller ?? []).filter((d) => d <= idagIso).length
+						: 0;
+					const kalenderDage = Math.floor((idagMs - startMs) / (24 * 60 * 60 * 1000));
+					const dagNummer = Math.max(1, kalenderDage - nulDatoerFør + 1);
 					aktivtForlob = { navn: f.navn, dagNummer, antalDage: f.antalDage };
 					break;
 				}

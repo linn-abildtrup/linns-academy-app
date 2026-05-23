@@ -84,6 +84,70 @@ export function getCurrentDay(
 }
 
 // ==============================================
+// Nul-dage (pause-dage der skubber forloebet)
+// ==============================================
+
+/** Lokal ISO yyyy-mm-dd for et Date-objekt. */
+function toIsoLokal(d: Date): string {
+	const y = d.getFullYear();
+	const m = String(d.getMonth() + 1).padStart(2, '0');
+	const dd = String(d.getDate()).padStart(2, '0');
+	return `${y}-${m}-${dd}`;
+}
+
+/**
+ * Folder intervaller ud til en deduperet liste af ISO-datoer.
+ * Inputtet kan have overlap eller dubletter — outputtet er en Set-baseret
+ * sorteret liste.
+ */
+export function nulDageDatoer(
+	intervaller: { fra: string; til: string }[]
+): string[] {
+	const sat = new Set<string>();
+	for (const iv of intervaller) {
+		const f = new Date(iv.fra);
+		const t = new Date(iv.til);
+		if (isNaN(f.getTime()) || isNaN(t.getTime())) continue;
+		const cur = new Date(f.getFullYear(), f.getMonth(), f.getDate());
+		const slut = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+		while (cur.getTime() <= slut.getTime()) {
+			sat.add(toIsoLokal(cur));
+			cur.setDate(cur.getDate() + 1);
+		}
+	}
+	return Array.from(sat).sort();
+}
+
+/**
+ * Aktuel dagNummer der tager hensyn til nul-dage. Nul-dage med dato <= now
+ * trækkes fra. Returnerer null hvis startDato er i fremtiden.
+ */
+export function getCurrentDayMedNulDage(
+	forlob: { startDato: string; antalDage: number },
+	nulDatoer: string[],
+	now: Date = new Date()
+): number | null {
+	const basis = getCurrentDay(forlob, now);
+	if (basis === null) return null;
+	const idagIso = toIsoLokal(now);
+	const passeret = nulDatoer.filter((d) => d <= idagIso).length;
+	return Math.max(0, basis - passeret);
+}
+
+/**
+ * Slut-millisecond for et forloeb der er forlaenget med nulDageBrugt dage.
+ * Bruges til at afgoere om et forloeb stadig er aktivt.
+ */
+export function forlobSlutMs(
+	startMs: number,
+	antalDage: number,
+	nulDageBrugt: number
+): number {
+	const msPerDag = 1000 * 60 * 60 * 24;
+	return startMs + (antalDage + nulDageBrugt) * msPerDag;
+}
+
+// ==============================================
 // Status pr dag
 // ==============================================
 

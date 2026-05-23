@@ -10,7 +10,13 @@
 	import type { ForlobDag } from '$lib/content/forlob';
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
-	import { getCurrentDay, tomForlobDag } from '$lib/content/forlob';
+	import {
+		forlobSlutMs,
+		getCurrentDay,
+		getCurrentDayMedNulDage,
+		nulDageDatoer,
+		tomForlobDag
+	} from '$lib/content/forlob';
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct, hentForlobsProgram } from '$lib/firestore/mikrotraening';
 	import { hentMitProgram, hentProgramFremgang } from '$lib/firestore/mineProgrammer';
@@ -129,10 +135,15 @@
 
 	const nyestUbeskrevneSvar = $derived(ubeskrivedeSpoergsmaal[0] ?? null);
 
+	const nulDatoer = $derived(nulDageDatoer(userProduct?.nulDage?.intervaller ?? []));
+
 	const aktivDagNummer = $derived.by<number | null>(() => {
 		if (!forlob) return null;
 		const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
-		return getCurrentDay({ startDato, antalDage: forlob.antalDage });
+		return getCurrentDayMedNulDage(
+			{ startDato, antalDage: forlob.antalDage },
+			nulDatoer
+		);
 	});
 
 	// Bagudkompatibel alias indtil vi får ryddet i template'n
@@ -177,20 +188,41 @@
 	}
 
 	// Bygger strip-data for alle dage i forløbet (inkl baseline 0)
-	const stripDage = $derived.by<{ dagNummer: number; dato: Date; status: 'fortid' | 'aktiv' | 'fremtid' }[]>(() => {
+	const stripDage = $derived.by<{
+		dagNummer: number | null;
+		dato: Date;
+		erNulDag: boolean;
+		status: 'fortid' | 'aktiv' | 'fremtid';
+	}[]>(() => {
 		if (!forlob) return [];
 		const start = forlob.startDato.toDate();
-		const out: { dagNummer: number; dato: Date; status: 'fortid' | 'aktiv' | 'fremtid' }[] = [];
-		for (let i = 0; i <= forlob.antalDage; i++) {
+		const totalKalender = forlob.antalDage + nulDatoer.length;
+		const idagMidnat = new Date();
+		idagMidnat.setHours(0, 0, 0, 0);
+		const out: {
+			dagNummer: number | null;
+			dato: Date;
+			erNulDag: boolean;
+			status: 'fortid' | 'aktiv' | 'fremtid';
+		}[] = [];
+		let progDag = 0;
+		for (let i = 0; i <= totalKalender; i++) {
 			const d = new Date(start);
 			d.setHours(12, 0, 0, 0);
 			d.setDate(start.getDate() + i);
+			const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+			const erNul = nulDatoer.includes(iso);
+			const dMidnat = new Date(d.getFullYear(), d.getMonth(), d.getDate());
 			let status: 'fortid' | 'aktiv' | 'fremtid' = 'fremtid';
-			if (aktivDagNummer !== null) {
-				if (i < aktivDagNummer) status = 'fortid';
-				else if (i === aktivDagNummer) status = 'aktiv';
-			}
-			out.push({ dagNummer: i, dato: d, status });
+			if (dMidnat.getTime() < idagMidnat.getTime()) status = 'fortid';
+			else if (dMidnat.getTime() === idagMidnat.getTime()) status = 'aktiv';
+			out.push({
+				dagNummer: erNul ? null : progDag,
+				dato: d,
+				erNulDag: erNul,
+				status
+			});
+			if (!erNul) progDag++;
 		}
 		return out;
 	});
@@ -869,33 +901,35 @@
 			const ids = ud.forlobIds ?? [];
 			if (ids.length === 0) return;
 
-			// Hent alle brugerens forløb parallelt og find DET der er aktivt
-			// lige nu (idag mellem startDato og slutDato). Klient kan kun være
-			// på ét forløb ad gangen, så vi tager det første aktive.
-			const forløbsData = await Promise.all(ids.map((id) => hentForlob(id)));
+			// Hent alle brugerens forløb + userProducts parallelt. Vi tjekker
+			// aktiv-status ved at forlænge slutDato med kundens nul-dage på
+			// userProduct'et — ellers ville forløbet 'udløbe' for tidligt.
+			const [forløbsData, kickstartUp, kropsroUp] = await Promise.all([
+				Promise.all(ids.map((id) => hentForlob(id))),
+				hentUserProduct(uid, 'kickstart'),
+				hentUserProduct(uid, 'premiumforløb')
+			]);
 			const idagMs = Date.now();
 			let aktivt = null;
+			let aktivtUp: typeof kickstartUp = null;
 			for (const f of forløbsData) {
 				if (!f) continue;
+				const up = f.type === 'kropsro' ? kropsroUp : kickstartUp;
+				const nulBrugt = nulDageDatoer(up?.nulDage?.intervaller ?? []).length;
 				const startMs = f.startDato.toMillis();
-				const slutMs = startMs + f.antalDage * 24 * 60 * 60 * 1000;
+				const slutMs = forlobSlutMs(startMs, f.antalDage, nulBrugt);
 				if (idagMs >= startMs && idagMs < slutMs) {
 					aktivt = f;
+					aktivtUp = up;
 					break;
 				}
 			}
 			if (!aktivt) return;
-
-			// Hent userProduct baseret på forløbets type:
-			//   kropsro    → premiumforløb
-			//   kickstart  → kickstart
-			// type kan mangle på gamle forløb — fald tilbage til 'kickstart'
-			// for at bevare bagudkompatibilitet.
-			const produktType = aktivt.type === 'kropsro' ? 'premiumforløb' : 'kickstart';
-			const up =
-				(await hentUserProduct(uid, produktType)) ??
-				(await hentUserProduct(uid, 'kickstart'));
-			if (up) userProduct = up;
+			if (aktivtUp) userProduct = aktivtUp;
+			else {
+				const fallback = await hentUserProduct(uid, 'kickstart');
+				if (fallback) userProduct = fallback;
+			}
 
 			const [dage, vaneDage] = await Promise.all([
 				hentForlobsdage(aktivt.id),
@@ -919,8 +953,8 @@
 	const valgtDagDato = $derived.by<string | null>(() => {
 		const d = dagensDag;
 		if (!d) return null;
-		const dato = stripDage[d.dagNummer]?.dato;
-		return dato ? formaterDato(dato) : null;
+		const chip = stripDage.find((c) => c.dagNummer === d.dagNummer);
+		return chip ? formaterDato(chip.dato) : null;
 	});
 
 	$effect(() => {
@@ -1123,24 +1157,33 @@
 						{/if}
 					</div>
 					<div class="strip" bind:this={stripEl}>
-						{#each stripDage as chip (chip.dagNummer)}
+						{#each stripDage as chip (chip.dato.toISOString())}
 							{@const fmt = formatStripChipDato(chip.dato)}
-							{@const erValgt = (valgtDagNummer ?? aktivDagNummer) === chip.dagNummer}
+							{@const erValgt = chip.dagNummer !== null && (valgtDagNummer ?? aktivDagNummer) === chip.dagNummer}
 							<button
 								type="button"
 								class="strip-chip"
 								class:erValgt
 								class:erIDag={chip.status === 'aktiv'}
 								class:erFremtid={chip.status === 'fremtid'}
-								disabled={chip.status === 'fremtid'}
-								data-dag={chip.dagNummer}
-								onclick={() => vaelgDag(chip.dagNummer)}
-								aria-label="Dag {chip.dagNummer}, {fmt.ugedag} {fmt.dag}."
+								class:erNulDag={chip.erNulDag}
+								disabled={chip.status === 'fremtid' || chip.erNulDag}
+								data-dag={chip.dagNummer ?? ''}
+								onclick={() => chip.dagNummer !== null && vaelgDag(chip.dagNummer)}
+								aria-label={chip.erNulDag
+									? `Nul-dag ${fmt.ugedag} ${fmt.dag}.`
+									: `Dag ${chip.dagNummer}, ${fmt.ugedag} ${fmt.dag}.`}
 							>
 								<span class="chip-ugedag">{fmt.ugedag}</span>
 								<span class="chip-dag">{fmt.dag}</span>
 								<span class="chip-num">
-									{chip.dagNummer === 0 ? 'Start' : 'D' + chip.dagNummer}
+									{#if chip.erNulDag}
+										Pause
+									{:else if chip.dagNummer === 0}
+										Start
+									{:else}
+										D{chip.dagNummer}
+									{/if}
 								</span>
 							</button>
 						{/each}
@@ -2472,6 +2515,17 @@
 		opacity: 0.45;
 		cursor: not-allowed;
 		background: var(--bg2);
+	}
+
+	.strip-chip.erNulDag {
+		background: #f1ede8;
+		border-style: dashed;
+		opacity: 0.85;
+		cursor: not-allowed;
+	}
+	.strip-chip.erNulDag .chip-num {
+		color: var(--text3);
+		font-style: italic;
 	}
 
 	.strip-chip.erFadet:not(.erFremtid):not(.erValgt) {

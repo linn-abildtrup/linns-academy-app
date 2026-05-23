@@ -16,10 +16,17 @@
 	import {
 		gemProgramValg,
 		hentForlobsProgrammer,
-		hentUserProduct
+		hentUserProduct,
+		tilfoejNulDageInterval,
+		fjernNulDageInterval
 	} from '$lib/firestore/mikrotraening';
 	import { hentAktivProduktType } from '$lib/firestore/forlob';
 	import { gemAktivtTraeningsprogram } from '$lib/firestore/mineProgrammer';
+	import { MAX_NUL_DAGE_PR_FORLOB } from '$lib/content/mikrotraening';
+	import { nulDageDatoer } from '$lib/content/forlob';
+	import { harTestAdgang } from '$lib/utils/userAdgang';
+	import TesterBadge from '$lib/components/TesterBadge.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import Icon, { type IconName } from '$lib/components/Icon.svelte';
 	import {
 		anvendScale,
@@ -35,7 +42,6 @@
 	import { gemBrugerProfilOgMaal, gemNaeringsindstillinger } from '$lib/userDoc';
 	import type { BrugerProfil, DagligeMaal } from '$lib/types';
 	import BeregnMaalWizard from '$lib/components/BeregnMaalWizard.svelte';
-	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import { effektivState, harPremium } from '$lib/utils/userAdgang';
 
 	const getUser = getContext<() => User | null>('user');
@@ -130,6 +136,27 @@
 	let mtProduktType = $state<'kickstart' | 'premiumforløb'>('kickstart');
 	let mtForlobId = $state<string | null>(null);
 
+	// Nul-dage (test-feature)
+	let nulIntervaller = $state<{ fra: string; til: string; satMs: number }[]>([]);
+	let nulFra = $state('');
+	let nulTil = $state('');
+	let nulGemmer = $state(false);
+	let nulFejl = $state<string | null>(null);
+	let nulFortrydMs = $state<number | null>(null);
+	const harNulDageTest = $derived(harTestAdgang(userDoc, 'nul-dage'));
+	const erKropsro = $derived(mtProduktType === 'premiumforløb');
+	const visNulDage = $derived(harNulDageTest && erKropsro && !!mtForlobId);
+	const nulBrugt = $derived(nulDageDatoer(nulIntervaller).length);
+	const nulTilbage = $derived(MAX_NUL_DAGE_PR_FORLOB - nulBrugt);
+	const idagIso = idag();
+	function idag(): string {
+		const d = new Date();
+		const y = d.getFullYear();
+		const m = String(d.getMonth() + 1).padStart(2, '0');
+		const dd = String(d.getDate()).padStart(2, '0');
+		return `${y}-${m}-${dd}`;
+	}
+
 	function ikonForUdstyr(udstyr: string[]): IconName {
 		if (udstyr.includes('kettlebell')) return 'kettlebell';
 		if (udstyr.includes('haandvaegte')) return 'kettlebell';
@@ -150,12 +177,86 @@
 			const alle = await hentForlobsProgrammer(forlobId);
 			mtProgrammer = alle.filter((p) => p.aktiv);
 			valgtMtProgramId = up.programValg?.mikrotraening ?? null;
+			nulIntervaller = up.nulDage?.intervaller ?? [];
 		} catch (e) {
 			console.error('Kunne ikke hente mikrotræning-programmer:', e);
 		} finally {
 			mtIndlaeser = false;
 		}
 	});
+
+	function antalDageIInterval(fra: string, til: string): number {
+		const f = new Date(fra);
+		const t = new Date(til);
+		if (isNaN(f.getTime()) || isNaN(t.getTime())) return 0;
+		const ms = t.getTime() - f.getTime();
+		return Math.floor(ms / (1000 * 60 * 60 * 24)) + 1;
+	}
+
+	function satIDag(satMs: number): boolean {
+		const sat = new Date(satMs);
+		return (
+			sat.getFullYear() === new Date().getFullYear() &&
+			sat.getMonth() === new Date().getMonth() &&
+			sat.getDate() === new Date().getDate()
+		);
+	}
+
+	function formaterDatoKort(iso: string): string {
+		const [y, m, d] = iso.split('-');
+		return `${parseInt(d, 10)}/${parseInt(m, 10)}`;
+	}
+
+	async function gemNulInterval() {
+		if (!user || nulGemmer || !nulFra || !nulTil) return;
+		if (nulFra < idagIso) {
+			nulFejl = 'Du kan kun vaelge fra i dag og frem.';
+			return;
+		}
+		if (nulTil < nulFra) {
+			nulFejl = 'Slutdato skal vaere efter startdato.';
+			return;
+		}
+		nulGemmer = true;
+		nulFejl = null;
+		try {
+			const res = await tilfoejNulDageInterval(
+				user.uid,
+				mtProduktType,
+				nulFra,
+				nulTil,
+				MAX_NUL_DAGE_PR_FORLOB
+			);
+			if (!res.ok) {
+				nulFejl = res.fejl;
+				return;
+			}
+			nulIntervaller = [
+				...nulIntervaller,
+				{ fra: nulFra, til: nulTil, satMs: Date.now() }
+			];
+			nulFra = '';
+			nulTil = '';
+		} catch (e) {
+			console.error(e);
+			nulFejl = 'Kunne ikke gemme. Proev igen.';
+		} finally {
+			nulGemmer = false;
+		}
+	}
+
+	async function bekraeftFortryd() {
+		if (!user || nulFortrydMs === null) return;
+		const satMs = nulFortrydMs;
+		nulFortrydMs = null;
+		try {
+			await fjernNulDageInterval(user.uid, mtProduktType, satMs);
+			nulIntervaller = nulIntervaller.filter((iv) => iv.satMs !== satMs);
+		} catch (e) {
+			console.error(e);
+			nulFejl = 'Kunne ikke fjerne. Proev igen.';
+		}
+	}
 
 	async function vaelgMtProgram(programId: string) {
 		const u = user;
@@ -443,6 +544,100 @@
 			<h2 class="sektion-titel">Mikrotræning — program</h2>
 			<div class="status-besked">Henter dine programvalg...</div>
 		</section>
+	{/if}
+
+	{#if visNulDage}
+		<section class="sektion">
+			<h2 class="sektion-titel">
+				Nul-dage
+				<TesterBadge />
+			</h2>
+			<p class="sektion-sub">
+				Sæt dit forløb på pause når du er på ferie, syg eller har travlt. Hver nul-dag
+				skubber forløbet én dag frem. Du har {MAX_NUL_DAGE_PR_FORLOB} nul-dage til dette
+				forløb.
+			</p>
+
+			<div class="nul-tael">
+				<div class="nul-tael-tal">{nulBrugt} / {MAX_NUL_DAGE_PR_FORLOB}</div>
+				<div class="nul-tael-tekst">brugt — {nulTilbage} tilbage</div>
+			</div>
+
+			{#if nulFejl}
+				<div class="status-besked fejl">{nulFejl}</div>
+			{/if}
+
+			{#if nulTilbage > 0}
+				<div class="nul-form">
+					<label class="nul-felt">
+						<span class="nul-label">Fra</span>
+						<input type="date" bind:value={nulFra} min={idagIso} disabled={nulGemmer} />
+					</label>
+					<label class="nul-felt">
+						<span class="nul-label">Til</span>
+						<input
+							type="date"
+							bind:value={nulTil}
+							min={nulFra || idagIso}
+							disabled={nulGemmer}
+						/>
+					</label>
+					<button
+						class="nul-knap"
+						type="button"
+						onclick={gemNulInterval}
+						disabled={!nulFra || !nulTil || nulGemmer}
+					>
+						{nulGemmer ? 'Gemmer...' : 'Marker som nul-dage'}
+					</button>
+				</div>
+			{:else}
+				<div class="status-besked">Du har brugt alle dine nul-dage for dette forløb.</div>
+			{/if}
+
+			{#if nulIntervaller.length > 0}
+				<div class="nul-liste-titel">Dine nul-dage</div>
+				<ul class="nul-liste">
+					{#each [...nulIntervaller].sort((a, b) => a.fra.localeCompare(b.fra)) as iv (iv.satMs)}
+						{@const dage = antalDageIInterval(iv.fra, iv.til)}
+						{@const kanFortryde = satIDag(iv.satMs)}
+						<li class="nul-rad">
+							<div class="nul-rad-tekst">
+								<div class="nul-rad-datoer">
+									{formaterDatoKort(iv.fra)}{iv.fra !== iv.til ? ' – ' + formaterDatoKort(iv.til) : ''}
+								</div>
+								<div class="nul-rad-meta">
+									{dage} dag{dage === 1 ? '' : 'e'}
+									{#if !kanFortryde}
+										· låst
+									{/if}
+								</div>
+							</div>
+							{#if kanFortryde}
+								<button
+									class="nul-fortryd"
+									type="button"
+									onclick={() => (nulFortrydMs = iv.satMs)}
+								>
+									Fortryd
+								</button>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</section>
+	{/if}
+
+	{#if nulFortrydMs !== null}
+		<BekraeftModal
+			titel="Fortryd nul-dage?"
+			beskrivelse="Dagene gives tilbage til din pulje og forløbet rykkes tilbage til sin oprindelige slutdato."
+			bekraeftTekst="Ja, fortryd"
+			destruktiv
+			onBekraeft={bekraeftFortryd}
+			onAnnuller={() => (nulFortrydMs = null)}
+		/>
 	{/if}
 
 	{#if erAbonnent}
@@ -828,6 +1023,119 @@
 		color: var(--text3);
 		margin: 0 4px 10px;
 		line-height: 1.5;
+	}
+
+	.nul-tael {
+		display: flex;
+		align-items: baseline;
+		gap: 10px;
+		padding: 14px 16px;
+		background: var(--bg2, #f5f1ec);
+		border-radius: 12px;
+		margin-bottom: 12px;
+	}
+	.nul-tael-tal {
+		font-family: var(--ff-d);
+		font-size: calc(22px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+	.nul-tael-tekst {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text2);
+	}
+	.nul-form {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+		margin-bottom: 14px;
+	}
+	.nul-felt {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	.nul-label {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+	.nul-felt input {
+		padding: 10px 12px;
+		font-size: calc(14px * var(--fs-scale, 1));
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: var(--white);
+		color: var(--text);
+		font-family: var(--ff-b);
+	}
+	.nul-knap {
+		grid-column: 1 / -1;
+		padding: 12px;
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		border-radius: 10px;
+		border: none;
+		background: var(--terra);
+		color: #fff;
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+	.nul-knap:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+	.nul-liste-titel {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin: 6px 4px 8px;
+	}
+	.nul-liste {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.nul-rad {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		padding: 10px 14px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+	}
+	.nul-rad-datoer {
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+	.nul-rad-meta {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+	.nul-fortryd {
+		background: none;
+		border: 1px solid var(--border);
+		color: var(--text2);
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 500;
+		padding: 6px 12px;
+		border-radius: 8px;
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+	.nul-fortryd:hover {
+		border-color: #b8503f;
+		color: #b8503f;
 	}
 
 	.status-besked {

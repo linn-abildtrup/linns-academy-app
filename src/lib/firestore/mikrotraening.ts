@@ -22,6 +22,7 @@ import type {
 	PauseDoc
 } from '$lib/content/mikrotraening';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
+import { nulDageDatoer } from '$lib/content/forlob';
 
 function userProductDoc(uid: string, productId: string) {
 	return doc(db, `${aktivBrugerBasisPath(uid)}/products/${productId}`);
@@ -234,6 +235,57 @@ export async function gemProgramValg(
 	await updateDoc(userProductDoc(uid, productId), {
 		[`programValg.${treaningsform}`]: programId
 	});
+}
+
+/**
+ * Henter eksisterende nul-dage-intervaller fra userProduct, validerer at
+ * det nye interval ikke sprenger 21-pulje, og gemmer det. Returnerer
+ * antallet brugt eller en fejlbesked.
+ */
+export async function tilfoejNulDageInterval(
+	uid: string,
+	productId: string,
+	fra: string,
+	til: string,
+	maxDage: number
+): Promise<{ ok: true; brugt: number } | { ok: false; fejl: string }> {
+	const ref = userProductDoc(uid, productId);
+	const snap = await getDoc(ref);
+	if (!snap.exists()) return { ok: false, fejl: 'Produkt ikke fundet.' };
+	const data = snap.data() as UserProduct;
+	const eksisterende = data.nulDage?.intervaller ?? [];
+
+	const nyt = { fra, til, satMs: Date.now() };
+	const samlet = [...eksisterende, nyt];
+	const brugt = nulDageDatoer(samlet).length;
+	if (brugt > maxDage) {
+		const tidligere = nulDageDatoer(eksisterende).length;
+		return {
+			ok: false,
+			fejl: `Det ville overskride pulje paa ${maxDage} dage (du har brugt ${tidligere}, og dette interval ville give ${brugt}).`
+		};
+	}
+
+	await updateDoc(ref, { 'nulDage.intervaller': samlet });
+	return { ok: true, brugt };
+}
+
+/**
+ * Fjerner et interval baseret paa satMs (timestamp for hvornaar det blev
+ * tilfoejet). Bruges af fortryd-knappen.
+ */
+export async function fjernNulDageInterval(
+	uid: string,
+	productId: string,
+	satMs: number
+): Promise<void> {
+	const ref = userProductDoc(uid, productId);
+	const snap = await getDoc(ref);
+	if (!snap.exists()) return;
+	const data = snap.data() as UserProduct;
+	const eksisterende = data.nulDage?.intervaller ?? [];
+	const filtreret = eksisterende.filter((iv) => iv.satMs !== satMs);
+	await updateDoc(ref, { 'nulDage.intervaller': filtreret });
 }
 
 /**
