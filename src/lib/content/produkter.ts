@@ -71,6 +71,7 @@ export const PRODUKTER: Record<ActiveProduct, Produkt> = {
 		accessSource: 'forløb',
 		activeSubscription: false,
 		simpleroProduktId: null, // TODO: oprettes i Simplero
+		forlobId: 'kropsro_maj_2026',
 		beskrivelse: 'Engangskøb af premium-forløb — alt i Kickstart + premium-features (træningsprogram-valg, næring, vanetracker, Linn AI).'
 	}
 };
