@@ -9,7 +9,11 @@
 		genererProgramMedConfig,
 		type Exercise
 	} from '$lib/content/mikrotraening';
-	import { hentMineProgrammer, opretMitProgram } from '$lib/firestore/mineProgrammer';
+	import {
+		gemAktivtTraeningsprogram,
+		hentMineProgrammer,
+		opretMitProgram
+	} from '$lib/firestore/mineProgrammer';
 	import {
 		anslaaetVarighedMinutter,
 		anslaaetDagVarighedMin,
@@ -107,6 +111,16 @@
 				dage,
 				config
 			});
+			// Sæt automatisk det nybyggede program som klientens aktive
+			// træningsprogram — så det straks vises på forsiden uden at hun
+			// behøver at trykke 'Vælg' i træningslisten først
+			if (ny.id) {
+				try {
+					await gemAktivtTraeningsprogram(u.uid, { kilde: 'eget', programId: ny.id });
+				} catch (e) {
+					console.warn('Kunne ikke markere som aktivt program:', e);
+				}
+			}
 			viserAutoModal = false;
 			if (ny.id) goto(`/app/moduler/traening/byg-eget/${ny.id}`);
 		} catch (e) {
