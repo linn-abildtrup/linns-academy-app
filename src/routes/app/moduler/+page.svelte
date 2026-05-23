@@ -1,18 +1,51 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
+	import { getContext, onMount } from 'svelte';
 	import type { UserDoc } from '$lib/types';
 	import { getModulerForUser, type Modul } from '$lib/content/moduler';
 	import Icon from '$lib/components/Icon.svelte';
 	import { effektivState, harGennemfoertForlob } from '$lib/utils/userAdgang';
+	import { hentForlob } from '$lib/firestore/forlob';
 
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const userDoc = $derived(getUserDoc());
 	const userState = $derived(effektivState(userDoc));
 
+	// Find det forløb klient er AKTIV på lige nu (idag inden for startDato +
+	// antalDage). Bruges til 'Kropsro, dag X af 84' i stedet for hardcoded
+	// placeholder.
+	let aktivtForlob = $state<{ navn: string; dagNummer: number; antalDage: number } | null>(null);
+
+	onMount(async () => {
+		const ud = userDoc;
+		if (!ud) return;
+		const forlobIds = ud.forlobIds ?? [];
+		if (forlobIds.length === 0) return;
+		try {
+			const forløbsData = await Promise.all(forlobIds.map((id) => hentForlob(id)));
+			const idagMs = Date.now();
+			for (const f of forløbsData) {
+				if (!f) continue;
+				const startMs = f.startDato.toMillis();
+				const slutMs = startMs + f.antalDage * 24 * 60 * 60 * 1000;
+				if (idagMs >= startMs && idagMs < slutMs) {
+					const dagNummer = Math.max(
+						1,
+						Math.floor((idagMs - startMs) / (24 * 60 * 60 * 1000)) + 1
+					);
+					aktivtForlob = { navn: f.navn, dagNummer, antalDage: f.antalDage };
+					break;
+				}
+			}
+		} catch (e) {
+			console.warn('Kunne ikke hente aktivt forløb til moduler-siden:', e);
+		}
+	});
+
 	const moduler = $derived.by<Modul[]>(() => {
 		if (!userState) return [];
 		return getModulerForUser(userState, {
-			harGennemfoertForlob: harGennemfoertForlob(userDoc)
+			harGennemfoertForlob: harGennemfoertForlob(userDoc),
+			aktivtForlob
 		});
 	});
 

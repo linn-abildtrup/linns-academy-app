@@ -81,12 +81,18 @@ export interface ModulerOptions {
 	 * Kickstart, næste skridt Kropsro' og 'Start dit forløb — Kickstart'.
 	 */
 	harGennemfoertForlob?: boolean;
+	/**
+	 * Det forløb klienten er AKTIVT på lige nu (hvis nogen). Bruges af
+	 * forlobskunde-flow til at vise 'Kropsro, dag X af 84' i stedet for
+	 * en hardcoded placeholder. Hvis null vises en generisk besked.
+	 */
+	aktivtForlob?: { navn: string; dagNummer: number; antalDage: number } | null;
 }
 
 export function getModulerForUser(state: UserState, options: ModulerOptions = {}): Modul[] {
 	return MODULER_BASE.map((base) => {
 		if (state === 'forlobskunde') {
-			return forlobskundeStatus(base);
+			return forlobskundeStatus(base, options.aktivtForlob ?? null);
 		}
 		if (state === 'modulbruger') {
 			return modulbrugerStatus(base, options.harGennemfoertForlob ?? false);
@@ -95,23 +101,42 @@ export function getModulerForUser(state: UserState, options: ModulerOptions = {}
 	});
 }
 
-function forlobskundeStatus(base: ModulBase): Modul {
-	const progressMap: Record<string, number> = {
-		forlob: 0.3,
-		traening: 0.42,
-		kost: 0.65,
-		vaner: 0.18,
-		bibliotek: 0
-	};
+function forlobskundeStatus(
+	base: ModulBase,
+	aktivtForlob: { navn: string; dagNummer: number; antalDage: number } | null
+): Modul {
+	// Forlob-sub-tekst beregnes ud fra det faktiske aktive forløb hvis det
+	// findes — ellers fallback til generisk besked. De andre sub-tekster
+	// (traening/kost/vaner) er placeholders indtil vi har real progress-data
+	// på de moduler.
+	let forlobSub = 'Dit aktive forløb';
+	let forlobProgress = 0.3;
+	if (aktivtForlob) {
+		const { navn, dagNummer, antalDage } = aktivtForlob;
+		// Strip evt suffix fra navn så det bliver fx 'Kropsro' i stedet for
+		// 'Kropsro 25. Maj 2026'
+		const kortNavn = navn.split(' ')[0];
+		forlobSub = `${kortNavn}, dag ${dagNummer} af ${antalDage}`;
+		forlobProgress = Math.max(0, Math.min(1, dagNummer / antalDage));
+	}
+
 	const subMap: Record<string, string> = {
-		forlob: 'Kickstart, dag 6 af 21',
-		traening: '3 af 7 sessioner',
-		kost: 'Uge 4 af 6',
-		vaner: '3 dage i træk',
+		forlob: forlobSub,
+		traening: 'Mikrotræning og styrke',
+		kost: '30-30 beregner og opskrifter',
+		vaner: 'Dine daglige rutiner',
 		bibliotek: 'Alt fra dit forløb',
 		symptomcheck: 'Følg din udvikling gennem forløbet'
 	};
-	const noProgress = base.id === 'bibliotek' || base.id === 'symptomcheck';
+	const progressMap: Record<string, number | null> = {
+		forlob: forlobProgress,
+		traening: null,
+		kost: null,
+		vaner: null,
+		bibliotek: null,
+		symptomcheck: null
+	};
+	const noProgress = progressMap[base.id] === null;
 	return {
 		...base,
 		status: 'aktiv',

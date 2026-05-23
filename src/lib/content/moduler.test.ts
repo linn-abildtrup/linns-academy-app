@@ -37,6 +37,21 @@ describe('getModulerForUser', () => {
 				expect(m.laasTekst).toBeNull();
 			});
 		});
+
+		it('viser aktivt forløb med dag-tæller når sat', () => {
+			const moduler = getModulerForUser('forlobskunde', {
+				aktivtForlob: { navn: 'Kropsro 25. Maj 2026', dagNummer: 5, antalDage: 84 }
+			});
+			const forlob = moduler.find((m) => m.id === 'forlob');
+			expect(forlob?.subTekst).toBe('Kropsro, dag 5 af 84');
+			expect(forlob?.progress).toBeCloseTo(5 / 84, 2);
+		});
+
+		it('viser fallback når intet aktivt forløb', () => {
+			const moduler = getModulerForUser('forlobskunde', { aktivtForlob: null });
+			const forlob = moduler.find((m) => m.id === 'forlob');
+			expect(forlob?.subTekst).toBe('Dit aktive forløb');
+		});
 	});
 
 	describe('modulbruger med gennemført forløb', () => {
