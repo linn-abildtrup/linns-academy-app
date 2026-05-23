@@ -17,6 +17,16 @@ service cloud.firestore {
 		match /users/{uid} {
 			allow read: if request.auth != null && (isAdmin() || request.auth.uid == uid);
 			allow write: if request.auth != null && request.auth.uid == uid;
+			// Admin må OPDATERE udvalgte felter på andre brugere — bruges fra
+			// admin-siden /admin/testere til at tildele test-adgang. Begrænset
+			// til de specifikke felter for sikkerhed; admin kan ikke overskrive
+			// brugerens kerne-data (state, accessLevel, dagligeMaal osv.) ad
+			// denne vej.
+			allow update: if request.auth != null
+				&& isAdmin()
+				&& request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+					'testerFeatures'
+				]);
 
 			// Bruger-produkter (køb, fremgang, valg): kun egen bruger
 			match /products/{productId} {
