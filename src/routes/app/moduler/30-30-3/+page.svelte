@@ -1883,12 +1883,20 @@
 				</div>
 			{:else}
 				{@const dagsTotaler = dagbogTotaler()}
+				{@const proteinDagsMaal = userDoc?.dagligeMaal?.protein ?? PROTEIN_MAALTIDS_MAAL * 3}
 				<div class="totaler">
 					<div class="total-card">
 						<div class="total-head">
 							<span class="total-label">Protein i dag</span>
+							<span class="total-mål">mål {proteinDagsMaal}g</span>
 						</div>
 						<div class="total-val">{formatGram(dagsTotaler.protein)}</div>
+						<div class="total-bar">
+							<div
+								class="total-fill protein-fill"
+								style="width: {procentMod(proteinDagsMaal, dagsTotaler.protein)}%"
+							></div>
+						</div>
 					</div>
 					<div class="total-card">
 						<div class="total-head">
