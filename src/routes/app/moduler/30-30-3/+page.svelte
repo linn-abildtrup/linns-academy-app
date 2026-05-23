@@ -35,7 +35,8 @@
 		sletFavorit,
 		sletMaaltid,
 		stemPaaFodevare,
-		toggleFavoritFodevare
+		toggleFavoritFodevare,
+		toggleSkjultFodevare
 	} from '$lib/firestore/kost';
 	import { lookupBarcode } from '$lib/content/openFoodFacts';
 	import BarcodeScanner from '$lib/components/BarcodeScanner.svelte';
@@ -184,6 +185,9 @@
 		startNavn?: string;
 		startProtein?: number;
 		startFiber?: number;
+		startKh?: number;
+		startFedt?: number;
+		startKcal?: number;
 		startKat?: Kategori;
 	} | null>(null);
 	let stemmer = $state<string | null>(null); // fodevare-id der er ved at få stem opdateret
@@ -338,6 +342,8 @@
 	// Alle: tom-state uden søgning, alle matchende foods med søgning.
 	// Seneste: de seneste 30 valgte fødevarer (alfabetisk).
 	// Favorit: brugerens favoritter (alfabetisk).
+	const skjulteFodevareSet = $derived(new Set(userDoc?.skjulteFodevarer ?? []));
+
 	const filtretetPicker = $derived.by<Fodevare[]>(() => {
 		const q = pickerSoeg.trim().toLowerCase();
 		let base: Fodevare[];
@@ -349,6 +355,9 @@
 		} else {
 			base = foods.filter((f) => favoritFodevareSet.has(f.id));
 		}
+		// Filtrer skjulte community-fødevarer ud — brugerens egne valg om
+		// hvilke andre kunders fødevarer hun vil se i sin oversigt
+		base = base.filter((f) => !skjulteFodevareSet.has(f.id));
 		if (q) base = base.filter((f) => matcherSog(f.name, q));
 		return sorterFodevarer(base, 'alpha');
 	});
@@ -395,6 +404,22 @@
 			// userDoc-snapshot opdaterer automatisk favoritFodevareSet via $derived.
 		} catch (e) {
 			console.warn('Kunne ikke ændre favorit-status:', e);
+		}
+	}
+
+	async function skjulFodevare(food: Fodevare, e: Event) {
+		e.stopPropagation();
+		const u = user;
+		if (!u) return;
+		const bekraeftet = confirm(
+			`Fjern "${food.name}" fra din oversigt? Den vises ikke længere når du søger.`
+		);
+		if (!bekraeftet) return;
+		try {
+			await toggleSkjultFodevare(u.uid, food.id, true);
+			// userDoc-snapshot opdaterer automatisk skjulteFodevareSet via $derived.
+		} catch (err) {
+			console.warn('Kunne ikke skjule fødevaren:', err);
 		}
 	}
 
@@ -744,6 +769,9 @@
 				startNavn: off?.navn ?? '',
 				startProtein: off?.protein ?? 0,
 				startFiber: off?.fiber ?? 0,
+				startKh: off?.kh ?? 0,
+				startFedt: off?.fedt ?? 0,
+				startKcal: off?.kcal ?? 0,
 				startKat: off?.katForslag ?? 'andet'
 			};
 		} finally {
@@ -757,6 +785,9 @@
 			startNavn: '',
 			startProtein: 0,
 			startFiber: 0,
+			startKh: 0,
+			startFedt: 0,
+			startKcal: 0,
 			startKat: 'andet'
 		};
 	}
@@ -2328,13 +2359,15 @@
 								<div class="stem-rad">
 									<button
 										type="button"
-										class="stem-knap"
+										class="stem-knap stem-ok"
 										class:aktiv={minStem === 'ok'}
 										disabled={stemmer === food.id}
 										onclick={(e) => stemFodevare(food, 'ok', e)}
 										aria-label="Bekræft fødevare"
+										title="Bekræft at fødevaren er korrekt"
 									>
-										✓ {okAntal}
+										<span class="stem-ikon">✓</span>
+										<span class="stem-tal">{okAntal}</span>
 									</button>
 									<button
 										type="button"
@@ -2343,8 +2376,19 @@
 										disabled={stemmer === food.id}
 										onclick={(e) => stemFodevare(food, 'ej', e)}
 										aria-label="Marker som dårlig kvalitet"
+										title="Marker som forkert / dårlig kvalitet"
 									>
-										✗ {ejAntal}
+										<span class="stem-ikon">✗</span>
+										<span class="stem-tal">{ejAntal}</span>
+									</button>
+									<button
+										type="button"
+										class="stem-knap stem-skjul"
+										onclick={(e) => skjulFodevare(food, e)}
+										aria-label="Fjern fra min oversigt"
+										title="Fjern fra min oversigt"
+									>
+										<span class="stem-ikon">🗑</span>
 									</button>
 								</div>
 							{/if}
@@ -2468,6 +2512,9 @@
 		startNavn={nyDialog.startNavn}
 		startProtein={nyDialog.startProtein}
 		startFiber={nyDialog.startFiber}
+		startKh={nyDialog.startKh}
+		startFedt={nyDialog.startFedt}
+		startKcal={nyDialog.startKcal}
 		startKat={nyDialog.startKat}
 		uid={user.uid}
 		uidNavn={userDoc?.firstName ?? 'En bruger'}
@@ -2980,9 +3027,12 @@
 		font-size: calc(13.5px * var(--fs-scale, 1));
 		font-weight: 500;
 		color: var(--text);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		line-height: 1.3;
+		/* Tillad wrap så lange navne bryder til næste linje i stedet for at
+		   skubbe hele rækken bredere end de andre. word-break sørger for at
+		   meget lange ord (fx 'Bovinetenderloinmarinated') også splittes. */
+		overflow-wrap: anywhere;
+		word-break: break-word;
 	}
 
 	.food-meta {
@@ -3877,42 +3927,82 @@
 
 	.stem-rad {
 		display: flex;
-		gap: 6px;
-		padding: 4px 12px 8px;
+		gap: 8px;
+		padding: 8px 12px;
 		background: var(--bg2);
 		border-left: 1px solid var(--border);
 		border-right: 1px solid var(--border);
 		border-bottom: 1px solid var(--border);
 		border-radius: 0 0 10px 10px;
 		margin-top: -2px;
+		justify-content: flex-end;
 	}
 
 	.stem-knap {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		gap: 4px;
-		padding: 4px 10px;
-		font-size: calc(11px * var(--fs-scale, 1));
+		gap: 5px;
+		padding: 6px 12px;
+		min-width: 44px;
+		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 600;
 		font-family: var(--ff-b);
-		border-radius: 99px;
+		border-radius: 8px;
 		background: var(--white);
 		color: var(--text2);
 		border: 1px solid var(--border);
 		cursor: pointer;
+		transition: background 0.15s, border-color 0.15s, color 0.15s;
 	}
 
-	.stem-knap.aktiv {
-		background: var(--sdim);
-		color: var(--sage);
-		border-color: rgba(111, 158, 126, 0.35);
+	.stem-ikon {
+		font-size: calc(14px * var(--fs-scale, 1));
+		line-height: 1;
 	}
 
-	.stem-knap.stem-ej.aktiv {
-		background: #fbeeea;
-		color: #8a4a3e;
+	.stem-tal {
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* ✓ Behold / bekræft — grøn */
+	.stem-knap.stem-ok {
+		color: #2f6b3a;
+		border-color: #c9e2c3;
+	}
+	.stem-knap.stem-ok:hover {
+		background: #ecf6e8;
+	}
+	.stem-knap.stem-ok.aktiv {
+		background: #4a8a4f;
+		color: #fff;
+		border-color: #4a8a4f;
+	}
+
+	/* ✗ Ikke beholde / forkert — rød */
+	.stem-knap.stem-ej {
+		color: #a8453a;
 		border-color: #f0d6cf;
+	}
+	.stem-knap.stem-ej:hover {
+		background: #fbeeea;
+	}
+	.stem-knap.stem-ej.aktiv {
+		background: #c5544a;
+		color: #fff;
+		border-color: #c5544a;
+	}
+
+	/* 🗑 Skjul fra min oversigt — mørk */
+	.stem-knap.stem-skjul {
+		color: #2a1f17;
+		border-color: #c4b9ad;
+		background: #f4ede4;
+	}
+	.stem-knap.stem-skjul:hover {
+		background: #2a1f17;
+		color: #fff;
+		border-color: #2a1f17;
 	}
 
 	.stem-knap:disabled {

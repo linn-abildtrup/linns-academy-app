@@ -131,6 +131,11 @@ export interface UserDoc {
 	// og markeres med en stjerne ved siden af fødevaren.
 	favoritFodevarer?: string[];
 
+	// Community-fødevarer brugeren har skjult fra sin oversigt (tryk på
+	// skraldespand-knappen). Lokal-only skjul — den globale fødevare
+	// slettes ikke i Firestore. Andre brugere ser stadig fødevaren.
+	skjulteFodevarer?: string[];
+
 	// Hvilken mikrotræning-variant brugeren har valgt (kettlebell eller
 	// uden udstyr). Bruges af aboMikrotraening-systemet til at hente det
 	// rigtige program. Hvis ikke sat, bruges 'no_kettlebell' som default.

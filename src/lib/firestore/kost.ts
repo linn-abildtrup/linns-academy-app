@@ -137,6 +137,9 @@ interface NyCommunityFodevare {
 	cat: Kategori;
 	p: number;
 	f: number;
+	kh?: number;
+	fedt?: number;
+	kcal?: number;
 	uid: string;
 	uidNavn: string;
 }
@@ -188,6 +191,11 @@ export async function gemCommunityFodevare(
 			ejBy: [],
 			verificeret: false
 		};
+		// Tilføj udvidet næring kun hvis den er angivet (undgår 0-værdier
+		// for felter brugeren bevidst lod være tom)
+		if (typeof data.kh === 'number' && data.kh > 0) ny.kh = data.kh;
+		if (typeof data.fedt === 'number' && data.fedt > 0) ny.fedt = data.fedt;
+		if (typeof data.kcal === 'number' && data.kcal > 0) ny.kcal = data.kcal;
 		tx.set(ref, ny);
 	});
 
@@ -370,6 +378,23 @@ export async function toggleFavoritFodevare(
 	const ref = doc(db, `${aktivBrugerBasisPath(uid)}`);
 	await updateDoc(ref, {
 		favoritFodevarer: gørTilFavorit ? arrayUnion(foodId) : arrayRemove(foodId)
+	});
+}
+
+/**
+ * Skjuler eller viser igen en fødevare i brugerens picker-oversigt.
+ * Lokal-only: den globale community-fødevare slettes ikke for andre brugere.
+ * Bruges når en bruger trykker skraldespand-knappen ved en fremmed community-
+ * fødevare hun ikke vil have i sine søgeresultater.
+ */
+export async function toggleSkjultFodevare(
+	uid: string,
+	foodId: string,
+	skjul: boolean
+): Promise<void> {
+	const ref = doc(db, `${aktivBrugerBasisPath(uid)}`);
+	await updateDoc(ref, {
+		skjulteFodevarer: skjul ? arrayUnion(foodId) : arrayRemove(foodId)
 	});
 }
 

@@ -18,6 +18,9 @@
 		startNavn?: string;
 		startProtein?: number;
 		startFiber?: number;
+		startKh?: number;
+		startFedt?: number;
+		startKcal?: number;
 		startKat?: Kategori;
 		uid: string;
 		uidNavn: string;
@@ -30,6 +33,9 @@
 		startNavn = '',
 		startProtein = 0,
 		startFiber = 0,
+		startKh = 0,
+		startFedt = 0,
+		startKcal = 0,
 		startKat = 'andet',
 		uid,
 		uidNavn,
@@ -45,6 +51,9 @@
 	let kat = $state<Kategori>(untrack(() => startKat));
 	let protein = $state(untrack(() => startProtein));
 	let fiber = $state(untrack(() => startFiber));
+	let kh = $state(untrack(() => startKh));
+	let fedt = $state(untrack(() => startFedt));
+	let kcal = $state(untrack(() => startKcal));
 	let gemmer = $state(false);
 	let fejl = $state<string | null>(null);
 
@@ -110,10 +119,13 @@
 				cat: kat,
 				p: protein,
 				f: fiber,
+				kh: kh > 0 ? kh : undefined,
+				fedt: fedt > 0 ? fedt : undefined,
+				kcal: kcal > 0 ? kcal : undefined,
 				uid,
 				uidNavn
 			});
-			onTilfoejet({
+			const ny: Fodevare = {
 				id,
 				name: n,
 				cat: kat,
@@ -126,7 +138,11 @@
 				okBy: [uid],
 				ejBy: [],
 				verificeret: false
-			});
+			};
+			if (kh > 0) ny.kh = kh;
+			if (fedt > 0) ny.fedt = fedt;
+			if (kcal > 0) ny.kcal = kcal;
+			onTilfoejet(ny);
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke gemme. Prøv igen.';
@@ -190,6 +206,22 @@
 					/>
 				</label>
 			</div>
+
+			<div class="rad">
+				<label class="felt">
+					<span class="lbl">Kulhydrater pr 100g</span>
+					<input type="number" bind:value={kh} min="0" step="0.1" disabled={gemmer} />
+				</label>
+				<label class="felt">
+					<span class="lbl">Fedt pr 100g</span>
+					<input type="number" bind:value={fedt} min="0" step="0.1" disabled={gemmer} />
+				</label>
+			</div>
+
+			<label class="felt">
+				<span class="lbl">Kalorier pr 100g (kcal)</span>
+				<input type="number" bind:value={kcal} min="0" step="1" disabled={gemmer} />
+			</label>
 
 			<p class="hint">
 				<Icon name="community" size={13} color="var(--text3)" />
