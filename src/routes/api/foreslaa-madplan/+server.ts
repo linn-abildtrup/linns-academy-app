@@ -56,12 +56,21 @@ Din opgave:
 3. Filtrer kandidaterne efter reglerne:
    - Hvis bruger har angivet "kun glutenfri", så vælg KUN opskrifter der har 'glutenfri' i deres dietTags.
    - Hvis bruger har angivet ingredienser at undgå, så udelad opskrifter hvor en af deres ingredienser indeholder de angivne ord (case-insensitive substring-match).
-4. Vælg så kombinationen tilsammen (1 fra hver kategori) rammer dagens mål bedst muligt — særligt protein og fiber.
+4. Vælg så kombinationen tilsammen (1 fra hver kategori) rammer MINDST 80% af klientens protein-mål OG 80% af hendes fiber-mål. Dette er et hårdt krav — vælg ikke kombinationer der ligger under, hvis det er muligt at undgå.
 5. Prioriter variation: hvis brugeren får flere alternativer, så gør dem forskellige (forskellig protein-kilde, forskellige hovedingredienser).
 6. Hvis brugeren har favorit-fødevarer, foretræk opskrifter der bruger dem hvis muligt.
 7. Hvert forslag skal pege på et opskriftId fra puljen. Ingen påfund — vælg KUN fra de leverede opskrifter.
 8. Skriv en kort 'hvorforPasser'-tekst (max 1 sætning) der forklarer hvorfor netop denne opskrift passer.
 9. Hvis du ikke kan finde nok egnede til en kategori, så lever færre — bedre 1 godt forslag end 3 dårlige.
+
+10. Lav også en liste af 3-5 NEMME snack-suppleringer ("snacks") brugeren kan tilføje i løbet af dagen for at nå 100% af sit mål. Eksempler:
+    - "Et æble" (0.5 g protein, 4 g fiber)
+    - "Et hårdkogt æg" (6 g protein, 0 g fiber)
+    - "100g græsk yoghurt med 30g hindbær" (10 g protein, 2 g fiber)
+    - "En gulerod" (1 g protein, 3 g fiber)
+    - "Lille håndfuld mandler (15g)" (3 g protein, 2 g fiber)
+    - "30g hummus med 1 stang selleri" (2 g protein, 2 g fiber)
+    Snacks skal være KORTE, KONKRETE og INDEN FOR rimelige portionsstørrelser. Brug danske ingredienser.
 
 Returnér KUN JSON i dette format (intet andet, ingen markdown, ingen forklaring):
 
@@ -75,6 +84,10 @@ Returnér KUN JSON i dette format (intet andet, ingen markdown, ingen forklaring
   ],
   "frokost": [...],
   "aftensmad": [...],
+  "snacks": [
+    { "tekst": "Et æble", "protein": 0.5, "fiber": 4 },
+    { "tekst": "Et hårdkogt æg", "protein": 6, "fiber": 0 }
+  ],
   "samletBegrundelse": "<1-2 sætninger om hvordan kombinationen rammer dagens mål>",
   "advarsel": "<valgfri — kun hvis du ikke kunne overholde alle krav>"
 }

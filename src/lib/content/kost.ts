@@ -180,6 +180,11 @@ export interface MaaltidsItem {
 	portion: number;
 	enhedId?: string;
 	manuel?: { navn: string; enhed: string };
+	/**
+	 * Hvis dette item kom fra en AI-foreslået opskrift, gemmer vi opskrift-
+	 * referencen så dagbog-UI'en kan linke tilbage til opskriften med ét klik.
+	 */
+	opskriftRef?: { id: string; erEgen: boolean };
 }
 
 /**

@@ -113,11 +113,18 @@
 
 	const STORAGE_KEY = 'la_30303_maaltid_v1';
 
-	type Tab = 'maaltid' | 'opskrifter' | 'mine' | 'dagbog';
+	type Tab = 'maaltid' | 'opskrifter' | 'mine' | 'madplan' | 'dagbog';
 
 	function tabFraQuery(): Tab {
 		const t = page.url.searchParams.get('tab');
-		if (t === 'maaltid' || t === 'opskrifter' || t === 'mine' || t === 'dagbog') return t;
+		if (
+			t === 'maaltid' ||
+			t === 'opskrifter' ||
+			t === 'mine' ||
+			t === 'madplan' ||
+			t === 'dagbog'
+		)
+			return t;
 		return 'maaltid';
 	}
 
@@ -270,6 +277,7 @@
 	let madplanGlutenfri = $state(false);
 	let madplanUndgaa = $state<string[]>(['', '', '']);
 	let madplanTilfoejer = $state<string | null>(null); // opskriftId der lige nu tilføjes
+	let madplanTilfoejede = $state<Set<string>>(new Set()); // opskriftIds der er tilføjet
 
 	const kanBrugeMadplan = $derived(
 		harPremium(userDoc) && !!userDoc?.dagligeMaal
@@ -1101,6 +1109,10 @@
 		madplanSvar = null;
 		madplanFejl = null;
 		madplanTilfoejer = null;
+		madplanTilfoejede = new Set();
+		// Skift tilbage til opskrifter-fanen så brugeren ikke står tilbage på
+		// en tom madplan-tab.
+		if (aktivTab === 'madplan') skiftTab('opskrifter');
 	}
 
 	/** Bygger kandidat-puljen ud fra globale opskrifter + brugerens egne. */
@@ -1242,7 +1254,8 @@
 					{
 						foodId: '',
 						portion: 1,
-						manuel: { navn: `${navn} (AI-forslag)`, enhed: 'portion' }
+						manuel: { navn: `${navn} (AI-forslag)`, enhed: 'portion' },
+						opskriftRef: { id: forslag.opskriftId, erEgen: forslag.erEgen }
 					}
 				],
 				totalP,
@@ -1252,12 +1265,27 @@
 				totalKcal
 			});
 			await indlaesDagbog();
+			// Marker som tilføjet så ✓-badge vises på forslag-kortet
+			madplanTilfoejede = new Set([...madplanTilfoejede, forslag.opskriftId]);
 		} catch (e) {
 			console.error(e);
 			madplanFejl = 'Kunne ikke tilføje til dagbog. Prøv igen.';
 		} finally {
 			madplanTilfoejer = null;
 		}
+	}
+
+	// Sub-modal til "Se opskrift" der lader brugeren se en opskrift uden at
+	// forlade madplan-modalen.
+	let visningOpskrift = $state<Opskrift | null>(null);
+
+	function visOpskriftInline(opskriftId: string) {
+		const o = opskrifter.find((x) => x.id === opskriftId);
+		if (o) visningOpskrift = o;
+	}
+
+	function lukOpskriftInline() {
+		visningOpskrift = null;
 	}
 
 	function visningsDato(key: string): string {
@@ -1326,6 +1354,19 @@
 					onclick={() => skiftTab('mine')}
 				>
 					Mine
+				</button>
+			{/if}
+			{#if kanBrugeMadplan}
+				<button
+					class="tab-knap"
+					class:aktiv={aktivTab === 'madplan'}
+					type="button"
+					onclick={() => {
+						skiftTab('madplan');
+						aabnMadplanModal();
+					}}
+				>
+					Madplan
 				</button>
 			{/if}
 			<button
@@ -1582,15 +1623,6 @@
 				</span>
 			</div>
 
-			{#if kanBrugeMadplan}
-				<button
-					type="button"
-					class="btn primary madplan-knap"
-					onclick={aabnMadplanModal}
-				>
-					✨ Foreslå en madplan til mig
-				</button>
-			{/if}
 
 			<input
 				type="search"
@@ -1717,6 +1749,17 @@
 					</div>
 				{/if}
 			{/if}
+		{:else if aktivTab === 'madplan'}
+			<div class="hint-boks">
+				<span class="hint-ikon">✨</span>
+				<span class="hint-tekst">
+					AI'en bygger en madplan til dig ud fra opskrifterne her i appen og dine egne. Vælg
+					antal alternativer, glutenfri og ingredienser du vil undgå.
+				</span>
+			</div>
+			<button type="button" class="primary-knap mine-tilfoj" onclick={aabnMadplanModal}>
+				✨ Foreslå en madplan
+			</button>
 		{:else if aktivTab === 'mine'}
 			<div class="hint-boks">
 				<span class="hint-ikon">✨</span>
@@ -1847,9 +1890,22 @@
 							<div class="type-gruppe">
 								<div class="type-overskrift">{MAALTIDSTYPE_LABELS[type]}</div>
 								{#each dette as m (m.id)}
+									{@const opskRef = m.items[0]?.opskriftRef}
 									<div class="dagbog-kort">
 										<div class="dagbog-kort-head">
-											<div class="dagbog-navn">{m.navn}</div>
+											{#if opskRef}
+												<a
+													class="dagbog-navn dagbog-navn-link"
+													href={opskRef.erEgen
+														? `/app/moduler/30-30-3/min-opskrift/${opskRef.id}`
+														: `/app/moduler/30-30-3/opskrifter/${opskRef.id}`}
+												>
+													{m.navn}
+													<span class="opskrift-link-pil" aria-hidden="true">›</span>
+												</a>
+											{:else}
+												<div class="dagbog-navn">{m.navn}</div>
+											{/if}
 											<div class="dagbog-handlinger">
 												<button
 													class="ikon-knap"
@@ -2480,7 +2536,7 @@
 
 				<button
 					type="button"
-					class="btn primary madplan-generer"
+					class="primary-knap madplan-generer"
 					onclick={() => void genererMadplan()}
 					disabled={madplanGenererer}
 				>
@@ -2507,27 +2563,40 @@
 								{@const navn = forslag.erEgen
 									? (opsk as MinOpskrift | undefined)?.navn ?? '(ukendt)'
 									: (opsk as Opskrift | undefined)?.titel ?? '(ukendt)'}
-								<div class="madplan-forslag">
-									<div class="madplan-forslag-titel">{navn}</div>
+								{@const erTilfoejet = madplanTilfoejede.has(forslag.opskriftId)}
+								<div class="madplan-forslag" class:tilfoejet={erTilfoejet}>
+									<div class="madplan-forslag-titel">
+										{navn}
+										{#if erTilfoejet}
+											<span class="tilfoejet-badge" aria-label="Tilføjet til dagbog">
+												✓ Tilføjet
+											</span>
+										{/if}
+									</div>
 									<p class="madplan-forslag-tekst">{forslag.hvorforPasser}</p>
 									<div class="madplan-forslag-handlinger">
 										{#if !forslag.erEgen}
-											<a
-												class="btn ghost madplan-link"
-												href="/app/moduler/30-30-3/opskrifter/{forslag.opskriftId}"
+											<button
+												class="ghost-knap madplan-link"
+												type="button"
+												onclick={() => visOpskriftInline(forslag.opskriftId)}
 											>
 												Se opskrift
-											</a>
+											</button>
 										{/if}
 										<button
-											class="btn primary"
+											class="primary-knap"
 											type="button"
 											onclick={() => void tilfoejForslagTilDagbog(forslag, kat)}
-											disabled={madplanTilfoejer === forslag.opskriftId}
+											disabled={madplanTilfoejer === forslag.opskriftId || erTilfoejet}
 										>
-											{madplanTilfoejer === forslag.opskriftId
-												? 'Tilføjer…'
-												: 'Tilføj til dagbog'}
+											{#if erTilfoejet}
+												✓ Tilføjet
+											{:else if madplanTilfoejer === forslag.opskriftId}
+												Tilføjer…
+											{:else}
+												Tilføj til dagbog
+											{/if}
 										</button>
 									</div>
 								</div>
@@ -2536,6 +2605,25 @@
 					</div>
 				{/each}
 
+				{#if madplanSvar.snacks.length > 0}
+					<div class="madplan-sektion snacks-sektion">
+						<div class="madplan-sektion-titel">Nemme suppleringer i løbet af dagen</div>
+						<p class="snacks-intro">
+							Tilføj 1–2 af disse hvis opskrifterne ikke fuldt rammer dit mål.
+						</p>
+						<ul class="snacks-liste">
+							{#each madplanSvar.snacks as s (s.tekst)}
+								<li class="snack-item">
+									<span class="snack-tekst">{s.tekst}</span>
+									<span class="snack-makro">
+										({Math.round(s.protein * 10) / 10} g protein · {Math.round(s.fiber * 10) / 10} g fiber)
+									</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
+
 				{#if madplanFejl}
 					<div class="status-besked fejl">{madplanFejl}</div>
 				{/if}
@@ -2543,19 +2631,73 @@
 				<div class="madplan-handlinger">
 					<button
 						type="button"
-						class="btn ghost"
+						class="ghost-knap"
 						onclick={() => {
 							madplanSvar = null;
 							madplanFejl = null;
+							madplanTilfoejede = new Set();
 						}}
 					>
 						Generer nye forslag
 					</button>
-					<button type="button" class="btn primary" onclick={lukMadplanModal}>
+					<button type="button" class="primary-knap" onclick={lukMadplanModal}>
 						Færdig
 					</button>
 				</div>
 			{/if}
+		</div>
+	</div>
+{/if}
+
+{#if visningOpskrift}
+	<div
+		class="modal-bag opskrift-inline-bag"
+		role="dialog"
+		aria-modal="true"
+		use:portalToBody
+		onclick={(e) => {
+			if (e.target === e.currentTarget) lukOpskriftInline();
+		}}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') lukOpskriftInline();
+		}}
+		tabindex="-1"
+	>
+		<div class="modal opskrift-inline-modal">
+			<div class="modal-head">
+				<div class="modal-titel">{visningOpskrift.titel}</div>
+				<button class="modal-luk" type="button" onclick={lukOpskriftInline} aria-label="Luk">
+					×
+				</button>
+			</div>
+			<div class="opskrift-inline-body">
+				{#if visningOpskrift.billedeUrl}
+					<img
+						class="opskrift-inline-billede"
+						src={visningOpskrift.billedeUrl}
+						alt={visningOpskrift.titel}
+						width="800"
+						height="600"
+						loading="lazy"
+						decoding="async"
+					/>
+				{/if}
+				<p class="opskrift-inline-beskrivelse">{visningOpskrift.beskrivelse}</p>
+
+				<div class="opskrift-inline-sektion">
+					<div class="opskrift-inline-sektion-titel">Ingredienser ({visningOpskrift.defaultPortioner} portion)</div>
+					<ul class="opskrift-inline-ingrediens-liste">
+						{#each visningOpskrift.ingredienser as ing, i (i)}
+							<li>{ing.maengde} {ing.enhed} {ing.navn}</li>
+						{/each}
+					</ul>
+				</div>
+
+				<div class="opskrift-inline-sektion">
+					<div class="opskrift-inline-sektion-titel">Sådan gør du</div>
+					<div class="opskrift-inline-instruktion">{visningOpskrift.instruktioner}</div>
+				</div>
+			</div>
 		</div>
 	</div>
 {/if}
@@ -4492,7 +4634,164 @@
 		margin-top: 8px;
 	}
 
-	.madplan-handlinger .btn {
+	.madplan-handlinger .primary-knap,
+	.madplan-handlinger .ghost-knap {
 		flex: 1;
+		margin: 0;
+	}
+
+	.madplan-forslag.tilfoejet {
+		border-color: var(--sage, #7fa37b);
+		background: rgba(127, 163, 123, 0.06);
+	}
+
+	.tilfoejet-badge {
+		display: inline-block;
+		margin-left: 8px;
+		padding: 2px 8px;
+		background: var(--sage, #7fa37b);
+		color: #fff;
+		border-radius: 99px;
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		vertical-align: middle;
+	}
+
+	.madplan-forslag-handlinger .primary-knap,
+	.madplan-forslag-handlinger .ghost-knap {
+		flex: 1;
+		margin: 0;
+	}
+
+	.madplan-link {
+		text-decoration: none;
+	}
+
+	.snacks-sektion {
+		margin-top: 4px;
+	}
+
+	.snacks-intro {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		margin: 0 0 4px;
+		line-height: 1.4;
+	}
+
+	.snacks-liste {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.snack-item {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		padding: 10px 12px;
+		background: var(--bg2);
+		border-radius: 10px;
+	}
+
+	.snack-tekst {
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.snack-makro {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* Se opskrift inline */
+	.opskrift-inline-modal {
+		padding: 0;
+		overflow: hidden;
+	}
+
+	.opskrift-inline-body {
+		padding: 0 18px 18px;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+		flex: 1;
+		min-height: 0;
+	}
+
+	.opskrift-inline-billede {
+		width: calc(100% + 36px);
+		margin: 0 -18px;
+		height: auto;
+		display: block;
+		object-fit: cover;
+		max-height: 220px;
+	}
+
+	.opskrift-inline-beskrivelse {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text2);
+		margin: 0;
+		line-height: 1.5;
+	}
+
+	.opskrift-inline-sektion {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.opskrift-inline-sektion-titel {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.opskrift-inline-ingrediens-liste {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.opskrift-inline-ingrediens-liste li {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+	}
+
+	.opskrift-inline-instruktion {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		line-height: 1.55;
+		white-space: pre-wrap;
+	}
+
+	/* Dagbog-måltid med klikbart link til opskrift */
+	.dagbog-navn-link {
+		color: inherit;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.dagbog-navn-link:hover {
+		color: var(--terra);
+	}
+
+	.opskrift-link-pil {
+		color: var(--terra);
+		font-weight: 700;
+		font-size: 1.1em;
 	}
 </style>

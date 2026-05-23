@@ -70,12 +70,30 @@ export interface MadplanForslag {
 }
 
 /**
- * Svar fra /api/foreslaa-madplan. Tre sektioner med 1-3 forslag hver.
+ * Et lille supplerende snack-forslag — typisk noget hurtigt og enkelt som
+ * brugeren kan tilføje hvis opskrifterne ikke fuldt rammer hendes mål.
+ * Indeholder protein/fiber-bidrag så det vises i parentes på UI'en.
+ */
+export interface SnackForslag {
+	tekst: string; // "Et æble" / "1 hårdkogt æg" / "100g græsk yoghurt med hindbær"
+	protein: number; // g
+	fiber: number; // g
+}
+
+/**
+ * Svar fra /api/foreslaa-madplan. Tre sektioner med 1-3 forslag hver
+ * plus en liste over nemme snack-suppleringer.
  */
 export interface MadplanSvar {
 	morgenmad: MadplanForslag[];
 	frokost: MadplanForslag[];
 	aftensmad: MadplanForslag[];
+	/**
+	 * Hurtige snack-suppleringer brugeren kan tilføje hvis opskrifterne alene
+	 * ikke når 100% af protein/fiber-målet. AI'en regner med at brugeren
+	 * vælger ÉN opskrift fra hver kategori og estimerer derfra.
+	 */
+	snacks: SnackForslag[];
 	/** 1-2 sætninger om hvordan kombinationen rammer dagens mål. */
 	samletBegrundelse: string;
 	/** Valgfri — hvis AI'en ikke kunne overholde alle krav. */
@@ -149,6 +167,15 @@ export function validerSvar(
 			if (!kandidatIds.has(forslag.opskriftId)) {
 				return `${k}: ukendt opskriftId "${forslag.opskriftId}"`;
 			}
+		}
+	}
+	if (!Array.isArray(svar.snacks)) return 'snacks-listen mangler';
+	for (const s of svar.snacks) {
+		if (typeof s.tekst !== 'string' || s.tekst.length === 0) {
+			return 'snack mangler tekst';
+		}
+		if (typeof s.protein !== 'number' || typeof s.fiber !== 'number') {
+			return 'snack mangler protein/fiber';
 		}
 	}
 	return null;
