@@ -19,6 +19,7 @@
 		hentUserProduct
 	} from '$lib/firestore/mikrotraening';
 	import { hentAktivProduktType } from '$lib/firestore/forlob';
+	import { gemAktivtTraeningsprogram } from '$lib/firestore/mineProgrammer';
 	import Icon, { type IconName } from '$lib/components/Icon.svelte';
 	import {
 		anvendScale,
@@ -127,6 +128,7 @@
 	let mtFejl = $state<string | null>(null);
 	let mtGemmer = $state<string | null>(null);
 	let mtProduktType = $state<'kickstart' | 'premiumforløb'>('kickstart');
+	let mtForlobId = $state<string | null>(null);
 
 	function ikonForUdstyr(udstyr: string[]): IconName {
 		if (udstyr.includes('kettlebell')) return 'kettlebell';
@@ -144,6 +146,7 @@
 			if (!up) return;
 			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
 			if (!forlobId) return;
+			mtForlobId = forlobId;
 			const alle = await hentForlobsProgrammer(forlobId);
 			mtProgrammer = alle.filter((p) => p.aktiv);
 			valgtMtProgramId = up.programValg?.mikrotraening ?? null;
@@ -160,7 +163,19 @@
 		mtGemmer = programId;
 		mtFejl = null;
 		try {
-			await gemProgramValg(u.uid, mtProduktType, 'mikrotraening', programId);
+			const opgaver: Promise<unknown>[] = [
+				gemProgramValg(u.uid, mtProduktType, 'mikrotraening', programId)
+			];
+			if (mtForlobId) {
+				opgaver.push(
+					gemAktivtTraeningsprogram(u.uid, {
+						kilde: 'tildelt',
+						programId,
+						forlobId: mtForlobId
+					})
+				);
+			}
+			await Promise.all(opgaver);
 			valgtMtProgramId = programId;
 		} catch (e) {
 			console.error(e);
