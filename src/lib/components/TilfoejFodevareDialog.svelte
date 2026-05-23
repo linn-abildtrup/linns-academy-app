@@ -1,19 +1,18 @@
 <script lang="ts">
-	// Dialog til at oprette en ny community-fødevare. Bruges efter en scan
-	// eller når brugeren vælger 'Tilføj manuelt'.
+	// Dialog til at oprette en ny EGEN privat fødevare. Bruges efter en
+	// stregkode-scan (Open Food Facts pre-udfylder næringsdata) eller når
+	// brugeren vælger 'Tilføj fødevare manuelt'.
 	//
-	// Pre-udfyldes med data fra Open Food Facts hvis stregkoden blev fundet.
-	// Brugeren kan altid rette navn, kategori og næringsdata før gem.
+	// Fødevaren gemmes på users/{uid}/customFodevarer og er KUN synlig for
+	// brugeren selv. Tidligere blev dette gemt som community-fødevare alle
+	// kunne se, men den funktion er fjernet.
 	import { onDestroy, onMount, untrack } from 'svelte';
-	import {
-		KATEGORI_LABELS,
-		type Kategori,
-		type Fodevare
-	} from '$lib/content/kost';
-	import { gemCommunityFodevare } from '$lib/firestore/kost';
-	import Icon from '$lib/components/Icon.svelte';
+	import { KATEGORI_LABELS, type Kategori, type Fodevare } from '$lib/content/kost';
+	import { gemMinCustomFodevare } from '$lib/firestore/kost';
 
 	interface Props {
+		/** Stregkode hvis dialogen blev åbnet fra scanner — bruges ikke i UI'en
+		 *  men kan bevares for senere genkendelse / metadata. */
 		barcode: string;
 		startNavn?: string;
 		startProtein?: number;
@@ -23,13 +22,12 @@
 		startKcal?: number;
 		startKat?: Kategori;
 		uid: string;
-		uidNavn: string;
 		onTilfoejet: (fodevare: Fodevare) => void;
 		onClose: () => void;
 	}
 
 	let {
-		barcode,
+		barcode: _barcode,
 		startNavn = '',
 		startProtein = 0,
 		startFiber = 0,
@@ -38,7 +36,6 @@
 		startKcal = 0,
 		startKat = 'andet',
 		uid,
-		uidNavn,
 		onTilfoejet,
 		onClose
 	}: Props = $props();
@@ -113,31 +110,35 @@
 		gemmer = true;
 		fejl = null;
 		try {
-			const id = await gemCommunityFodevare({
-				barcode,
+			const customData: {
+				name: string;
+				cat: Kategori;
+				p: number;
+				f: number;
+				liquid: boolean;
+				kilde: 'custom';
+				kh?: number;
+				fedt?: number;
+				kcal?: number;
+			} = {
 				name: n,
 				cat: kat,
 				p: protein,
 				f: fiber,
-				kh: kh > 0 ? kh : undefined,
-				fedt: fedt > 0 ? fedt : undefined,
-				kcal: kcal > 0 ? kcal : undefined,
-				uid,
-				uidNavn
-			});
+				liquid: false,
+				kilde: 'custom'
+			};
+			if (kh > 0) customData.kh = kh;
+			if (fedt > 0) customData.fedt = fedt;
+			if (kcal > 0) customData.kcal = kcal;
+			const id = await gemMinCustomFodevare(uid, customData);
 			const ny: Fodevare = {
 				id,
 				name: n,
 				cat: kat,
 				p: protein,
 				f: fiber,
-				kilde: 'community',
-				barcode,
-				addedBy: uid,
-				addedByName: uidNavn,
-				okBy: [uid],
-				ejBy: [],
-				verificeret: false
+				kilde: 'custom'
 			};
 			if (kh > 0) ny.kh = kh;
 			if (fedt > 0) ny.fedt = fedt;
@@ -155,15 +156,11 @@
 <div class="bag" use:portalToBody>
 	<div class="modal" role="dialog" aria-modal="true">
 		<header class="head">
-			<div class="titel">Ny fødevare</div>
+			<div class="titel">Tilføj egen fødevare</div>
 			<button class="luk" type="button" onclick={onClose} aria-label="Luk">×</button>
 		</header>
 
 		<div class="body">
-			<div class="barcode-info">
-				Stregkode: <span class="kode">{barcode}</span>
-			</div>
-
 			<label class="felt">
 				<span class="lbl">Navn</span>
 				<input
@@ -224,9 +221,7 @@
 			</label>
 
 			<p class="hint">
-				<Icon name="community" size={13} color="var(--text3)" />
-				Andre brugere kan se og bekræfte din fødevare. Når 3 har sagt 'ok', får
-				den et verificeret-flueben.
+				Fødevaren gemmes kun for dig — andre brugere ser den ikke.
 			</p>
 
 			{#if fejl}
@@ -299,18 +294,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
-	}
-
-	.barcode-info {
-		font-size: calc(12px * var(--fs-scale, 1));
-		color: var(--text3);
-	}
-
-	.kode {
-		font-family: var(--ff-b);
-		color: var(--text2);
-		font-weight: 600;
-		letter-spacing: 0.04em;
 	}
 
 	.felt {

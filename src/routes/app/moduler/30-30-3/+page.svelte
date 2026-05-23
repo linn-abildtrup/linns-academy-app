@@ -34,9 +34,7 @@
 		opdaterMaaltid,
 		sletFavorit,
 		sletMaaltid,
-		stemPaaFodevare,
-		toggleFavoritFodevare,
-		toggleSkjultFodevare
+		toggleFavoritFodevare
 	} from '$lib/firestore/kost';
 	import { lookupBarcode } from '$lib/content/openFoodFacts';
 	import BarcodeScanner from '$lib/components/BarcodeScanner.svelte';
@@ -156,13 +154,6 @@
 	let mineCustomFodevarer = $state<Fodevare[]>([]);
 
 	// Egne fødevarer — opret/redigér-modal
-	let viserEgenModal = $state(false);
-	let egenNavn = $state('');
-	let egenProtein = $state(0);
-	let egenFiber = $state(0);
-	let egenErVaeske = $state(false);
-	let egenFejl = $state<string | null>(null);
-	let gemmerEgen = $state(false);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
@@ -191,7 +182,6 @@
 		startKcal?: number;
 		startKat?: Kategori;
 	} | null>(null);
-	let stemmer = $state<string | null>(null); // fodevare-id der er ved at få stem opdateret
 
 	// Opskrifter-state
 	let opskriftSoeg = $state('');
@@ -343,8 +333,6 @@
 	// Alle: tom-state uden søgning, alle matchende foods med søgning.
 	// Seneste: de seneste 30 valgte fødevarer (alfabetisk).
 	// Favorit: brugerens favoritter (alfabetisk).
-	const skjulteFodevareSet = $derived(new Set(userDoc?.skjulteFodevarer ?? []));
-
 	const filtretetPicker = $derived.by<Fodevare[]>(() => {
 		const q = pickerSoeg.trim().toLowerCase();
 		let base: Fodevare[];
@@ -356,9 +344,11 @@
 		} else {
 			base = foods.filter((f) => favoritFodevareSet.has(f.id));
 		}
-		// Filtrer skjulte community-fødevarer ud — brugerens egne valg om
-		// hvilke andre kunders fødevarer hun vil se i sin oversigt
-		base = base.filter((f) => !skjulteFodevareSet.has(f.id));
+		// Community-fødevarer (oprettet af andre klienter) vises ikke længere
+		// — funktionen blev fjernet fordi andres fødevarer skabte støj i
+		// søgningen. Eksisterende community-data forbliver i Firestore men
+		// er skjult fra klient-side overalt.
+		base = base.filter((f) => f.kilde !== 'community');
 		if (q) base = base.filter((f) => matcherSog(f.name, q));
 		return sorterFodevarer(base, 'alpha');
 	});
@@ -436,18 +426,6 @@
 		}
 	}
 
-	function skjulFodevare(food: Fodevare, e: Event) {
-		e.stopPropagation();
-		const u = user;
-		if (!u) return;
-		bekraeft = {
-			titel: 'Fjern fra din oversigt?',
-			beskrivelse: `${food.name} bliver fjernet fra din søgning og dine lister. Den slettes ikke for andre brugere — du kan altid hente den tilbage senere hvis du fortryder.`,
-			bekraeftTekst: 'Fjern fra oversigt',
-			destruktiv: true,
-			onBekraeft: () => toggleSkjultFodevare(u.uid, food.id, true)
-		};
-	}
 
 	async function indlaesSenesteFodevarer(uid: string) {
 		// Henter måltider fra de seneste 90 dage, sortér nyeste først, og
@@ -730,74 +708,6 @@
 		pickerTab = 'alle';
 	}
 
-	function aabnEgenModal() {
-		egenNavn = '';
-		egenProtein = 0;
-		egenFiber = 0;
-		egenErVaeske = false;
-		egenFejl = null;
-		viserEgenModal = true;
-	}
-
-	function lukEgenModal() {
-		viserEgenModal = false;
-		egenFejl = null;
-	}
-
-	async function gemEgenFodevare() {
-		const u = user;
-		if (!u || gemmerEgen) return;
-		const navn = egenNavn.trim();
-		if (!navn) {
-			egenFejl = 'Skriv et navn.';
-			return;
-		}
-		const p = Number(egenProtein);
-		const f = Number(egenFiber);
-		if (!Number.isFinite(p) || p < 0 || !Number.isFinite(f) || f < 0) {
-			egenFejl = 'Protein og fiber skal være tal (gram pr 100 g).';
-			return;
-		}
-		gemmerEgen = true;
-		egenFejl = null;
-		try {
-			const id = await gemMinCustomFodevare(u.uid, {
-				name: navn,
-				cat: 'andet',
-				p,
-				f,
-				liquid: egenErVaeske,
-				kilde: 'custom'
-			});
-			const nyFodevare: Fodevare = {
-				id,
-				name: navn,
-				cat: 'andet',
-				p,
-				f,
-				liquid: egenErVaeske,
-				kilde: 'custom'
-			};
-			mineCustomFodevarer = [...mineCustomFodevarer, nyFodevare].sort((a, b) =>
-				a.name.localeCompare(b.name, 'da')
-			);
-			const samlet = [...foods.filter((x) => x.id !== id), nyFodevare];
-			foods = samlet;
-			foodMap = new Map(samlet.map((x) => [x.id, x]));
-			viserEgenModal = false;
-			// Tilføj direkte til måltidet hvis vi var i picker-flow
-			if (viserPicker) {
-				tilfoejTilMaaltid(nyFodevare);
-				viserPicker = false;
-			}
-		} catch (e) {
-			console.error(e);
-			egenFejl = 'Kunne ikke gemme. Prøv igen.';
-		} finally {
-			gemmerEgen = false;
-		}
-	}
-
 	function aabnScanner() {
 		if (!kanScanne) return;
 		viserScanner = true;
@@ -850,36 +760,6 @@
 		nyDialog = null;
 		// Tilføj direkte til måltid (eller erstat hvis vi var i erstat-flow)
 		tilfoejTilMaaltid(ny);
-	}
-
-	async function stemFodevare(food: Fodevare, type: 'ok' | 'ej', e: Event) {
-		e.stopPropagation();
-		const u = user;
-		if (!u || !food.id || stemmer) return;
-		stemmer = food.id;
-		try {
-			await stemPaaFodevare(food.id, u.uid, type);
-			// Opdater lokal cache så UI reagerer med det samme
-			const idx = foods.findIndex((f) => f.id === food.id);
-			if (idx >= 0) {
-				const okBy = (foods[idx].okBy ?? []).filter((x) => x !== u.uid);
-				const ejBy = (foods[idx].ejBy ?? []).filter((x) => x !== u.uid);
-				if (type === 'ok') okBy.push(u.uid);
-				else ejBy.push(u.uid);
-				const opdateret: Fodevare = {
-					...foods[idx],
-					okBy,
-					ejBy,
-					verificeret: okBy.length >= 3
-				};
-				foods = [...foods.slice(0, idx), opdateret, ...foods.slice(idx + 1)];
-				foodMap = new Map(foods.map((f) => [f.id, f]));
-			}
-		} catch (err) {
-			console.error(err);
-		} finally {
-			stemmer = null;
-		}
 	}
 
 	function lukPicker() {
@@ -2380,13 +2260,8 @@
 						{/if}
 					{/if}
 					{#each filtretetPicker as food (food.id)}
-						{@const erCommunity = food.kilde === 'community'}
-						{@const okAntal = food.okBy?.length ?? 0}
-						{@const ejAntal = food.ejBy?.length ?? 0}
-						{@const minStem = user && food.okBy?.includes(user.uid) ? 'ok' : user && food.ejBy?.includes(user.uid) ? 'ej' : null}
 						{@const erFavorit = favoritFodevareSet.has(food.id)}
-						{@const harStemRad = erCommunity && user !== null && food.addedBy !== user.uid}
-						<div class="picker-row-wrap" class:har-stem-rad={harStemRad}>
+						<div class="picker-row-wrap">
 							<div class="picker-row-flex">
 								<button
 									class="favorit-stjerne"
@@ -2408,74 +2283,21 @@
 									onclick={() => tilfoejTilMaaltid(food)}
 								>
 									<div class="picker-tekst">
-										<div class="food-navn">
-											{food.name}
-											{#if erCommunity && food.verificeret}
-												<span class="badge badge-verificeret" title="Verificeret af fællesskabet">✓</span>
-											{:else if erCommunity && ejAntal > okAntal}
-												<span class="badge badge-mistaenkelig" title="Flere har stemt 'ej' end 'ok'">⚠</span>
-											{:else if erCommunity}
-												<span class="badge badge-ny" title="Tilføjet af bruger">Ny</span>
-											{/if}
-										</div>
+										<div class="food-navn">{food.name}</div>
 										<div class="food-meta">
 											{food.p}g protein · {food.f}g fiber pr 100g
-											{#if erCommunity && food.addedByName}
-												<span class="meta-by"> · af {food.addedByName}</span>
-											{/if}
 										</div>
 									</div>
 									<span class="picker-plus">+</span>
 								</button>
 							</div>
-							{#if erCommunity && user && food.addedBy !== user.uid}
-								<div class="stem-rad">
-									<button
-										type="button"
-										class="stem-knap stem-ok"
-										class:aktiv={minStem === 'ok'}
-										disabled={stemmer === food.id}
-										onclick={(e) => stemFodevare(food, 'ok', e)}
-										aria-label="Bekræft fødevare"
-										title="Bekræft at fødevaren er korrekt"
-									>
-										<span class="stem-ikon">✓</span>
-										<span class="stem-tal">{okAntal}</span>
-									</button>
-									<button
-										type="button"
-										class="stem-knap stem-ej"
-										class:aktiv={minStem === 'ej'}
-										disabled={stemmer === food.id}
-										onclick={(e) => stemFodevare(food, 'ej', e)}
-										aria-label="Marker som dårlig kvalitet"
-										title="Marker som forkert / dårlig kvalitet"
-									>
-										<span class="stem-ikon">✗</span>
-										<span class="stem-tal">{ejAntal}</span>
-									</button>
-									<button
-										type="button"
-										class="stem-knap stem-skjul"
-										onclick={(e) => skjulFodevare(food, e)}
-										aria-label="Fjern fra min oversigt"
-										title="Fjern fra min oversigt"
-									>
-										<Icon name="trash" size={14} color="currentColor" />
-									</button>
-								</div>
-							{/if}
 						</div>
 					{/each}
 				</div>
 				<div class="picker-footer">
 					<button class="manuel-link" type="button" onclick={aabnTilfoejManuel}>
 						<Icon name="plus" size={12} color="var(--terra)" />
-						Tilføj fødevare manuelt
-					</button>
-					<button class="manuel-link" type="button" onclick={aabnEgenModal}>
-						<Icon name="plus" size={12} color="var(--terra)" />
-						Tilføj som egen (kun for mig)
+						Tilføj egen fødevare
 					</button>
 				</div>
 			</div>
@@ -2500,84 +2322,6 @@
 	/>
 {/if}
 
-{#if viserEgenModal}
-	<div
-		class="modal-bag"
-		role="dialog"
-		aria-modal="true"
-		use:portalToBody
-		onclick={(e) => {
-			if (e.target === e.currentTarget) lukEgenModal();
-		}}
-		onkeydown={(e) => {
-			if (e.key === 'Escape') lukEgenModal();
-		}}
-		tabindex="-1"
-	>
-		<div class="modal">
-			<div class="modal-head">
-				<div class="modal-titel">Tilføj egen fødevare</div>
-				<button class="modal-luk" type="button" onclick={lukEgenModal} aria-label="Luk">×</button>
-			</div>
-			<div class="modal-body">
-				<p class="modal-sub">
-					Egne fødevarer gemmes kun for dig — de er ikke synlige for andre kunder.
-					Skriv næringsindhold pr 100 g.
-				</p>
-				<label class="felt">
-					<span class="felt-label">Navn</span>
-					<input
-						type="text"
-						class="felt-input"
-						placeholder="fx Bodylab icetea"
-						bind:value={egenNavn}
-						disabled={gemmerEgen}
-						use:autofokus
-					/>
-				</label>
-				<div class="dobbelt-rad">
-					<label class="felt">
-						<span class="felt-label">Protein (g pr 100 g)</span>
-						<input
-							type="number"
-							class="felt-input"
-							min="0"
-							step="0.1"
-							bind:value={egenProtein}
-							disabled={gemmerEgen}
-						/>
-					</label>
-					<label class="felt">
-						<span class="felt-label">Fiber (g pr 100 g)</span>
-						<input
-							type="number"
-							class="felt-input"
-							min="0"
-							step="0.1"
-							bind:value={egenFiber}
-							disabled={gemmerEgen}
-						/>
-					</label>
-				</div>
-				<label class="favorit-toggle" class:on={egenErVaeske}>
-					<input type="checkbox" bind:checked={egenErVaeske} disabled={gemmerEgen} />
-					<div class="favorit-toggle-tekst">
-						<div class="favorit-toggle-lbl">Det er en væske</div>
-						<div class="favorit-toggle-sub">Vis ml som basis-enhed i stedet for g</div>
-					</div>
-				</label>
-				{#if egenFejl}
-					<div class="gem-besked fejl">{egenFejl}</div>
-				{/if}
-			</div>
-			<div class="modal-footer">
-				<button class="primary-knap" type="button" onclick={gemEgenFodevare} disabled={gemmerEgen}>
-					{gemmerEgen ? 'Gemmer…' : 'Gem'}
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
 
 {#if bekraeft}
 	<BekraeftModal
@@ -2602,7 +2346,6 @@
 		startKcal={nyDialog.startKcal}
 		startKat={nyDialog.startKat}
 		uid={user.uid}
-		uidNavn={userDoc?.firstName ?? 'En bruger'}
 		onTilfoejet={efterTilfoejet}
 		onClose={() => (nyDialog = null)}
 	/>
@@ -3972,142 +3715,6 @@
 	}
 	.picker-row-flex .picker-row {
 		flex: 1;
-	}
-
-	/* Når wrap'en har en stem-rad under: fjern bottom-border-radius og
-	   border-bottom på picker-row så de visuelt smelter sammen som ét kort. */
-	.picker-row-wrap.har-stem-rad .picker-row {
-		border-bottom-left-radius: 0;
-		border-bottom-right-radius: 0;
-		border-bottom: none;
-	}
-
-	.badge {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		min-width: 18px;
-		height: 18px;
-		padding: 0 5px;
-		font-size: calc(10px * var(--fs-scale, 1));
-		font-weight: 700;
-		border-radius: 99px;
-		margin-left: 6px;
-		vertical-align: middle;
-	}
-
-	.badge-verificeret {
-		background: var(--sdim);
-		color: var(--sage);
-		border: 1px solid rgba(111, 158, 126, 0.35);
-	}
-
-	.badge-mistaenkelig {
-		background: #fbeeea;
-		color: #8a4a3e;
-		border: 1px solid #f0d6cf;
-	}
-
-	.badge-ny {
-		background: var(--tdim);
-		color: var(--terra);
-		border: 1px solid var(--tdim2);
-		font-weight: 500;
-		font-size: calc(9.5px * var(--fs-scale, 1));
-		letter-spacing: 0.04em;
-	}
-
-	.meta-by {
-		color: var(--text3);
-		font-style: italic;
-	}
-
-	.stem-rad {
-		display: flex;
-		gap: 8px;
-		padding: 8px 10px;
-		background: var(--bg2);
-		border: 1px solid var(--border);
-		border-top: none;
-		border-radius: 0 0 10px 10px;
-		justify-content: flex-end;
-	}
-
-	.stem-knap {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 5px;
-		padding: 6px 12px;
-		min-width: 44px;
-		font-size: calc(12px * var(--fs-scale, 1));
-		font-weight: 600;
-		font-family: var(--ff-b);
-		border-radius: 8px;
-		background: var(--white);
-		color: var(--text2);
-		border: 1px solid var(--border);
-		cursor: pointer;
-		transition: background 0.15s, border-color 0.15s, color 0.15s;
-	}
-
-	.stem-ikon {
-		font-size: calc(14px * var(--fs-scale, 1));
-		line-height: 1;
-	}
-
-	.stem-tal {
-		font-variant-numeric: tabular-nums;
-	}
-
-	/* ✓ Behold / bekræft — fyldt grøn */
-	.stem-knap.stem-ok {
-		background: #4a8a4f;
-		color: #fff;
-		border-color: #4a8a4f;
-	}
-	.stem-knap.stem-ok:hover {
-		background: #3b6e3f;
-		border-color: #3b6e3f;
-	}
-	.stem-knap.stem-ok.aktiv {
-		background: #2f5634;
-		border-color: #2f5634;
-		box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
-	}
-
-	/* ✗ Ikke beholde / forkert — fyldt rød */
-	.stem-knap.stem-ej {
-		background: #c5544a;
-		color: #fff;
-		border-color: #c5544a;
-	}
-	.stem-knap.stem-ej:hover {
-		background: #a8453a;
-		border-color: #a8453a;
-	}
-	.stem-knap.stem-ej.aktiv {
-		background: #8a3329;
-		border-color: #8a3329;
-		box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
-	}
-
-	/* Skjul fra min oversigt — fyldt mørk (kun ikon, ingen tekst) */
-	.stem-knap.stem-skjul {
-		background: #2a1f17;
-		color: #fff;
-		border-color: #2a1f17;
-		min-width: 38px;
-		padding: 6px 10px;
-	}
-	.stem-knap.stem-skjul:hover {
-		background: #4a3a2d;
-		border-color: #4a3a2d;
-	}
-
-	.stem-knap:disabled {
-		opacity: 0.5;
-		cursor: wait;
 	}
 
 	.dagbog-rad {
