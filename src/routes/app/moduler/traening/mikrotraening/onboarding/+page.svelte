@@ -2,22 +2,27 @@
 	import { getContext, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
+	import type { UserDoc } from '$lib/types';
 	import type { TrainingProgram, UserProduct } from '$lib/content/mikrotraening';
 	import {
 		gemProgramValg,
 		hentForlobsProgrammer,
 		hentUserProduct
 	} from '$lib/firestore/mikrotraening';
+	import { hentAktivProduktType } from '$lib/firestore/forlob';
 	import Icon, { type IconName } from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
 	const getUser = getContext<() => User | null>('user');
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
+	const userDoc = $derived(getUserDoc());
 
 	let programmer = $state<TrainingProgram[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let gemmer = $state<string | null>(null);
+	let produktType = $state<'kickstart' | 'premiumforløb'>('kickstart');
 
 	function ikonForUdstyr(udstyr: string[]): IconName {
 		if (udstyr.includes('kettlebell')) return 'kettlebell';
@@ -33,7 +38,8 @@
 			return;
 		}
 		try {
-			const up = await hentUserProduct(u.uid, 'kickstart');
+			produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+			const up = await hentUserProduct(u.uid, produktType);
 			if (!up) {
 				fejl = 'Du har ikke adgang til mikrotræning endnu.';
 				loading = false;
@@ -70,7 +76,7 @@
 		gemmer = programId;
 		fejl = null;
 		try {
-			await gemProgramValg(u.uid, 'kickstart', 'mikrotraening', programId);
+			await gemProgramValg(u.uid, produktType, 'mikrotraening', programId);
 			goto('/app/moduler/traening/mikrotraening');
 		} catch (e) {
 			console.error(e);

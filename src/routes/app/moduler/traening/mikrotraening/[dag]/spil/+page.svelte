@@ -23,7 +23,9 @@
 	} from '$lib/firestore/mikrotraening';
 	import { logTraening } from '$lib/firestore/traeningHistorik';
 	import { formaterHistorikDato } from '$lib/content/traeningHistorik';
+	import { hentAktivProduktType } from '$lib/firestore/forlob';
 	import { getAudioUrl, getVideoUrl } from '$lib/utils/storage';
+	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -33,10 +35,13 @@
 	type Phase = 'prep' | 'work' | 'rest' | 'switch' | 'done';
 
 	const getUser = getContext<() => User | null>('user');
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
+	const userDoc = $derived(getUserDoc());
 
 	const dagNummer = $derived(parseInt(page.params.dag ?? '', 10));
 
+	let produktType = $state<'kickstart' | 'premiumforløb'>('kickstart');
 	let userProduct = $state<UserProduct | null>(null);
 	let programData = $state<ProgramMedDage | null>(null);
 	let exerciseMap = $state<Map<string, Exercise>>(new Map());
@@ -149,7 +154,8 @@
 		}
 
 		try {
-			const up = await hentUserProduct(u.uid, 'kickstart');
+			produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+			const up = await hentUserProduct(u.uid, produktType);
 			if (!up) {
 				fejl = 'Du har ikke adgang til mikrotræning endnu.';
 				loading = false;
@@ -568,7 +574,7 @@
 		if (phase === 'done' || traeningGennemfort) return;
 		if (loading || fejl) return;
 		void gemPause(u.uid, {
-			productId: 'kickstart',
+			productId: produktType,
 			elementAlias: 'mikrotraening',
 			programId,
 			dag: dagNummer,
@@ -585,7 +591,7 @@
 		if (u && programId && phase !== 'done' && !traeningGennemfort) {
 			try {
 				await gemPause(u.uid, {
-					productId: 'kickstart',
+					productId: produktType,
 					elementAlias: 'mikrotraening',
 					programId,
 					dag: dagNummer,
@@ -634,7 +640,7 @@
 		gemFejl = null;
 		try {
 			const opdateret = markerDagSomGennemfort(huidigFremgang(), dagNummer);
-			await gemMikrotraeningFremgang(u.uid, 'kickstart', opdateret);
+			await gemMikrotraeningFremgang(u.uid, produktType, opdateret);
 			if (userProduct) {
 				userProduct = {
 					...userProduct,

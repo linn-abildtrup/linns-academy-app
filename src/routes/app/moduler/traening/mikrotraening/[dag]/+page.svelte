@@ -16,13 +16,17 @@
 		hentUserProduct,
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
+	import { hentAktivProduktType } from '$lib/firestore/forlob';
 	import { getVideoUrl } from '$lib/utils/storage';
 	import { onDestroy } from 'svelte';
+	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
 	const getUser = getContext<() => User | null>('user');
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
+	const userDoc = $derived(getUserDoc());
 
 	const dagNummer = $derived(parseInt(page.params.dag ?? '', 10));
 
@@ -90,14 +94,15 @@
 			return;
 		}
 
-		if (!Number.isFinite(dagNummer) || dagNummer < 1 || dagNummer > 21) {
+		if (!Number.isFinite(dagNummer) || dagNummer < 1 || dagNummer > 100) {
 			fejl = 'Ugyldigt dag-nummer.';
 			loading = false;
 			return;
 		}
 
 		try {
-			const up = await hentUserProduct(u.uid, 'kickstart');
+			const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+			const up = await hentUserProduct(u.uid, produktType);
 			if (!up) {
 				fejl = 'Du har ikke adgang til mikrotræning endnu.';
 				loading = false;

@@ -84,6 +84,32 @@ export function ryForlobCache(): void {
 }
 
 /**
+ * Finder hvilken activeProduct den nuvaerende dato falder indenfor for en
+ * bruger med flere forloebsIDs. Returnerer 'premiumforloeb' hvis brugeren
+ * aktuelt er paa et Kropsro-forloeb, ellers 'kickstart'. Falder tilbage til
+ * 'kickstart' hvis intet forloeb matcher (fx hvis ingen er aktive endnu).
+ *
+ * Bruges af mikrotraenings-siderne som ellers hardcodede 'kickstart' og
+ * derfor ikke kunne haandtere Kropsro-kunders programValg + fremgang.
+ */
+export async function hentAktivProduktType(
+	forlobIds: string[]
+): Promise<'kickstart' | 'premiumforløb'> {
+	if (forlobIds.length === 0) return 'kickstart';
+	const forløbsData = await Promise.all(forlobIds.map((id) => hentForlob(id)));
+	const idagMs = Date.now();
+	for (const f of forløbsData) {
+		if (!f) continue;
+		const startMs = f.startDato.toMillis();
+		const slutMs = startMs + f.antalDage * 24 * 60 * 60 * 1000;
+		if (idagMs >= startMs && idagMs < slutMs) {
+			return f.type === 'kropsro' ? 'premiumforløb' : 'kickstart';
+		}
+	}
+	return 'kickstart';
+}
+
+/**
  * Opretter eller opdaterer et forløb. Bruger setDoc med merge så eksisterende
  * felter ikke nulstilles ved partielle opdateringer.
  *

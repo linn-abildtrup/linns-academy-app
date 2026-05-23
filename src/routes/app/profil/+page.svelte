@@ -18,6 +18,7 @@
 		hentForlobsProgrammer,
 		hentUserProduct
 	} from '$lib/firestore/mikrotraening';
+	import { hentAktivProduktType } from '$lib/firestore/forlob';
 	import Icon, { type IconName } from '$lib/components/Icon.svelte';
 	import {
 		anvendScale,
@@ -125,6 +126,7 @@
 	let mtIndlaeser = $state(false);
 	let mtFejl = $state<string | null>(null);
 	let mtGemmer = $state<string | null>(null);
+	let mtProduktType = $state<'kickstart' | 'premiumforløb'>('kickstart');
 
 	function ikonForUdstyr(udstyr: string[]): IconName {
 		if (udstyr.includes('kettlebell')) return 'kettlebell';
@@ -137,7 +139,8 @@
 		if (!u) return;
 		mtIndlaeser = true;
 		try {
-			const up = await hentUserProduct(u.uid, 'kickstart');
+			mtProduktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+			const up = await hentUserProduct(u.uid, mtProduktType);
 			if (!up) return;
 			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
 			if (!forlobId) return;
@@ -157,7 +160,7 @@
 		mtGemmer = programId;
 		mtFejl = null;
 		try {
-			await gemProgramValg(u.uid, 'kickstart', 'mikrotraening', programId);
+			await gemProgramValg(u.uid, mtProduktType, 'mikrotraening', programId);
 			valgtMtProgramId = programId;
 		} catch (e) {
 			console.error(e);

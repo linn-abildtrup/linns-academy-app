@@ -23,7 +23,7 @@
 		type AboMikrotraeningProgramMedDage
 	} from '$lib/firestore/aboMikrotraening';
 	import type { AboMikrotraeningTraening } from '$lib/content/aboMikrotraening';
-	import { hentForlob } from '$lib/firestore/forlob';
+	import { hentForlob, hentAktivProduktType } from '$lib/firestore/forlob';
 	import { erForlobsklient, erModulbruger } from '$lib/utils/userAdgang';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
@@ -137,7 +137,8 @@
 	});
 
 	async function indlaesForlobsData(uid: string) {
-		const up = await hentUserProduct(uid, 'kickstart');
+		const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+		const up = await hentUserProduct(uid, produktType);
 		if (!up) {
 			fejl = 'Du har ikke adgang til mikrotræning endnu.';
 			return;
