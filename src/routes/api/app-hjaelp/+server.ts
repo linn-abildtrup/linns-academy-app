@@ -18,7 +18,7 @@ import {
 } from '$lib/content/appHjaelp';
 import type { ActiveProduct } from '$lib/types';
 
-const ANTHROPIC_MODEL = 'claude-sonnet-4-5-20250929';
+const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
 const MAX_TOKENS = 1024;
 
 interface IndkommendeBesked {

@@ -17,7 +17,7 @@ import { MAX_QUERIES_PR_DAG, quotaNoegle } from '$lib/content/linnAi';
 import { harPremium } from '$lib/utils/userAdgang';
 import type { UserDoc } from '$lib/types';
 
-const MODEL = 'claude-sonnet-4-5-20250929';
+const MODEL = 'claude-haiku-4-5-20251001';
 const MAX_TOKENS = 2048;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB pr billede
 const MAX_BILLEDER = 3;

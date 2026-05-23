@@ -21,7 +21,7 @@ import {
 import type { UserDoc } from '$lib/types';
 import { harPremium } from '$lib/utils/userAdgang';
 
-const MODEL = 'claude-sonnet-4-5-20250929';
+const MODEL = 'claude-haiku-4-5-20251001';
 const MAX_TOKENS = 2048;
 
 async function verificerToken(idToken: string): Promise<string | null> {
