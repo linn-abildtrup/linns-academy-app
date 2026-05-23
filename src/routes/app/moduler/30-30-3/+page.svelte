@@ -325,13 +325,21 @@
 	// Default: bred substring-søgning ("æg" matcher alt med "æg" i navnet).
 	// Med toggle "Kun hele ord" slået til: kun eksakt ord-match — "æg" matcher
 	// kun "Æg" eller fx "Pålæg med æg", ikke "Æggenudler".
+	//
+	// Komma/semikolon-separation aktiverer AND-logik: "laks, opdræt" finder
+	// fødevarer der både har "laks" OG "opdræt" i navnet.
 	function matcherSog(navn: string, q: string): boolean {
 		const lower = navn.toLowerCase();
+		const termer = q
+			.split(/[,;]/)
+			.map((t) => t.trim())
+			.filter((t) => t.length > 0);
+		if (termer.length === 0) return true;
 		if (eksaktSog) {
 			const ord = lower.split(/[\s,\-/&()]+/);
-			return ord.includes(q);
+			return termer.every((t) => ord.includes(t));
 		}
-		return lower.includes(q);
+		return termer.every((t) => lower.includes(t));
 	}
 
 	// Filtrér foods i pickeren baseret på aktiv tab + søgeord.
@@ -2227,7 +2235,7 @@
 				<input
 					type="search"
 					class="search"
-					placeholder="Søg fødevare"
+					placeholder="Søg fødevare (fx laks, opdræt)"
 					bind:value={pickerSoeg}
 					use:autofokus
 				/>
