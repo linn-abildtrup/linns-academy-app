@@ -28,6 +28,7 @@ export interface LektionItem {
 	varighedMin: number;
 	format: string;
 	url: string;
+	thumbnailUrl?: string;
 }
 
 /**

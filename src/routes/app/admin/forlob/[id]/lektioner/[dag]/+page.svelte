@@ -5,7 +5,7 @@
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
 	import { nyLektion, tomForlobDag } from '$lib/content/forlob';
 	import { gemForlobsdag, hentForlobsdag, sletForlobsdag } from '$lib/firestore/forlob';
-	import { uploadHtmlFil, uploadLydFil } from '$lib/utils/storage';
+	import { uploadHtmlFil, uploadLydFil, uploadThumbnailFil } from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const forlobId = $derived(page.params.id ?? '');
@@ -19,6 +19,8 @@
 	let bekraefter = $state(false);
 	let uploaderHtml = $state<string | null>(null);
 	let uploaderLyd = $state<string | null>(null);
+	let uploaderThumb = $state<string | null>(null);
+	let dragOver = $state<string | null>(null);
 	let uploadFejl = $state<string | null>(null);
 
 	$effect(() => {
@@ -113,6 +115,68 @@
 			uploaderLyd = null;
 			input.value = '';
 		}
+	}
+
+	async function haandterThumbnailFil(lektionId: string, fil: File | undefined | null) {
+		if (!fil) return;
+		if (!fil.type.startsWith('image/')) {
+			uploadFejl = 'Vaelg en billedfil (JPG, PNG, WebP).';
+			return;
+		}
+		uploaderThumb = lektionId;
+		uploadFejl = null;
+		try {
+			const url = await uploadThumbnailFil(forlobId, fil);
+			opdaterLektion(lektionId, 'thumbnailUrl', url);
+		} catch (err) {
+			console.error(err);
+			uploadFejl =
+				err instanceof Error ? `Upload fejlede: ${err.message}` : 'Upload fejlede.';
+		} finally {
+			uploaderThumb = null;
+		}
+	}
+
+	function haandterThumbnailInput(lektionId: string, e: Event) {
+		const input = e.target as HTMLInputElement;
+		const fil = input.files?.[0];
+		haandterThumbnailFil(lektionId, fil);
+		input.value = '';
+	}
+
+	function haandterDrop(lektionId: string, e: DragEvent) {
+		e.preventDefault();
+		dragOver = null;
+		const fil = e.dataTransfer?.files?.[0];
+		haandterThumbnailFil(lektionId, fil);
+	}
+
+	function haandterDragOver(lektionId: string, e: DragEvent) {
+		e.preventDefault();
+		dragOver = lektionId;
+	}
+
+	function haandterDragLeave() {
+		dragOver = null;
+	}
+
+	async function haandterPaste(lektionId: string, e: ClipboardEvent) {
+		const items = e.clipboardData?.items;
+		if (!items) return;
+		for (const item of items) {
+			if (item.type.startsWith('image/')) {
+				e.preventDefault();
+				const fil = item.getAsFile();
+				if (fil) {
+					await haandterThumbnailFil(lektionId, fil);
+				}
+				return;
+			}
+		}
+	}
+
+	function fjernThumbnail(lektionId: string) {
+		opdaterLektion(lektionId, 'thumbnailUrl', undefined);
 	}
 
 	async function gem() {
@@ -298,6 +362,63 @@
 							<span class="html-upload-hint">eller indsæt URL ovenfor</span>
 						</div>
 					</label>
+
+					<div class="felt">
+						<span class="felt-label">Thumbnail (valgfri)</span>
+						<div
+							class="thumb-dropzone"
+							class:har-thumb={!!l.thumbnailUrl}
+							class:drag-over={dragOver === l.id}
+							class:uploader={uploaderThumb === l.id}
+							ondrop={(e) => haandterDrop(l.id, e)}
+							ondragover={(e) => haandterDragOver(l.id, e)}
+							ondragleave={haandterDragLeave}
+							onpaste={(e) => haandterPaste(l.id, e)}
+							role="region"
+							aria-label="Slip eller indsæt et billede her"
+						>
+							{#if l.thumbnailUrl}
+								<img src={l.thumbnailUrl} alt="Thumbnail" class="thumb-preview" />
+								<div class="thumb-overlay">
+									<label class="thumb-knap">
+										Skift
+										<input
+											type="file"
+											accept="image/*"
+											onchange={(e) => haandterThumbnailInput(l.id, e)}
+											disabled={gemmer || uploaderThumb === l.id}
+										/>
+									</label>
+									<button
+										class="thumb-knap fare"
+										type="button"
+										onclick={() => fjernThumbnail(l.id)}
+										disabled={gemmer || uploaderThumb === l.id}
+									>
+										Fjern
+									</button>
+								</div>
+							{:else if uploaderThumb === l.id}
+								<div class="thumb-tom">Uploader...</div>
+							{:else}
+								<label class="thumb-tom">
+									<div class="thumb-tom-titel">Slip billede her</div>
+									<div class="thumb-tom-hint">
+										eller klik for at vælge · træk fra Finder · indsæt med ⌘V
+									</div>
+									<input
+										type="file"
+										accept="image/*"
+										onchange={(e) => haandterThumbnailInput(l.id, e)}
+										disabled={gemmer}
+									/>
+								</label>
+							{/if}
+						</div>
+						<div class="thumb-hint">
+							Vises i stedet for video-tjenestens auto-thumbnail. Maks 3 MB.
+						</div>
+					</div>
 				</article>
 			{/each}
 
@@ -688,6 +809,109 @@
 	}
 
 	.html-upload-hint {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		font-style: italic;
+	}
+
+	.thumb-dropzone {
+		position: relative;
+		aspect-ratio: 16 / 9;
+		border: 2px dashed var(--border);
+		border-radius: 10px;
+		background: var(--white);
+		overflow: hidden;
+		transition: border-color 0.15s, background 0.15s;
+	}
+
+	.thumb-dropzone.drag-over {
+		border-color: var(--terra);
+		background: var(--tdim);
+	}
+
+	.thumb-dropzone.har-thumb {
+		border-style: solid;
+	}
+
+	.thumb-preview {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
+	.thumb-overlay {
+		position: absolute;
+		inset: auto 0 0 0;
+		display: flex;
+		gap: 6px;
+		padding: 8px;
+		background: linear-gradient(to top, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
+		justify-content: flex-end;
+	}
+
+	.thumb-tom {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 100%;
+		gap: 4px;
+		padding: 16px;
+		cursor: pointer;
+		color: var(--text2);
+		text-align: center;
+	}
+
+	.thumb-tom-titel {
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.thumb-tom-hint {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.thumb-tom input[type='file'] {
+		display: none;
+	}
+
+	.thumb-knap {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		padding: 6px 10px;
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 500;
+		border-radius: 6px;
+		border: none;
+		background: rgba(255, 255, 255, 0.95);
+		color: var(--text);
+		cursor: pointer;
+		font-family: var(--ff-b);
+	}
+
+	.thumb-knap.fare {
+		background: rgba(184, 80, 63, 0.95);
+		color: #fff;
+	}
+
+	.thumb-knap input[type='file'] {
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		cursor: pointer;
+	}
+
+	.thumb-knap:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.thumb-hint {
 		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		font-style: italic;

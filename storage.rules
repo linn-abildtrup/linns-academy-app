@@ -30,11 +30,20 @@ service firebase.storage {
 
 		// Forløbs-specifikt indhold (HTML-uploads til lektioner og guides):
 		// /forlob/{forlobId}/html/{filename}
-		match /forlob/{forlobId}/{folder}/{filename=**} {
+		match /forlob/{forlobId}/html/{filename=**} {
 			allow read: if request.auth != null;
 			allow write: if isAdmin()
 				&& request.resource.size < 5 * 1024 * 1024
 				&& request.resource.contentType.matches('text/html.*');
+		}
+
+		// Forløbs-thumbnails — admin-uploaded thumbnail-billeder pr lektion.
+		// /forlob/{forlobId}/thumbnails/{filename}
+		match /forlob/{forlobId}/thumbnails/{filename=**} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin()
+				&& request.resource.size < 3 * 1024 * 1024
+				&& request.resource.contentType.matches('image/.*');
 		}
 
 		// Admin-uploads (PDF'er, manualer m.m.)

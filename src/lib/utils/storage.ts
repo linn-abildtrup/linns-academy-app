@@ -106,6 +106,30 @@ export async function uploadHtmlFil(forlobId: string, fil: File): Promise<string
 }
 
 /**
+ * Uploader et thumbnail-billede til Firebase Storage og returnerer URL'en.
+ * Gemmes på /forlob/{forlobId}/thumbnails/{timestamp}-{filename} så vi
+ * undgår navne-kollisioner. Content-type bevares fra File-objektet.
+ *
+ * Bruges fra admin-lektion-siden naar Linn dropper et billede for at
+ * overstyre Vimeo/YouTube auto-thumbnail.
+ */
+export async function uploadThumbnailFil(forlobId: string, fil: File): Promise<string> {
+	if (!forlobId) throw new Error('uploadThumbnailFil: forlobId er paakraevet');
+	if (!fil) throw new Error('uploadThumbnailFil: fil er paakraevet');
+	if (!fil.type.startsWith('image/')) {
+		throw new Error('Filen skal vaere et billede.');
+	}
+	if (fil.size > 3 * 1024 * 1024) {
+		throw new Error('Billedet maa hoejst fylde 3 MB.');
+	}
+	const safe = fil.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+	const path = `forlob/${forlobId}/thumbnails/${Date.now()}-${safe}`;
+	const storageRef = ref(storage, path);
+	await uploadBytes(storageRef, fil, { contentType: fil.type });
+	return getDownloadURL(storageRef);
+}
+
+/**
  * Uploader en lydfil til Cloudflare R2 og returnerer den public URL.
  * Bruger /api/r2-upload-url-endpointet til at få en pre-signed URL og
  * uploader så filen direkte til R2 derfra (file-data passerer ikke gennem

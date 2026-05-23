@@ -1211,7 +1211,7 @@
 					<div class="actions-list">
 						{#if dagensDag.lektioner.length > 0}
 							{#each dagensDag.lektioner as lektion, i (lektion.id)}
-								{@const thumbUrl = videoThumbnail(lektion.url)}
+								{@const thumbUrl = lektion.thumbnailUrl || videoThumbnail(lektion.url)}
 								{@const erLyd = erLydLektion(lektion.url)}
 								{@const erInspiration = erInspirationLektion(lektion.url)}
 								{@const visThumb = erVideoLektion(lektion.url) || erLyd || erInspiration}

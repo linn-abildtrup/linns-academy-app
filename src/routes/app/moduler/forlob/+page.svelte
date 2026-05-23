@@ -241,7 +241,7 @@
 				{:else}
 					<div class="lektion-liste">
 						{#each aktivDag.lektioner as l (l.id)}
-							{@const thumbUrl = videoThumbnail(l.url)}
+							{@const thumbUrl = l.thumbnailUrl || videoThumbnail(l.url)}
 							{@const erLyd = erLydLektion(l.url)}
 							{@const erInspiration = erInspirationLektion(l.url)}
 							{@const visThumb = erVideoLektion(l.url) || erLyd || erInspiration}
