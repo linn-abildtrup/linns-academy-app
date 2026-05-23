@@ -20,16 +20,20 @@ export interface Koeb {
 	udlobsdato?: string;
 }
 
+// Kunden ser bare 'App' uanset om hun har basisabo eller premiumabo.
+// Forskellen mellem basis og premium er en intern adgangsdetalje der
+// styrer hvilket indhold der vises — den behøver ikke fremgå af 'Mine
+// køb' eller andre kunde-vendte labels.
 const KORT_NAVN: Record<ActiveProduct, string> = {
-	basisabo: 'Basis-app',
-	premiumabo: 'Premium-app',
+	basisabo: 'App',
+	premiumabo: 'App',
 	kickstart: 'Kickstart',
 	premiumforløb: 'Premium-forløb'
 };
 
 const VISNINGS_NAVN: Record<ActiveProduct, string> = {
-	basisabo: 'Basis-app',
-	premiumabo: 'Premium-app',
+	basisabo: 'App',
+	premiumabo: 'App',
 	kickstart: 'Kickstart en sund overgangsalder',
 	premiumforløb: 'Premium-forløb'
 };

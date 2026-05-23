@@ -13,7 +13,7 @@ function lavUserDoc(overrides: Partial<UserDoc>): UserDoc {
 }
 
 describe('getKoebForUser', () => {
-	it('returnerer Basis-app for basisabo-bruger', () => {
+	it('returnerer "App" for basisabo-bruger', () => {
 		const koeb = getKoebForUser(
 			lavUserDoc({
 				activeProduct: 'basisabo',
@@ -22,12 +22,12 @@ describe('getKoebForUser', () => {
 			})
 		);
 		expect(koeb).toHaveLength(1);
-		expect(koeb[0].kortNavn).toBe('Basis-app');
+		expect(koeb[0].kortNavn).toBe('App');
 		expect(koeb[0].status).toBe('aktiv');
 		expect(koeb[0].lobende).toBe(true);
 	});
 
-	it('returnerer Premium-app for premiumabo-bruger', () => {
+	it('returnerer "App" for premiumabo-bruger', () => {
 		const koeb = getKoebForUser(
 			lavUserDoc({
 				activeProduct: 'premiumabo',
@@ -36,7 +36,7 @@ describe('getKoebForUser', () => {
 			})
 		);
 		expect(koeb).toHaveLength(1);
-		expect(koeb[0].kortNavn).toBe('Premium-app');
+		expect(koeb[0].kortNavn).toBe('App');
 		expect(koeb[0].lobende).toBe(true);
 	});
 
