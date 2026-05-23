@@ -864,18 +864,44 @@
 
 	async function indlaesForlob(uid: string) {
 		try {
-			const up = await hentUserProduct(uid, 'kickstart');
-			if (!up) return;
-			userProduct = up;
-			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
-			if (!forlobId) return;
-			const [f, dage, vaneDage] = await Promise.all([
-				hentForlob(forlobId),
-				hentForlobsdage(forlobId),
-				hentVaneprogramForForlob(forlobId).catch(() => [] as VaneProgramDag[])
+			const ud = userDoc;
+			if (!ud) return;
+			const ids = ud.forlobIds ?? [];
+			if (ids.length === 0) return;
+
+			// Hent alle brugerens forløb parallelt og find DET der er aktivt
+			// lige nu (idag mellem startDato og slutDato). Klient kan kun være
+			// på ét forløb ad gangen, så vi tager det første aktive.
+			const forløbsData = await Promise.all(ids.map((id) => hentForlob(id)));
+			const idagMs = Date.now();
+			let aktivt = null;
+			for (const f of forløbsData) {
+				if (!f) continue;
+				const startMs = f.startDato.toMillis();
+				const slutMs = startMs + f.antalDage * 24 * 60 * 60 * 1000;
+				if (idagMs >= startMs && idagMs < slutMs) {
+					aktivt = f;
+					break;
+				}
+			}
+			if (!aktivt) return;
+
+			// Hent userProduct baseret på forløbets type:
+			//   kropsro    → premiumforløb
+			//   kickstart  → kickstart
+			// type kan mangle på gamle forløb — fald tilbage til 'kickstart'
+			// for at bevare bagudkompatibilitet.
+			const produktType = aktivt.type === 'kropsro' ? 'premiumforløb' : 'kickstart';
+			const up =
+				(await hentUserProduct(uid, produktType)) ??
+				(await hentUserProduct(uid, 'kickstart'));
+			if (up) userProduct = up;
+
+			const [dage, vaneDage] = await Promise.all([
+				hentForlobsdage(aktivt.id),
+				hentVaneprogramForForlob(aktivt.id).catch(() => [] as VaneProgramDag[])
 			]);
-			if (!f) return;
-			forlob = f;
+			forlob = aktivt;
 			forlobsdage = dage;
 			vaneprogramDage = vaneDage;
 		} catch (e) {
