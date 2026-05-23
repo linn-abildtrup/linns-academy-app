@@ -3,6 +3,7 @@
 	import type { User } from 'firebase/auth';
 	import { page } from '$app/state';
 	import Icon from '$lib/components/Icon.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import { hentForlob } from '$lib/firestore/forlob';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import {
@@ -71,14 +72,24 @@
 		}
 	}
 
-	async function slet(v: AdminTildeltVane) {
-		if (!confirm(`Slet vanen "${v.label}" for alle deltagere på forløbet?`)) return;
+	let sletVane = $state<AdminTildeltVane | null>(null);
+	let sletter = $state(false);
+	function aabnSletBekraeft(v: AdminTildeltVane) {
+		sletVane = v;
+	}
+	async function slet() {
+		const v = sletVane;
+		if (!v) return;
+		sletter = true;
 		try {
 			await sletAdminVane(forlobId, v.id);
 			vaner = vaner.filter((x) => x.id !== v.id);
+			sletVane = null;
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke slette vanen.';
+		} finally {
+			sletter = false;
 		}
 	}
 </script>
@@ -116,7 +127,7 @@
 							<button
 								type="button"
 								class="fjern-knap"
-								onclick={() => slet(v)}
+								onclick={() => aabnSletBekraeft(v)}
 								aria-label="Slet vane"
 							>
 								Slet
@@ -152,6 +163,18 @@
 		</section>
 	{/if}
 </div>
+
+{#if sletVane}
+	<BekraeftModal
+		titel={'Slet vanen "' + sletVane.label + '"?'}
+		beskrivelse="Vanen fjernes for alle deltagere på forløbet og kan ikke gendannes."
+		bekraeftTekst="Slet"
+		destruktiv
+		arbejder={sletter}
+		onBekraeft={() => void slet()}
+		onAnnuller={() => (sletVane = null)}
+	/>
+{/if}
 
 <style>
 	.page {

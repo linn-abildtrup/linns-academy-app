@@ -14,6 +14,7 @@
 	import type { AiBesked, AiSamtale } from '$lib/content/linnAi';
 	import { Timestamp } from 'firebase/firestore';
 	import Icon from '$lib/components/Icon.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import StjerneRating from '$lib/components/StjerneRating.svelte';
 
@@ -76,14 +77,25 @@
 		aktivSamtale = (await hentSamtale(u.uid, id)) ?? null;
 	}
 
-	async function handleSlet(id: string) {
+	let sletSamtaleId = $state<string | null>(null);
+	let sletter = $state(false);
+	function aabnSletBekraeft(id: string) {
+		sletSamtaleId = id;
+	}
+	async function handleSlet() {
 		const u = user;
-		if (!u) return;
-		if (!confirm('Slet denne samtale?')) return;
-		await sletSamtale(u.uid, id);
-		samtaler = await hentSamtaler(u.uid);
-		if (aktivSamtale?.id === id) {
-			aktivSamtale = samtaler[0] ?? null;
+		const id = sletSamtaleId;
+		if (!u || !id) return;
+		sletter = true;
+		try {
+			await sletSamtale(u.uid, id);
+			samtaler = await hentSamtaler(u.uid);
+			if (aktivSamtale?.id === id) {
+				aktivSamtale = samtaler[0] ?? null;
+			}
+			sletSamtaleId = null;
+		} finally {
+			sletter = false;
 		}
 	}
 
@@ -235,7 +247,7 @@
 								class="slet-mini"
 								type="button"
 								aria-label="Slet samtale"
-								onclick={() => handleSlet(s.id)}
+								onclick={() => aabnSletBekraeft(s.id)}
 							>
 								×
 							</button>
@@ -316,6 +328,18 @@
 		</div>
 	{/if}
 </div>
+
+{#if sletSamtaleId}
+	<BekraeftModal
+		titel="Slet denne samtale?"
+		beskrivelse="Samtalen og alle dens beskeder slettes permanent."
+		bekraeftTekst="Slet"
+		destruktiv
+		arbejder={sletter}
+		onBekraeft={() => void handleSlet()}
+		onAnnuller={() => (sletSamtaleId = null)}
+	/>
+{/if}
 
 <style>
 	.page {

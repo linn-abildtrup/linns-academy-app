@@ -33,6 +33,7 @@
 	import { gemBrugerProfilOgMaal, gemNaeringsindstillinger } from '$lib/userDoc';
 	import type { BrugerProfil, DagligeMaal } from '$lib/types';
 	import BeregnMaalWizard from '$lib/components/BeregnMaalWizard.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import { effektivState, harPremium } from '$lib/utils/userAdgang';
 
 	const getUser = getContext<() => User | null>('user');
@@ -217,12 +218,16 @@
 	}
 
 	let nulstillerApp = $state(false);
+	let viserNulstilBekraeft = $state(false);
+
+	function aabnNulstilBekraeft() {
+		if (nulstillerApp) return;
+		viserNulstilBekraeft = true;
+	}
 
 	async function handleNulstilApp() {
-		const bekraeftet = confirm(
-			'Nulstil app? Du bliver logget ud, og gemte indstillinger på denne enhed slettes (fx hvilken dato du sidst kiggede på).\n\nDine data i appen rører vi ikke — du kan logge ind igen som normalt bagefter.'
-		);
-		if (!bekraeftet || nulstillerApp) return;
+		if (nulstillerApp) return;
+		viserNulstilBekraeft = false;
 		nulstillerApp = true;
 		try {
 			// 1. Log ud af Firebase Auth — fjerner tokens i IndexedDB
@@ -634,7 +639,7 @@
 			indstillinger og cache på telefonen. Dine data (måltider, vaner, træninger)
 			er gemt i skyen og bliver IKKE rørt.
 		</p>
-		<button class="nulstil-app" type="button" onclick={handleNulstilApp} disabled={nulstillerApp}>
+		<button class="nulstil-app" type="button" onclick={aabnNulstilBekraeft} disabled={nulstillerApp}>
 			{nulstillerApp ? 'Nulstiller…' : '🔄 Nulstil appen på denne enhed'}
 		</button>
 	</section>
@@ -647,6 +652,18 @@
 		startProfil={userDoc?.brugerProfil}
 		onBrugMaal={brugBeregnedeMaal}
 		onClose={() => (viserWizard = false)}
+	/>
+{/if}
+
+{#if viserNulstilBekraeft}
+	<BekraeftModal
+		titel="Nulstil app?"
+		beskrivelse="Du bliver logget ud, og gemte indstillinger på denne enhed slettes (fx hvilken dato du sidst kiggede på). Dine data i appen rører vi ikke — du kan logge ind igen som normalt bagefter."
+		bekraeftTekst="Nulstil og log ud"
+		destruktiv
+		arbejder={nulstillerApp}
+		onBekraeft={() => void handleNulstilApp()}
+		onAnnuller={() => (viserNulstilBekraeft = false)}
 	/>
 {/if}
 

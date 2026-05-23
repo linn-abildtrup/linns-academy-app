@@ -22,6 +22,7 @@
 	} from '$lib/content/kost';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 
 	const getUser = getContext<() => User | null>('user');
 	const user = $derived(getUser());
@@ -229,10 +230,14 @@
 		}
 	}
 
+	let viserSletBekraeft = $state(false);
+	function aabnSletBekraeft() {
+		if (!sletter) viserSletBekraeft = true;
+	}
 	async function slet() {
 		const u = user;
 		if (!u || sletter) return;
-		if (!confirm('Slet denne opskrift?')) return;
+		viserSletBekraeft = false;
 		sletter = true;
 		try {
 			await sletMinOpskrift(u.uid, id);
@@ -320,7 +325,7 @@
 				<span>Læg ind som måltid</span>
 			</button>
 
-			<button class="slet-knap" type="button" onclick={slet} disabled={sletter}>
+			<button class="slet-knap" type="button" onclick={aabnSletBekraeft} disabled={sletter}>
 				{sletter ? 'Sletter...' : 'Slet opskrift'}
 			</button>
 		{:else}
@@ -537,6 +542,18 @@
 			</button>
 		</div>
 	</div>
+{/if}
+
+{#if viserSletBekraeft}
+	<BekraeftModal
+		titel="Slet denne opskrift?"
+		beskrivelse="Opskriften slettes permanent og kan ikke gendannes."
+		bekraeftTekst="Slet"
+		destruktiv
+		arbejder={sletter}
+		onBekraeft={() => void slet()}
+		onAnnuller={() => (viserSletBekraeft = false)}
+	/>
 {/if}
 
 <style>

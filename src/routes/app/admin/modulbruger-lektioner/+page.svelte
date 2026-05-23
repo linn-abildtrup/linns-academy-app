@@ -9,6 +9,7 @@
 	import type { ModulbrugerLektion } from '$lib/content/modulbrugerLektioner';
 	import { tomLektion } from '$lib/content/modulbrugerLektioner';
 	import Icon from '$lib/components/Icon.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
 	let lektioner = $state<ModulbrugerLektion[]>([]);
@@ -105,8 +106,14 @@
 		}
 	}
 
-	async function slet(dato: string) {
-		if (!confirm(`Slet lektion for ${visningsDato(dato)}?`)) return;
+	let sletDato = $state<string | null>(null);
+	function aabnSletBekraeft(dato: string) {
+		sletDato = dato;
+	}
+	async function slet() {
+		const dato = sletDato;
+		if (!dato) return;
+		sletDato = null;
 		sletter = dato;
 		try {
 			await sletModulbrugerLektion(dato);
@@ -259,7 +266,7 @@
 						<button
 							class="row-knap row-knap-slet"
 							type="button"
-							onclick={() => slet(l.dato)}
+							onclick={() => aabnSletBekraeft(l.dato)}
 							disabled={sletter === l.dato}
 						>
 							{sletter === l.dato ? 'Sletter...' : 'Slet'}
@@ -270,6 +277,18 @@
 		</div>
 	{/if}
 </div>
+
+{#if sletDato}
+	<BekraeftModal
+		titel="Slet lektion?"
+		beskrivelse={'Lektionen for ' + visningsDato(sletDato) + ' slettes permanent.'}
+		bekraeftTekst="Slet"
+		destruktiv
+		arbejder={sletter === sletDato}
+		onBekraeft={() => void slet()}
+		onAnnuller={() => (sletDato = null)}
+	/>
+{/if}
 
 <style>
 	.page {

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import Icon from '$lib/components/Icon.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import {
 		hentAlleSpoergsmaal,
 		opdaterSpoergsmaalStatus,
@@ -84,16 +85,25 @@
 		}
 	}
 
-	async function slet(id: string) {
-		const ok = confirm('Slet spørgsmålet permanent?');
-		if (!ok) return;
+	let sletId = $state<string | null>(null);
+	let sletter = $state(false);
+	function aabnSletBekraeft(id: string) {
+		sletId = id;
+	}
+	async function slet() {
+		const id = sletId;
+		if (!id) return;
+		sletter = true;
 		try {
 			await sletSpoergsmaal(id);
 			alle = alle.filter((q) => q.id !== id);
+			sletId = null;
 			visToast('Slettet');
 		} catch (e) {
 			console.error(e);
 			visToast('Kunne ikke slette');
+		} finally {
+			sletter = false;
 		}
 	}
 
@@ -257,7 +267,7 @@
 								Markér som brugt
 							</button>
 						{/if}
-						<button type="button" class="ghost-knap sm danger" onclick={() => slet(q.id)}>
+						<button type="button" class="ghost-knap sm danger" onclick={() => aabnSletBekraeft(q.id)}>
 							Slet
 						</button>
 					</div>
@@ -270,6 +280,18 @@
 		<div class="toast" role="status">{toast}</div>
 	{/if}
 </div>
+
+{#if sletId}
+	<BekraeftModal
+		titel="Slet spørgsmålet?"
+		beskrivelse="Spørgsmålet slettes permanent og kan ikke gendannes."
+		bekraeftTekst="Slet"
+		destruktiv
+		arbejder={sletter}
+		onBekraeft={() => void slet()}
+		onAnnuller={() => (sletId = null)}
+	/>
+{/if}
 
 <style>
 	.page {

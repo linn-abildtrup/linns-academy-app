@@ -7,6 +7,7 @@
 	} from '$lib/firestore/kost';
 	import { KATEGORI_LABELS, type Fodevare } from '$lib/content/kost';
 	import Icon from '$lib/components/Icon.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
 	let alle = $state<Fodevare[]>([]);
@@ -55,10 +56,15 @@
 		}
 	}
 
-	async function slet(f: Fodevare) {
+	let sletFood = $state<Fodevare | null>(null);
+	function aabnSletBekraeft(f: Fodevare) {
 		if (!f.id || arbejder) return;
-		const ok = confirm(`Slet '${f.name}' permanent? Det kan ikke fortrydes.`);
-		if (!ok) return;
+		sletFood = f;
+	}
+	async function slet() {
+		const f = sletFood;
+		if (!f || !f.id || arbejder) return;
+		sletFood = null;
 		arbejder = f.id;
 		try {
 			await sletCommunityFodevare(f.id);
@@ -149,7 +155,7 @@
 							class="action danger"
 							type="button"
 							disabled={arbejder === f.id}
-							onclick={() => slet(f)}
+							onclick={() => aabnSletBekraeft(f)}
 						>
 							Slet
 						</button>
@@ -159,6 +165,18 @@
 		</div>
 	{/if}
 </div>
+
+{#if sletFood}
+	<BekraeftModal
+		titel={'Slet "' + sletFood.name + '" permanent?'}
+		beskrivelse="Fødevaren fjernes for alle brugere og kan ikke gendannes."
+		bekraeftTekst="Slet"
+		destruktiv
+		arbejder={arbejder === sletFood.id}
+		onBekraeft={() => void slet()}
+		onAnnuller={() => (sletFood = null)}
+	/>
+{/if}
 
 <style>
 	.page {

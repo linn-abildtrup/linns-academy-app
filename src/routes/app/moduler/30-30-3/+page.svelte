@@ -41,6 +41,7 @@
 	import { lookupBarcode } from '$lib/content/openFoodFacts';
 	import BarcodeScanner from '$lib/components/BarcodeScanner.svelte';
 	import TilfoejFodevareDialog from '$lib/components/TilfoejFodevareDialog.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import type { FavoritMaaltid } from '$lib/content/kost';
 	import {
 		ALLE_DIET_TAGS,
@@ -407,29 +408,45 @@
 		}
 	}
 
-	// Bekræftelses-modal til skjul-fødevare — erstatter native confirm() med
-	// app'ens egen modal-stil
-	let skjulBekraeft = $state<Fodevare | null>(null);
-	let skjulArbejder = $state(false);
+	// Generisk bekræftelses-modal (erstatter alle native confirm()-kald).
+	// onBekraeft kaldes når brugeren trykker bekræft; modalen lukker
+	// automatisk når handlingen er færdig (eller med det samme hvis funktionen
+	// ikke returnerer en Promise).
+	type BekraeftOpts = {
+		titel: string;
+		beskrivelse?: string;
+		bekraeftTekst?: string;
+		destruktiv?: boolean;
+		onBekraeft: () => Promise<void> | void;
+	};
+	let bekraeft = $state<BekraeftOpts | null>(null);
+	let bekraeftArbejder = $state(false);
+
+	async function udforBekraeft() {
+		if (!bekraeft || bekraeftArbejder) return;
+		const handler = bekraeft.onBekraeft;
+		bekraeftArbejder = true;
+		try {
+			await Promise.resolve(handler());
+			bekraeft = null;
+		} catch (err) {
+			console.warn('Bekræftelses-handler fejlede:', err);
+		} finally {
+			bekraeftArbejder = false;
+		}
+	}
 
 	function skjulFodevare(food: Fodevare, e: Event) {
 		e.stopPropagation();
-		skjulBekraeft = food;
-	}
-
-	async function bekraeftSkjul() {
 		const u = user;
-		const food = skjulBekraeft;
-		if (!u || !food || skjulArbejder) return;
-		skjulArbejder = true;
-		try {
-			await toggleSkjultFodevare(u.uid, food.id, true);
-			skjulBekraeft = null;
-		} catch (err) {
-			console.warn('Kunne ikke skjule fødevaren:', err);
-		} finally {
-			skjulArbejder = false;
-		}
+		if (!u) return;
+		bekraeft = {
+			titel: 'Fjern fra din oversigt?',
+			beskrivelse: `${food.name} bliver fjernet fra din søgning og dine lister. Den slettes ikke for andre brugere — du kan altid hente den tilbage senere hvis du fortryder.`,
+			bekraeftTekst: 'Fjern fra oversigt',
+			destruktiv: true,
+			onBekraeft: () => toggleSkjultFodevare(u.uid, food.id, true)
+		};
 	}
 
 	async function indlaesSenesteFodevarer(uid: string) {
@@ -524,51 +541,76 @@
 	}
 
 	function indlaesFavoritIMaaltid(fav: FavoritMaaltid) {
+		const apply = () => {
+			maaltid = fav.items.map((i) => ({ ...i }));
+			pendingMaaltidsNavn = fav.navn;
+			skiftTab('maaltid');
+		};
 		if (maaltid.length > 0) {
-			const ok = confirm(
-				'Du har allerede et måltid i gang. Vil du erstatte det med ' + fav.navn + '?'
-			);
-			if (!ok) return;
+			bekraeft = {
+				titel: 'Erstat dit nuværende måltid?',
+				beskrivelse: `Du har allerede et måltid i gang. Det erstattes af "${fav.navn}".`,
+				bekraeftTekst: 'Erstat',
+				onBekraeft: apply
+			};
+		} else {
+			apply();
 		}
-		maaltid = fav.items.map((i) => ({ ...i }));
-		pendingMaaltidsNavn = fav.navn;
-		skiftTab('maaltid');
 	}
 
-	async function sletFavoritKlik(id: string, navn: string) {
+	function sletFavoritKlik(id: string, navn: string) {
 		const u = user;
 		if (!u) return;
-		const ok = confirm(`Slet favoritten "${navn}"?`);
-		if (!ok) return;
-		try {
-			await sletFavorit(u.uid, id);
-			favoritter = favoritter.filter((f) => f.id !== id);
-		} catch (e) {
-			console.error(e);
-		}
+		bekraeft = {
+			titel: `Slet favoritten "${navn}"?`,
+			beskrivelse: 'Favoritten fjernes permanent fra din liste.',
+			bekraeftTekst: 'Slet',
+			destruktiv: true,
+			onBekraeft: async () => {
+				try {
+					await sletFavorit(u.uid, id);
+					favoritter = favoritter.filter((f) => f.id !== id);
+				} catch (e) {
+					console.error(e);
+				}
+			}
+		};
 	}
 
 	function startRedigerFavorit(fav: FavoritMaaltid) {
+		const apply = () => {
+			maaltid = fav.items.map((i) => ({ ...i }));
+			redigererFavorit = { id: fav.id, navn: fav.navn };
+			redigerNavn = fav.navn;
+			redigerBesked = null;
+			skiftTab('maaltid');
+		};
 		if (maaltid.length > 0) {
-			const ok = confirm(
-				'Du har et måltid i gang. Det erstattes af favoritten du vil redigere.'
-			);
-			if (!ok) return;
+			bekraeft = {
+				titel: 'Erstat dit nuværende måltid?',
+				beskrivelse:
+					'Du har et måltid i gang. Det erstattes af favoritten du vil redigere.',
+				bekraeftTekst: 'Fortsæt',
+				onBekraeft: apply
+			};
+		} else {
+			apply();
 		}
-		maaltid = fav.items.map((i) => ({ ...i }));
-		redigererFavorit = { id: fav.id, navn: fav.navn };
-		redigerNavn = fav.navn;
-		redigerBesked = null;
-		skiftTab('maaltid');
 	}
 
 	function annullerRediger() {
-		const ok = confirm('Kassér ændringer? Favoritten forbliver uændret.');
-		if (!ok) return;
-		maaltid = [];
-		localStorage.setItem(STORAGE_KEY, '[]');
-		redigererFavorit = null;
-		redigerBesked = null;
+		bekraeft = {
+			titel: 'Kassér ændringer?',
+			beskrivelse: 'Favoritten forbliver uændret.',
+			bekraeftTekst: 'Kassér',
+			destruktiv: true,
+			onBekraeft: () => {
+				maaltid = [];
+				localStorage.setItem(STORAGE_KEY, '[]');
+				redigererFavorit = null;
+				redigerBesked = null;
+			}
+		};
 	}
 
 	async function gemRedigeretFavorit() {
@@ -959,26 +1001,39 @@
 	}
 
 	function startRedigerMaaltid(m: GemtMaaltid) {
+		const apply = () => {
+			maaltid = m.items.map((i) => ({ ...i }));
+			redigererMaaltid = { id: m.id, navn: m.navn, type: m.type, dato: m.dato };
+			// Annullér samtidig favorit-redigering hvis aktiv
+			redigererFavorit = null;
+			redigerBesked = null;
+			skiftTab('maaltid');
+		};
 		if (maaltid.length > 0 && redigererMaaltid?.id !== m.id) {
-			const ok = confirm(
-				'Du har et måltid i gang. Det erstattes af måltidet du vil redigere.'
-			);
-			if (!ok) return;
+			bekraeft = {
+				titel: 'Erstat dit nuværende måltid?',
+				beskrivelse:
+					'Du har et måltid i gang. Det erstattes af måltidet du vil redigere.',
+				bekraeftTekst: 'Fortsæt',
+				onBekraeft: apply
+			};
+		} else {
+			apply();
 		}
-		maaltid = m.items.map((i) => ({ ...i }));
-		redigererMaaltid = { id: m.id, navn: m.navn, type: m.type, dato: m.dato };
-		// Annullér samtidig favorit-redigering hvis aktiv
-		redigererFavorit = null;
-		redigerBesked = null;
-		skiftTab('maaltid');
 	}
 
 	function annullerRedigerMaaltid() {
-		const ok = confirm('Kassér ændringer? Måltidet i dagbogen forbliver uændret.');
-		if (!ok) return;
-		maaltid = [];
-		localStorage.setItem(STORAGE_KEY, '[]');
-		redigererMaaltid = null;
+		bekraeft = {
+			titel: 'Kassér ændringer?',
+			beskrivelse: 'Måltidet i dagbogen forbliver uændret.',
+			bekraeftTekst: 'Kassér',
+			destruktiv: true,
+			onBekraeft: () => {
+				maaltid = [];
+				localStorage.setItem(STORAGE_KEY, '[]');
+				redigererMaaltid = null;
+			}
+		};
 	}
 
 	// Gem-modal
@@ -2523,57 +2578,16 @@
 	</div>
 {/if}
 
-{#if skjulBekraeft}
-	<div
-		class="modal-bag"
-		role="dialog"
-		aria-modal="true"
-		use:portalToBody
-		onclick={(e) => {
-			if (e.target === e.currentTarget) skjulBekraeft = null;
-		}}
-		onkeydown={(e) => {
-			if (e.key === 'Escape') skjulBekraeft = null;
-		}}
-		tabindex="-1"
-	>
-		<div class="modal bekraeft-modal">
-			<div class="modal-head">
-				<div class="modal-titel">Fjern fra din oversigt?</div>
-				<button
-					class="modal-luk"
-					type="button"
-					onclick={() => (skjulBekraeft = null)}
-					aria-label="Luk"
-				>
-					×
-				</button>
-			</div>
-			<p class="bekraeft-tekst">
-				<strong>{skjulBekraeft.name}</strong> bliver fjernet fra din søgning og
-				dine lister. Den slettes ikke for andre brugere — du kan altid hente
-				den tilbage senere hvis du fortryder.
-			</p>
-			<div class="bekraeft-handlinger">
-				<button
-					type="button"
-					class="ghost-knap"
-					onclick={() => (skjulBekraeft = null)}
-					disabled={skjulArbejder}
-				>
-					Annullér
-				</button>
-				<button
-					type="button"
-					class="primary-knap bekraeft-fjern"
-					onclick={() => void bekraeftSkjul()}
-					disabled={skjulArbejder}
-				>
-					{skjulArbejder ? 'Fjerner…' : 'Fjern fra oversigt'}
-				</button>
-			</div>
-		</div>
-	</div>
+{#if bekraeft}
+	<BekraeftModal
+		titel={bekraeft.titel}
+		beskrivelse={bekraeft.beskrivelse}
+		bekraeftTekst={bekraeft.bekraeftTekst}
+		destruktiv={bekraeft.destruktiv}
+		arbejder={bekraeftArbejder}
+		onBekraeft={() => void udforBekraeft()}
+		onAnnuller={() => (bekraeft = null)}
+	/>
 {/if}
 
 {#if nyDialog && user}
@@ -5011,40 +5025,4 @@
 		font-variant-numeric: tabular-nums;
 	}
 
-	/* Bekræftelses-modal til skjul-fødevare (erstatter native confirm()) */
-	.bekraeft-modal {
-		padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-		max-height: none;
-		height: auto;
-	}
-
-	.bekraeft-tekst {
-		font-size: calc(13.5px * var(--fs-scale, 1));
-		color: var(--text2);
-		margin: 0;
-		line-height: 1.5;
-	}
-
-	.bekraeft-tekst strong {
-		color: var(--text);
-	}
-
-	.bekraeft-handlinger {
-		display: flex;
-		gap: 8px;
-		margin-top: 4px;
-	}
-
-	.bekraeft-handlinger .ghost-knap,
-	.bekraeft-handlinger .primary-knap {
-		flex: 1;
-		margin: 0;
-	}
-
-	.bekraeft-fjern {
-		background: #c5544a;
-	}
 </style>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Symptomcheck | Linn's Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --plum: #2A0F1E;
+    --terracotta: #C4624A;
+    --dusty-rose: #FDF4F7;
+    --rose-dark: #F3EDF1;
+    --warm-beige: #F5F0EB;
+    --dark: #333;
+    --med: #555;
+    --light: #999;
+    --border: #e8e4e0;
+    --bar-bg: #f0ece8;
+    --somatisk: #C4624A;
+    --psykologisk: #2A0F1E;
+    --urogenital: #8B5E3C;
+    --somatisk-bg: #FDF4F7;
+    --psykologisk-bg: #F3EDF1;
+    --urogenital-bg: #F5F0EB;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', system-ui, sans-serif; color: var(--dark); background: #fff; -webkit-font-smoothing: antialiased; }
+  .container { max-width: 600px; margin: 0 auto; padding: 2rem 1rem; }
+  .brand { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: var(--terracotta); text-align: center; margin-bottom: 4px; }
+  h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 24px; color: var(--plum); text-align: center; font-weight: 500; margin-bottom: 8px; }
+  .subtitle { font-size: 14px; color: var(--light); text-align: center; line-height: 1.6; margin-bottom: 1.5rem; }
+  .measure-points { display: flex; gap: 8px; justify-content: center; margin-bottom: 1.5rem; }
+  .measure-btn { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid #ddd; background: transparent; color: var(--light); font-family: 'DM Sans', system-ui, sans-serif; transition: all 0.15s ease; }
+  .measure-btn.active { border-color: var(--terracotta); background: var(--dusty-rose); color: var(--terracotta); }
+  .subscale-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; padding: 6px 12px; border-radius: 6px; display: inline-block; }
+  .subscale-group { margin-top: 24px; }
+  .subscale-group:first-child { margin-top: 0; }
+  .item-card { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 10px; transition: border-color 0.2s ease; }
+  .item-card.answered { border-color: rgba(0,0,0,0.15); }
+  .item-title { font-size: 15px; font-weight: 500; color: var(--plum); margin-bottom: 2px; }
+  .item-desc { font-size: 12px; color: var(--light); margin-bottom: 12px; line-height: 1.4; }
+  .severity-row { display: flex; gap: 6px; }
+  .sev-btn { flex: 1; padding: 8px 4px; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--light); font-family: 'DM Sans', system-ui, sans-serif; transition: all 0.15s ease; }
+  .sev-btn.selected { border-width: 1.5px; }
+  .progress { font-size: 13px; color: var(--light); text-align: center; margin: 1.5rem 0 12px; }
+  .submit-btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: default; background: #ddd; color: var(--light); font-family: 'DM Sans', system-ui, sans-serif; transition: all 0.2s ease; }
+  .submit-btn.ready { background: var(--plum); color: #fff; cursor: pointer; }
+  .submit-btn.ready:hover { opacity: 0.9; }
+  .info-box { margin-top: 2rem; background: var(--dusty-rose); border-radius: 10px; padding: 1rem 1.25rem; }
+  .info-box p { font-size: 11px; color: #777; line-height: 1.6; }
+
+  /* Results */
+  .results { display: none; }
+  .results.show { display: block; }
+  .questionnaire.hide { display: none; }
+  .total-box { border-radius: 12px; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem; }
+  .total-score { font-size: 42px; font-weight: 500; margin-bottom: 4px; font-family: 'Playfair Display', Georgia, serif; }
+  .total-max { font-size: 11px; color: var(--light); margin-bottom: 8px; }
+  .total-label { font-size: 16px; font-weight: 500; }
+  .subscales-row { display: flex; gap: 12px; margin-bottom: 2rem; }
+  .subscale-card { flex: 1; border-radius: 10px; padding: 1rem; text-align: center; }
+  .subscale-score { font-size: 24px; font-weight: 500; margin-bottom: 4px; font-family: 'Playfair Display', Georgia, serif; }
+  .subscale-max { font-size: 10px; color: var(--light); margin-bottom: 2px; }
+  .subscale-name { font-size: 12px; font-weight: 500; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .bar-label { font-size: 12px; color: var(--med); width: 160px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 8px; background: var(--bar-bg); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+  .bar-val { font-size: 13px; font-weight: 500; width: 20px; text-align: right; }
+  .reset-btn { width: 100%; padding: 14px; border: 1px solid var(--terracotta); background: transparent; color: var(--terracotta); border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', system-ui, sans-serif; }
+  .reset-btn:hover { background: var(--dusty-rose); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- QUESTIONNAIRE -->
+  <div id="questionnaire" class="questionnaire">
+    <p class="brand">Linn's Academy</p>
+    <h1>Hvordan har din krop det lige nu?</h1>
+    <p class="subtitle">Mærk efter og vælg den sværhedsgrad der passer bedst for hvert symptom. Der er ingen rigtige eller forkerte svar.</p>
+
+    <div class="measure-points">
+      <button class="measure-btn active" data-point="baseline" onclick="setMeasurePoint(this)">Startpunkt (dag 0)</button>
+      <button class="measure-btn" data-point="midtvejs" onclick="setMeasurePoint(this)">Midtvejs (dag 10-11)</button>
+      <button class="measure-btn" data-point="afslutning" onclick="setMeasurePoint(this)">Afslutning (dag 21)</button>
+    </div>
+
+    <div id="items-container"></div>
+
+    <p class="progress" id="progress">0 af 11 besvaret</p>
+    <button class="submit-btn" id="submitBtn" onclick="showResults()">Se mit resultat</button>
+
+    <div class="info-box">
+      <p>Denne symptomtjekliste er baseret på Menopause Rating Scale (MRS), som bruges i forskning verden over til at måle overgangsaldersymptomer. Tilpasset til dansk af Linn's Academy. Kilde: Heinemann et al., Health Qual Life Outcomes 2003;1:28.</p>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results" class="results">
+    <p class="brand">Linn's Academy</p>
+    <h1>Din symptomprofil</h1>
+    <p class="subtitle" id="resultMeasureLabel"></p>
+
+    <div class="total-box" id="totalBox">
+      <div class="total-score" id="totalScore"></div>
+      <div class="total-max">af 44 mulige</div>
+      <div class="total-label" id="totalLabel"></div>
+    </div>
+
+    <div class="subscales-row" id="subscalesRow"></div>
+
+    <p style="font-size:13px;color:#777;margin-bottom:12px;">Dine svar i overblik</p>
+    <div id="barsContainer"></div>
+
+    <div class="info-box" style="margin-bottom:1.5rem;">
+      <p style="font-size:12px;color:var(--plum);margin-bottom:6px;font-weight:500;">Hvad er dette?</p>
+      <p>Du har lige udfyldt en internationalt anerkendt symptomtjekliste for kvinder i overgangsalderen (Menopause Rating Scale). Den bruges verden over til at måle, hvordan symptomer udvikler sig over tid. Ved at udfylde den igen senere i forløbet, kan du se din egen udvikling sort på hvidt.</p>
+    </div>
+
+    <button class="reset-btn" onclick="resetAll()">Udfyld igen</button>
+  </div>
+
+</div>
+
+<script>
+const MRS_ITEMS = [
+  { id:1, subscale:"somatisk", da:"Hedeture og svedeture", description:"Pludselige varmebølger, svedanfald, nattesved" },
+  { id:2, subscale:"somatisk", da:"Hjertebanken", description:"Hjertet der banker hårdt, springer et slag over, løber hurtigt, eller trykken for brystet" },
+  { id:3, subscale:"somatisk", da:"Søvnproblemer", description:"Svært ved at falde i søvn, vågner midt om natten, vågner for tidligt" },
+  { id:4, subscale:"psykologisk", da:"Nedtrykthed og humørsvingninger", description:"Føler mig nede, trist, tårer tæt på, mangler drivkraft, humøret svinger" },
+  { id:5, subscale:"psykologisk", da:"Irritabilitet", description:"Kort lunte, indre spænding, let til at blive frustreret" },
+  { id:6, subscale:"psykologisk", da:"Uro og ængstelse", description:"Indre uro, bekymringstanker, følelse af panik" },
+  { id:7, subscale:"psykologisk", da:"Træthed og hjernetåge", description:"Mangler overskud, dårlig hukommelse, svært ved at koncentrere mig, glemsomhed" },
+  { id:8, subscale:"urogenital", da:"Ændringer i sexlyst", description:"Mindre lyst til sex, ændret seksuel tilfredshed" },
+  { id:9, subscale:"urogenital", da:"Blæreproblemer", description:"Skal tisse oftere, svært ved at holde sig, lidt urinlækage" },
+  { id:10, subscale:"urogenital", da:"Tørhed nedadtil", description:"Tørhed eller svien i skeden, ubehag ved samleje" },
+  { id:11, subscale:"somatisk", da:"Led- og muskelsmerter", description:"Ømhed i led, stivhed, muskelsmerter, gigtlignende gener" },
+];
+
+const SEVERITY = [
+  { value:0, label:"Ingen" },
+  { value:1, label:"Lidt" },
+  { value:2, label:"En del" },
+  { value:3, label:"Meget" },
+  { value:4, label:"Voldsomt" },
+];
+
+const SUBSCALES = {
+  somatisk:    { label:"Krop og søvn",    items:[1,2,3,11], color:"#C4624A", bg:"#FDF4F7" },
+  psykologisk: { label:"Humør og energi", items:[4,5,6,7],  color:"#2A0F1E", bg:"#F3EDF1" },
+  urogenital:  { label:"Underliv og blære",items:[8,9,10],   color:"#8B5E3C", bg:"#F5F0EB" },
+};
+
+let scores = {};
+let measurePoint = "baseline";
+
+function buildItems() {
+  const c = document.getElementById('items-container');
+  c.innerHTML = '';
+  let lastSubscale = '';
+  MRS_ITEMS.forEach((item, idx) => {
+    const sub = SUBSCALES[item.subscale];
+    if (item.subscale !== lastSubscale) {
+      const group = document.createElement('div');
+      group.className = 'subscale-group';
+      if (idx > 0) group.style.marginTop = '24px';
+      const lbl = document.createElement('div');
+      lbl.className = 'subscale-label';
+      lbl.style.color = sub.color;
+      lbl.style.background = sub.bg;
+      lbl.textContent = sub.label;
+      group.appendChild(lbl);
+      c.appendChild(group);
+      lastSubscale = item.subscale;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.id = 'card-' + item.id;
+    card.innerHTML = `
+      <div class="item-title">${item.id}. ${item.da}</div>
+      <div class="item-desc">${item.description}</div>
+      <div class="severity-row" id="sev-${item.id}"></div>
+    `;
+    c.appendChild(card);
+
+    const sevRow = card.querySelector('.severity-row');
+    SEVERITY.forEach(sev => {
+      const btn = document.createElement('button');
+      btn.className = 'sev-btn';
+      btn.textContent = sev.label;
+      btn.dataset.itemId = item.id;
+      btn.dataset.value = sev.value;
+      btn.onclick = () => selectSeverity(item.id, sev.value, sub.color, sub.bg);
+      sevRow.appendChild(btn);
+    });
+  });
+}
+
+function selectSeverity(itemId, value, color, bg) {
+  scores[itemId] = value;
+  const card = document.getElementById('card-' + itemId);
+  card.classList.add('answered');
+  card.style.borderColor = color + '40';
+
+  const btns = document.querySelectorAll(`#sev-${itemId} .sev-btn`);
+  btns.forEach(btn => {
+    if (parseInt(btn.dataset.value) === value) {
+      btn.classList.add('selected');
+      btn.style.borderColor = color;
+      btn.style.background = bg;
+      btn.style.color = color;
+    } else {
+      btn.classList.remove('selected');
+      btn.style.borderColor = '';
+      btn.style.background = '';
+      btn.style.color = '';
+    }
+  });
+
+  updateProgress();
+}
+
+function updateProgress() {
+  const count = Object.keys(scores).length;
+  document.getElementById('progress').textContent = `${count} af 11 besvaret`;
+  const btn = document.getElementById('submitBtn');
+  if (count === 11) {
+    btn.classList.add('ready');
+  } else {
+    btn.classList.remove('ready');
+  }
+}
+
+function setMeasurePoint(el) {
+  document.querySelectorAll('.measure-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  measurePoint = el.dataset.point;
+}
+
+function getInterpretation(total) {
+  if (total <= 4)  return { label:"Ingen eller meget få gener", color:"#1D9E75" };
+  if (total <= 8)  return { label:"Lette gener", color:"#639922" };
+  if (total <= 16) return { label:"Mærkbare gener", color:"#BA7517" };
+  if (total <= 24) return { label:"Tydelige gener i hverdagen", color:"#C4624A" };
+  return { label:"Kraftige gener der fylder meget", color:"#A32D2D" };
+}
+
+function showResults() {
+  if (Object.keys(scores).length < 11) return;
+
+  const total = Object.values(scores).reduce((a,b) => a+b, 0);
+  const interp = getInterpretation(total);
+
+  document.getElementById('questionnaire').classList.add('hide');
+  document.getElementById('results').classList.add('show');
+
+  const labels = { baseline:"Startpunkt (dag 0)", midtvejs:"Midtvejs (dag 10-11)", afslutning:"Afslutning (dag 21)" };
+  document.getElementById('resultMeasureLabel').textContent = labels[measurePoint];
+
+  const totalBox = document.getElementById('totalBox');
+  totalBox.style.background = interp.color + '12';
+  totalBox.style.border = `1px solid ${interp.color}33`;
+  document.getElementById('totalScore').textContent = total;
+  document.getElementById('totalScore').style.color = interp.color;
+  document.getElementById('totalLabel').textContent = interp.label;
+  document.getElementById('totalLabel').style.color = interp.color;
+
+  const subRow = document.getElementById('subscalesRow');
+  subRow.innerHTML = '';
+  Object.entries(SUBSCALES).forEach(([key, sub]) => {
+    const score = sub.items.reduce((s, id) => s + (scores[id] || 0), 0);
+    const max = sub.items.length * 4;
+    subRow.innerHTML += `
+      <div class="subscale-card" style="background:${sub.bg};border:1px solid ${sub.color}20;">
+        <div class="subscale-score" style="color:${sub.color};">${score}</div>
+        <div class="subscale-max">af ${max}</div>
+        <div class="subscale-name" style="color:${sub.color};">${sub.label}</div>
+      </div>
+    `;
+  });
+
+  const bars = document.getElementById('barsContainer');
+  bars.innerHTML = '';
+  MRS_ITEMS.forEach(item => {
+    const val = scores[item.id];
+    const pct = (val / 4) * 100;
+    const color = SUBSCALES[item.subscale].color;
+    bars.innerHTML += `
+      <div class="bar-row">
+        <span class="bar-label">${item.da}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color};"></div></div>
+        <span class="bar-val" style="color:${color};">${val}</span>
+      </div>
+    `;
+  });
+}
+
+function resetAll() {
+  scores = {};
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('questionnaire').classList.remove('hide');
+  document.querySelectorAll('.sev-btn').forEach(btn => {
+    btn.classList.remove('selected');
+    btn.style.borderColor = '';
+    btn.style.background = '';
+    btn.style.color = '';
+  });
+  document.querySelectorAll('.item-card').forEach(card => {
+    card.classList.remove('answered');
+    card.style.borderColor = '';
+  });
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+buildItems();
+updateProgress();
+</script>
+</body>
+</html>

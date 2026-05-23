@@ -11,6 +11,7 @@
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 
 	const forlobId = $derived(page.params.id ?? '');
 	const programId = $derived(page.params.programId ?? '');
@@ -106,12 +107,15 @@
 		}
 	}
 
+	let viserGenererBekraeft = $state(false);
+	function aabnGenererBekraeft() {
+		if (!programData || genererStatus === 'arbejder') return;
+		viserGenererBekraeft = true;
+	}
+
 	async function genererStandardprogram() {
 		if (!programData) return;
-		const bekraeftet = confirm(
-			`Det vil overskrive alle ${programData.dage.length} dage med et standardprogram. Er du sikker?`
-		);
-		if (!bekraeftet) return;
+		viserGenererBekraeft = false;
 
 		genererStatus = 'arbejder';
 		genererBesked = '';
@@ -243,7 +247,7 @@
 			<button
 				class="btn primary"
 				type="button"
-				onclick={genererStandardprogram}
+				onclick={aabnGenererBekraeft}
 				disabled={genererStatus === 'arbejder'}
 			>
 				{#if genererStatus === 'arbejder'}
@@ -294,6 +298,20 @@
 		</section>
 	{/if}
 </div>
+
+{#if viserGenererBekraeft && programData}
+	<BekraeftModal
+		titel="Overskriv programmet?"
+		beskrivelse={'Det vil overskrive alle ' +
+			programData.dage.length +
+			' dage med et standardprogram. Er du sikker?'}
+		bekraeftTekst="Overskriv"
+		destruktiv
+		arbejder={genererStatus === 'arbejder'}
+		onBekraeft={() => void genererStandardprogram()}
+		onAnnuller={() => (viserGenererBekraeft = false)}
+	/>
+{/if}
 
 <style>
 	.page {

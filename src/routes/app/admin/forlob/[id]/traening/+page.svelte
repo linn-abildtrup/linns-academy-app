@@ -30,6 +30,7 @@
 	} from '$lib/firestore/tildelinger';
 	import { alleProdukter } from '$lib/content/produkter';
 	import Icon from '$lib/components/Icon.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 
 	type Deltager = {
 		uid: string;
@@ -207,14 +208,24 @@
 		}
 	}
 
-	async function bekraeftSlet(p: TrainingProgram) {
-		if (!confirm(`Slet '${p.navn}' og alle dets dage permanent?`)) return;
+	let sletProgram = $state<TrainingProgram | null>(null);
+	let sletter = $state(false);
+	function aabnSletBekraeft(p: TrainingProgram) {
+		sletProgram = p;
+	}
+	async function bekraeftSlet() {
+		const p = sletProgram;
+		if (!p) return;
+		sletter = true;
 		try {
 			await sletForlobsProgram(forlobId, p.id);
 			await indlaes();
+			sletProgram = null;
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke slette programmet.';
+		} finally {
+			sletter = false;
 		}
 	}
 
@@ -352,7 +363,7 @@
 							<button
 								class="slet-mini"
 								type="button"
-								onclick={() => bekraeftSlet(p)}
+								onclick={() => aabnSletBekraeft(p)}
 								aria-label="Slet program"
 								title="Slet program"
 							>
@@ -557,6 +568,18 @@
 			</button>
 		</div>
 	</div>
+{/if}
+
+{#if sletProgram}
+	<BekraeftModal
+		titel={'Slet "' + sletProgram.navn + '"?'}
+		beskrivelse="Programmet og alle dets dage slettes permanent og kan ikke gendannes."
+		bekraeftTekst="Slet"
+		destruktiv
+		arbejder={sletter}
+		onBekraeft={() => void bekraeftSlet()}
+		onAnnuller={() => (sletProgram = null)}
+	/>
 {/if}
 
 <style>

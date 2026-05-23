@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import Icon from '$lib/components/Icon.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import type { Exercise } from '$lib/content/mikrotraening';
 	import { hentAlleExercises } from '$lib/firestore/mikrotraening';
 	import {
@@ -138,9 +139,14 @@
 		}
 	}
 
+	let viserSletBekraeft = $state(false);
+	function aabnSletBekraeft() {
+		if (!user || gemmer || erNyt) return;
+		viserSletBekraeft = true;
+	}
 	async function slet() {
 		if (!user || gemmer || erNyt) return;
-		if (!confirm('Slet dette program permanent?')) return;
+		viserSletBekraeft = false;
 		gemmer = true;
 		try {
 			await sletMitProgram(user.uid, programId);
@@ -295,7 +301,7 @@
 				<button
 					type="button"
 					class="slet-knap"
-					onclick={slet}
+					onclick={aabnSletBekraeft}
 					disabled={gemmer}
 				>
 					Slet program
@@ -353,6 +359,18 @@
 			{/if}
 		</div>
 	</div>
+{/if}
+
+{#if viserSletBekraeft}
+	<BekraeftModal
+		titel="Slet dette program?"
+		beskrivelse="Programmet slettes permanent og kan ikke gendannes."
+		bekraeftTekst="Slet"
+		destruktiv
+		arbejder={gemmer}
+		onBekraeft={() => void slet()}
+		onAnnuller={() => (viserSletBekraeft = false)}
+	/>
 {/if}
 
 <style>

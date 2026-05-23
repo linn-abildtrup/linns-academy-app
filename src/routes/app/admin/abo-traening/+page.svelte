@@ -18,6 +18,7 @@
 	import { hentAlleExercises } from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 
 	type ProduktType = 'basis' | 'premium';
 	let aktivTab = $state<ProduktType>('basis');
@@ -80,12 +81,16 @@
 		}
 	});
 
+	let viserAutoGenererBekraeft = $state(false);
+
+	function aabnAutoGenererBekraeft() {
+		if (genererStatus === 'arbejder') return;
+		viserAutoGenererBekraeft = true;
+	}
+
 	async function autoGenerer() {
 		if (genererStatus === 'arbejder') return;
-		const bekraeftet = confirm(
-			`Det vil ${aktivProgram ? 'overskrive' : 'oprette'} programmet for ${aktivTab}-abo. Er du sikker?`
-		);
-		if (!bekraeftet) return;
+		viserAutoGenererBekraeft = false;
 
 		genererStatus = 'arbejder';
 		genererBesked = '';
@@ -246,7 +251,7 @@
 			<button
 				class="primary-knap"
 				type="button"
-				onclick={autoGenerer}
+				onclick={aabnAutoGenererBekraeft}
 				disabled={genererStatus === 'arbejder'}
 			>
 				{#if genererStatus === 'arbejder'}
@@ -291,6 +296,20 @@
 		{/if}
 	{/if}
 </div>
+
+{#if viserAutoGenererBekraeft}
+	<BekraeftModal
+		titel="{aktivProgram ? 'Overskriv' : 'Opret'} programmet?"
+		beskrivelse="Det vil {aktivProgram
+			? 'overskrive det eksisterende program'
+			: 'oprette et nyt program'} for {aktivTab}-abo. Er du sikker?"
+		bekraeftTekst={aktivProgram ? 'Overskriv' : 'Opret'}
+		destruktiv={!!aktivProgram}
+		arbejder={genererStatus === 'arbejder'}
+		onBekraeft={() => void autoGenerer()}
+		onAnnuller={() => (viserAutoGenererBekraeft = false)}
+	/>
+{/if}
 
 <style>
 	.page {

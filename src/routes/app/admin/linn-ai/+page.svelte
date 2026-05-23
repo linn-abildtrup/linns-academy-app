@@ -10,6 +10,7 @@
 	import type { VidenbaseDokument, VidenbaseKilde } from '$lib/content/linnAi';
 	import { chunkTekst, DEFAULT_SYSTEM_PROMPT } from '$lib/content/linnAi';
 	import Icon from '$lib/components/Icon.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
 	let dokumenter = $state<VidenbaseDokument[]>([]);
@@ -56,9 +57,13 @@
 		}
 	}
 
+	let viserNulstilBekraeft = $state(false);
+	function aabnNulstilBekraeft() {
+		viserNulstilBekraeft = true;
+	}
 	function nulstilPrompt() {
-		if (!confirm('Nulstil til standard-promptet?')) return;
 		systemPrompt = DEFAULT_SYSTEM_PROMPT;
+		viserNulstilBekraeft = false;
 	}
 
 	async function handleFiles(files: FileList | File[]) {
@@ -145,14 +150,27 @@
 		if (input.files) handleFiles(input.files);
 	}
 
-	async function handleSlet(id: string, navn: string) {
-		if (!confirm(`Slet '${navn}' fra videnbasen?`)) return;
+	let sletDok = $state<{ id: string; navn: string } | null>(null);
+	let sletter = $state(false);
+	let sletFejl = $state<string | null>(null);
+	function aabnSletBekraeft(id: string, navn: string) {
+		sletDok = { id, navn };
+		sletFejl = null;
+	}
+	async function handleSlet() {
+		const d = sletDok;
+		if (!d) return;
+		sletter = true;
+		sletFejl = null;
 		try {
-			await sletVidenbaseDokument(id);
+			await sletVidenbaseDokument(d.id);
 			dokumenter = await hentAlleVidenbaseDokumenter();
+			sletDok = null;
 		} catch (e) {
 			console.error(e);
-			alert('Kunne ikke slette.');
+			sletFejl = 'Kunne ikke slette.';
+		} finally {
+			sletter = false;
 		}
 	}
 
@@ -222,7 +240,7 @@
 		<section class="card">
 			<div class="card-head">
 				<div class="section-label">Persona / system-prompt</div>
-				<button class="reset-knap" type="button" onclick={nulstilPrompt}>
+				<button class="reset-knap" type="button" onclick={aabnNulstilBekraeft}>
 					Nulstil til standard
 				</button>
 			</div>
@@ -261,7 +279,7 @@
 							<button
 								class="slet-btn"
 								type="button"
-								onclick={() => handleSlet(d.id, d.navn)}
+								onclick={() => aabnSletBekraeft(d.id, d.navn)}
 								aria-label="Slet"
 							>
 								×
@@ -273,6 +291,29 @@
 		</section>
 	{/if}
 </div>
+
+{#if viserNulstilBekraeft}
+	<BekraeftModal
+		titel="Nulstil til standard-promptet?"
+		beskrivelse="Den nuværende prompt overskrives med standardværdien."
+		bekraeftTekst="Nulstil"
+		destruktiv
+		onBekraeft={nulstilPrompt}
+		onAnnuller={() => (viserNulstilBekraeft = false)}
+	/>
+{/if}
+
+{#if sletDok}
+	<BekraeftModal
+		titel={'Slet "' + sletDok.navn + '"?'}
+		beskrivelse={sletFejl ?? 'Dokumentet fjernes fra videnbasen og kan ikke gendannes.'}
+		bekraeftTekst="Slet"
+		destruktiv
+		arbejder={sletter}
+		onBekraeft={() => void handleSlet()}
+		onAnnuller={() => (sletDok = null)}
+	/>
+{/if}
 
 <script module lang="ts">
 	import type { VidenbaseKilde as VK } from '$lib/content/linnAi';
