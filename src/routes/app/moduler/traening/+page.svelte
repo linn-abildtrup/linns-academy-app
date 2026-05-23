@@ -3,7 +3,8 @@
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
-	import { erForlobsklient, erModulbruger, harPremium } from '$lib/utils/userAdgang';
+	import TesterBadge from '$lib/components/TesterBadge.svelte';
+	import { erForlobsklient, erModulbruger, harPremium, harTestAdgang } from '$lib/utils/userAdgang';
 	import {
 		hentAlleProgrammerPaaTvaers,
 		hentTildelingerForBruger,
@@ -32,7 +33,10 @@
 	let indlaeserNyt = $state(false);
 	let gemmerAktiv = $state(false);
 
-	const visCustomBuilder = $derived(erAppKunde || harCustomBuilderTildelt);
+	const harBygEgetTestAdgang = $derived(harTestAdgang(userDoc, 'byg-eget-program'));
+	const visCustomBuilder = $derived(
+		harBygEgetTestAdgang && (erAppKunde || harCustomBuilderTildelt)
+	);
 
 	type AktivKilde = 'mikrotraening' | 'eget' | 'tildelt';
 	const aktivt = $derived(userDoc?.aktivtTraeningsprogram);
@@ -202,7 +206,8 @@
 					</a>
 				{/each}
 
-				{#each mineProgrammer as p (p.id)}
+				{#if harBygEgetTestAdgang}
+					{#each mineProgrammer as p (p.id)}
 					<a
 						class="program-row"
 						class:aktiv={erAktivt('eget', p.id)}
@@ -242,6 +247,7 @@
 						{/if}
 					</a>
 				{/each}
+				{/if}
 			{/if}
 		{/if}
 	</div>
@@ -252,7 +258,10 @@
 				<Icon name="flame" size={18} color="#fff" />
 			</div>
 			<div class="byg-eget-tekst">
-				<div class="byg-eget-titel">Byg dit eget program</div>
+				<div class="byg-eget-titel">
+					Byg dit eget program
+					<TesterBadge />
+				</div>
 				<div class="byg-eget-sub">Vælg øvelser, sæt, reps og pause selv</div>
 			</div>
 			<div class="program-pil">

@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
 	import type { User } from 'firebase/auth';
+	import type { UserDoc } from '$lib/types';
 	import { goto } from '$app/navigation';
+	import { harTestAdgang } from '$lib/utils/userAdgang';
 	import Icon from '$lib/components/Icon.svelte';
 	import { hentAlleExercises } from '$lib/firestore/mikrotraening';
 	import {
@@ -22,7 +24,9 @@
 	} from '$lib/content/mineProgrammer';
 
 	const getUser = getContext<() => User | null>('user');
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
+	const userDoc = $derived(getUserDoc());
 
 	let programmer = $state<CustomProgram[]>([]);
 	let alleOevelser = $state<Exercise[]>([]);
@@ -41,6 +45,10 @@
 
 	onMount(async () => {
 		if (!user) return;
+		if (!harTestAdgang(userDoc, 'byg-eget-program')) {
+			goto('/app/moduler/traening');
+			return;
+		}
 		try {
 			[programmer, alleOevelser] = await Promise.all([
 				hentMineProgrammer(user.uid),

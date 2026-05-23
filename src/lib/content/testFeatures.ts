@@ -26,6 +26,12 @@ export const TEST_FEATURES: TestFeature[] = [
 		navn: 'Foreslå madplan',
 		beskrivelse:
 			'AI-genereret madplan-forslag i 30-30-3-beregneren. Tab i tabbaren og knap der åbner modal med konfiguration (antal forslag, glutenfri, undgå-ingredienser) og resultat med 1-3 opskriftforslag pr måltidstype + snack-suppleringer.'
+	},
+	{
+		key: 'byg-eget-program',
+		navn: 'Byg dit eget program',
+		beskrivelse:
+			'Custom-builder hvor kunden selv vælger øvelser, sæt, reps og pause. Inkluderer 14-dages auto-byg-flow. Skjuler både CTA og kundens egne programmer på Træning-modul-siden samt root-ruten for ikke-testere.'
 	}
 ];
 
