@@ -142,14 +142,23 @@
 				loading = false;
 				return;
 			}
-			if (p.oevelser.length === 0) {
+			// For 14-dages programmer ligger øvelserne i dage[N-1].oevelser,
+			// ikke i p.oevelser (som er tom for fler-dages). Find dem ud fra
+			// ?dag=N eller den valgte dag.
+			let aktuelleOevelser = p.oevelser;
+			if (p.dage && p.dage.length > 0) {
+				const valgtDag = dagNummer ?? 1;
+				const dag = p.dage.find((d) => d.dagNummer === valgtDag);
+				aktuelleOevelser = dag?.oevelser ?? [];
+			}
+			if (aktuelleOevelser.length === 0) {
 				fejl = 'Programmet har ingen øvelser.';
 				loading = false;
 				return;
 			}
 			program = p;
 
-			const exerciseIds = Array.from(new Set(p.oevelser.map((o) => o.exerciseId)));
+			const exerciseIds = Array.from(new Set(aktuelleOevelser.map((o) => o.exerciseId)));
 			exerciseMap = await hentExercises(exerciseIds);
 
 			const urlPar = await Promise.all(
