@@ -136,6 +136,17 @@ export interface UserDoc {
 	// slettes ikke i Firestore. Andre brugere ser stadig fødevaren.
 	skjulteFodevarer?: string[];
 
+	/**
+	 * Test-features brugeren har adgang til før de er udrullet til alle.
+	 * Liste af feature-keys (se src/lib/content/testFeatures.ts for kendte).
+	 * Admin tildeler test-adgang via /admin/testere.
+	 *
+	 * I koden tjekkes med harTestAdgang(userDoc, 'feature-key'). Når en
+	 * feature er produktionsklar fjerner vi tjekken fra koden — listen i
+	 * Firestore bevares til næste test-runde.
+	 */
+	testerFeatures?: string[];
+
 	// Hvilken mikrotræning-variant brugeren har valgt (kettlebell eller
 	// uden udstyr). Bruges af aboMikrotraening-systemet til at hente det
 	// rigtige program. Hvis ikke sat, bruges 'no_kettlebell' som default.

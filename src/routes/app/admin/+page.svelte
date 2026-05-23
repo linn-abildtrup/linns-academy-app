@@ -97,6 +97,14 @@
 			rute: '/app/admin/nulstil-adgang',
 			accent: '#9D6358',
 			icon: 'lock' as const
+		},
+		{
+			id: 'testere',
+			navn: 'Testere',
+			beskrivelse: 'Giv specifikke kunder adgang til funktioner under udvikling',
+			rute: '/app/admin/testere',
+			accent: '#8C5C7A',
+			icon: 'sparkle' as const
 		}
 	];
 </script>

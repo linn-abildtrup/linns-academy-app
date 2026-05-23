@@ -143,3 +143,20 @@ export function udledState(
 	if (accessSource === 'forløb') return 'forlobskunde';
 	return 'modulbruger';
 }
+
+/**
+ * Returnerer true hvis brugeren har test-adgang til den givne feature-key.
+ * Bruges til at gate eksperimentelle funktioner: kun brugere på testere-
+ * listen ser dem indtil de er klar til alle.
+ *
+ * Eksempel: {#if harTestAdgang(userDoc, 'madplan-v2')}<NyMadplan />{/if}
+ *
+ * Når funktionen er produktionsklar fjernes tjekken — alle brugere får
+ * adgangen, og testere-listen i Firestore er stadig der til næste runde.
+ */
+export function harTestAdgang(
+	userDoc: UserDoc | null | undefined,
+	feature: string
+): boolean {
+	return userDoc?.testerFeatures?.includes(feature) ?? false;
+}

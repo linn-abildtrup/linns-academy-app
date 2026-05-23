@@ -1,0 +1,34 @@
+// Katalog over test-features brugere kan have adgang til før udrulning.
+//
+// Admin tildeler test-adgang per kunde via /admin/testere. I koden
+// tjekkes med harTestAdgang(userDoc, 'feature-key') fra utils/userAdgang.
+//
+// Når en feature er færdig-testet:
+// 1. Fjern harTestAdgang-tjekken i koden — alle får funktionen
+// 2. Sæt 'udrullet: true' her så admin-siden viser at testen er afsluttet
+// 3. Listen over testere i Firestore bevares — kan genbruges til næste
+//    funktion eller fjernes manuelt via admin-siden
+
+export interface TestFeature {
+	key: string;
+	navn: string;
+	beskrivelse: string;
+	udrullet?: boolean;
+}
+
+/**
+ * Liste over kendte test-features. Tilføj nye HERE før du bruger dem i
+ * koden — så admin-siden ved hvad der kan tildeles.
+ */
+export const TEST_FEATURES: TestFeature[] = [
+	{
+		key: 'eksempel',
+		navn: 'Eksempel-feature',
+		beskrivelse:
+			'En dummy-feature til at vise hvordan test-systemet virker. Kan slettes når en rigtig test-feature kommer.'
+	}
+];
+
+export function hentTestFeature(key: string): TestFeature | undefined {
+	return TEST_FEATURES.find((f) => f.key === key);
+}
