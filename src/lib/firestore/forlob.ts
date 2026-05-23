@@ -96,6 +96,11 @@ export async function gemForlob(
 ): Promise<void> {
 	const ref = doc(db, 'forlob', forlobId);
 	await setDoc(ref, data, { merge: true });
+	// VIGTIGT: ryd in-memory cache så næste hentForlob() returnerer den
+	// netop gemte version, ikke den gamle. Ellers ser admin sine egne
+	// ændringer rulle tilbage når hun navigerer væk og tilbage.
+	forlobCache.delete(forlobId);
+	forlobPromises.delete(forlobId);
 }
 
 /**
