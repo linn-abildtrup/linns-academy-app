@@ -22,10 +22,10 @@ export interface TestFeature {
  */
 export const TEST_FEATURES: TestFeature[] = [
 	{
-		key: 'eksempel',
-		navn: 'Eksempel-feature',
+		key: 'foreslaa-madplan',
+		navn: 'Foreslå madplan',
 		beskrivelse:
-			'En dummy-feature til at vise hvordan test-systemet virker. Kan slettes når en rigtig test-feature kommer.'
+			'AI-genereret madplan-forslag i 30-30-3-beregneren. Tab i tabbaren og knap der åbner modal med konfiguration (antal forslag, glutenfri, undgå-ingredienser) og resultat med 1-3 opskriftforslag pr måltidstype + snack-suppleringer.'
 	}
 ];
 

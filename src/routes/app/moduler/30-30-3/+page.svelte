@@ -60,7 +60,8 @@
 	} from '$lib/firestore/kost';
 
 	const getUser = getContext<() => User | null>('user');
-	import { harPremium } from '$lib/utils/userAdgang';
+	import { harPremium, harTestAdgang } from '$lib/utils/userAdgang';
+	import TesterBadge from '$lib/components/TesterBadge.svelte';
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc?.() ?? null);
@@ -274,8 +275,12 @@
 	let madplanTilfoejer = $state<string | null>(null); // opskriftId der lige nu tilføjes
 	let madplanTilfoejede = $state<Set<string>>(new Set()); // opskriftIds der er tilføjet
 
+	// Madplan er bag test-flag indtil den er færdig-testet. Kun premium-
+	// kunder med dagligeMaal sat OG som er på testere-listen ser den.
 	const kanBrugeMadplan = $derived(
-		harPremium(userDoc) && !!userDoc?.dagligeMaal
+		harPremium(userDoc) &&
+			!!userDoc?.dagligeMaal &&
+			harTestAdgang(userDoc, 'foreslaa-madplan')
 	);
 
 	// Gem-måltid-modal state
@@ -1350,7 +1355,7 @@
 						aabnMadplanModal();
 					}}
 				>
-					Madplan
+					Madplan<TesterBadge />
 				</button>
 			{/if}
 			<button
@@ -2367,7 +2372,7 @@
 	>
 		<div class="modal madplan-modal">
 			<div class="modal-head">
-				<div class="modal-titel">✨ Foreslå en madplan</div>
+				<div class="modal-titel">✨ Foreslå en madplan<TesterBadge /></div>
 				<button class="modal-luk" type="button" onclick={lukMadplanModal} aria-label="Luk">
 					×
 				</button>
