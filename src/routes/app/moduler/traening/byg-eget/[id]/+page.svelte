@@ -37,7 +37,12 @@
 	let gemmer = $state(false);
 	let fejl = $state<string | null>(null);
 
-	const erFlerdages = $derived((program?.dage?.length ?? 0) > 0);
+	const flerdagesProgram = $derived.by(() => {
+		if (!program) return null;
+		const dage = program.dage;
+		if (!dage || !Array.isArray(dage) || dage.length === 0) return null;
+		return { program, dage };
+	});
 	const dagIDag = $derived(program ? aktuelDag(program) : 1);
 
 	// Picker-modal state
@@ -192,11 +197,11 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Mine programmer</span>
 		</a>
-		<div class="eyebrow">{erFlerdages ? 'Mit 14-dages program' : 'Custom-builder'}</div>
+		<div class="eyebrow">{flerdagesProgram ? 'Mit 14-dages program' : 'Custom-builder'}</div>
 		<h1>{erNyt ? 'Nyt program' : navn || 'Rediger program'}</h1>
-		{#if erFlerdages && program?.dage}
+		{#if flerdagesProgram}
 			<p class="page-sub">
-				{program.dage.length} dage · ca. {anslaaetDagVarighedMin(program.dage[0])} min pr dag
+				{flerdagesProgram.dage.length} dage · ca. {anslaaetDagVarighedMin(flerdagesProgram.dage[0])} min pr dag
 			</p>
 		{:else if oevelser.length > 0}
 			<p class="page-sub">
@@ -211,11 +216,12 @@
 
 	{#if indlaeser}
 		<div class="besked">Henter…</div>
-	{:else if erFlerdages && program?.dage}
+	{:else if flerdagesProgram}
+		{@const dage = flerdagesProgram.dage}
 		<!-- 14-dages read-only visning med dag-grid -->
 		<section class="i-dag-kort">
 			<div class="i-dag-label">I dag</div>
-			<div class="i-dag-tal">Dag {dagIDag} af {program.dage.length}</div>
+			<div class="i-dag-tal">Dag {dagIDag} af {dage.length}</div>
 			<a
 				class="start-knap"
 				href={`/app/moduler/traening/byg-eget/${programId}/spil?dag=${dagIDag}`}
@@ -227,7 +233,7 @@
 		<section class="sektion">
 			<div class="sektion-titel">Alle dage</div>
 			<div class="dag-grid">
-				{#each program.dage as d (d.dagNummer)}
+				{#each dage as d (d.dagNummer)}
 					<a
 						class="dag-celle"
 						class:i-dag={d.dagNummer === dagIDag}
