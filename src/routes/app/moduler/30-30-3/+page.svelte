@@ -2385,7 +2385,8 @@
 						{@const ejAntal = food.ejBy?.length ?? 0}
 						{@const minStem = user && food.okBy?.includes(user.uid) ? 'ok' : user && food.ejBy?.includes(user.uid) ? 'ej' : null}
 						{@const erFavorit = favoritFodevareSet.has(food.id)}
-						<div class="picker-row-wrap">
+						{@const harStemRad = erCommunity && user !== null && food.addedBy !== user.uid}
+						<div class="picker-row-wrap" class:har-stem-rad={harStemRad}>
 							<div class="picker-row-flex">
 								<button
 									class="favorit-stjerne"
@@ -3954,7 +3955,7 @@
 	/* Container der grupperer favorit-stjerne + picker-row på samme linje.
 	   picker-row beholder sin egen border/baggrund (defineret i .picker-row).
 	   Stem-rad (community-fødevarer) renderes som søsken-element under og
-	   styles separat så det visuelt hører sammen med picker-row over. */
+	   kobler sømfrit til picker-row via .har-stem-rad-klassen på wrap. */
 	.picker-row-wrap {
 		display: flex;
 		flex-direction: column;
@@ -3973,10 +3974,9 @@
 		flex: 1;
 	}
 
-	/* Community-fødevarer har stem-rad under picker-row — kobler dem visuelt
-	   sammen ved at fjerne bottom-border-radius og border på picker-row, og
-	   give stem-rad en matching styling der ligner en footer på samme kort. */
-	.picker-row-wrap:has(.stem-rad) .picker-row {
+	/* Når wrap'en har en stem-rad under: fjern bottom-border-radius og
+	   border-bottom på picker-row så de visuelt smelter sammen som ét kort. */
+	.picker-row-wrap.har-stem-rad .picker-row {
 		border-bottom-left-radius: 0;
 		border-bottom-right-radius: 0;
 		border-bottom: none;
@@ -4025,10 +4025,10 @@
 	.stem-rad {
 		display: flex;
 		gap: 8px;
-		padding: 6px 10px 8px;
+		padding: 8px 10px;
 		background: var(--bg2);
 		border: 1px solid var(--border);
-		border-top: 1px dashed var(--border);
+		border-top: none;
 		border-radius: 0 0 10px 10px;
 		justify-content: flex-end;
 	}
@@ -4060,46 +4060,49 @@
 		font-variant-numeric: tabular-nums;
 	}
 
-	/* ✓ Behold / bekræft — grøn */
+	/* ✓ Behold / bekræft — fyldt grøn */
 	.stem-knap.stem-ok {
-		color: #2f6b3a;
-		border-color: #c9e2c3;
-	}
-	.stem-knap.stem-ok:hover {
-		background: #ecf6e8;
-	}
-	.stem-knap.stem-ok.aktiv {
 		background: #4a8a4f;
 		color: #fff;
 		border-color: #4a8a4f;
 	}
+	.stem-knap.stem-ok:hover {
+		background: #3b6e3f;
+		border-color: #3b6e3f;
+	}
+	.stem-knap.stem-ok.aktiv {
+		background: #2f5634;
+		border-color: #2f5634;
+		box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+	}
 
-	/* ✗ Ikke beholde / forkert — rød */
+	/* ✗ Ikke beholde / forkert — fyldt rød */
 	.stem-knap.stem-ej {
-		color: #a8453a;
-		border-color: #f0d6cf;
-	}
-	.stem-knap.stem-ej:hover {
-		background: #fbeeea;
-	}
-	.stem-knap.stem-ej.aktiv {
 		background: #c5544a;
 		color: #fff;
 		border-color: #c5544a;
 	}
+	.stem-knap.stem-ej:hover {
+		background: #a8453a;
+		border-color: #a8453a;
+	}
+	.stem-knap.stem-ej.aktiv {
+		background: #8a3329;
+		border-color: #8a3329;
+		box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+	}
 
-	/* Skjul fra min oversigt — mørk (kun ikon, ingen tekst) */
+	/* Skjul fra min oversigt — fyldt mørk (kun ikon, ingen tekst) */
 	.stem-knap.stem-skjul {
-		color: #2a1f17;
-		border-color: #c4b9ad;
-		background: #f4ede4;
+		background: #2a1f17;
+		color: #fff;
+		border-color: #2a1f17;
 		min-width: 38px;
 		padding: 6px 10px;
 	}
 	.stem-knap.stem-skjul:hover {
-		background: #2a1f17;
-		color: #fff;
-		border-color: #2a1f17;
+		background: #4a3a2d;
+		border-color: #4a3a2d;
 	}
 
 	.stem-knap:disabled {
