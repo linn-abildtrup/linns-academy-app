@@ -80,10 +80,15 @@
 		type ValgteOpskrifter
 	} from '$lib/content/indkoebsliste';
 	import {
-		handlingsFarve,
-		type MaaltidDiff,
-		type OptimerSvar
-	} from '$lib/content/optimerMaaltider';
+		filtrerKandidater,
+		MAALTIDSKATEGORIER,
+		MAALTIDSKATEGORI_LABELS,
+		type ForeslaaRequest,
+		type MadplanForslag,
+		type MadplanSvar,
+		type Maaltidskategori,
+		type OpskriftKandidat
+	} from '$lib/content/foreslaaMadplan';
 
 	// Flytter overlay-elementet til document.body så det kommer ud af
 	// app-shellens stacking context (.app-shell har overflow: hidden) og
@@ -253,15 +258,21 @@
 		skiftTab('maaltid');
 	}
 
-	// Optimér-min-mad-state (premium-feature)
-	let optimerIndlaeser = $state(false);
-	let optimerSvar = $state<OptimerSvar | null>(null);
-	let optimerFejl = $state<string | null>(null);
-	let anvenderOptimering = $state(false);
-	const kanOptimere = $derived(
-		harPremium(userDoc) &&
-			!!userDoc?.dagligeMaal &&
-			dagbogDato === formatDatoKey()
+	// Foreslå-madplan-state (premium-feature) — erstatter den tidligere
+	// 'Optimér min mad'-funktion. AI'en bygger en madplan til én dag ud fra
+	// de eksisterende opskrifter + brugerens egne, frem for at justere
+	// dagens loggede måltider.
+	let viserMadplanModal = $state(false);
+	let madplanGenererer = $state(false);
+	let madplanFejl = $state<string | null>(null);
+	let madplanSvar = $state<MadplanSvar | null>(null);
+	let madplanAntal = $state<1 | 2 | 3>(2);
+	let madplanGlutenfri = $state(false);
+	let madplanUndgaa = $state<string[]>(['', '', '']);
+	let madplanTilfoejer = $state<string | null>(null); // opskriftId der lige nu tilføjes
+
+	const kanBrugeMadplan = $derived(
+		harPremium(userDoc) && !!userDoc?.dagligeMaal
 	);
 
 	// Gem-måltid-modal state
@@ -1079,135 +1090,174 @@
 		return { protein: p, fiber: f, kh, fedt, kcal };
 	}
 
-	async function optimerMad() {
+	function aabnMadplanModal() {
+		madplanSvar = null;
+		madplanFejl = null;
+		viserMadplanModal = true;
+	}
+
+	function lukMadplanModal() {
+		viserMadplanModal = false;
+		madplanSvar = null;
+		madplanFejl = null;
+		madplanTilfoejer = null;
+	}
+
+	/** Bygger kandidat-puljen ud fra globale opskrifter + brugerens egne. */
+	function byggMadplanKandidater(): OpskriftKandidat[] {
+		const out: OpskriftKandidat[] = [];
+		for (const o of opskrifter) {
+			// Tag første matchende måltids-kategori (de fleste opskrifter
+			// har præcis én af morgenmad/frokost/aftensmad)
+			const kat = o.kategorier.find((k) =>
+				MAALTIDSKATEGORIER.includes(k as Maaltidskategori)
+			) as Maaltidskategori | undefined;
+			if (!kat) continue;
+			// Træk makro ud af instruktioner-feltet hvis det er noteret der
+			// (konvention: "Protein: 30 g | Fiber: 7 g | Kalorier: 410 kcal")
+			const m = o.instruktioner.match(
+				/Protein:\s*(\d+(?:[.,]\d+)?)\s*g.*?Fiber:\s*(\d+(?:[.,]\d+)?)\s*g.*?Kalorier:\s*(\d+(?:[.,]\d+)?)\s*kcal/i
+			);
+			out.push({
+				id: o.id,
+				titel: o.titel,
+				kategori: kat,
+				protein: m ? parseFloat(m[1].replace(',', '.')) : 0,
+				fiber: m ? parseFloat(m[2].replace(',', '.')) : 0,
+				kalorier: m ? parseFloat(m[3].replace(',', '.')) : 0,
+				dietTags: o.dietTags,
+				ingredienser: o.ingredienser.map((i) => i.navn),
+				erEgen: false
+			});
+		}
+		for (const e of mineOpskrifter) {
+			out.push({
+				id: e.id,
+				titel: e.navn,
+				kategori: 'frokost', // brugerens egne har ingen kategori — sæt frokost som default
+				protein: e.makroPrPortion.protein,
+				fiber: e.makroPrPortion.fiber,
+				kalorier: e.makroPrPortion.kcal,
+				dietTags: [],
+				ingredienser: e.ingredienser.map((i) => i.navn),
+				erEgen: true
+			});
+		}
+		return out;
+	}
+
+	async function genererMadplan() {
 		const u = user;
 		if (!u || !userDoc?.dagligeMaal) return;
-		optimerIndlaeser = true;
-		optimerFejl = null;
-		optimerSvar = null;
+		madplanGenererer = true;
+		madplanFejl = null;
+		madplanSvar = null;
 		try {
+			const alleKandidater = byggMadplanKandidater();
+			const filtrerede = filtrerKandidater(
+				alleKandidater,
+				madplanGlutenfri,
+				madplanUndgaa.filter((s) => s.trim().length > 0)
+			);
+			if (filtrerede.length === 0) {
+				throw new Error(
+					'Ingen opskrifter matcher dine filtre. Prøv at fjerne glutenfri eller undgå-ingredienser.'
+				);
+			}
+			// Send navne på favorit-fødevarer (ikke ids — AI'en kender ikke ids)
+			const favoritNavne = (userDoc.favoritFodevarer ?? [])
+				.map((id) => foodMap.get(id)?.name ?? '')
+				.filter((n) => n.length > 0);
+
+			const req: ForeslaaRequest = {
+				maal: userDoc.dagligeMaal,
+				favoritFoodNavne: favoritNavne,
+				antalAlternativer: madplanAntal,
+				glutenfri: madplanGlutenfri,
+				undgaaIngredienser: madplanUndgaa.filter((s) => s.trim().length > 0),
+				kandidater: filtrerede
+			};
 			const idToken = await u.getIdToken();
-			const res = await fetch('/api/optimer-maaltider', {
+			const res = await fetch('/api/foreslaa-madplan', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 					Authorization: `Bearer ${idToken}`
 				},
-				body: JSON.stringify({
-					maaltider: dagbogMaaltider,
-					maal: userDoc.dagligeMaal,
-					dietTags: []
-				})
+				body: JSON.stringify(req)
 			});
 			if (!res.ok) {
 				const data = (await res.json().catch(() => ({}))) as { message?: string };
 				throw new Error(data.message ?? `Server-fejl ${res.status}`);
 			}
-			optimerSvar = (await res.json()) as OptimerSvar;
+			madplanSvar = (await res.json()) as MadplanSvar;
 		} catch (e) {
-			optimerFejl = e instanceof Error ? e.message : 'Noget gik galt. Prøv igen.';
+			madplanFejl = e instanceof Error ? e.message : 'Noget gik galt. Prøv igen.';
 		} finally {
-			optimerIndlaeser = false;
+			madplanGenererer = false;
 		}
 	}
 
-	function lukOptimerKort() {
-		optimerSvar = null;
-		optimerFejl = null;
-	}
-
-	/**
-	 * Anvender AI'ens diff på dagbogen ved at føje en manuel "AI-tilpasning"-
-	 * item til hvert berørt måltid og opdatere måltidets totaler med
-	 * makroDelta. For NY_-prefiksede maaltidId'er oprettes et nyt måltid.
-	 *
-	 * 'fjern' og 'byt' lægges også ind som manuelle items (med negative eller
-	 * netto-makro) så dagstotalerne stemmer. Bruger kan rydde manuelt op
-	 * bagefter hvis hun vil.
-	 */
-	async function anvendOptimering() {
+	/** Tilføjer en AI-foreslået opskrift som et nyt måltid i dagbogen. */
+	async function tilfoejForslagTilDagbog(
+		forslag: MadplanForslag,
+		kategori: Maaltidskategori
+	) {
 		const u = user;
-		if (!u || !optimerSvar) return;
-		anvenderOptimering = true;
+		if (!u) return;
+		madplanTilfoejer = forslag.opskriftId;
 		try {
-			// Grupper diff pr måltid for at lave så få Firestore-writes som muligt
-			const grupperet = new Map<string, MaaltidDiff[]>();
-			for (const d of optimerSvar.diff) {
-				const liste = grupperet.get(d.maaltidId) ?? [];
-				liste.push(d);
-				grupperet.set(d.maaltidId, liste);
+			let navn = '';
+			let totalP = 0;
+			let totalF = 0;
+			let totalKh = 0;
+			let totalFedt = 0;
+			let totalKcal = 0;
+			if (forslag.erEgen) {
+				const e = mineOpskrifter.find((x) => x.id === forslag.opskriftId);
+				if (!e) throw new Error('Egen opskrift ikke fundet');
+				navn = e.navn;
+				totalP = e.makroPrPortion.protein;
+				totalF = e.makroPrPortion.fiber;
+				totalKh = e.makroPrPortion.kh;
+				totalFedt = e.makroPrPortion.fedt;
+				totalKcal = e.makroPrPortion.kcal;
+			} else {
+				const o = opskrifter.find((x) => x.id === forslag.opskriftId);
+				if (!o) throw new Error('Opskrift ikke fundet');
+				navn = o.titel;
+				const m = o.instruktioner.match(
+					/Protein:\s*(\d+(?:[.,]\d+)?)\s*g.*?Fiber:\s*(\d+(?:[.,]\d+)?)\s*g.*?Kalorier:\s*(\d+(?:[.,]\d+)?)\s*kcal/i
+				);
+				if (m) {
+					totalP = parseFloat(m[1].replace(',', '.'));
+					totalF = parseFloat(m[2].replace(',', '.'));
+					totalKcal = parseFloat(m[3].replace(',', '.'));
+				}
 			}
-
-			for (const [maaltidId, diffs] of grupperet) {
-				const erNyt = maaltidId.startsWith('NY_');
-				const eksisterende = erNyt
-					? null
-					: dagbogMaaltider.find((m) => m.id === maaltidId);
-
-				// Saml ny item-liste og totaler
-				const nyeItems: MaaltidsItem[] = diffs.map((d) => ({
-					foodId: '',
-					portion: 1,
-					manuel: {
-						navn: `${d.handling === 'fjern' ? '− ' : d.handling === 'byt' ? '↔ ' : '+ '}${d.tekst}`,
-						enhed: 'AI-justering'
+			await gemMaaltid(u.uid, {
+				navn,
+				type: kategori,
+				dato: dagbogDato,
+				items: [
+					{
+						foodId: '',
+						portion: 1,
+						manuel: { navn: `${navn} (AI-forslag)`, enhed: 'portion' }
 					}
-				}));
-				let totalP = (eksisterende?.totalP ?? 0);
-				let totalF = (eksisterende?.totalF ?? 0);
-				let totalKh = (eksisterende?.totalKh ?? 0);
-				let totalFedt = (eksisterende?.totalFedt ?? 0);
-				let totalKcal = (eksisterende?.totalKcal ?? 0);
-				for (const d of diffs) {
-					totalP += d.makroDelta.protein;
-					totalF += d.makroDelta.fiber;
-					totalKh += d.makroDelta.kh;
-					totalFedt += d.makroDelta.fedt;
-					totalKcal += d.makroDelta.kcal;
-				}
-				// Klippe til ikke-negative tal
-				totalP = Math.max(0, totalP);
-				totalF = Math.max(0, totalF);
-				totalKh = Math.max(0, totalKh);
-				totalFedt = Math.max(0, totalFedt);
-				totalKcal = Math.max(0, totalKcal);
-
-				if (erNyt) {
-					const første = diffs[0];
-					await gemMaaltid(u.uid, {
-						navn: første.maaltidNavn || 'AI-snack',
-						type: første.maaltidType,
-						dato: dagbogDato,
-						items: nyeItems,
-						totalP,
-						totalF,
-						totalKh,
-						totalFedt,
-						totalKcal
-					});
-				} else if (eksisterende) {
-					await opdaterMaaltid(u.uid, eksisterende.id, {
-						navn: eksisterende.navn,
-						type: eksisterende.type,
-						dato: eksisterende.dato,
-						items: [...eksisterende.items, ...nyeItems],
-						totalP,
-						totalF,
-						totalKh,
-						totalFedt,
-						totalKcal
-					});
-				}
-			}
-
-			// Genindlæs dagbog og luk kortet
+				],
+				totalP,
+				totalF,
+				totalKh,
+				totalFedt,
+				totalKcal
+			});
 			await indlaesDagbog();
-			optimerSvar = null;
 		} catch (e) {
 			console.error(e);
-			optimerFejl = 'Kunne ikke anvende alle ændringer. Prøv igen.';
+			madplanFejl = 'Kunne ikke tilføje til dagbog. Prøv igen.';
 		} finally {
-			anvenderOptimering = false;
+			madplanTilfoejer = null;
 		}
 	}
 
@@ -1533,6 +1583,16 @@
 				</span>
 			</div>
 
+			{#if kanBrugeMadplan}
+				<button
+					type="button"
+					class="btn primary madplan-knap"
+					onclick={aabnMadplanModal}
+				>
+					✨ Foreslå en madplan til mig
+				</button>
+			{/if}
+
 			<input
 				type="search"
 				class="search"
@@ -1780,92 +1840,6 @@
 					</div>
 				{/if}
 
-				{#if kanOptimere}
-					<div class="optimer-rad">
-						{#if !optimerSvar}
-							<button
-								class="btn primary optimer-knap"
-								type="button"
-								onclick={() => void optimerMad()}
-								disabled={optimerIndlaeser}
-							>
-								{optimerIndlaeser ? 'AI analyserer dagen…' : 'Optimér min mad'}
-							</button>
-							{#if optimerFejl}
-								<div class="status-besked fejl">{optimerFejl}</div>
-							{/if}
-						{:else}
-							<div class="optimer-kort">
-								<div class="optimer-head">
-									<h3>Forslag til justeringer</h3>
-									<button
-										class="ikon-knap"
-										type="button"
-										onclick={lukOptimerKort}
-										aria-label="Luk"
-									>
-										×
-									</button>
-								</div>
-
-								<p class="optimer-samlet">{optimerSvar.samletBegrundelse}</p>
-
-								{#if optimerSvar.advarsel}
-									<div class="status-besked advarsel">{optimerSvar.advarsel}</div>
-								{/if}
-
-								{#if optimerSvar.diff.length === 0}
-									<div class="status-besked">Din dag ser allerede god ud — ingen ændringer foreslået.</div>
-								{:else}
-									<ul class="optimer-diff">
-										{#each optimerSvar.diff as d, i (i)}
-											<li class="optimer-item" style="--accent: {handlingsFarve(d.handling)}">
-												<div class="optimer-item-head">
-													<span class="optimer-maaltid">{MAALTIDSTYPE_LABELS[d.maaltidType]} · {d.maaltidNavn}</span>
-												</div>
-												<div class="optimer-item-body">{d.tekst}</div>
-												<div class="optimer-item-meta">{d.begrundelse}</div>
-												<div class="optimer-item-makro">
-													{d.makroDelta.protein >= 0 ? '+' : ''}{Math.round(d.makroDelta.protein * 10) / 10}g protein ·
-													{d.makroDelta.fiber >= 0 ? '+' : ''}{Math.round(d.makroDelta.fiber * 10) / 10}g fiber ·
-													{d.makroDelta.kcal >= 0 ? '+' : ''}{Math.round(d.makroDelta.kcal)} kcal
-												</div>
-											</li>
-										{/each}
-									</ul>
-
-									<div class="optimer-resultat">
-										<div class="optimer-resultat-titel">Forventet resultat</div>
-										<div class="optimer-resultat-tal">
-											{Math.round(optimerSvar.resultatMakro.protein)}g protein ·
-											{Math.round(optimerSvar.resultatMakro.fiber)}g fiber ·
-											{Math.round(optimerSvar.resultatMakro.kcal)} kcal
-										</div>
-									</div>
-
-									<div class="optimer-handlinger">
-										<button
-											class="btn ghost"
-											type="button"
-											onclick={lukOptimerKort}
-											disabled={anvenderOptimering}
-										>
-											Behold som det er
-										</button>
-										<button
-											class="btn primary"
-											type="button"
-											onclick={() => void anvendOptimering()}
-											disabled={anvenderOptimering}
-										>
-											{anvenderOptimering ? 'Anvender…' : 'Anvend ændringer'}
-										</button>
-									</div>
-								{/if}
-							</div>
-						{/if}
-					</div>
-				{/if}
 
 				<div class="dagbog-liste">
 					{#each MAALTIDSTYPER as type (type)}
@@ -2438,6 +2412,155 @@
 	/>
 {/if}
 
+{#if viserMadplanModal}
+	<div
+		class="modal-bag"
+		role="dialog"
+		aria-modal="true"
+		use:portalToBody
+		onclick={(e) => {
+			if (e.target === e.currentTarget) lukMadplanModal();
+		}}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') lukMadplanModal();
+		}}
+		tabindex="-1"
+	>
+		<div class="modal madplan-modal">
+			<div class="modal-head">
+				<div class="modal-titel">✨ Foreslå en madplan</div>
+				<button class="modal-luk" type="button" onclick={lukMadplanModal} aria-label="Luk">
+					×
+				</button>
+			</div>
+
+			{#if !madplanSvar}
+				<p class="madplan-intro">
+					AI'en bygger en madplan til dig ud fra opskrifterne her i appen og dine egne.
+					Du vælger hvor mange alternativer du vil have, og om der er ingredienser du
+					ikke ønsker.
+				</p>
+
+				<div class="madplan-felt">
+					<div class="madplan-lbl">Hvor mange forslag pr måltid?</div>
+					<div class="antal-knapper">
+						{#each [1, 2, 3] as n (n)}
+							<button
+								type="button"
+								class="antal-knap"
+								class:aktiv={madplanAntal === n}
+								onclick={() => (madplanAntal = n as 1 | 2 | 3)}
+							>
+								{n}
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<label class="madplan-felt madplan-checkbox">
+					<input type="checkbox" bind:checked={madplanGlutenfri} />
+					<span>Kun glutenfri opskrifter</span>
+				</label>
+
+				<div class="madplan-felt">
+					<div class="madplan-lbl">Ingredienser jeg ikke vil have (op til 3)</div>
+					{#each [0, 1, 2] as i (i)}
+						<input
+							type="text"
+							class="madplan-input"
+							placeholder={i === 0 ? 'fx svinekød' : i === 1 ? 'fx koriander' : 'fx mælk'}
+							bind:value={madplanUndgaa[i]}
+							maxlength="40"
+						/>
+					{/each}
+				</div>
+
+				{#if madplanFejl}
+					<div class="status-besked fejl">{madplanFejl}</div>
+				{/if}
+
+				<button
+					type="button"
+					class="btn primary madplan-generer"
+					onclick={() => void genererMadplan()}
+					disabled={madplanGenererer}
+				>
+					{madplanGenererer ? 'AI tænker…' : 'Generer madplan'}
+				</button>
+			{:else}
+				<p class="madplan-samlet">{madplanSvar.samletBegrundelse}</p>
+
+				{#if madplanSvar.advarsel}
+					<div class="status-besked advarsel">{madplanSvar.advarsel}</div>
+				{/if}
+
+				{#each MAALTIDSKATEGORIER as kat (kat)}
+					{@const liste = madplanSvar[kat]}
+					<div class="madplan-sektion">
+						<div class="madplan-sektion-titel">{MAALTIDSKATEGORI_LABELS[kat]}</div>
+						{#if liste.length === 0}
+							<div class="madplan-tom">AI'en fandt intet egnet til denne måltidstype.</div>
+						{:else}
+							{#each liste as forslag (forslag.opskriftId)}
+								{@const opsk = forslag.erEgen
+									? mineOpskrifter.find((x) => x.id === forslag.opskriftId)
+									: opskrifter.find((x) => x.id === forslag.opskriftId)}
+								{@const navn = forslag.erEgen
+									? (opsk as MinOpskrift | undefined)?.navn ?? '(ukendt)'
+									: (opsk as Opskrift | undefined)?.titel ?? '(ukendt)'}
+								<div class="madplan-forslag">
+									<div class="madplan-forslag-titel">{navn}</div>
+									<p class="madplan-forslag-tekst">{forslag.hvorforPasser}</p>
+									<div class="madplan-forslag-handlinger">
+										{#if !forslag.erEgen}
+											<a
+												class="btn ghost madplan-link"
+												href="/app/moduler/30-30-3/opskrifter/{forslag.opskriftId}"
+											>
+												Se opskrift
+											</a>
+										{/if}
+										<button
+											class="btn primary"
+											type="button"
+											onclick={() => void tilfoejForslagTilDagbog(forslag, kat)}
+											disabled={madplanTilfoejer === forslag.opskriftId}
+										>
+											{madplanTilfoejer === forslag.opskriftId
+												? 'Tilføjer…'
+												: 'Tilføj til dagbog'}
+										</button>
+									</div>
+								</div>
+							{/each}
+						{/if}
+					</div>
+				{/each}
+
+				{#if madplanFejl}
+					<div class="status-besked fejl">{madplanFejl}</div>
+				{/if}
+
+				<div class="madplan-handlinger">
+					<button
+						type="button"
+						class="btn ghost"
+						onclick={() => {
+							madplanSvar = null;
+							madplanFejl = null;
+						}}
+					>
+						Generer nye forslag
+					</button>
+					<button type="button" class="btn primary" onclick={lukMadplanModal}>
+						Færdig
+					</button>
+				</div>
+			{/if}
+		</div>
+	</div>
+{/if}
+
 <style>
 	.page {
 		padding: 18px 18px 100px;
@@ -2509,114 +2632,6 @@
 		color: #8a6a1a;
 		background: #fbf3dd;
 		border-color: #f0e2b1;
-	}
-
-	.optimer-rad {
-		margin-bottom: 14px;
-	}
-
-	.optimer-knap {
-		width: 100%;
-	}
-
-	.optimer-kort {
-		background: var(--white);
-		border: 1px solid var(--border);
-		border-radius: 14px;
-		padding: 16px;
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
-
-	.optimer-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-	}
-
-	.optimer-head h3 {
-		margin: 0;
-		font-size: calc(16px * var(--fs-scale, 1));
-		color: var(--text);
-	}
-
-	.optimer-samlet {
-		margin: 0;
-		color: var(--text2);
-		font-size: calc(13px * var(--fs-scale, 1));
-		line-height: 1.45;
-	}
-
-	.optimer-diff {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.optimer-item {
-		border-left: 3px solid var(--accent);
-		background: var(--bg, #fafafa);
-		border-radius: 8px;
-		padding: 10px 12px;
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.optimer-maaltid {
-		font-size: calc(11px * var(--fs-scale, 1));
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		color: var(--text3);
-	}
-
-	.optimer-item-body {
-		font-size: calc(14px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--text);
-	}
-
-	.optimer-item-meta {
-		font-size: calc(12px * var(--fs-scale, 1));
-		color: var(--text2);
-	}
-
-	.optimer-item-makro {
-		font-size: calc(11.5px * var(--fs-scale, 1));
-		color: var(--text3);
-		font-variant-numeric: tabular-nums;
-	}
-
-	.optimer-resultat {
-		background: var(--bg-soft, #f4f4f1);
-		border-radius: 8px;
-		padding: 10px 12px;
-	}
-
-	.optimer-resultat-titel {
-		font-size: calc(11px * var(--fs-scale, 1));
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		color: var(--text3);
-		margin-bottom: 2px;
-	}
-
-	.optimer-resultat-tal {
-		font-size: calc(13.5px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--text);
-		font-variant-numeric: tabular-nums;
-	}
-
-	.optimer-handlinger {
-		display: flex;
-		gap: 8px;
-		justify-content: flex-end;
 	}
 
 	.tabs {
@@ -4319,5 +4334,166 @@
 		color: var(--text3);
 		margin-top: 2px;
 		line-height: 1.4;
+	}
+
+	/* Foreslå madplan-modal */
+	.madplan-knap {
+		width: 100%;
+		margin-bottom: 12px;
+	}
+
+	.madplan-modal {
+		padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		gap: 14px;
+	}
+
+	.madplan-intro {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.5;
+		margin: 0;
+	}
+
+	.madplan-felt {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.madplan-lbl {
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text2);
+	}
+
+	.madplan-checkbox {
+		flex-direction: row;
+		align-items: center;
+		gap: 8px;
+		cursor: pointer;
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+	}
+
+	.antal-knapper {
+		display: flex;
+		gap: 8px;
+	}
+
+	.antal-knap {
+		flex: 1;
+		padding: 10px;
+		border: 1px solid var(--border);
+		background: var(--white);
+		color: var(--text2);
+		border-radius: 10px;
+		font-family: inherit;
+		font-size: calc(15px * var(--fs-scale, 1));
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.antal-knap.aktiv {
+		background: var(--terra);
+		border-color: var(--terra);
+		color: var(--white);
+	}
+
+	.madplan-input {
+		padding: 9px 11px;
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-family: inherit;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--white);
+		color: var(--text);
+		margin-bottom: 6px;
+	}
+
+	.madplan-input:focus {
+		outline: 2px solid var(--terra);
+		outline-offset: -1px;
+	}
+
+	.madplan-generer {
+		width: 100%;
+		margin-top: 4px;
+	}
+
+	.madplan-samlet {
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-style: italic;
+		color: var(--text2);
+		background: var(--bg2);
+		padding: 10px 12px;
+		border-radius: 8px;
+		margin: 0;
+		line-height: 1.5;
+	}
+
+	.madplan-sektion {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.madplan-sektion-titel {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-top: 4px;
+	}
+
+	.madplan-tom {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		font-style: italic;
+	}
+
+	.madplan-forslag {
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		padding: 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.madplan-forslag-titel {
+		font-size: calc(14.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.madplan-forslag-tekst {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		margin: 0;
+		line-height: 1.4;
+	}
+
+	.madplan-forslag-handlinger {
+		display: flex;
+		gap: 8px;
+	}
+
+	.madplan-link {
+		text-decoration: none;
+		flex: 1;
+		text-align: center;
+	}
+
+	.madplan-handlinger {
+		display: flex;
+		gap: 8px;
+		margin-top: 8px;
+	}
+
+	.madplan-handlinger .btn {
+		flex: 1;
 	}
 </style>
