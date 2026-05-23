@@ -1636,7 +1636,7 @@
 			<input
 				type="search"
 				class="search"
-				placeholder="Søg opskrift..."
+				placeholder="Søg opskrift (fx laks, ris)..."
 				bind:value={opskriftSoeg}
 			/>
 

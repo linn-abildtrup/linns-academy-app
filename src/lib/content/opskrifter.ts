@@ -119,7 +119,13 @@ export function formatMaengde(m: number): string {
 
 /**
  * Filtrerer opskrifter ud fra søgeord, kategorier og dietTags.
- * Søgeord matcher mod titel og beskrivelse (case-insensitiv).
+ *
+ * Søgeord:
+ * - Komma- eller semikolon-separerede ord behandles som AND-søgning.
+ *   Eksempel: "laks, ris" finder kun opskrifter med BÅDE laks OG ris.
+ * - Et enkelt ord (uden komma) er ren substring-søgning.
+ * - Hvert delord matches mod titel + beskrivelse + ingredienser (case-insensitive).
+ *
  * Kategorier er OR-logik: opskriften vises hvis den matcher mindst én af de valgte.
  * DietTags er AND-logik: alle valgte tags skal være på opskriften.
  * Hvis ingen kategorier eller dietTags er valgt, vises alle.
@@ -130,7 +136,11 @@ export function filtrerOpskrifter(
 	valgteKategorier: OpskriftKategori[],
 	valgteDietTags: DietTag[] = []
 ): Opskrift[] {
-	const q = soegeord.trim().toLowerCase();
+	const termer = soegeord
+		.toLowerCase()
+		.split(/[,;]/)
+		.map((t) => t.trim())
+		.filter((t) => t.length > 0);
 	return opskrifter.filter((o) => {
 		if (valgteKategorier.length > 0) {
 			const matcher = o.kategorier.some((k) => valgteKategorier.includes(k));
@@ -140,10 +150,11 @@ export function filtrerOpskrifter(
 			const harAlle = valgteDietTags.every((t) => (o.dietTags ?? []).includes(t));
 			if (!harAlle) return false;
 		}
-		if (q) {
+		if (termer.length > 0) {
 			const ingredienserTekst = o.ingredienser.map((i) => i.navn).join(' ');
 			const tekst = (o.titel + ' ' + o.beskrivelse + ' ' + ingredienserTekst).toLowerCase();
-			if (!tekst.includes(q)) return false;
+			// AND-logik: alle termer skal være til stede et eller andet sted i teksten
+			if (!termer.every((t) => tekst.includes(t))) return false;
 		}
 		return true;
 	});

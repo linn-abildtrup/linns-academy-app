@@ -106,6 +106,22 @@ describe('filtrerOpskrifter', () => {
 		expect(filtrerOpskrifter(liste, 'kylling', ['morgenmad'])).toEqual([]);
 	});
 
+	it('komma-separeret søgning er AND-logik mellem termer', () => {
+		expect(filtrerOpskrifter(liste, 'kylling, salat', [])).toEqual([salat]);
+		// "havregryn, mælk" findes begge i havregroed
+		expect(filtrerOpskrifter(liste, 'havregryn, mælk', [])).toEqual([havregroed]);
+		// "kylling, havregryn" matcher ingen (kylling er i salat, havregryn i havregroed)
+		expect(filtrerOpskrifter(liste, 'kylling, havregryn', [])).toEqual([]);
+	});
+
+	it('semikolon-separation virker også', () => {
+		expect(filtrerOpskrifter(liste, 'kylling; salat', [])).toEqual([salat]);
+	});
+
+	it('ekstra mellemrum og tomme termer ignoreres', () => {
+		expect(filtrerOpskrifter(liste, '  kylling , ,  salat  ', [])).toEqual([salat]);
+	});
+
 	it('filtrerer på dietTags (AND-logik)', () => {
 		expect(filtrerOpskrifter(liste, '', [], ['vegetar'])).toEqual([havregroed]);
 		expect(filtrerOpskrifter(liste, '', [], ['glutenfri'])).toEqual([salat]);
