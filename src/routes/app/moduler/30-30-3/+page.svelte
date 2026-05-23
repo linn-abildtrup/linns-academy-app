@@ -407,19 +407,28 @@
 		}
 	}
 
-	async function skjulFodevare(food: Fodevare, e: Event) {
+	// Bekræftelses-modal til skjul-fødevare — erstatter native confirm() med
+	// app'ens egen modal-stil
+	let skjulBekraeft = $state<Fodevare | null>(null);
+	let skjulArbejder = $state(false);
+
+	function skjulFodevare(food: Fodevare, e: Event) {
 		e.stopPropagation();
+		skjulBekraeft = food;
+	}
+
+	async function bekraeftSkjul() {
 		const u = user;
-		if (!u) return;
-		const bekraeftet = confirm(
-			`Fjern "${food.name}" fra din oversigt? Den vises ikke længere når du søger.`
-		);
-		if (!bekraeftet) return;
+		const food = skjulBekraeft;
+		if (!u || !food || skjulArbejder) return;
+		skjulArbejder = true;
 		try {
 			await toggleSkjultFodevare(u.uid, food.id, true);
-			// userDoc-snapshot opdaterer automatisk skjulteFodevareSet via $derived.
+			skjulBekraeft = null;
 		} catch (err) {
 			console.warn('Kunne ikke skjule fødevaren:', err);
+		} finally {
+			skjulArbejder = false;
 		}
 	}
 
@@ -2396,7 +2405,7 @@
 										aria-label="Fjern fra min oversigt"
 										title="Fjern fra min oversigt"
 									>
-										<span class="stem-ikon">🗑</span>
+										<Icon name="trash" size={14} color="currentColor" />
 									</button>
 								</div>
 							{/if}
@@ -2508,6 +2517,59 @@
 			<div class="modal-footer">
 				<button class="primary-knap" type="button" onclick={gemEgenFodevare} disabled={gemmerEgen}>
 					{gemmerEgen ? 'Gemmer…' : 'Gem'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if skjulBekraeft}
+	<div
+		class="modal-bag"
+		role="dialog"
+		aria-modal="true"
+		use:portalToBody
+		onclick={(e) => {
+			if (e.target === e.currentTarget) skjulBekraeft = null;
+		}}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') skjulBekraeft = null;
+		}}
+		tabindex="-1"
+	>
+		<div class="modal bekraeft-modal">
+			<div class="modal-head">
+				<div class="modal-titel">Fjern fra din oversigt?</div>
+				<button
+					class="modal-luk"
+					type="button"
+					onclick={() => (skjulBekraeft = null)}
+					aria-label="Luk"
+				>
+					×
+				</button>
+			</div>
+			<p class="bekraeft-tekst">
+				<strong>{skjulBekraeft.name}</strong> bliver fjernet fra din søgning og
+				dine lister. Den slettes ikke for andre brugere — du kan altid hente
+				den tilbage senere hvis du fortryder.
+			</p>
+			<div class="bekraeft-handlinger">
+				<button
+					type="button"
+					class="ghost-knap"
+					onclick={() => (skjulBekraeft = null)}
+					disabled={skjulArbejder}
+				>
+					Annullér
+				</button>
+				<button
+					type="button"
+					class="primary-knap bekraeft-fjern"
+					onclick={() => void bekraeftSkjul()}
+					disabled={skjulArbejder}
+				>
+					{skjulArbejder ? 'Fjerner…' : 'Fjern fra oversigt'}
 				</button>
 			</div>
 		</div>
@@ -3875,10 +3937,22 @@
 		text-decoration: underline;
 	}
 
+	/* Wrap-container der gør picker-row + stem-rad til én visuel kort-enhed:
+	   begge dele bor inde i en kantet boks og deler border + radius. Den
+	   indre .picker-row mister sin egen kant så det hele ser samlet ud. */
 	.picker-row-wrap {
 		display: flex;
 		flex-direction: column;
 		gap: 0;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		overflow: hidden;
+		transition: border-color 0.15s;
+	}
+
+	.picker-row-wrap:has(.picker-row:hover) {
+		border-color: var(--terra);
 	}
 
 	.picker-row-flex {
@@ -3891,6 +3965,13 @@
 	}
 	.picker-row-flex .picker-row {
 		flex: 1;
+		background: transparent;
+		border: none;
+		border-radius: 0;
+	}
+	.picker-row-flex .picker-row:hover {
+		background: var(--white);
+		border: none;
 	}
 
 	.badge {
@@ -3936,13 +4017,9 @@
 	.stem-rad {
 		display: flex;
 		gap: 8px;
-		padding: 8px 12px;
-		background: var(--bg2);
-		border-left: 1px solid var(--border);
-		border-right: 1px solid var(--border);
-		border-bottom: 1px solid var(--border);
-		border-radius: 0 0 10px 10px;
-		margin-top: -2px;
+		padding: 6px 10px 8px;
+		background: rgba(0, 0, 0, 0.02);
+		border-top: 1px solid var(--border);
 		justify-content: flex-end;
 	}
 
@@ -4001,11 +4078,13 @@
 		border-color: #c5544a;
 	}
 
-	/* 🗑 Skjul fra min oversigt — mørk */
+	/* Skjul fra min oversigt — mørk (kun ikon, ingen tekst) */
 	.stem-knap.stem-skjul {
 		color: #2a1f17;
 		border-color: #c4b9ad;
 		background: #f4ede4;
+		min-width: 38px;
+		padding: 6px 10px;
 	}
 	.stem-knap.stem-skjul:hover {
 		background: #2a1f17;
@@ -4930,5 +5009,42 @@
 		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text);
 		font-variant-numeric: tabular-nums;
+	}
+
+	/* Bekræftelses-modal til skjul-fødevare (erstatter native confirm()) */
+	.bekraeft-modal {
+		padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+		max-height: none;
+		height: auto;
+	}
+
+	.bekraeft-tekst {
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		margin: 0;
+		line-height: 1.5;
+	}
+
+	.bekraeft-tekst strong {
+		color: var(--text);
+	}
+
+	.bekraeft-handlinger {
+		display: flex;
+		gap: 8px;
+		margin-top: 4px;
+	}
+
+	.bekraeft-handlinger .ghost-knap,
+	.bekraeft-handlinger .primary-knap {
+		flex: 1;
+		margin: 0;
+	}
+
+	.bekraeft-fjern {
+		background: #c5544a;
 	}
 </style>
