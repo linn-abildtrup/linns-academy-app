@@ -100,9 +100,9 @@
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc?.());
-	// FAQ-fanen vises kun for forløbskunder — den hører til det aktive
-	// forløb. Modulbrugere (basis-app) ser kun Links + Lektioner.
-	const visFaq = $derived(erForlobsklient(userDoc));
+	// visFaq beregnes som $derived længere nede når faqItems-state er
+	// deklareret — vi kan ikke referere et $state-felt før det er
+	// declared, så placeringen er flyttet.
 
 	// Tab-id'er er strenge — faste navne som 'faq'/'guides'/'oevelser'/
 	// 'opskrifter' og dynamiske 'lektioner-{productType}' (fx 'lektioner-kickstart',
@@ -148,6 +148,11 @@
 	let faqItems = $state<FaqItem[]>([]);
 	let guideKategorier = $state<GuideKategori[]>([]);
 	let guideItems = $state<GuideItem[]>([]);
+
+	// FAQ-fanen vises kun for forløbskunder OG kun hvis der er FAQ-items
+	// fra et AKTIVT forløb. Gennemførte forløbs FAQ vises ikke — den hører
+	// til mens forløbet kører, ikke som referencebibliotek bagefter.
+	const visFaq = $derived(erForlobsklient(userDoc) && faqItems.length > 0);
 	// Lektioner grupperes pr forløbs-type (kickstart, premiumforløb osv.) så
 	// hver type får sin egen fane. Hver entry er aggregeret over alle
 	// instanser af samme type (fx hvis brugeren har gennemført Kickstart Maj
@@ -444,24 +449,45 @@
 				return;
 			}
 
+			// Først: hent forløb-data så vi kan adskille AKTIVE fra GENNEMFØRTE
+			// forløb. FAQ-fanen viser kun materiale fra aktive forløb — det
+			// hører til mens forløbet kører, ikke som referencebibliotek
+			// bagefter. Guides, øvelser og lektioner vises stadig for ALLE
+			// forløb (de er gennemført materiale brugeren har adgang til).
+			const forløbsData = await Promise.all(forlobIds.map((id) => hentForlob(id)));
+			const idagMs = Date.now();
+			const aktiveForlobIds = forlobIds.filter((_id, i) => {
+				const f = forløbsData[i];
+				if (!f) return false;
+				const startMs = f.startDato.toMillis();
+				const slutMs = startMs + f.antalDage * 24 * 60 * 60 * 1000;
+				return idagMs < slutMs;
+			});
+
+			// FAQ hentes KUN for aktive forløb
+			const faqResultater = await Promise.all(
+				aktiveForlobIds.map((forlobId) =>
+					Promise.all([hentFaqKategorier(forlobId), hentFaqItems(forlobId)])
+				)
+			);
+			faqKategorier = faqResultater.flatMap((r) => r[0]);
+			faqItems = faqResultater.flatMap((r) => r[1]);
+
+			// Guides + øvelser hentes for alle forløb (gennemførte + aktive)
 			const resultater = await Promise.all(
 				forlobIds.map((forlobId) =>
 					Promise.all([
-						hentFaqKategorier(forlobId),
-						hentFaqItems(forlobId),
 						hentGuideKategorier(forlobId),
 						hentGuideItems(forlobId),
 						hentOevelserForForlob(forlobId)
 					])
 				)
 			);
-			faqKategorier = resultater.flatMap((r) => r[0]);
-			faqItems = resultater.flatMap((r) => r[1]);
-			guideKategorier = resultater.flatMap((r) => r[2]);
-			guideItems = resultater.flatMap((r) => r[3]);
+			guideKategorier = resultater.flatMap((r) => r[0]);
+			guideItems = resultater.flatMap((r) => r[1]);
 			// Dedupliker øvelser efter id (en øvelse kan være i flere forløb)
 			const oevelseMap = new Map<string, Exercise>();
-			for (const ex of resultater.flatMap((r) => r[4])) {
+			for (const ex of resultater.flatMap((r) => r[2])) {
 				oevelseMap.set(ex.id, ex);
 			}
 			oevelser = Array.from(oevelseMap.values()).sort((a, b) =>
