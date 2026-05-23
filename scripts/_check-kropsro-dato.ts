@@ -1,0 +1,15 @@
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { readFileSync } from 'fs';
+const sa = JSON.parse(readFileSync('/Users/linnabildtrup/Projekter/linns-academy-app/scripts/service-account-key.json', 'utf-8'));
+initializeApp({ credential: cert(sa) });
+const db = getFirestore();
+const f = await db.collection('forlob').doc('kropsro_maj_2026').get();
+const d = f.data();
+const startMs = d?.startDato?.toMillis?.();
+const startDate = new Date(startMs);
+console.log('navn:', d?.navn);
+console.log('antalDage:', d?.antalDage);
+console.log('startDato ISO:', startDate.toISOString());
+console.log('startDato lokal:', startDate.toLocaleString('da-DK', { timeZone: 'Europe/Copenhagen' }));
+process.exit(0);
