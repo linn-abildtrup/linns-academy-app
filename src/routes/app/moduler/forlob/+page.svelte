@@ -550,7 +550,6 @@
 
 	.lektion-thumb {
 		width: 100%;
-		aspect-ratio: 16 / 9;
 		background: var(--cream);
 		overflow: hidden;
 		display: flex;
@@ -560,14 +559,13 @@
 
 	.lektion-thumb img {
 		width: 100%;
-		height: 100%;
-		object-fit: cover;
+		height: auto;
 		display: block;
 	}
 
 	.lektion-thumb-placeholder {
 		width: 100%;
-		height: 100%;
+		aspect-ratio: 16 / 9;
 		display: flex;
 		flex-direction: column;
 		align-items: center;

@@ -2616,20 +2616,19 @@
 		position: relative;
 		flex-shrink: 0;
 		width: 110px;
+		align-self: center;
 		border-radius: 10px;
 		overflow: hidden;
-		aspect-ratio: 16 / 10;
 		background: rgba(0, 0, 0, 0.2);
 	}
 	.lektion-thumb img {
 		width: 100%;
-		height: 100%;
-		object-fit: cover;
+		height: auto;
 		display: block;
 	}
 	.lektion-thumb-placeholder {
 		width: 100%;
-		height: 100%;
+		aspect-ratio: 16 / 10;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
