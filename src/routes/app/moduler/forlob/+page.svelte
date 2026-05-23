@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { goto, replaceState } from '$app/navigation';
 	import type { User } from 'firebase/auth';
+	import type { UserDoc } from '$lib/types';
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
@@ -15,7 +16,9 @@
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
 
 	const getUser = getContext<() => User | null>('user');
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
+	const userDoc = $derived(getUserDoc?.());
 
 	let forlob = $state<Forlob | null>(null);
 	let forlobsdage = $state<ForlobDag[]>([]);
@@ -143,29 +146,41 @@
 		}
 
 		try {
-			const up = await hentUserProduct(u.uid, 'kickstart');
-			if (!up) {
+			const ud = userDoc;
+			if (!ud) {
 				fejl = 'Du har ikke adgang til Mit forløb endnu.';
 				loading = false;
 				return;
 			}
 
-			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
-			if (!forlobId) {
+			// Find det aktive forløb baseret på dato (matcher forsidens logik —
+			// klient kan kun være på ét forløb ad gangen). Tidligere hentede
+			// siden KUN userProduct('kickstart') og fejlede for Kropsro-kunder.
+			const ids = ud.forlobIds ?? [];
+			if (ids.length === 0) {
 				fejl = 'Du er ikke tilknyttet et forløb endnu. Kontakt Linn.';
 				loading = false;
 				return;
 			}
-
-			const [f, dage] = await Promise.all([
-				hentForlob(forlobId),
-				hentForlobsdage(forlobId)
-			]);
-			if (!f) {
-				fejl = 'Forløbet kunne ikke findes.';
+			const forløbsData = await Promise.all(ids.map((id) => hentForlob(id)));
+			const idagMs = Date.now();
+			let aktivt: Forlob | null = null;
+			for (const f of forløbsData) {
+				if (!f) continue;
+				const startMs = f.startDato.toMillis();
+				const slutMs = startMs + f.antalDage * 24 * 60 * 60 * 1000;
+				if (idagMs >= startMs && idagMs < slutMs) {
+					aktivt = f;
+					break;
+				}
+			}
+			if (!aktivt) {
+				fejl = 'Du har ikke et aktivt forløb lige nu.';
 				loading = false;
 				return;
 			}
+			const dage = await hentForlobsdage(aktivt.id);
+			const f = aktivt;
 			forlob = f;
 			forlobsdage = dage;
 
