@@ -139,7 +139,8 @@ function laesCsv(estimater: Estimater): ParsetOpskrift[] {
 
 function byggInstruktioner(o: ParsetOpskrift): string {
 	const dele = [o.fremgangsmaade];
-	if (o.inspireretAf) dele.push(`Inspireret af: ${o.inspireretAf}`);
+	// 'Inspireret af'-linjen droppes bevidst — vi vil ikke henvise til kilden
+	// af opskrifterne (Arla / Spis Bedre / Valdemarsro osv.) i app-teksten.
 	if (o.tip) dele.push(`Tip: ${o.tip}`);
 	dele.push(
 		`Protein: ${o.protein} g | Fiber: ${o.fiber} g | Kalorier: ${o.kalorier} kcal | Tid: ${o.tidMin} minutter`
