@@ -1275,13 +1275,22 @@
 		}
 	}
 
-	// Sub-modal til "Se opskrift" der lader brugeren se en opskrift uden at
-	// forlade madplan-modalen.
-	let visningOpskrift = $state<Opskrift | null>(null);
+	// Sub-modal til "Se opskrift" — bruges både fra madplan-modalen og fra
+	// dagbog-måltider der har opskriftRef. Discriminated union så vi kan
+	// vise enten en global Opskrift eller en MinOpskrift.
+	type VisningOpskrift =
+		| { type: 'global'; opskrift: Opskrift }
+		| { type: 'egen'; opskrift: MinOpskrift };
+	let visningOpskrift = $state<VisningOpskrift | null>(null);
 
-	function visOpskriftInline(opskriftId: string) {
-		const o = opskrifter.find((x) => x.id === opskriftId);
-		if (o) visningOpskrift = o;
+	function visOpskriftInline(opskriftId: string, erEgen = false) {
+		if (erEgen) {
+			const o = mineOpskrifter.find((x) => x.id === opskriftId);
+			if (o) visningOpskrift = { type: 'egen', opskrift: o };
+		} else {
+			const o = opskrifter.find((x) => x.id === opskriftId);
+			if (o) visningOpskrift = { type: 'global', opskrift: o };
+		}
 	}
 
 	function lukOpskriftInline() {
@@ -1894,15 +1903,15 @@
 									<div class="dagbog-kort">
 										<div class="dagbog-kort-head">
 											{#if opskRef}
-												<a
+												<button
+													type="button"
 													class="dagbog-navn dagbog-navn-link"
-													href={opskRef.erEgen
-														? `/app/moduler/30-30-3/min-opskrift/${opskRef.id}`
-														: `/app/moduler/30-30-3/opskrifter/${opskRef.id}`}
+													onclick={() => visOpskriftInline(opskRef.id, opskRef.erEgen)}
+													title="Se opskrift"
 												>
 													{m.navn}
 													<span class="opskrift-link-pil" aria-hidden="true">›</span>
-												</a>
+												</button>
 											{:else}
 												<div class="dagbog-navn">{m.navn}</div>
 											{/if}
@@ -2575,15 +2584,13 @@
 									</div>
 									<p class="madplan-forslag-tekst">{forslag.hvorforPasser}</p>
 									<div class="madplan-forslag-handlinger">
-										{#if !forslag.erEgen}
-											<button
-												class="ghost-knap madplan-link"
-												type="button"
-												onclick={() => visOpskriftInline(forslag.opskriftId)}
-											>
-												Se opskrift
-											</button>
-										{/if}
+										<button
+											class="ghost-knap madplan-link"
+											type="button"
+											onclick={() => visOpskriftInline(forslag.opskriftId, forslag.erEgen)}
+										>
+											Se opskrift
+										</button>
 										<button
 											class="primary-knap"
 											type="button"
@@ -2650,6 +2657,12 @@
 {/if}
 
 {#if visningOpskrift}
+	{@const v = visningOpskrift}
+	{@const titel = v.type === 'global' ? v.opskrift.titel : v.opskrift.navn}
+	{@const billede = v.opskrift.billedeUrl}
+	{@const beskrivelse = v.opskrift.beskrivelse ?? ''}
+	{@const antalPortioner =
+		v.type === 'global' ? v.opskrift.defaultPortioner : v.opskrift.antalPortioner}
 	<div
 		class="modal-bag opskrift-inline-bag"
 		role="dialog"
@@ -2665,38 +2678,53 @@
 	>
 		<div class="modal opskrift-inline-modal">
 			<div class="modal-head">
-				<div class="modal-titel">{visningOpskrift.titel}</div>
+				<div class="modal-titel">{titel}</div>
 				<button class="modal-luk" type="button" onclick={lukOpskriftInline} aria-label="Luk">
 					×
 				</button>
 			</div>
 			<div class="opskrift-inline-body">
-				{#if visningOpskrift.billedeUrl}
+				{#if billede}
 					<img
 						class="opskrift-inline-billede"
-						src={visningOpskrift.billedeUrl}
-						alt={visningOpskrift.titel}
+						src={billede}
+						alt={titel}
 						width="800"
 						height="600"
 						loading="lazy"
 						decoding="async"
 					/>
 				{/if}
-				<p class="opskrift-inline-beskrivelse">{visningOpskrift.beskrivelse}</p>
+				{#if beskrivelse}
+					<p class="opskrift-inline-beskrivelse">{beskrivelse}</p>
+				{/if}
 
 				<div class="opskrift-inline-sektion">
-					<div class="opskrift-inline-sektion-titel">Ingredienser ({visningOpskrift.defaultPortioner} portion)</div>
+					<div class="opskrift-inline-sektion-titel">
+						Ingredienser ({antalPortioner} portion{antalPortioner === 1 ? '' : 'er'})
+					</div>
 					<ul class="opskrift-inline-ingrediens-liste">
-						{#each visningOpskrift.ingredienser as ing, i (i)}
+						{#each v.opskrift.ingredienser as ing, i (i)}
 							<li>{ing.maengde} {ing.enhed} {ing.navn}</li>
 						{/each}
 					</ul>
 				</div>
 
-				<div class="opskrift-inline-sektion">
-					<div class="opskrift-inline-sektion-titel">Sådan gør du</div>
-					<div class="opskrift-inline-instruktion">{visningOpskrift.instruktioner}</div>
-				</div>
+				{#if v.type === 'global'}
+					<div class="opskrift-inline-sektion">
+						<div class="opskrift-inline-sektion-titel">Sådan gør du</div>
+						<div class="opskrift-inline-instruktion">{v.opskrift.instruktioner}</div>
+					</div>
+				{:else}
+					<div class="opskrift-inline-sektion">
+						<div class="opskrift-inline-sektion-titel">Makro pr portion</div>
+						<div class="opskrift-inline-makro">
+							{v.opskrift.makroPrPortion.protein}g protein ·
+							{v.opskrift.makroPrPortion.fiber}g fiber ·
+							{v.opskrift.makroPrPortion.kcal} kcal
+						</div>
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -4776,16 +4804,21 @@
 		white-space: pre-wrap;
 	}
 
-	/* Dagbog-måltid med klikbart link til opskrift */
-	.dagbog-navn-link {
+	/* Dagbog-måltid med klikbar knap til at åbne opskrift i modal */
+	button.dagbog-navn-link {
+		background: none;
+		border: none;
+		padding: 0;
+		font: inherit;
 		color: inherit;
-		text-decoration: none;
+		text-align: left;
+		cursor: pointer;
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
 	}
 
-	.dagbog-navn-link:hover {
+	button.dagbog-navn-link:hover {
 		color: var(--terra);
 	}
 
@@ -4793,5 +4826,11 @@
 		color: var(--terra);
 		font-weight: 700;
 		font-size: 1.1em;
+	}
+
+	.opskrift-inline-makro {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		font-variant-numeric: tabular-nums;
 	}
 </style>
