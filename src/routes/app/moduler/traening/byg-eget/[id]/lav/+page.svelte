@@ -7,7 +7,11 @@
 	import type { Exercise } from '$lib/content/mikrotraening';
 	import { hentAlleExercises } from '$lib/firestore/mikrotraening';
 	import { hentMitProgram } from '$lib/firestore/mineProgrammer';
-	import type { CustomProgram } from '$lib/content/mineProgrammer';
+	import {
+		aktuelDag,
+		type CustomProgram,
+		type CustomProgramOevelse
+	} from '$lib/content/mineProgrammer';
 	import { getVideoUrl } from '$lib/utils/storage';
 
 	const getUser = getContext<() => User | null>('user');
@@ -84,7 +88,20 @@
 		}
 	});
 
-	const harOevelser = $derived((program?.oevelser.length ?? 0) > 0);
+	// 14-dages programmer har øvelser i dage[N-1].oevelser i stedet for
+	// program.oevelser. Beregn aktuel dag ud fra startetDato (sat første
+	// gang detail-siden blev åbnet).
+	const dagIDag = $derived(program ? aktuelDag(program) : 1);
+	const dagensOevelser = $derived.by<CustomProgramOevelse[]>(() => {
+		if (!program) return [];
+		if (program.dage && program.dage.length > 0) {
+			const dag = program.dage.find((d) => d.dagNummer === dagIDag);
+			return dag?.oevelser ?? [];
+		}
+		return program.oevelser ?? [];
+	});
+	const harOevelser = $derived(dagensOevelser.length > 0);
+	const erFlerdages = $derived((program?.dage?.length ?? 0) > 0);
 </script>
 
 <div class="page">
@@ -93,7 +110,13 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Træning</span>
 		</a>
-		<div class="eyebrow">Dagens træning</div>
+		<div class="eyebrow">
+			{#if erFlerdages && program?.dage}
+				Dag {dagIDag} af {program.dage.length}
+			{:else}
+				Dagens træning
+			{/if}
+		</div>
 		<h1>{program?.navn ?? 'Dagens øvelser'}</h1>
 		<p class="page-sub">
 			Tryk på en øvelse for at se den. Tryk Start træning for at gå i gang.
@@ -101,7 +124,7 @@
 		{#if program}
 			<a class="rediger-link" href={`/app/moduler/traening/byg-eget/${programId}`}>
 				<Icon name="settings" size={12} color="var(--text2)" />
-				<span>Rediger program</span>
+				<span>{erFlerdages ? 'Se hele programmet' : 'Rediger program'}</span>
 			</a>
 		{/if}
 	</header>
@@ -113,13 +136,16 @@
 	{:else if !harOevelser}
 		<div class="status-besked">Programmet har ingen øvelser endnu.</div>
 	{:else if program}
-		<a class="start-knap top" href={`/app/moduler/traening/byg-eget/${programId}/spil`}>
+		{@const spilHref = erFlerdages
+			? `/app/moduler/traening/byg-eget/${programId}/spil?dag=${dagIDag}`
+			: `/app/moduler/traening/byg-eget/${programId}/spil`}
+		<a class="start-knap top" href={spilHref}>
 			Start træning
 			<Icon name="arrow" size={14} color="#fff" />
 		</a>
 
 		<div class="ovelse-liste">
-			{#each program.oevelser as o, i (i)}
+			{#each dagensOevelser as o, i (i)}
 				{@const exercise = exerciseMap.get(o.exerciseId)}
 				<article class="ovelse-row">
 					<div class="ovelse-num">{i + 1}</div>
