@@ -1154,14 +1154,13 @@
 		madplanSvar = null;
 		try {
 			const alleKandidater = byggMadplanKandidater();
-			const filtrerede = filtrerKandidater(
-				alleKandidater,
-				madplanGlutenfri,
-				madplanUndgaa.filter((s) => s.trim().length > 0)
-			);
+			// Glutenfri filtreres klient-side (halverer pool og giver hurtigere
+			// svar). Undgå-ingredienser sendes til AI'en så katalog-puljen
+			// kan deles via prompt-cache på serveren.
+			const filtrerede = filtrerKandidater(alleKandidater, madplanGlutenfri);
 			if (filtrerede.length === 0) {
 				throw new Error(
-					'Ingen opskrifter matcher dine filtre. Prøv at fjerne glutenfri eller undgå-ingredienser.'
+					'Ingen glutenfri opskrifter fundet. Prøv at fjerne glutenfri-filteret.'
 				);
 			}
 			// Send navne på favorit-fødevarer (ikke ids — AI'en kender ikke ids)

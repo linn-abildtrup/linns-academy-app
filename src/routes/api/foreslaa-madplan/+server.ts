@@ -44,36 +44,24 @@ async function verificerToken(idToken: string): Promise<string | null> {
 	}
 }
 
-function byggSystemPrompt(req: ForeslaaRequest): string {
-	const favoritLinje =
-		req.favoritFoodNavne.length > 0
-			? `\nHun har markeret disse som favorit-fødevarer (foretræk opskrifter der bruger dem hvis muligt): ${req.favoritFoodNavne.join(', ')}.`
-			: '';
-	const undgaaLinje =
-		req.undgaaIngredienser.length > 0
-			? `\nHun vil IKKE have disse ingredienser: ${req.undgaaIngredienser.join(', ')}.`
-			: '';
-	const glutenLinje = req.glutenfri
-		? '\nKun glutenfri opskrifter må foreslås.'
-		: '';
-
-	return `Du er en dansk klinisk kostvejleder der bygger en madplan til én dag for en kvinde i overgangsalderen.
-
-Hendes daglige næringsmål:
-- Protein: ${req.maal.protein}g
-- Fiber: ${req.maal.fiber}g
-- Kulhydrater: ${req.maal.kh}g
-- Fedt: ${req.maal.fedt}g
-- Kalorier: ${req.maal.kcal} kcal${favoritLinje}${undgaaLinje}${glutenLinje}
+/**
+ * Statisk del af system-prompten — rolle + JSON-format + generelle regler.
+ * Ændrer sig ikke mellem requests, så Anthropic kan caches den (~600 tokens).
+ */
+const STATIC_SYSTEM = `Du er en dansk klinisk kostvejleder der bygger en madplan til én dag for en kvinde i overgangsalderen.
 
 Din opgave:
-1. Modtag pulje af kandidat-opskrifter i bruger-beskeden (allerede filtreret efter glutenfri- og undgå-krav).
-2. Vælg ${req.antalAlternativer} forslag til MORGENMAD, ${req.antalAlternativer} til FROKOST og ${req.antalAlternativer} til AFTENSMAD.
-3. Vælg så kombinationen tilsammen (1 fra hver kategori) rammer dagens mål bedst muligt — særligt protein og fiber.
-4. Prioriter variation: hvis brugeren får flere alternativer, så gør dem forskellige (forskellig protein-kilde, forskellige hovedingredienser).
-5. Hvert forslag skal pege på et opskriftId fra puljen. Ingen påfund — vælg KUN fra de leverede opskrifter.
-6. Skriv en kort 'hvorforPasser'-tekst (max 1 sætning) der forklarer hvorfor netop denne opskrift er god til hendes dag.
-7. Hvis du ikke kan finde ${req.antalAlternativer} egnede til en kategori, så lever færre — bedre 1 godt forslag end 3 dårlige.
+1. Modtag en pulje af kandidat-opskrifter (kommer i den næste system-blok) plus klientens daglige mål og filtre (kommer i bruger-beskeden).
+2. Vælg det ønskede antal forslag til MORGENMAD, FROKOST og AFTENSMAD.
+3. Filtrer kandidaterne efter reglerne:
+   - Hvis bruger har angivet "kun glutenfri", så vælg KUN opskrifter der har 'glutenfri' i deres dietTags.
+   - Hvis bruger har angivet ingredienser at undgå, så udelad opskrifter hvor en af deres ingredienser indeholder de angivne ord (case-insensitive substring-match).
+4. Vælg så kombinationen tilsammen (1 fra hver kategori) rammer dagens mål bedst muligt — særligt protein og fiber.
+5. Prioriter variation: hvis brugeren får flere alternativer, så gør dem forskellige (forskellig protein-kilde, forskellige hovedingredienser).
+6. Hvis brugeren har favorit-fødevarer, foretræk opskrifter der bruger dem hvis muligt.
+7. Hvert forslag skal pege på et opskriftId fra puljen. Ingen påfund — vælg KUN fra de leverede opskrifter.
+8. Skriv en kort 'hvorforPasser'-tekst (max 1 sætning) der forklarer hvorfor netop denne opskrift passer.
+9. Hvis du ikke kan finde nok egnede til en kategori, så lever færre — bedre 1 godt forslag end 3 dårlige.
 
 Returnér KUN JSON i dette format (intet andet, ingen markdown, ingen forklaring):
 
@@ -92,12 +80,14 @@ Returnér KUN JSON i dette format (intet andet, ingen markdown, ingen forklaring
 }
 
 Vær realistisk og praktisk. Brug danske ingredienser og portionsstørrelser.`;
-}
 
-function byggBrugerBesked(req: ForeslaaRequest): string {
-	// Komprimér kandidat-data så prompten ikke svulmer for meget.
-	// Send id + titel + kategori + makro + de første 6 ingredienser.
-	const forenklet = req.kandidater.map((k) => ({
+/**
+ * Bygger kandidat-katalog som JSON-streng. Hvis klienten sender samme pool
+ * to gange inden for 5 minutter, får anden request cache-hit på dette block
+ * (90% billigere på input-tokens for denne del).
+ */
+function byggKandidatKatalog(kandidater: ForeslaaRequest['kandidater']): string {
+	const forenklet = kandidater.map((k) => ({
 		id: k.id,
 		titel: k.titel,
 		kategori: k.kategori,
@@ -105,9 +95,42 @@ function byggBrugerBesked(req: ForeslaaRequest): string {
 		protein: k.protein,
 		fiber: k.fiber,
 		kalorier: k.kalorier,
-		ingredienser: k.ingredienser.slice(0, 6).join(', ')
+		dietTags: k.dietTags,
+		ingredienser: k.ingredienser.slice(0, 8).join(', ')
 	}));
-	return `Her er puljen af opskrifter at vælge fra (${forenklet.length} stk):\n\n${JSON.stringify(forenklet, null, 0)}\n\nVælg ${req.antalAlternativer} forslag pr måltidstype som beskrevet.`;
+	return `KANDIDAT-POOL (${forenklet.length} opskrifter at vælge fra):\n\n${JSON.stringify(forenklet, null, 0)}`;
+}
+
+/**
+ * Bruger-besked med de variabler der ændrer sig fra request til request:
+ * mål, filtre, antal alternativer, favoritter. Ikke cacheable.
+ */
+function byggBrugerBesked(req: ForeslaaRequest): string {
+	const favoritLinje =
+		req.favoritFoodNavne.length > 0
+			? `Favorit-fødevarer (foretræk hvis muligt): ${req.favoritFoodNavne.join(', ')}.`
+			: 'Ingen særlige favorit-fødevarer.';
+	const undgaaLinje =
+		req.undgaaIngredienser.length > 0
+			? `Udelad opskrifter med disse ingredienser: ${req.undgaaIngredienser.join(', ')}.`
+			: 'Ingen ingredienser at undgå.';
+	const glutenLinje = req.glutenfri
+		? 'Kun glutenfri (vælg kun opskrifter med "glutenfri" i dietTags).'
+		: 'Glutenfri er ikke et krav.';
+
+	return `Klientens daglige næringsmål:
+- Protein: ${req.maal.protein}g
+- Fiber: ${req.maal.fiber}g
+- Kulhydrater: ${req.maal.kh}g
+- Fedt: ${req.maal.fedt}g
+- Kalorier: ${req.maal.kcal} kcal
+
+Filtre:
+- ${glutenLinje}
+- ${undgaaLinje}
+- ${favoritLinje}
+
+Vælg ${req.antalAlternativer} forslag pr måltidstype (morgenmad, frokost, aftensmad) fra kandidat-poolen ovenfor.`;
 }
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -140,9 +163,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(429, `Du har brugt dine ${MAX_QUERIES_PR_DAG} daglige AI-queries. Prøv igen i morgen.`);
 	}
 
-	const systemPrompt = byggSystemPrompt(body);
+	const kandidatKatalog = byggKandidatKatalog(body.kandidater);
 	const brugerBesked = byggBrugerBesked(body);
 
+	// System-promtet sendes som array af blocks så vi kan sætte cache_control
+	// på kandidat-katalog. Anthropic cacher alt fra start til markøren — så
+	// både STATIC_SYSTEM og kandidat-katalog cached i 5 min. Cache-hit giver
+	// ~90% billigere input-tokens for den cachede del. Hvis to brugere kører
+	// foreslå-madplan inden for 5 min med samme opskrift-pool, betaler den
+	// anden kun en brøkdel for de ~7000 tokens katalog.
 	const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
 		method: 'POST',
 		headers: {
@@ -153,7 +182,14 @@ export const POST: RequestHandler = async ({ request }) => {
 		body: JSON.stringify({
 			model: MODEL,
 			max_tokens: MAX_TOKENS,
-			system: systemPrompt,
+			system: [
+				{ type: 'text', text: STATIC_SYSTEM },
+				{
+					type: 'text',
+					text: kandidatKatalog,
+					cache_control: { type: 'ephemeral' }
+				}
+			],
 			messages: [{ role: 'user', content: brugerBesked }]
 		})
 	});

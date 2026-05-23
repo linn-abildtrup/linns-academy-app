@@ -87,37 +87,23 @@ export interface MadplanSvar {
 // ==============================================
 
 /**
- * Returnerer en lowercase-version af strengen med danske bogstaver bevaret.
- * Bruges til case-insensitive matching uden at miste å/æ/ø.
- */
-function normaliser(s: string): string {
-	return s.trim().toLowerCase();
-}
-
-/**
- * Filtrerer kandidat-listen efter glutenfri-krav og undgå-ingredienser.
- * Glutenfri tjekker dietTags. Undgå-ingredienser tjekker substring-match
- * mod opskriftens ingrediens-navne (case-insensitive).
+ * Filtrerer kandidat-listen til AI'en.
+ *
+ * VIGTIGT: Vi filtrerer KUN på glutenfri her, IKKE på undgå-ingredienser.
+ * Det er bevidst: AI'en filtrerer undgå-ingredienser på serveren, så
+ * kandidat-katalogen er ens for alle ikke-glutenfri-brugere (eller alle
+ * glutenfri-brugere) og kan deles via Anthropic prompt caching.
+ *
+ * Glutenfri-filteret beholdes klient-side fordi det halverer pool-størrelsen
+ * og giver klart hurtigere svar, og fordi de to grupper alligevel har hver
+ * deres cache-entry.
  */
 export function filtrerKandidater(
 	kandidater: OpskriftKandidat[],
-	glutenfri: boolean,
-	undgaaIngredienser: string[]
+	glutenfri: boolean
 ): OpskriftKandidat[] {
-	const undgaa = undgaaIngredienser
-		.map(normaliser)
-		.filter((s) => s.length > 0);
-
-	return kandidater.filter((k) => {
-		if (glutenfri && !k.dietTags.includes('glutenfri')) return false;
-		if (undgaa.length > 0) {
-			const ings = k.ingredienser.map(normaliser);
-			for (const u of undgaa) {
-				if (ings.some((i) => i.includes(u))) return false;
-			}
-		}
-		return true;
-	});
+	if (!glutenfri) return kandidater;
+	return kandidater.filter((k) => k.dietTags.includes('glutenfri'));
 }
 
 /**
