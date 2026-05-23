@@ -170,7 +170,7 @@
 			basisabo: 'Basis-abo',
 			premiumabo: 'Premium-abo',
 			kickstart: 'Kickstart',
-			premiumforløb: 'Premium-forløb'
+			premiumforløb: 'Kropsro'
 		};
 		return a.activeProduct ? (map[a.activeProduct] ?? a.activeProduct) : '—';
 	}

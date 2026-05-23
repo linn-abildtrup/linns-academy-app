@@ -5,7 +5,7 @@
 // Brugerens UI-variant bestemmes nu af accessSource + accessLevel:
 //
 //   forløb        + basis    → forløbskunde (Maria-flow, Kickstart)
-//   forløb        + premium  → forløbskunde på premium-forløb
+//   forløb        + premium  → forløbskunde på Kropsro
 //   abonnement    + basis    → modulbruger (basisapp)
 //   abonnement    + premium  → modulbruger på premiumapp
 //   ingenting / none          → udlobet (eller ny bruger uden adgang)
@@ -118,7 +118,7 @@ export function harIngenAdgang(userDoc: UserDoc | null | undefined): boolean {
 
 /**
  * True hvis brugeren tidligere har været på et forløb (Kickstart eller
- * Premium-forløb). Bruges til at vise Træningsøvelser-fanen i bibliotek
+ * Kropsro). Bruges til at vise Træningsøvelser-fanen i bibliotek
  * for udløbede brugere og rene basis-abonnenter der har gennemført forløb.
  */
 export function harGennemfoertForlob(userDoc: UserDoc | null | undefined): boolean {

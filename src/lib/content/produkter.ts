@@ -6,7 +6,7 @@
 //   1. Basis-app (abonnement)        → modulbruger på basis-niveau
 //   2. Premium-app (abonnement)      → modulbruger på premium-niveau
 //   3. Kickstart-forløb (engangs)    → forløbskunde på basis-niveau
-//   4. Premium-forløb (engangs)      → forløbskunde på premium-niveau
+//   4. Kropsro-forløb (engangs)      → forløbskunde på premium-niveau
 //
 // accessLevel + accessSource bestemmer UI-varianten:
 //   - source='forløb'      → forløbskunde-UI (variant A1: strip + dagens lektion)
@@ -66,13 +66,13 @@ export const PRODUKTER: Record<ActiveProduct, Produkt> = {
 	},
 	premiumforløb: {
 		activeProduct: 'premiumforløb',
-		navn: 'Premium-forløb',
+		navn: 'Kropsro-forløb',
 		accessLevel: 'premium',
 		accessSource: 'forløb',
 		activeSubscription: false,
 		simpleroProduktId: null, // TODO: oprettes i Simplero
 		forlobId: 'kropsro_maj_2026',
-		beskrivelse: 'Engangskøb af premium-forløb — alt i Kickstart + premium-features (træningsprogram-valg, næring, vanetracker, Linn AI).'
+		beskrivelse: 'Engangskøb af Kropsro-forløb — alt i Kickstart + premium-features (træningsprogram-valg, næring, vanetracker, Linn AI).'
 	}
 };
 
@@ -86,7 +86,7 @@ export const PRODUKTER: Record<ActiveProduct, Produkt> = {
 //   - harPremium(userDoc)      → vis premium-only features (se nedenfor)
 //   - harBasisAdgang(userDoc)  → vis alt der er basis eller premium
 //
-//                                 Basis-abo  Premium-abo  Kickstart  Premium-forløb
+//                                 Basis-abo  Premium-abo  Kickstart  Kropsro
 // Mikrotræning                       ✅          ✅           ✅           ✅
 // Kost                               ✅          ✅           ✅           ✅
 // Vaner (basis-tracker)              ✅          ✅           ✅           ✅

@@ -224,7 +224,7 @@
 		<Loading tekst="Henter..." />
 	{:else if !harAdgang}
 		<div class="status-besked">
-			Linn AI er kun tilgængelig for premium-abonnenter og premium-forløb.
+			Linn AI er kun tilgængelig for premium-abonnenter og Kropsro.
 		</div>
 	{:else}
 		<div class="layout">

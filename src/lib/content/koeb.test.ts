@@ -55,7 +55,7 @@ describe('getKoebForUser', () => {
 		expect(koeb[0].lobende).toBe(false);
 	});
 
-	it('returnerer Premium-forløb for premiumforløb-kunde', () => {
+	it('returnerer Kropsro for premiumforløb-kunde', () => {
 		const koeb = getKoebForUser(
 			lavUserDoc({
 				state: 'forlobskunde',
@@ -65,7 +65,7 @@ describe('getKoebForUser', () => {
 			})
 		);
 		expect(koeb).toHaveLength(1);
-		expect(koeb[0].kortNavn).toBe('Premium-forløb');
+		expect(koeb[0].kortNavn).toBe('Kropsro');
 	});
 
 	it('returnerer Kickstart med læseadgang når bruger er i bonus-periode efter forløb', () => {

@@ -203,7 +203,7 @@ export async function synkroniserForlobskundeStatus(
 	// Vigtigt: gamle userProducts slettes ALDRIG — bibliotek skal stadig vise
 	// materiale fra forløb brugeren har gennemført, selv hvis hun nu er på
 	// noget andet. activeProduct-id'et bruges som dokumentnavn så Maria der
-	// først tager Kickstart og senere Premium-forløb ender med to docs:
+	// først tager Kickstart og senere Kropsro ender med to docs:
 	// products/kickstart + products/premiumforløb.
 	if (allowed.forlobId) {
 		const productId = allowed.activeProduct ?? 'kickstart';

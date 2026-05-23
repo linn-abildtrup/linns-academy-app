@@ -184,7 +184,7 @@
 
 	{#if !harAdgang}
 		<div class="status-besked">
-			Denne funktion er kun tilgængelig for premium-app og premium-forløb.
+			Denne funktion er kun tilgængelig for premium-app og Kropsro.
 		</div>
 	{:else if tilstand === 'vaelg'}
 		<div class="vaelg-card">

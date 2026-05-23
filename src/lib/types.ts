@@ -187,7 +187,7 @@ export interface UserDoc {
 	adminKlientMode?: 'forlob' | 'basisapp' | 'premiumapp';
 
 	/**
-	 * Alle forløb brugeren nogensinde har været på (Kickstart, Premium-forløb,
+	 * Alle forløb brugeren nogensinde har været på (Kickstart, Kropsro,
 	 * fremtidige forløb). Bruges af bibliotek-modulet til at vise materiale
 	 * fra alle gennemførte forløb. SKAL aldrig overskrives — kun appendes.
 	 * Webhook + sync-funktion bruger arrayUnion for at bevare historik.

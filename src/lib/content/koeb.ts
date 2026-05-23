@@ -28,14 +28,14 @@ const KORT_NAVN: Record<ActiveProduct, string> = {
 	basisabo: 'App',
 	premiumabo: 'App',
 	kickstart: 'Kickstart',
-	premiumforløb: 'Premium-forløb'
+	premiumforløb: 'Kropsro'
 };
 
 const VISNINGS_NAVN: Record<ActiveProduct, string> = {
 	basisabo: 'App',
 	premiumabo: 'App',
 	kickstart: 'Kickstart en sund overgangsalder',
-	premiumforløb: 'Premium-forløb'
+	premiumforløb: 'Kropsro'
 };
 
 function isoDato(ms: number): string {
