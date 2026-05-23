@@ -450,9 +450,8 @@
 			}
 
 			// Først: hent forløb-data så vi kan adskille AKTIVE fra GENNEMFØRTE
-			// forløb. FAQ-fanen viser kun materiale fra aktive forløb — det
-			// hører til mens forløbet kører, ikke som referencebibliotek
-			// bagefter. Guides, øvelser og lektioner vises stadig for ALLE
+			// forløb. FAQ og Links hører til mens forløbet kører — vises kun
+			// for aktive forløb. Øvelser og lektioner vises stadig for ALLE
 			// forløb (de er gennemført materiale brugeren har adgang til).
 			const forløbsData = await Promise.all(forlobIds.map((id) => hentForlob(id)));
 			const idagMs = Date.now();
@@ -464,30 +463,30 @@
 				return idagMs < slutMs;
 			});
 
-			// FAQ hentes KUN for aktive forløb
-			const faqResultater = await Promise.all(
+			// FAQ + Links hentes KUN for aktive forløb
+			const aktiveResultater = await Promise.all(
 				aktiveForlobIds.map((forlobId) =>
-					Promise.all([hentFaqKategorier(forlobId), hentFaqItems(forlobId)])
-				)
-			);
-			faqKategorier = faqResultater.flatMap((r) => r[0]);
-			faqItems = faqResultater.flatMap((r) => r[1]);
-
-			// Guides + øvelser hentes for alle forløb (gennemførte + aktive)
-			const resultater = await Promise.all(
-				forlobIds.map((forlobId) =>
 					Promise.all([
+						hentFaqKategorier(forlobId),
+						hentFaqItems(forlobId),
 						hentGuideKategorier(forlobId),
-						hentGuideItems(forlobId),
-						hentOevelserForForlob(forlobId)
+						hentGuideItems(forlobId)
 					])
 				)
 			);
-			guideKategorier = resultater.flatMap((r) => r[0]);
-			guideItems = resultater.flatMap((r) => r[1]);
+			faqKategorier = aktiveResultater.flatMap((r) => r[0]);
+			faqItems = aktiveResultater.flatMap((r) => r[1]);
+			guideKategorier = aktiveResultater.flatMap((r) => r[2]);
+			guideItems = aktiveResultater.flatMap((r) => r[3]);
+
+			// Øvelser hentes for alle forløb (gennemførte + aktive) — de er
+			// del af det personlige bibliotek brugeren bevarer
+			const resultater = await Promise.all(
+				forlobIds.map((forlobId) => hentOevelserForForlob(forlobId))
+			);
 			// Dedupliker øvelser efter id (en øvelse kan være i flere forløb)
 			const oevelseMap = new Map<string, Exercise>();
-			for (const ex of resultater.flatMap((r) => r[2])) {
+			for (const ex of resultater.flat()) {
 				oevelseMap.set(ex.id, ex);
 			}
 			oevelser = Array.from(oevelseMap.values()).sort((a, b) =>
