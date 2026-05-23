@@ -181,6 +181,11 @@
 	let valgteOpskriftKategorier = $state<OpskriftKategori[]>([]);
 	let valgteDietTags = $state<DietTag[]>([]);
 
+	// Pagination: vis 30 ad gangen for at undgå at 129+ kort renderes på en
+	// gang (især når billeder kommer på er det vigtigt at holde DOM let).
+	const OPSKRIFTER_PR_SIDE = 30;
+	let synligeOpskriftAntal = $state(OPSKRIFTER_PR_SIDE);
+
 	// Indkøbsliste-state — valgte opskrifter med portioner og overlay
 	let valgteOpskrifter = $state<ValgteOpskrifter>(new Map());
 	let viserIndkoebsliste = $state(false);
@@ -332,6 +337,31 @@
 	const filtreredeOpskrifter = $derived(
 		filtrerOpskrifter(opskrifter, opskriftSoeg, valgteOpskriftKategorier, valgteDietTags)
 	);
+
+	const synligeOpskrifter = $derived(
+		filtreredeOpskrifter.slice(0, synligeOpskriftAntal)
+	);
+
+	const harFlereOpskrifter = $derived(
+		synligeOpskriftAntal < filtreredeOpskrifter.length
+	);
+
+	// Nulstil pagination når filtre eller søgning ændres, så brugeren ikke
+	// pludselig ser fragmenter af en gammel resultatside.
+	$effect(() => {
+		// Reaktive afhængigheder — Svelte tracker disse
+		void opskriftSoeg;
+		void valgteOpskriftKategorier;
+		void valgteDietTags;
+		synligeOpskriftAntal = OPSKRIFTER_PR_SIDE;
+	});
+
+	function visFlereOpskrifter() {
+		synligeOpskriftAntal = Math.min(
+			synligeOpskriftAntal + OPSKRIFTER_PR_SIDE,
+			filtreredeOpskrifter.length
+		);
+	}
 
 	const totaler = $derived(beregnMaaltid(maaltid, foodMap));
 	const proteinPct = $derived(procentMod(PROTEIN_MAALTIDS_MAAL, totaler.protein));
@@ -1544,13 +1574,21 @@
 				<div class="status-besked">Ingen opskrifter matcher dine filtre.</div>
 			{:else}
 				<div class="opskrift-grid">
-					{#each filtreredeOpskrifter as o (o.id)}
+					{#each synligeOpskrifter as o, i (o.id)}
 						{@const erValgt = valgteOpskrifter.has(o.id)}
 						{@const portioner = valgteOpskrifter.get(o.id) ?? o.defaultPortioner}
 						<a class="opskrift-kort" class:valgt={erValgt} href="/app/moduler/30-30-3/opskrifter/{o.id}">
 							<div class="opskrift-billede">
 								{#if o.billedeUrl}
-									<img src={o.billedeUrl} alt={o.titel} />
+									<img
+										src={o.billedeUrl}
+										alt={o.titel}
+										width="400"
+										height="300"
+										loading={i < 6 ? 'eager' : 'lazy'}
+										decoding="async"
+										fetchpriority={i < 6 ? 'high' : 'low'}
+									/>
 								{:else}
 									<div class="opskrift-emoji">🍽️</div>
 								{/if}
@@ -1594,6 +1632,16 @@
 						</a>
 					{/each}
 				</div>
+
+				{#if harFlereOpskrifter}
+					<button
+						type="button"
+						class="vis-flere-knap"
+						onclick={visFlereOpskrifter}
+					>
+						Vis flere ({filtreredeOpskrifter.length - synligeOpskriftAntal} tilbage)
+					</button>
+				{/if}
 
 				{#if valgteAntal > 0}
 					<div class="indkoeb-bar">
@@ -3195,11 +3243,38 @@
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
+		/* Blød fade-in når lazy-loaded billede ankommer — undgår 'pop'
+		   når browseren swapper placeholder ud */
+		animation: billede-fade-in 0.3s ease-out;
+	}
+
+	@keyframes billede-fade-in {
+		from { opacity: 0; }
+		to { opacity: 1; }
 	}
 
 	.opskrift-emoji {
 		font-size: calc(38px * var(--fs-scale, 1));
 		opacity: 0.4;
+	}
+
+	.vis-flere-knap {
+		display: block;
+		margin: 16px auto 0;
+		padding: 12px 24px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 99px;
+		font-family: inherit;
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 500;
+		color: var(--text2);
+		cursor: pointer;
+	}
+
+	.vis-flere-knap:hover {
+		border-color: var(--terra);
+		color: var(--terra);
 	}
 
 	.opskrift-tekst {

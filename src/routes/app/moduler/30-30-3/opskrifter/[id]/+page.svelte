@@ -124,7 +124,15 @@
 	{:else if opskrift}
 		<div class="hero">
 			{#if opskrift.billedeUrl}
-				<img class="hero-img" src={opskrift.billedeUrl} alt={opskrift.titel} />
+				<img
+					class="hero-img"
+					src={opskrift.billedeUrl}
+					alt={opskrift.titel}
+					width="800"
+					height="600"
+					fetchpriority="high"
+					decoding="async"
+				/>
 			{:else}
 				<div class="hero-emoji">🍽️</div>
 			{/if}
