@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
-	import type { UserDoc } from '$lib/types';
+	import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type UserDoc } from '$lib/types';
 	import { getModulerForUser, type Modul } from '$lib/content/moduler';
 	import Icon from '$lib/components/Icon.svelte';
 	import { effektivState, harGennemfoertForlob } from '$lib/utils/userAdgang';
@@ -30,8 +30,8 @@
 		try {
 			const [forløbsData, kickstartUp, kropsroUp] = await Promise.all([
 				Promise.all(forlobIds.map((id) => hentForlob(id))),
-				hentUserProduct(u.uid, 'kickstart'),
-				hentUserProduct(u.uid, 'premiumforløb')
+				hentUserProduct(u.uid, KICKSTART_PRODUCT_ID),
+				hentUserProduct(u.uid, KROPSRO_PRODUCT_ID)
 			]);
 			const idagMs = Date.now();
 			for (const f of forløbsData) {

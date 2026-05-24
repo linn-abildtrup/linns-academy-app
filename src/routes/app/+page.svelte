@@ -5,7 +5,7 @@
 	import { doc as doc_ref, updateDoc } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
 	import type { User } from 'firebase/auth';
-	import type { UserDoc } from '$lib/types';
+	import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type UserDoc } from '$lib/types';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import type { ForlobDag } from '$lib/content/forlob';
 	import type { UserProduct } from '$lib/content/mikrotraening';
@@ -345,7 +345,7 @@
 		const ud = userDoc;
 		if (!ud) return;
 		const erKropsro =
-			ud.accessSource === 'forløb' && ud.activeProduct === 'premiumforløb';
+			ud.accessSource === 'forløb' && ud.activeProduct === KROPSRO_PRODUCT_ID;
 		if (!erKropsro) return;
 
 		// Buddy-modalen har precedens — vises før Facebook-spørgsmålet
@@ -907,8 +907,8 @@
 			// userProduct'et — ellers ville forløbet 'udløbe' for tidligt.
 			const [forløbsData, kickstartUp, kropsroUp] = await Promise.all([
 				Promise.all(ids.map((id) => hentForlob(id))),
-				hentUserProduct(uid, 'kickstart'),
-				hentUserProduct(uid, 'premiumforløb')
+				hentUserProduct(uid, KICKSTART_PRODUCT_ID),
+				hentUserProduct(uid, KROPSRO_PRODUCT_ID)
 			]);
 			const idagMs = Date.now();
 			let aktivt = null;
@@ -928,7 +928,7 @@
 			if (!aktivt) return;
 			if (aktivtUp) userProduct = aktivtUp;
 			else {
-				const fallback = await hentUserProduct(uid, 'kickstart');
+				const fallback = await hentUserProduct(uid, KICKSTART_PRODUCT_ID);
 				if (fallback) userProduct = fallback;
 			}
 

@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { goto, replaceState } from '$app/navigation';
 	import type { User } from 'firebase/auth';
-	import type { UserDoc } from '$lib/types';
+	import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type UserDoc } from '$lib/types';
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
@@ -184,8 +184,8 @@
 			}
 			const [forløbsData, kickstartUp, kropsroUp] = await Promise.all([
 				Promise.all(ids.map((id) => hentForlob(id))),
-				hentUserProduct(u.uid, 'kickstart'),
-				hentUserProduct(u.uid, 'premiumforløb')
+				hentUserProduct(u.uid, KICKSTART_PRODUCT_ID),
+				hentUserProduct(u.uid, KROPSRO_PRODUCT_ID)
 			]);
 			const idagMs = Date.now();
 			let aktivt: Forlob | null = null;

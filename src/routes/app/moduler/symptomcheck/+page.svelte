@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
 	import type { User } from 'firebase/auth';
-	import type { UserDoc } from '$lib/types';
+	import { KROPSRO_PRODUCT_ID, type UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import {
@@ -174,7 +174,7 @@
 		}
 		if (
 			userDoc?.accessSource === 'forløb' &&
-			userDoc.activeProduct === 'premiumforløb'
+			userDoc.activeProduct === KROPSRO_PRODUCT_ID
 		) {
 			return 'På Kropsro udfylder du hver 4. søndag gennem dit forløb.';
 		}

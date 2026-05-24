@@ -23,6 +23,11 @@ import type {
 	Forlob
 } from '$lib/content/forlobAdgang';
 import type { ForlobDag } from '$lib/content/forlob';
+import {
+	KICKSTART_PRODUCT_ID,
+	KROPSRO_PRODUCT_ID,
+	type ForlobProduct
+} from '$lib/types';
 
 // ==============================================
 // Forlob-helpers
@@ -85,17 +90,18 @@ export function ryForlobCache(): void {
 
 /**
  * Finder hvilken activeProduct den nuvaerende dato falder indenfor for en
- * bruger med flere forloebsIDs. Returnerer 'premiumforloeb' hvis brugeren
- * aktuelt er paa et Kropsro-forloeb, ellers 'kickstart'. Falder tilbage til
- * 'kickstart' hvis intet forloeb matcher (fx hvis ingen er aktive endnu).
+ * bruger med flere forloebsIDs. Returnerer KROPSRO_PRODUCT_ID hvis brugeren
+ * aktuelt er paa et Kropsro-forloeb, ellers KICKSTART_PRODUCT_ID. Falder
+ * tilbage til Kickstart hvis intet forloeb matcher (fx hvis ingen er
+ * aktive endnu).
  *
- * Bruges af mikrotraenings-siderne som ellers hardcodede 'kickstart' og
+ * Bruges af mikrotraenings-siderne som ellers hardcodede Kickstart og
  * derfor ikke kunne haandtere Kropsro-kunders programValg + fremgang.
  */
 export async function hentAktivProduktType(
 	forlobIds: string[]
-): Promise<'kickstart' | 'premiumforløb'> {
-	if (forlobIds.length === 0) return 'kickstart';
+): Promise<ForlobProduct> {
+	if (forlobIds.length === 0) return KICKSTART_PRODUCT_ID;
 	const forløbsData = await Promise.all(forlobIds.map((id) => hentForlob(id)));
 	const idagMs = Date.now();
 	for (const f of forløbsData) {
@@ -103,10 +109,10 @@ export async function hentAktivProduktType(
 		const startMs = f.startDato.toMillis();
 		const slutMs = startMs + f.antalDage * 24 * 60 * 60 * 1000;
 		if (idagMs >= startMs && idagMs < slutMs) {
-			return f.type === 'kropsro' ? 'premiumforløb' : 'kickstart';
+			return f.type === 'kropsro' ? KROPSRO_PRODUCT_ID : KICKSTART_PRODUCT_ID;
 		}
 	}
-	return 'kickstart';
+	return KICKSTART_PRODUCT_ID;
 }
 
 /**

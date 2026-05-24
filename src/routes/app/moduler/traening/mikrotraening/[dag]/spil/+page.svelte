@@ -25,7 +25,7 @@
 	import { formaterHistorikDato } from '$lib/content/traeningHistorik';
 	import { hentAktivProduktType } from '$lib/firestore/forlob';
 	import { getAudioUrl, getVideoUrl } from '$lib/utils/storage';
-	import type { UserDoc } from '$lib/types';
+	import { KICKSTART_PRODUCT_ID, type ForlobProduct, type UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -41,7 +41,7 @@
 
 	const dagNummer = $derived(parseInt(page.params.dag ?? '', 10));
 
-	let produktType = $state<'kickstart' | 'premiumforløb'>('kickstart');
+	let produktType = $state<ForlobProduct>(KICKSTART_PRODUCT_ID);
 	let userProduct = $state<UserProduct | null>(null);
 	let programData = $state<ProgramMedDage | null>(null);
 	let exerciseMap = $state<Map<string, Exercise>>(new Map());

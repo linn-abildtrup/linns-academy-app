@@ -204,7 +204,8 @@ export async function synkroniserForlobskundeStatus(
 	// materiale fra forløb brugeren har gennemført, selv hvis hun nu er på
 	// noget andet. activeProduct-id'et bruges som dokumentnavn så Maria der
 	// først tager Kickstart og senere Kropsro ender med to docs:
-	// products/kickstart + products/premiumforløb.
+	// products/kickstart + products/premiumforløb (det interne id for
+	// Kropsro — se KROPSRO_PRODUCT_ID i types.ts).
 	if (allowed.forlobId) {
 		const productId = allowed.activeProduct ?? 'kickstart';
 		const productRef = doc(db, 'users', uid, 'products', productId);

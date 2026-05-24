@@ -26,8 +26,27 @@ export type AccessSource = 'abonnement' | 'forløb';
 /**
  * Det specifikke produkt brugeren har købt. Sat fra Simplero-webhook
  * baseret på hvilket tag der blev tilføjet.
+ *
+ * VIGTIGT: 'premiumforløb' er det historiske interne id for det produkt
+ * der i UI og kommunikation hedder "Kropsro". Da appen blev bygget
+ * havde Linn endnu ikke navngivet forløbet — 'premiumforløb' blev brugt
+ * som arbejdsnavn og er nu indlejret i Firestore-data + webhook-mapping.
+ * Brug konstanten KROPSRO_PRODUCT_ID nedenfor i stedet for at hardcode
+ * strengen, så koden er læsbar uden at man skal kende historien.
  */
 export type ActiveProduct = 'kickstart' | 'premiumforløb' | 'basisabo' | 'premiumabo';
+
+/**
+ * Læsbart alias for det interne 'premiumforløb'-id. Kropsro-forløbet
+ * (engangskøb af 84-dages premium-forløb).
+ */
+export const KROPSRO_PRODUCT_ID = 'premiumforløb' as const;
+
+/** Læsbart alias for Kickstart-forløbet (engangskøb af 21-dages basis-forløb). */
+export const KICKSTART_PRODUCT_ID = 'kickstart' as const;
+
+/** Forløbskunde-produkter (engangs-køb af et forløb). */
+export type ForlobProduct = typeof KICKSTART_PRODUCT_ID | typeof KROPSRO_PRODUCT_ID;
 
 /**
  * Bruger-dokumentet i Firestore-collection 'users'.

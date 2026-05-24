@@ -8,7 +8,7 @@
 // han samtidig opdatere de relevante sektioner her, så svarene bliver i sync
 // med koden.
 
-import type { ActiveProduct } from '$lib/types';
+import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type ActiveProduct } from '$lib/types';
 
 export const APP_HJAELP_MAX_QUERIES_PR_DAG = 30;
 
@@ -20,13 +20,14 @@ export function appHjaelpQuotaNoegle(dato: Date = new Date()): string {
 }
 
 // Hvilke produkt-typer hver sektion gælder for. Inkluderer brugeren mindst
-// ét af de listede produkter, vises sektionen.
-type Produkt = ActiveProduct; // 'basisabo' | 'premiumabo' | 'kickstart' | 'premiumforløb'
+// ét af de listede produkter, vises sektionen. 'premiumforløb' = Kropsro
+// (se KROPSRO_PRODUCT_ID i types.ts).
+type Produkt = ActiveProduct;
 
-const ALLE_PRODUKTER: Produkt[] = ['basisabo', 'premiumabo', 'kickstart', 'premiumforløb'];
+const ALLE_PRODUKTER: Produkt[] = ['basisabo', 'premiumabo', KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID];
 const MODULBRUGERE: Produkt[] = ['basisabo', 'premiumabo'];
-const FORLOBSKUNDER: Produkt[] = ['kickstart', 'premiumforløb'];
-const PREMIUM: Produkt[] = ['premiumabo', 'premiumforløb'];
+const FORLOBSKUNDER: Produkt[] = [KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID];
+const PREMIUM: Produkt[] = ['premiumabo', KROPSRO_PRODUCT_ID];
 
 export interface AppHjaelpSektion {
 	titel: string;
@@ -303,7 +304,7 @@ Bemærk: Den ugentlige slider-check inde i Vaner-modulet (om søndagen) fortsæt
 	},
 	{
 		titel: 'Buddy-gruppe på Kropsro',
-		visFor: ['premiumforløb'],
+		visFor: [KROPSRO_PRODUCT_ID],
 		indhold: `Ved første login på Kropsro bliver du spurgt om du vil være med i en buddy-gruppe på fire til fem personer fra forløbet, der holder hinanden oppe i hverdagen. En slags minifællesskab indenfor det store fællesskab.
 
 I skriver sammen, deler hvad der er svært, fejrer jeres små wins og holder hinanden ansvarlig. Det er frivilligt at deltage.
@@ -314,7 +315,7 @@ Du bliver kun spurgt én gang ved første login. Når du har sagt ja eller nej, 
 	},
 	{
 		titel: 'Facebook-gruppe på Kropsro',
-		visFor: ['premiumforløb'],
+		visFor: [KROPSRO_PRODUCT_ID],
 		indhold: `På dag 0 eller derefter bliver du spurgt om du er kommet ind i Kropsros Facebook-gruppe. Gruppen er hvor deltagerne mødes, deler oplevelser og stiller spørgsmål til Linn.
 
 Svar Ja hvis du er inde — så spørger vi ikke igen. Svar "Ikke endnu" hvis du stadig leder efter linket (du finder det i din velkomst-mail fra Linn).
@@ -345,7 +346,7 @@ For at skifte aktivt program: gå til Moduler → Træning og klik "Vælg" ved s
 // =============================================================================
 
 function fagligRedirect(activeProduct: ActiveProduct | undefined): string {
-	const erPremium = activeProduct === 'premiumabo' || activeProduct === 'premiumforløb';
+	const erPremium = activeProduct === 'premiumabo' || activeProduct === KROPSRO_PRODUCT_ID;
 	if (erPremium) {
 		return 'henvis til Linn AI (premium-feature i Moduler)';
 	}

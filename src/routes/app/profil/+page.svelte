@@ -10,7 +10,7 @@
 	import { doc as doc_ref, updateDoc } from 'firebase/firestore';
 	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
-	import type { UserDoc } from '$lib/types';
+	import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type ForlobProduct, type UserDoc } from '$lib/types';
 	import { getKoebForUser, formatUdlobsdato } from '$lib/content/koeb';
 	import type { TrainingProgram, UserProduct } from '$lib/content/mikrotraening';
 	import {
@@ -133,7 +133,7 @@
 	let mtIndlaeser = $state(false);
 	let mtFejl = $state<string | null>(null);
 	let mtGemmer = $state<string | null>(null);
-	let mtProduktType = $state<'kickstart' | 'premiumforløb'>('kickstart');
+	let mtProduktType = $state<ForlobProduct>(KICKSTART_PRODUCT_ID);
 	let mtForlobId = $state<string | null>(null);
 
 	// Nul-dage (test-feature)
@@ -144,7 +144,7 @@
 	let nulFejl = $state<string | null>(null);
 	let nulFortrydMs = $state<number | null>(null);
 	const harNulDageTest = $derived(harTestAdgang(userDoc, 'nul-dage'));
-	const erKropsro = $derived(mtProduktType === 'premiumforløb');
+	const erKropsro = $derived(mtProduktType === KROPSRO_PRODUCT_ID);
 	const visNulDage = $derived(harNulDageTest && erKropsro && !!mtForlobId);
 	const nulBrugt = $derived(nulDageDatoer(nulIntervaller).length);
 	const nulTilbage = $derived(MAX_NUL_DAGE_PR_FORLOB - nulBrugt);

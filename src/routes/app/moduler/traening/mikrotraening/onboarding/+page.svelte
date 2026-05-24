@@ -2,7 +2,7 @@
 	import { getContext, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
-	import type { UserDoc } from '$lib/types';
+	import { KICKSTART_PRODUCT_ID, type ForlobProduct, type UserDoc } from '$lib/types';
 	import type { TrainingProgram, UserProduct } from '$lib/content/mikrotraening';
 	import {
 		gemProgramValg,
@@ -23,7 +23,7 @@
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let gemmer = $state<string | null>(null);
-	let produktType = $state<'kickstart' | 'premiumforløb'>('kickstart');
+	let produktType = $state<ForlobProduct>(KICKSTART_PRODUCT_ID);
 	let aktivtForlobId = $state<string | null>(null);
 
 	function ikonForUdstyr(udstyr: string[]): IconName {
