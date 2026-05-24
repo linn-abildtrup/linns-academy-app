@@ -66,6 +66,7 @@
 	import Loading from '$lib/components/Loading.svelte';
 	import { effektivState, harPremium } from '$lib/utils/userAdgang';
 	import {
+		detekterGuideType,
 		erInspirationLektion,
 		erLydLektion,
 		erVideoLektion,
@@ -1259,11 +1260,15 @@
 								{@const erInspiration = erInspirationLektion(lektion.url)}
 								{@const visThumb = erVideoLektion(lektion.url) || erLyd || erInspiration}
 								{@const visFormat = erInspiration ? 'Inspiration' : lektion.format}
+								{@const guideType = detekterGuideType(lektion.url)}
+								{@const erEksternt = guideType === 'pdf' || guideType === 'link'}
 								<a
 									class="lektion-card lektion-card-kompakt"
 									class:lektion-card-medThumb={visThumb}
 									data-tone={i % 3}
-									href="/app/moduler/forlob?lektion={lektion.id}"
+									href={erEksternt ? lektion.url : `/app/moduler/forlob?lektion=${lektion.id}`}
+									target={erEksternt ? '_blank' : undefined}
+									rel={erEksternt ? 'noopener noreferrer' : undefined}
 								>
 									<div class="lektion-decoration lektion-decoration-1"></div>
 									<div class="lektion-decoration lektion-decoration-2"></div>
