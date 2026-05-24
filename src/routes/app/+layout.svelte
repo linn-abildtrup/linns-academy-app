@@ -39,29 +39,50 @@
 	function effektivUserDoc(d: UserDoc | null): UserDoc | null {
 		if (!d) return null;
 		const mode = d.adminKlientMode;
+		// Admin's egne expiresAt/bonusPeriodEndsAt-felter kan vaere udloebet
+		// (fx fra tidligere test-roller). Vi nulstiller dem i klient-mode saa
+		// effektivState() ikke faelder hende som udlobet — klient-oplevelsen
+		// skal afspejle 'aktiv klient', ikke admin's egen historik.
+		const klientOverride = {
+			expiresAt: undefined,
+			bonusPeriodEndsAt: undefined
+		};
+		// Naar admin tester et specifikt forloeb, skal forlobId vaere i
+		// forlobIds saa forsidens indlaesForlob-flow finder det. Vi tilfoejer
+		// adminKlientForlobId hvis det ikke allerede er der.
+		function medAdminForlobId(forlobIds: string[] | undefined, id: string | undefined): string[] | undefined {
+			if (!id) return forlobIds;
+			const liste = forlobIds ?? [];
+			return liste.includes(id) ? liste : [...liste, id];
+		}
 		// Bagudkompatibilitet: hvis adminKlientForlobId er sat men adminKlientMode
 		// mangler (gamle dokumenter), antag forlobs-mode.
 		if (!mode && d.adminKlientForlobId) {
 			return {
 				...d,
+				...klientOverride,
 				state: 'forlobskunde',
 				accessLevel: 'basis',
 				accessSource: 'forløb',
-				activeProduct: 'kickstart'
+				activeProduct: 'kickstart',
+				forlobIds: medAdminForlobId(d.forlobIds, d.adminKlientForlobId)
 			};
 		}
 		if (mode === 'forlob') {
 			return {
 				...d,
+				...klientOverride,
 				state: 'forlobskunde',
 				accessLevel: 'basis',
 				accessSource: 'forløb',
-				activeProduct: 'kickstart'
+				activeProduct: 'kickstart',
+				forlobIds: medAdminForlobId(d.forlobIds, d.adminKlientForlobId)
 			};
 		}
 		if (mode === 'basisapp') {
 			return {
 				...d,
+				...klientOverride,
 				state: 'modulbruger',
 				accessLevel: 'basis',
 				accessSource: 'abonnement',
@@ -72,6 +93,7 @@
 		if (mode === 'premiumapp') {
 			return {
 				...d,
+				...klientOverride,
 				state: 'modulbruger',
 				accessLevel: 'premium',
 				accessSource: 'abonnement',
