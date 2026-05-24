@@ -146,14 +146,19 @@
 		try {
 			produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
 			const up = await hentUserProduct(u.uid, produktType);
-			if (!up) {
+			// Admin i klient-mode har ikke noedvendigvis et userProduct-doc.
+			// I det tilfaelde bruger vi adminKlientForlobId direkte saa preview
+			// stadig virker.
+			const adminForlobId = userDoc?.adminKlientForlobId ?? null;
+			if (!up && !adminForlobId) {
 				fejl = 'Du har ikke adgang til vanetracker endnu.';
 				loading = false;
 				return;
 			}
-			userProduct = up;
+			if (up) userProduct = up;
 
-			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+			const forlobId =
+				(up as UserProduct & { forlobId?: string } | null)?.forlobId ?? adminForlobId;
 			if (!forlobId) {
 				fejl = 'Du er ikke tilknyttet et forløb endnu.';
 				loading = false;
