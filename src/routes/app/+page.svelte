@@ -1445,7 +1445,10 @@
 						<div class="eyebrow eyebrow-muted">Dagens refleksion</div>
 					</div>
 					<p class="reflection-tekst">{aktivVaneprogramDag.reflection}</p>
-					<a class="reflection-link" href="/app/moduler/vaner/{aktivVaneprogramDag.dagNummer}">
+					<a
+						class="reflection-link"
+						href={`/app/moduler/vaner/${aktivVaneprogramDag.dagNummer}${iPreviewMode ? `?previewDag=${aktivVaneprogramDag.dagNummer}` : ''}`}
+					>
 						Skriv dit svar
 						<Icon name="chevron-r" size={14} color="var(--terra)" />
 					</a>
