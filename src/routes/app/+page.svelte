@@ -1179,6 +1179,20 @@
 		gemmerSvar = true;
 		const aktuel = forlobVanedag ?? tomForlobVanedag(n);
 		const nyCheckin = { ...aktuel.checkin, [spId]: vaerdi } as CheckinSvar;
+		// Paa baseline- og check-in-dage skal vi altid have et komplet snapshot.
+		// Slidere klienten ikke har bevaeget faar default-vaerdien 5 (neutral)
+		// saa sammenligning paa tvaers af forloeb-checkins ikke har huller.
+		// Samme logik som dag-page'ns gem()-funktion.
+		const erBaselineEllerCheckin =
+			!!aktivVaneprogramDag && (aktivVaneprogramDag.isBaseline || aktivVaneprogramDag.isCheckin);
+		if (erBaselineEllerCheckin) {
+			for (const sp of CHECKIN_SPORGSMAAL) {
+				const id = sp.id as Exclude<keyof CheckinSvar, 'generelTekst'>;
+				if (typeof nyCheckin[id] !== 'number') {
+					nyCheckin[id] = 5;
+				}
+			}
+		}
 		const ny: VanedagEntry = { ...aktuel, checkin: nyCheckin };
 		forlobVanedag = ny;
 		try {
