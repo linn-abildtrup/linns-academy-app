@@ -10,6 +10,8 @@
 		type KlientSpoergsmaal,
 		type SpoergsmaalStatus
 	} from '$lib/firestore/spoergsmaal';
+	import { hentAlleForlob } from '$lib/firestore/forlob';
+	import type { Forlob } from '$lib/content/forlobAdgang';
 
 	type Filter = 'alle' | SpoergsmaalStatus;
 
@@ -29,6 +31,7 @@
 	};
 
 	let alle = $state<KlientSpoergsmaal[]>([]);
+	let alleForlob = $state<Forlob[]>([]);
 	let aktivtFilter = $state<Filter>('alle');
 	// Forløbs-filter: 'alle' (alt), 'modulbrugere', 'uden-forlob' eller et forlobId
 	let aktivtForlobFilter = $state<string>('alle');
@@ -119,6 +122,14 @@
 				ubesvaret: alle.filter((q) => !q.svar).length
 			}
 		];
+		// Sikr at alle aktive forloeb i Firestore ogsaa optraeder — selv
+		// hvis ingen klient har stillet sporgsmaal endnu (admin vil kunne
+		// vaelge filtret for at se '0 sporgsmaal endnu' for det forloeb).
+		for (const f of alleForlob) {
+			if (!map.has(f.id)) {
+				map.set(f.id, { navn: f.navn, antal: 0, ubesvaret: 0 });
+			}
+		}
 		for (const [id, info] of [...map.entries()].sort((a, b) =>
 			a[1].navn.localeCompare(b[1].navn, 'da')
 		)) {
@@ -152,7 +163,10 @@
 		loading = true;
 		fejl = null;
 		try {
-			alle = await hentAlleSpoergsmaal();
+			[alle, alleForlob] = await Promise.all([
+				hentAlleSpoergsmaal(),
+				hentAlleForlob().then((fs) => fs.filter((f) => f.aktiv !== false))
+			]);
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente spørgsmål.';
