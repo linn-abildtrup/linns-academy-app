@@ -48,6 +48,9 @@
 		hentAboMikrotraeningProgram
 	} from '$lib/firestore/aboMikrotraening';
 	import { hentExercises } from '$lib/firestore/mikrotraening';
+	import { isAdmin } from '$lib/admin';
+	import { getPreviewDag } from '$lib/utils/forlobPreview';
+	import PreviewBanner from '$lib/components/PreviewBanner.svelte';
 	import { aktuelAboDag } from '$lib/content/aboMikrotraening';
 	import { getVideoUrl, prefetchVideoer } from '$lib/utils/storage';
 	import { hentModulbrugerLektion } from '$lib/firestore/modulbrugerLektioner';
@@ -138,7 +141,7 @@
 
 	const nulDatoer = $derived(nulDageDatoer(userProduct?.nulDage?.intervaller ?? []));
 
-	const aktivDagNummer = $derived.by<number | null>(() => {
+	const naturligAktivDagNummer = $derived.by<number | null>(() => {
 		if (!forlob) return null;
 		const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
 		return getCurrentDayMedNulDage(
@@ -146,6 +149,23 @@
 			nulDatoer
 		);
 	});
+
+	// Admin-preview: bypasser den naturlige dag-laas, saa admin kan se
+	// vilkaarlige dage i forloebet som om de er aabnet.
+	const previewDag = $derived(getPreviewDag(page.url.searchParams, userDoc, isAdmin(user)));
+	const iPreviewMode = $derived(previewDag !== null);
+	const kanStartePreview = $derived(
+		!iPreviewMode &&
+			isAdmin(user) &&
+			userDoc?.adminKlientMode === 'forlob' &&
+			!!userDoc?.adminKlientForlobId
+	);
+
+	// 'aktivDagNummer' bruges i hele forsiden som 'den dag der er aaben i dag'.
+	// I preview-mode er det preview-dag'en; ellers den naturlige dag.
+	const aktivDagNummer = $derived(
+		previewDag !== null ? previewDag : naturligAktivDagNummer
+	);
 
 	// Bagudkompatibel alias indtil vi får ryddet i template'n
 	const dayNumber = $derived(aktivDagNummer);
@@ -167,7 +187,9 @@
 
 	function vaelgDag(n: number) {
 		if (aktivDagNummer === null) return;
-		if (n > aktivDagNummer) return;
+		// I preview-mode bypasses dag-laasen — admin kan se vilkaarlige dage.
+		// Ellers er fremtidige dage utilgaengelige som normalt.
+		if (!iPreviewMode && n > aktivDagNummer) return;
 		valgtDagNummer = n;
 		opdaterUrlMedDag(n);
 	}
@@ -184,6 +206,17 @@
 			url.searchParams.delete('dag');
 		} else {
 			url.searchParams.set('dag', String(n));
+		}
+		// I preview-mode skal previewDag flytte sig sammen med 'dag' — det er
+		// hele pointen at chip-klik aendrer hvilken dag admin ser som 'i dag'.
+		// Vi opdaterer kun previewDag hvis den allerede er i URL'en (saa
+		// almindelige klienter ikke faar det utilsigtet).
+		if (url.searchParams.has('previewDag')) {
+			if (n === null) {
+				url.searchParams.delete('previewDag');
+			} else {
+				url.searchParams.set('previewDag', String(n));
+			}
 		}
 		replaceState(url, page.state);
 	}
@@ -1128,6 +1161,10 @@
 	}
 </script>
 
+{#if iPreviewMode && forlob && previewDag !== null}
+	<PreviewBanner dagNummer={previewDag} antalDage={forlob.antalDage} />
+{/if}
+
 {#if userState === 'forlobskunde'}
 	<div class="forside-a1">
 		{#if forlob}
@@ -1155,6 +1192,10 @@
 							<button class="strip-tilbage" type="button" onclick={nulstilTilIDag}>
 								Tilbage til i dag
 							</button>
+						{:else if kanStartePreview}
+							<a class="strip-tilbage" href="?previewDag=0">
+								Forhåndsvis dage
+							</a>
 						{/if}
 					</div>
 					<div class="strip" bind:this={stripEl}>
@@ -1168,7 +1209,7 @@
 								class:erIDag={chip.status === 'aktiv'}
 								class:erFremtid={chip.status === 'fremtid'}
 								class:erNulDag={chip.erNulDag}
-								disabled={chip.status === 'fremtid' || chip.erNulDag}
+								disabled={(!iPreviewMode && chip.status === 'fremtid') || chip.erNulDag}
 								data-dag={chip.dagNummer ?? ''}
 								onclick={() => chip.dagNummer !== null && vaelgDag(chip.dagNummer)}
 								aria-label={chip.erNulDag
