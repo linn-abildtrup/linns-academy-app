@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
+	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { UserProduct } from '$lib/content/mikrotraening';
@@ -44,8 +45,11 @@
 		erModulbruger,
 		harPremium
 	} from '$lib/utils/userAdgang';
+	import { effektivtUnlocket, getPreviewDag } from '$lib/utils/forlobPreview';
+	import { isAdmin } from '$lib/admin';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import PreviewBanner from '$lib/components/PreviewBanner.svelte';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -75,8 +79,16 @@
 	// === Forløbs-derived ===
 	const startDato = $derived(forlob?.startDato?.toDate() ?? null);
 	const antalDage = $derived(forlob?.antalDage ?? 21);
-	const unlocket = $derived(unlockedDays(startDato, antalDage));
+	const naturligtUnlocket = $derived(unlockedDays(startDato, antalDage));
+	const previewDag = $derived(getPreviewDag(page.url.searchParams, userDoc, isAdmin(user)));
+	const unlocket = $derived(effektivtUnlocket(naturligtUnlocket, previewDag, antalDage));
 	const erIkkeStartet = $derived(unlocket < 0);
+	const kanStartePreview = $derived(
+		previewDag === null &&
+			isAdmin(user) &&
+			userDoc?.adminKlientMode === 'forlob' &&
+			!!userDoc?.adminKlientForlobId
+	);
 	const baselineDag = $derived(dage.find((d) => d.isBaseline) ?? null);
 	const programDage = $derived(
 		dage.filter((d) => !d.isBaseline).sort((a, b) => a.dagNummer - b.dagNummer)
@@ -308,6 +320,10 @@
 	}
 </script>
 
+{#if previewDag !== null}
+	<PreviewBanner dagNummer={previewDag} {antalDage} />
+{/if}
+
 <div class="page">
 	<header class="page-header">
 		<a class="back" href="/app/moduler">
@@ -326,6 +342,18 @@
 			{/if}
 		</p>
 	</header>
+
+	{#if kanStartePreview}
+		<a class="preview-launcher" href="?previewDag=0">
+			<div class="preview-launcher-tekst">
+				<div class="preview-launcher-titel">Forhåndsvis fremtidige dage</div>
+				<div class="preview-launcher-sub">
+					Som admin kan du se hvordan kunderne oplever dag 0-{antalDage}.
+				</div>
+			</div>
+			<Icon name="chevron-r" size={14} color="var(--terra)" />
+		</a>
+	{/if}
 
 	{#if loading}
 		<Loading tekst="Henter dine vaner..." />
@@ -675,6 +703,34 @@
 		border: 1px solid var(--tdim2);
 		border-radius: 12px;
 		margin-bottom: 14px;
+	}
+
+	.preview-launcher {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 12px 14px;
+		background: var(--terra2);
+		border: 1px solid var(--terra);
+		border-radius: 12px;
+		margin-bottom: 14px;
+		text-decoration: none;
+	}
+
+	.preview-launcher-tekst {
+		flex: 1;
+	}
+
+	.preview-launcher-titel {
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.preview-launcher-sub {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		margin-top: 1px;
 	}
 
 	.banner-titel {

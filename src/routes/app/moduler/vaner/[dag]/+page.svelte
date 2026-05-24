@@ -24,8 +24,11 @@
 		type AdminTildeltVane
 	} from '$lib/firestore/admintildelteVaner';
 	import type { ForlobProduct } from '$lib/types';
+	import { getPreviewDag } from '$lib/utils/forlobPreview';
+	import { isAdmin } from '$lib/admin';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import PreviewBanner from '$lib/components/PreviewBanner.svelte';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -75,8 +78,12 @@
 		return `Dag ${prog.dagNummer}${datoSuffix}`;
 	});
 
+	const previewDag = $derived(getPreviewDag(page.url.searchParams, userDoc, isAdmin(user)));
+	const iPreviewMode = $derived(previewDag !== null);
+
 	const erLaast = $derived.by(() => {
 		if (!forlob) return true;
+		if (iPreviewMode) return false;
 		const u = unlockedDays(forlob.startDato.toDate(), forlob.antalDage);
 		return u < 0 || dagNummer > u;
 	});
@@ -289,6 +296,14 @@
 		}
 	}
 </script>
+
+{#if iPreviewMode && forlob}
+	<PreviewBanner
+		dagNummer={dagNummer}
+		antalDage={forlob.antalDage}
+		buildPath={(d) => `/app/moduler/vaner/${d}`}
+	/>
+{/if}
 
 <div class="page">
 	<header class="page-header">
