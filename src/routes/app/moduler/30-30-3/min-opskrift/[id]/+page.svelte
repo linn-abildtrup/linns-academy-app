@@ -47,6 +47,16 @@
 
 	// Læg-som-måltid modal
 	let viserMaaltidModal = $state(false);
+
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+		if (viserMaaltidModal) {
+			document.body.style.overflow = 'hidden';
+			return () => {
+				document.body.style.overflow = '';
+			};
+		}
+	});
 	let maaltidPortioner = $state(1);
 	let maaltidDato = $state(formatDatoKey());
 	let maaltidType = $state<Maaltidstype>(gaetMaaltidstype());
@@ -975,6 +985,8 @@
 		max-width: 520px;
 		max-height: 92vh;
 		overflow-y: auto;
+		overscroll-behavior: contain;
+		-webkit-overflow-scrolling: touch;
 		background: var(--bg);
 		border-radius: 18px 18px 0 0;
 		padding: 18px 18px 28px;

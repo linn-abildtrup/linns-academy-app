@@ -46,6 +46,18 @@
 
 	// 'Gem direkte i dagbog'-modal
 	let viserMaaltidModal = $state(false);
+
+	// Laas body-scroll naar modalen er aaben — ellers scroller iOS Safari
+	// baggrunden i stedet for modal-indholdet.
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+		if (viserMaaltidModal) {
+			document.body.style.overflow = 'hidden';
+			return () => {
+				document.body.style.overflow = '';
+			};
+		}
+	});
 	let maaltidPortioner = $state(1);
 	let maaltidDato = $state(formatDatoKey());
 	let maaltidType = $state<Maaltidstype>(gaetMaaltidstype());
@@ -689,6 +701,8 @@
 		max-width: 520px;
 		max-height: 92vh;
 		overflow-y: auto;
+		overscroll-behavior: contain;
+		-webkit-overflow-scrolling: touch;
 		background: var(--bg, #f6f3ee);
 		border-radius: 18px 18px 0 0;
 		padding: 18px 18px 28px;
