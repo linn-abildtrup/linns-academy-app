@@ -13,6 +13,7 @@
 	import {
 		hentExercises,
 		hentForlobsProgram,
+		hentForlobsProgrammer,
 		hentUserProduct,
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
@@ -103,24 +104,35 @@
 		try {
 			const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
 			const up = await hentUserProduct(u.uid, produktType);
-			if (!up) {
+			// Admin i klient-mode har ikke noedvendigvis et userProduct-doc.
+			// Faldt tilbage til adminKlientForlobId + foerste aktive program.
+			const adminForlobId = userDoc?.adminKlientForlobId ?? null;
+			if (!up && !adminForlobId) {
 				fejl = 'Du har ikke adgang til mikrotræning endnu.';
 				loading = false;
 				return;
 			}
-			userProduct = up;
+			if (up) userProduct = up;
 
-			const programId = up.programValg?.mikrotraening;
-			if (!programId) {
-				goto('/app/moduler/traening/mikrotraening/onboarding');
-				return;
-			}
-
-			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+			let programId = up?.programValg?.mikrotraening;
+			const forlobId =
+				(up as UserProduct & { forlobId?: string } | null)?.forlobId ?? adminForlobId;
 			if (!forlobId) {
 				fejl = 'Du er ikke tilknyttet et forløb endnu.';
 				loading = false;
 				return;
+			}
+
+			if (!programId) {
+				if (adminForlobId) {
+					const programmer = await hentForlobsProgrammer(forlobId);
+					const foersteAktive = programmer.find((p) => p.aktiv) ?? programmer[0];
+					if (foersteAktive) programId = foersteAktive.id;
+				}
+				if (!programId) {
+					goto('/app/moduler/traening/mikrotraening/onboarding');
+					return;
+				}
 			}
 
 			const data = await hentForlobsProgram(forlobId, programId);
