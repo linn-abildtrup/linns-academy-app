@@ -47,6 +47,7 @@
 		DIET_LABELS,
 		filtrerOpskrifter,
 		KATEGORI_LABELS as OPSKRIFT_LABELS,
+		parseOpskriftMakro,
 		type DietTag,
 		type Opskrift,
 		type OpskriftKategori
@@ -1113,18 +1114,14 @@
 				MAALTIDSKATEGORIER.includes(k as Maaltidskategori)
 			) as Maaltidskategori | undefined;
 			if (!kat) continue;
-			// Træk makro ud af instruktioner-feltet hvis det er noteret der
-			// (konvention: "Protein: 30 g | Fiber: 7 g | Kalorier: 410 kcal")
-			const m = o.instruktioner.match(
-				/Protein:\s*(\d+(?:[.,]\d+)?)\s*g.*?Fiber:\s*(\d+(?:[.,]\d+)?)\s*g.*?Kalorier:\s*(\d+(?:[.,]\d+)?)\s*kcal/i
-			);
+			const mk = parseOpskriftMakro(o.instruktioner);
 			out.push({
 				id: o.id,
 				titel: o.titel,
 				kategori: kat,
-				protein: m ? parseFloat(m[1].replace(',', '.')) : 0,
-				fiber: m ? parseFloat(m[2].replace(',', '.')) : 0,
-				kalorier: m ? parseFloat(m[3].replace(',', '.')) : 0,
+				protein: mk.protein ?? 0,
+				fiber: mk.fiber ?? 0,
+				kalorier: mk.kalorier ?? 0,
 				dietTags: o.dietTags,
 				ingredienser: o.ingredienser.map((i) => i.navn),
 				erEgen: false
@@ -1225,14 +1222,10 @@
 				const o = opskrifter.find((x) => x.id === forslag.opskriftId);
 				if (!o) throw new Error('Opskrift ikke fundet');
 				navn = o.titel;
-				const m = o.instruktioner.match(
-					/Protein:\s*(\d+(?:[.,]\d+)?)\s*g.*?Fiber:\s*(\d+(?:[.,]\d+)?)\s*g.*?Kalorier:\s*(\d+(?:[.,]\d+)?)\s*kcal/i
-				);
-				if (m) {
-					totalP = parseFloat(m[1].replace(',', '.'));
-					totalF = parseFloat(m[2].replace(',', '.'));
-					totalKcal = parseFloat(m[3].replace(',', '.'));
-				}
+				const mk = parseOpskriftMakro(o.instruktioner);
+				totalP = mk.protein ?? 0;
+				totalF = mk.fiber ?? 0;
+				totalKcal = mk.kalorier ?? 0;
 			}
 			await gemMaaltid(u.uid, {
 				navn,

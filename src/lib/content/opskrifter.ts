@@ -118,6 +118,31 @@ export function formatMaengde(m: number): string {
 }
 
 /**
+ * Parser makro-felter (protein/fiber/kalorier) ud af opskriftens
+ * instruktioner-felt. Hver felt parses uafhaengigt — hvis et mangler
+ * returneres null for det felt (UI viser '—' i stedet for 0).
+ *
+ * Konvention i instruktionerne: "Protein: X g | Fiber: Y g | Kalorier: Z kcal"
+ */
+export function parseOpskriftMakro(instr: string): {
+	protein: number | null;
+	fiber: number | null;
+	kalorier: number | null;
+} {
+	function nr(rx: RegExp): number | null {
+		const m = instr.match(rx);
+		if (!m) return null;
+		const v = parseFloat(m[1].replace(',', '.'));
+		return Number.isFinite(v) ? v : null;
+	}
+	return {
+		protein: nr(/Protein:\s*(\d+(?:[.,]\d+)?)\s*g/i),
+		fiber: nr(/Fiber:\s*(\d+(?:[.,]\d+)?)\s*g/i),
+		kalorier: nr(/Kalorier:\s*(\d+(?:[.,]\d+)?)\s*kcal/i)
+	};
+}
+
+/**
  * Filtrerer opskrifter ud fra søgeord, kategorier og dietTags.
  *
  * Søgeord:

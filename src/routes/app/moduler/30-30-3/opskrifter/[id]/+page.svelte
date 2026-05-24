@@ -7,6 +7,7 @@
 		DIET_LABELS,
 		formatMaengde,
 		KATEGORI_LABELS,
+		parseOpskriftMakro,
 		skalerMaengde,
 		type Opskrift
 	} from '$lib/content/opskrifter';
@@ -64,35 +65,23 @@
 	let gemmerMaaltid = $state(false);
 	let maaltidBesked = $state<string | null>(null);
 
-	/**
-	 * Parser protein/fiber/kalorier ud af opskriftens instruktioner-felt der
-	 * efter import-konvention slutter med 'Protein: Xg | Fiber: Yg | Kalorier: Z kcal | Tid: T minutter'.
-	 */
-	function parseOpskriftMakro(instr: string): { protein: number; fiber: number; kalorier: number } {
-		const m = instr.match(
-			/Protein:\s*(\d+(?:[.,]\d+)?)\s*g.*?Fiber:\s*(\d+(?:[.,]\d+)?)\s*g.*?Kalorier:\s*(\d+(?:[.,]\d+)?)\s*kcal/i
-		);
-		if (!m) return { protein: 0, fiber: 0, kalorier: 0 };
-		return {
-			protein: parseFloat(m[1].replace(',', '.')),
-			fiber: parseFloat(m[2].replace(',', '.')),
-			kalorier: parseFloat(m[3].replace(',', '.'))
-		};
-	}
-
-	const skaleretMakro = $derived(
+	const skaleretMakro = $derived<{
+		protein: number | null;
+		fiber: number | null;
+		kalorier: number | null;
+	}>(
 		opskrift
 			? (() => {
 					const m = parseOpskriftMakro(opskrift.instruktioner);
 					const p = Math.max(0.01, maaltidPortioner);
 					const skala = p / (opskrift.defaultPortioner || 1);
 					return {
-						protein: Math.round(m.protein * skala * 10) / 10,
-						fiber: Math.round(m.fiber * skala * 10) / 10,
-						kalorier: Math.round(m.kalorier * skala)
+						protein: m.protein === null ? null : Math.round(m.protein * skala * 10) / 10,
+						fiber: m.fiber === null ? null : Math.round(m.fiber * skala * 10) / 10,
+						kalorier: m.kalorier === null ? null : Math.round(m.kalorier * skala)
 					};
 				})()
-			: { protein: 0, fiber: 0, kalorier: 0 }
+			: { protein: null, fiber: null, kalorier: null }
 	);
 
 	function aabnMaaltidModal() {
@@ -130,11 +119,11 @@
 						opskriftRef: { id: opskrift.id, erEgen: false }
 					}
 				],
-				totalP: skaleretMakro.protein,
-				totalF: skaleretMakro.fiber,
+				totalP: skaleretMakro.protein ?? 0,
+				totalF: skaleretMakro.fiber ?? 0,
 				totalKh: 0,
 				totalFedt: 0,
-				totalKcal: skaleretMakro.kalorier
+				totalKcal: skaleretMakro.kalorier ?? 0
 			});
 			viserMaaltidModal = false;
 			goto(`/app/moduler/30-30-3?tab=dagbog&dato=${maaltidDato}`);
@@ -405,9 +394,9 @@
 			<div class="modal-makro">
 				<div class="modal-makro-titel">Makro i dette måltid</div>
 				<div class="modal-makro-grid">
-					<div><strong>{skaleretMakro.protein}g</strong><span>Protein</span></div>
-					<div><strong>{skaleretMakro.fiber}g</strong><span>Fiber</span></div>
-					<div><strong>{skaleretMakro.kalorier}</strong><span>Kalorier</span></div>
+					<div><strong>{skaleretMakro.protein === null ? '—' : skaleretMakro.protein + 'g'}</strong><span>Protein</span></div>
+					<div><strong>{skaleretMakro.fiber === null ? '—' : skaleretMakro.fiber + 'g'}</strong><span>Fiber</span></div>
+					<div><strong>{skaleretMakro.kalorier === null ? '—' : skaleretMakro.kalorier}</strong><span>Kalorier</span></div>
 				</div>
 			</div>
 
