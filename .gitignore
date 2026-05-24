@@ -40,3 +40,6 @@ scripts/*.csv
 
 # Screenshots til hurtig deling med Claude
 /screenshots
+
+# Lokale binaries (hentet fra nettet, ikke commit-vaerdige)
+scripts/bin
