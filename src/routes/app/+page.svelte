@@ -1439,6 +1439,19 @@
 				</section>
 			{/if}
 
+			{#if aktivVaneprogramDag && !aktivVaneprogramDag.isBaseline && aktivVaneprogramDag.reflection?.trim()}
+				<section class="reflection-section">
+					<div class="actions-header">
+						<div class="eyebrow eyebrow-muted">Dagens refleksion</div>
+					</div>
+					<p class="reflection-tekst">{aktivVaneprogramDag.reflection}</p>
+					<a class="reflection-link" href="/app/moduler/vaner/{aktivVaneprogramDag.dagNummer}">
+						Skriv dit svar
+						<Icon name="chevron-r" size={14} color="var(--terra)" />
+					</a>
+				</section>
+			{/if}
+
 			{#if aktivVaneprogramDag}
 				<section class="vaner-inline-section">
 					<div class="actions-header">
@@ -3014,6 +3027,35 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
+	}
+
+	.reflection-section {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		padding: 14px 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.reflection-tekst {
+		font-size: calc(14px * var(--fs-scale, 1));
+		color: var(--text);
+		line-height: 1.5;
+		margin: 0;
+	}
+
+	.reflection-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		align-self: flex-start;
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--terra);
+		font-weight: 600;
+		text-decoration: none;
+		padding: 4px 0;
 	}
 
 	.vaner-inline-liste {
