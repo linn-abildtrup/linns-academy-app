@@ -26,7 +26,7 @@
 	} from '$lib/content/aboVaner';
 	import { unlockedDays } from '$lib/content/forlobAdgang';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
-	import { hentForlob } from '$lib/firestore/forlob';
+	import { hentAktivProduktType, hentForlob } from '$lib/firestore/forlob';
 	import { hentAlleVanedage, hentVaneprogramForForlob } from '$lib/firestore/vaner';
 	import {
 		hentAboBonusPulje,
@@ -34,6 +34,8 @@
 		hentAlleAboVanedage
 	} from '$lib/firestore/aboVaner';
 	import {
+		filtrerVanerForUge,
+		hentAdminVanerForForlob,
 		hentAdminVanerForKunde,
 		type AdminTildeltVane
 	} from '$lib/firestore/admintildelteVaner';
@@ -208,7 +210,8 @@
 	});
 
 	async function indlaesForlobsData(uid: string) {
-		const up = await hentUserProduct(uid, 'kickstart');
+		const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+		const up = await hentUserProduct(uid, produktType);
 		if (!up) {
 			fejl = 'Du har ikke adgang til vanetracker endnu.';
 			return;
@@ -234,7 +237,13 @@
 			return;
 		}
 		dage = programDage;
-		entries = await hentAlleVanedage(uid, 'kickstart');
+		entries = await hentAlleVanedage(uid, produktType);
+
+		try {
+			adminVaner = await hentAdminVanerForForlob(forlobId);
+		} catch (e) {
+			console.warn('Kunne ikke hente admin-vaner:', e);
+		}
 	}
 
 	async function indlaesAboData(uid: string) {

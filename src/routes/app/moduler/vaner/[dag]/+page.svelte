@@ -14,20 +14,31 @@
 		type VaneSvar,
 		type VanedagEntry
 	} from '$lib/content/vaner';
+	import type { UserDoc } from '$lib/types';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
-	import { hentForlob } from '$lib/firestore/forlob';
+	import { hentAktivProduktType, hentForlob } from '$lib/firestore/forlob';
 	import { gemVanedag, hentVanedag, hentVaneprogramDag } from '$lib/firestore/vaner';
+	import {
+		filtrerVanerForUge,
+		hentAdminVanerForForlob,
+		type AdminTildeltVane
+	} from '$lib/firestore/admintildelteVaner';
+	import type { ForlobProduct } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
 	const getUser = getContext<() => User | null>('user');
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(getUser());
+	const userDoc = $derived(getUserDoc());
 
 	const dagNummer = $derived(parseInt(page.params.dag ?? '', 10));
 
 	let userProduct = $state<UserProduct | null>(null);
 	let forlob = $state<Forlob | null>(null);
 	let prog = $state<VaneProgramDag | null>(null);
+	let produktType = $state<ForlobProduct>('kickstart');
+	let adminVanerForUge = $state<AdminTildeltVane[]>([]);
 
 	let checks = $state<Record<string, VaneSvar>>({});
 	let bonus = $state<Record<string, BonusSvar>>({});
@@ -70,34 +81,45 @@
 		return u < 0 || dagNummer > u;
 	});
 
+	// Vaner vises som sum af program-checks (Kickstart-stil) + admin-tildelte
+	// vaner for den uge dagen ligger i (Kropsro-stil). For Kropsro er
+	// prog.checks tomt og adminVanerForUge bærer hele listen.
+	const visteVaner = $derived<{ id: string; label: string }[]>([
+		...(prog?.checks ?? []),
+		...adminVanerForUge.map((v) => ({ id: `at-${v.id}`, label: v.label }))
+	]);
+
 	const aktuelStatus = $derived(
 		prog
-			? beregnDagsStatus(prog, {
-					dagNummer,
-					checks,
-					bonus,
-					checkin,
-					note
-				})
+			? beregnDagsStatus(
+					{ ...prog, checks: visteVaner } as VaneProgramDag,
+					{
+						dagNummer,
+						checks,
+						bonus,
+						checkin,
+						note
+					}
+				)
 			: 'empty'
 	);
 
 	const fremgangPct = $derived.by(() => {
-		if (!prog || prog.checks.length === 0) return 0;
-		const score = prog.checks.reduce((s, c) => {
+		if (!prog || visteVaner.length === 0) return 0;
+		const score = visteVaner.reduce((s, c) => {
 			const v = checks[c.id];
 			return s + (v === 'ja' ? 1 : v === 'delvist' ? 0.5 : 0);
 		}, 0);
 		const bonusScore = prog.bonus && bonus[prog.bonus.id] === 'ja' ? 1 : 0;
-		const total = prog.checks.length + (prog.bonus ? 1 : 0);
+		const total = visteVaner.length + (prog.bonus ? 1 : 0);
 		return total > 0 ? Math.round(((score + bonusScore) / total) * 100) : 0;
 	});
 
 	const fremgangAntal = $derived.by(() => {
 		if (!prog) return { ja: 0, total: 0 };
-		const ja = prog.checks.filter((c) => checks[c.id] === 'ja').length;
+		const ja = visteVaner.filter((c) => checks[c.id] === 'ja').length;
 		const bonusJa = prog.bonus && bonus[prog.bonus.id] === 'ja' ? 1 : 0;
-		const total = prog.checks.length + (prog.bonus ? 1 : 0);
+		const total = visteVaner.length + (prog.bonus ? 1 : 0);
 		return { ja: ja + bonusJa, total };
 	});
 
@@ -108,14 +130,15 @@
 			loading = false;
 			return;
 		}
-		if (!Number.isFinite(dagNummer) || dagNummer < 0 || dagNummer > 21) {
+		if (!Number.isFinite(dagNummer) || dagNummer < 0) {
 			fejl = 'Ugyldigt dag-nummer.';
 			loading = false;
 			return;
 		}
 
 		try {
-			const up = await hentUserProduct(u.uid, 'kickstart');
+			produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+			const up = await hentUserProduct(u.uid, produktType);
 			if (!up) {
 				fejl = 'Du har ikke adgang til vanetracker endnu.';
 				loading = false;
@@ -138,6 +161,12 @@
 			}
 			forlob = f;
 
+			if (dagNummer > f.antalDage) {
+				fejl = `Dag ${dagNummer} findes ikke i dette forløb (maks ${f.antalDage}).`;
+				loading = false;
+				return;
+			}
+
 			const dagData = await hentVaneprogramDag(forlobId, dagNummer);
 			if (!dagData) {
 				fejl = `Dag ${dagNummer} findes ikke i programmet.`;
@@ -146,7 +175,20 @@
 			}
 			prog = dagData;
 
-			const entry = await hentVanedag(u.uid, dagNummer, 'kickstart');
+			// Hent admin-tildelte vaner for det aktuelle forløb og filtrer
+			// til den uge denne dag ligger i. Dag 0 (baseline) er uge 0 og
+			// har ingen vaner.
+			if (!prog.isBaseline) {
+				try {
+					const alle = await hentAdminVanerForForlob(forlobId);
+					const ugeForDag = prog.uge;
+					adminVanerForUge = filtrerVanerForUge(alle, ugeForDag);
+				} catch (e) {
+					console.warn('Kunne ikke hente admin-vaner:', e);
+				}
+			}
+
+			const entry = await hentVanedag(u.uid, dagNummer, produktType);
 			if (entry) {
 				oprindeligEntry = entry;
 				checks = { ...(entry.checks ?? {}) };
@@ -158,9 +200,10 @@
 				editMode = true;
 			}
 
-			// Hent baseline-svar separat hvis vi er på dag 21 og har brug for sammenligning
-			if (dagNummer === 21) {
-				baselineEntry = await hentVanedag(u.uid, 0, 'kickstart');
+			// Hent baseline-svar separat hvis vi er på sidste MRS-checkin
+			// (slutter forløbet). Vi sammenligner mod baseline (dag 0).
+			if (prog.isMrsCheckin && dagNummer === f.antalDage) {
+				baselineEntry = await hentVanedag(u.uid, 0, produktType);
 			}
 		} catch (e) {
 			console.error(e);
@@ -234,7 +277,7 @@
 					checkin,
 					note
 				},
-				'kickstart'
+				produktType
 			);
 			oprindeligEntry = { dagNummer, checks, bonus, checkin, note };
 			editMode = false;
@@ -271,6 +314,18 @@
 	{:else if erLaast}
 		<div class="status-besked">🔒 Denne dag er endnu ikke låst op.</div>
 	{:else if prog}
+		{#if prog.isMrsCheckin}
+			<a class="mrs-notice" href="/app/moduler/symptomcheck">
+				<div class="mrs-notice-tekst">
+					<div class="mrs-notice-titel">Tid til symptomcheck</div>
+					<div class="mrs-notice-sub">
+						I dag skal du udfylde dit MRS-spørgeskema så vi kan måle hvordan
+						kroppen reagerer på forløbet.
+					</div>
+				</div>
+				<Icon name="chevron-r" size={14} color="var(--terra)" />
+			</a>
+		{/if}
 		{#if !prog.isBaseline}
 			<section class="card">
 				<div class="section-label">Refleksion</div>
@@ -284,10 +339,10 @@
 				></textarea>
 			</section>
 
-			{#if prog.checks.length > 0}
+			{#if visteVaner.length > 0}
 				<section class="card">
 					<div class="section-label">Dagens vaner</div>
-					{#each prog.checks as c (c.id)}
+					{#each visteVaner as c (c.id)}
 						{@const val = checks[c.id]}
 						<div class="check-row">
 							<div class="check-label">{c.label}</div>
@@ -529,6 +584,35 @@
 		border-radius: 14px;
 		padding: 16px;
 		margin-bottom: 14px;
+	}
+
+	.mrs-notice {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 14px 16px;
+		background: var(--terra2);
+		border: 1px solid var(--terra);
+		border-radius: 14px;
+		text-decoration: none;
+		margin-bottom: 14px;
+	}
+
+	.mrs-notice-tekst {
+		flex: 1;
+	}
+
+	.mrs-notice-titel {
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		margin-bottom: 2px;
+	}
+
+	.mrs-notice-sub {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.4;
 	}
 
 	.section-label {

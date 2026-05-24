@@ -17,6 +17,7 @@
 		"seed:mikrotraening": "tsx scripts/seed-mikrotraening.ts",
 		"seed:forlob": "tsx scripts/seed-forlob.ts",
 		"seed:vaneprogram": "tsx scripts/seed-vaneprogram.ts",
+		"seed:vaneprogram:kropsro": "tsx scripts/seed-vaneprogram-kropsro.ts",
 		"seed:fodevarer": "tsx scripts/seed-fodevarer.ts",
 		"seed:frida": "tsx scripts/seed-frida.ts",
 		"migrate:recipes": "tsx scripts/migrate-recipes.ts",

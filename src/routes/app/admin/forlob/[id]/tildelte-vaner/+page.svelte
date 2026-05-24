@@ -24,17 +24,33 @@
 	let fejl = $state<string | null>(null);
 
 	let nyLabel = $state('');
+	let nyUgeNummer = $state<number | null>(null); // null = altid aktiv (bagudkompat)
 	let gemmer = $state(false);
 	let formFejl = $state<string | null>(null);
+
+	const antalUger = $derived(forlob ? Math.max(1, Math.ceil(forlob.antalDage / 7)) : 1);
+
+	// Grupperer vaner: én bucket pr uge + én "altid aktiv"-bucket for vaner uden ugeNummer.
+	const grupper = $derived.by<{ ugeNummer: number | null; label: string; vaner: AdminTildeltVane[] }[]>(() => {
+		const altidAktive = vaner.filter((v) => v.ugeNummer === undefined);
+		const grupper: { ugeNummer: number | null; label: string; vaner: AdminTildeltVane[] }[] = [];
+		for (let u = 1; u <= antalUger; u++) {
+			const v = vaner.filter((x) => x.ugeNummer === u);
+			grupper.push({ ugeNummer: u, label: `Uge ${u}`, vaner: v });
+		}
+		if (altidAktive.length > 0) {
+			grupper.push({ ugeNummer: null, label: 'Altid aktive (uden uge-tilknytning)', vaner: altidAktive });
+		}
+		return grupper;
+	});
+
+	const VANER_PR_UGE_BLOED_GRAENSE = 5;
 
 	async function indlaes() {
 		loading = true;
 		fejl = null;
 		try {
-			const [f, v] = await Promise.all([
-				hentForlob(forlobId),
-				hentAdminVanerForForlob(forlobId)
-			]);
+			const [f, v] = await Promise.all([hentForlob(forlobId), hentAdminVanerForForlob(forlobId)]);
 			forlob = f;
 			vaner = v;
 		} catch (e) {
@@ -61,7 +77,7 @@
 		gemmer = true;
 		formFejl = null;
 		try {
-			const ny = await tilfoejAdminVane(forlobId, label, adminUser.uid);
+			const ny = await tilfoejAdminVane(forlobId, label, adminUser.uid, nyUgeNummer ?? undefined);
 			vaner = [...vaner, ny];
 			nyLabel = '';
 		} catch (e) {
@@ -103,8 +119,8 @@
 		<div class="eyebrow">Admin · Tildelte vaner</div>
 		<h1>Tildelte vaner</h1>
 		<p class="page-sub">
-			Vaner du tildeler her får alle deltagere på {forlob?.navn ?? 'forløbet'} oveni deres
-			egne 3 selvvalgte vaner. Kunden kan ikke fjerne dem fra sin opsætning.
+			Vaner du tildeler her får alle deltagere på {forlob?.navn ?? 'forløbet'} oveni deres egne 3
+			selvvalgte vaner. Vælg hvilken uge vanen gælder for, eller lad den være altid aktiv.
 		</p>
 	</header>
 
@@ -120,34 +136,65 @@
 			{#if vaner.length === 0}
 				<p class="hint">Ingen tildelte vaner endnu. Tilføj den første nedenfor.</p>
 			{:else}
-				<div class="liste">
-					{#each vaner as v (v.id)}
-						<div class="rad">
-							<div class="rad-tekst">{v.label}</div>
-							<button
-								type="button"
-								class="fjern-knap"
-								onclick={() => aabnSletBekraeft(v)}
-								aria-label="Slet vane"
-							>
-								Slet
-							</button>
+				{#each grupper as gruppe (gruppe.ugeNummer ?? 'altid')}
+					{#if gruppe.vaner.length > 0}
+						<div class="gruppe">
+							<div class="gruppe-header">
+								<span class="gruppe-titel">{gruppe.label}</span>
+								<span
+									class="gruppe-count"
+									class:overskredet={gruppe.ugeNummer !== null &&
+										gruppe.vaner.length > VANER_PR_UGE_BLOED_GRAENSE}
+								>
+									{gruppe.vaner.length}
+									{gruppe.vaner.length === 1 ? 'vane' : 'vaner'}
+									{#if gruppe.ugeNummer !== null && gruppe.vaner.length > VANER_PR_UGE_BLOED_GRAENSE}
+										· over anbefalet ({VANER_PR_UGE_BLOED_GRAENSE})
+									{/if}
+								</span>
+							</div>
+							<div class="liste">
+								{#each gruppe.vaner as v (v.id)}
+									<div class="rad">
+										<div class="rad-tekst">{v.label}</div>
+										<button
+											type="button"
+											class="fjern-knap"
+											onclick={() => aabnSletBekraeft(v)}
+											aria-label="Slet vane"
+										>
+											Slet
+										</button>
+									</div>
+								{/each}
+							</div>
 						</div>
-					{/each}
-				</div>
+					{/if}
+				{/each}
 			{/if}
 
 			<div class="tilfoj-form">
-				<label class="felt">
-					<span class="felt-label">Tilføj ny vane</span>
-					<input
-						type="text"
-						bind:value={nyLabel}
-						placeholder="Fx 'Drik 2 liter vand'"
-						maxlength="80"
-						disabled={gemmer}
-					/>
-				</label>
+				<div class="form-grid">
+					<label class="felt felt-label-stor">
+						<span class="felt-label">Tilføj ny vane</span>
+						<input
+							type="text"
+							bind:value={nyLabel}
+							placeholder="Fx 'Drik 2 liter vand'"
+							maxlength="80"
+							disabled={gemmer}
+						/>
+					</label>
+					<label class="felt felt-uge">
+						<span class="felt-label">Uge</span>
+						<select bind:value={nyUgeNummer} disabled={gemmer}>
+							<option value={null}>Altid</option>
+							{#each Array.from({ length: antalUger }, (_, i) => i + 1) as u (u)}
+								<option value={u}>Uge {u}</option>
+							{/each}
+						</select>
+					</label>
+				</div>
 				{#if formFejl}
 					<div class="form-fejl">{formFejl}</div>
 				{/if}
@@ -249,7 +296,7 @@
 		font-size: calc(15px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
-		margin-bottom: 8px;
+		margin-bottom: 12px;
 	}
 
 	.hint {
@@ -258,11 +305,37 @@
 		margin: 0 0 12px;
 	}
 
+	.gruppe {
+		margin-bottom: 14px;
+	}
+
+	.gruppe-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		margin-bottom: 6px;
+		gap: 8px;
+	}
+
+	.gruppe-titel {
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.gruppe-count {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.gruppe-count.overskredet {
+		color: #8a4a3e;
+	}
+
 	.liste {
 		border: 1px solid var(--border);
 		border-radius: 10px;
 		overflow: hidden;
-		margin-bottom: 16px;
 	}
 
 	.rad {
@@ -301,11 +374,18 @@
 	.tilfoj-form {
 		padding-top: 14px;
 		border-top: 1px dashed var(--border);
+		margin-top: 8px;
+	}
+
+	.form-grid {
+		display: grid;
+		grid-template-columns: 1fr 110px;
+		gap: 10px;
+		margin-bottom: 10px;
 	}
 
 	.felt {
 		display: block;
-		margin-bottom: 10px;
 	}
 
 	.felt-label {
@@ -318,7 +398,8 @@
 		margin-bottom: 4px;
 	}
 
-	.felt input {
+	.felt input,
+	.felt select {
 		width: 100%;
 		padding: 10px 12px;
 		font-size: calc(15px * var(--fs-scale, 1));
@@ -331,7 +412,8 @@
 		box-sizing: border-box;
 	}
 
-	.felt input:focus {
+	.felt input:focus,
+	.felt select:focus {
 		border-color: var(--terra);
 	}
 

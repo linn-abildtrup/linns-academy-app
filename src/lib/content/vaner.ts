@@ -51,6 +51,7 @@ export interface VaneProgramDag {
 	isCheckin: boolean;
 	isBaseline: boolean;
 	isWin: boolean;
+	isMrsCheckin?: boolean;
 }
 
 /**

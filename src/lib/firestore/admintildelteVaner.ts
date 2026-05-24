@@ -6,7 +6,11 @@
 // sin opsætning.
 //
 // Datamodel: forlob/{forlobId}/admintildelteVaner/{auto-id}
-//   { label: string, oprettetAt: number, oprettetAf: string }
+//   { label: string, ugeNummer?: number, oprettetAt: number, oprettetAf: string }
+//
+// ugeNummer er valgfrit. Hvis sat, vises vanen kun i den uge af forløbet.
+// Hvis udeladt, opfattes vanen som "altid aktiv" (bagudkompatibelt med
+// eksisterende Kickstart-vaner uden uge-felt).
 
 import {
 	addDoc,
@@ -15,13 +19,15 @@ import {
 	doc,
 	getDocs,
 	orderBy,
-	query
+	query,
+	updateDoc
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 
 export interface AdminTildeltVane {
 	id: string;
 	label: string;
+	ugeNummer?: number;
 	oprettetAt: number;
 	oprettetAf: string;
 }
@@ -56,14 +62,43 @@ export async function hentAdminVanerForKunde(
 export async function tilfoejAdminVane(
 	forlobId: string,
 	label: string,
-	oprettetAf: string
+	oprettetAf: string,
+	ugeNummer?: number
 ): Promise<AdminTildeltVane> {
 	const nu = Date.now();
-	const data = { label: label.trim(), oprettetAt: nu, oprettetAf };
+	const data: Omit<AdminTildeltVane, 'id'> = {
+		label: label.trim(),
+		oprettetAt: nu,
+		oprettetAf
+	};
+	if (ugeNummer !== undefined) data.ugeNummer = ugeNummer;
 	const ref = await addDoc(adminVanerCol(forlobId), data);
 	return { id: ref.id, ...data };
 }
 
 export async function sletAdminVane(forlobId: string, vaneId: string): Promise<void> {
 	await deleteDoc(doc(db, 'forlob', forlobId, 'admintildelteVaner', vaneId));
+}
+
+export async function opdaterAdminVane(
+	forlobId: string,
+	vaneId: string,
+	opdateringer: { label?: string; ugeNummer?: number | null }
+): Promise<void> {
+	const data: Record<string, unknown> = {};
+	if (opdateringer.label !== undefined) data.label = opdateringer.label.trim();
+	if (opdateringer.ugeNummer !== undefined) data.ugeNummer = opdateringer.ugeNummer;
+	await updateDoc(doc(db, 'forlob', forlobId, 'admintildelteVaner', vaneId), data);
+}
+
+/**
+ * Returnerer kun de vaner der er aktive i en given uge.
+ * Vaner uden ugeNummer-felt (legacy / Kickstart-stil) opfattes som altid aktive.
+ * ugeNummer 0 forventes ikke i praksis — vi behandler det som "altid aktiv".
+ */
+export function filtrerVanerForUge(
+	vaner: AdminTildeltVane[],
+	ugeNummer: number
+): AdminTildeltVane[] {
+	return vaner.filter((v) => v.ugeNummer === undefined || v.ugeNummer === ugeNummer);
 }
