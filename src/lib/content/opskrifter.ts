@@ -118,15 +118,17 @@ export function formatMaengde(m: number): string {
 }
 
 /**
- * Parser makro-felter (protein/fiber/kalorier) ud af opskriftens
- * instruktioner-felt. Hver felt parses uafhaengigt — hvis et mangler
- * returneres null for det felt (UI viser '—' i stedet for 0).
+ * Parser makro-felter ud af opskriftens instruktioner-felt. Hver felt
+ * parses uafhaengigt — manglende felt returneres som null (UI viser '—'
+ * i stedet for 0).
  *
- * Konvention i instruktionerne: "Protein: X g | Fiber: Y g | Kalorier: Z kcal"
+ * Konvention: "Protein: X g | Fiber: Y g | Kulhydrater: K g | Fedt: F g | Kalorier: Z kcal"
  */
 export function parseOpskriftMakro(instr: string): {
 	protein: number | null;
 	fiber: number | null;
+	kh: number | null;
+	fedt: number | null;
 	kalorier: number | null;
 } {
 	function nr(rx: RegExp): number | null {
@@ -138,6 +140,8 @@ export function parseOpskriftMakro(instr: string): {
 	return {
 		protein: nr(/Protein:\s*(\d+(?:[.,]\d+)?)\s*g/i),
 		fiber: nr(/Fiber:\s*(\d+(?:[.,]\d+)?)\s*g/i),
+		kh: nr(/(?:Kulhydrat(?:er)?|Kh):\s*(\d+(?:[.,]\d+)?)\s*g/i),
+		fedt: nr(/Fedt:\s*(\d+(?:[.,]\d+)?)\s*g/i),
 		kalorier: nr(/Kalorier:\s*(\d+(?:[.,]\d+)?)\s*kcal/i)
 	};
 }

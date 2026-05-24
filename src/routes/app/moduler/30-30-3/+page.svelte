@@ -1225,6 +1225,8 @@
 				const mk = parseOpskriftMakro(o.instruktioner);
 				totalP = mk.protein ?? 0;
 				totalF = mk.fiber ?? 0;
+				totalKh = mk.kh ?? 0;
+				totalFedt = mk.fedt ?? 0;
 				totalKcal = mk.kalorier ?? 0;
 			}
 			await gemMaaltid(u.uid, {

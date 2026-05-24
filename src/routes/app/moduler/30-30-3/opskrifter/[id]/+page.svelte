@@ -68,6 +68,8 @@
 	const skaleretMakro = $derived<{
 		protein: number | null;
 		fiber: number | null;
+		kh: number | null;
+		fedt: number | null;
 		kalorier: number | null;
 	}>(
 		opskrift
@@ -75,13 +77,16 @@
 					const m = parseOpskriftMakro(opskrift.instruktioner);
 					const p = Math.max(0.01, maaltidPortioner);
 					const skala = p / (opskrift.defaultPortioner || 1);
+					const round1 = (v: number) => Math.round(v * 10) / 10;
 					return {
-						protein: m.protein === null ? null : Math.round(m.protein * skala * 10) / 10,
-						fiber: m.fiber === null ? null : Math.round(m.fiber * skala * 10) / 10,
+						protein: m.protein === null ? null : round1(m.protein * skala),
+						fiber: m.fiber === null ? null : round1(m.fiber * skala),
+						kh: m.kh === null ? null : round1(m.kh * skala),
+						fedt: m.fedt === null ? null : round1(m.fedt * skala),
 						kalorier: m.kalorier === null ? null : Math.round(m.kalorier * skala)
 					};
 				})()
-			: { protein: null, fiber: null, kalorier: null }
+			: { protein: null, fiber: null, kh: null, fedt: null, kalorier: null }
 	);
 
 	function aabnMaaltidModal() {
@@ -121,8 +126,8 @@
 				],
 				totalP: skaleretMakro.protein ?? 0,
 				totalF: skaleretMakro.fiber ?? 0,
-				totalKh: 0,
-				totalFedt: 0,
+				totalKh: skaleretMakro.kh ?? 0,
+				totalFedt: skaleretMakro.fedt ?? 0,
 				totalKcal: skaleretMakro.kalorier ?? 0
 			});
 			viserMaaltidModal = false;
@@ -396,6 +401,8 @@
 				<div class="modal-makro-grid">
 					<div><strong>{skaleretMakro.protein === null ? '—' : skaleretMakro.protein + 'g'}</strong><span>Protein</span></div>
 					<div><strong>{skaleretMakro.fiber === null ? '—' : skaleretMakro.fiber + 'g'}</strong><span>Fiber</span></div>
+					<div><strong>{skaleretMakro.kh === null ? '—' : skaleretMakro.kh + 'g'}</strong><span>Kulhydrater</span></div>
+					<div><strong>{skaleretMakro.fedt === null ? '—' : skaleretMakro.fedt + 'g'}</strong><span>Fedt</span></div>
 					<div><strong>{skaleretMakro.kalorier === null ? '—' : skaleretMakro.kalorier}</strong><span>Kalorier</span></div>
 				</div>
 			</div>
@@ -838,22 +845,22 @@
 
 	.modal-makro-grid {
 		display: grid;
-		grid-template-columns: 1fr 1fr 1fr;
-		gap: 8px;
+		grid-template-columns: repeat(5, 1fr);
+		gap: 6px;
 	}
 
 	.modal-makro-grid > div {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		padding: 8px;
+		padding: 8px 4px;
 		background: var(--white);
 		border-radius: 8px;
 	}
 
 	.modal-makro-grid strong {
 		font-family: var(--ff-d);
-		font-size: calc(17px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--terra);
 	}
