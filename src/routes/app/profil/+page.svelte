@@ -170,14 +170,15 @@
 		try {
 			mtProduktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
 			const up = await hentUserProduct(u.uid, mtProduktType);
-			if (!up) return;
-			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+			const adminForlobId = userDoc?.adminKlientForlobId ?? null;
+			const forlobId =
+				(up as UserProduct & { forlobId?: string } | null)?.forlobId ?? adminForlobId;
 			if (!forlobId) return;
 			mtForlobId = forlobId;
 			const alle = await hentForlobsProgrammer(forlobId);
 			mtProgrammer = alle.filter((p) => p.aktiv);
-			valgtMtProgramId = up.programValg?.mikrotraening ?? null;
-			nulIntervaller = up.nulDage?.intervaller ?? [];
+			valgtMtProgramId = up?.programValg?.mikrotraening ?? null;
+			nulIntervaller = up?.nulDage?.intervaller ?? [];
 		} catch (e) {
 			console.error('Kunne ikke hente mikrotræning-programmer:', e);
 		} finally {

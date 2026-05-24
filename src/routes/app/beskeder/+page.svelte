@@ -32,8 +32,9 @@
 		try {
 			const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
 			const up = await hentUserProduct(u.uid, produktType);
-			if (!up) return;
-			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+			const adminForlobId = userDoc?.adminKlientForlobId ?? null;
+			const forlobId =
+				(up as UserProduct & { forlobId?: string } | null)?.forlobId ?? adminForlobId;
 			if (!forlobId) return;
 			aktivtForlobId = forlobId;
 			const f = await hentForlob(forlobId);

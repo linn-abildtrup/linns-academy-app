@@ -16,6 +16,7 @@
 		gemPause,
 		hentExercises,
 		hentForlobsProgram,
+		hentForlobsProgrammer,
 		hentPause,
 		hentUserProduct,
 		sletPause,
@@ -156,26 +157,37 @@
 		try {
 			produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
 			const up = await hentUserProduct(u.uid, produktType);
-			if (!up) {
+			// Admin i klient-mode har ikke noedvendigvis et userProduct.
+			// Faldt tilbage til adminKlientForlobId + foerste aktive program.
+			const adminForlobId = userDoc?.adminKlientForlobId ?? null;
+			if (!up && !adminForlobId) {
 				fejl = 'Du har ikke adgang til mikrotræning endnu.';
 				loading = false;
 				return;
 			}
-			userProduct = up;
+			if (up) userProduct = up;
 
-			const valgtProgramId = up.programValg?.mikrotraening;
-			if (!valgtProgramId) {
-				goto('/app/moduler/traening/mikrotraening/onboarding');
-				return;
-			}
-			programId = valgtProgramId;
-
-			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
+			let valgtProgramId = up?.programValg?.mikrotraening;
+			const forlobId =
+				(up as UserProduct & { forlobId?: string } | null)?.forlobId ?? adminForlobId;
 			if (!forlobId) {
 				fejl = 'Du er ikke tilknyttet et forløb endnu.';
 				loading = false;
 				return;
 			}
+
+			if (!valgtProgramId) {
+				if (adminForlobId) {
+					const programmer = await hentForlobsProgrammer(forlobId);
+					const foersteAktive = programmer.find((p) => p.aktiv) ?? programmer[0];
+					if (foersteAktive) valgtProgramId = foersteAktive.id;
+				}
+				if (!valgtProgramId) {
+					goto('/app/moduler/traening/mikrotraening/onboarding');
+					return;
+				}
+			}
+			programId = valgtProgramId;
 
 			const data = await hentForlobsProgram(forlobId, valgtProgramId);
 			if (!data) {
