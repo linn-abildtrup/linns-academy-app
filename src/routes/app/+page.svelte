@@ -2935,12 +2935,13 @@
 
 	.traening-thumb {
 		position: relative;
-		width: 46px;
-		height: 46px;
+		width: 110px;
+		aspect-ratio: 16 / 10;
 		border-radius: 10px;
 		overflow: hidden;
 		flex-shrink: 0;
 		background: var(--bg2);
+		align-self: center;
 	}
 
 	.traening-thumb video {

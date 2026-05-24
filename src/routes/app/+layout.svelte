@@ -43,9 +43,13 @@
 		// (fx fra tidligere test-roller). Vi nulstiller dem i klient-mode saa
 		// effektivState() ikke faelder hende som udlobet — klient-oplevelsen
 		// skal afspejle 'aktiv klient', ikke admin's egen historik.
+		// aktivtTraeningsprogram nulstilles ogsaa saa admin's egne 'mit-eget-
+		// program'-valg ikke laekker ind i klient-preview (display ville
+		// ellers vise admin's eget programnavn i traenings-rubrikken).
 		const klientOverride = {
 			expiresAt: undefined,
-			bonusPeriodEndsAt: undefined
+			bonusPeriodEndsAt: undefined,
+			aktivtTraeningsprogram: undefined
 		};
 		// Naar admin tester et specifikt forloeb, skal forlobId vaere i
 		// forlobIds saa forsidens indlaesForlob-flow finder det. Vi tilfoejer
