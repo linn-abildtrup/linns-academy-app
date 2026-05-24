@@ -51,6 +51,12 @@
 	import { isAdmin } from '$lib/admin';
 	import { getPreviewDag } from '$lib/utils/forlobPreview';
 	import PreviewBanner from '$lib/components/PreviewBanner.svelte';
+	import {
+		filtrerVanerForUge,
+		hentAdminVanerForForlob,
+		type AdminTildeltVane
+	} from '$lib/firestore/admintildelteVaner';
+	import type { ForlobProduct } from '$lib/types';
 	import { aktuelAboDag } from '$lib/content/aboMikrotraening';
 	import { getVideoUrl, prefetchVideoer } from '$lib/utils/storage';
 	import { hentModulbrugerLektion } from '$lib/firestore/modulbrugerLektioner';
@@ -86,6 +92,8 @@
 	let forlob = $state<Forlob | null>(null);
 	let forlobsdage = $state<ForlobDag[]>([]);
 	let userProduct = $state<UserProduct | null>(null);
+	let aktivProduktType = $state<ForlobProduct>(KICKSTART_PRODUCT_ID);
+	let adminVaner = $state<AdminTildeltVane[]>([]);
 	let vaneprogramDage = $state<VaneProgramDag[]>([]);
 	let forlobVanedag = $state<VanedagEntry | null>(null);
 	let forlobMaaltider = $state<GemtMaaltid[]>([]);
@@ -959,19 +967,22 @@
 				}
 			}
 			if (!aktivt) return;
+			aktivProduktType = aktivt.type === 'kropsro' ? KROPSRO_PRODUCT_ID : KICKSTART_PRODUCT_ID;
 			if (aktivtUp) userProduct = aktivtUp;
 			else {
 				const fallback = await hentUserProduct(uid, KICKSTART_PRODUCT_ID);
 				if (fallback) userProduct = fallback;
 			}
 
-			const [dage, vaneDage] = await Promise.all([
+			const [dage, vaneDage, admVaner] = await Promise.all([
 				hentForlobsdage(aktivt.id),
-				hentVaneprogramForForlob(aktivt.id).catch(() => [] as VaneProgramDag[])
+				hentVaneprogramForForlob(aktivt.id).catch(() => [] as VaneProgramDag[]),
+				hentAdminVanerForForlob(aktivt.id).catch(() => [] as AdminTildeltVane[])
 			]);
 			forlob = aktivt;
 			forlobsdage = dage;
 			vaneprogramDage = vaneDage;
+			adminVaner = admVaner;
 		} catch (e) {
 			console.error('Kunne ikke hente forløb til forsiden:', e);
 		}
@@ -983,6 +994,25 @@
 		if (n === null) return null;
 		return vaneprogramDage.find((d) => d.dagNummer === n) ?? null;
 	});
+
+	// Vaner der vises i 'Dagens smaa skridt': sum af programmets per-dag-checks
+	// (Kickstart-stil) og admin-tildelte vaner for ugen (Kropsro-stil). Kropsro
+	// har tomme per-dag-checks og bygger hele listen fra admin-tildelte vaner.
+	// For at id'erne ikke kolliderer praefixes admin-vaner med 'at-'.
+	const aktivUge = $derived(aktivVaneprogramDag?.uge ?? 0);
+	const adminVanerForUge = $derived(
+		aktivVaneprogramDag && !aktivVaneprogramDag.isBaseline
+			? filtrerVanerForUge(adminVaner, aktivUge)
+			: ([] as AdminTildeltVane[])
+	);
+	const visteVanerForsiden = $derived<{ id: string; label: string }[]>(
+		aktivVaneprogramDag
+			? [
+					...aktivVaneprogramDag.checks,
+					...adminVanerForUge.map((v) => ({ id: `at-${v.id}`, label: v.label }))
+				]
+			: []
+	);
 
 	const valgtDagDato = $derived.by<string | null>(() => {
 		const d = dagensDag;
@@ -1005,7 +1035,7 @@
 		void (async () => {
 			try {
 				const [vanedag, maaltider] = await Promise.all([
-					hentVanedag(u.uid, n, 'kickstart'),
+					hentVanedag(u.uid, n, aktivProduktType),
 					dato ? hentMaaltiderForDato(u.uid, dato) : Promise.resolve([] as GemtMaaltid[])
 				]);
 				forlobVanedag = vanedag;
@@ -1107,7 +1137,7 @@
 		const ny: VanedagEntry = { ...aktuel, checks: nyChecks };
 		forlobVanedag = ny;
 		try {
-			await gemVanedag(u.uid, ny, 'kickstart');
+			await gemVanedag(u.uid, ny, aktivProduktType);
 		} catch (e) {
 			console.error('Kunne ikke gemme forløbs-vane-svar:', e);
 		} finally {
@@ -1129,7 +1159,7 @@
 		const ny: VanedagEntry = { ...aktuel, bonus: nyBonus };
 		forlobVanedag = ny;
 		try {
-			await gemVanedag(u.uid, ny, 'kickstart');
+			await gemVanedag(u.uid, ny, aktivProduktType);
 		} catch (e) {
 			console.error('Kunne ikke gemme forløbs-bonus-svar:', e);
 		} finally {
@@ -1152,7 +1182,7 @@
 		const ny: VanedagEntry = { ...aktuel, checkin: nyCheckin };
 		forlobVanedag = ny;
 		try {
-			await gemVanedag(u.uid, ny, 'kickstart');
+			await gemVanedag(u.uid, ny, aktivProduktType);
 		} catch (e) {
 			console.error('Kunne ikke gemme forløbs-check-in-svar:', e);
 		} finally {
@@ -1422,7 +1452,7 @@
 								</div>
 							</div>
 						{:else}
-							{#each aktivVaneprogramDag.checks as vane (vane.id)}
+							{#each visteVanerForsiden as vane (vane.id)}
 								{@const svar = forlobVanedag?.checks?.[vane.id]}
 								<div class="vane-inline-row">
 									<div class="vane-inline-label">{vane.label}</div>
