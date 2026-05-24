@@ -11,7 +11,7 @@
 		type KlientSpoergsmaal
 	} from '$lib/firestore/spoergsmaal';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
-	import { hentForlob } from '$lib/firestore/forlob';
+	import { hentAktivProduktType, hentForlob } from '$lib/firestore/forlob';
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import { effektivState } from '$lib/utils/userAdgang';
 
@@ -30,7 +30,8 @@
 		const u = user;
 		if (!u) return;
 		try {
-			const up = await hentUserProduct(u.uid, 'kickstart');
+			const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+			const up = await hentUserProduct(u.uid, produktType);
 			if (!up) return;
 			const forlobId = (up as UserProduct & { forlobId?: string }).forlobId;
 			if (!forlobId) return;
