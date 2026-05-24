@@ -18,7 +18,11 @@
 		tomForlobDag
 	} from '$lib/content/forlob';
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
-	import { hentUserProduct, hentForlobsProgram } from '$lib/firestore/mikrotraening';
+	import {
+		hentUserProduct,
+		hentForlobsProgram,
+		hentForlobsProgrammer
+	} from '$lib/firestore/mikrotraening';
 	import { hentMitProgram, hentProgramFremgang } from '$lib/firestore/mineProgrammer';
 	import { hentHistorikForDato } from '$lib/firestore/traeningHistorik';
 	import { senesteEntry, type TraeningHistorikEntry } from '$lib/content/traeningHistorik';
@@ -1054,15 +1058,29 @@
 			forlobTraeningsVideo = null;
 			return;
 		}
-		const programId = userProduct?.programValg?.mikrotraening;
-		const forlobId = (userProduct as (UserProduct & { forlobId?: string }) | null)?.forlobId;
+		// Admin i klient-mode har ikke noedvendigvis et userProduct. Fald tilbage
+		// til adminKlientForlobId + forste aktive program saa preview-thumbnail
+		// stadig vises.
+		const adminForlobId = ud?.adminKlientForlobId ?? null;
+		let programId = userProduct?.programValg?.mikrotraening;
+		const forlobId =
+			(userProduct as (UserProduct & { forlobId?: string }) | null)?.forlobId ?? adminForlobId;
 		const n = valgtDagNummer ?? aktivDagNummer;
-		if (!programId || !forlobId || n === null || n === 0) {
+		if (!forlobId || n === null || n === 0) {
 			forlobTraeningsVideo = null;
 			return;
 		}
 		void (async () => {
 			try {
+				if (!programId && adminForlobId) {
+					const programmer = await hentForlobsProgrammer(forlobId);
+					const foersteAktive = programmer.find((p) => p.aktiv) ?? programmer[0];
+					if (foersteAktive) programId = foersteAktive.id;
+				}
+				if (!programId) {
+					forlobTraeningsVideo = null;
+					return;
+				}
 				const program = await hentForlobsProgram(forlobId, programId);
 				if (!program) return;
 				const dag = program.dage.find((d) => d.dagNummer === n);
