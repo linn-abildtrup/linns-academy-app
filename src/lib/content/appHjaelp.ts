@@ -94,11 +94,20 @@ Knap 'Start dagens træning' åbner dagens session. Når du er færdig, kan du g
 Under 'Seneste dage'-griddet kan du se hvilke dage du har trænet (grøn). I dag er markeret med terra-kant. Klik på en dag for at åbne den dags træning igen.`
 	},
 	{
-		titel: 'Mikrotræning — forløbskunder',
-		visFor: FORLOBSKUNDER,
+		titel: 'Mikrotræning — Kickstart',
+		visFor: [KICKSTART_PRODUCT_ID],
 		indhold: `Mikrotræning finder du under Moduler → Træning → Mikrotræning. Det er et 21-dages program der følger forløbet. Hver dag er låst op i takt med forløbet — du kan ikke springe frem. Du kan altid gå tilbage til tidligere dage.
 
 Du kan vælge program (med eller uden udstyr) under Profil → Mikrotræning — program. Første gang du åbner Mikrotræning bliver du spurgt om du har kettlebells.
+
+På forsiden vises en lille trænings-video til venstre på Træningskortet — det er dagens første øvelse der allerede er klar at se. Klik kortet for at åbne hele dagens session.`
+	},
+	{
+		titel: 'Mikrotræning — Kropsro',
+		visFor: [KROPSRO_PRODUCT_ID],
+		indhold: `Mikrotræning finder du under Moduler → Træning → Mikrotræning. Programmet følger hele Kropsro-forløbets længde (84 dage). Hver dag er låst op i takt med forløbet — du kan ikke springe frem. Du kan altid gå tilbage til tidligere dage.
+
+Du kan vælge program (med eller uden kettlebells) under Profil → Mikrotræning — program. Første gang du åbner Mikrotræning bliver du spurgt om du har kettlebells.
 
 På forsiden vises en lille trænings-video til venstre på Træningskortet — det er dagens første øvelse der allerede er klar at se. Klik kortet for at åbne hele dagens session.`
 	},
