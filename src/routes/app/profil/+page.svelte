@@ -315,6 +315,9 @@
 
 	const statusTekst = $derived.by(() => {
 		if (userState === 'forlobskunde') {
+			if (userDoc?.activeProduct === KROPSRO_PRODUCT_ID) {
+				return 'Du er på Kropsro';
+			}
 			return 'Du er på Kickstart en sund overgangsalder';
 		}
 		if (userState === 'modulbruger') {
