@@ -83,6 +83,7 @@
 		erInspirationLektion,
 		erLydLektion,
 		erVideoLektion,
+		erZoomLektion,
 		videoThumbnail
 	} from '$lib/content/bibliotek';
 
@@ -1361,8 +1362,9 @@
 								{@const thumbUrl = lektion.thumbnailUrl || videoThumbnail(lektion.url)}
 								{@const erLyd = erLydLektion(lektion.url)}
 								{@const erInspiration = erInspirationLektion(lektion.url)}
-								{@const visThumb = erVideoLektion(lektion.url) || erLyd || erInspiration}
-								{@const visFormat = erInspiration ? 'Inspiration' : lektion.format}
+								{@const erZoom = erZoomLektion(lektion.url)}
+								{@const visThumb = erVideoLektion(lektion.url) || erLyd || erInspiration || erZoom}
+								{@const visFormat = erInspiration ? 'Inspiration' : erZoom ? 'Zoom-møde' : lektion.format}
 								{@const guideType = detekterGuideType(lektion.url)}
 								{@const erEksternt = guideType === 'pdf' || guideType === 'link'}
 								<a
@@ -1387,6 +1389,11 @@
 											{:else if erInspiration}
 												<div class="lektion-thumb-placeholder lektion-thumb-inspiration">
 													<Icon name="lightbulb" size={32} color="#fff" />
+												</div>
+											{:else if erZoom}
+												<div class="lektion-thumb-placeholder lektion-thumb-zoom">
+													<Icon name="video" size={28} color="#fff" />
+													<span>Zoom</span>
 												</div>
 											{:else}
 												<div class="lektion-thumb-placeholder">Zoom</div>
@@ -1734,10 +1741,15 @@
 						{@const modulErLyd = !!modulbrugerLektion.url && erLydLektion(modulbrugerLektion.url)}
 						{@const modulErInspiration =
 							!!modulbrugerLektion.url && erInspirationLektion(modulbrugerLektion.url)}
+						{@const modulErZoom = !!modulbrugerLektion.url && erZoomLektion(modulbrugerLektion.url)}
 						{@const modulVisThumb =
 							!!modulbrugerLektion.url &&
-							(erVideoLektion(modulbrugerLektion.url) || modulErLyd || modulErInspiration)}
-						{@const modulVisFormat = modulErInspiration ? 'Inspiration' : (modulbrugerLektion.format ?? '')}
+							(erVideoLektion(modulbrugerLektion.url) || modulErLyd || modulErInspiration || modulErZoom)}
+						{@const modulVisFormat = modulErInspiration
+							? 'Inspiration'
+							: modulErZoom
+								? 'Zoom-møde'
+								: (modulbrugerLektion.format ?? '')}
 						<svelte:element
 							this={modulbrugerLektion.url ? 'a' : 'div'}
 							class="lektion-card lektion-card-kompakt"
@@ -1761,6 +1773,11 @@
 									{:else if modulErInspiration}
 										<div class="lektion-thumb-placeholder lektion-thumb-inspiration">
 											<Icon name="lightbulb" size={32} color="#fff" />
+										</div>
+									{:else if modulErZoom}
+										<div class="lektion-thumb-placeholder lektion-thumb-zoom">
+											<Icon name="video" size={28} color="#fff" />
+											<span>Zoom</span>
 										</div>
 									{:else}
 										<div class="lektion-thumb-placeholder">Zoom</div>
@@ -2827,7 +2844,12 @@
 		/* Varm gul-orange som passer til lyspære/inspiration-symbolet. */
 		background: linear-gradient(135deg, #e8b04a 0%, #c98a2e 100%);
 	}
-	.lektion-thumb-lyd span {
+	.lektion-thumb-zoom {
+		/* Zoom-blaa der signalerer videomøde-link. Matcher Zooms egen brand-blaa. */
+		background: linear-gradient(135deg, #2d8cff 0%, #0a66c2 100%);
+	}
+	.lektion-thumb-lyd span,
+	.lektion-thumb-zoom span {
 		font-size: calc(11px * var(--fs-scale, 1));
 		opacity: 0.95;
 	}

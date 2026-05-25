@@ -220,6 +220,16 @@ export function erVideoLektion(url: string): boolean {
 }
 
 /**
+ * True hvis URL'en peger paa et Zoom-link — enten et live-moede
+ * (zoom.us/j/, zoom.us/my/, zoom.us/s/) eller en optagelse
+ * (zoom.us/rec/). Bruges til at vise et Zoom-thumbnail paa lektion-cards.
+ */
+export function erZoomLektion(url: string): boolean {
+	if (!url) return false;
+	return /zoom\.us\//i.test(url);
+}
+
+/**
  * True hvis URL'en peger på en lyd-lektion (mp3, m4a, wav osv.). Bruges til
  * at vise et generisk lyd-thumbnail på lektion-cards så klienter kan se
  * det er en podcast/audio og ikke en video.
