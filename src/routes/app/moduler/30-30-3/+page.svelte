@@ -183,6 +183,7 @@
 		startFedt?: number;
 		startKcal?: number;
 		startKat?: Kategori;
+		eksisterendeId?: string;
 	} | null>(null);
 
 	// Opskrifter-state
@@ -768,12 +769,67 @@
 	}
 
 	function efterTilfoejet(ny: Fodevare) {
-		// Læg den nye fødevare ind i klient-cachen så den straks kan findes
-		foods = [...foods, ny].sort((a, b) => a.name.localeCompare(b.name, 'da'));
+		const u = user;
+		const erEdit = mineCustomFodevarer.some((f) => f.id === ny.id);
+		// Læg den nye fødevare ind i klient-cachen så den straks kan findes.
+		// Ved edit: erstat den eksisterende; ellers tilf0j.
+		if (erEdit) {
+			foods = foods.map((f) => (f.id === ny.id ? ny : f));
+			mineCustomFodevarer = mineCustomFodevarer.map((f) => (f.id === ny.id ? ny : f));
+		} else {
+			foods = [...foods, ny].sort((a, b) => a.name.localeCompare(b.name, 'da'));
+			mineCustomFodevarer = [...mineCustomFodevarer, ny];
+		}
 		foodMap = new Map(foods.map((f) => [f.id, f]));
 		nyDialog = null;
-		// Tilføj direkte til måltid (eller erstat hvis vi var i erstat-flow)
-		tilfoejTilMaaltid(ny);
+		// Auto-tilf0j til favoritter ved NY oprettelse (ikke ved edit) saa
+		// egne f0devarer altid duker op i favorit-tabben.
+		if (!erEdit && u && !favoritFodevareSet.has(ny.id)) {
+			void toggleFavoritFodevare(u.uid, ny.id, true).catch((e) =>
+				console.warn('Kunne ikke auto-favorisere ny f0devare:', e)
+			);
+		}
+		// Ved oprettelse: tilf0j direkte til maaltid. Ved edit: ingen
+		// auto-tilf0jelse — klienten redigerede bare data.
+		if (!erEdit) tilfoejTilMaaltid(ny);
+	}
+
+	async function rediger_egen_fodevare(food: Fodevare) {
+		nyDialog = {
+			barcode: 'edit_' + food.id,
+			startNavn: food.name,
+			startProtein: food.p,
+			startFiber: food.f,
+			startKh: food.kh ?? 0,
+			startFedt: food.fedt ?? 0,
+			startKcal: food.kcal ?? 0,
+			startKat: food.cat,
+			eksisterendeId: food.id
+		};
+	}
+
+	let bekraeftSlet = $state<Fodevare | null>(null);
+	let sletter = $state(false);
+
+	async function bekraeft_slet_egen() {
+		const u = user;
+		const food = bekraeftSlet;
+		if (!u || !food || sletter) return;
+		sletter = true;
+		try {
+			await sletMinCustomFodevare(u.uid, food.id);
+			foods = foods.filter((f) => f.id !== food.id);
+			foodMap = new Map(foods.map((f) => [f.id, f]));
+			mineCustomFodevarer = mineCustomFodevarer.filter((f) => f.id !== food.id);
+			if (favoritFodevareSet.has(food.id)) {
+				await toggleFavoritFodevare(u.uid, food.id, false);
+			}
+			bekraeftSlet = null;
+		} catch (e) {
+			console.error('Kunne ikke slette egen f0devare:', e);
+		} finally {
+			sletter = false;
+		}
 	}
 
 	function lukPicker() {
@@ -2269,6 +2325,7 @@
 					{/if}
 					{#each filtretetPicker as food (food.id)}
 						{@const erFavorit = favoritFodevareSet.has(food.id)}
+						{@const erEgen = food.kilde === 'custom'}
 						<div class="picker-row-wrap">
 							<div class="picker-row-flex">
 								<button
@@ -2298,6 +2355,26 @@
 									</div>
 									<span class="picker-plus">+</span>
 								</button>
+								{#if erEgen}
+									<button
+										class="egen-knap egen-knap-rediger"
+										type="button"
+										onclick={() => rediger_egen_fodevare(food)}
+										aria-label="Rediger fødevare"
+										title="Rediger"
+									>
+										Rediger
+									</button>
+									<button
+										class="egen-knap egen-knap-slet"
+										type="button"
+										onclick={() => (bekraeftSlet = food)}
+										aria-label="Slet fødevare"
+										title="Slet"
+									>
+										<Icon name="trash" size={14} color="#fff" />
+									</button>
+								{/if}
 							</div>
 						</div>
 					{/each}
@@ -2353,9 +2430,22 @@
 		startFedt={nyDialog.startFedt}
 		startKcal={nyDialog.startKcal}
 		startKat={nyDialog.startKat}
+		eksisterendeId={nyDialog.eksisterendeId}
 		uid={user.uid}
 		onTilfoejet={efterTilfoejet}
 		onClose={() => (nyDialog = null)}
+	/>
+{/if}
+
+{#if bekraeftSlet}
+	<BekraeftModal
+		titel={'Slet "' + bekraeftSlet.name + '"?'}
+		beskrivelse="Fødevaren fjernes fra dine favoritter og kan ikke gendannes."
+		bekraeftTekst="Slet"
+		destruktiv
+		arbejder={sletter}
+		onBekraeft={() => void bekraeft_slet_egen()}
+		onAnnuller={() => (bekraeftSlet = null)}
 	/>
 {/if}
 
@@ -3723,6 +3813,43 @@
 	}
 	.picker-row-flex .picker-row {
 		flex: 1;
+	}
+
+	.egen-knap {
+		align-self: center;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 6px 10px;
+		border-radius: 8px;
+		border: none;
+		font-family: var(--ff-b);
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		cursor: pointer;
+		flex-shrink: 0;
+	}
+
+	.egen-knap-rediger {
+		background: var(--bg2);
+		color: var(--text2);
+		border: 1px solid var(--border);
+	}
+
+	.egen-knap-rediger:hover {
+		border-color: var(--terra);
+		color: var(--terra);
+	}
+
+	.egen-knap-slet {
+		background: #b87b6e;
+		color: #fff;
+		width: 32px;
+		padding: 6px;
+	}
+
+	.egen-knap-slet:hover {
+		background: #9c6356;
 	}
 
 	.dagbog-rad {

@@ -21,6 +21,8 @@
 		startFedt?: number;
 		startKcal?: number;
 		startKat?: Kategori;
+		/** Hvis sat, redigerer vi en eksisterende fødevare i stedet for at oprette ny. */
+		eksisterendeId?: string;
 		uid: string;
 		onTilfoejet: (fodevare: Fodevare) => void;
 		onClose: () => void;
@@ -35,10 +37,13 @@
 		startFedt = 0,
 		startKcal = 0,
 		startKat = 'andet',
+		eksisterendeId,
 		uid,
 		onTilfoejet,
 		onClose
 	}: Props = $props();
+
+	const erEditMode = $derived(!!eksisterendeId);
 
 	// Pre-udfyld med start-værdierne. Dialog'en re-mountes når brugeren åbner
 	// en ny fødevare, så initialværdier her er korrekte. untrack undgår
@@ -131,7 +136,10 @@
 			if (kh > 0) customData.kh = kh;
 			if (fedt > 0) customData.fedt = fedt;
 			if (kcal > 0) customData.kcal = kcal;
-			const id = await gemMinCustomFodevare(uid, customData);
+			const id = await gemMinCustomFodevare(
+				uid,
+				eksisterendeId ? { id: eksisterendeId, ...customData } : customData
+			);
 			const ny: Fodevare = {
 				id,
 				name: n,
@@ -156,7 +164,7 @@
 <div class="bag" use:portalToBody>
 	<div class="modal" role="dialog" aria-modal="true">
 		<header class="head">
-			<div class="titel">Tilføj egen fødevare</div>
+			<div class="titel">{erEditMode ? 'Rediger fødevare' : 'Tilføj egen fødevare'}</div>
 			<button class="luk" type="button" onclick={onClose} aria-label="Luk">×</button>
 		</header>
 
@@ -231,7 +239,7 @@
 
 		<div class="foot">
 			<button class="primary" type="button" onclick={gem} disabled={gemmer}>
-				{gemmer ? 'Gemmer...' : 'Gem og tilføj til måltid'}
+				{gemmer ? 'Gemmer...' : erEditMode ? 'Gem ændringer' : 'Gem og tilføj til måltid'}
 			</button>
 		</div>
 	</div>
