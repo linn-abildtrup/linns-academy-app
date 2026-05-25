@@ -83,13 +83,26 @@ export const POST: RequestHandler = async ({ request }) => {
 	// filtreres efter activeProduct så hun ikke får svar om features hun
 	// ikke har adgang til.
 	const userDoc = (await hentDoc(`users/${uid}`)) as
-		| { activeProduct?: ActiveProduct; adminKlientMode?: string; accessLevel?: string }
+		| {
+				activeProduct?: ActiveProduct;
+				adminKlientMode?: string;
+				adminKlientForlobId?: string;
+				accessLevel?: string;
+		  }
 		| null;
 
 	// Admin kan teste i klient-mode — vi udleder activeProduct fra mode
 	let activeProduct = userDoc?.activeProduct;
 	if (userDoc?.adminKlientMode === 'basisapp') activeProduct = 'basisabo';
 	else if (userDoc?.adminKlientMode === 'premiumapp') activeProduct = 'premiumabo';
+	else if (userDoc?.adminKlientMode === 'forlob' && userDoc?.adminKlientForlobId) {
+		// Slaa forlob-typen op saa AI'en svarer som om vi er paa det rigtige forløb
+		const forlob = (await hentDoc(`forlob/${userDoc.adminKlientForlobId}`)) as
+			| { type?: string }
+			| null;
+		activeProduct =
+			forlob?.type === 'kropsro' ? 'premiumforløb' : 'kickstart';
+	}
 
 	// Rate-limit
 	const noegle = appHjaelpQuotaNoegle();

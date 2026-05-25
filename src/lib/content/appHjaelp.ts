@@ -391,8 +391,25 @@ function fagligRedirect(activeProduct: ActiveProduct | undefined): string {
 	return 'forklar venligt at App-hjælp kun svarer på spørgsmål om hvordan appen virker';
 }
 
+function brugerKontekst(activeProduct: ActiveProduct | undefined): string {
+	switch (activeProduct) {
+		case KICKSTART_PRODUCT_ID:
+			return `KUNDE-KONTEKST: Denne bruger er forløbskunde paa Kickstart (21-dages forløb). Svar ALTID ud fra Kickstart-flowet — daglige vaner, 21-dages mikrotraening, ugentlige check-ins (dag 7, 14, 21), MRS dag 0/10-11/21. Naevn ALDRIG Kropsro-specifikke features (ugentlige vaner, nul-dage, 84 dage).`;
+		case KROPSRO_PRODUCT_ID:
+			return `KUNDE-KONTEKST: Denne bruger er forløbskunde paa Kropsro (84-dages forløb). Svar ALTID ud fra Kropsro-flowet — UGENTLIGE vaner mandag-soendag (op til 5 pr uge), refleksioner hver dag paa forsiden, MRS-checkin paa dag 0/28/56/84, nul-dage til pauser. Naevn ALDRIG Kickstart-specifikke features (daglige admin-vaner, 21 dage, ugentlige check-ins).`;
+		case 'basisabo':
+			return `KUNDE-KONTEKST: Denne bruger har Basis-abonnement (modulbruger uden forløb). Svar ud fra abonnementsbruger-flowet. Naevn ALDRIG forløbs-features eller premium-features.`;
+		case 'premiumabo':
+			return `KUNDE-KONTEKST: Denne bruger har Premium-abonnement (modulbruger uden forløb). Svar ud fra premium-abonnementsbruger-flowet. Naevn ALDRIG forløbs-features.`;
+		default:
+			return `KUNDE-KONTEKST: Brugerens praecise produkt-type er ukendt — hold svaret generelt om appens navigation og undlad at naevne forløbs- eller premium-features.`;
+	}
+}
+
 function byggSystemPromptBase(activeProduct: ActiveProduct | undefined): string {
 	return `Du er App-hjælp — en assistent der svarer på spørgsmål om hvordan Linn's Academy-appen virker. Dit ENESTE formål er at hjælpe brugeren med at navigere og bruge appen.
+
+${brugerKontekst(activeProduct)}
 
 VIGTIGE REGLER:
 - Du må KUN svare på spørgsmål om appen og dens features.
