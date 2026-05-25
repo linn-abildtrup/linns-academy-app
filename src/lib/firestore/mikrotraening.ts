@@ -271,6 +271,47 @@ export async function tilfoejNulDageInterval(
 }
 
 /**
+ * Tilfoejer en egen vane til klienten under et specifikt forl0bs-product.
+ * Validerer at vi ikke overskrider MAX_EGNE_VANER.
+ * Returnerer den oprettede vane (med id og oprettetAt).
+ */
+export async function tilfoejEgenVane(
+	uid: string,
+	productId: string,
+	label: string,
+	maxVaner: number
+): Promise<{ ok: true; vane: { id: string; label: string; oprettetAt: number } } | { ok: false; fejl: string }> {
+	const ref = userProductDoc(uid, productId);
+	const snap = await getDoc(ref);
+	if (!snap.exists()) return { ok: false, fejl: 'Produkt ikke fundet.' };
+	const data = snap.data() as UserProduct;
+	const eksisterende = data.egneVaner ?? [];
+	if (eksisterende.length >= maxVaner) {
+		return { ok: false, fejl: `Du kan h0jst have ${maxVaner} egne vaner ad gangen.` };
+	}
+	const id = `egn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+	const vane = { id, label: label.trim(), oprettetAt: Date.now() };
+	await updateDoc(ref, { egneVaner: [...eksisterende, vane] });
+	return { ok: true, vane };
+}
+
+/**
+ * Fjerner en egen vane baseret paa id.
+ */
+export async function fjernEgenVane(
+	uid: string,
+	productId: string,
+	vaneId: string
+): Promise<void> {
+	const ref = userProductDoc(uid, productId);
+	const snap = await getDoc(ref);
+	if (!snap.exists()) return;
+	const data = snap.data() as UserProduct;
+	const eksisterende = data.egneVaner ?? [];
+	await updateDoc(ref, { egneVaner: eksisterende.filter((v) => v.id !== vaneId) });
+}
+
+/**
  * Fjerner et interval baseret paa satMs (timestamp for hvornaar det blev
  * tilfoejet). Bruges af fortryd-knappen.
  */

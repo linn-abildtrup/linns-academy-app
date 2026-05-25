@@ -111,9 +111,16 @@ export interface UserProduct {
 	nulDage?: {
 		intervaller: { fra: string; til: string; satMs: number }[];
 	};
+	/**
+	 * Egne vaner klienten selv har valgt at f0lge oveni Linn's tildelte.
+	 * Max 3 ad gangen. Kan tilfoejes og slettes frit. Bruges af Kropsro-
+	 * forloebskunder; abonnenter har deres egne via aboVaneOpsaetning.
+	 */
+	egneVaner?: { id: string; label: string; oprettetAt: number }[];
 }
 
 export const MAX_NUL_DAGE_PR_FORLOB = 21;
+export const MAX_EGNE_VANER = 3;
 
 export interface MikrotraeningFremgang {
 	gennemforte: number[];

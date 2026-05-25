@@ -1014,7 +1014,11 @@
 		aktivVaneprogramDag
 			? [
 					...aktivVaneprogramDag.checks,
-					...adminVanerForUge.map((v) => ({ id: `at-${v.id}`, label: v.label }))
+					...adminVanerForUge.map((v) => ({ id: `at-${v.id}`, label: v.label })),
+					...(userProduct?.egneVaner ?? []).map((v) => ({
+						id: `eg-${v.id}`,
+						label: v.label
+					}))
 				]
 			: []
 	);

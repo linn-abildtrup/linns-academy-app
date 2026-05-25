@@ -28,7 +28,12 @@
 		type AboVanedagEntry
 	} from '$lib/content/aboVaner';
 	import { unlockedDays } from '$lib/content/forlobAdgang';
-	import { hentUserProduct } from '$lib/firestore/mikrotraening';
+	import {
+		fjernEgenVane,
+		hentUserProduct,
+		tilfoejEgenVane
+	} from '$lib/firestore/mikrotraening';
+	import { MAX_EGNE_VANER } from '$lib/content/mikrotraening';
 	import { hentAktivProduktType, hentForlob } from '$lib/firestore/forlob';
 	import { hentAlleVanedage, hentVaneprogramForForlob } from '$lib/firestore/vaner';
 	import {
@@ -68,6 +73,12 @@
 	let forlob = $state<Forlob | null>(null);
 	let dage = $state<VaneProgramDag[]>([]);
 	let entries = $state<Map<number, VanedagEntry>>(new Map());
+	// === Egne vaner (forl0bskunde) ===
+	let egneVaner = $state<{ id: string; label: string; oprettetAt: number }[]>([]);
+	let nyEgenVaneLabel = $state('');
+	let gemmerEgenVane = $state(false);
+	let egenVaneFejl = $state<string | null>(null);
+	let aktivProduktType = $state<'kickstart' | 'premiumforløb'>('kickstart');
 
 	// === Abo-state ===
 	let aboOpsaetning = $state<AboVaneOpsaetning | null>(null);
@@ -225,6 +236,7 @@
 
 	async function indlaesForlobsData(uid: string) {
 		const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+		aktivProduktType = produktType;
 		const up = await hentUserProduct(uid, produktType);
 		// Admin i klient-mode har ikke noedvendigvis et userProduct-doc.
 		// I det tilfaelde bruger vi adminKlientForlobId direkte saa preview
@@ -234,7 +246,10 @@
 			fejl = 'Du har ikke adgang til vanetracker endnu.';
 			return;
 		}
-		if (up) userProduct = up;
+		if (up) {
+			userProduct = up;
+			egneVaner = up.egneVaner ?? [];
+		}
 
 		const forlobId =
 			(up as UserProduct & { forlobId?: string } | null)?.forlobId ?? adminForlobId;
@@ -281,6 +296,49 @@
 		}
 	}
 
+	async function gemEgenVane() {
+		const u = user;
+		if (!u || gemmerEgenVane) return;
+		const label = nyEgenVaneLabel.trim();
+		if (!label) {
+			egenVaneFejl = 'Skriv en vane f0rst.';
+			return;
+		}
+		if (label.length > 60) {
+			egenVaneFejl = 'H0jst 60 tegn.';
+			return;
+		}
+		gemmerEgenVane = true;
+		egenVaneFejl = null;
+		try {
+			const res = await tilfoejEgenVane(u.uid, aktivProduktType, label, MAX_EGNE_VANER);
+			if (res.ok) {
+				egneVaner = [...egneVaner, res.vane];
+				nyEgenVaneLabel = '';
+			} else {
+				egenVaneFejl = res.fejl;
+			}
+		} catch (e) {
+			console.error(e);
+			egenVaneFejl = 'Kunne ikke gemme vanen.';
+		} finally {
+			gemmerEgenVane = false;
+		}
+	}
+
+	async function sletEgenVane(vaneId: string) {
+		const u = user;
+		if (!u) return;
+		const tidligere = egneVaner;
+		egneVaner = egneVaner.filter((v) => v.id !== vaneId);
+		try {
+			await fjernEgenVane(u.uid, aktivProduktType, vaneId);
+		} catch (e) {
+			console.error(e);
+			egneVaner = tidligere;
+		}
+	}
+
 	// ==== Forløbs-funktioner (uændret) ====
 	function dagState(dag: VaneProgramDag): {
 		status: 'locked' | ReturnType<typeof beregnDagsStatus>;
@@ -291,11 +349,13 @@
 			return { status: 'locked', flower: 'none', farve: 'tom' };
 		}
 		const entry = entries.get(dag.dagNummer) ?? null;
-		// Admin-vaner gemmes med id-prefix 'at-' (matcher /vaner/[dag]'s
-		// visteVaner-konstruktion) saa entry.checks-opslag rammer.
-		const extraVaner = filtrerVanerForUge(adminVaner, dag.uge).map((v) => ({
-			id: `at-${v.id}`
-		}));
+		// Admin-vaner gemmes med id-prefix 'at-' og egne vaner med 'eg-'
+		// (matcher /vaner/[dag]'s visteVaner-konstruktion) saa entry.checks-
+		// opslag rammer.
+		const extraVaner = [
+			...filtrerVanerForUge(adminVaner, dag.uge).map((v) => ({ id: `at-${v.id}` })),
+			...egneVaner.map((v) => ({ id: `eg-${v.id}` }))
+		];
 		return {
 			status: beregnDagsStatus(dag, entry),
 			flower: beregnFlowerNiveau(dag, entry),
@@ -468,6 +528,62 @@
 					</div>
 				{/if}
 			{/each}
+		</section>
+
+		<section class="egne-vaner-card">
+			<div class="egne-vaner-header">
+				<div class="section-label">Mine egne vaner</div>
+				<div class="egne-vaner-tael">{egneVaner.length} / {MAX_EGNE_VANER}</div>
+			</div>
+			<p class="egne-vaner-hint">
+				Tilføj 1-{MAX_EGNE_VANER} egne vaner du selv vil arbejde med oveni Linns
+				ugentlige vaner. Du kan fjerne eller tilføje nye når som helst.
+			</p>
+			{#if egneVaner.length > 0}
+				<div class="egne-vaner-liste">
+					{#each egneVaner as v (v.id)}
+						<div class="egne-vaner-rad">
+							<div class="egne-vaner-label">{v.label}</div>
+							<button
+								type="button"
+								class="egne-vaner-slet"
+								onclick={() => sletEgenVane(v.id)}
+								aria-label="Slet vane"
+							>
+								Fjern
+							</button>
+						</div>
+					{/each}
+				</div>
+			{/if}
+			{#if egneVaner.length < MAX_EGNE_VANER}
+				<form
+					class="egne-vaner-form"
+					onsubmit={(e) => {
+						e.preventDefault();
+						void gemEgenVane();
+					}}
+				>
+					<input
+						type="text"
+						class="egne-vaner-input"
+						placeholder="Fx 'Gå 5000 skridt'"
+						bind:value={nyEgenVaneLabel}
+						maxlength="60"
+						disabled={gemmerEgenVane}
+					/>
+					<button
+						type="submit"
+						class="egne-vaner-tilfoej"
+						disabled={gemmerEgenVane || !nyEgenVaneLabel.trim()}
+					>
+						{gemmerEgenVane ? 'Gemmer...' : 'Tilføj'}
+					</button>
+				</form>
+				{#if egenVaneFejl}
+					<div class="egne-vaner-fejl">{egenVaneFejl}</div>
+				{/if}
+			{/if}
 		</section>
 	{:else if gren === 'abo'}
 		{#if !aboOpsaetning}
@@ -976,6 +1092,111 @@
 		margin-top: 14px;
 		padding-top: 12px;
 		border-top: 1px solid var(--border);
+	}
+
+	.egne-vaner-card {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		padding: 16px;
+		margin-top: 16px;
+	}
+
+	.egne-vaner-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		margin-bottom: 8px;
+	}
+
+	.egne-vaner-tael {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.egne-vaner-hint {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		margin: 0 0 12px;
+		line-height: 1.4;
+	}
+
+	.egne-vaner-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		margin-bottom: 12px;
+	}
+
+	.egne-vaner-rad {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		padding: 10px 12px;
+		background: var(--bg2);
+		border-radius: 10px;
+	}
+
+	.egne-vaner-label {
+		flex: 1;
+		font-size: calc(14px * var(--fs-scale, 1));
+		color: var(--text);
+	}
+
+	.egne-vaner-slet {
+		padding: 6px 12px;
+		background: transparent;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		color: var(--text2);
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		cursor: pointer;
+	}
+
+	.egne-vaner-form {
+		display: flex;
+		gap: 8px;
+	}
+
+	.egne-vaner-input {
+		flex: 1;
+		padding: 10px 12px;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: var(--bg2);
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		color: var(--text);
+	}
+
+	.egne-vaner-input:focus {
+		outline: none;
+		border-color: var(--terra);
+	}
+
+	.egne-vaner-tilfoej {
+		padding: 10px 18px;
+		background: var(--terra);
+		color: #fff;
+		border: none;
+		border-radius: 10px;
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		font-family: var(--ff-b);
+		cursor: pointer;
+	}
+
+	.egne-vaner-tilfoej:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.egne-vaner-fejl {
+		margin-top: 8px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: #8a4a3e;
 	}
 
 	.farvekode-titel {

@@ -42,6 +42,7 @@
 	let prog = $state<VaneProgramDag | null>(null);
 	let produktType = $state<ForlobProduct>('kickstart');
 	let adminVanerForUge = $state<AdminTildeltVane[]>([]);
+	let egneVaner = $state<{ id: string; label: string }[]>([]);
 
 	let checks = $state<Record<string, VaneSvar>>({});
 	let bonus = $state<Record<string, BonusSvar>>({});
@@ -90,10 +91,13 @@
 
 	// Vaner vises som sum af program-checks (Kickstart-stil) + admin-tildelte
 	// vaner for den uge dagen ligger i (Kropsro-stil). For Kropsro er
-	// prog.checks tomt og adminVanerForUge bærer hele listen.
+	// prog.checks tomt og adminVanerForUge baerer hele listen. Plus egne
+	// vaner som klienten selv har valgt (prefix 'eg-' saa id-rummet ikke
+	// kolliderer med admin-vaner eller program-checks).
 	const visteVaner = $derived<{ id: string; label: string }[]>([
 		...(prog?.checks ?? []),
-		...adminVanerForUge.map((v) => ({ id: `at-${v.id}`, label: v.label }))
+		...adminVanerForUge.map((v) => ({ id: `at-${v.id}`, label: v.label })),
+		...egneVaner.map((v) => ({ id: `eg-${v.id}`, label: v.label }))
 	]);
 
 	const aktuelStatus = $derived(
@@ -155,7 +159,10 @@
 				loading = false;
 				return;
 			}
-			if (up) userProduct = up;
+			if (up) {
+				userProduct = up;
+				egneVaner = (up.egneVaner ?? []).map((v) => ({ id: v.id, label: v.label }));
+			}
 
 			const forlobId =
 				(up as UserProduct & { forlobId?: string } | null)?.forlobId ?? adminForlobId;
