@@ -96,11 +96,11 @@ Under 'Seneste dage'-griddet kan du se hvilke dage du har trænet (grøn). I dag
 	{
 		titel: 'Mikrotræning — forløbskunder',
 		visFor: FORLOBSKUNDER,
-		indhold: `Mikrotræning er bygget op som et 21-dages program der følger forløbet. Du finder det under Moduler → Træning → Mikrotræning.
+		indhold: `Mikrotræning finder du under Moduler → Træning → Mikrotræning. Det er et 21-dages program der følger forløbet. Hver dag er låst op i takt med forløbet — du kan ikke springe frem. Du kan altid gå tilbage til tidligere dage.
 
-Hver dag er låst op i takt med forløbet — du kan ikke springe frem. Du kan altid gå tilbage til tidligere dage. Når du har gennemført alle 21 dage, er du færdig med programmet.
+Du kan vælge program (med eller uden udstyr) under Profil → Mikrotræning — program. Første gang du åbner Mikrotræning bliver du spurgt om du har kettlebells.
 
-Du kan vælge program (med eller uden udstyr) under Profil → Mikrotræning — program.`
+På forsiden vises en lille trænings-video til venstre på Træningskortet — det er dagens første øvelse der allerede er klar at se. Klik kortet for at åbne hele dagens session.`
 	},
 	{
 		titel: 'Byg dit eget træningsprogram',
@@ -176,23 +176,59 @@ Du har desuden adgang til udvidet næringsdata og kan se hvordan dine vaner og k
 Resten af vanetrackeren virker som basis: tjek ind dagligt, se farvekoder for hvor mange vaner du ramte, og scroll i månedsarkivet for historik.`
 	},
 	{
-		titel: 'Vaner fra dit forløb (Linn-tildelte)',
-		visFor: FORLOBSKUNDER,
-		indhold: `Ud over dine selvvalgte vaner kan Linn tildele ekstra vaner til alle deltagere på dit forløb. Du genkender dem på et lille "Fra forløb"-tag ved siden af navnet.
+		titel: 'Vaner fra dit forløb (Linn-tildelte) — Kickstart',
+		visFor: [KICKSTART_PRODUCT_ID],
+		indhold: `Ud over dine selvvalgte vaner kan Linn tildele ekstra vaner til alle deltagere paa dit forløb. Du genkender dem på et lille "Fra forløb"-tag ved siden af navnet.
 
 Disse vaner kommer oveni dine egne tre — de tæller IKKE med i din tre-grænse, så du kan stadig vælge tre selv. Du kan ikke fjerne dem (de er låste), men du tjekker ja/delvist/nej på dem hver dag på samme måde som dine egne.`
+	},
+	{
+		titel: 'Vaner fra dit forløb (Linn-tildelte) — Kropsro',
+		visFor: [KROPSRO_PRODUCT_ID],
+		indhold: `På Kropsro arbejder du med ugentlige vaner som Linn lægger ind. Hver uge (mandag til søndag) får du nye vaner — typisk op til fem.
+
+Du tjekker ja/delvist/nej på dem hver dag på samme måde som dine egne vaner. Du kan ikke fjerne dem (de er låste fra Linn).
+
+Når en ny uge starter, kommer de nye vaner automatisk frem på forsiden under 'Dagens små skridt' og i Vaner-modulet. Tidligere ugers vaner forsvinder fra dagens visning — men dine tidligere svar bevares i historikken.`
 	},
 	{
 		titel: 'Mit forløb',
 		visFor: FORLOBSKUNDER,
 		indhold: `Mit forløb finder du under Moduler → Mit forløb. Her ser du:
-- Alle dage i forløbet (typisk 21 dage) med status: gennemført, i gang eller låst.
+- Alle dage i forløbet med status: gennemført, i gang eller låst.
 - Dagens lektion med video/lyd/læsestof.
 - En note fra Linn for nogle dage.
 
 Klik på en dag for at åbne lektionen. Forløbet låser dagene op én ad gangen — du kan ikke springe frem.
 
 Når forløbet er gennemført, har du 90 dages bonusperiode hvor du stadig kan se materialet (læseadgang).`
+	},
+	{
+		titel: 'Dagens refleksion på forsiden',
+		visFor: FORLOBSKUNDER,
+		indhold: `Lige over 'Dagens små skridt' på forsiden vises et 'Dagens refleksion'-kort med et refleksionsspørgsmål Linn har skrevet til dagen. Klik 'Skriv dit svar' for at åbne dagen i Vaner-modulet hvor du kan skrive dit eget svar i tekstfeltet under refleksionen.
+
+Refleksionen vises kun hvis Linn har lagt en op for den dag. Baseline-dagen (dag 0) har ingen refleksion — kun selve baseline-check-in.`
+	},
+	{
+		titel: 'Vaner-oversigt — dagsfarver',
+		visFor: FORLOBSKUNDER,
+		indhold: `I Vaner-modulet ser du et grid over alle dage i forløbet. Når du har udfyldt en dags vaner, farves cellen efter hvor godt det gik:
+- Grøn: 75% eller flere af dagens vaner blev til 'ja' (eller halv-score for 'delvist')
+- Orange: 50-74% blev til 'ja'
+- Rød: under 50% blev til 'ja'
+- Hvid: dagen er endnu ikke udfyldt (eller fremtidig — så er den låst)
+
+Klik en dag for at åbne den og se dine svar (du kan også redigere dem). Baseline-dagen (dag 0) bliver ikke farvet — den har sin egen visning.`
+	},
+	{
+		titel: 'Nul-dage (pause-dage) på Kropsro',
+		visFor: [KROPSRO_PRODUCT_ID],
+		indhold: `Hvis du holder ferie, bliver syg eller har en travl uge, kan du markere en periode som 'nul-dage'. Forløbet sættes på pause i de dage, og slutdatoen rykker tilsvarende fremad.
+
+Du finder funktionen under Profil → Nul-dage. Vælg fra-dato og til-dato (fremtidige datoer eller i dag). Du kan bruge maks 21 nul-dage i alt i hele forløbet.
+
+På forsidens dato-strip vises pause-dage som stiplede 'Pause'-kasser, og 'Dag X af Y'-tælleren springer dem over. Du kan fortryde en pause-periode på samme dag du satte den, men ikke bagefter.`
 	},
 	{
 		titel: 'Beskeder — spørgsmål til Linn',
@@ -291,6 +327,8 @@ Hvor ofte (altid om søndagen efter første udfyldelse):
 - Kropsro-kunde: dag 0 (søndag), derefter hver 4. søndag gennem forløbet.
 
 Når det er tid til at udfylde, vises et terra "Tag din symptomcheck"-kort på din forside. Klik for at åbne modulet. Når du har udfyldt, viser kortet i stedet datoen for næste udfyldelse — du kan ikke tage en ny check før den dato, så grafen forbliver retvisende.
+
+For Kropsro: når du åbner en dag i Vaner-modulet der er en MRS-checkin-dag (dag 0, 28, 56, 84), vises også et "Tid til symptomcheck"-kort øverst med direkte link til modulet.
 
 I selve checken udfylder du først de 5 sliders (træk fra 1-10), så de 11 MRS-spørgsmål (Ingen / Lidt / En del / Meget / Voldsomt). I alt 16 svar. Resultatet viser:
 - Din MRS total-score (0-44) med fortolkning fra internationalt anerkendt MRS-skala.
