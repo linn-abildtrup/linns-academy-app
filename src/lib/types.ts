@@ -206,6 +206,14 @@ export interface UserDoc {
 	adminKlientMode?: 'forlob' | 'basisapp' | 'premiumapp';
 
 	/**
+	 * Hvilket produkt admin tester naar adminKlientMode='forlob'. Gemmes
+	 * sammen med adminKlientForlobId saa layout's effektivUserDoc kan
+	 * sætte det rigtige activeProduct uden at lave et ekstra forl0b-opslag.
+	 * Sat automatisk af gemAdminKlientForlob ud fra forl0bets type.
+	 */
+	adminKlientAktivProdukt?: 'kickstart' | 'premiumforløb';
+
+	/**
 	 * Alle forløb brugeren nogensinde har været på (Kickstart, Kropsro,
 	 * fremtidige forløb). Bruges af bibliotek-modulet til at vise materiale
 	 * fra alle gennemførte forløb. SKAL aldrig overskrives — kun appendes.

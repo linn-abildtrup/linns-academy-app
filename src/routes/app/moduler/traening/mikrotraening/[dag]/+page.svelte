@@ -95,11 +95,13 @@
 			return;
 		}
 
-		if (!Number.isFinite(dagNummer) || dagNummer < 1 || dagNummer > 100) {
+		if (!Number.isFinite(dagNummer) || dagNummer < 1 || dagNummer > 200) {
 			fejl = 'Ugyldigt dag-nummer.';
 			loading = false;
 			return;
 		}
+		// 200 er rent sanity-check mod absurde URLs. Det reelle max-tjek sker
+		// nedenfor naar vi har programmet og kan se dets faktiske antalDage.
 
 		try {
 			const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);

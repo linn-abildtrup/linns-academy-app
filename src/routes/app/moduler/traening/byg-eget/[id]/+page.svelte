@@ -197,7 +197,7 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Mine programmer</span>
 		</a>
-		<div class="eyebrow">{flerdagesProgram ? 'Mit 14-dages program' : 'Custom-builder'}</div>
+		<div class="eyebrow">{flerdagesProgram ? `Mit ${flerdagesProgram.dage.length}-dages program` : 'Custom-builder'}</div>
 		<h1>{erNyt ? 'Nyt program' : navn || 'Rediger program'}</h1>
 		{#if flerdagesProgram}
 			<p class="page-sub">

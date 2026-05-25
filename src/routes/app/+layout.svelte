@@ -59,6 +59,11 @@
 			const liste = forlobIds ?? [];
 			return liste.includes(id) ? liste : [...liste, id];
 		}
+		// activeProduct vaelges dynamisk ud fra det forl0b admin tester
+		// (kickstart vs premiumforl0b). Sat af gemAdminKlientForlob — vi
+		// faldter tilbage til 'kickstart' hvis feltet mangler (gamle doks).
+		const klientForlobProdukt = d.adminKlientAktivProdukt ?? 'kickstart';
+		const erKropsroKlient = klientForlobProdukt === 'premiumforløb';
 		// Bagudkompatibilitet: hvis adminKlientForlobId er sat men adminKlientMode
 		// mangler (gamle dokumenter), antag forlobs-mode.
 		if (!mode && d.adminKlientForlobId) {
@@ -66,9 +71,9 @@
 				...d,
 				...klientOverride,
 				state: 'forlobskunde',
-				accessLevel: 'basis',
+				accessLevel: erKropsroKlient ? 'premium' : 'basis',
 				accessSource: 'forløb',
-				activeProduct: 'kickstart',
+				activeProduct: klientForlobProdukt,
 				forlobIds: medAdminForlobId(d.forlobIds, d.adminKlientForlobId)
 			};
 		}
@@ -77,9 +82,9 @@
 				...d,
 				...klientOverride,
 				state: 'forlobskunde',
-				accessLevel: 'basis',
+				accessLevel: erKropsroKlient ? 'premium' : 'basis',
 				accessSource: 'forløb',
-				activeProduct: 'kickstart',
+				activeProduct: klientForlobProdukt,
 				forlobIds: medAdminForlobId(d.forlobIds, d.adminKlientForlobId)
 			};
 		}

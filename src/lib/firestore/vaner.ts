@@ -77,7 +77,7 @@ export async function gemVaneprogramDag(
  */
 export async function hentAlleVanedage(
 	uid: string,
-	productId: string = 'kickstart'
+	productId: string
 ): Promise<Map<number, VanedagEntry>> {
 	const snap = await getDocs(vanedageCollection(uid, productId));
 	const map = new Map<number, VanedagEntry>();
@@ -172,7 +172,7 @@ export async function hentCheckinHistorikForBruger(
 export async function hentVanedag(
 	uid: string,
 	dagNummer: number,
-	productId: string = 'kickstart'
+	productId: string
 ): Promise<VanedagEntry | null> {
 	const id = `dag${dagNummer}`;
 	const snap = await getDoc(vanedagDoc(uid, productId, id));
@@ -187,7 +187,7 @@ export async function hentVanedag(
 export async function gemVanedag(
 	uid: string,
 	entry: Omit<VanedagEntry, 'savedAt'>,
-	productId: string = 'kickstart'
+	productId: string
 ): Promise<void> {
 	const id = `dag${entry.dagNummer}`;
 	await setDoc(

@@ -45,22 +45,28 @@ export async function gemBrugerProfilOgMaal(
 export async function gemAdminKlientForlob(uid: string, forlobId: string): Promise<void> {
 	const { serverTimestamp, getDoc } = await import('firebase/firestore');
 
+	// Slaa forl0b-type op saa vi opretter den rigtige productId (kickstart vs
+	// premiumforl0b) og kan gemme den paa userDoc'en til effektivUserDoc.
+	const forlobRef = doc(db, 'forlob', forlobId);
+	const forlobSnap = await getDoc(forlobRef);
+	const forlobData = forlobSnap.exists() ? forlobSnap.data() : null;
+	const erKropsro = forlobData?.type === 'kropsro';
+	const productId = erKropsro ? 'premiumforløb' : 'kickstart';
+
 	await updateDoc(doc(db, 'users', uid), {
 		adminKlientForlobId: forlobId,
-		adminKlientMode: 'forlob'
+		adminKlientMode: 'forlob',
+		adminKlientAktivProdukt: productId
 	});
 
 	const productRef = doc(
 		db,
-		`users/${uid}/adminKlient/${forlobId}/products/kickstart`
+		`users/${uid}/adminKlient/${forlobId}/products/${productId}`
 	);
 	const eks = await getDoc(productRef);
 	if (!eks.exists()) {
-		const forlobRef = doc(db, 'forlob', forlobId);
-		const forlobSnap = await getDoc(forlobRef);
-		const forlobData = forlobSnap.exists() ? forlobSnap.data() : null;
 		await setDoc(productRef, {
-			productId: 'kickstart',
+			productId,
 			forlobId,
 			startDato: forlobData?.startDato ?? serverTimestamp(),
 			udloberDato: null,
@@ -103,7 +109,8 @@ export async function ryAdminKlientMode(uid: string): Promise<void> {
 	const { deleteField } = await import('firebase/firestore');
 	await updateDoc(doc(db, 'users', uid), {
 		adminKlientForlobId: deleteField(),
-		adminKlientMode: deleteField()
+		adminKlientMode: deleteField(),
+		adminKlientAktivProdukt: deleteField()
 	});
 }
 
