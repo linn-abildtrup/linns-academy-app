@@ -291,7 +291,11 @@
 			return { status: 'locked', flower: 'none', farve: 'tom' };
 		}
 		const entry = entries.get(dag.dagNummer) ?? null;
-		const extraVaner = filtrerVanerForUge(adminVaner, dag.uge);
+		// Admin-vaner gemmes med id-prefix 'at-' (matcher /vaner/[dag]'s
+		// visteVaner-konstruktion) saa entry.checks-opslag rammer.
+		const extraVaner = filtrerVanerForUge(adminVaner, dag.uge).map((v) => ({
+			id: `at-${v.id}`
+		}));
 		return {
 			status: beregnDagsStatus(dag, entry),
 			flower: beregnFlowerNiveau(dag, entry),
@@ -345,8 +349,10 @@
 		<div class="eyebrow">{gren === 'forlob' ? 'Forløb' : 'Daglig'}</div>
 		<h1>Vaner</h1>
 		<p class="page-sub">
-			{#if gren === 'forlob'}
-				Tre små vaner, hver dag i 21 dage. Tjek ind når du har lavet dem.
+			{#if gren === 'forlob' && forlob}
+				Daglige vaner i {forlob.antalDage} dage. Tjek ind når du har lavet dem.
+			{:else if gren === 'forlob'}
+				Daglige vaner gennem forløbet. Tjek ind når du har lavet dem.
 			{:else if gren === 'abo'}
 				Dine personlige vaner. Tjek ind hver dag — uge for uge.
 			{:else}
