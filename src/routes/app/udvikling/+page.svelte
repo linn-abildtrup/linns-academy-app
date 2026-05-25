@@ -21,11 +21,9 @@
 	import type { TraeningHistorikEntry } from '$lib/content/traeningHistorik';
 	import { hentAboVaneOpsaetning, hentAlleAboVanedage } from '$lib/firestore/aboVaner';
 	import type { AboVaneOpsaetning, AboVanedagEntry } from '$lib/content/aboVaner';
-	import { hentAlleVanedage } from '$lib/firestore/vaner';
+	import { hentCheckinHistorikForBruger } from '$lib/firestore/vaner';
 	import type { VanedagEntry, CheckinSvar } from '$lib/content/vaner';
 	import { CHECKIN_SPORGSMAAL } from '$lib/content/vaner';
-	import { hentAktivProduktType } from '$lib/firestore/forlob';
-	import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID } from '$lib/types';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -57,7 +55,15 @@
 	let traeningHistorik = $state<TraeningHistorikEntry[]>([]);
 	let aboVaneOpsaetning = $state<AboVaneOpsaetning | null>(null);
 	let aboVanedage = $state<Map<string, AboVanedagEntry>>(new Map());
-	let forlobsVanedage = $state<Map<number, VanedagEntry>>(new Map());
+	interface CheckinHistorikPunkt {
+		forlobId: string;
+		forlobNavn: string;
+		forlobType: 'kickstart' | 'kropsro';
+		dagNummer: number;
+		dato: Date;
+		entry: VanedagEntry;
+	}
+	let checkinHistorik = $state<CheckinHistorikPunkt[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
@@ -66,19 +72,16 @@
 	// (uanset om hun aktiv basis/premium/forløb eller udløbet i bonus).
 	const harForlobsHistorik = $derived((userDoc?.forlobIds?.length ?? 0) > 0);
 
-	// Find dage med checkin-data (baseline + ugentlige check-ins). For
-	// Kickstart-forløb er det typisk dag 0, 7, 14, 21.
+	// Filtrér historik til kun de punkter der HAR slider-svar (baseline +
+	// ugentlige check-ins). Sorteret kronologisk paa tvaers af forl0b.
 	const checkinDage = $derived.by(() => {
-		const liste: { dagNummer: number; entry: VanedagEntry }[] = [];
-		for (const [dagNummer, entry] of forlobsVanedage) {
-			const c = entry.checkin as CheckinSvar | undefined;
-			if (!c) continue;
-			const harSlider = CHECKIN_SPORGSMAAL.some(
+		return checkinHistorik.filter((p) => {
+			const c = p.entry.checkin as CheckinSvar | undefined;
+			if (!c) return false;
+			return CHECKIN_SPORGSMAAL.some(
 				(q) => typeof c[q.id as keyof CheckinSvar] === 'number'
 			);
-			if (harSlider) liste.push({ dagNummer, entry });
-		}
-		return liste.sort((a, b) => a.dagNummer - b.dagNummer);
+		});
 	});
 
 	const SLIDER_FARVER: Record<string, string> = {
@@ -131,12 +134,10 @@
 			}
 			// Forløbs-vanedage (baseline + ugentlige check-ins) hentes for
 			// kunder der har gennemført et forløb — uanset deres nuværende
-			// adgangsniveau. Bruges til 'Min udvikling siden baseline'-sektionen.
-			// Vi henter BÅDE kickstart- og kropsro-vanedage hvis kunden har
-			// haft begge forløb, og merger dem til én map.
+			// adgangsniveau. Vi henter fra ALLE forl0b kunden har deltaget i
+			// saa Kickstart-historik bevares naar hun starter paa Kropsro.
 			if (harForlobsHistorik) {
-				const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
-				promiser.push(hentAlleVanedage(u.uid, produktType));
+				promiser.push(hentCheckinHistorikForBruger(u.uid, userDoc?.forlobIds ?? []));
 			}
 			const r = await Promise.all(promiser);
 			alle = r[0] as GemtMaaltid[];
@@ -148,7 +149,7 @@
 				aboVanedage = r[idx++] as Map<string, AboVanedagEntry>;
 			}
 			if (harForlobsHistorik) {
-				forlobsVanedage = r[idx++] as Map<number, VanedagEntry>;
+				checkinHistorik = r[idx++] as CheckinHistorikPunkt[];
 			}
 		} catch (e) {
 			console.error(e);
@@ -710,20 +711,22 @@
 		{@const innerW = grafBredde - padX * 2}
 		{@const innerH = grafHojde - padY * 2}
 		{@const n = checkinDage.length}
-		{@const baselineKommentar = checkinDage.find((d) => d.dagNummer === 0)?.entry.checkin?.generelTekst}
-		{@const baselineForlob =
-			userDoc?.activeProduct === KROPSRO_PRODUCT_ID
-				? 'Kropsro'
-				: userDoc?.activeProduct === KICKSTART_PRODUCT_ID
-					? 'Kickstart'
-					: null}
+		{@const foersteBaseline = checkinDage.find((d) => d.dagNummer === 0)}
+		{@const baselineKommentar = foersteBaseline?.entry.checkin?.generelTekst}
+		{@const visFlereForlob = new Set(checkinDage.map((d) => d.forlobId)).size > 1}
 		<div class="sektion-titel">Baseline + check-ins</div>
 		<section class="kort">
 			<div class="kort-titel">
-				Din udvikling siden{baselineForlob ? ` ${baselineForlob}-baseline` : ' baseline'}
+				{visFlereForlob
+					? 'Din udvikling siden første baseline'
+					: foersteBaseline
+						? `Din udvikling siden ${foersteBaseline.forlobNavn}-baseline`
+						: 'Din udvikling'}
 			</div>
 			<p class="kort-sub">
-				Sammenlign dine 5 baseline-svar (dag 0) med dine ugentlige check-ins.
+				{visFlereForlob
+					? 'Alle baseline-svar og check-ins fra dine forløb, samlet i én tidslinje.'
+					: 'Sammenlign dine 5 baseline-svar (dag 0) med dine ugentlige check-ins.'}
 				Skala 1-10, hvor 10 er bedst.
 			</p>
 
@@ -738,8 +741,18 @@
 					<text x={padX - 4} y={padY + innerH / 2 + 4} text-anchor="end" class="graf-y-label">5</text>
 					<text x={padX - 4} y={padY + innerH + 4} text-anchor="end" class="graf-y-label">1</text>
 
-					<!-- X-akse labels (dag-numre) -->
-					{#each checkinDage as d, i (d.dagNummer)}
+					<!-- Vertikal stiplet linje hvor nyt forl0b starter (kun ved flere forl0b) -->
+					{#if visFlereForlob}
+						{#each checkinDage as d, i (d.forlobId + '-' + d.dagNummer)}
+							{#if i > 0 && checkinDage[i - 1].forlobId !== d.forlobId}
+								{@const x = padX + (i / (n - 1)) * innerW}
+								<line x1={x} y1={padY} x2={x} y2={padY + innerH} stroke="var(--text3)" stroke-width="0.5" stroke-dasharray="3 2" />
+							{/if}
+						{/each}
+					{/if}
+
+					<!-- X-akse labels (dag-numre, evt med forl0b-prefiks) -->
+					{#each checkinDage as d, i (d.forlobId + '-' + d.dagNummer)}
 						{@const x = n === 1 ? padX + innerW / 2 : padX + (i / (n - 1)) * innerW}
 						<text x={x} y={grafHojde - 2} text-anchor="middle" class="graf-x-label">
 							{d.dagNummer === 0 ? 'Base' : `D${d.dagNummer}`}

@@ -89,6 +89,83 @@ export async function hentAlleVanedage(
 }
 
 /**
+ * Henter brugerens checkin-data fra ALLE forl0b hun har deltaget i, samlet
+ * og sorteret kronologisk. Bruges af udvikling-fanen til at vise hele
+ * baseline+check-in-historikken pa tvaers af Kickstart og Kropsro.
+ *
+ * Hvert returneret punkt har:
+ *  - forlobId, forlobNavn (label til UI)
+ *  - dagNummer (lokalt i forl0bet — 0=baseline, 7/14/21 osv. for Kickstart,
+ *    0/28/56/84 for Kropsro)
+ *  - dato (faktisk dato beregnet fra forl0b.startDato + dagNummer)
+ *  - entry (selve VanedagEntry-doc)
+ */
+export async function hentCheckinHistorikForBruger(
+	uid: string,
+	forlobIds: string[]
+): Promise<
+	Array<{
+		forlobId: string;
+		forlobNavn: string;
+		forlobType: 'kickstart' | 'kropsro';
+		dagNummer: number;
+		dato: Date;
+		entry: VanedagEntry;
+	}>
+> {
+	const forl0bsdata = await Promise.all(
+		forlobIds.map(async (forlobId) => {
+			const fSnap = await getDoc(doc(db, 'forlob', forlobId));
+			if (!fSnap.exists()) return null;
+			const f = fSnap.data() as {
+				navn?: string;
+				startDato?: { toDate: () => Date };
+				type?: string;
+			};
+			const forlobType: 'kickstart' | 'kropsro' = f.type === 'kropsro' ? 'kropsro' : 'kickstart';
+			const productId = forlobType === 'kropsro' ? 'premiumforløb' : 'kickstart';
+			const vanedage = await hentAlleVanedage(uid, productId);
+			const startDato = f.startDato?.toDate?.() ?? new Date();
+			return {
+				forlobId,
+				forlobNavn: f.navn ?? forlobId,
+				forlobType,
+				startDato,
+				vanedage
+			};
+		})
+	);
+
+	const punkter: Array<{
+		forlobId: string;
+		forlobNavn: string;
+		forlobType: 'kickstart' | 'kropsro';
+		dagNummer: number;
+		dato: Date;
+		entry: VanedagEntry;
+	}> = [];
+
+	for (const f of forl0bsdata) {
+		if (!f) continue;
+		for (const [dagNummer, entry] of f.vanedage) {
+			const dato = new Date(f.startDato);
+			dato.setDate(dato.getDate() + dagNummer);
+			punkter.push({
+				forlobId: f.forlobId,
+				forlobNavn: f.forlobNavn,
+				forlobType: f.forlobType,
+				dagNummer,
+				dato,
+				entry
+			});
+		}
+	}
+
+	punkter.sort((a, b) => a.dato.getTime() - b.dato.getTime());
+	return punkter;
+}
+
+/**
  * Henter brugerens svar for én specifik dag.
  * Returnerer null hvis dagen ikke er besvaret endnu.
  */
