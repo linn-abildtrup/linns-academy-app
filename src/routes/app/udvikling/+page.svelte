@@ -24,6 +24,8 @@
 	import { hentAlleVanedage } from '$lib/firestore/vaner';
 	import type { VanedagEntry, CheckinSvar } from '$lib/content/vaner';
 	import { CHECKIN_SPORGSMAAL } from '$lib/content/vaner';
+	import { hentAktivProduktType } from '$lib/firestore/forlob';
+	import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID } from '$lib/types';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -130,8 +132,11 @@
 			// Forløbs-vanedage (baseline + ugentlige check-ins) hentes for
 			// kunder der har gennemført et forløb — uanset deres nuværende
 			// adgangsniveau. Bruges til 'Min udvikling siden baseline'-sektionen.
+			// Vi henter BÅDE kickstart- og kropsro-vanedage hvis kunden har
+			// haft begge forløb, og merger dem til én map.
 			if (harForlobsHistorik) {
-				promiser.push(hentAlleVanedage(u.uid, 'kickstart'));
+				const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+				promiser.push(hentAlleVanedage(u.uid, produktType));
 			}
 			const r = await Promise.all(promiser);
 			alle = r[0] as GemtMaaltid[];
@@ -706,9 +711,17 @@
 		{@const innerH = grafHojde - padY * 2}
 		{@const n = checkinDage.length}
 		{@const baselineKommentar = checkinDage.find((d) => d.dagNummer === 0)?.entry.checkin?.generelTekst}
+		{@const baselineForlob =
+			userDoc?.activeProduct === KROPSRO_PRODUCT_ID
+				? 'Kropsro'
+				: userDoc?.activeProduct === KICKSTART_PRODUCT_ID
+					? 'Kickstart'
+					: null}
 		<div class="sektion-titel">Baseline + check-ins</div>
 		<section class="kort">
-			<div class="kort-titel">Din udvikling siden Kickstart-baseline</div>
+			<div class="kort-titel">
+				Din udvikling siden{baselineForlob ? ` ${baselineForlob}-baseline` : ' baseline'}
+			</div>
 			<p class="kort-sub">
 				Sammenlign dine 5 baseline-svar (dag 0) med dine ugentlige check-ins.
 				Skala 1-10, hvor 10 er bedst.

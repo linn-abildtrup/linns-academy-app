@@ -148,11 +148,14 @@
 			loading = false;
 			return;
 		}
-		if (!Number.isFinite(dagNummer) || dagNummer < 1 || dagNummer > 21) {
+		if (!Number.isFinite(dagNummer) || dagNummer < 1 || dagNummer > 200) {
 			fejl = 'Ugyldigt dag-nummer.';
 			loading = false;
 			return;
 		}
+		// Det faktiske max-dag-tjek sker efter program-data er hentet — saa
+		// dagNummer > program.antalDage giver beskeden 'Der er ikke lagt
+		// oevelser ind for denne dag endnu' der haandterer det elegant.
 
 		try {
 			produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
