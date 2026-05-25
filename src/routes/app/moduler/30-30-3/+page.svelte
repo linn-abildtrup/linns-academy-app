@@ -2372,7 +2372,7 @@
 										aria-label="Slet fødevare"
 										title="Slet"
 									>
-										<Icon name="trash" size={14} color="#fff" />
+										<Icon name="trash" size={14} color="var(--text3)" />
 									</button>
 								{/if}
 							</div>
@@ -3815,41 +3815,31 @@
 		flex: 1;
 	}
 
+	/* Ghost-knapper for egne fodevarer — efterligner favorit-stjerne's
+	   subtile stil saa de ikke skiller sig ud i picker-row'en. */
 	.egen-knap {
 		align-self: center;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		padding: 6px 10px;
-		border-radius: 8px;
+		padding: 4px 8px;
+		border-radius: 6px;
+		background: none;
 		border: none;
 		font-family: var(--ff-b);
-		font-size: calc(11.5px * var(--fs-scale, 1));
-		font-weight: 600;
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 500;
+		color: var(--text3);
 		cursor: pointer;
 		flex-shrink: 0;
 	}
 
-	.egen-knap-rediger {
-		background: var(--bg2);
-		color: var(--text2);
-		border: 1px solid var(--border);
-	}
-
-	.egen-knap-rediger:hover {
-		border-color: var(--terra);
-		color: var(--terra);
+	.egen-knap:hover {
+		opacity: 0.7;
 	}
 
 	.egen-knap-slet {
-		background: #b87b6e;
-		color: #fff;
-		width: 32px;
-		padding: 6px;
-	}
-
-	.egen-knap-slet:hover {
-		background: #9c6356;
+		padding: 4px;
 	}
 
 	.dagbog-rad {
