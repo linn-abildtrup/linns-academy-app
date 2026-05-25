@@ -156,6 +156,53 @@ export function beregnDagsStatus(
 }
 
 /**
+ * 3-niveau-farve for en dag baseret paa procent ja-svar. Bruges til at
+ * farve hele dag-cellen i vaner-oversigten saa kunden kan se hvor godt
+ * dagen er gaaet paa et oejeblik.
+ *
+ *   >=75% ja → gron
+ *   >=50% ja → orange
+ *   under    → rod
+ *   ingen svar / baseline / ingen vaner → tom
+ *
+ * Delvist taeller som 0.5 ja. Bonus taeller med (ja=1, ellers 0).
+ *
+ * For Kropsro (hvor prog.checks er tom) skal kalderen sende ekstra
+ * vaner ind via 'extraChecks' (typisk filtrerede admin-tildelte vaner
+ * for ugen). Saa er beregningen den samme paa tvaers af forloebstyper.
+ */
+export type DagsFarve = 'gron' | 'orange' | 'rod' | 'tom';
+
+export function beregnDagsFarve(
+	prog: VaneProgramDag,
+	entry: VanedagEntry | null,
+	extraChecks: { id: string }[] = []
+): DagsFarve {
+	if (!entry || prog.isBaseline) return 'tom';
+	const visteVaner = [...prog.checks, ...extraChecks];
+	const total = visteVaner.length + (prog.bonus ? 1 : 0);
+	if (total === 0) return 'tom';
+
+	let score = 0;
+	for (const c of visteVaner) {
+		const v = entry.checks?.[c.id];
+		if (v === 'ja') score += 1;
+		else if (v === 'delvist') score += 0.5;
+	}
+	if (prog.bonus && entry.bonus?.[prog.bonus.id] === 'ja') score += 1;
+
+	const harNogetSvar =
+		visteVaner.some((c) => entry.checks?.[c.id]) ||
+		(prog.bonus && entry.bonus?.[prog.bonus.id]);
+	if (!harNogetSvar) return 'tom';
+
+	const procent = (score / total) * 100;
+	if (procent >= 75) return 'gron';
+	if (procent >= 50) return 'orange';
+	return 'rod';
+}
+
+/**
  * Beregner et "flower-niveau" for en dag baseret på hvor mange vaner der er
  * besvaret med ja/delvist. Bruges til farve-kodning af dagscirklen i grid.
  *

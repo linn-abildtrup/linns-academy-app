@@ -6,9 +6,11 @@
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import {
+		beregnDagsFarve,
 		beregnDagsStatus,
 		beregnFlowerNiveau,
 		beregnSamletFremgang,
+		type DagsFarve,
 		type FlowerNiveau,
 		type VaneProgramDag,
 		type VanedagEntry
@@ -283,14 +285,17 @@
 	function dagState(dag: VaneProgramDag): {
 		status: 'locked' | ReturnType<typeof beregnDagsStatus>;
 		flower: FlowerNiveau;
+		farve: DagsFarve;
 	} {
 		if (erIkkeStartet || dag.dagNummer > unlocket) {
-			return { status: 'locked', flower: 'none' };
+			return { status: 'locked', flower: 'none', farve: 'tom' };
 		}
 		const entry = entries.get(dag.dagNummer) ?? null;
+		const extraVaner = filtrerVanerForUge(adminVaner, dag.uge);
 		return {
 			status: beregnDagsStatus(dag, entry),
-			flower: beregnFlowerNiveau(dag, entry)
+			flower: beregnFlowerNiveau(dag, entry),
+			farve: beregnDagsFarve(dag, entry, extraVaner)
 		};
 	}
 
@@ -311,12 +316,14 @@
 	const naeste = $derived(naesteDagNummer());
 
 	function uger(): VaneProgramDag[][] {
-		const r: VaneProgramDag[][] = [[], [], []];
+		const m = new Map<number, VaneProgramDag[]>();
 		for (const dag of programDage) {
-			const ugeIdx = Math.min(2, Math.max(0, dag.uge - 1));
-			r[ugeIdx].push(dag);
+			const u = Math.max(1, dag.uge);
+			if (!m.has(u)) m.set(u, []);
+			m.get(u)!.push(dag);
 		}
-		return r;
+		const ugeIder = [...m.keys()].sort((a, b) => a - b);
+		return ugeIder.map((u) => m.get(u)!);
 	}
 
 	function kortDagLabel(datoStr: string): string {
@@ -438,7 +445,7 @@
 						{#each ugeDage as dag (dag.dagNummer)}
 							{@const s = dagState(dag)}
 							<a
-								class="dag flower-{s.flower} status-{s.status}"
+								class="dag flower-{s.flower} status-{s.status} farve-{s.farve}"
 								class:laast={s.status === 'locked'}
 								class:naeste={dag.dagNummer === naeste}
 								href={s.status === 'locked' ? '#' : `/app/moduler/vaner/${dag.dagNummer}`}
@@ -959,36 +966,6 @@
 		font-weight: 600;
 	}
 
-	.flower-excellent {
-		background: #6f9e7e;
-		color: #fff;
-		border-color: #6f9e7e;
-	}
-
-	.flower-good {
-		background: #92b39e;
-		color: #fff;
-		border-color: #92b39e;
-	}
-
-	.flower-medium {
-		background: #c9a07a;
-		color: #fff;
-		border-color: #c9a07a;
-	}
-
-	.flower-low {
-		background: #d4b59a;
-		color: #fff;
-		border-color: #d4b59a;
-	}
-
-	.flower-poor {
-		background: #e0d0c0;
-		color: var(--text2);
-		border-color: #d4c0aa;
-	}
-
 	.farvekode {
 		margin-top: 14px;
 		padding-top: 12px;
@@ -1037,6 +1014,26 @@
 		background: var(--bg2);
 		border-color: var(--border2, var(--border));
 		color: var(--text3);
+	}
+
+	/* 3-niveau farve baseret paa dagens samlede vane-svar. Erstatter det
+	   gamle flower-* 6-niveau system. Matcher svar-knappernes farver paa
+	   forsiden (gron=sage, orange=c9a07a, rod=b87b6e). Skal staa EFTER
+	   flower-*-reglerne saa de vinder specificity-kampen. */
+	.dag.farve-gron {
+		background: var(--sage);
+		border-color: var(--sage);
+		color: #fff;
+	}
+	.dag.farve-orange {
+		background: #c9a07a;
+		border-color: #c9a07a;
+		color: #fff;
+	}
+	.dag.farve-rod {
+		background: #b87b6e;
+		border-color: #b87b6e;
+		color: #fff;
 	}
 
 	.onboarding-card {
