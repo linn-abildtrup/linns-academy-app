@@ -16,6 +16,7 @@
 		hentAllowedEmailsForForlob,
 		hentForlob,
 		sletForlob,
+		tilfoejEnKunde,
 		type ImportResultat
 	} from '$lib/firestore/forlob';
 	import Icon from '$lib/components/Icon.svelte';
@@ -44,6 +45,48 @@
 	let importerer = $state(false);
 	let importResultat = $state<ImportResultat | null>(null);
 	let importFejl = $state<string | null>(null);
+
+	// Manuel tilfoej-én-kunde-form
+	let nyEmail = $state('');
+	let nyFornavn = $state('');
+	let nyEfternavn = $state('');
+	let tilfoejer = $state(false);
+	let tilfoejResultat = $state<string | null>(null);
+	let tilfoejFejl = $state<string | null>(null);
+
+	async function tilfoejManuel() {
+		const email = nyEmail.trim();
+		if (!email) {
+			tilfoejFejl = 'Skriv en email.';
+			return;
+		}
+		if (!email.includes('@')) {
+			tilfoejFejl = 'Ugyldig email.';
+			return;
+		}
+		if (!nyFornavn.trim()) {
+			tilfoejFejl = 'Skriv et fornavn.';
+			return;
+		}
+		tilfoejer = true;
+		tilfoejFejl = null;
+		tilfoejResultat = null;
+		try {
+			const r = await tilfoejEnKunde(forlobId, email, nyFornavn.trim(), nyEfternavn.trim());
+			tilfoejResultat = r.status === 'tilfoejet'
+				? `${r.email} tilføjet til forløbet.`
+				: `${r.email} fandtes allerede — er nu opdateret til dette forløb.`;
+			nyEmail = '';
+			nyFornavn = '';
+			nyEfternavn = '';
+			emails = await hentAllowedEmailsForForlob(forlobId);
+		} catch (e) {
+			console.error(e);
+			tilfoejFejl = 'Kunne ikke tilføje kunden.';
+		} finally {
+			tilfoejer = false;
+		}
+	}
 
 	let soegning = $state('');
 
@@ -366,6 +409,61 @@
 			</div>
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
+
+		<div class="form-card">
+			<div class="form-titel">Tilføj én kunde manuelt</div>
+			<p class="csv-hint">
+				Indsæt klientens email, fornavn og efternavn. Hun bliver automatisk tilknyttet
+				dette forløb med korrekt adgang.
+			</p>
+			<form
+				class="manuel-form"
+				onsubmit={(e) => {
+					e.preventDefault();
+					void tilfoejManuel();
+				}}
+			>
+				<input
+					type="email"
+					class="manuel-input"
+					placeholder="Email"
+					bind:value={nyEmail}
+					disabled={tilfoejer}
+					autocomplete="email"
+				/>
+				<div class="manuel-row">
+					<input
+						type="text"
+						class="manuel-input"
+						placeholder="Fornavn"
+						bind:value={nyFornavn}
+						disabled={tilfoejer}
+						autocomplete="given-name"
+					/>
+					<input
+						type="text"
+						class="manuel-input"
+						placeholder="Efternavn"
+						bind:value={nyEfternavn}
+						disabled={tilfoejer}
+						autocomplete="family-name"
+					/>
+				</div>
+				<button
+					type="submit"
+					class="form-knap primary"
+					disabled={tilfoejer || !nyEmail.trim() || !nyFornavn.trim()}
+				>
+					{tilfoejer ? 'Tilføjer...' : 'Tilføj kunde'}
+				</button>
+			</form>
+			{#if tilfoejResultat}
+				<div class="kvit-besked">{tilfoejResultat}</div>
+			{/if}
+			{#if tilfoejFejl}
+				<div class="fejl-besked">{tilfoejFejl}</div>
+			{/if}
+		</div>
 
 		<div class="form-card">
 			<div class="form-titel">Importér emails fra Simplero</div>
@@ -928,6 +1026,34 @@
 		outline: none;
 		resize: vertical;
 		min-height: 100px;
+	}
+
+	.manuel-form {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.manuel-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+	}
+
+	.manuel-input {
+		padding: 10px 12px;
+		font-size: calc(14px * var(--fs-scale, 1));
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: var(--bg2);
+		color: var(--text);
+		font-family: var(--ff-b);
+		outline: none;
+		box-sizing: border-box;
+	}
+
+	.manuel-input:focus {
+		border-color: var(--terra);
 	}
 
 	.csv-textarea:focus {

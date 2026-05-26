@@ -339,10 +339,40 @@ export interface ImportResultat {
 }
 
 /**
+ * Returnerer de adgangs-felter en allowedEmail SKAL have for et givet
+ * forl0b. Slaar forl0bets type op og udleder activeProduct, accessLevel,
+ * accessSource og activeSubscription. Bruges af baade CSV-import og
+ * single-add saa alle nye kunder faar konsistente felter.
+ *
+ * - Kropsro (type='kropsro')  → premium-niveau
+ * - Kickstart (default)       → basis-niveau
+ */
+async function adgangsFelterForForlob(forlobId: string): Promise<{
+	activeProduct: 'premiumforløb' | 'kickstart';
+	accessLevel: 'premium' | 'basis';
+	accessSource: 'forløb';
+	activeSubscription: false;
+}> {
+	const fSnap = await getDoc(doc(db, 'forlob', forlobId));
+	const erKropsro = fSnap.exists() && (fSnap.data() as { type?: string }).type === 'kropsro';
+	return {
+		activeProduct: erKropsro ? 'premiumforløb' : 'kickstart',
+		accessLevel: erKropsro ? 'premium' : 'basis',
+		accessSource: 'forløb',
+		activeSubscription: false
+	};
+}
+
+/**
  * Skriver en batch af CSV-rækker til allowedEmails. Idempotent:
  * - Nye emails oprettes med status='invited'
  * - Eksisterende emails får navn og forløb opdateret hvis det er ændret
  * - Allerede registrerede emails beholder deres status
+ *
+ * Adgangs-felter (activeProduct, accessLevel osv) udledes fra forl0bets
+ * type via adgangsFelterForForlob saa nye kunder automatisk faar korrekt
+ * premium/basis-niveau. Eksisterende kunder faar OGSAA felterne opdateret
+ * hvis de mangler eller er forkerte for det nye forl0b (oprydning).
  *
  * Firestore har en grænse på 500 ops pr batch — vi splitter op i 400-chunks
  * for at have margen.
@@ -353,6 +383,8 @@ export async function gemAllowedEmailsBatch(
 ): Promise<ImportResultat> {
 	const resultat: ImportResultat = { tilfoejet: 0, opdateret: 0, uaendret: 0, fejl: 0 };
 	const eksisterende = new Map<string, AllowedEmail>();
+
+	const adgangsFelter = await adgangsFelterForForlob(forlobId);
 
 	const eksSnap = await getDocs(collection(db, 'allowedEmails'));
 	for (const d of eksSnap.docs) {
@@ -379,6 +411,7 @@ export async function gemAllowedEmailsBatch(
 					firstName: row.firstName,
 					lastName: row.lastName,
 					forlobId,
+					...adgangsFelter,
 					status: 'invited' as const,
 					oprettet: serverTimestamp() as unknown as Timestamp
 				});
@@ -387,14 +420,19 @@ export async function gemAllowedEmailsBatch(
 				const ingenAendring =
 					eks.firstName === row.firstName &&
 					eks.lastName === row.lastName &&
-					eks.forlobId === forlobId;
+					eks.forlobId === forlobId &&
+					eks.activeProduct === adgangsFelter.activeProduct &&
+					eks.accessLevel === adgangsFelter.accessLevel &&
+					eks.accessSource === adgangsFelter.accessSource &&
+					eks.activeSubscription === adgangsFelter.activeSubscription;
 				if (ingenAendring) {
 					resultat.uaendret++;
 				} else {
 					batch.update(ref, {
 						firstName: row.firstName,
 						lastName: row.lastName,
-						forlobId
+						forlobId,
+						...adgangsFelter
 					});
 					resultat.opdateret++;
 				}
@@ -410,6 +448,45 @@ export async function gemAllowedEmailsBatch(
 	}
 
 	return resultat;
+}
+
+/**
+ * Tilfoejer en enkelt kunde til et forl0b. Returnerer info om hvad der skete
+ * — 'tilfoejet' for ny, 'opdateret' hvis allerede eksisterende. Bruger samme
+ * adgangs-felter-logik som batch-import.
+ */
+export async function tilfoejEnKunde(
+	forlobId: string,
+	email: string,
+	firstName: string,
+	lastName: string
+): Promise<{ status: 'tilfoejet' | 'opdateret'; email: string }> {
+	const id = email.trim().toLowerCase();
+	if (!id || !id.includes('@')) {
+		throw new Error('Ugyldig email');
+	}
+	const adgangsFelter = await adgangsFelterForForlob(forlobId);
+	const ref = doc(db, 'allowedEmails', id);
+	const eks = await getDoc(ref);
+	if (eks.exists()) {
+		await updateDoc(ref, {
+			firstName: firstName.trim(),
+			lastName: lastName.trim(),
+			forlobId,
+			...adgangsFelter
+		});
+		return { status: 'opdateret', email: id };
+	}
+	await setDoc(ref, {
+		email: id,
+		firstName: firstName.trim(),
+		lastName: lastName.trim(),
+		forlobId,
+		...adgangsFelter,
+		status: 'invited' as const,
+		oprettet: serverTimestamp()
+	});
+	return { status: 'tilfoejet', email: id };
 }
 
 // ==============================================
