@@ -185,14 +185,20 @@
 			portioner = o.defaultPortioner || 4;
 			ratingAvg = typeof o.ratingAvg === 'number' ? o.ratingAvg : null;
 			ratingCount = typeof o.ratingCount === 'number' ? o.ratingCount : 0;
-			if (user) {
-				minStjerne = await hentMinRating(o.id, user.uid);
-			}
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente opskriften.';
 		} finally {
 			loading = false;
+		}
+
+		// Rating er valgfri — hvis den fejler skal opskriften stadig vises.
+		if (opskrift && user) {
+			try {
+				minStjerne = await hentMinRating(opskrift.id, user.uid);
+			} catch (e) {
+				console.warn('Kunne ikke hente min rating:', e);
+			}
 		}
 	});
 
