@@ -150,6 +150,17 @@ Når du kommer tilbage til samme træning senere, bliver du spurgt "Du fortsætt
 På forsidens "Dagens træning"-kort vises et grønt flueben når du har gennemført dagens træning.`
 	},
 	{
+		titel: 'Stjerner paa opskrifter',
+		visFor: ALLE_PRODUKTER,
+		indhold: `Naar du aabner en opskrift under Moduler → Mad → Opskrifter, ser du fem stjerner under titlen. Klik paa antallet af stjerner du synes opskriften fortjener (1 = ikke for mig, 5 = perfekt).
+
+Under stjernerne vises gennemsnittet af alle klienters vurderinger. Hvis ingen har vurderet endnu, staar der "Ingen vurderinger endnu — vaer den foerste".
+
+Du kan altid aendre din egen stjerne ved at klikke paa et nyt antal — kun den nyeste taeller med i gennemsnittet.
+
+Paa selve opskrift-listen vises et lille stjerne-maerke i hjoernet af hver opskrift med gennemsnittet, saa du hurtigt kan se hvilke opskrifter andre klienter er glade for.`
+	},
+	{
 		titel: 'Mad — 30-30 beregner og dagbog',
 		visFor: ALLE_PRODUKTER,
 		indhold: `Mad-modulet finder du under Moduler → Mad (30-30 beregner). Det er bygget op af faner:

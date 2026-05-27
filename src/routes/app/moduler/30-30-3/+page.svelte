@@ -1740,6 +1740,12 @@
 								>
 									{erValgt ? '✓' : '+'}
 								</button>
+								{#if typeof o.ratingAvg === 'number' && (o.ratingCount ?? 0) > 0}
+									<span class="rating-badge" aria-label="Gennemsnitlig vurdering">
+										<span aria-hidden="true">★</span>
+										{o.ratingAvg.toFixed(1).replace('.', ',')}
+									</span>
+								{/if}
 							</div>
 							<div class="opskrift-tekst">
 								<div class="opskrift-titel">{o.titel}</div>
@@ -3320,6 +3326,23 @@
 	.vaelg-knap.on {
 		background: var(--terra);
 		color: var(--white);
+	}
+
+	.rating-badge {
+		position: absolute;
+		bottom: 8px;
+		left: 8px;
+		background: rgba(255, 255, 255, 0.92);
+		color: var(--gold);
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		padding: 3px 7px;
+		border-radius: 99px;
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		line-height: 1;
+		backdrop-filter: blur(4px);
 	}
 
 	.portioner-rad {

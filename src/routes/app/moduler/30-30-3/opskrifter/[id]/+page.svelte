@@ -12,6 +12,7 @@
 		type Opskrift
 	} from '$lib/content/opskrifter';
 	import { hentOpskrift } from '$lib/firestore/opskrifter';
+	import { hentMinRating, gemMinRating } from '$lib/firestore/opskriftRatings';
 	import { gemMaaltid, hentAlleFodevarer } from '$lib/firestore/kost';
 	import {
 		formatDatoKey,
@@ -44,6 +45,34 @@
 
 	let tilfoejer = $state(false);
 	let tilfoejBesked = $state<{ tekst: string; type: 'ok' | 'advarsel' } | null>(null);
+
+	// Rating-state. minStjerne = null indtil brugeren har stemt.
+	// ratingAvg + ratingCount holdes parallelt med opskrift-doc og opdateres
+	// optimistisk ved klik saa UI'en foeles snappy.
+	let minStjerne = $state<number | null>(null);
+	let ratingAvg = $state<number | null>(null);
+	let ratingCount = $state<number>(0);
+	let gemmerRating = $state(false);
+	let ratingFejl = $state<string | null>(null);
+
+	async function vaelgStjerne(stjerner: number) {
+		if (!user || !opskrift || gemmerRating) return;
+		gemmerRating = true;
+		ratingFejl = null;
+		const tidligere = minStjerne;
+		minStjerne = stjerner;
+		try {
+			const ny = await gemMinRating(opskrift.id, user.uid, stjerner);
+			ratingAvg = ny.ratingAvg;
+			ratingCount = ny.ratingCount;
+		} catch (e) {
+			console.error(e);
+			minStjerne = tidligere;
+			ratingFejl = 'Kunne ikke gemme din vurdering. Pr0v igen.';
+		} finally {
+			gemmerRating = false;
+		}
+	}
 
 	// 'Gem direkte i dagbog'-modal
 	let viserMaaltidModal = $state(false);
@@ -154,6 +183,11 @@
 			opskrift = o;
 			foods = allFoods;
 			portioner = o.defaultPortioner || 4;
+			ratingAvg = typeof o.ratingAvg === 'number' ? o.ratingAvg : null;
+			ratingCount = typeof o.ratingCount === 'number' ? o.ratingCount : 0;
+			if (user) {
+				minStjerne = await hentMinRating(o.id, user.uid);
+			}
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente opskriften.';
@@ -254,6 +288,34 @@
 				{/each}
 			</div>
 		{/if}
+
+		<div class="rating">
+			<div class="rating-stjerner" role="group" aria-label="Giv din vurdering">
+				{#each [1, 2, 3, 4, 5] as v (v)}
+					<button
+						class="rating-knap"
+						class:aktiv={minStjerne !== null && v <= minStjerne}
+						type="button"
+						aria-label="{v} ud af 5 stjerner"
+						aria-pressed={minStjerne === v}
+						disabled={gemmerRating}
+						onclick={() => vaelgStjerne(v)}
+					>
+						<span aria-hidden="true">★</span>
+					</button>
+				{/each}
+			</div>
+			<div class="rating-meta">
+				{#if ratingAvg !== null && ratingCount > 0}
+					Gennemsnit: {ratingAvg.toFixed(1).replace('.', ',')}
+				{:else}
+					Ingen vurderinger endnu — vær den første
+				{/if}
+			</div>
+			{#if ratingFejl}
+				<div class="rating-fejl">{ratingFejl}</div>
+			{/if}
+		</div>
 		{#if opskrift.beskrivelse}
 			<p class="beskrivelse">{opskrift.beskrivelse}</p>
 		{/if}
@@ -514,6 +576,47 @@
 	.kategori-badge.diet {
 		color: var(--sage);
 		background: var(--sdim);
+	}
+
+	.rating {
+		margin: 0 0 14px;
+	}
+
+	.rating-stjerner {
+		display: flex;
+		gap: 2px;
+		margin-bottom: 4px;
+	}
+
+	.rating-knap {
+		background: transparent;
+		border: none;
+		padding: 4px 2px;
+		font-size: calc(22px * var(--fs-scale, 1));
+		color: var(--border2);
+		cursor: pointer;
+		line-height: 1;
+		touch-action: manipulation;
+	}
+
+	.rating-knap.aktiv {
+		color: var(--gold);
+	}
+
+	.rating-knap:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.rating-meta {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.rating-fejl {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--terra);
+		margin-top: 4px;
 	}
 
 	.beskrivelse {

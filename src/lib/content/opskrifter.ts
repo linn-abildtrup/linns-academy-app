@@ -60,6 +60,11 @@ export interface Opskrift {
 	aktiv: boolean;
 	oprettet?: Timestamp;
 	opdateret?: Timestamp;
+	// Aggregeret rating opdateres via Firestore-transaktion naar kunder stemmer.
+	// ratingAvg er null indtil mindst én kunde har stemt.
+	ratingSum?: number;
+	ratingCount?: number;
+	ratingAvg?: number | null;
 }
 
 // ==============================================

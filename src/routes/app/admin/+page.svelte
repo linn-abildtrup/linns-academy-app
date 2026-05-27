@@ -19,6 +19,14 @@
 			icon: 'book' as const
 		},
 		{
+			id: 'opskrift-ratings',
+			navn: 'Opskrift-ratings',
+			beskrivelse: 'Se hvilke opskrifter klienterne giver lavest og hoejest gennemsnit',
+			rute: '/app/admin/opskrifter/ratings',
+			accent: '#B8956A',
+			icon: 'star' as const
+		},
+		{
 			id: 'traening',
 			navn: 'Træningsmodul',
 			beskrivelse: 'Øvelsesbank — opret og rediger øvelser til mikrotræningsprogrammer',
