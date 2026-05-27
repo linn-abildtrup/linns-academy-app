@@ -150,6 +150,51 @@ Når du kommer tilbage til samme træning senere, bliver du spurgt "Du fortsætt
 På forsidens "Dagens træning"-kort vises et grønt flueben når du har gennemført dagens træning.`
 	},
 	{
+		titel: 'Scan stregkode paa foedevarer (premium-feature)',
+		visFor: PREMIUM,
+		indhold: `Som premium-bruger kan du scanne stregkoden paa en faerdigvare i stedet for at indtaste protein/fiber-tallene manuelt. Det er praktisk naar du staar i koekkenet med en pakke yoghurt eller en daase tun.
+
+HVOR FINDER DU SCAN-KNAPPEN:
+1. Aabn Moduler → Mad (30-30-3 beregner)
+2. Gaa til 'Slaa op'-fanen
+3. Tryk paa 'Scan'-knappen (med stregkode-ikon ved siden af 'Gem i dagbog')
+
+SAADAN VIRKER DET:
+1. Foerste gang du trykker Scan, spoerger telefonen om at give appen kamera-adgang. Tryk 'Tillad'.
+2. Bagside-kameraet aabner i fuld skaerm. Hold telefonen over stregkoden saa den fylder rammen — ikke for taet, ikke for langt vaek (typisk 10-15 cm).
+3. Naar appen laeser koden, slaar den automatisk op i en aaben foedevare-database (Open Food Facts) og udfylder navn, protein, fiber, kulhydrater, fedt og kalorier pr 100g.
+4. Du faar et bekraeftelses-vindue hvor du kan rette tallene hvis de ser forkerte ud, og tilfoeje produktet til dit maaltid.
+5. Naeste gang du scanner samme produkt, springer appen direkte til at tilfoeje det — den husker scannede produkter.
+
+HVIS SCANNER IKKE AABNER, ELLER SKAERMEN ER SORT — KAMERA-ADGANG MANGLER:
+Det er den hyppigste arsag. Saadan giver du appen lov til kameraet:
+
+iPhone:
+1. Indstillinger paa telefonen
+2. Scroll ned til 'Safari' (hvis du bruger appen via Safari) ELLER til 'Linn's Academy' (hvis du har gemt den som hjemmeskaerm-app)
+3. Find 'Kamera' og saet det til 'Tillad' eller 'Spoerg'
+4. Gaa tilbage til appen og pr0v Scan igen
+
+Android:
+1. Indstillinger → Apps (eller Apps og notifikationer)
+2. Find Chrome (hvis du bruger appen i Chrome) eller Linn's Academy
+3. Tilladelser → Kamera → vaelg 'Tillad'
+4. Gaa tilbage til appen og pr0v Scan igen
+
+HVIS STREGKODEN IKKE LAESES:
+1. Sorg for godt lys — solskin eller laeselys virker bedst, halvmoerke er kameraets fjende
+2. Hold telefonen stille — ryst gor det svaert at laese koden
+3. Juster afstanden — pr0v at flytte telefonen langsomt ind og ud (typisk 10-15 cm)
+4. Tjek at stregkoden ikke er kroellet, doelvt, eller skadet
+5. Hvis det stadig ikke virker: luk scanneren og brug 'Tilfoej manuelt'-knappen i samme fane — der indtaster du selv tallene fra naerings-deklarationen paa pakken
+
+HVIS PRODUKTET IKKE FINDES I DATABASEN:
+Open Food Facts indeholder de fleste daglige varer, men ind imellem er et produkt nyt eller meget specialiseret. Saa kommer dialogen op med tomme felter — du kan selv indtaste tallene fra pakken, og produktet bliver gemt til naeste gang du scanner det.
+
+SCANNET PRODUKT GEMMES TIL ALLE:
+Naar du scanner et produkt og bekraefter naeringstallene, gemmes det i en faelles-database saa andre klienter ogsaa kan bruge det. Du behoever derfor aldrig at scanne samme produkt to gange — heller ikke selvom det er foerste gang i appen totalt.`
+	},
+	{
 		titel: 'Stjerner paa opskrifter',
 		visFor: ALLE_PRODUKTER,
 		indhold: `Naar du aabner en opskrift under Moduler → Mad → Opskrifter, ser du fem stjerner under titlen. Klik paa antallet af stjerner du synes opskriften fortjener (1 = ikke for mig, 5 = perfekt).
