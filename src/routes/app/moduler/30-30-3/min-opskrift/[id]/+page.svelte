@@ -1078,6 +1078,7 @@
 		font-weight: 600;
 		color: var(--text2);
 		cursor: pointer;
+		touch-action: manipulation;
 	}
 
 	.portion-chip.aktiv {

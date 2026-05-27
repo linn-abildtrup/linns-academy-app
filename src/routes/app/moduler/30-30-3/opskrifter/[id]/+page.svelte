@@ -557,6 +557,7 @@
 		color: var(--text2);
 		cursor: pointer;
 		font-family: var(--ff-b);
+		touch-action: manipulation;
 	}
 
 	.portion-knap:hover:not(:disabled) {
@@ -805,6 +806,7 @@
 		font-weight: 600;
 		color: var(--text2);
 		cursor: pointer;
+		touch-action: manipulation;
 	}
 
 	.portion-chip.aktiv {
