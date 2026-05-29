@@ -24,7 +24,7 @@
 		antalDage,
 		nuvaerendeDag,
 		valgteDageStart,
-		titel = 'Vis ogsaa paa dage',
+		titel = 'Vis også på dage',
 		onGem,
 		onAnnuller
 	}: Props = $props();
@@ -111,10 +111,10 @@
 			<div class="genvej-rad">
 				<button type="button" class="genvej-knap" onclick={vaelgAlle}>Alle dage</button>
 				<button type="button" class="genvej-knap" onclick={() => vaelgNaesteX(7)}>
-					Naeste 7 dage
+					Næste 7 dage
 				</button>
 				<button type="button" class="genvej-knap" onclick={() => vaelgNaesteX(14)}>
-					Naeste 14 dage
+					Næste 14 dage
 				</button>
 				<button type="button" class="genvej-knap genvej-ryd" onclick={ryd}>Ryd</button>
 			</div>

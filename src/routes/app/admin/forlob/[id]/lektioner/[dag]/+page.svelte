@@ -121,7 +121,7 @@
 			gruppeBekraeft = {
 				titel: 'Slet lektion',
 				beskrivelse:
-					'Denne lektion ligger ogsaa paa andre dage. Vil du fjerne den fra alle dage eller kun fra denne ene?',
+					'Denne lektion ligger også på andre dage. Vil du fjerne den fra alle dage eller kun fra denne ene?',
 				antalDage: dageMedGruppe.length,
 				alleLabel: 'Slet fra alle dage',
 				denneLabel: 'Kun denne dag',
@@ -330,9 +330,9 @@
 					noteAendretGrupperet ? noteGruppeDage.get(dag.noteGrupperingId ?? '')?.length ?? 0 : 0
 				);
 				gruppeBekraeft = {
-					titel: 'Aendringer paa flere dage',
+					titel: 'Ændringer på flere dage',
 					beskrivelse:
-						'Du har aendret indhold der ogsaa ligger paa andre dage. Vil du opdatere alle dage eller kun denne ene?',
+						'Du har ændret indhold der også ligger på andre dage. Vil du opdatere alle dage eller kun denne ene?',
 					antalDage: samletAntalDage,
 					alleLabel: 'Ret alle dage',
 					denneLabel: 'Kun denne dag',
@@ -479,7 +479,7 @@
 			if (dialogMaal === 'note') {
 				const tekst = dag.noteFraLinn.trim();
 				if (!tekst) {
-					fejl = 'Skriv noten foerst, foer du vaelger flere dage.';
+					fejl = 'Skriv noten først, før du vælger flere dage.';
 					gemmer = false;
 					dialogMaal = null;
 					return;
@@ -552,7 +552,7 @@
 		gruppeBekraeft = {
 			titel: 'Slet note',
 			beskrivelse:
-				'Denne note ligger ogsaa paa andre dage. Vil du slette den fra alle dage eller kun fra denne ene?',
+				'Denne note ligger også på andre dage. Vil du slette den fra alle dage eller kun fra denne ene?',
 			antalDage: dageMed.length,
 			alleLabel: 'Slet fra alle dage',
 			denneLabel: 'Kun denne dag',
@@ -619,9 +619,9 @@
 				{#if dag.noteGrupperingId && (noteGruppeDage.get(dag.noteGrupperingId) ?? []).length > 1}
 					<span
 						class="gruppe-chip"
-						title={`Noten ligger paa dage: ${(noteGruppeDage.get(dag.noteGrupperingId) ?? []).join(', ')}`}
+						title={`Noten ligger på dage: ${(noteGruppeDage.get(dag.noteGrupperingId) ?? []).join(', ')}`}
 					>
-						🔗 ligger paa {noteGruppeDage.get(dag.noteGrupperingId)?.length} dage
+						🔗 ligger på {noteGruppeDage.get(dag.noteGrupperingId)?.length} dage
 					</span>
 				{/if}
 			</div>
@@ -637,9 +637,9 @@
 					type="button"
 					onclick={() => aabnVaelgDageDialog('note')}
 					disabled={gemmer || !dag.noteFraLinn.trim()}
-					title={!dag.noteFraLinn.trim() ? 'Skriv noten foerst' : ''}
+					title={!dag.noteFraLinn.trim() ? 'Skriv noten først' : ''}
 				>
-					Vis ogsaa paa dage...
+					Vis også på dage...
 				</button>
 				{#if dag.noteGrupperingId}
 					<button
@@ -674,7 +674,7 @@
 						<div class="lektion-edit-num">
 							Lektion
 							{#if erGrupperet}
-								<span class="gruppe-chip" title={`Ligger paa dage: ${dageMed.join(', ')}`}>
+								<span class="gruppe-chip" title={`Ligger på dage: ${dageMed.join(', ')}`}>
 									🔗 {dageMed.length} dage
 								</span>
 							{/if}
@@ -834,9 +834,9 @@
 							type="button"
 							onclick={() => aabnVaelgDageDialog(`lektion:${l.id}`)}
 							disabled={gemmer || !l.titel.trim()}
-							title={!l.titel.trim() ? 'Skriv titel foerst' : ''}
+							title={!l.titel.trim() ? 'Skriv titel først' : ''}
 						>
-							Vis ogsaa paa dage...
+							Vis også på dage...
 						</button>
 					</div>
 				</article>
@@ -901,7 +901,7 @@
 		antalDage={forlob.antalDage}
 		nuvaerendeDag={dagNummer}
 		valgteDageStart={dialogStartDage}
-		titel={dialogMaal === 'note' ? 'Vis noten paa dage' : 'Vis lektion paa dage'}
+		titel={dialogMaal === 'note' ? 'Vis noten på dage' : 'Vis lektion på dage'}
 		onGem={haandterVaelgDage}
 		onAnnuller={() => (dialogMaal = null)}
 	/>

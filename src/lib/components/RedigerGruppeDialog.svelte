@@ -34,7 +34,7 @@
 		</header>
 
 		<p class="beskrivelse">{beskrivelse}</p>
-		<p class="meta">Denne ligger paa {antalDage} dag{antalDage === 1 ? '' : 'e'}.</p>
+		<p class="meta">Denne ligger på {antalDage} dag{antalDage === 1 ? '' : 'e'}.</p>
 
 		<div class="knap-rad">
 			<button type="button" class="annuller" onclick={onAnnuller}>Annuller</button>
