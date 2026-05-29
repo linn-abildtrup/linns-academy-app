@@ -355,41 +355,6 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Job’s tears',
 			'Polenta'
 		]
-	},
-	{
-		id: 'fermenteret',
-		label: 'Fermenterede fødevarer',
-		items: [
-			'Kefir',
-			'Kimchi',
-			'Kombucha',
-			'Miso',
-			'Surkål',
-			'Yoghurt med levende kulturer',
-			'Tempeh',
-			// Yderligere fermenterede ting
-			'Natto',
-			'Skyr',
-			'Ymer',
-			'A38',
-			'Filmjölk',
-			'Tjukkmelk',
-			// Endnu flere fermenterede
-			'Kærnemælk',
-			'Vandkefir',
-			'Crème fraîche',
-			'Quark',
-			'Kvass',
-			'Doenjang',
-			'Gochujang',
-			'Fermenteret gulerod',
-			'Fermenteret rødbede',
-			'Fermenteret agurk',
-			'Fermenteret hvidløg',
-			'Æblecidereddike',
-			'Sourdough-starter',
-			'Kishk'
-		]
 	}
 ];
 
