@@ -1653,7 +1653,7 @@
 						{/if}
 						<div class="challenge-knapper">
 							<button type="button" class="challenge-knap primaer" onclick={aabnChallengeDialog}>
-								Indtast frugt/grøntsag
+								Indtast plante
 							</button>
 							<button type="button" class="challenge-knap sekundaer" onclick={aabnChallengeStilling}>
 								Se stillingen

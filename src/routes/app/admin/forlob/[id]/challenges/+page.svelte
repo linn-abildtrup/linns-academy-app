@@ -59,9 +59,9 @@
 			await gemChallenge({
 				id,
 				forlobId,
-				navn: 'Frugt og grønt-challenge',
+				navn: 'Planter til tarmmikrobiom',
 				beskrivelse:
-					'Spis så mange forskellige frugter og grøntsager som muligt i denne uge.',
+					'Spis så mange forskellige planter som muligt — frugt, grønt, bælgfrugter, nødder, korn, krydderier og fermenteret mad tæller alle med.',
 				startDato: Timestamp.fromDate(idag),
 				slutDato: Timestamp.fromDate(omEnUge),
 				aktiv: false,

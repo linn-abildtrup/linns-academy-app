@@ -181,7 +181,7 @@
 				<input
 					type="text"
 					bind:value={navn}
-					placeholder="Frugt og grønt-challenge"
+					placeholder="Planter til tarmmikrobiom"
 					maxlength="80"
 					disabled={gemmer}
 				/>
