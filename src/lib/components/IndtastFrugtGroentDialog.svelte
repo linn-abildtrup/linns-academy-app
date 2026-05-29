@@ -82,9 +82,9 @@
 		</header>
 
 		<p class="intro">
-			Hver gang du har spist en ny plante — frugt, grøntsag, bælgfrugt, nød, korn,
-			krydderi eller fermenteret — tilføj den her. Jo flere forskellige, jo bedre for
-			dit tarmmikrobiom.
+			Hver gang du har spist en ny plante — frugt, grøntsag, bælgfrugt, nød, frø
+			eller korn — tilføj den her. Jo flere forskellige, jo bedre for dit
+			tarmmikrobiom.
 		</p>
 
 		<div class="soege-omraade">
@@ -120,38 +120,42 @@
 		{/if}
 
 		<div class="liste-omraade">
-			{#if visFritekstForslag}
-				<button
-					type="button"
-					class="fritekst-knap"
-					onclick={() => tilfoej(visFritekstForslag)}
-					disabled={gemmer}
-				>
-					+ Tilføj "{visFritekstForslag}"
-				</button>
-			{/if}
-
-			{#each visKategorier as kat (kat.id)}
-				<div class="kategori-blok">
-					<div class="kategori-titel">{kat.label}</div>
-					<div class="kategori-items">
-						{#each kat.items as item (item)}
-							<button
-								type="button"
-								class="item-chip"
-								onclick={() => tilfoej(item)}
-								disabled={gemmer}
-							>
-								{item}
-							</button>
-						{/each}
-					</div>
-				</div>
+			{#if soegeOrd.trim() === ''}
+				<div class="tom">Start med at søge på en plante du har spist — fx "æble" eller "broccoli".</div>
 			{:else}
-				{#if !visFritekstForslag}
-					<div class="tom">Ingen matcher dit søgeord — prøv at skrive det selv og tryk Tilføj.</div>
+				{#if visFritekstForslag}
+					<button
+						type="button"
+						class="fritekst-knap"
+						onclick={() => tilfoej(visFritekstForslag)}
+						disabled={gemmer}
+					>
+						+ Tilføj "{visFritekstForslag}"
+					</button>
 				{/if}
-			{/each}
+
+				{#each visKategorier as kat (kat.id)}
+					<div class="kategori-blok">
+						<div class="kategori-titel">{kat.label}</div>
+						<div class="kategori-items">
+							{#each kat.items as item (item)}
+								<button
+									type="button"
+									class="item-chip"
+									onclick={() => tilfoej(item)}
+									disabled={gemmer}
+								>
+									{item}
+								</button>
+							{/each}
+						</div>
+					</div>
+				{:else}
+					{#if !visFritekstForslag}
+						<div class="tom">Ingen matcher dit søgeord — prøv at skrive det helt selv og tryk Tilføj.</div>
+					{/if}
+				{/each}
+			{/if}
 		</div>
 
 		<footer class="dialog-foot">

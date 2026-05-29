@@ -408,7 +408,7 @@ Bemærk: Den ugentlige slider-check inde i Vaner-modulet (om søndagen) fortsæt
 	{
 		titel: 'Planter til tarmmikrobiom (challenge)',
 		visFor: [KROPSRO_PRODUCT_ID],
-		indhold: `Når Linn starter en challenge i Kropsro-forløbet, vises et lille challenge-kort på din forside hver dag i perioden. Det går ud på at spise så mange forskellige planter som muligt — frugt, grøntsager, bælgfrugter, nødder, korn, krydderier og fermenteret mad tæller alle med. Jo flere forskellige du får, jo mere mangfoldigt bliver dit tarmmikrobiom.
+		indhold: `Når Linn starter en challenge i Kropsro-forløbet, vises et lille challenge-kort på din forside hver dag i perioden. Det går ud på at spise så mange forskellige planter som muligt — frugt, grøntsager, bælgfrugter, nødder, frø og korn tæller alle med. Jo flere forskellige du får, jo mere mangfoldigt bliver dit tarmmikrobiom.
 
 SÅDAN GØR DU:
 1. Tryk 'Indtast frugt/grøntsag' på challenge-kortet

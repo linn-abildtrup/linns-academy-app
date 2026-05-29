@@ -61,7 +61,7 @@
 				forlobId,
 				navn: 'Planter til tarmmikrobiom',
 				beskrivelse:
-					'Spis så mange forskellige planter som muligt — frugt, grønt, bælgfrugter, nødder, korn, krydderier og fermenteret mad tæller alle med.',
+					'Spis så mange forskellige planter som muligt — frugt, grønt, bælgfrugter, nødder, frø og korn tæller alle med.',
 				startDato: Timestamp.fromDate(idag),
 				slutDato: Timestamp.fromDate(omEnUge),
 				aktiv: false,
