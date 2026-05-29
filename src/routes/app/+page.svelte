@@ -17,7 +17,17 @@
 		nulDageDatoer,
 		tomForlobDag
 	} from '$lib/content/forlob';
-	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
+	import { hentAllowedEmail, hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
+	import type { Challenge, ChallengeIndtastning } from '$lib/content/challenge';
+	import { beregnStilling, challengeDisplayNavn } from '$lib/content/challenge';
+	import {
+		gemMinIndtastning as gemChallengeIndtastning,
+		hentAktivChallenge,
+		hentAlleIndtastninger as hentAlleChallengeIndtastninger,
+		hentMinIndtastning as hentMinChallengeIndtastning
+	} from '$lib/firestore/challenge';
+	import IndtastFrugtGroentDialog from '$lib/components/IndtastFrugtGroentDialog.svelte';
+	import StillingOverlay from '$lib/components/StillingOverlay.svelte';
 	import {
 		hentUserProduct,
 		hentForlobsProgram,
@@ -96,6 +106,12 @@
 
 	let forlob = $state<Forlob | null>(null);
 	let forlobsdage = $state<ForlobDag[]>([]);
+	let aktivChallenge = $state<Challenge | null>(null);
+	let visChallengeDialog = $state(false);
+	let visChallengeStilling = $state(false);
+	let challengeIndtastninger = $state<ChallengeIndtastning[]>([]);
+	let minChallengeIndtastning = $state<string[]>([]);
+	let gemmerChallenge = $state(false);
 	let userProduct = $state<UserProduct | null>(null);
 	let aktivProduktType = $state<ForlobProduct>(KICKSTART_PRODUCT_ID);
 	let adminVaner = $state<AdminTildeltVane[]>([]);
@@ -988,10 +1004,88 @@
 			forlobsdage = dage;
 			vaneprogramDage = vaneDage;
 			adminVaner = admVaner;
+
+			// Hent aktiv challenge hvis denne er Kropsro
+			if (aktivt && userDoc?.activeProduct === KROPSRO_PRODUCT_ID) {
+				try {
+					const c = await hentAktivChallenge(aktivt.id);
+					aktivChallenge = c;
+					if (c && user) {
+						const min = await hentMinChallengeIndtastning(aktivt.id, c.id, user.uid);
+						minChallengeIndtastning = min?.foedevarer ?? [];
+					}
+				} catch (e) {
+					console.warn('Kunne ikke hente challenge:', e);
+				}
+			}
 		} catch (e) {
 			console.error('Kunne ikke hente forløb til forsiden:', e);
 		}
 	}
+
+	async function aabnChallengeDialog() {
+		visChallengeDialog = true;
+	}
+
+	async function gemChallengeOgVisStilling(foedevarer: string[]) {
+		if (!aktivChallenge || !forlob || !user || !userDoc) return;
+		gemmerChallenge = true;
+		try {
+			// Hent efternavn fra allowedEmail (userDoc gemmer kun fornavn).
+			let efternavn = '';
+			try {
+				const ae = await hentAllowedEmail(userDoc.email);
+				efternavn = ae?.lastName ?? '';
+			} catch {
+				// fortsaet uden efternavn
+			}
+			await gemChallengeIndtastning(
+				forlob.id,
+				aktivChallenge.id,
+				user.uid,
+				foedevarer,
+				userDoc.firstName ?? '',
+				efternavn
+			);
+			minChallengeIndtastning = foedevarer;
+			visChallengeDialog = false;
+			await indlaesChallengeStilling();
+			visChallengeStilling = true;
+		} catch (e) {
+			console.error('Kunne ikke gemme challenge-indtastning:', e);
+		} finally {
+			gemmerChallenge = false;
+		}
+	}
+
+	async function aabnChallengeStilling() {
+		if (!aktivChallenge || !forlob) return;
+		await indlaesChallengeStilling();
+		visChallengeStilling = true;
+	}
+
+	async function indlaesChallengeStilling() {
+		if (!aktivChallenge || !forlob) return;
+		try {
+			challengeIndtastninger = await hentAlleChallengeIndtastninger(
+				forlob.id,
+				aktivChallenge.id
+			);
+		} catch (e) {
+			console.warn('Kunne ikke hente challenge-stilling:', e);
+			challengeIndtastninger = [];
+		}
+	}
+
+	const challengeStillingRaekker = $derived.by(() => {
+		if (!aktivChallenge) return [];
+		const inputs = challengeIndtastninger.map((i) => ({
+			uid: i.uid,
+			foedevarer: i.foedevarer,
+			displayNavn: challengeDisplayNavn(i.fornavn ?? '', i.efternavn ?? '')
+		}));
+		return beregnStilling(inputs, aktivChallenge.fravalgteBrugere, user?.uid ?? null);
+	});
 
 	const aktivVaneprogramDag = $derived.by<VaneProgramDag | null>(() => {
 		if (vaneprogramDage.length === 0) return null;
@@ -1495,6 +1589,42 @@
 						Skriv dit svar
 						<Icon name="chevron-r" size={14} color="var(--terra)" />
 					</a>
+				</section>
+			{/if}
+
+			{#if aktivChallenge}
+				{@const minScore = new Set(minChallengeIndtastning).size}
+				<section class="actions-section challenge-section">
+					<div class="actions-header">
+						<div class="eyebrow eyebrow-muted">Challenge</div>
+					</div>
+					<div class="challenge-card">
+						<div class="challenge-head">
+							<div class="challenge-ikon">
+								<Icon name="leaf" size={20} color="#fff" />
+							</div>
+							<div class="challenge-tekst">
+								<div class="challenge-navn">{aktivChallenge.navn}</div>
+								{#if aktivChallenge.beskrivelse}
+									<div class="challenge-beskrivelse">{aktivChallenge.beskrivelse}</div>
+								{/if}
+							</div>
+						</div>
+						{#if minScore > 0}
+							<div class="challenge-min-score">
+								Du har <strong>{minScore}</strong>
+								forskellig{minScore === 1 ? '' : 'e'} indtil videre
+							</div>
+						{/if}
+						<div class="challenge-knapper">
+							<button type="button" class="challenge-knap primaer" onclick={aabnChallengeDialog}>
+								Indtast frugt/grøntsag
+							</button>
+							<button type="button" class="challenge-knap sekundaer" onclick={aabnChallengeStilling}>
+								Se stillingen
+							</button>
+						</div>
+					</div>
 				</section>
 			{/if}
 
@@ -2226,6 +2356,23 @@
 			</button>
 		</div>
 	</div>
+{/if}
+
+{#if visChallengeDialog && aktivChallenge}
+	<IndtastFrugtGroentDialog
+		startListe={minChallengeIndtastning}
+		gemmer={gemmerChallenge}
+		onGem={gemChallengeOgVisStilling}
+		onLuk={() => (visChallengeDialog = false)}
+	/>
+{/if}
+
+{#if visChallengeStilling && aktivChallenge}
+	<StillingOverlay
+		challengeNavn={aktivChallenge.navn}
+		raekker={challengeStillingRaekker}
+		onLuk={() => (visChallengeStilling = false)}
+	/>
 {/if}
 
 <style>
@@ -3118,6 +3265,95 @@
 		font-weight: 600;
 		text-decoration: none;
 		padding: 4px 0;
+	}
+
+	.challenge-card {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		padding: 14px 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.challenge-head {
+		display: flex;
+		gap: 12px;
+		align-items: flex-start;
+	}
+
+	.challenge-ikon {
+		width: 40px;
+		height: 40px;
+		border-radius: 12px;
+		background: linear-gradient(135deg, var(--sage), #5e8c6f);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.challenge-tekst {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.challenge-navn {
+		font-family: var(--ff-d);
+		font-size: calc(15px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		line-height: 1.2;
+	}
+
+	.challenge-beskrivelse {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.4;
+		margin-top: 4px;
+	}
+
+	.challenge-min-score {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--sage);
+		background: var(--sdim);
+		padding: 8px 12px;
+		border-radius: 10px;
+	}
+
+	.challenge-min-score strong {
+		font-family: var(--ff-d);
+		font-weight: 700;
+	}
+
+	.challenge-knapper {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+	}
+
+	.challenge-knap {
+		padding: 10px 12px;
+		font-family: var(--ff-b);
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		border-radius: 10px;
+		cursor: pointer;
+		touch-action: manipulation;
+		border: 1px solid transparent;
+	}
+
+	.challenge-knap.primaer {
+		background: var(--terra);
+		color: var(--white);
+		border-color: var(--terra);
+	}
+
+	.challenge-knap.sekundaer {
+		background: var(--white);
+		color: var(--terra);
+		border-color: var(--terra);
 	}
 
 	.vaner-inline-liste {

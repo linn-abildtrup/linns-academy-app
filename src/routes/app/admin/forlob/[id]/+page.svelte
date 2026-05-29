@@ -353,6 +353,17 @@
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
 
+		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/challenges">
+			<div class="indhold-icon" style="background: #6F9E7E;">
+				<Icon name="leaf" size={16} color="#fff" />
+			</div>
+			<div class="indhold-tekst">
+				<div class="indhold-navn">Challenges</div>
+				<div class="indhold-sub">Tidsbegrænsede konkurrencer som frugt/grønt-uge</div>
+			</div>
+			<Icon name="chevron-r" size={14} color="var(--text3)" />
+		</a>
+
 		{#if forlob?.type === 'kropsro'}
 			<a class="indhold-row" href="/app/admin/forlob/{forlobId}/buddymakker">
 				<div class="indhold-icon" style="background: #9D6358;">

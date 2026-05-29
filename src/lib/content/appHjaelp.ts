@@ -406,6 +406,25 @@ Når du har udfyldt 2+ gange, vises en udviklings-graf på forsiden af modulet s
 Bemærk: Den ugentlige slider-check inde i Vaner-modulet (om søndagen) fortsætter uændret. Symptomcheck er en separat dybere vurdering der inkluderer både sliders OG MRS.`
 	},
 	{
+		titel: 'Frugt og grønt-challenge',
+		visFor: [KROPSRO_PRODUCT_ID],
+		indhold: `Når Linn starter en challenge i Kropsro-forløbet, vises et lille challenge-kort på din forside hver dag i perioden. Det går typisk ud på at spise så mange forskellige frugter og grøntsager som muligt i den valgte uge.
+
+SÅDAN GØR DU:
+1. Tryk 'Indtast frugt/grøntsag' på challenge-kortet
+2. Søg efter den frugt eller grøntsag du har spist (fx 'æble') og tryk på den
+3. Du kan tilføje flere ad gangen — de dukker op som små chips nederst
+4. Hvis du har spist noget der ikke er på listen, kan du bare skrive navnet i søgefeltet og trykke 'Tilføj' øverst
+5. Når du er færdig, tryk 'Gem'
+
+Hver frugt eller grøntsag tæller kun én gang i alt for hele challenge-perioden, så det handler om at få så mange forskellige slags som muligt — ikke om at spise samme æble fem gange.
+
+STILLINGEN:
+Når du trykker 'Gem' (eller 'Se stillingen') vises en fuld-skærm med top-3 podium øverst og resten af deltagerne nedenfor. Du ser fornavn + første bogstav i efternavn på alle andre. Din egen placering er fremhævet. Tryk krydset øverst for at lukke og komme tilbage til forsiden.
+
+Når challenge-perioden er forbi, forsvinder kortet automatisk fra forsiden.`
+	},
+	{
 		titel: 'Buddy-gruppe på Kropsro',
 		visFor: [KROPSRO_PRODUCT_ID],
 		indhold: `Ved første login på Kropsro bliver du spurgt om du vil være med i en buddy-gruppe på fire til fem personer fra forløbet, der holder hinanden oppe i hverdagen. En slags minifællesskab indenfor det store fællesskab.
