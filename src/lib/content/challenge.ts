@@ -118,7 +118,48 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			// Svampe
 			'Shiitake',
 			'Østershatte',
-			'Kantareller'
+			'Kantareller',
+			'Portobello',
+			'Karl Johan',
+			'Enoki',
+			'Træhat',
+			// Yderligere kaal og bladgroent
+			'Kinakål',
+			'Romanesco',
+			'Savoykål',
+			'Rosenkål',
+			'Cavolo nero',
+			'Sortkål',
+			'Sennepsblade',
+			'Mizuna',
+			'Ramsløg',
+			'Komatsuna',
+			// Squash og graeskar
+			'Kabocha',
+			'Spaghettisquash',
+			'Patisson',
+			// Eksotiske roedder og knolde
+			'Daikon',
+			'Lotusrod',
+			'Yam',
+			'Taro',
+			'Cassava',
+			'Bambusskud',
+			'Vandkastanjer',
+			'Wasabi-rod',
+			'Sortrod',
+			'Skorzonerrod',
+			'Kålroe',
+			'Roe',
+			// Spirer
+			'Brokkolispirer',
+			'Radisespirer',
+			'Alfalfaspirer',
+			'Linsespirer',
+			// Bredboenner (ofte servered som groentsag)
+			'Bredbønner',
+			'Snitbønner',
+			'Voksbønner'
 		]
 	},
 	{
@@ -173,7 +214,34 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Papaya',
 			'Passionsfrugt',
 			'Litchi',
-			'Sharonfrugt'
+			'Sharonfrugt',
+			'Guava',
+			'Drage-frugt',
+			'Stjernefrugt',
+			'Mangosten',
+			'Rambutan',
+			'Jackfrugt',
+			'Tamarillo',
+			'Tamarinde',
+			'Lokvat',
+			'Quitte',
+			'Cherimoya',
+			'Persimon',
+			// Superbaer
+			'Acerola',
+			'Acai',
+			'Goji-bær',
+			'Maqui-bær',
+			'Aronia-bær',
+			// Citrus
+			'Pomelo',
+			'Yuzu',
+			'Kumquat',
+			'Blodappelsin',
+			'Tangelo',
+			// Andre stenfrugter
+			'Surkirsebær',
+			'Slåen-blommer'
 		]
 	},
 	{
@@ -201,7 +269,18 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Sorte øjne bønner',
 			'Borlotti bønner',
 			'Brune linser',
-			'Belugalinser'
+			'Belugalinser',
+			// Endnu flere boenner
+			'Hestebønner',
+			'Lupinbønner',
+			'Anasazi-bønner',
+			'Hyacintbønner',
+			'Vingerbønner',
+			'Tepari-bønner',
+			'Sorte linser',
+			'Gule linser',
+			'Cranberry-bønner',
+			'Romanske bønner'
 		]
 	},
 	{
@@ -227,7 +306,14 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Pistacie',
 			'Birkes',
 			'Sennepsfrø',
-			'Kokosnød'
+			'Kokosnød',
+			// Endnu flere noedder og froe
+			'Kastanjer',
+			'Tigernødder',
+			'Vandmelonkerner',
+			'Sortkommen',
+			'Bogfrø',
+			'Hampehjerter'
 		]
 	},
 	{
@@ -253,7 +339,21 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Jasminris',
 			'Teff',
 			'Farro',
-			'Couscous'
+			'Couscous',
+			// Endnu flere korn
+			'Hvede',
+			'Khorasan',
+			'Triticale',
+			'Emmer',
+			'Einkorn',
+			'Rød ris',
+			'Sushiris',
+			'Mochi ris',
+			'Sorghum',
+			'Fonio',
+			'Kaniwa',
+			'Job’s tears',
+			'Polenta'
 		]
 	},
 	{
@@ -273,7 +373,22 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Ymer',
 			'A38',
 			'Filmjölk',
-			'Tjukkmelk'
+			'Tjukkmelk',
+			// Endnu flere fermenterede
+			'Kærnemælk',
+			'Vandkefir',
+			'Crème fraîche',
+			'Quark',
+			'Kvass',
+			'Doenjang',
+			'Gochujang',
+			'Fermenteret gulerod',
+			'Fermenteret rødbede',
+			'Fermenteret agurk',
+			'Fermenteret hvidløg',
+			'Æblecidereddike',
+			'Sourdough-starter',
+			'Kishk'
 		]
 	}
 ];
