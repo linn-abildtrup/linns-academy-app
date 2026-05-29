@@ -43,101 +43,189 @@ export interface StillingRaekke {
 }
 
 /**
- * Pra'definerede frugter og groentsager klienten kan vaelge fra. Listen
- * daekker det meste typisk dansk koekken. Klienten kan ogsaa skrive egne
- * via fritekst-felt hvis hun spiste noget der ikke staar her.
- *
- * Sorteret alfabetisk (sortering sker ogsaa i UI'en for sikkerheds skyld).
+ * Praedefinerede planter klienten kan vaelge fra. Daekker syv kategorier
+ * fra Linns 'Planter til dit tarmmikrobiom'-afkrydsningsliste. Klienten kan
+ * ogsaa skrive egne via fritekst-felt hvis hun spiste noget der ikke staar
+ * her, og databasen fra Mad-modulet merges ind reaktivt i dialogen.
  */
-export const FRUGT_OG_GROENT: string[] = [
-	// Frugt
-	'Abrikos',
-	'Ananas',
-	'Appelsin',
-	'Avocado',
-	'Banan',
-	'Blomme',
-	'Blaabær',
-	'Brombær',
-	'Citron',
-	'Drueagurk',
-	'Druer',
-	'Fersken',
-	'Figen',
-	'Granatæble',
-	'Grapefrugt',
-	'Hindbær',
-	'Honningmelon',
-	'Jordbær',
-	'Kirsebær',
-	'Kiwi',
-	'Klementin',
-	'Lime',
-	'Mango',
-	'Mandarin',
-	'Melon',
-	'Nektarin',
-	'Papaya',
-	'Pasionsfrugt',
-	'Pære',
-	'Ribs',
-	'Rabarber',
-	'Solbær',
-	'Stikkelsbær',
-	'Tranebær',
-	'Vandmelon',
-	'Æble',
-	// Groentsager — bladgroent og rodfrugter
-	'Agurk',
-	'Artiskok',
-	'Asparges',
-	'Aubergine',
-	'Avokado-salat',
-	'Bladbede',
-	'Bladsalat',
-	'Blomkål',
-	'Broccoli',
-	'Bønner',
-	'Champignon',
-	'Edamame',
-	'Fennikel',
-	'Grønkål',
-	'Gulerod',
-	'Hvidkål',
-	'Hvidløg',
-	'Iceberg-salat',
-	'Ingefær',
-	'Jordskok',
-	'Kartoffel',
-	'Knoldselleri',
-	'Kål',
-	'Linser',
-	'Løg',
-	'Majs',
-	'Mangold',
-	'Pak choi',
-	'Pastinak',
-	'Peberfrugt',
-	'Persille',
-	'Persillerod',
-	'Porre',
-	'Radise',
-	'Rosenkål',
-	'Rucola',
-	'Rødbede',
-	'Rødkål',
-	'Salat',
-	'Selleri',
-	'Skalotteløg',
-	'Spidskål',
-	'Spinat',
-	'Spirer',
-	'Squash',
-	'Søde kartofler',
-	'Tomat',
-	'Vandkarse',
-	'Ærter'
+export interface PlanteKategori {
+	id: string;
+	label: string;
+	items: string[];
+}
+
+export const PLANTE_KATEGORIER: PlanteKategori[] = [
+	{
+		id: 'groent',
+		label: 'Grøntsager',
+		items: [
+			'Spinat',
+			'Broccoli',
+			'Blomkål',
+			'Gulerødder',
+			'Rødbeder',
+			'Squash',
+			'Aubergine',
+			'Spidskål',
+			'Hvidkål',
+			'Rødkål',
+			'Grønkål',
+			'Porre',
+			'Løg',
+			'Rødløg',
+			'Hvidløg',
+			'Selleri',
+			'Fennikel',
+			'Artiskok',
+			'Radiser',
+			'Asparges',
+			'Tomater',
+			'Agurk',
+			'Peberfrugt',
+			'Champignon',
+			'Søde kartofler',
+			'Pastinak',
+			'Hokkaido',
+			'Butternut squash',
+			'Pak choi'
+		]
+	},
+	{
+		id: 'frugt',
+		label: 'Frugt og bær',
+		items: [
+			'Æbler',
+			'Pærer',
+			'Bananer',
+			'Blåbær',
+			'Hindbær',
+			'Jordbær',
+			'Avocado',
+			'Citron',
+			'Lime',
+			'Appelsin',
+			'Grapefrugt',
+			'Figner',
+			'Dadler',
+			'Granatæble',
+			'Mango',
+			'Kiwi',
+			'Ananas',
+			'Vindruer',
+			'Vandmelon',
+			'Brombær'
+		]
+	},
+	{
+		id: 'baelg',
+		label: 'Bælgfrugter',
+		items: [
+			'Røde linser',
+			'Grønne linser',
+			'Kikærter',
+			'Sorte bønner',
+			'Hvide bønner',
+			'Kidneybønner',
+			'Edamame',
+			'Grønne ærter',
+			'Snapærter',
+			'Gule ærter',
+			'Mungbønner',
+			'Cannellinibønner'
+		]
+	},
+	{
+		id: 'noedder',
+		label: 'Nødder og frø',
+		items: [
+			'Valnødder',
+			'Mandler',
+			'Cashewnødder',
+			'Hasselnødder',
+			'Hørfrø',
+			'Chiafrø',
+			'Hampfrø',
+			'Solsikkefrø',
+			'Græskarkerner',
+			'Sesamfrø',
+			'Pinjekerner',
+			'Paranødder',
+			'Pekannødder',
+			'Macadamianødder'
+		]
+	},
+	{
+		id: 'krydderier',
+		label: 'Krydderier og urter',
+		items: [
+			'Gurkemeje',
+			'Kanel',
+			'Ingefær',
+			'Spidskommen',
+			'Koriander (frø)',
+			'Koriander (frisk)',
+			'Persille',
+			'Dild',
+			'Basilikum',
+			'Timian',
+			'Rosmarin',
+			'Mynte',
+			'Oregano',
+			'Kardemomme',
+			'Muskatnød',
+			'Sort peber',
+			'Chili',
+			'Paprika',
+			'Purløg',
+			'Estragon'
+		]
+	},
+	{
+		id: 'korn',
+		label: 'Korn og pseudokorn',
+		items: [
+			'Havregryn',
+			'Quinoa',
+			'Boghvede',
+			'Rug',
+			'Spelt',
+			'Byggryn',
+			'Bulgur',
+			'Hirse',
+			'Amaranth',
+			'Havreris'
+		]
+	},
+	{
+		id: 'fermenteret',
+		label: 'Fermenterede fødevarer',
+		items: [
+			'Kefir',
+			'Kimchi',
+			'Kombucha',
+			'Miso',
+			'Surkål',
+			'Yoghurt med levende kulturer',
+			'Tempeh'
+		]
+	}
 ];
+
+/**
+ * Mapping fra Mad-modulets Fodevare.cat-felt til vores PlanteKategori-id.
+ * Database-foedevarer flettes ind under den matchende kategori i dialogen.
+ */
+export const CAT_TIL_PLANTE_KATEGORI: Record<string, string> = {
+	gront: 'groent',
+	baer: 'frugt',
+	baelg: 'baelg',
+	noedder: 'noedder',
+	korn: 'korn'
+	// 'mejeri', 'koed', 'fisk', 'prot', 'drikke', 'andet' indgaar ikke som planter.
+};
+
+/** Flat liste over alle planter — bruges som soegegrundlag. */
+export const ALLE_PLANTER: string[] = PLANTE_KATEGORIER.flatMap((k) => k.items);
 
 /**
  * Returnerer kortet displaynavn 'Fornavn E.' baseret paa fulde navn.

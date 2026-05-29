@@ -1,10 +1,18 @@
 <script lang="ts">
 	// Indtast-modal til frugt/groent-challenge. Klienten:
-	// 1. Soeger/vaelger fra praedefineret liste (eller skriver eget navn)
+	// 1. Soeger eller bladrer i kategoriserede planter (Linns 'Planter til
+	//    tarmmikrobiom'-liste + alle relevante foedevarer fra Mad-modulets database)
 	// 2. Hver tilfoejelse vises som chip — kan fjernes
-	// 3. Trykker 'Gem' → kalkern faar ansvar for at gemme + aabne stillingen
-	import { FRUGT_OG_GROENT } from '$lib/content/challenge';
+	// 3. Trykker 'Gem' → kalderen faar ansvar for at gemme + aabne stillingen
+	import { onMount } from 'svelte';
+	import {
+		PLANTE_KATEGORIER,
+		CAT_TIL_PLANTE_KATEGORI,
+		type PlanteKategori
+	} from '$lib/content/challenge';
 	import { normaliserFoedevareListe } from '$lib/firestore/challenge';
+	import { hentAlleFodevarer } from '$lib/firestore/kost';
+	import type { Fodevare } from '$lib/content/kost';
 
 	interface Props {
 		startListe: string[];
@@ -19,24 +27,71 @@
 	$effect(() => {
 		valgte = [...startListe];
 	});
+
 	let soegeOrd = $state('');
-	let viserDropdown = $state(false);
+	let databaseFoedevarer = $state<Fodevare[]>([]);
+
+	onMount(async () => {
+		try {
+			// hentAlleFodevarer er cached pr session, saa anden gang er oeblikkelig.
+			databaseFoedevarer = await hentAlleFodevarer();
+		} catch (e) {
+			console.warn('Kunne ikke hente foedevare-database:', e);
+		}
+	});
+
+	// Saml den fulde kategoriserede liste: Linns PDF-items + database-items
+	// flettet ind under deres rette kategori (case-insensitivt deduplikering).
+	const kategoriseretListe = $derived.by<PlanteKategori[]>(() => {
+		const ud = PLANTE_KATEGORIER.map((k) => ({
+			id: k.id,
+			label: k.label,
+			items: [...k.items]
+		}));
+		const indexByKategori = new Map<string, PlanteKategori>(ud.map((k) => [k.id, k]));
+
+		for (const f of databaseFoedevarer) {
+			const kategoriId = CAT_TIL_PLANTE_KATEGORI[f.cat];
+			if (!kategoriId) continue;
+			const kat = indexByKategori.get(kategoriId);
+			if (!kat) continue;
+			// Dedup case-insensitivt
+			const findes = kat.items.some((i) => i.toLowerCase() === f.name.toLowerCase());
+			if (!findes) kat.items.push(f.name);
+		}
+		// Sortér hver kategori alfabetisk
+		for (const k of ud) {
+			k.items.sort((a, b) => a.localeCompare(b, 'da'));
+		}
+		return ud;
+	});
 
 	const valgteLowercase = $derived(new Set(valgte.map((v) => v.toLowerCase())));
 
-	const filtreret = $derived.by(() => {
+	// Filtrer pr kategori + udelad dem klienten allerede har valgt.
+	const visKategorier = $derived.by<PlanteKategori[]>(() => {
 		const ord = soegeOrd.trim().toLowerCase();
-		const base = FRUGT_OG_GROENT.filter((f) => !valgteLowercase.has(f.toLowerCase()));
-		if (!ord) return base.slice(0, 50);
-		return base.filter((f) => f.toLowerCase().includes(ord)).slice(0, 30);
+		return kategoriseretListe
+			.map((k) => ({
+				...k,
+				items: k.items.filter((i) => {
+					if (valgteLowercase.has(i.toLowerCase())) return false;
+					if (!ord) return true;
+					return i.toLowerCase().includes(ord);
+				})
+			}))
+			.filter((k) => k.items.length > 0);
 	});
+
+	const alleKendteLowercase = $derived(
+		new Set(kategoriseretListe.flatMap((k) => k.items.map((i) => i.toLowerCase())))
+	);
 
 	const visFritekstForslag = $derived.by(() => {
 		const ord = soegeOrd.trim();
 		if (!ord) return null;
 		if (valgteLowercase.has(ord.toLowerCase())) return null;
-		const findesIListe = FRUGT_OG_GROENT.some((f) => f.toLowerCase() === ord.toLowerCase());
-		if (findesIListe) return null;
+		if (alleKendteLowercase.has(ord.toLowerCase())) return null;
 		return ord;
 	});
 
@@ -44,7 +99,6 @@
 		const ny = normaliserFoedevareListe([...valgte, navn]);
 		valgte = ny;
 		soegeOrd = '';
-		viserDropdown = false;
 	}
 
 	function fjern(navn: string) {
@@ -54,78 +108,32 @@
 	async function gem() {
 		await onGem(valgte);
 	}
-
-	function paaFokus() {
-		viserDropdown = true;
-	}
-
-	function paaBlur() {
-		setTimeout(() => (viserDropdown = false), 150);
-	}
 </script>
 
 <div class="overlay" role="dialog" aria-modal="true" aria-labelledby="fg-titel">
 	<div class="dialog">
 		<header class="dialog-head">
-			<h2 id="fg-titel">Indtast frugt og grønt</h2>
+			<h2 id="fg-titel">Indtast planter</h2>
 			<button type="button" class="luk" onclick={onLuk} aria-label="Luk">×</button>
 		</header>
 
 		<p class="intro">
-			Hver gang du har spist en ny frugt eller grøntsag i dag — tilføj den her. Du
-			kan tilføje flere ad gangen og trykke Gem til sidst.
+			Hver gang du har spist en ny plante — frugt, grøntsag, bælgfrugt, nød, korn,
+			krydderi eller fermenteret — tilføj den her. Jo flere forskellige, jo bedre for
+			dit tarmmikrobiom.
 		</p>
 
-		<div class="vaelg-omraade">
-			<label class="soege-label">
-				<span>Vælg frugt eller grøntsag</span>
-				<input
-					type="text"
-					bind:value={soegeOrd}
-					placeholder="Søg eller skriv eget navn..."
-					onfocus={paaFokus}
-					onblur={paaBlur}
-					disabled={gemmer}
-				/>
-			</label>
-
-			{#if viserDropdown}
-				<div class="dropdown" role="listbox">
-					{#if visFritekstForslag}
-						<button
-							type="button"
-							class="dropdown-row fritekst"
-							onmousedown={(e) => {
-								e.preventDefault();
-								tilfoej(visFritekstForslag);
-							}}
-						>
-							+ Tilføj "{visFritekstForslag}"
-						</button>
-					{/if}
-					{#each filtreret as f (f)}
-						<button
-							type="button"
-							class="dropdown-row"
-							onmousedown={(e) => {
-								e.preventDefault();
-								tilfoej(f);
-							}}
-						>
-							{f}
-						</button>
-					{:else}
-						{#if !visFritekstForslag}
-							<div class="dropdown-tom">Ingen flere matcher.</div>
-						{/if}
-					{/each}
-				</div>
-			{/if}
+		<div class="soege-omraade">
+			<input
+				type="text"
+				bind:value={soegeOrd}
+				placeholder="Søg eller skriv en plante..."
+				disabled={gemmer}
+				class="soege-input"
+			/>
 		</div>
 
-		{#if valgte.length === 0}
-			<p class="muted">Ingen tilføjet endnu — vælg fra listen ovenfor.</p>
-		{:else}
+		{#if valgte.length > 0}
 			<div class="chips-omraade">
 				<div class="chips-label">
 					Du har {valgte.length} forskellig{valgte.length === 1 ? '' : 'e'} i alt:
@@ -146,6 +154,41 @@
 				</div>
 			</div>
 		{/if}
+
+		<div class="liste-omraade">
+			{#if visFritekstForslag}
+				<button
+					type="button"
+					class="fritekst-knap"
+					onclick={() => tilfoej(visFritekstForslag)}
+					disabled={gemmer}
+				>
+					+ Tilføj "{visFritekstForslag}"
+				</button>
+			{/if}
+
+			{#each visKategorier as kat (kat.id)}
+				<div class="kategori-blok">
+					<div class="kategori-titel">{kat.label}</div>
+					<div class="kategori-items">
+						{#each kat.items as item (item)}
+							<button
+								type="button"
+								class="item-chip"
+								onclick={() => tilfoej(item)}
+								disabled={gemmer}
+							>
+								{item}
+							</button>
+						{/each}
+					</div>
+				</div>
+			{:else}
+				{#if !visFritekstForslag}
+					<div class="tom">Ingen matcher dit søgeord — prøv at skrive det selv og tryk Tilføj.</div>
+				{/if}
+			{/each}
+		</div>
 
 		<footer class="dialog-foot">
 			<button type="button" class="annuller" onclick={onLuk} disabled={gemmer}>
@@ -179,7 +222,7 @@
 		background: var(--white);
 		border-radius: 14px;
 		width: 100%;
-		max-width: 460px;
+		max-width: 520px;
 		max-height: calc(100vh - 32px);
 		display: flex;
 		flex-direction: column;
@@ -220,25 +263,12 @@
 		line-height: 1.45;
 	}
 
-	.vaelg-omraade {
-		position: relative;
-		padding: 0 16px;
+	.soege-omraade {
+		padding: 0 16px 8px;
 	}
 
-	.soege-label {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.soege-label span {
-		font-size: calc(11px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--text2);
-		letter-spacing: 0.04em;
-	}
-
-	.soege-label input {
+	.soege-input {
+		width: 100%;
 		padding: 10px 12px;
 		font-size: calc(14px * var(--fs-scale, 1));
 		border: 1px solid var(--border);
@@ -246,67 +276,16 @@
 		background: var(--bg2);
 		color: var(--text);
 		font-family: var(--ff-b);
+		box-sizing: border-box;
 	}
 
-	.dropdown {
-		position: absolute;
-		left: 16px;
-		right: 16px;
-		top: calc(100% + 4px);
-		background: var(--white);
-		border: 1px solid var(--border);
-		border-radius: 12px;
-		box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
-		max-height: 280px;
-		overflow-y: auto;
-		z-index: 5;
-	}
-
-	.dropdown-row {
-		display: block;
-		width: 100%;
-		text-align: left;
-		padding: 10px 14px;
-		background: transparent;
-		border: none;
-		border-top: 1px solid var(--border);
-		font-family: var(--ff-b);
-		font-size: calc(13.5px * var(--fs-scale, 1));
-		color: var(--text);
-		cursor: pointer;
-	}
-
-	.dropdown-row:first-child {
-		border-top: none;
-	}
-
-	.dropdown-row:hover {
-		background: var(--bg2);
-	}
-
-	.dropdown-row.fritekst {
-		color: var(--terra);
-		font-weight: 600;
-	}
-
-	.dropdown-tom {
-		padding: 12px 14px;
-		font-size: calc(12px * var(--fs-scale, 1));
-		color: var(--text3);
-		font-style: italic;
-	}
-
-	.muted {
-		padding: 0 16px;
-		font-size: calc(12px * var(--fs-scale, 1));
-		color: var(--text3);
-		font-style: italic;
-		margin: 12px 0 0;
+	.soege-input:focus {
+		outline: none;
+		border-color: var(--terra);
 	}
 
 	.chips-omraade {
-		padding: 12px 16px 8px;
-		overflow-y: auto;
+		padding: 0 16px 8px;
 	}
 
 	.chips-label {
@@ -314,7 +293,7 @@
 		font-weight: 600;
 		color: var(--text2);
 		letter-spacing: 0.04em;
-		margin-bottom: 8px;
+		margin-bottom: 6px;
 	}
 
 	.chips {
@@ -349,6 +328,83 @@
 	.chip-fjern:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	.liste-omraade {
+		flex: 1;
+		overflow-y: auto;
+		padding: 0 16px 12px;
+		border-top: 1px solid var(--border);
+	}
+
+	.fritekst-knap {
+		display: block;
+		width: 100%;
+		padding: 10px 14px;
+		margin: 10px 0;
+		background: var(--tdim);
+		border: 1px dashed var(--terra);
+		border-radius: 10px;
+		font-family: var(--ff-b);
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--terra);
+		cursor: pointer;
+		touch-action: manipulation;
+	}
+
+	.kategori-blok {
+		margin-top: 14px;
+	}
+
+	.kategori-blok:first-child {
+		margin-top: 10px;
+	}
+
+	.kategori-titel {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--terra);
+		margin-bottom: 8px;
+	}
+
+	.kategori-items {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.item-chip {
+		padding: 6px 11px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 99px;
+		font-family: var(--ff-b);
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		cursor: pointer;
+		touch-action: manipulation;
+	}
+
+	.item-chip:hover:not(:disabled) {
+		border-color: var(--sage);
+		color: var(--sage);
+		background: var(--sdim);
+	}
+
+	.item-chip:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.tom {
+		padding: 24px 0;
+		text-align: center;
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		font-style: italic;
 	}
 
 	.dialog-foot {
