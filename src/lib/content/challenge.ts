@@ -131,7 +131,24 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Brombær',
 			// Fra fødevaredatabasen
 			'Honningmelon',
-			'Rosiner'
+			'Rosiner',
+			// Vilde nordiske baer
+			'Hyben',
+			'Hyldebær',
+			'Tyttebær',
+			'Tranebær',
+			'Solbær',
+			'Ribs',
+			'Stikkelsbær',
+			'Havtorn',
+			'Slåen',
+			'Multebær',
+			// Almindelige stenfrugter
+			'Blommer',
+			'Kirsebær',
+			'Abrikoser',
+			'Ferskner',
+			'Nektariner'
 		]
 	},
 	{
