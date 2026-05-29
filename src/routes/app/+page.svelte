@@ -1005,10 +1005,12 @@
 			vaneprogramDage = vaneDage;
 			adminVaner = admVaner;
 
-			// Hent alle challenges hvis denne er Kropsro. Den aktive findes
-			// reaktivt via $derived saa preview-mode ogsaa virker for
-			// fremtidige challenges.
-			if (aktivt && userDoc?.activeProduct === KROPSRO_PRODUCT_ID) {
+			// Hent alle challenges hvis dette er et Kropsro-forloeb. Den aktive
+			// findes reaktivt via $derived saa preview-mode ogsaa virker for
+			// fremtidige challenges. Vi tjekker forloebets type (ikke userDoc's
+			// activeProduct) saa admin uden klient-mode ogsaa ser challenge'n
+			// paa egen forside hvis hun er paa et Kropsro-forloeb.
+			if (aktivt && aktivt.type === 'kropsro') {
 				try {
 					alleChallenges = await hentChallenges(aktivt.id);
 				} catch (e) {
