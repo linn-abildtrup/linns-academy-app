@@ -140,9 +140,25 @@
 						gemmer = false;
 					}
 				},
-				paaDenne: () => {
+				paaDenne: async () => {
 					gruppeBekraeft = null;
-					dag = { ...dag, lektioner: dag.lektioner.filter((x) => x.id !== id) };
+					gemmer = true;
+					try {
+						// Persistér oeblikkeligt saa slettelsen ogsaa reflekteres
+						// i VaelgDageDialog og /lektioner-oversigten.
+						const nu: ForlobDag = {
+							...dag,
+							lektioner: dag.lektioner.filter((x) => x.id !== id)
+						};
+						await gemForlobsdag(forlobId, nu);
+						dag = nu;
+						await refreshGruppeDage();
+					} catch (e) {
+						console.error(e);
+						fejl = 'Kunne ikke slette lektion.';
+					} finally {
+						gemmer = false;
+					}
 				}
 			};
 			return;
@@ -571,9 +587,24 @@
 					gemmer = false;
 				}
 			},
-			paaDenne: () => {
+			paaDenne: async () => {
 				gruppeBekraeft = null;
-				dag = { ...dag, noteFraLinn: '', noteGrupperingId: undefined };
+				gemmer = true;
+				try {
+					const nu: ForlobDag = {
+						...dag,
+						noteFraLinn: '',
+						noteGrupperingId: undefined
+					};
+					await gemForlobsdag(forlobId, nu);
+					dag = nu;
+					await refreshGruppeDage();
+				} catch (e) {
+					console.error(e);
+					fejl = 'Kunne ikke slette note.';
+				} finally {
+					gemmer = false;
+				}
 			}
 		};
 	}
