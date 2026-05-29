@@ -29,6 +29,10 @@ export interface LektionItem {
 	format: string;
 	url: string;
 	thumbnailUrl?: string;
+	// Naar Linn vil have samme lektion paa flere dage, faar de en faelles
+	// grupperingId. Aendringer kan saa propageres til alle dage i gruppen
+	// via opdaterLektionGruppe(). Tom = standalone lektion (uafhaengig).
+	grupperingId?: string;
 }
 
 /**
@@ -44,6 +48,9 @@ export interface ForlobDag {
 	uge: number;
 	lektioner: LektionItem[];
 	noteFraLinn: string;
+	// Hvis noten skal vises paa flere dage, faar de samme noteGrupperingId.
+	// Tom = standalone note.
+	noteGrupperingId?: string;
 }
 
 // ==============================================
@@ -199,6 +206,32 @@ export function formatDato(date: Date = new Date()): string {
 	const maaned = maaneder[date.getMonth()];
 	return ugedag + ', ' + dag + '. ' + maaned;
 }
+
+/**
+ * Returnerer datoen for en bestemt dagNummer i et forløb, baseret paa
+ * startDato. Dag 0 = startdagen selv.
+ */
+export function datoForDag(startDato: string, dagNummer: number): Date {
+	const d = new Date(startDato);
+	d.setDate(d.getDate() + dagNummer);
+	return d;
+}
+
+/**
+ * Kort dato-format brugt i admin-vaelg-dage-dialog: "30. maj 2026".
+ */
+export function formatKortDato(date: Date): string {
+	return `${date.getDate()}. ${maaneder[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/**
+ * Engelsk-stil ugedag-navn brugt til at gruppere genveje: 0=soendag.
+ */
+export function ugedagForDato(date: Date): number {
+	return date.getDay();
+}
+
+export const UGEDAG_LABELS = ugedage;
 
 // ==============================================
 // Helpers til at bygge nye lektioner

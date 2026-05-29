@@ -22,7 +22,8 @@ import type {
 	CsvRow,
 	Forlob
 } from '$lib/content/forlobAdgang';
-import type { ForlobDag } from '$lib/content/forlob';
+import type { ForlobDag, LektionItem } from '$lib/content/forlob';
+import { tomForlobDag } from '$lib/content/forlob';
 import {
 	KICKSTART_PRODUCT_ID,
 	KROPSRO_PRODUCT_ID,
@@ -548,4 +549,199 @@ export async function gemForlobsdag(forlobId: string, dag: ForlobDag): Promise<v
  */
 export async function sletForlobsdag(forlobId: string, dagNummer: number): Promise<void> {
 	await deleteDoc(doc(db, 'forlob', forlobId, 'forlobsdage', `dag${dagNummer}`));
+}
+
+// ==============================================
+// Gruppe-operationer for lektioner og noter
+// ==============================================
+
+/**
+ * Genererer en ny grupperingId. Bruges naar Linn vaelger flere dage at vise
+ * en lektion eller note paa.
+ */
+function nyGrupperingId(): string {
+	return typeof crypto !== 'undefined' && crypto.randomUUID
+		? crypto.randomUUID()
+		: 'g-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+async function hentEksisterendeOgTomDage(
+	forlobId: string,
+	dageNumre: number[]
+): Promise<Map<number, ForlobDag>> {
+	const ud = new Map<number, ForlobDag>();
+	for (const n of dageNumre) {
+		const eks = await hentForlobsdag(forlobId, n);
+		ud.set(n, eks ?? tomForlobDag(n));
+	}
+	return ud;
+}
+
+/**
+ * Tilfoejer/opdaterer en lektion paa de valgte dage. Lektionen kopieres til
+ * hver dag som en selvstaendig forekomst med samme grupperingId, saa de kan
+ * opdateres samlet via opdaterLektionGruppe().
+ *
+ * - Hvis lektion allerede har en grupperingId, bruges den. Ellers genereres en ny.
+ * - Hvis en dag allerede har en lektion fra samme gruppe, opdateres den i
+ *   stedet for at oprette en duplikat.
+ */
+export async function gemLektionPaaDage(
+	forlobId: string,
+	lektionFelter: Omit<LektionItem, 'id'>,
+	dageNumre: number[],
+	eksisterendeGrupperingId?: string
+): Promise<{ grupperingId: string }> {
+	const grupperingId = eksisterendeGrupperingId ?? nyGrupperingId();
+	const dage = await hentEksisterendeOgTomDage(forlobId, dageNumre);
+
+	for (const [_, dag] of dage) {
+		const eksisterendeIdx = dag.lektioner.findIndex(
+			(l) => l.grupperingId === grupperingId
+		);
+		const data = { ...lektionFelter, grupperingId };
+		if (eksisterendeIdx >= 0) {
+			dag.lektioner[eksisterendeIdx] = {
+				...data,
+				id: dag.lektioner[eksisterendeIdx].id
+			};
+		} else {
+			dag.lektioner.push({
+				...data,
+				id:
+					typeof crypto !== 'undefined' && crypto.randomUUID
+						? crypto.randomUUID()
+						: 'l-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)
+			});
+		}
+		await gemForlobsdag(forlobId, dag);
+	}
+
+	ryForlobCache();
+	return { grupperingId };
+}
+
+/**
+ * Propagerer aendringer til alle dage med samme grupperingId — bruges naar
+ * Linn vaelger 'Ret alle' efter at have aendret en grupperet lektion.
+ * Beholder lektionens eksisterende id pr dag (hver dag har sin egen).
+ */
+export async function opdaterLektionGruppe(
+	forlobId: string,
+	grupperingId: string,
+	nyeFelter: Omit<LektionItem, 'id' | 'grupperingId'>
+): Promise<void> {
+	const alleDage = await hentForlobsdage(forlobId);
+	for (const dag of alleDage) {
+		const idx = dag.lektioner.findIndex((l) => l.grupperingId === grupperingId);
+		if (idx < 0) continue;
+		const nu: ForlobDag = {
+			...dag,
+			lektioner: dag.lektioner.map((l, i) =>
+				i === idx ? { ...nyeFelter, id: l.id, grupperingId } : l
+			)
+		};
+		await gemForlobsdag(forlobId, nu);
+	}
+	ryForlobCache();
+}
+
+/**
+ * Sletter alle lektioner med en given grupperingId fra alle dage. Bruges
+ * naar Linn vaelger 'Slet alle' i slet-dialog.
+ */
+export async function sletLektionGruppe(
+	forlobId: string,
+	grupperingId: string
+): Promise<void> {
+	const alleDage = await hentForlobsdage(forlobId);
+	for (const dag of alleDage) {
+		const harDen = dag.lektioner.some((l) => l.grupperingId === grupperingId);
+		if (!harDen) continue;
+		const nu: ForlobDag = {
+			...dag,
+			lektioner: dag.lektioner.filter((l) => l.grupperingId !== grupperingId)
+		};
+		await gemForlobsdag(forlobId, nu);
+	}
+	ryForlobCache();
+}
+
+/**
+ * Returnerer listen af dagNumre hvor en given lektion-gruppe ligger.
+ * Bruges til at vise 'Denne lektion ligger paa dage 3, 5, 7'-tooltip.
+ */
+export async function findDageMedLektionGruppe(
+	forlobId: string,
+	grupperingId: string
+): Promise<number[]> {
+	const alleDage = await hentForlobsdage(forlobId);
+	return alleDage
+		.filter((d) => d.lektioner.some((l) => l.grupperingId === grupperingId))
+		.map((d) => d.dagNummer)
+		.sort((a, b) => a - b);
+}
+
+/**
+ * Tilfoejer/opdaterer note-fra-Linn paa de valgte dage med faelles
+ * noteGrupperingId. Note overskriver eksisterende note paa hver valgt dag.
+ */
+export async function gemNotePaaDage(
+	forlobId: string,
+	noteFraLinn: string,
+	dageNumre: number[],
+	eksisterendeGrupperingId?: string
+): Promise<{ noteGrupperingId: string }> {
+	const noteGrupperingId = eksisterendeGrupperingId ?? nyGrupperingId();
+	const dage = await hentEksisterendeOgTomDage(forlobId, dageNumre);
+	for (const [_, dag] of dage) {
+		await gemForlobsdag(forlobId, { ...dag, noteFraLinn, noteGrupperingId });
+	}
+	ryForlobCache();
+	return { noteGrupperingId };
+}
+
+/**
+ * Propagerer note-aendring til alle dage med samme noteGrupperingId.
+ */
+export async function opdaterNoteGruppe(
+	forlobId: string,
+	noteGrupperingId: string,
+	nyTekst: string
+): Promise<void> {
+	const alleDage = await hentForlobsdage(forlobId);
+	for (const dag of alleDage) {
+		if (dag.noteGrupperingId !== noteGrupperingId) continue;
+		await gemForlobsdag(forlobId, { ...dag, noteFraLinn: nyTekst });
+	}
+	ryForlobCache();
+}
+
+/**
+ * Sletter (saetter til tom) noter med en given noteGrupperingId paa alle dage.
+ */
+export async function sletNoteGruppe(
+	forlobId: string,
+	noteGrupperingId: string
+): Promise<void> {
+	const alleDage = await hentForlobsdage(forlobId);
+	for (const dag of alleDage) {
+		if (dag.noteGrupperingId !== noteGrupperingId) continue;
+		await gemForlobsdag(forlobId, { ...dag, noteFraLinn: '', noteGrupperingId: undefined });
+	}
+	ryForlobCache();
+}
+
+/**
+ * Returnerer listen af dagNumre hvor en given note-gruppe ligger.
+ */
+export async function findDageMedNoteGruppe(
+	forlobId: string,
+	noteGrupperingId: string
+): Promise<number[]> {
+	const alleDage = await hentForlobsdage(forlobId);
+	return alleDage
+		.filter((d) => d.noteGrupperingId === noteGrupperingId)
+		.map((d) => d.dagNummer)
+		.sort((a, b) => a - b);
 }

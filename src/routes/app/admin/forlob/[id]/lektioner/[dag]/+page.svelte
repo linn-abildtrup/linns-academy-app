@@ -3,15 +3,32 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
+	import type { Forlob } from '$lib/content/forlobAdgang';
 	import { nyLektion, tomForlobDag } from '$lib/content/forlob';
-	import { gemForlobsdag, hentForlobsdag, sletForlobsdag } from '$lib/firestore/forlob';
+	import {
+		findDageMedLektionGruppe,
+		findDageMedNoteGruppe,
+		gemForlobsdag,
+		gemLektionPaaDage,
+		gemNotePaaDage,
+		hentForlob,
+		hentForlobsdag,
+		opdaterLektionGruppe,
+		opdaterNoteGruppe,
+		sletForlobsdag,
+		sletLektionGruppe,
+		sletNoteGruppe
+	} from '$lib/firestore/forlob';
 	import { uploadHtmlFil, uploadLydFil, uploadThumbnailFil } from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
+	import VaelgDageDialog from '$lib/components/VaelgDageDialog.svelte';
+	import RedigerGruppeDialog from '$lib/components/RedigerGruppeDialog.svelte';
 
 	const forlobId = $derived(page.params.id ?? '');
 	const dagNummer = $derived(parseInt(page.params.dag ?? '0', 10));
 
 	let dag = $state<ForlobDag>(tomForlobDag(0));
+	let forlob = $state<Forlob | null>(null);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let gemmer = $state(false);
@@ -22,6 +39,46 @@
 	let uploaderThumb = $state<string | null>(null);
 	let dragOver = $state<string | null>(null);
 	let uploadFejl = $state<string | null>(null);
+
+	// 'Vis ogsaa paa dage'-dialog. maal er enten 'lektion:<id>' eller 'note'.
+	let dialogMaal = $state<string | null>(null);
+	let dialogStartDage = $state<number[]>([]);
+
+	// 'Ret alle eller kun denne'-bekraeft-dialog
+	let gruppeBekraeft = $state<{
+		titel: string;
+		beskrivelse: string;
+		antalDage: number;
+		alleLabel: string;
+		denneLabel: string;
+		erFarlig: boolean;
+		paaAlle: () => void | Promise<void>;
+		paaDenne: () => void | Promise<void>;
+	} | null>(null);
+
+	// Cache over hvilke dage hver gruppe ligger paa — bygges naar siden loader
+	// og opdateres efter gem.
+	let lektionGruppeDage = $state<Map<string, number[]>>(new Map());
+	let noteGruppeDage = $state<Map<string, number[]>>(new Map());
+
+	async function refreshGruppeDage() {
+		const lkRes = new Map<string, number[]>();
+		for (const l of dag.lektioner) {
+			if (l.grupperingId && !lkRes.has(l.grupperingId)) {
+				lkRes.set(l.grupperingId, await findDageMedLektionGruppe(forlobId, l.grupperingId));
+			}
+		}
+		lektionGruppeDage = lkRes;
+
+		const nRes = new Map<string, number[]>();
+		if (dag.noteGrupperingId) {
+			nRes.set(
+				dag.noteGrupperingId,
+				await findDageMedNoteGruppe(forlobId, dag.noteGrupperingId)
+			);
+		}
+		noteGruppeDage = nRes;
+	}
 
 	$effect(() => {
 		// Re-init når dagNummer ændrer sig (deep-link / navigation)
@@ -36,8 +93,13 @@
 		loading = true;
 		fejl = null;
 		try {
-			const fundet = await hentForlobsdag(forlobId, dagNummer);
+			const [fundet, f] = await Promise.all([
+				hentForlobsdag(forlobId, dagNummer),
+				forlob ? Promise.resolve(forlob) : hentForlob(forlobId)
+			]);
 			dag = fundet ?? tomForlobDag(dagNummer);
+			forlob = f;
+			await refreshGruppeDage();
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente dagen.';
@@ -51,7 +113,41 @@
 	}
 
 	function fjernLektion(id: string) {
-		dag = { ...dag, lektioner: dag.lektioner.filter((l) => l.id !== id) };
+		const l = dag.lektioner.find((x) => x.id === id);
+		if (!l) return;
+		const dageMedGruppe = l.grupperingId ? lektionGruppeDage.get(l.grupperingId) ?? [] : [];
+		if (l.grupperingId && dageMedGruppe.length > 1) {
+			const gid = l.grupperingId;
+			gruppeBekraeft = {
+				titel: 'Slet lektion',
+				beskrivelse:
+					'Denne lektion ligger ogsaa paa andre dage. Vil du fjerne den fra alle dage eller kun fra denne ene?',
+				antalDage: dageMedGruppe.length,
+				alleLabel: 'Slet fra alle dage',
+				denneLabel: 'Kun denne dag',
+				erFarlig: true,
+				paaAlle: async () => {
+					gruppeBekraeft = null;
+					gemmer = true;
+					try {
+						await sletLektionGruppe(forlobId, gid);
+						dag = { ...dag, lektioner: dag.lektioner.filter((x) => x.id !== id) };
+						await refreshGruppeDage();
+					} catch (e) {
+						console.error(e);
+						fejl = 'Kunne ikke slette gruppe.';
+					} finally {
+						gemmer = false;
+					}
+				},
+				paaDenne: () => {
+					gruppeBekraeft = null;
+					dag = { ...dag, lektioner: dag.lektioner.filter((x) => x.id !== id) };
+				}
+			};
+			return;
+		}
+		dag = { ...dag, lektioner: dag.lektioner.filter((x) => x.id !== id) };
 	}
 
 	function opdaterLektion<K extends keyof LektionItem>(
@@ -179,35 +275,307 @@
 		opdaterLektion(lektionId, 'thumbnailUrl', undefined);
 	}
 
+	// Sammenligner lektion-felter (ekskl id + grupperingId) saa vi kan
+	// detektere om en grupperet lektion er aendret og skal trigge dialog.
+	function lektionFelterEr(a: LektionItem, b: LektionItem): boolean {
+		return (
+			a.titel === b.titel &&
+			a.beskrivelse === b.beskrivelse &&
+			a.varighedMin === b.varighedMin &&
+			a.format === b.format &&
+			a.url === b.url &&
+			(a.thumbnailUrl ?? '') === (b.thumbnailUrl ?? '')
+		);
+	}
+
 	async function gem() {
 		gemmer = true;
 		fejl = null;
 		gemKvit = false;
 		try {
-			// Trim alle lektion-felter inden gemning
-			const lektioner: LektionItem[] = dag.lektioner.map((l) => ({
+			const original = (await hentForlobsdag(forlobId, dagNummer)) ?? tomForlobDag(dagNummer);
+			const trimmet: LektionItem[] = dag.lektioner.map((l) => ({
 				...l,
 				titel: l.titel.trim(),
 				beskrivelse: l.beskrivelse.trim(),
 				format: l.format.trim(),
 				url: l.url.trim()
 			}));
-			const renset: ForlobDag = {
+
+			// Find grupperede lektioner der er aendret ift original
+			const aendredeGrupperede: LektionItem[] = [];
+			for (const ny of trimmet) {
+				if (!ny.grupperingId) continue;
+				const dageMed = lektionGruppeDage.get(ny.grupperingId) ?? [];
+				if (dageMed.length <= 1) continue;
+				const original_l = original.lektioner.find((o) => o.id === ny.id);
+				if (!original_l) continue;
+				if (!lektionFelterEr(ny, original_l)) {
+					aendredeGrupperede.push(ny);
+				}
+			}
+
+			const noteAendretGrupperet =
+				dag.noteGrupperingId &&
+				(noteGruppeDage.get(dag.noteGrupperingId)?.length ?? 0) > 1 &&
+				dag.noteFraLinn.trim() !== (original.noteFraLinn ?? '').trim();
+
+			if (aendredeGrupperede.length > 0 || noteAendretGrupperet) {
+				// Naar der er grupperede aendringer: vis dialog. Spoerg én gang
+				// samlet (typisk er det én lektion eller noten der er aendret).
+				const samletAntalDage = Math.max(
+					...aendredeGrupperede.map(
+						(l) => lektionGruppeDage.get(l.grupperingId ?? '')?.length ?? 0
+					),
+					noteAendretGrupperet ? noteGruppeDage.get(dag.noteGrupperingId ?? '')?.length ?? 0 : 0
+				);
+				gruppeBekraeft = {
+					titel: 'Aendringer paa flere dage',
+					beskrivelse:
+						'Du har aendret indhold der ogsaa ligger paa andre dage. Vil du opdatere alle dage eller kun denne ene?',
+					antalDage: samletAntalDage,
+					alleLabel: 'Ret alle dage',
+					denneLabel: 'Kun denne dag',
+					erFarlig: false,
+					paaAlle: async () => {
+						gruppeBekraeft = null;
+						await gemMedPropagering(trimmet, aendredeGrupperede, !!noteAendretGrupperet);
+					},
+					paaDenne: async () => {
+						gruppeBekraeft = null;
+						await gemSomStandalone(trimmet, aendredeGrupperede, !!noteAendretGrupperet);
+					}
+				};
+				gemmer = false;
+				return;
+			}
+
+			// Ingen grupperede aendringer — gem normalt
+			await gemForlobsdag(forlobId, {
 				dagNummer: dag.dagNummer,
 				uge: dag.uge,
-				lektioner,
-				noteFraLinn: dag.noteFraLinn.trim()
-			};
-			await gemForlobsdag(forlobId, renset);
-			dag = renset;
+				lektioner: trimmet,
+				noteFraLinn: dag.noteFraLinn.trim(),
+				noteGrupperingId: dag.noteGrupperingId
+			});
+			dag = { ...dag, lektioner: trimmet };
 			gemKvit = true;
 			setTimeout(() => (gemKvit = false), 2000);
+			await refreshGruppeDage();
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke gemme.';
 		} finally {
 			gemmer = false;
 		}
+	}
+
+	async function gemMedPropagering(
+		trimmet: LektionItem[],
+		grupperede: LektionItem[],
+		noteAendret: boolean
+	) {
+		gemmer = true;
+		try {
+			// Foerst gem den aktuelle dag (med trimmede felter)
+			await gemForlobsdag(forlobId, {
+				dagNummer: dag.dagNummer,
+				uge: dag.uge,
+				lektioner: trimmet,
+				noteFraLinn: dag.noteFraLinn.trim(),
+				noteGrupperingId: dag.noteGrupperingId
+			});
+			// Propagér aendrede grupperede lektioner til alle andre dage
+			for (const l of grupperede) {
+				if (!l.grupperingId) continue;
+				await opdaterLektionGruppe(forlobId, l.grupperingId, {
+					titel: l.titel,
+					beskrivelse: l.beskrivelse,
+					varighedMin: l.varighedMin,
+					format: l.format,
+					url: l.url,
+					thumbnailUrl: l.thumbnailUrl
+				});
+			}
+			if (noteAendret && dag.noteGrupperingId) {
+				await opdaterNoteGruppe(forlobId, dag.noteGrupperingId, dag.noteFraLinn.trim());
+			}
+			dag = { ...dag, lektioner: trimmet };
+			gemKvit = true;
+			setTimeout(() => (gemKvit = false), 2000);
+			await refreshGruppeDage();
+		} catch (e) {
+			console.error(e);
+			fejl = 'Kunne ikke gemme.';
+		} finally {
+			gemmer = false;
+		}
+	}
+
+	async function gemSomStandalone(
+		trimmet: LektionItem[],
+		grupperede: LektionItem[],
+		noteAendret: boolean
+	) {
+		gemmer = true;
+		try {
+			// 'Kun denne': fjern grupperingId fra de aendrede lektioner saa
+			// de andre dage forbliver intakte med den oprindelige version.
+			const grupIds = new Set(grupperede.map((l) => l.id));
+			const opdateret = trimmet.map((l) =>
+				grupIds.has(l.id) ? { ...l, grupperingId: undefined } : l
+			);
+			const noteOpdateret = noteAendret;
+			await gemForlobsdag(forlobId, {
+				dagNummer: dag.dagNummer,
+				uge: dag.uge,
+				lektioner: opdateret,
+				noteFraLinn: dag.noteFraLinn.trim(),
+				noteGrupperingId: noteOpdateret ? undefined : dag.noteGrupperingId
+			});
+			dag = {
+				...dag,
+				lektioner: opdateret,
+				noteGrupperingId: noteOpdateret ? undefined : dag.noteGrupperingId
+			};
+			gemKvit = true;
+			setTimeout(() => (gemKvit = false), 2000);
+			await refreshGruppeDage();
+		} catch (e) {
+			console.error(e);
+			fejl = 'Kunne ikke gemme.';
+		} finally {
+			gemmer = false;
+		}
+	}
+
+	function aabnVaelgDageDialog(maal: string) {
+		dialogMaal = maal;
+		if (maal === 'note') {
+			const ds = dag.noteGrupperingId
+				? noteGruppeDage.get(dag.noteGrupperingId) ?? [dagNummer]
+				: [dagNummer];
+			dialogStartDage = ds.length > 0 ? ds : [dagNummer];
+		} else if (maal.startsWith('lektion:')) {
+			const id = maal.slice('lektion:'.length);
+			const l = dag.lektioner.find((x) => x.id === id);
+			if (l?.grupperingId) {
+				dialogStartDage = lektionGruppeDage.get(l.grupperingId) ?? [dagNummer];
+			} else {
+				dialogStartDage = [dagNummer];
+			}
+		}
+	}
+
+	async function haandterVaelgDage(valgteDage: number[]) {
+		if (!dialogMaal) return;
+		const valgte = valgteDage.includes(dagNummer)
+			? valgteDage
+			: [...valgteDage, dagNummer].sort((a, b) => a - b);
+
+		gemmer = true;
+		fejl = null;
+		try {
+			if (dialogMaal === 'note') {
+				const tekst = dag.noteFraLinn.trim();
+				if (!tekst) {
+					fejl = 'Skriv noten foerst, foer du vaelger flere dage.';
+					gemmer = false;
+					dialogMaal = null;
+					return;
+				}
+				const { noteGrupperingId } = await gemNotePaaDage(
+					forlobId,
+					tekst,
+					valgte,
+					dag.noteGrupperingId
+				);
+				dag = { ...dag, noteGrupperingId };
+			} else if (dialogMaal.startsWith('lektion:')) {
+				const id = dialogMaal.slice('lektion:'.length);
+				const l = dag.lektioner.find((x) => x.id === id);
+				if (!l) {
+					gemmer = false;
+					dialogMaal = null;
+					return;
+				}
+				const { grupperingId } = await gemLektionPaaDage(
+					forlobId,
+					{
+						titel: l.titel.trim(),
+						beskrivelse: l.beskrivelse.trim(),
+						varighedMin: l.varighedMin,
+						format: l.format.trim(),
+						url: l.url.trim(),
+						thumbnailUrl: l.thumbnailUrl,
+						grupperingId: l.grupperingId
+					},
+					valgte,
+					l.grupperingId
+				);
+				// Fjern gruppen fra dage der ikke laengere er valgt
+				if (l.grupperingId) {
+					const tidligereDage = lektionGruppeDage.get(l.grupperingId) ?? [];
+					const fjernet = tidligereDage.filter((d) => !valgte.includes(d));
+					for (const d of fjernet) {
+						const andenDag = await hentForlobsdag(forlobId, d);
+						if (!andenDag) continue;
+						await gemForlobsdag(forlobId, {
+							...andenDag,
+							lektioner: andenDag.lektioner.filter((x) => x.grupperingId !== l.grupperingId)
+						});
+					}
+				}
+				dag = {
+					...dag,
+					lektioner: dag.lektioner.map((x) => (x.id === id ? { ...x, grupperingId } : x))
+				};
+			}
+			await refreshGruppeDage();
+		} catch (e) {
+			console.error(e);
+			fejl = 'Kunne ikke opdatere flere dage.';
+		} finally {
+			gemmer = false;
+			dialogMaal = null;
+		}
+	}
+
+	function fjernNoteFraGruppe() {
+		if (!dag.noteGrupperingId) return;
+		const dageMed = noteGruppeDage.get(dag.noteGrupperingId) ?? [];
+		if (dageMed.length <= 1) {
+			dag = { ...dag, noteGrupperingId: undefined };
+			return;
+		}
+		const gid = dag.noteGrupperingId;
+		gruppeBekraeft = {
+			titel: 'Slet note',
+			beskrivelse:
+				'Denne note ligger ogsaa paa andre dage. Vil du slette den fra alle dage eller kun fra denne ene?',
+			antalDage: dageMed.length,
+			alleLabel: 'Slet fra alle dage',
+			denneLabel: 'Kun denne dag',
+			erFarlig: true,
+			paaAlle: async () => {
+				gruppeBekraeft = null;
+				gemmer = true;
+				try {
+					await sletNoteGruppe(forlobId, gid);
+					dag = { ...dag, noteFraLinn: '', noteGrupperingId: undefined };
+					await refreshGruppeDage();
+				} catch (e) {
+					console.error(e);
+					fejl = 'Kunne ikke slette note-gruppe.';
+				} finally {
+					gemmer = false;
+				}
+			},
+			paaDenne: () => {
+				gruppeBekraeft = null;
+				dag = { ...dag, noteFraLinn: '', noteGrupperingId: undefined };
+			}
+		};
 	}
 
 	async function sletDag() {
@@ -246,13 +614,44 @@
 		<div class="status-besked fejl">{fejl}</div>
 	{:else}
 		<div class="form-card">
-			<div class="form-titel">Note fra Linn (valgfri)</div>
+			<div class="form-head">
+				<div class="form-titel">Note fra Linn (valgfri)</div>
+				{#if dag.noteGrupperingId && (noteGruppeDage.get(dag.noteGrupperingId) ?? []).length > 1}
+					<span
+						class="gruppe-chip"
+						title={`Noten ligger paa dage: ${(noteGruppeDage.get(dag.noteGrupperingId) ?? []).join(', ')}`}
+					>
+						🔗 ligger paa {noteGruppeDage.get(dag.noteGrupperingId)?.length} dage
+					</span>
+				{/if}
+			</div>
 			<textarea
 				bind:value={dag.noteFraLinn}
 				placeholder="Personlig note til klienterne for denne dag..."
 				rows="4"
 				disabled={gemmer}
 			></textarea>
+			<div class="vis-paa-rad">
+				<button
+					class="vis-paa-knap"
+					type="button"
+					onclick={() => aabnVaelgDageDialog('note')}
+					disabled={gemmer || !dag.noteFraLinn.trim()}
+					title={!dag.noteFraLinn.trim() ? 'Skriv noten foerst' : ''}
+				>
+					Vis ogsaa paa dage...
+				</button>
+				{#if dag.noteGrupperingId}
+					<button
+						class="vis-paa-knap ghost"
+						type="button"
+						onclick={fjernNoteFraGruppe}
+						disabled={gemmer}
+					>
+						Fjern note
+					</button>
+				{/if}
+			</div>
 		</div>
 
 		<div class="form-card">
@@ -268,9 +667,18 @@
 			{/if}
 
 			{#each dag.lektioner as l (l.id)}
-				<article class="lektion-edit">
+				{@const dageMed = l.grupperingId ? lektionGruppeDage.get(l.grupperingId) ?? [] : []}
+				{@const erGrupperet = dageMed.length > 1}
+				<article class="lektion-edit" class:grupperet={erGrupperet}>
 					<header class="lektion-edit-head">
-						<div class="lektion-edit-num">Lektion</div>
+						<div class="lektion-edit-num">
+							Lektion
+							{#if erGrupperet}
+								<span class="gruppe-chip" title={`Ligger paa dage: ${dageMed.join(', ')}`}>
+									🔗 {dageMed.length} dage
+								</span>
+							{/if}
+						</div>
 						<button
 							class="ikon-knap fare"
 							type="button"
@@ -419,6 +827,18 @@
 							Vises i stedet for video-tjenestens auto-thumbnail. Maks 3 MB.
 						</div>
 					</div>
+
+					<div class="vis-paa-rad">
+						<button
+							class="vis-paa-knap"
+							type="button"
+							onclick={() => aabnVaelgDageDialog(`lektion:${l.id}`)}
+							disabled={gemmer || !l.titel.trim()}
+							title={!l.titel.trim() ? 'Skriv titel foerst' : ''}
+						>
+							Vis ogsaa paa dage...
+						</button>
+					</div>
 				</article>
 			{/each}
 
@@ -474,6 +894,32 @@
 		</div>
 	{/if}
 </div>
+
+{#if dialogMaal && forlob}
+	<VaelgDageDialog
+		startDato={forlob.startDato.toDate().toISOString()}
+		antalDage={forlob.antalDage}
+		nuvaerendeDag={dagNummer}
+		valgteDageStart={dialogStartDage}
+		titel={dialogMaal === 'note' ? 'Vis noten paa dage' : 'Vis lektion paa dage'}
+		onGem={haandterVaelgDage}
+		onAnnuller={() => (dialogMaal = null)}
+	/>
+{/if}
+
+{#if gruppeBekraeft}
+	<RedigerGruppeDialog
+		titel={gruppeBekraeft.titel}
+		beskrivelse={gruppeBekraeft.beskrivelse}
+		antalDage={gruppeBekraeft.antalDage}
+		alleLabel={gruppeBekraeft.alleLabel}
+		denneLabel={gruppeBekraeft.denneLabel}
+		erFarlig={gruppeBekraeft.erFarlig}
+		onAlle={gruppeBekraeft.paaAlle}
+		onDenne={gruppeBekraeft.paaDenne}
+		onAnnuller={() => (gruppeBekraeft = null)}
+	/>
+{/if}
 
 <style>
 	.page {
@@ -583,10 +1029,16 @@
 		border-radius: 12px;
 	}
 
+	.lektion-edit.grupperet {
+		border-color: var(--terra2);
+		box-shadow: 0 0 0 1px var(--tdim) inset;
+	}
+
 	.lektion-edit-head {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		gap: 8px;
 	}
 
 	.lektion-edit-num {
@@ -594,6 +1046,58 @@
 		font-weight: 600;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
+		color: var(--text3);
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.gruppe-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: none;
+		color: var(--terra);
+		background: var(--tdim);
+		padding: 3px 8px;
+		border-radius: 99px;
+		cursor: help;
+	}
+
+	.vis-paa-rad {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+		margin-top: 4px;
+	}
+
+	.vis-paa-knap {
+		padding: 7px 12px;
+		font-family: var(--ff-b);
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 99px;
+		color: var(--terra);
+		cursor: pointer;
+		touch-action: manipulation;
+	}
+
+	.vis-paa-knap:hover:not(:disabled) {
+		border-color: var(--terra);
+	}
+
+	.vis-paa-knap:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.vis-paa-knap.ghost {
 		color: var(--text3);
 	}
 
