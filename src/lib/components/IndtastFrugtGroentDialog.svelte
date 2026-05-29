@@ -1,18 +1,16 @@
 <script lang="ts">
 	// Indtast-modal til frugt/groent-challenge. Klienten:
-	// 1. Soeger eller bladrer i kategoriserede planter (Linns 'Planter til
-	//    tarmmikrobiom'-liste + alle relevante foedevarer fra Mad-modulets database)
+	// 1. Soeger eller bladrer i Linns kategoriserede plante-liste fra
+	//    'Planter til tarmmikrobiom'-PDF'en
 	// 2. Hver tilfoejelse vises som chip — kan fjernes
 	// 3. Trykker 'Gem' → kalderen faar ansvar for at gemme + aabne stillingen
-	import { onMount } from 'svelte';
-	import {
-		PLANTE_KATEGORIER,
-		CAT_TIL_PLANTE_KATEGORI,
-		type PlanteKategori
-	} from '$lib/content/challenge';
+	//
+	// Vi merger IKKE laengere fra Mad-modulets foedevaredatabase. Den indeholder
+	// for mange variants ('Spinat, frisk' + 'Spinat, frossen hakket' osv) og
+	// forarbejdede ting (juice, pesto). Klienten kan i stedet bruge fritekst-
+	// feltet hvis hun spiser noget der ikke er paa listen.
+	import { PLANTE_KATEGORIER, type PlanteKategori } from '$lib/content/challenge';
 	import { normaliserFoedevareListe } from '$lib/firestore/challenge';
-	import { hentAlleFodevarer } from '$lib/firestore/kost';
-	import type { Fodevare } from '$lib/content/kost';
 
 	interface Props {
 		startListe: string[];
@@ -29,42 +27,8 @@
 	});
 
 	let soegeOrd = $state('');
-	let databaseFoedevarer = $state<Fodevare[]>([]);
 
-	onMount(async () => {
-		try {
-			// hentAlleFodevarer er cached pr session, saa anden gang er oeblikkelig.
-			databaseFoedevarer = await hentAlleFodevarer();
-		} catch (e) {
-			console.warn('Kunne ikke hente foedevare-database:', e);
-		}
-	});
-
-	// Saml den fulde kategoriserede liste: Linns PDF-items + database-items
-	// flettet ind under deres rette kategori (case-insensitivt deduplikering).
-	const kategoriseretListe = $derived.by<PlanteKategori[]>(() => {
-		const ud = PLANTE_KATEGORIER.map((k) => ({
-			id: k.id,
-			label: k.label,
-			items: [...k.items]
-		}));
-		const indexByKategori = new Map<string, PlanteKategori>(ud.map((k) => [k.id, k]));
-
-		for (const f of databaseFoedevarer) {
-			const kategoriId = CAT_TIL_PLANTE_KATEGORI[f.cat];
-			if (!kategoriId) continue;
-			const kat = indexByKategori.get(kategoriId);
-			if (!kat) continue;
-			// Dedup case-insensitivt
-			const findes = kat.items.some((i) => i.toLowerCase() === f.name.toLowerCase());
-			if (!findes) kat.items.push(f.name);
-		}
-		// Sortér hver kategori alfabetisk
-		for (const k of ud) {
-			k.items.sort((a, b) => a.localeCompare(b, 'da'));
-		}
-		return ud;
-	});
+	const kategoriseretListe = $derived<PlanteKategori[]>(PLANTE_KATEGORIER);
 
 	const valgteLowercase = $derived(new Set(valgte.map((v) => v.toLowerCase())));
 

@@ -155,32 +155,6 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 		]
 	},
 	{
-		id: 'krydderier',
-		label: 'Krydderier og urter',
-		items: [
-			'Gurkemeje',
-			'Kanel',
-			'Ingefær',
-			'Spidskommen',
-			'Koriander (frø)',
-			'Koriander (frisk)',
-			'Persille',
-			'Dild',
-			'Basilikum',
-			'Timian',
-			'Rosmarin',
-			'Mynte',
-			'Oregano',
-			'Kardemomme',
-			'Muskatnød',
-			'Sort peber',
-			'Chili',
-			'Paprika',
-			'Purløg',
-			'Estragon'
-		]
-	},
-	{
 		id: 'korn',
 		label: 'Korn og pseudokorn',
 		items: [
@@ -210,19 +184,6 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 		]
 	}
 ];
-
-/**
- * Mapping fra Mad-modulets Fodevare.cat-felt til vores PlanteKategori-id.
- * Database-foedevarer flettes ind under den matchende kategori i dialogen.
- */
-export const CAT_TIL_PLANTE_KATEGORI: Record<string, string> = {
-	gront: 'groent',
-	baer: 'frugt',
-	baelg: 'baelg',
-	noedder: 'noedder',
-	korn: 'korn'
-	// 'mejeri', 'koed', 'fisk', 'prot', 'drikke', 'andet' indgaar ikke som planter.
-};
 
 /** Flat liste over alle planter — bruges som soegegrundlag. */
 export const ALLE_PLANTER: string[] = PLANTE_KATEGORIER.flatMap((k) => k.items);
