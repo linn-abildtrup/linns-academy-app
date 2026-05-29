@@ -99,7 +99,10 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Iceberg',
 			'Romainesalat',
 			'Bladsalat',
-			'Feldsalat'
+			'Feldsalat',
+			// Yderligere groentsager
+			'Broccolini',
+			'Bønnespirer'
 		]
 	},
 	{
