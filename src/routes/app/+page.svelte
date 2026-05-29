@@ -18,11 +18,11 @@
 		tomForlobDag
 	} from '$lib/content/forlob';
 	import { hentAllowedEmail, hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
+	import { hentChallenges } from '$lib/firestore/challenge';
 	import type { Challenge, ChallengeIndtastning } from '$lib/content/challenge';
 	import { beregnStilling, challengeDisplayNavn } from '$lib/content/challenge';
 	import {
 		gemMinIndtastning as gemChallengeIndtastning,
-		hentAktivChallenge,
 		hentAlleIndtastninger as hentAlleChallengeIndtastninger,
 		hentMinIndtastning as hentMinChallengeIndtastning
 	} from '$lib/firestore/challenge';
@@ -106,7 +106,7 @@
 
 	let forlob = $state<Forlob | null>(null);
 	let forlobsdage = $state<ForlobDag[]>([]);
-	let aktivChallenge = $state<Challenge | null>(null);
+	let alleChallenges = $state<Challenge[]>([]);
 	let visChallengeDialog = $state(false);
 	let visChallengeStilling = $state(false);
 	let challengeIndtastninger = $state<ChallengeIndtastning[]>([]);
@@ -1005,17 +1005,14 @@
 			vaneprogramDage = vaneDage;
 			adminVaner = admVaner;
 
-			// Hent aktiv challenge hvis denne er Kropsro
+			// Hent alle challenges hvis denne er Kropsro. Den aktive findes
+			// reaktivt via $derived saa preview-mode ogsaa virker for
+			// fremtidige challenges.
 			if (aktivt && userDoc?.activeProduct === KROPSRO_PRODUCT_ID) {
 				try {
-					const c = await hentAktivChallenge(aktivt.id);
-					aktivChallenge = c;
-					if (c && user) {
-						const min = await hentMinChallengeIndtastning(aktivt.id, c.id, user.uid);
-						minChallengeIndtastning = min?.foedevarer ?? [];
-					}
+					alleChallenges = await hentChallenges(aktivt.id);
 				} catch (e) {
-					console.warn('Kunne ikke hente challenge:', e);
+					console.warn('Kunne ikke hente challenges:', e);
 				}
 			}
 		} catch (e) {
@@ -1076,6 +1073,44 @@
 			challengeIndtastninger = [];
 		}
 	}
+
+	// Effektiv challenge-dato: i preview-mode bruges previewDag (forskudt fra
+	// forloebets startDato), ellers den faktiske aktuelle dato.
+	const effektivChallengeDatoMs = $derived.by(() => {
+		if (iPreviewMode && previewDag !== null && forlob) {
+			const startMs = forlob.startDato?.toMillis?.() ?? 0;
+			return startMs + previewDag * 24 * 60 * 60 * 1000;
+		}
+		return Date.now();
+	});
+
+	const aktivChallenge = $derived.by<Challenge | null>(() => {
+		const nu = effektivChallengeDatoMs;
+		for (const c of alleChallenges) {
+			if (!c.aktiv) continue;
+			const startMs = c.startDato?.toMillis?.() ?? 0;
+			const slutMs = c.slutDato?.toMillis?.() ?? 0;
+			const slutMidnat = slutMs + (24 * 60 * 60 * 1000 - 1);
+			if (nu >= startMs && nu <= slutMidnat) return c;
+		}
+		return null;
+	});
+
+	// Hent klientens egen indtastning naar aktiv challenge skifter
+	$effect(() => {
+		const c = aktivChallenge;
+		const u = user;
+		const f = forlob;
+		if (!c || !u || !f) {
+			minChallengeIndtastning = [];
+			return;
+		}
+		hentMinChallengeIndtastning(f.id, c.id, u.uid)
+			.then((min) => {
+				minChallengeIndtastning = min?.foedevarer ?? [];
+			})
+			.catch((e) => console.warn('Kunne ikke hente min indtastning:', e));
+	});
 
 	const challengeStillingRaekker = $derived.by(() => {
 		if (!aktivChallenge) return [];
