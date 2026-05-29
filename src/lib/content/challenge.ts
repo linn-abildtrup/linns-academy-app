@@ -95,7 +95,11 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Rucola',
 			'Rabarber',
 			'Majs',
-			'Salat'
+			// Forskellige salater
+			'Iceberg',
+			'Romainesalat',
+			'Bladsalat',
+			'Feldsalat'
 		]
 	},
 	{
