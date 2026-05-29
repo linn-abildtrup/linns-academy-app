@@ -34,6 +34,8 @@ scripts/service-account-key.json
 # Data-filer til seeding (kan downloades igen, behøver ikke commit)
 scripts/*.xlsx
 scripts/*.csv
+# CSV-arbejdsfiler i root (84dage_*.csv mv) — bruges lokalt af Linn til import
+/*.csv
 
 # Claude Code lokale settings
 /.claude
