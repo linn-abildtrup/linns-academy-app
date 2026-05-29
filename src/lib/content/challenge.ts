@@ -102,7 +102,23 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Feldsalat',
 			// Yderligere groentsager
 			'Broccolini',
-			'Bønnespirer'
+			'Bønnespirer',
+			// Bladgroent og urter
+			'Mangold',
+			'Brøndkarse',
+			'Karse',
+			'Endivie',
+			'Cikorie',
+			// Loeg og rodfrugter
+			'Skalotteløg',
+			'Jordskok',
+			'Knoldselleri',
+			'Persillerod',
+			'Kålrabi',
+			// Svampe
+			'Shiitake',
+			'Østershatte',
+			'Kantareller'
 		]
 	},
 	{
@@ -148,7 +164,16 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Kirsebær',
 			'Abrikoser',
 			'Ferskner',
-			'Nektariner'
+			'Nektariner',
+			'Mirabeller',
+			// Citrusfrugt
+			'Klementiner',
+			'Mandariner',
+			// Tropiske og andre
+			'Papaya',
+			'Passionsfrugt',
+			'Litchi',
+			'Sharonfrugt'
 		]
 	},
 	{
@@ -168,7 +193,15 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Mungbønner',
 			'Cannellinibønner',
 			// Fra fødevaredatabasen
-			'Sojabønner'
+			'Sojabønner',
+			// Yderligere boenner og linser
+			'Aduki bønner',
+			'Pinto bønner',
+			'Lima bønner',
+			'Sorte øjne bønner',
+			'Borlotti bønner',
+			'Brune linser',
+			'Belugalinser'
 		]
 	},
 	{
@@ -188,7 +221,13 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Pinjekerner',
 			'Paranødder',
 			'Pekannødder',
-			'Macadamianødder'
+			'Macadamianødder',
+			// Yderligere noedder og froe
+			'Jordnødder',
+			'Pistacie',
+			'Birkes',
+			'Sennepsfrø',
+			'Kokosnød'
 		]
 	},
 	{
@@ -207,7 +246,14 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Havreris',
 			// Fra fødevaredatabasen
 			'Brune ris',
-			'Basmati ris'
+			'Basmati ris',
+			// Yderligere ris og korn
+			'Vild ris',
+			'Sort ris',
+			'Jasminris',
+			'Teff',
+			'Farro',
+			'Couscous'
 		]
 	},
 	{
@@ -220,7 +266,14 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Miso',
 			'Surkål',
 			'Yoghurt med levende kulturer',
-			'Tempeh'
+			'Tempeh',
+			// Yderligere fermenterede ting
+			'Natto',
+			'Skyr',
+			'Ymer',
+			'A38',
+			'Filmjölk',
+			'Tjukkmelk'
 		]
 	}
 ];
