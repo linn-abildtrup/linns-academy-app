@@ -87,7 +87,15 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Pastinak',
 			'Hokkaido',
 			'Butternut squash',
-			'Pak choi'
+			'Pak choi',
+			// Fra fødevaredatabasen — kun rå grundnavne, ikke afarter
+			'Kartoffel',
+			'Forårsløg',
+			'Sukkerærter',
+			'Rucola',
+			'Rabarber',
+			'Majs',
+			'Salat'
 		]
 	},
 	{
@@ -113,7 +121,10 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Ananas',
 			'Vindruer',
 			'Vandmelon',
-			'Brombær'
+			'Brombær',
+			// Fra fødevaredatabasen
+			'Honningmelon',
+			'Rosiner'
 		]
 	},
 	{
@@ -131,7 +142,9 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Snapærter',
 			'Gule ærter',
 			'Mungbønner',
-			'Cannellinibønner'
+			'Cannellinibønner',
+			// Fra fødevaredatabasen
+			'Sojabønner'
 		]
 	},
 	{
@@ -167,7 +180,10 @@ export const PLANTE_KATEGORIER: PlanteKategori[] = [
 			'Bulgur',
 			'Hirse',
 			'Amaranth',
-			'Havreris'
+			'Havreris',
+			// Fra fødevaredatabasen
+			'Brune ris',
+			'Basmati ris'
 		]
 	},
 	{
