@@ -59,6 +59,23 @@
 		return ord;
 	});
 
+	// Hvis hun soeger praecis det navn hun allerede har, vis beskeden.
+	// Match enten via 1) fritekst hun lige har tilfoejet eller 2) ethvert
+	// item fra basis-listen hvor navnet starter med soegeordet.
+	const alleredeIndtastet = $derived.by(() => {
+		const ord = soegeOrd.trim().toLowerCase();
+		if (!ord) return null;
+		// Direkte hit paa allerede valgt plante
+		if (valgteLowercase.has(ord)) {
+			return valgte.find((v) => v.toLowerCase() === ord) ?? null;
+		}
+		// Hvis hun skriver praecis et basis-navn der allerede er valgt
+		for (const v of valgte) {
+			if (v.toLowerCase().startsWith(ord) && ord.length >= 3) return v;
+		}
+		return null;
+	});
+
 	function tilfoej(navn: string) {
 		const ny = normaliserFoedevareListe([...valgte, navn]);
 		valgte = ny;
@@ -122,6 +139,8 @@
 		<div class="liste-omraade">
 			{#if soegeOrd.trim() === ''}
 				<div class="tom">Start med at søge på en plante du har spist — fx "æble" eller "broccoli".</div>
+			{:else if alleredeIndtastet}
+				<div class="advarsel">Du har allerede indtastet denne plante ({alleredeIndtastet}).</div>
 			{:else}
 				{#if visFritekstForslag}
 					<button
@@ -373,6 +392,18 @@
 		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text3);
 		font-style: italic;
+	}
+
+	.advarsel {
+		margin: 14px 0;
+		padding: 12px 14px;
+		background: var(--tdim);
+		border: 1px solid var(--terra2);
+		border-radius: 10px;
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--terra);
+		font-weight: 600;
+		text-align: center;
 	}
 
 	.dialog-foot {
