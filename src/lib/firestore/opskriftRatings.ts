@@ -5,6 +5,7 @@
 
 import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { db } from '$lib/firebase';
+import { kanSkrive } from '$lib/viewOnlyState.svelte';
 
 export interface OpskriftRating {
 	stjerner: number;
@@ -37,7 +38,8 @@ export async function gemMinRating(
 	opskriftId: string,
 	uid: string,
 	stjerner: number
-): Promise<{ ratingSum: number; ratingCount: number; ratingAvg: number }> {
+): Promise<{ ratingSum: number; ratingCount: number; ratingAvg: number } | null> {
+	if (!kanSkrive()) return null;
 	if (stjerner < 1 || stjerner > 5 || !Number.isInteger(stjerner)) {
 		throw new Error('stjerner skal vaere et heltal 1-5');
 	}

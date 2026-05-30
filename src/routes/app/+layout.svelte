@@ -15,17 +15,52 @@
 	import Loading from '$lib/components/Loading.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 	import AdminKlientBanner from '$lib/components/AdminKlientBanner.svelte';
+	import AdminImpersonateBanner from '$lib/components/AdminImpersonateBanner.svelte';
+	import ReadOnlyToast from '$lib/components/ReadOnlyToast.svelte';
 	import IngenAdgangScreen from '$lib/components/IngenAdgangScreen.svelte';
 	import { ryAdminKlientMode } from '$lib/userDoc';
 	import { setAktivKlientForlobId } from '$lib/state/adminKlientState.svelte';
 	import { harIngenAdgang } from '$lib/utils/userAdgang';
 	import { isAdmin } from '$lib/admin';
+	import { forladImpersonate, impersonateUid } from '$lib/viewOnlyState.svelte';
 
 	let { children } = $props();
 
 	let user = $state<User | null>(null);
 	let userDoc = $state<UserDoc | null>(null);
 	let loading = $state(true);
+
+	// Impersonate-mode: hvis admin har sat impersonateUid i localStorage,
+	// hentes klientens userDoc og bruges i stedet for admin's egen i hele
+	// app'en. Skrive-handlinger blokeres centralt via safeWrite()-wrapper.
+	let impersonatedDoc = $state<UserDoc | null>(null);
+	const aktivImpersonateUid = $derived(impersonateUid());
+	const erIImpersonate = $derived(aktivImpersonateUid !== null);
+	const effektivAuthUid = $derived(aktivImpersonateUid ?? user?.uid ?? null);
+
+	// Hent klientens userDoc naar impersonate-uid'en aendrer sig
+	$effect(() => {
+		const uid = aktivImpersonateUid;
+		if (!uid || !isAdmin(user)) {
+			impersonatedDoc = null;
+			return;
+		}
+		getUserDoc(uid)
+			.then((d) => {
+				impersonatedDoc = d ?? null;
+			})
+			.catch((e) => {
+				console.warn('Kunne ikke hente impersonate-userDoc:', e);
+				impersonatedDoc = null;
+			});
+	});
+
+	function forladImpersonateLokalt() {
+		forladImpersonate();
+		impersonatedDoc = null;
+		// Refresh siden saa alle data-laesninger genstartes med admin's egen uid
+		if (typeof window !== 'undefined') window.location.href = '/app';
+	}
 
 	// Når admin er i klient-mode, override'r vi adgangs-felterne så
 	// klient-modulerne reagerer som om admin var den valgte klient-type.
@@ -113,9 +148,33 @@
 		return d;
 	}
 
-	// Gør userDoc tilgængeligt for alle undersider via Svelte context
-	setContext('userDoc', () => effektivUserDoc(userDoc));
-	setContext('user', () => user);
+	// Gør userDoc tilgængeligt for alle undersider via Svelte context.
+	// I impersonate-mode bruger vi klientens userDoc i stedet for admin's
+	// egen — alle data-laesninger peges saaledes paa klientens data.
+	setContext('userDoc', () => {
+		if (erIImpersonate && impersonatedDoc) return effektivUserDoc(impersonatedDoc);
+		return effektivUserDoc(userDoc);
+	});
+	// User-context returnerer admin's User-objekt med en patched uid i
+	// impersonate-mode — saa alle eksisterende user.uid-laesninger automatisk
+	// peger paa klientens data uden refactor af komponenter. Firebase Auth's
+	// interne uid forbliver admin's egen saa auth-handling (token-refresh,
+	// sign-out) er uaendret.
+	setContext('user', () => {
+		if (erIImpersonate && aktivImpersonateUid && user) {
+			return new Proxy(user, {
+				get(target, prop) {
+					if (prop === 'uid') return aktivImpersonateUid;
+					return Reflect.get(target, prop);
+				}
+			}) as User;
+		}
+		return user;
+	});
+	// Effektiv uid bruges af alle data-laesninger der laeser fra
+	// /users/{uid}/... — i impersonate-mode er det klientens uid, ellers
+	// admin's egen auth.uid.
+	setContext('effektivUid', () => effektivAuthUid);
 	// Eksponér adminKlientForlobId så firestore-helpers kan scope deres
 	// læs/skriv-paths. Returnerer null når admin er i normal admin-mode
 	// eller når brugeren er en almindelig klient.
@@ -201,7 +260,12 @@
 	<IngenAdgangScreen {userDoc} />
 {:else}
 	<div class="app-shell">
-		{#if userDoc?.adminKlientMode || userDoc?.adminKlientForlobId}
+		{#if erIImpersonate && impersonatedDoc}
+			<AdminImpersonateBanner
+				klientNavn={impersonatedDoc.firstName || 'klient'}
+				onForlad={forladImpersonateLokalt}
+			/>
+		{:else if userDoc?.adminKlientMode || userDoc?.adminKlientForlobId}
 			<AdminKlientBanner
 				mode={userDoc.adminKlientMode}
 				forlobId={userDoc.adminKlientForlobId}
@@ -215,6 +279,7 @@
 		<div class="tabbar-wrap">
 			<TabBar />
 		</div>
+		<ReadOnlyToast />
 	</div>
 {/if}
 

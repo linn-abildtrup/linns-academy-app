@@ -19,6 +19,8 @@
 		tilfoejEnKunde,
 		type ImportResultat
 	} from '$lib/firestore/forlob';
+	import { hentBrugerePaaForlob } from '$lib/firestore/challenge';
+	import { startImpersonate } from '$lib/viewOnlyState.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const forlobId = $derived(page.params.id ?? '');
@@ -27,6 +29,11 @@
 	let emails = $state<AllowedEmail[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
+
+	// Email→uid mapping bygges fra users-query saa admin kan klikke
+	// 'Se app som hende' pr klient.
+	let emailTilUid = $state<Map<string, string>>(new Map());
+	let impersonateBekraeft = $state<{ uid: string; navn: string } | null>(null);
 
 	let formNavn = $state('');
 	let formStartDato = $state('');
@@ -140,12 +147,38 @@
 			formType = f.type ?? 'kickstart';
 
 			emails = await hentAllowedEmailsForForlob(forlobId);
+			// Byg email→uid mapping fra brugere registreret paa forl0bet
+			try {
+				const brugere = await hentBrugerePaaForlob(forlobId);
+				const m = new Map<string, string>();
+				for (const b of brugere) {
+					if (b.email) m.set(b.email.toLowerCase(), b.uid);
+				}
+				emailTilUid = m;
+			} catch (e) {
+				console.warn('Kunne ikke hente uid-mapping:', e);
+			}
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente forløbet.';
 		} finally {
 			loading = false;
 		}
+	}
+
+	function aabnImpersonateDialog(email: string, fornavn: string, efternavn: string) {
+		const uid = emailTilUid.get(email.toLowerCase());
+		if (!uid) return;
+		const navn = `${fornavn ?? ''} ${efternavn ?? ''}`.trim() || email;
+		impersonateBekraeft = { uid, navn };
+	}
+
+	function bekraeftImpersonate() {
+		if (!impersonateBekraeft) return;
+		startImpersonate(impersonateBekraeft.uid);
+		impersonateBekraeft = null;
+		// Naviger til app-forsiden saa admin straks ser klient-viewet
+		if (typeof window !== 'undefined') window.location.href = '/app';
 	}
 
 	async function gem() {
@@ -603,6 +636,7 @@
 			{:else}
 				<div class="emails-liste">
 					{#each filtreredeEmails as e (e.email)}
+						{@const harUid = emailTilUid.has(e.email.toLowerCase())}
 						<div class="email-row">
 							<div class="email-info">
 								<div class="email-adresse">{e.email}</div>
@@ -610,6 +644,16 @@
 									<div class="email-navn">{e.firstName} {e.lastName}</div>
 								{/if}
 							</div>
+							{#if harUid}
+								<button
+									type="button"
+									class="se-som-knap"
+									onclick={() => aabnImpersonateDialog(e.email, e.firstName ?? '', e.lastName ?? '')}
+									title="Se app'en som denne kunde (read-only)"
+								>
+									👁 Se som
+								</button>
+							{/if}
 							<span class="badge {e.status === 'registered' ? 'aktiv' : 'inaktiv'}">
 								{statusLabel(e.status)}
 							</span>
@@ -645,6 +689,31 @@
 		</div>
 	{/if}
 </div>
+
+{#if impersonateBekraeft}
+	<div class="impersonate-overlay" role="dialog" aria-modal="true">
+		<div class="impersonate-dialog">
+			<h2 class="impersonate-titel">Se app'en som {impersonateBekraeft.navn}?</h2>
+			<p class="impersonate-tekst">
+				Du går ind på app'en og ser den med <strong>{impersonateBekraeft.navn}</strong>s
+				data. Det er kun læseadgang — du kan klikke alt, men intet bliver gemt på hendes
+				konto. Lukker du browseren, forlader du automatisk view-mode.
+			</p>
+			<div class="impersonate-knapper">
+				<button
+					class="impersonate-knap ghost"
+					type="button"
+					onclick={() => (impersonateBekraeft = null)}
+				>
+					Annuller
+				</button>
+				<button class="impersonate-knap primary" type="button" onclick={bekraeftImpersonate}>
+					Ja, vis app'en
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.page {
@@ -1146,6 +1215,86 @@
 	.badge.inaktiv {
 		background: var(--bg2);
 		color: var(--text3);
+	}
+
+	.se-som-knap {
+		background: var(--sage);
+		color: #fff;
+		border: none;
+		font-family: var(--ff-b);
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		padding: 5px 10px;
+		border-radius: 99px;
+		cursor: pointer;
+		touch-action: manipulation;
+		flex-shrink: 0;
+	}
+
+	.se-som-knap:hover {
+		filter: brightness(1.05);
+	}
+
+	.impersonate-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 16px;
+		z-index: 1100;
+	}
+
+	.impersonate-dialog {
+		background: var(--white);
+		border-radius: 14px;
+		width: 100%;
+		max-width: 440px;
+		padding: 20px;
+	}
+
+	.impersonate-titel {
+		margin: 0 0 10px;
+		font-family: var(--ff-d);
+		font-size: calc(18px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.impersonate-tekst {
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.5;
+		margin: 0 0 18px;
+	}
+
+	.impersonate-knapper {
+		display: grid;
+		grid-template-columns: 1fr 1.4fr;
+		gap: 10px;
+	}
+
+	.impersonate-knap {
+		padding: 11px;
+		font-family: var(--ff-b);
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		border-radius: 10px;
+		cursor: pointer;
+		touch-action: manipulation;
+		border: 1px solid var(--border);
+	}
+
+	.impersonate-knap.ghost {
+		background: var(--white);
+		color: var(--text2);
+	}
+
+	.impersonate-knap.primary {
+		background: var(--terra);
+		color: #fff;
+		border-color: var(--terra);
 	}
 
 	.slet-omraade {

@@ -21,6 +21,7 @@ import { db } from '$lib/firebase';
 import type { FavoritMaaltid, Fodevare, GemtMaaltid, Kategori } from '$lib/content/kost';
 import { POPULAERE_FODEVARER } from '$lib/content/populaere-fodevarer.generated';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
+import { kanSkrive } from '$lib/viewOnlyState.svelte';
 
 /**
  * Returnerer Firestore-collection for brugerens måltider med automatisk
@@ -260,6 +261,7 @@ export async function gemMaaltid(
 	uid: string,
 	maaltid: Omit<GemtMaaltid, 'id'>
 ): Promise<string> {
+	if (!kanSkrive()) return '';
 	const ref = doc(maaltiderCollection(uid));
 	await setDoc(ref, {
 		...maaltid,
@@ -308,6 +310,7 @@ export async function opdaterMaaltid(
 	mealId: string,
 	data: Omit<GemtMaaltid, 'id'>
 ): Promise<void> {
+	if (!kanSkrive()) return;
 	await setDoc(maaltidDoc(uid, mealId), { ...data, opdateret: serverTimestamp() }, { merge: true });
 }
 
@@ -315,6 +318,7 @@ export async function opdaterMaaltid(
  * Sletter et gemt måltid.
  */
 export async function sletMaaltid(uid: string, mealId: string): Promise<void> {
+	if (!kanSkrive()) return;
 	await deleteDoc(maaltidDoc(uid, mealId));
 }
 

@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { TraeningHistorikEntry } from '$lib/content/traeningHistorik';
+import { kanSkrive } from '$lib/viewOnlyState.svelte';
 
 function historikCol(uid: string) {
 	return collection(db, 'users', uid, 'traeningHistorik');
@@ -25,6 +26,7 @@ export async function logTraening(
 	uid: string,
 	entry: Omit<TraeningHistorikEntry, 'id'>
 ): Promise<void> {
+	if (!kanSkrive()) return;
 	await addDoc(historikCol(uid), entry);
 }
 

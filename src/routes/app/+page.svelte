@@ -18,6 +18,7 @@
 		tomForlobDag
 	} from '$lib/content/forlob';
 	import { hentAllowedEmail, hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
+	import { kanSkrive } from '$lib/viewOnlyState.svelte';
 	import { hentChallenges } from '$lib/firestore/challenge';
 	import type { Challenge, ChallengeIndtastning } from '$lib/content/challenge';
 	import { beregnStilling, challengeDisplayNavn } from '$lib/content/challenge';
@@ -429,6 +430,10 @@
 	async function gemBuddyOensker(oensker: boolean) {
 		const u = user;
 		if (!u || gemmerBuddy) return;
+		if (!kanSkrive()) {
+			visBuddyModal = false;
+			return;
+		}
 		gemmerBuddy = true;
 		try {
 			await updateDoc(doc_ref(db, 'users', u.uid), { kropsroBuddyOensker: oensker });
@@ -443,6 +448,10 @@
 	async function gemFacebookSvar(erInde: boolean) {
 		const u = user;
 		if (!u || gemmerFacebook) return;
+		if (!kanSkrive()) {
+			visFacebookModal = false;
+			return;
+		}
 		gemmerFacebook = true;
 		try {
 			await updateDoc(doc_ref(db, 'users', u.uid), {
@@ -459,6 +468,10 @@
 	async function gemVariant(variant: 'kettlebell' | 'no_kettlebell') {
 		const u = user;
 		if (!u || gemmerVariant) return;
+		if (!kanSkrive()) {
+			visVariantModal = false;
+			return;
+		}
 		gemmerVariant = true;
 		try {
 			await updateDoc(doc_ref(db, 'users', u.uid), { mikrotraeningVariant: variant });

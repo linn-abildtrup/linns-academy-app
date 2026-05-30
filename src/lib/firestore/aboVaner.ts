@@ -28,6 +28,7 @@ import type {
 	ValgtVane
 } from '$lib/content/aboVaner';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
+import { kanSkrive } from '$lib/viewOnlyState.svelte';
 
 type ProduktType = 'basis' | 'premium';
 
@@ -140,6 +141,7 @@ export async function gemAboVanedag(
 	uid: string,
 	entry: Omit<AboVanedagEntry, 'savedAt'>
 ): Promise<void> {
+	if (!kanSkrive()) return;
 	await setDoc(
 		vanedagDoc(uid, entry.dato),
 		{ ...entry, savedAt: serverTimestamp() },
