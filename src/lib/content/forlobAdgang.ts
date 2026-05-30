@@ -38,6 +38,10 @@ export interface Forlob {
 	aktiv: boolean;
 	oprettet: Timestamp;
 	type?: ForlobType;
+	// Admin-laas: forhindrer at admin uforvarende navigerer ind paa et
+	// forl0b og redigerer det. Paavirker IKKE klienterne — paavirker kun
+	// admin-listens klikbarhed.
+	laast?: boolean;
 }
 
 export type AllowedEmailStatus = 'invited' | 'registered';

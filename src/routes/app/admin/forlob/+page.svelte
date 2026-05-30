@@ -4,6 +4,7 @@
 	import { Timestamp } from 'firebase/firestore';
 	import type { Forlob, ForlobType } from '$lib/content/forlobAdgang';
 	import {
+		gemForlob,
 		hentAlleForlob,
 		kopierForlobIndhold,
 		opretForlob
@@ -13,6 +14,13 @@
 	let forlob = $state<Forlob[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
+
+	// Laas-confirm-dialog: hvilket forl0b er ved at blive toggled, og hvad er
+	// next state.
+	let laasBekraeft = $state<{ forlobId: string; navn: string; nyTilstand: boolean } | null>(
+		null
+	);
+	let toggler = $state(false);
 
 	let viserForm = $state(false);
 	let formNavn = $state('');
@@ -125,6 +133,40 @@
 		if (!t || typeof t.toDate !== 'function') return '—';
 		const d = t.toDate();
 		return `${d.getDate()}/${d.getMonth() + 1}-${d.getFullYear()}`;
+	}
+
+	function aabnLaasDialog(f: Forlob, e: Event) {
+		e.preventDefault();
+		e.stopPropagation();
+		laasBekraeft = {
+			forlobId: f.id,
+			navn: f.navn,
+			nyTilstand: !f.laast
+		};
+	}
+
+	async function bekraeftLaas() {
+		if (!laasBekraeft || toggler) return;
+		toggler = true;
+		try {
+			await gemForlob(laasBekraeft.forlobId, { laast: laasBekraeft.nyTilstand });
+			// Opdater in-memory
+			forlob = forlob.map((f) =>
+				f.id === laasBekraeft!.forlobId ? { ...f, laast: laasBekraeft!.nyTilstand } : f
+			);
+			laasBekraeft = null;
+		} catch (e) {
+			console.error(e);
+			fejl = 'Kunne ikke ændre låsens tilstand.';
+		} finally {
+			toggler = false;
+		}
+	}
+
+	function blokerKlikHvisLaast(f: Forlob, e: Event) {
+		if (f.laast) {
+			e.preventDefault();
+		}
 	}
 </script>
 
@@ -261,7 +303,12 @@
 		{:else}
 			<div class="forlob-liste">
 				{#each forlob as f (f.id)}
-					<a class="forlob-row" href="/app/admin/forlob/{f.id}">
+					<a
+						class="forlob-row"
+						class:laast={f.laast}
+						href="/app/admin/forlob/{f.id}"
+						onclick={(e) => blokerKlikHvisLaast(f, e)}
+					>
 						<div class="forlob-icon" class:inaktiv={!f.aktiv}>
 							<Icon name="cal" size={16} color="#fff" />
 						</div>
@@ -278,6 +325,16 @@
 								Start {formatDato(f.startDato)} · {f.antalDage} dage
 							</div>
 						</div>
+						<button
+							type="button"
+							class="laas-knap"
+							class:er-laast={f.laast}
+							onclick={(e) => aabnLaasDialog(f, e)}
+							aria-label={f.laast ? 'Forløb er låst — tryk for at åbne' : 'Forløb er åbent — tryk for at låse'}
+							title={f.laast ? 'Låst' : 'Åben'}
+						>
+							<Icon name={f.laast ? 'lock' : 'unlock'} size={16} color="#fff" />
+						</button>
 						<Icon name="chevron-r" size={14} color="var(--text3)" />
 					</a>
 				{/each}
@@ -285,6 +342,36 @@
 		{/if}
 	</div>
 </div>
+
+{#if laasBekraeft}
+	<div class="overlay" role="dialog" aria-modal="true">
+		<div class="dialog">
+			<h2 class="dialog-titel">
+				{laasBekraeft.nyTilstand ? 'Lås forløbet?' : 'Åbn forløbet?'}
+			</h2>
+			<p class="dialog-tekst">
+				{#if laasBekraeft.nyTilstand}
+					Når <strong>{laasBekraeft.navn}</strong> er låst, kan du ikke klikke ind på det fra admin-listen. Klienterne mærker ingen forskel.
+				{:else}
+					Du åbner <strong>{laasBekraeft.navn}</strong> så du igen kan redigere det.
+				{/if}
+			</p>
+			<div class="dialog-knapper">
+				<button
+					class="form-knap ghost"
+					type="button"
+					onclick={() => (laasBekraeft = null)}
+					disabled={toggler}
+				>
+					Annuller
+				</button>
+				<button class="form-knap primary" type="button" onclick={bekraeftLaas} disabled={toggler}>
+					{toggler ? 'Gemmer...' : laasBekraeft.nyTilstand ? 'Ja, lås' : 'Ja, åbn'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.page {
@@ -633,5 +720,76 @@
 	.badge.inaktiv {
 		background: var(--bg2);
 		color: var(--text3);
+	}
+
+	.forlob-row.laast {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+
+	.forlob-row.laast:hover {
+		background: transparent;
+	}
+
+	.laas-knap {
+		width: 32px;
+		height: 32px;
+		border-radius: 9px;
+		background: var(--sage);
+		border: none;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		flex-shrink: 0;
+		touch-action: manipulation;
+	}
+
+	.laas-knap.er-laast {
+		background: #b8453a;
+	}
+
+	.laas-knap:hover {
+		filter: brightness(1.05);
+	}
+
+	.overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.45);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 16px;
+		z-index: 1001;
+	}
+
+	.dialog {
+		background: var(--white);
+		border-radius: 14px;
+		width: 100%;
+		max-width: 420px;
+		padding: 18px 18px 14px;
+	}
+
+	.dialog-titel {
+		margin: 0 0 8px;
+		font-family: var(--ff-d);
+		font-size: calc(18px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.dialog-tekst {
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.5;
+		margin: 0 0 16px;
+	}
+
+	.dialog-knapper {
+		display: grid;
+		grid-template-columns: 1fr 1.4fr;
+		gap: 10px;
 	}
 </style>
