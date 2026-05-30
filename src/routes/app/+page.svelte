@@ -406,9 +406,11 @@
 	$effect(() => {
 		const ud = userDoc;
 		if (!ud) return;
-		const erKropsro =
-			ud.accessSource === 'forløb' && ud.activeProduct === KROPSRO_PRODUCT_ID;
-		if (!erKropsro) return;
+		// Buddy + Facebook-modals er kun for Kropsro-FORLØB (type='kropsro'),
+		// ikke for premium-Kickstart-kunder selvom de har activeProduct=
+		// 'premiumforløb'. Vi tjekker derfor forløbets type, ikke
+		// activeProduct.
+		if (!forlob || forlob.type !== 'kropsro') return;
 
 		// Buddy-modalen har precedens — vises før Facebook-spørgsmålet
 		if (ud.kropsroBuddyOensker === undefined) {
@@ -417,8 +419,7 @@
 		}
 
 		// Facebook-modalen kræver desuden at vi er på dag 0 eller senere.
-		// Bruger forløbets startDato fra det allerede-hentede forlob-doc.
-		if (ud.kropsroFacebookGruppe === undefined && forlob) {
+		if (ud.kropsroFacebookGruppe === undefined) {
 			const startMs = forlob.startDato.toMillis?.() ?? 0;
 			if (startMs && Date.now() >= startMs) {
 				visFacebookModal = true;
