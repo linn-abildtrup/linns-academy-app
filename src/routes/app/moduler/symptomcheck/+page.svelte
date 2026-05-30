@@ -118,7 +118,6 @@
 				scores,
 				sliders as MrsSliders
 			);
-			if (!ny) return; // View-only-mode blokerede skrivningen
 			netop_gemt = ny;
 			tidligereScores = [...tidligereScores, ny];
 			visning = 'resultat';

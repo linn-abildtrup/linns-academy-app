@@ -17,7 +17,6 @@ import {
 	type MrsScore,
 	type MrsSliders
 } from '$lib/content/mrs';
-import { kanSkrive } from '$lib/viewOnlyState.svelte';
 
 function mrsCol(uid: string) {
 	return collection(db, 'users', uid, 'mrs_scores');
@@ -37,8 +36,7 @@ export async function gemMrsScore(
 	measurePoint: MaalePunkt,
 	scores: Record<number, number>,
 	sliders?: MrsSliders
-): Promise<MrsScore | null> {
-	if (!kanSkrive()) return null;
+): Promise<MrsScore> {
 	const subscales = calculateSubscales(scores);
 	const total = calculateTotal(scores);
 	const data: Omit<MrsScore, 'id'> = {

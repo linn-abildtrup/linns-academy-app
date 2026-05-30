@@ -63,13 +63,8 @@
 		minStjerne = stjerner;
 		try {
 			const ny = await gemMinRating(opskrift.id, user.uid, stjerner);
-			if (ny) {
-				ratingAvg = ny.ratingAvg;
-				ratingCount = ny.ratingCount;
-			} else {
-				// View-only-mode blokerede skrivningen; vis ikke nogen aendring
-				minStjerne = tidligere;
-			}
+			ratingAvg = ny.ratingAvg;
+			ratingCount = ny.ratingCount;
 		} catch (e) {
 			console.error(e);
 			minStjerne = tidligere;

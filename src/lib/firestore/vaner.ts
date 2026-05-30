@@ -18,7 +18,6 @@ import {
 import { db } from '$lib/firebase';
 import type { VaneProgramDag, VanedagEntry } from '$lib/content/vaner';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
-import { kanSkrive } from '$lib/viewOnlyState.svelte';
 
 function vanedageCollection(uid: string, productId: string) {
 	return collection(db, `${aktivBrugerBasisPath(uid)}/products/${productId}/vanedage`);
@@ -190,7 +189,6 @@ export async function gemVanedag(
 	entry: Omit<VanedagEntry, 'savedAt'>,
 	productId: string
 ): Promise<void> {
-	if (!kanSkrive()) return;
 	const id = `dag${entry.dagNummer}`;
 	await setDoc(
 		vanedagDoc(uid, productId, id),

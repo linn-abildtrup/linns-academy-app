@@ -14,7 +14,6 @@ import {
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { Challenge, ChallengeIndtastning } from '$lib/content/challenge';
-import { kanSkrive } from '$lib/viewOnlyState.svelte';
 
 function fraDoc(forlobId: string, id: string, data: Record<string, unknown>): Challenge {
 	return {
@@ -152,7 +151,6 @@ export async function gemMinIndtastning(
 	fornavn: string,
 	efternavn: string
 ): Promise<void> {
-	if (!kanSkrive()) return;
 	const normaliseret = normaliserFoedevareListe(foedevarer);
 	await setDoc(
 		doc(db, 'forlob', forlobId, 'challenges', challengeId, 'indtastninger', uid),

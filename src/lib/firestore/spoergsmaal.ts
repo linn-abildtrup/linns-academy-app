@@ -20,7 +20,6 @@ import {
 	type Timestamp
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
-import { kanSkrive } from '$lib/viewOnlyState.svelte';
 
 export type SpoergsmaalStatus = 'ny' | 'laest' | 'besvaret' | 'brugt';
 export type SpoergsmaalKundeType = 'forlobskunde' | 'modulbruger' | 'udlobet';
@@ -62,7 +61,6 @@ interface NytSpoergsmaalKontekst {
  * kan filtrere pr forløb selvom kunden flyttes til et nyt forløb bagefter.
  */
 export async function gemSpoergsmaal(kontekst: NytSpoergsmaalKontekst): Promise<string> {
-	if (!kanSkrive()) return '';
 	const trimmet = kontekst.spoergsmaal.trim();
 	if (!trimmet) throw new Error('Spørgsmål må ikke være tomt');
 	if (trimmet.length > SPOERGSMAAL_MAX_LAENGDE) {
