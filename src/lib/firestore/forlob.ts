@@ -355,10 +355,15 @@ async function adgangsFelterForForlob(forlobId: string): Promise<{
 	activeSubscription: false;
 }> {
 	const fSnap = await getDoc(doc(db, 'forlob', forlobId));
-	const erKropsro = fSnap.exists() && (fSnap.data() as { type?: string }).type === 'kropsro';
+	const data = fSnap.exists() ? (fSnap.data() as { type?: string; adgangsNiveau?: 'basis' | 'premium' }) : {};
+	// adgangsNiveau-override har forrang. Ellers default ud fra type:
+	// kropsro = premium, andet = basis.
+	const erPremium =
+		data.adgangsNiveau === 'premium' ||
+		(data.adgangsNiveau !== 'basis' && data.type === 'kropsro');
 	return {
-		activeProduct: erKropsro ? 'premiumforløb' : 'kickstart',
-		accessLevel: erKropsro ? 'premium' : 'basis',
+		activeProduct: erPremium ? 'premiumforløb' : 'kickstart',
+		accessLevel: erPremium ? 'premium' : 'basis',
 		accessSource: 'forløb',
 		activeSubscription: false
 	};

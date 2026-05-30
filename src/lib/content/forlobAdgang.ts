@@ -42,6 +42,11 @@ export interface Forlob {
 	// forl0b og redigerer det. Paavirker IKKE klienterne — paavirker kun
 	// admin-listens klikbarhed.
 	laast?: boolean;
+	// Override af default adgangs-niveau. Hvis sat, bruges denne vaerdi
+	// naar nye kunder tilfoejes til forl0bet i stedet for type-baseret
+	// default (kropsro=premium, kickstart=basis). Bruges fx til Kickstart
+	// juni 2026 hvor alle kunder skal have premium-adgang.
+	adgangsNiveau?: 'basis' | 'premium';
 }
 
 export type AllowedEmailStatus = 'invited' | 'registered';

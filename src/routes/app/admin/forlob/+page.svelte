@@ -29,6 +29,7 @@
 	let formId = $state('');
 	let formAktiv = $state(true);
 	let formType = $state<ForlobType>('kickstart');
+	let formPremium = $state(false);
 	let formKopierFra = $state<string>('');
 	let opretterFejl = $state<string | null>(null);
 	let opretter = $state(false);
@@ -65,6 +66,7 @@
 		formId = '';
 		formAktiv = true;
 		formType = 'kickstart';
+		formPremium = false;
 		formKopierFra = '';
 		opretterFejl = null;
 	}
@@ -105,7 +107,8 @@
 				antalDage: formAntalDage,
 				vaneProgramId: null,
 				aktiv: formAktiv,
-				type: formType
+				type: formType,
+				...(formPremium ? { adgangsNiveau: 'premium' as const } : {})
 			});
 
 			if (formKopierFra) {
@@ -230,6 +233,11 @@
 			<label class="checkbox-rad">
 				<input type="checkbox" bind:checked={formAktiv} disabled={opretter} />
 				<span>Aktivt forløb (nye køb tilknyttes automatisk)</span>
+			</label>
+
+			<label class="checkbox-rad">
+				<input type="checkbox" bind:checked={formPremium} disabled={opretter} />
+				<span>Premium-adgang (kunder får samme niveau som Kropsro)</span>
 			</label>
 
 			<div class="felt">
