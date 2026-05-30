@@ -24,7 +24,6 @@
 	import { gemAktivtTraeningsprogram } from '$lib/firestore/mineProgrammer';
 	import { MAX_NUL_DAGE_PR_FORLOB } from '$lib/content/mikrotraening';
 	import { nulDageDatoer } from '$lib/content/forlob';
-	import { harTestAdgang } from '$lib/utils/userAdgang';
 	import TesterBadge from '$lib/components/TesterBadge.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import Icon, { type IconName } from '$lib/components/Icon.svelte';
@@ -42,7 +41,12 @@
 	import { gemBrugerProfilOgMaal, gemNaeringsindstillinger } from '$lib/userDoc';
 	import type { BrugerProfil, DagligeMaal } from '$lib/types';
 	import BeregnMaalWizard from '$lib/components/BeregnMaalWizard.svelte';
-	import { effektivState, harPremium } from '$lib/utils/userAdgang';
+	import {
+		effektivState,
+		erKropsroForlobskunde,
+		harPremium,
+		harTestAdgang
+	} from '$lib/utils/userAdgang';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -315,7 +319,7 @@
 
 	const statusTekst = $derived.by(() => {
 		if (userState === 'forlobskunde') {
-			if (userDoc?.activeProduct === KROPSRO_PRODUCT_ID) {
+			if (erKropsroForlobskunde(userDoc)) {
 				return 'Du er på Kropsro';
 			}
 			return 'Du er på Kickstart en sund overgangsalder';

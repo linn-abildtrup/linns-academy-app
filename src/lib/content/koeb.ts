@@ -42,10 +42,28 @@ function isoDato(ms: number): string {
 	return new Date(ms).toISOString().slice(0, 10);
 }
 
+/**
+ * True hvis brugeren er Kropsro-forlobskunde (har 'kropsro_'-id i forlobIds).
+ * Bruges til at adskille fra premium-Kickstart-kunder der ogsaa har
+ * activeProduct='premiumforløb' men er paa et Kickstart-forl0b.
+ */
+function erKropsroIfgForlobIds(userDoc: UserDoc): boolean {
+	if (Array.isArray(userDoc.forlobIds) && userDoc.forlobIds.length > 0) {
+		return userDoc.forlobIds.some((id) => id.startsWith('kropsro_'));
+	}
+	return userDoc.activeProduct === 'premiumforløb';
+}
+
 export function getKoebForUser(userDoc: UserDoc | null | undefined): Koeb[] {
 	if (!userDoc) return [];
 
 	const product = userDoc.activeProduct;
+
+	// Premium-Kickstart-kunder skal vises som Kickstart, ikke Kropsro
+	const premiumKickstart =
+		product === 'premiumforløb' && !erKropsroIfgForlobIds(userDoc);
+	const navn = premiumKickstart ? VISNINGS_NAVN.kickstart : product ? VISNINGS_NAVN[product] : '';
+	const kortNavn = premiumKickstart ? KORT_NAVN.kickstart : product ? KORT_NAVN[product] : '';
 
 	// Aktiv adgang: vis det nuværende produkt
 	if (product && userDoc.accessLevel && userDoc.accessLevel !== 'none') {
@@ -61,8 +79,8 @@ export function getKoebForUser(userDoc: UserDoc | null | undefined): Koeb[] {
 		return [
 			{
 				id: product,
-				navn: VISNINGS_NAVN[product],
-				kortNavn: KORT_NAVN[product],
+				navn,
+				kortNavn,
 				type,
 				status: 'aktiv',
 				lobende: produkt.activeSubscription,
@@ -76,8 +94,8 @@ export function getKoebForUser(userDoc: UserDoc | null | undefined): Koeb[] {
 		return [
 			{
 				id: `${product}-laeseadgang`,
-				navn: VISNINGS_NAVN[product],
-				kortNavn: KORT_NAVN[product],
+				navn,
+				kortNavn,
 				type: 'forlob',
 				status: 'laeseadgang',
 				lobende: false,

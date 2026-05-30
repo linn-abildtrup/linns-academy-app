@@ -338,13 +338,19 @@ export function getSubskalaFortolkning(
 export function naesteUdfyldelseDato(
 	accessSource: 'abonnement' | 'forløb' | undefined,
 	activeProduct: string | undefined,
-	sidsteUdfyldelseAt: number | null
+	sidsteUdfyldelseAt: number | null,
+	erKickstart: boolean = false
 ): Date {
 	if (sidsteUdfyldelseAt === null) return new Date();
 	const sidste = new Date(sidsteUdfyldelseAt);
 
-	if (accessSource === 'forløb' && activeProduct === 'kickstart') {
-		// Ugentlig kadence: næste søndag efter sidste udfyldelse
+	// Kickstart har ugentlig kadence (baseret paa forloeb-type, ikke
+	// activeProduct — premium-Kickstart-kunder har activeProduct=
+	// 'premiumforløb' men skal stadig have ugentlig).
+	if (
+		accessSource === 'forløb' &&
+		(activeProduct === 'kickstart' || erKickstart)
+	) {
 		return naesteSoendagEfter(sidste);
 	}
 
@@ -391,9 +397,10 @@ export function naesteSoendagPaaEllerEfter(fra: Date): Date {
 export function skalUdfyldeNu(
 	accessSource: 'abonnement' | 'forløb' | undefined,
 	activeProduct: string | undefined,
-	sidsteUdfyldelseAt: number | null
+	sidsteUdfyldelseAt: number | null,
+	erKickstart: boolean = false
 ): boolean {
-	const due = naesteUdfyldelseDato(accessSource, activeProduct, sidsteUdfyldelseAt);
+	const due = naesteUdfyldelseDato(accessSource, activeProduct, sidsteUdfyldelseAt, erKickstart);
 	// Sammenlign på lokal dato — tæl en dag som "due" når vi rammer den
 	const idag = new Date();
 	idag.setHours(0, 0, 0, 0);

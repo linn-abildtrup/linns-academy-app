@@ -77,6 +77,34 @@ export function harPremium(userDoc: UserDoc | null | undefined): boolean {
 	return userDoc?.accessLevel === 'premium';
 }
 
+/**
+ * True hvis brugeren er paa et Kropsro-forl0b (ikke bare premium-niveau).
+ * Bruges til at adskille Kropsro-forl0bskunder fra premium-Kickstart-kunder
+ * (begge har activeProduct='premiumforløb' men kun Kropsro-kunder har et
+ * 'kropsro_'-id i forlobIds).
+ *
+ * Tilbagefald: hvis forlobIds ikke er sat, gaetter vi paa activeProduct
+ * (matchaer den hidtidige opfoersel for legacy-data).
+ */
+export function erKropsroForlobskunde(userDoc: UserDoc | null | undefined): boolean {
+	if (!userDoc) return false;
+	if (Array.isArray(userDoc.forlobIds) && userDoc.forlobIds.length > 0) {
+		return userDoc.forlobIds.some((id) => id.startsWith('kropsro_'));
+	}
+	return userDoc.activeProduct === 'premiumforløb';
+}
+
+/**
+ * True hvis brugeren er paa et Kickstart-forl0b (basis ELLER premium-niveau).
+ */
+export function erKickstartForlobskunde(userDoc: UserDoc | null | undefined): boolean {
+	if (!userDoc) return false;
+	if (Array.isArray(userDoc.forlobIds) && userDoc.forlobIds.length > 0) {
+		return userDoc.forlobIds.some((id) => id.startsWith('kickstart_'));
+	}
+	return userDoc.activeProduct === 'kickstart';
+}
+
 /** True hvis brugeren har mindst basis-niveau (basis eller premium) og adgangen ikke er udløbet. */
 export function harBasisAdgang(userDoc: UserDoc | null | undefined): boolean {
 	if (erUdloebet(userDoc)) return false;

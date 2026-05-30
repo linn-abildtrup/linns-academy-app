@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
 	import type { User } from 'firebase/auth';
-	import { KROPSRO_PRODUCT_ID, type UserDoc } from '$lib/types';
+	import { type UserDoc } from '$lib/types';
+	import { erKickstartForlobskunde, erKropsroForlobskunde } from '$lib/utils/userAdgang';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import {
@@ -150,11 +151,15 @@
 			: null
 	);
 
+	const erKickstart = $derived(erKickstartForlobskunde(userDoc));
+	const erKropsro = $derived(erKropsroForlobskunde(userDoc));
+
 	const skalUdfylde = $derived(
 		skalUdfyldeNu(
 			userDoc?.accessSource,
 			userDoc?.activeProduct,
-			sidsteUdfyldelseAt
+			sidsteUdfyldelseAt,
+			erKickstart
 		)
 	);
 
@@ -163,19 +168,17 @@
 			? naesteUdfyldelseDato(
 					userDoc?.accessSource,
 					userDoc?.activeProduct,
-					sidsteUdfyldelseAt
+					sidsteUdfyldelseAt,
+					erKickstart
 				)
 			: null
 	);
 
 	const kadenceTekst = $derived.by<string>(() => {
-		if (userDoc?.accessSource === 'forløb' && userDoc.activeProduct === 'kickstart') {
+		if (userDoc?.accessSource === 'forløb' && erKickstart) {
 			return 'På Kickstart udfylder du hver søndag, så du kan se din udvikling uge for uge.';
 		}
-		if (
-			userDoc?.accessSource === 'forløb' &&
-			userDoc.activeProduct === KROPSRO_PRODUCT_ID
-		) {
+		if (userDoc?.accessSource === 'forløb' && erKropsro) {
 			return 'På Kropsro udfylder du hver 4. søndag gennem dit forløb.';
 		}
 		return 'Du udfylder en symptomcheck hver 4. søndag, så du kan følge din udvikling over tid. Første gang må du gerne tage den med det samme som baseline.';
