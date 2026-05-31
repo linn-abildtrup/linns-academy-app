@@ -83,11 +83,15 @@
 		type AboVaneOpsaetning,
 		type AboVanedagEntry
 	} from '$lib/content/aboVaner';
-	import { CHECKIN_SPORGSMAAL, type VaneSvar, type CheckinSvar } from '$lib/content/vaner';
+	import { type VaneSvar } from '$lib/content/vaner';
 	import type { GemtMaaltid } from '$lib/content/kost';
 	import { dagligeMalForBruger } from '$lib/content/naering';
 	import Loading from '$lib/components/Loading.svelte';
-	import { effektivState, harPremium } from '$lib/utils/userAdgang';
+	import {
+		effektivState,
+		erKickstartForlobskunde,
+		harPremium
+	} from '$lib/utils/userAdgang';
 	import {
 		detekterGuideType,
 		erInspirationLektion,
@@ -639,7 +643,8 @@
 			skalUdfyldeMrsNu(
 				userDoc?.accessSource,
 				userDoc?.activeProduct,
-				mrsSidsteUdfyldelseAt
+				mrsSidsteUdfyldelseAt,
+				erKickstartForlobskunde(userDoc)
 			)
 	);
 
@@ -1327,37 +1332,7 @@
 		void gemForlobBonusSvar(bonusId, aktiv ? null : svar);
 	}
 
-	async function gemForlobCheckinSvar(spId: string, vaerdi: number) {
-		const u = user;
-		const n = valgtDagNummer ?? aktivDagNummer;
-		if (!u || n === null || gemmerSvar) return;
-		gemmerSvar = true;
-		const aktuel = forlobVanedag ?? tomForlobVanedag(n);
-		const nyCheckin = { ...aktuel.checkin, [spId]: vaerdi } as CheckinSvar;
-		// Paa baseline- og check-in-dage skal vi altid have et komplet snapshot.
-		// Slidere klienten ikke har bevaeget faar default-vaerdien 5 (neutral)
-		// saa sammenligning paa tvaers af forloeb-checkins ikke har huller.
-		// Samme logik som dag-page'ns gem()-funktion.
-		const erBaselineEllerCheckin =
-			!!aktivVaneprogramDag && (aktivVaneprogramDag.isBaseline || aktivVaneprogramDag.isCheckin);
-		if (erBaselineEllerCheckin) {
-			for (const sp of CHECKIN_SPORGSMAAL) {
-				const id = sp.id as Exclude<keyof CheckinSvar, 'generelTekst'>;
-				if (typeof nyCheckin[id] !== 'number') {
-					nyCheckin[id] = 5;
-				}
-			}
-		}
-		const ny: VanedagEntry = { ...aktuel, checkin: nyCheckin };
-		forlobVanedag = ny;
-		try {
-			await gemVanedag(u.uid, ny, aktivProduktType);
-		} catch (e) {
-			console.error('Kunne ikke gemme forløbs-check-in-svar:', e);
-		} finally {
-			gemmerSvar = false;
-		}
-	}
+	// gemForlobCheckinSvar fjernet — sliders haandteres nu af symptomcheck-modulet.
 </script>
 
 {#if iPreviewMode && forlob && previewDag !== null}
@@ -1666,35 +1641,31 @@
 				</section>
 			{/if}
 
-			{#if aktivVaneprogramDag}
+			{#if aktivVaneprogramDag && !aktivVaneprogramDag.isBaseline}
 				<section class="vaner-inline-section">
 					<div class="actions-header">
 						<div class="eyebrow eyebrow-muted">Dagens små skridt</div>
 					</div>
 					<div class="vaner-inline-liste">
-						{#if aktivVaneprogramDag.isBaseline}
-							<!-- Baseline-dag: vaner-spørgsmål vises i vaner-modulet, intet på forsiden -->
-						{:else}
-							{#each visteVanerForsiden as vane (vane.id)}
-								{@const svar = forlobVanedag?.checks?.[vane.id]}
-								<div class="vane-inline-row">
-									<div class="vane-inline-label">{vane.label}</div>
-									<div class="vane-svar-knapper">
-										{#each [{ v: 'ja' as VaneSvar, l: 'Ja' }, { v: 'delvist' as VaneSvar, l: 'Delvist' }, { v: 'nej' as VaneSvar, l: 'Nej' }] as opt (opt.v)}
-											<button
-												type="button"
-												class="svar-knap svar-knap-{opt.v}"
-												class:aktiv={svar === opt.v}
-												disabled={gemmerSvar}
-												onclick={() => gemForlobVaneSvar(vane.id, opt.v)}
-											>
-												{opt.l}
-											</button>
-										{/each}
-									</div>
+						{#each visteVanerForsiden as vane (vane.id)}
+							{@const svar = forlobVanedag?.checks?.[vane.id]}
+							<div class="vane-inline-row">
+								<div class="vane-inline-label">{vane.label}</div>
+								<div class="vane-svar-knapper">
+									{#each [{ v: 'ja' as VaneSvar, l: 'Ja' }, { v: 'delvist' as VaneSvar, l: 'Delvist' }, { v: 'nej' as VaneSvar, l: 'Nej' }] as opt (opt.v)}
+										<button
+											type="button"
+											class="svar-knap svar-knap-{opt.v}"
+											class:aktiv={svar === opt.v}
+											disabled={gemmerSvar}
+											onclick={() => gemForlobVaneSvar(vane.id, opt.v)}
+										>
+											{opt.l}
+										</button>
+									{/each}
 								</div>
-							{/each}
-						{/if}
+							</div>
+						{/each}
 
 						{#if aktivVaneprogramDag.bonus}
 							<div class="vane-inline-row vane-inline-bonus">
@@ -1715,37 +1686,9 @@
 							</div>
 						{/if}
 
-						{#if aktivVaneprogramDag.isCheckin || aktivVaneprogramDag.isBaseline}
-							<div class="checkin-blok">
-								<div class="checkin-titel">
-									{aktivVaneprogramDag.isBaseline ? 'Baseline check-in' : 'Ugentligt check-in'}
-								</div>
-								<div class="checkin-sub">Mærk efter — hvor er du på skalaen lige nu? (1 = lavt, 10 = højt)</div>
-								{#each CHECKIN_SPORGSMAAL as q (q.id)}
-									{@const aktuel = forlobVanedag?.checkin?.[q.id as keyof CheckinSvar] ?? null}
-									<div class="checkin-row">
-										<div class="checkin-label">{q.label}</div>
-										<div class="checkin-skala-rad">
-											<input
-												class="checkin-slider"
-												type="range"
-												min="1"
-												max="10"
-												step="1"
-												value={typeof aktuel === 'number' ? aktuel : 5}
-												disabled={gemmerSvar}
-												onchange={(e) =>
-													gemForlobCheckinSvar(
-														q.id,
-														parseInt((e.target as HTMLInputElement).value, 10)
-													)}
-											/>
-											<div class="checkin-vaerdi">{typeof aktuel === 'number' ? aktuel : '-'}</div>
-										</div>
-									</div>
-								{/each}
-							</div>
-						{/if}
+						<!-- Slider-check-in fjernet: symptomcheck-modulet overtager
+						     denne funktion. Klienten klikker 'Tag din symptomcheck'
+						     CTA'et oeverst paa baseline- og check-in-dage. -->
 					</div>
 				</section>
 			{/if}
