@@ -145,9 +145,14 @@
 		netop_gemt ? getInterpretation(netop_gemt.total) : null
 	);
 
+	// Kun rigtige symptomcheck-udfyldelser taeller til kadence.
+	// kunSliders-entries (migrationsdata fra vaner-modulet) vises i grafen
+	// men maa ikke taelle som 'sidste udfyldelse'.
+	const rigtigeScores = $derived(tidligereScores.filter((s) => !s.kunSliders));
+
 	const sidsteUdfyldelseAt = $derived(
-		tidligereScores.length > 0
-			? tidligereScores[tidligereScores.length - 1].timestamp
+		rigtigeScores.length > 0
+			? rigtigeScores[rigtigeScores.length - 1].timestamp
 			: null
 	);
 

@@ -194,6 +194,11 @@ export interface MrsScore {
 	/** 5-slider velvære-check udfyldt sammen med MRS. Optional fordi gamle
 	 *  data fra før 22. maj 2026 ikke har feltet. */
 	sliders?: MrsSliders;
+	/** True hvis denne entry kun har sliders (migreret fra vaner-modulet).
+	 *  MRS-scores er tomme. Bruges af forsiden og symptomcheck til at
+	 *  ekskludere migration-data fra kadence-beregning, men entry'en er
+	 *  stadig synlig i symptomcheck-grafen. */
+	kunSliders?: boolean;
 }
 
 /** Returnerer en fejlbesked eller null hvis sliders er gyldige. */

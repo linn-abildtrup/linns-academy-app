@@ -627,8 +627,16 @@
 		(async () => {
 			try {
 				const scores = await hentAlleMrsScores(u.uid);
+				// Kun 'rigtige' symptomcheck-udfyldelser taeller til kadence-beregning.
+				// kunSliders-entries (fra migration) viser sliders-historik i grafen
+				// men maa ikke tael med som 'sidste udfyldelse'.
+				const rigtigeUdfyldelser = scores.filter(
+					(s) => !(s as unknown as { kunSliders?: boolean }).kunSliders
+				);
 				mrsSidsteUdfyldelseAt =
-					scores.length > 0 ? scores[scores.length - 1].timestamp : null;
+					rigtigeUdfyldelser.length > 0
+						? rigtigeUdfyldelser[rigtigeUdfyldelser.length - 1].timestamp
+						: null;
 			} catch (e) {
 				console.warn('Kunne ikke hente MRS-scorer:', e);
 				mrsSidsteUdfyldelseAt = null;
