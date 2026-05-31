@@ -174,11 +174,11 @@ export interface SliderSpoergsmaal {
 }
 
 export const SLIDER_SPORGSMAAL: readonly SliderSpoergsmaal[] = [
-	{ id: 'energi', label: 'Min energi' },
-	{ id: 'mave', label: 'Min mave og fordøjelse' },
+	{ id: 'energi', label: 'Min energi (1 = træt → 10 = energisk)' },
+	{ id: 'mave', label: 'Min mave og fordøjelse (1 = ubehag → 10 = i balance)' },
 	{ id: 'cravings', label: 'Mine cravings (1 = mange → 10 = ingen)' },
-	{ id: 'humor', label: 'Mit humør og overskud' },
-	{ id: 'sovn', label: 'Min søvn' }
+	{ id: 'humor', label: 'Mit humør og overskud (1 = nedtrykt → 10 = glad og overskud)' },
+	{ id: 'sovn', label: 'Min søvn (1 = uroligt → 10 = dyb og afslappende)' }
 ] as const;
 
 /** Et færdigt udfyldt MRS-skema som lagres i Firestore. */

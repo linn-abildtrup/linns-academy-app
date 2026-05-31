@@ -463,9 +463,7 @@
 						oninput={(e) =>
 							setSlider(spm.id, parseInt((e.target as HTMLInputElement).value, 10))}
 					/>
-					<div class="slider-vaerdi">
-						{v !== undefined ? v : '–'}
-					</div>
+					<div class="slider-vaerdi">{v ?? 5}</div>
 				</div>
 			{/each}
 		</section>
