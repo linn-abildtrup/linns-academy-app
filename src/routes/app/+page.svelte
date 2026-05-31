@@ -1673,11 +1673,7 @@
 					</div>
 					<div class="vaner-inline-liste">
 						{#if aktivVaneprogramDag.isBaseline}
-							<div class="vane-inline-row">
-								<div class="vane-inline-label">
-									Tag dit baseline-check-in nedenfor før forløbet starter.
-								</div>
-							</div>
+							<!-- Baseline-dag: vaner-spørgsmål vises i vaner-modulet, intet på forsiden -->
 						{:else}
 							{#each visteVanerForsiden as vane (vane.id)}
 								{@const svar = forlobVanedag?.checks?.[vane.id]}
