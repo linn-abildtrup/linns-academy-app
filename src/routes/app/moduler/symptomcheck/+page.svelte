@@ -65,8 +65,9 @@
 	});
 
 	function startNyUdfyldelse() {
-		// Første gang = 'forste', ellers en planlagt opfølgning
-		valgtMaalepunkt = tidligereScores.length === 0 ? 'forste' : 'opfoelgning';
+		// Første gang = 'forste', ellers en planlagt opfølgning.
+		// rigtigeScores ekskluderer migration-entries (kunSliders).
+		valgtMaalepunkt = rigtigeScores.length === 0 ? 'forste' : 'opfoelgning';
 		scores = {};
 		sliders = {};
 		netop_gemt = null;
@@ -199,11 +200,13 @@
 	}
 
 	const tidligereSorteret = $derived(
-		[...tidligereScores].sort((a, b) => b.timestamp - a.timestamp)
+		[...rigtigeScores].sort((a, b) => b.timestamp - a.timestamp)
 	);
 
 	// Til sliders-grafen: kun entries der faktisk har sliders-data (post-22-maj
 	// 2026). Gamle MRS-udfyldelser uden sliders falder fra.
+	// Migration-entries (kunSliders=true) vises ikke i grafen for at undgaa
+	// at nye klienter ser data der ikke er deres egen.
 	const tidligereMedSliders = $derived(
 		tidligereSorteret.filter((s) => s.sliders !== undefined)
 	);
@@ -246,7 +249,7 @@
 			<button type="button" class="cta-knap due" onclick={startNyUdfyldelse}>
 				<div class="cta-tekst">
 					<div class="cta-eyebrow">
-						{tidligereScores.length === 0 ? 'Første udfyldelse' : 'Tid til opfølgning'}
+						{rigtigeScores.length === 0 ? 'Første udfyldelse' : 'Tid til opfølgning'}
 					</div>
 					<div class="cta-titel">Tag symptomcheck nu</div>
 				</div>
