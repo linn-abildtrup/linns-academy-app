@@ -23,6 +23,34 @@
 	let error = $state('');
 	let loading = $state(false);
 	let user = $state<User | null>(null);
+
+	// Maps Firebase Auth fejl-koder til paedagogiske danske beskeder.
+	// Default er 'Noget gik galt' hvis koden ikke kendes.
+	const FIREBASE_FEJL_TEKSTER: Record<string, string> = {
+		'auth/wrong-password': 'Forkert adgangskode.',
+		'auth/invalid-credential': 'Forkert adgangskode eller email.',
+		'auth/invalid-login-credentials': 'Forkert adgangskode eller email.',
+		'auth/user-not-found':
+			'Vi kan ikke finde en konto med denne email. Tjek stavemaaden eller opret en ny konto.',
+		'auth/invalid-email': 'Email-adressen ser ikke ud til at vaere gyldig.',
+		'auth/missing-password': 'Skriv din adgangskode.',
+		'auth/too-many-requests':
+			'Du har proevet for mange gange. Vent et par minutter og proev igen.',
+		'auth/user-disabled': 'Din konto er deaktiveret. Skriv til kontakt@linnsacademy.dk.',
+		'auth/network-request-failed': 'Kunne ikke komme paa nettet. Tjek din forbindelse og proev igen.',
+		'auth/email-already-in-use':
+			'Der findes allerede en konto med denne email. Proev at logge ind i stedet.',
+		'auth/weak-password': 'Adgangskoden er for kort. Vaelg mindst 6 tegn.',
+		'auth/operation-not-allowed': 'Login-metoden er ikke aktiveret. Skriv til kontakt@linnsacademy.dk.'
+	};
+
+	function oversaetFejl(e: unknown): string {
+		if (e && typeof e === 'object' && 'code' in e) {
+			const code = (e as { code: string }).code;
+			if (code in FIREBASE_FEJL_TEKSTER) return FIREBASE_FEJL_TEKSTER[code];
+		}
+		return 'Noget gik galt. Pr0v igen.';
+	}
 	let resetSendt = $state(false);
 
 	onAuthStateChanged(auth, (u) => {
@@ -59,7 +87,7 @@
 			}
 			await goto('/');
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Noget gik galt';
+			error = oversaetFejl(e);
 		} finally {
 			loading = false;
 		}
