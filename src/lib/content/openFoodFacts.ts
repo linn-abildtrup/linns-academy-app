@@ -115,40 +115,55 @@ export async function lookupBarcode(barcode: string): Promise<OffResultat | null
 	}
 }
 
+const OFF_FIELDS =
+	'code,product_name,product_name_da,generic_name,generic_name_da,brands,categories_tags,nutriments,image_front_small_url';
+
+async function offFetch(params: Record<string, string>): Promise<OffProduct[]> {
+	const url = new URL('https://world.openfoodfacts.org/api/v2/search');
+	for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+	url.searchParams.set('countries_tags_en', 'denmark');
+	url.searchParams.set('fields', OFF_FIELDS);
+	url.searchParams.set('page_size', '20');
+	const res = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
+	if (!res.ok) return [];
+	const data = (await res.json()) as OffSearchResponse;
+	return data.products ?? [];
+}
+
 /**
  * Soeger efter produkter i Open Food Facts via deres v2 search-API.
  * Bruges af '30-30-3' Soeg-foedevare til at finde maerkevarer der ikke
- * er i jeres egen fodevarer-database. Returnerer op til 20 produkter
- * sorteret efter popularitet.
+ * er i jeres egen fodevarer-database. Returnerer op til 20 produkter.
  *
- * Filtrerer kun produkter der har minimum protein- eller fiber-data, saa
- * vi ikke spammer brugeren med uudfyldte poster.
+ * Soeger parallelt paa to maader og merger resultaterne:
+ * 1. brands_tags - finder produkter med matchende maerke (fx 'Cheasy')
+ * 2. search_terms - finder produkter med matchende navn/ingrediens
+ *
+ * Brand-matches placeres oeverst fordi de er mere specifikke - hvis
+ * man skriver 'cheasy' vil man typisk se Cheasy-produkter, ikke
+ * tilfaeldige danske produkter. Filtrerer poster uden naeringsdata.
  */
 export async function searchProducts(query: string): Promise<OffResultat[]> {
 	const q = query.trim();
 	if (q.length < 3) return [];
 	try {
-		const url = new URL('https://world.openfoodfacts.org/api/v2/search');
-		url.searchParams.set('search_terms', q);
-		// Filtrer paa produkter solgt i Danmark - ellers rammer 'cheasy'
-		// false positives som franske/marokkanske produkter foer Cheasy
-		// Skyr fra Arla. OFF har ~19000 danske produkter.
-		url.searchParams.set('countries_tags_en', 'denmark');
-		url.searchParams.set(
-			'fields',
-			'code,product_name,product_name_da,generic_name,generic_name_da,brands,categories_tags,nutriments,image_front_small_url'
-		);
-		url.searchParams.set('page_size', '20');
-		url.searchParams.set('sort_by', 'popularity_key');
-		const res = await fetch(url.toString(), {
-			headers: { Accept: 'application/json' }
-		});
-		if (!res.ok) return [];
-		const data = (await res.json()) as OffSearchResponse;
-		if (!data.products) return [];
-		return data.products
+		const [merker, navne] = await Promise.all([
+			offFetch({ brands_tags: q }),
+			offFetch({ search_terms: q })
+		]);
+		// Merge: maerke-matches foerst, derefter navne-matches. Dedup paa code.
+		const seen = new Set<string>();
+		const merged: OffProduct[] = [];
+		for (const p of [...merker, ...navne]) {
+			const code = p.code ?? '';
+			if (!code || seen.has(code)) continue;
+			seen.add(code);
+			merged.push(p);
+		}
+		return merged
 			.map((p) => parseProdukt(p))
-			.filter((p): p is OffResultat => p !== null && (p.protein > 0 || p.fiber > 0 || p.kcal > 0));
+			.filter((p): p is OffResultat => p !== null && (p.protein > 0 || p.fiber > 0 || p.kcal > 0))
+			.slice(0, 20);
 	} catch (e) {
 		console.warn('OFF-soegning fejlede:', e);
 		return [];
