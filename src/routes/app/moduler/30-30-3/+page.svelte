@@ -69,7 +69,8 @@
 	// Udvidet næring (kh/fedt/kcal) er kun for premium. Brugerens toggle
 	// huskes på userDoc, men gælder kun hvis hun har premium-niveau.
 	const visUdvidet = $derived(harPremium(userDoc) && userDoc?.visUdvidetNaering === true);
-	const kanScanne = $derived(harPremium(userDoc));
+	// Stregkode-scanner er aaben for alle kundetyper - ikke laengere premium-gated.
+	const kanScanne = true;
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
 	import { hentMineOpskrifter } from '$lib/firestore/minOpskrift';
 	import type { MinOpskrift } from '$lib/content/minOpskrift';
