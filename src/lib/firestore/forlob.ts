@@ -110,7 +110,13 @@ export async function hentAktivProduktType(
 		const startMs = f.startDato.toMillis();
 		const slutMs = startMs + f.antalDage * 24 * 60 * 60 * 1000;
 		if (idagMs >= startMs && idagMs < slutMs) {
-			return f.type === 'kropsro' ? KROPSRO_PRODUCT_ID : KICKSTART_PRODUCT_ID;
+			// Premium-Kickstart har adgangsNiveau='premium' og bruger samme
+			// product-doc-id som Kropsro ('premiumforløb'), fordi det er der
+			// allowedEmails-flowet opretter doc'en (activeProduct='premiumforløb').
+			const erPremium =
+				f.adgangsNiveau === 'premium' ||
+				(f.adgangsNiveau !== 'basis' && f.type === 'kropsro');
+			return erPremium ? KROPSRO_PRODUCT_ID : KICKSTART_PRODUCT_ID;
 		}
 	}
 	return KICKSTART_PRODUCT_ID;
