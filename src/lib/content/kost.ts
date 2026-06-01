@@ -224,13 +224,88 @@ export const KATEGORI_LABELS: Record<Kategori, string> = {
  * Returnerer 1 hvis enhedId er undefined, 'g' eller ikke matcher noget —
  * så portion-tallet selv er gram-tallet.
  */
+/**
+ * Default-portioner pr. kategori. Bruges som fallback i UI'en naar en
+ * foedevare ikke har egne `units` definereret - saa klienten altid kan
+ * vaelge fx 'spsk' eller 'stk' i stedet for kun gram.
+ *
+ * Vaerdierne er vejledende gennemsnit. Klient kan stadig angive sin egen
+ * portionsstoerelse i tal (fx '2 skiver') og enheden bruges som multiplier.
+ */
+const STANDARD_ENHEDER_KATEGORI: Record<Kategori, Enhed[]> = {
+	mejeri: [
+		{ u: 'spsk', label: 'spsk', g: 15 },
+		{ u: 'dl', label: 'dl', g: 100 },
+		{ u: 'skive', label: 'skive', g: 25 }
+	],
+	koed: [
+		{ u: 'skive', label: 'skive', g: 30 },
+		{ u: 'stk', label: 'stk', g: 100 },
+		{ u: 'spsk', label: 'spsk', g: 15 }
+	],
+	fisk: [
+		{ u: 'stk', label: 'stk', g: 100 },
+		{ u: 'skive', label: 'skive', g: 30 },
+		{ u: 'portion', label: 'portion', g: 125 }
+	],
+	baelg: [
+		{ u: 'spsk', label: 'spsk', g: 15 },
+		{ u: 'dl', label: 'dl', g: 80 }
+	],
+	korn: [
+		{ u: 'skive', label: 'skive', g: 40 },
+		{ u: 'dl', label: 'dl', g: 40 },
+		{ u: 'spsk', label: 'spsk', g: 10 },
+		{ u: 'stk', label: 'stk', g: 25 }
+	],
+	gront: [
+		{ u: 'stk', label: 'stk', g: 80 },
+		{ u: 'haandfuld', label: 'håndfuld', g: 30 },
+		{ u: 'dl', label: 'dl', g: 50 }
+	],
+	baer: [
+		{ u: 'stk', label: 'stk', g: 150 },
+		{ u: 'haandfuld', label: 'håndfuld', g: 30 },
+		{ u: 'dl', label: 'dl', g: 100 }
+	],
+	noedder: [
+		{ u: 'haandfuld', label: 'håndfuld', g: 30 },
+		{ u: 'spsk', label: 'spsk', g: 10 },
+		{ u: 'stk', label: 'stk', g: 5 }
+	],
+	prot: [
+		{ u: 'scoop', label: 'scoop', g: 30 },
+		{ u: 'spsk', label: 'spsk', g: 10 }
+	],
+	drikke: [
+		{ u: 'dl', label: 'dl', g: 100 },
+		{ u: 'glas', label: 'glas', g: 200 }
+	],
+	andet: [
+		{ u: 'stk', label: 'stk', g: 100 },
+		{ u: 'spsk', label: 'spsk', g: 15 }
+	]
+};
+
+/**
+ * Returnerer de tilgaengelige enheder for en foedevare. Hvis foedevaren
+ * selv har 'units' defineret (admin har sat dem manuelt), bruges de.
+ * Ellers falder vi tilbage til standard-enheder for kategorien saa
+ * klienten altid kan vaelge en fornuftig portion ud over rene gram.
+ */
+export function getEnheder(food: Fodevare | undefined): Enhed[] {
+	if (!food) return [];
+	if (food.units && food.units.length > 0) return food.units;
+	return STANDARD_ENHEDER_KATEGORI[food.cat] ?? [];
+}
+
 export function gramForEnhed(food: Fodevare | undefined, enhedId?: string): number {
 	// 'g' og 'ml' er begge basis-enheder (1 enhed = 1 gram) — 'ml' bruges
 	// blot som display-label for væsker så det ikke står '200 g mælk'.
 	// Vandbaserede væsker har ~1g/ml; for olie og sukkersirup er det en
 	// vejledende afrunding, men det matcher den gamle apps adfærd.
 	if (!enhedId || enhedId === 'g' || enhedId === 'ml') return 1;
-	const enhed = food?.units?.find((u) => u.u === enhedId);
+	const enhed = getEnheder(food).find((u) => u.u === enhedId);
 	return enhed?.g ?? 1;
 }
 

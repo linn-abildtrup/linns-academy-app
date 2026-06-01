@@ -10,6 +10,7 @@
 		erManueltItem,
 		formatDatoKey,
 		formatGram,
+		getEnheder,
 		gaetMaaltidstype,
 		MAALTIDSTYPE_LABELS,
 		MAALTIDSTYPER,
@@ -782,7 +783,16 @@
 
 	function opdaterEnhed(index: number, ny: string) {
 		const opdateret = [...maaltid];
-		opdateret[index] = { ...opdateret[index], enhedId: ny || undefined };
+		const eksisterende = opdateret[index];
+		// Auto-juster portion-tal naar enheden skifter type, saa kunden
+		// ikke ender med absurde vaerdier som '100 skiver'. Gar fra g/ml
+		// til navngivet enhed -> portion = 1. Modsat vej -> portion = 100.
+		const gammelErGram = !eksisterende.enhedId || eksisterende.enhedId === 'g' || eksisterende.enhedId === 'ml';
+		const nyErGram = !ny || ny === 'g' || ny === 'ml';
+		let portion = eksisterende.portion;
+		if (gammelErGram && !nyErGram) portion = 1;
+		else if (!gammelErGram && nyErGram) portion = 100;
+		opdateret[index] = { ...eksisterende, portion, enhedId: ny || undefined };
 		maaltid = opdateret;
 	}
 
@@ -1677,6 +1687,9 @@
 								<div class="item-tekst">
 									<div class="item-navn">{food?.name ?? item.foodId}</div>
 									<div class="item-meta">
+										{#if item.enhedId && item.enhedId !== 'g' && item.enhedId !== 'ml'}
+											{formatGram(beregnet.gram)} ·
+										{/if}
 										{formatGram(beregnet.protein)} protein · {formatGram(beregnet.fiber)} fiber
 									</div>
 								</div>
@@ -1690,21 +1703,18 @@
 										opdaterPortion(i, (e.target as HTMLInputElement).value)}
 								/>
 								{@const basisEnhed = food?.liquid ? 'ml' : 'g'}
-								{#if food?.units && food.units.length > 0}
-									<select
-										class="enhed-select"
-										value={item.enhedId ?? basisEnhed}
-										onchange={(e) =>
-											opdaterEnhed(i, (e.target as HTMLSelectElement).value)}
-									>
-										<option value={basisEnhed}>{basisEnhed}</option>
-										{#each food.units as u (u.u)}
-											<option value={u.u}>{u.label}</option>
-										{/each}
-									</select>
-								{:else}
-									<span class="enhed-static">{basisEnhed}</span>
-								{/if}
+								{@const enheder = getEnheder(food)}
+								<select
+									class="enhed-select"
+									value={item.enhedId ?? basisEnhed}
+									onchange={(e) =>
+										opdaterEnhed(i, (e.target as HTMLSelectElement).value)}
+								>
+									<option value={basisEnhed}>{basisEnhed}</option>
+									{#each enheder as u (u.u)}
+										<option value={u.u}>{u.label} ({u.g}g)</option>
+									{/each}
+								</select>
 								<button
 									class="ikon-knap"
 									type="button"
@@ -3275,12 +3285,6 @@
 		color: var(--text);
 		font-family: var(--ff-b);
 		outline: none;
-	}
-
-	.enhed-static {
-		font-size: calc(12px * var(--fs-scale, 1));
-		color: var(--text3);
-		text-align: center;
 	}
 
 	.ikon-knap {
