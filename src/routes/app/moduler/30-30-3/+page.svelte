@@ -2238,16 +2238,16 @@
 										aria-label="Rediger favorit"
 										title="Rediger"
 									>
-										✎
+										Rediger
 									</button>
 									<button
-										class="favorit-mini"
+										class="favorit-mini favorit-mini-slet"
 										type="button"
 										onclick={() => sletFavoritKlik(f.id, f.navn)}
 										aria-label="Slet favorit"
 										title="Slet"
 									>
-										×
+										<Icon name="trash" size={14} color="var(--text3)" />
 									</button>
 								</div>
 							</div>
@@ -4369,34 +4369,39 @@
 	}
 
 	.favorit-handlinger {
-		position: absolute;
-		top: 4px;
-		right: 4px;
 		display: flex;
-		gap: 4px;
+		gap: 6px;
+		align-items: center;
+		flex-shrink: 0;
 	}
 
 	.favorit-mini {
-		width: 22px;
-		height: 22px;
-		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.9);
+		min-height: 36px;
+		padding: 0 12px;
+		border-radius: 8px;
+		background: var(--bg2);
 		border: 1px solid var(--border);
-		color: var(--text3);
+		color: var(--text2);
 		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
 		cursor: pointer;
 		font-family: var(--ff-b);
-		line-height: 1;
-		display: flex;
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+		gap: 4px;
+	}
+	.favorit-mini-slet {
+		min-width: 36px;
 		padding: 0;
 	}
-
 	.favorit-mini:hover {
-		background: var(--terra);
-		color: #fff;
-		border-color: var(--terra);
+		background: var(--bg);
+		border-color: var(--text3);
+	}
+	.favorit-mini-slet:hover {
+		background: rgba(184, 70, 70, 0.08);
+		border-color: rgba(184, 70, 70, 0.4);
 	}
 
 	.rediger-banner {
