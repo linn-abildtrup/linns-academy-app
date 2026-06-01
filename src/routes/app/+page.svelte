@@ -1540,7 +1540,7 @@
 								</a>
 							{/each}
 						{/if}
-						{#if dagensDag.dagNummer > 0}
+						{#if dagensDag.dagNummer >= 0}
 							{@const forlobGennemfoertCheck = !valgtErIDag
 								? forlobTraeningGennemfoert
 								: brugerAktivtProgram
@@ -1597,7 +1597,7 @@
 				</section>
 			{/if}
 
-			{#if aktivVaneprogramDag && !aktivVaneprogramDag.isBaseline && aktivVaneprogramDag.reflection?.trim()}
+			{#if aktivVaneprogramDag?.reflection?.trim()}
 				<section class="reflection-section">
 					<div class="actions-header">
 						<div class="eyebrow eyebrow-muted">Dagens refleksion</div>
