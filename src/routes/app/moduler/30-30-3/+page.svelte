@@ -36,7 +36,7 @@
 		sletMaaltid,
 		toggleFavoritFodevare
 	} from '$lib/firestore/kost';
-	import { lookupBarcode } from '$lib/content/openFoodFacts';
+	import { lookupBarcode, searchProducts, type OffResultat } from '$lib/content/openFoodFacts';
 	import BarcodeScanner from '$lib/components/BarcodeScanner.svelte';
 	import TilfoejFodevareDialog from '$lib/components/TilfoejFodevareDialog.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
@@ -171,6 +171,14 @@
 	let pickerSoeg = $state('');
 	let pickerTab = $state<PickerTab>('alle');
 	let erstatterIndex = $state<number | null>(null);
+
+	// OpenFoodFacts live-soegning: naar brugeren skriver i 'Soeg foedevare'
+	// og fanen 'Alle' er aktiv, soeger vi parallelt i OFF for at hente
+	// maerkevarer der ikke findes i jeres egen database. Resultater vises
+	// under de lokale i pickeren.
+	let offResultater = $state<OffResultat[]>([]);
+	let offSoegerNu = $state(false);
+	let offGemmer = $state<string | null>(null);
 
 	// Stregkode-scanner og 'tilføj ny fødevare'-dialog
 	let viserScanner = $state(false);
@@ -396,6 +404,72 @@
 			synligeOpskriftAntal + OPSKRIFTER_PR_SIDE,
 			filtreredeOpskrifter.length
 		);
+	}
+
+	// Live-soegning i OpenFoodFacts: debounced 400ms saa vi ikke spammer
+	// API'en mens kunden tipper. Soeger kun naar 'Alle'-fanen er aktiv og
+	// query er mindst 3 tegn. Nulstiller resultater naar query er for kort
+	// eller pickeren er lukket.
+	$effect(() => {
+		const q = pickerSoeg.trim();
+		const aktiv = viserPicker && pickerTab === 'alle' && q.length >= 3;
+		if (!aktiv) {
+			offResultater = [];
+			offSoegerNu = false;
+			return;
+		}
+		offSoegerNu = true;
+		const timer = setTimeout(async () => {
+			const resultater = await searchProducts(q);
+			// Filtrer dem der allerede findes som lokal foedevare (cf_-prefix)
+			// eller som klientens egne customs (matcher pr barcode hvis sat).
+			const lokaleBarcodes = new Set(
+				foods.flatMap((f) => (f.barcode ? [f.barcode] : []))
+			);
+			offResultater = resultater.filter((r) => !lokaleBarcodes.has(r.barcode));
+			offSoegerNu = false;
+		}, 400);
+		return () => {
+			clearTimeout(timer);
+		};
+	});
+
+	// Konverter et OFF-resultat til en Fodevare og gem som klientens custom-
+	// foedevare. Tilfoejer derefter direkte til maaltidet og favoriserer den
+	// saa den er hurtig at finde naeste gang.
+	async function vaelgOffProdukt(off: OffResultat) {
+		const u = user;
+		if (!u || offGemmer) return;
+		offGemmer = off.barcode;
+		try {
+			const ny: Omit<Fodevare, 'id'> = {
+				name: off.navn,
+				cat: off.katForslag,
+				p: off.protein,
+				f: off.fiber,
+				kh: off.kh,
+				fedt: off.fedt,
+				kcal: off.kcal,
+				kilde: 'custom',
+				barcode: off.barcode
+			};
+			const id = await gemMinCustomFodevare(u.uid, ny);
+			const food: Fodevare = { id, ...ny };
+			foods = [...foods, food].sort((a, b) => a.name.localeCompare(b.name, 'da'));
+			mineCustomFodevarer = [...mineCustomFodevarer, food];
+			foodMap = new Map(foods.map((f) => [f.id, f]));
+			if (!favoritFodevareSet.has(id)) {
+				void toggleFavoritFodevare(u.uid, id, true).catch((e) =>
+					console.warn('Kunne ikke auto-favorisere OFF-produkt:', e)
+				);
+			}
+			tilfoejTilMaaltid(food);
+			offResultater = offResultater.filter((r) => r.barcode !== off.barcode);
+		} catch (e) {
+			console.error('Kunne ikke gemme OFF-produkt:', e);
+		} finally {
+			offGemmer = null;
+		}
 	}
 
 	const totaler = $derived(beregnMaaltid(maaltid, foodMap));
@@ -2385,6 +2459,38 @@
 							</div>
 						</div>
 					{/each}
+					{#if pickerTab === 'alle' && pickerSoeg.trim().length >= 3}
+						{#if offSoegerNu}
+							<div class="off-header">Søger flere produkter…</div>
+						{:else if offResultater.length > 0}
+							<div class="off-header">Flere produkter (OpenFoodFacts)</div>
+							{#each offResultater as off (off.barcode)}
+								<div class="picker-row-wrap">
+									<div class="picker-row-flex">
+										<button
+											class="picker-row off-row"
+											type="button"
+											disabled={offGemmer === off.barcode}
+											onclick={() => vaelgOffProdukt(off)}
+										>
+											{#if off.billedeUrl}
+												<img class="off-thumb" src={off.billedeUrl} alt="" loading="lazy" />
+											{/if}
+											<div class="picker-tekst">
+												<div class="food-navn">{off.navn}</div>
+												<div class="food-meta">
+													{off.protein}g protein · {off.fiber}g fiber pr 100g
+												</div>
+											</div>
+											<span class="picker-plus">
+												{offGemmer === off.barcode ? '…' : '+'}
+											</span>
+										</button>
+									</div>
+								</div>
+							{/each}
+						{/if}
+					{/if}
 				</div>
 				<div class="picker-footer">
 					<button class="manuel-link" type="button" onclick={aabnTilfoejManuel}>
@@ -3815,6 +3921,33 @@
 
 	.manuel-link:hover {
 		text-decoration: underline;
+	}
+
+	.off-header {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text3);
+		padding: 14px 4px 6px;
+		border-top: 1px solid var(--border);
+		margin-top: 4px;
+	}
+	.off-row {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+	.off-row:disabled {
+		opacity: 0.6;
+	}
+	.off-thumb {
+		width: 36px;
+		height: 36px;
+		object-fit: cover;
+		border-radius: 6px;
+		flex-shrink: 0;
+		background: var(--bg2);
 	}
 
 	/* Container der grupperer favorit-stjerne + picker-row på samme linje.
