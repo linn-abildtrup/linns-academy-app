@@ -49,20 +49,29 @@
 				BarcodeFormat.EAN_8,
 				BarcodeFormat.UPC_A,
 				BarcodeFormat.UPC_E,
-				BarcodeFormat.CODE_128
+				BarcodeFormat.CODE_128,
+				BarcodeFormat.CODE_39,
+				BarcodeFormat.ITF
 			]);
+			// TRY_HARDER faar ZXing til at bruge mere CPU per frame, hvilket
+			// markant forbedrer chancen for at laese skaeve eller lidt
+			// uskarpe stregkoder paa iOS-kameraer.
+			hints.set(DecodeHintType.TRY_HARDER, true);
 			const reader = new BrowserMultiFormatReader(hints);
 
-			// Vælg bagside-kamera hvis muligt
-			const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-			const back =
-				devices.find((d) =>
-					/back|bag|environment|rear/i.test(d.label)
-				) ?? devices[devices.length - 1];
-
 			if (!video) return;
-			controls = await reader.decodeFromVideoDevice(
-				back?.deviceId,
+			// Brug constraints i stedet for deviceId-lookup: facingMode:'environment'
+			// vaelger bagside-kamera robust paa iOS Safari (hvor device-labels er
+			// tomme foer kamera-permission er givet). Hoejere opl0sning gor det
+			// nemmere at laese EAN-13 paa afstand.
+			controls = await reader.decodeFromConstraints(
+				{
+					video: {
+						facingMode: { ideal: 'environment' },
+						width: { ideal: 1920 },
+						height: { ideal: 1080 }
+					}
+				},
 				video,
 				(result, _err, scanner) => {
 					if (result) {
