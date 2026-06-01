@@ -74,7 +74,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(404, `Ingen Firebase Auth-konto fundet for ${targetEmail}`);
 	}
 
-	const tempPassword = genererTempPassword(10);
+	const tempPassword = genererTempPassword();
 	try {
 		await setUserPassword(uid, tempPassword);
 	} catch (e) {

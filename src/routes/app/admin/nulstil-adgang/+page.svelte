@@ -142,10 +142,28 @@
 		}
 	}
 
+	let beskedKopieret = $state(false);
+	const klientBesked = $derived(
+		tempPassword
+			? `Jeg har nulstillet din adgangskode, som er ${tempPassword}. Du skal logge ind med den og kan efterfølgende ændre den under Profil.`
+			: ''
+	);
+	async function kopierBesked() {
+		if (!klientBesked) return;
+		try {
+			await navigator.clipboard.writeText(klientBesked);
+			beskedKopieret = true;
+			setTimeout(() => (beskedKopieret = false), 2000);
+		} catch (e) {
+			console.warn('Clipboard fejlede:', e);
+		}
+	}
+
 	function luk() {
 		tempPassword = null;
 		tempEmail = '';
 		kopieret = false;
+		beskedKopieret = false;
 	}
 </script>
 
@@ -256,12 +274,13 @@
 				</button>
 			</div>
 
-			<div class="instruktioner-titel">Husk at fortælle hende:</div>
-			<ul class="instruktioner">
-				<li>Log ind med denne kode på <strong>app.linnsacademy.dk</strong></li>
-				<li>Gå derefter til Profil → Skift adgangskode og lav sin egen kode</li>
-				<li>Den midlertidige kode bør ikke gemmes nogen steder</li>
-			</ul>
+			<div class="besked-kort">
+				<div class="besked-label">Besked til kunden</div>
+				<div class="besked-tekst">{klientBesked}</div>
+				<button class="kopier-knap" type="button" onclick={kopierBesked}>
+					{beskedKopieret ? '✓ Kopieret!' : '📋 Kopiér besked'}
+				</button>
+			</div>
 
 			<div class="modal-knapper">
 				<button class="modal-knap primary" type="button" onclick={luk}>Luk</button>
@@ -429,6 +448,28 @@
 		margin-bottom: 12px;
 		word-break: break-all;
 	}
+	.besked-kort {
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		padding: 16px;
+		margin: 14px 0;
+	}
+	.besked-label {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-bottom: 8px;
+	}
+	.besked-tekst {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		line-height: 1.5;
+		margin-bottom: 12px;
+		user-select: all;
+	}
 	.kopier-knap {
 		padding: 9px 16px;
 		font-size: calc(12.5px * var(--fs-scale, 1));
@@ -439,21 +480,6 @@
 		color: #fff;
 		border: none;
 		cursor: pointer;
-	}
-	.instruktioner-titel {
-		font-size: calc(12.5px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--text);
-		margin-top: 14px;
-		margin-bottom: 6px;
-	}
-	.instruktioner {
-		list-style: disc inside;
-		padding: 0;
-		margin: 0 0 8px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
-		color: var(--text2);
-		line-height: 1.6;
 	}
 	.modal-knapper {
 		display: flex;

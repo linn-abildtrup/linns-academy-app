@@ -156,12 +156,14 @@ export async function setUserPassword(uid: string, newPassword: string): Promise
 }
 
 /**
- * Genererer en menneske-venlig midlertidig adgangskode. Bruger 10 tegn
- * med blandet store/små bogstaver + tal. Undgår forvirrende tegn som
- * 0/O og 1/l/I så koden kan læses op over telefonen uden fejl.
+ * Genererer en 6-cifret midlertidig adgangskode. Kun tal — nemt at taste
+ * paa en telefon (ingen skift mellem caps/lowercase/tal-tastatur) og
+ * nemt at laese op. Firebase Auth har rate-limiting indbygget mod
+ * brute-force, saa 6 cifre er sikkerhedsmaessigt tilstraekkeligt for
+ * en midlertidig kode der erstattes straks efter login.
  */
-export function genererTempPassword(laengde = 10): string {
-	const tegn = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
+export function genererTempPassword(laengde = 6): string {
+	const tegn = '0123456789';
 	const buffer = new Uint8Array(laengde);
 	crypto.getRandomValues(buffer);
 	let kode = '';
