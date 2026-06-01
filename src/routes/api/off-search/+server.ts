@@ -32,7 +32,11 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
 			body: JSON.stringify({
 				q,
 				countries_tags: 'en:denmark',
-				page_size: 20,
+				// 50 saa klient-koden kan filtrere AND-match (kun produkter
+				// der indeholder alle soegeord) og stadig have ~20 tilbage
+				// til at vise. search-a-licious har ingen operator-param og
+				// '+ord1 +ord2' Lucene-syntax giver 0 hits.
+				page_size: 50,
 				fields: OFF_FIELDS
 			})
 		});

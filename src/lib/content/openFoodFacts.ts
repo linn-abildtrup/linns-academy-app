@@ -148,9 +148,26 @@ export async function searchProducts(query: string): Promise<OffResultat[]> {
 		if (!res.ok) return [];
 		const data = (await res.json()) as OffSearchResponse;
 		const produkter = data.hits ?? data.products ?? [];
-		return produkter
+		const parsed = produkter
 			.map((p) => parseProdukt(p))
 			.filter((p): p is OffResultat => p !== null && (p.protein > 0 || p.fiber > 0 || p.kcal > 0));
+
+		// Multi-word soegning skal vaere AND ('cheasy ost' = baade cheasy
+		// og ost). search-a-licious returnerer OR-match som default, saa vi
+		// filtrerer selv: alle soegeord skal optraede i produktets navn
+		// (som inkluderer brand i parentes).
+		const ord = q
+			.toLowerCase()
+			.split(/\s+/)
+			.filter((w) => w.length > 0);
+		const filtreret =
+			ord.length > 1
+				? parsed.filter((p) => {
+						const tekst = p.navn.toLowerCase();
+						return ord.every((w) => tekst.includes(w));
+					})
+				: parsed;
+		return filtreret.slice(0, 20);
 	} catch (e) {
 		console.warn('OFF-soegning fejlede:', e);
 		return [];
