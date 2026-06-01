@@ -140,15 +140,11 @@ export async function searchProducts(query: string): Promise<OffResultat[]> {
 	const q = query.trim();
 	if (q.length < 3) return [];
 	try {
-		const url = new URL('https://search.openfoodfacts.org/search');
-		url.searchParams.set('q', q);
-		url.searchParams.set('countries_tags', 'en:denmark');
-		url.searchParams.set(
-			'fields',
-			'code,product_name,product_name_da,generic_name,generic_name_da,brands,categories_tags,nutriments,image_front_small_url'
-		);
-		url.searchParams.set('page_size', '20');
-		const res = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
+		// Vi kalder vores eget proxy-endpoint i stedet for OFF direkte:
+		// search.openfoodfacts.org's preflight respons mangler
+		// Access-Control-Allow-Origin og blokeres derfor af browseren.
+		// Proxyen videresender requesten server-side.
+		const res = await fetch(`/api/off-search?q=${encodeURIComponent(q)}`);
 		if (!res.ok) return [];
 		const data = (await res.json()) as OffSearchResponse;
 		const produkter = data.hits ?? data.products ?? [];
