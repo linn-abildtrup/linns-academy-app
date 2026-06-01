@@ -130,6 +130,10 @@ export async function searchProducts(query: string): Promise<OffResultat[]> {
 	try {
 		const url = new URL('https://world.openfoodfacts.org/api/v2/search');
 		url.searchParams.set('search_terms', q);
+		// Filtrer paa produkter solgt i Danmark - ellers rammer 'cheasy'
+		// false positives som franske/marokkanske produkter foer Cheasy
+		// Skyr fra Arla. OFF har ~19000 danske produkter.
+		url.searchParams.set('countries_tags_en', 'denmark');
 		url.searchParams.set(
 			'fields',
 			'code,product_name,product_name_da,generic_name,generic_name_da,brands,categories_tags,nutriments,image_front_small_url'
