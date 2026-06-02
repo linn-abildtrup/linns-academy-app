@@ -18,6 +18,9 @@
 	let fejl = $state<string | null>(null);
 	let started = $state(false);
 	let controls: IScannerControls | null = null;
+	let reader: BrowserMultiFormatReader | null = null;
+	let snapper = $state(false);
+	let snapBesked = $state<string | null>(null);
 
 	function portalToBody(node: HTMLElement) {
 		document.body.appendChild(node);
@@ -57,7 +60,7 @@
 			// markant forbedrer chancen for at laese skaeve eller lidt
 			// uskarpe stregkoder paa iOS-kameraer.
 			hints.set(DecodeHintType.TRY_HARDER, true);
-			const reader = new BrowserMultiFormatReader(hints);
+			reader = new BrowserMultiFormatReader(hints);
 
 			if (!video) return;
 			// Brug constraints i stedet for deviceId-lookup: facingMode:'environment'
@@ -92,6 +95,42 @@
 				e instanceof Error && e.name === 'NotAllowedError'
 					? 'Kamera-adgang blev afvist. Giv adgang i indstillinger og prøv igen.'
 					: 'Kunne ikke starte kameraet. Prøv at lukke og åbne igen.';
+		}
+	}
+
+	// Manuel 'Tag billede'-fallback: hvis den kontinuerlige decoder ikke
+	// fanger stregkoden (typisk Android-kameraer med daarlig autofokus),
+	// kan kunden trykke en knap. Vi capturer en frame fra video-streamen,
+	// tegner den paa en canvas og koerer ZXing med TRY_HARDER paa det ene
+	// stillbillede. Det giver decoderen al den CPU-tid den vil have.
+	async function takeSnap() {
+		if (!video || !reader || snapper) return;
+		if (video.videoWidth === 0 || video.videoHeight === 0) return;
+		snapper = true;
+		snapBesked = null;
+		try {
+			const canvas = document.createElement('canvas');
+			canvas.width = video.videoWidth;
+			canvas.height = video.videoHeight;
+			const ctx = canvas.getContext('2d');
+			if (!ctx) {
+				snapBesked = 'Kunne ikke tage billede. Prøv igen.';
+				return;
+			}
+			ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+			const result = await reader.decodeFromCanvas(canvas);
+			if (result) {
+				controls?.stop();
+				onDetected(result.getText());
+			} else {
+				snapBesked = 'Vi kunne ikke læse koden. Hold telefonen tættere på og prøv igen.';
+			}
+		} catch {
+			// ZXing kaster NotFoundException naar intet matcher - det er normal flow,
+			// ikke en fejl. Vis venlig besked.
+			snapBesked = 'Vi kunne ikke læse koden. Hold telefonen tættere på og prøv igen.';
+		} finally {
+			snapper = false;
 		}
 	}
 
@@ -131,7 +170,20 @@
 			{:else if !started}
 				<div class="hint">Starter kamera...</div>
 			{:else}
-				<div class="hint">Hold telefonen så stregkoden er i feltet</div>
+				{#if snapBesked}
+					<div class="snap-besked">{snapBesked}</div>
+				{:else}
+					<div class="hint">Hold telefonen så stregkoden er i feltet</div>
+				{/if}
+				<button
+					type="button"
+					class="snap-knap"
+					onclick={takeSnap}
+					disabled={snapper}
+					aria-label="Tag billede af stregkode"
+				>
+					{snapper ? 'Læser…' : '📷 Tag billede'}
+				</button>
 			{/if}
 		</div>
 	</div>
@@ -305,5 +357,39 @@
 		border-radius: 12px;
 		display: inline-block;
 		max-width: 320px;
+	}
+
+	.snap-besked {
+		font-family: var(--ff-b);
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: #fff;
+		padding: 12px 16px;
+		background: rgba(184, 70, 70, 0.85);
+		border-radius: 12px;
+		display: inline-block;
+		max-width: 320px;
+		margin-bottom: 12px;
+	}
+
+	.snap-knap {
+		font-family: var(--ff-b);
+		font-size: calc(15px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: #fff;
+		padding: 14px 22px;
+		background: var(--terra);
+		border: none;
+		border-radius: 999px;
+		cursor: pointer;
+		margin-top: 10px;
+		min-height: 48px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+	}
+	.snap-knap:disabled {
+		opacity: 0.7;
+		cursor: wait;
+	}
+	.snap-knap:active {
+		transform: scale(0.98);
 	}
 </style>
