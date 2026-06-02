@@ -5,6 +5,8 @@
 import {
 	addDoc,
 	collection,
+	deleteDoc,
+	doc,
 	getDocs,
 	orderBy,
 	query
@@ -61,4 +63,13 @@ export async function hentAlleMrsScores(uid: string): Promise<MrsScore[]> {
 	const q = query(mrsCol(uid), orderBy('timestamp', 'asc'));
 	const snap = await getDocs(q);
 	return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<MrsScore, 'id'>) }));
+}
+
+/**
+ * Sletter en MRS-udfyldelse. UI'en eksponerer kun sletning af klientens
+ * SENESTE udfyldelse (som en "fortryd"-funktion) - dette er en bevidst
+ * begraensning saa historik bevares for sammenligning over tid.
+ */
+export async function sletMrsScore(uid: string, scoreId: string): Promise<void> {
+	await deleteDoc(doc(mrsCol(uid), scoreId));
 }

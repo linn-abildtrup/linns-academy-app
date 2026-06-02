@@ -21,7 +21,7 @@
 		type MrsScore,
 		type MrsSliders
 	} from '$lib/content/mrs';
-	import { gemMrsScore, hentAlleMrsScores } from '$lib/firestore/mrs';
+	import { gemMrsScore, hentAlleMrsScores, sletMrsScore } from '$lib/firestore/mrs';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -87,6 +87,32 @@
 		fejl = null;
 		visning = 'resultat';
 		if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
+	}
+
+	let sletter = $state<string | null>(null);
+
+	/**
+	 * Sletter klientens seneste udfyldelse. UI'en eksponerer kun knappen
+	 * paa den nyeste post saa historikken bevares for sammenligning.
+	 */
+	async function sletSeneste(s: MrsScore) {
+		if (!user || sletter || !s.id) return;
+		const dato = formaterDatoTekst(s.timestamp);
+		const bekraeft = window.confirm(
+			`Vil du slette din symptomcheck fra ${dato}? Den kan ikke gendannes.`
+		);
+		if (!bekraeft) return;
+		const id = s.id;
+		sletter = id;
+		try {
+			await sletMrsScore(user.uid, id);
+			tidligereScores = tidligereScores.filter((t) => t.id !== id);
+		} catch (e) {
+			console.error('Kunne ikke slette MRS-score:', e);
+			fejl = 'Kunne ikke slette udfyldelsen. Prøv igen.';
+		} finally {
+			sletter = null;
+		}
 	}
 
 	function tilbageTilForside() {
@@ -388,24 +414,39 @@
 				<p class="hint">Du har ikke udfyldt en symptomcheck endnu.</p>
 			{:else}
 				<div class="historik-liste">
-					{#each tidligereSorteret as s (s.id)}
+					{#each tidligereSorteret as s, i (s.id)}
 						{@const interp = getInterpretation(s.total)}
-						<button
-							type="button"
-							class="historik-rad"
-							onclick={() => aabnTidligere(s)}
-						>
-							<div class="historik-dato">{formaterDatoTekst(s.timestamp)}</div>
-							<div class="historik-info">
-								<div class="historik-score" style="color: {interp.color};">
-									{s.total}<span class="historik-max">/44</span>
+						{@const erNyeste = i === 0}
+						<div class="historik-rad-wrap">
+							<button
+								type="button"
+								class="historik-rad"
+								onclick={() => aabnTidligere(s)}
+							>
+								<div class="historik-dato">{formaterDatoTekst(s.timestamp)}</div>
+								<div class="historik-info">
+									<div class="historik-score" style="color: {interp.color};">
+										{s.total}<span class="historik-max">/44</span>
+									</div>
+									<div class="historik-label" style="color: {interp.color};">
+										{interp.label}
+									</div>
 								</div>
-								<div class="historik-label" style="color: {interp.color};">
-									{interp.label}
-								</div>
-							</div>
-							<Icon name="chevron-r" size={14} color="var(--text3)" />
-						</button>
+								<Icon name="chevron-r" size={14} color="var(--text3)" />
+							</button>
+							{#if erNyeste}
+								<button
+									type="button"
+									class="slet-knap"
+									onclick={() => sletSeneste(s)}
+									disabled={sletter === s.id}
+									aria-label="Slet seneste udfyldelse"
+									title="Slet seneste udfyldelse"
+								>
+									<Icon name="trash" size={14} color="var(--text3)" />
+								</button>
+							{/if}
+						</div>
 					{/each}
 				</div>
 			{/if}
@@ -883,7 +924,35 @@
 		gap: 8px;
 	}
 
+	.historik-rad-wrap {
+		display: flex;
+		gap: 6px;
+		align-items: stretch;
+	}
+
+	.slet-knap {
+		min-width: 40px;
+		padding: 0 10px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	.slet-knap:hover {
+		background: rgba(184, 70, 70, 0.08);
+		border-color: rgba(184, 70, 70, 0.4);
+	}
+	.slet-knap:disabled {
+		opacity: 0.5;
+		cursor: wait;
+	}
+
 	.historik-rad {
+		flex: 1;
 		display: flex;
 		align-items: center;
 		gap: 12px;

@@ -132,12 +132,15 @@ service cloud.firestore {
 			}
 
 			// MRS-scorer — udfyldte symptomtjeklister (baseline/midtvejs/afslutning).
-			// Immutable: create + read, ingen update/delete. Sikrer validerede
-			// forskningsdata kan ikke ændres efter udfyldelse.
+			// Update er stadig spærret (data er forskningsdata der ikke må ændres
+			// efter udfyldelse). Delete er åbnet for ejeren så klienten kan
+			// fortryde en lige-udfyldt symptomcheck — UI'en viser dog kun slet
+			// på den nyeste udfyldelse for at bevare historik til sammenligning.
 			match /mrs_scores/{scoreId} {
 				allow read: if request.auth != null && request.auth.uid == uid;
 				allow create: if request.auth != null && request.auth.uid == uid;
-				allow update, delete: if false;
+				allow update: if false;
+				allow delete: if request.auth != null && request.auth.uid == uid;
 			}
 		}
 
