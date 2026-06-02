@@ -875,7 +875,7 @@
 				</button>
 			</div>
 
-			<div class="timer-badge">
+			<div class="timer-badge" translate="no">
 				<svg viewBox="0 0 120 120">
 					<circle
 						cx="60"
