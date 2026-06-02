@@ -62,14 +62,19 @@
 			if (!video) return;
 			// Brug constraints i stedet for deviceId-lookup: facingMode:'environment'
 			// vaelger bagside-kamera robust paa iOS Safari (hvor device-labels er
-			// tomme foer kamera-permission er givet). Hoejere opl0sning gor det
-			// nemmere at laese EAN-13 paa afstand.
+			// tomme foer kamera-permission er givet).
+			//
+			// Opl0sning: ideal 1280x720 med max 1920x1080. Tidligere bad vi om
+			// ideal 1920x1080 - det gjorde at decoderen paa mid-tier Android-
+			// telefoner ikke kunne naar at processe frames hurtigt nok, hvilket
+			// betoed at kunderne saa kameraet kore men aldrig fik et scan-hit.
+			// 1280x720 giver decoderen 3-4x flere frames/sek at arbejde med.
 			controls = await reader.decodeFromConstraints(
 				{
 					video: {
 						facingMode: { ideal: 'environment' },
-						width: { ideal: 1920 },
-						height: { ideal: 1080 }
+						width: { ideal: 1280, max: 1920 },
+						height: { ideal: 720, max: 1080 }
 					}
 				},
 				video,
