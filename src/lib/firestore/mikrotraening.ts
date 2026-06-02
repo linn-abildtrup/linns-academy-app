@@ -252,21 +252,33 @@ export async function gemProgramValg(
 export async function synkroniserTraeningsvariant(
 	uid: string,
 	variant: Variant,
-	productId: string | null
+	productId: string | null,
+	forlobId: string | null = null
 ): Promise<void> {
+	const programId = programIdForVariant(variant);
 	// userDoc opdateres altid paa selve users/{uid}-doc'en (IKKE
 	// adminKlient-sub-path) - mikrotraeningVariant er et felt paa
 	// brugerens identitets-doc og skal vaere ens i alle modes.
-	const opgaver: Promise<unknown>[] = [
-		updateDoc(doc(db, 'users', uid), { mikrotraeningVariant: variant })
-	];
+	// For forloebskunder opdaterer vi samtidig aktivtTraeningsprogram saa
+	// /app/moduler/traening viser den nye variant som 'Aktiv' med det samme.
+	const userPatch: Record<string, unknown> = {
+		mikrotraeningVariant: variant
+	};
+	if (forlobId) {
+		userPatch.aktivtTraeningsprogram = {
+			kilde: 'tildelt',
+			programId,
+			forlobId
+		};
+	}
+	const opgaver: Promise<unknown>[] = [updateDoc(doc(db, 'users', uid), userPatch)];
 	if (productId) {
 		// products-doc'en bruger aktivBrugerBasisPath saa admin-klient-mode
 		// faar data isoleret i sandkassen, som de andre programValg.
 		opgaver.push(
 			setDoc(
 				userProductDoc(uid, productId),
-				{ programValg: { mikrotraening: programIdForVariant(variant) } },
+				{ programValg: { mikrotraening: programId } },
 				{ merge: true }
 			)
 		);

@@ -313,8 +313,11 @@
 		try {
 			// Forloebskunder faar baade userDoc og products synkroniseret
 			// via synkroniserTraeningsvariant. Abo-kunder kun userDoc.
+			// forlobId med saa aktivtTraeningsprogram opdateres og
+			// /app/moduler/traening viser den nye variant som 'Aktiv'.
 			const productId = erForlobskunde ? mtProduktType : null;
-			await synkroniserTraeningsvariant(u.uid, variant, productId);
+			const forlobId = erForlobskunde ? (mtForlobId ?? null) : null;
+			await synkroniserTraeningsvariant(u.uid, variant, productId, forlobId);
 			// Hold ogsaa valgtMtProgramId i sync saa program-listen ikke
 			// viser foraeldet 'aktiv'-markering.
 			if (erForlobskunde) {

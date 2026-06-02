@@ -477,7 +477,8 @@
 			// Abo-kunder har ikke et product-doc - kun userDoc opdateres.
 			const erForlob = userDoc?.accessSource === 'forløb';
 			const productId = erForlob ? aktivProduktType : null;
-			await synkroniserTraeningsvariant(u.uid, variant, productId);
+			const forlobId = erForlob ? (forlob?.id ?? null) : null;
+			await synkroniserTraeningsvariant(u.uid, variant, productId, forlobId);
 		} catch (e) {
 			console.warn('Kunne ikke gemme variant:', e);
 		} finally {
