@@ -95,6 +95,14 @@
 		);
 	}
 
+	// Skjul den generiske 'Mikrotraening'-raekke hvis kunden allerede har
+	// et tildelt mikrotraenings-program (fx mikrotraening_kettlebell eller
+	// mikrotraening_no_kettlebell fra forloebet). Ellers ser hun det samme
+	// valg som baade en generisk-raekke OG en specifik-raekke nedenunder.
+	const harTildeltMikrotraening = $derived(
+		tildelteProgrammer.some((t) => t.programId.startsWith('mikrotraening'))
+	);
+
 	function forlobNavnFor(id: string): string {
 		const produkt = alleProdukter().find((p) => p.forlobId === id);
 		return produkt?.navn ?? id;
@@ -119,6 +127,7 @@
 	</header>
 
 	<div class="program-liste">
+		{#if !harTildeltMikrotraening}
 		<a
 			class="program-row"
 			class:aktiv={erAktivt('mikrotraening')}
@@ -155,6 +164,7 @@
 				</div>
 			{/if}
 		</a>
+		{/if}
 
 		{#if erPremium}
 			{#if indlaeserNyt}

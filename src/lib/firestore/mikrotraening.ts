@@ -23,6 +23,7 @@ import type {
 } from '$lib/content/mikrotraening';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
 import { nulDageDatoer } from '$lib/content/forlob';
+import { programIdForVariant, type Variant } from '$lib/utils/traeningsvariant';
 
 function userProductDoc(uid: string, productId: string) {
 	return doc(db, `${aktivBrugerBasisPath(uid)}/products/${productId}`);
@@ -235,6 +236,42 @@ export async function gemProgramValg(
 	await updateDoc(userProductDoc(uid, productId), {
 		[`programValg.${treaningsform}`]: programId
 	});
+}
+
+/**
+ * Synkroniserer kettlebell-variant til BAADE userDoc.mikrotraeningVariant
+ * OG products/{productId}.programValg.mikrotraening saa valget ses ens
+ * uanset om kunden er paa abonnement, kickstart-forloeb eller Kropsro.
+ *
+ * productId kan vaere null hvis kunden ikke har et aktivt forloebs-produkt
+ * (ren abo-kunde) - saa skrives kun til userDoc.
+ *
+ * Bruger merge:true paa products-doc'en saa andre felter (forlobId,
+ * fremgang, nulDage, egneVaner) bevares.
+ */
+export async function synkroniserTraeningsvariant(
+	uid: string,
+	variant: Variant,
+	productId: string | null
+): Promise<void> {
+	// userDoc opdateres altid paa selve users/{uid}-doc'en (IKKE
+	// adminKlient-sub-path) - mikrotraeningVariant er et felt paa
+	// brugerens identitets-doc og skal vaere ens i alle modes.
+	const opgaver: Promise<unknown>[] = [
+		updateDoc(doc(db, 'users', uid), { mikrotraeningVariant: variant })
+	];
+	if (productId) {
+		// products-doc'en bruger aktivBrugerBasisPath saa admin-klient-mode
+		// faar data isoleret i sandkassen, som de andre programValg.
+		opgaver.push(
+			setDoc(
+				userProductDoc(uid, productId),
+				{ programValg: { mikrotraening: programIdForVariant(variant) } },
+				{ merge: true }
+			)
+		);
+	}
+	await Promise.all(opgaver);
 }
 
 /**

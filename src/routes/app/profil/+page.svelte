@@ -17,9 +17,14 @@
 		gemProgramValg,
 		hentForlobsProgrammer,
 		hentUserProduct,
+		synkroniserTraeningsvariant,
 		tilfoejNulDageInterval,
 		fjernNulDageInterval
 	} from '$lib/firestore/mikrotraening';
+	import {
+		programIdForVariant,
+		type Variant
+	} from '$lib/utils/traeningsvariant';
 	import { hentAktivProduktType } from '$lib/firestore/forlob';
 	import { gemAktivtTraeningsprogram } from '$lib/firestore/mineProgrammer';
 	import { MAX_NUL_DAGE_PR_FORLOB } from '$lib/content/mikrotraening';
@@ -291,22 +296,30 @@
 		}
 	}
 
-	// Variant-valg for abo-brugere (basis/premium): kettlebell vs no-kettlebell.
-	// Skifter aboMikrotraening-programmet med det samme — alle abonnentens
-	// program-views henter variant fra userDoc.mikrotraeningVariant.
+	// Variant-valg: virker for baade abo og forloeb. Synkroniserer
+	// userDoc.mikrotraeningVariant og products/{id}.programValg.mikrotraening
+	// saa valget afspejles ens overalt (forsiden, traeningsmodul, profil).
 	const erAbonnent = $derived(userDoc?.accessSource === 'abonnement');
 	const erForlobskunde = $derived(userDoc?.accessSource === 'forløb');
-	let varGemmer = $state<'kettlebell' | 'no_kettlebell' | null>(null);
+	let varGemmer = $state<Variant | null>(null);
 	let varFejl = $state<string | null>(null);
 
-	async function vaelgVariant(variant: 'kettlebell' | 'no_kettlebell') {
+	async function vaelgVariant(variant: Variant) {
 		const u = user;
 		if (!u || varGemmer) return;
 		if ((userDoc?.mikrotraeningVariant ?? 'no_kettlebell') === variant) return;
 		varGemmer = variant;
 		varFejl = null;
 		try {
-			await updateDoc(doc_ref(db, 'users', u.uid), { mikrotraeningVariant: variant });
+			// Forloebskunder faar baade userDoc og products synkroniseret
+			// via synkroniserTraeningsvariant. Abo-kunder kun userDoc.
+			const productId = erForlobskunde ? mtProduktType : null;
+			await synkroniserTraeningsvariant(u.uid, variant, productId);
+			// Hold ogsaa valgtMtProgramId i sync saa program-listen ikke
+			// viser foraeldet 'aktiv'-markering.
+			if (erForlobskunde) {
+				valgtMtProgramId = programIdForVariant(variant);
+			}
 		} catch (e) {
 			console.error(e);
 			varFejl = 'Kunne ikke skifte variant. Prøv igen.';
@@ -507,52 +520,9 @@
 		</section>
 	{/if}
 
-	{#if erForlobskunde && mtProgrammer.length > 0}
-		<section class="sektion">
-			<h2 class="sektion-titel">Mikrotræning — program</h2>
-			<p class="sektion-sub">
-				Vælg om du træner med eller uden udstyr. Dit program opdateres med det samme.
-			</p>
-			{#if mtFejl}
-				<div class="status-besked fejl">{mtFejl}</div>
-			{/if}
-			<div class="program-liste">
-				{#each mtProgrammer as p (p.id)}
-					{@const aktiv = valgtMtProgramId === p.id}
-					{@const gemmerDenne = mtGemmer === p.id}
-					<button
-						class="program-knap"
-						class:aktiv
-						type="button"
-						onclick={() => vaelgMtProgram(p.id)}
-						disabled={mtGemmer !== null}
-					>
-						<span class="program-ikon" class:aktiv>
-							<Icon name={ikonForUdstyr(p.udstyr)} size={18} />
-						</span>
-						<span class="program-tekst">
-							<span class="program-navn">{p.navn}</span>
-							{#if p.beskrivelse}
-								<span class="program-sub">{p.beskrivelse}</span>
-							{/if}
-						</span>
-						<span class="program-status">
-							{#if gemmerDenne}
-								<span class="program-gemmer">Gemmer...</span>
-							{:else if aktiv}
-								<Icon name="check" size={18} color="var(--sage, #6f9e7e)" />
-							{/if}
-						</span>
-					</button>
-				{/each}
-			</div>
-		</section>
-	{:else if erForlobskunde && mtIndlaeser}
-		<section class="sektion">
-			<h2 class="sektion-titel">Mikrotræning — program</h2>
-			<div class="status-besked">Henter dine programvalg...</div>
-		</section>
-	{/if}
+	<!-- Variant-vaelger flyttet under: gaelder ALLE kundetyper. Dette
+	     'mtProgrammer'-block er fjernet for at undgaa dobbelt-visning
+	     af samme valg (med/uden kettlebell) for forloebskunder. -->
 
 	{#if visNulDage}
 		<section class="sektion">
@@ -648,7 +618,7 @@
 		/>
 	{/if}
 
-	{#if erAbonnent}
+	{#if userDoc}
 		{@const aktivVariant = userDoc?.mikrotraeningVariant ?? 'no_kettlebell'}
 		<section class="sektion">
 			<h2 class="sektion-titel">Mikrotræning — program</h2>

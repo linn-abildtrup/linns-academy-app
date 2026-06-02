@@ -31,8 +31,14 @@
 	import {
 		hentUserProduct,
 		hentForlobsProgram,
-		hentForlobsProgrammer
+		hentForlobsProgrammer,
+		synkroniserTraeningsvariant
 	} from '$lib/firestore/mikrotraening';
+	import {
+		harValgtVariant,
+		variantForProgramId,
+		type Variant
+	} from '$lib/utils/traeningsvariant';
 	import { hentMitProgram, hentProgramFremgang } from '$lib/firestore/mineProgrammer';
 	import { hentHistorikForDato } from '$lib/firestore/traeningHistorik';
 	import { senesteEntry, type TraeningHistorikEntry } from '$lib/content/traeningHistorik';
@@ -461,12 +467,17 @@
 		}
 	}
 
-	async function gemVariant(variant: 'kettlebell' | 'no_kettlebell') {
+	async function gemVariant(variant: Variant) {
 		const u = user;
 		if (!u || gemmerVariant) return;
 		gemmerVariant = true;
 		try {
-			await updateDoc(doc_ref(db, 'users', u.uid), { mikrotraeningVariant: variant });
+			// Forløbskunder faar valget gemt baade paa userDoc og paa deres
+			// products-doc saa mikrotraening-siden finder det rigtige program.
+			// Abo-kunder har ikke et product-doc - kun userDoc opdateres.
+			const erForlob = userDoc?.accessSource === 'forløb';
+			const productId = erForlob ? aktivProduktType : null;
+			await synkroniserTraeningsvariant(u.uid, variant, productId);
 		} catch (e) {
 			console.warn('Kunne ikke gemme variant:', e);
 		} finally {
@@ -480,13 +491,41 @@
 
 	function maaskeAabneVariantModal(href: string, e: MouseEvent) {
 		const ud = userDoc;
-		if (!ud || ud.accessSource !== 'abonnement') return;
-		if (ud.mikrotraeningVariant) return;
+		if (!ud) return;
+		if (harValgtVariant(ud, userProduct)) return;
 		// Ingen variant valgt — fang klikket og åbn modal i stedet.
 		e.preventDefault();
 		pendingTraeningHref = href;
 		visVariantModal = true;
 	}
+
+	// Vises pop-up'en automatisk paa mount hvis kunden ikke har valgt
+	// kettlebell-variant endnu. Gaelder ALLE kundetyper (abo + forloeb).
+	// Auto-migrerer forløbskunder der har valgt program via onboarding
+	// men endnu ikke har mikrotraeningVariant sat paa userDoc.
+	$effect(() => {
+		const ud = userDoc;
+		if (!ud || !user) return;
+		// For forløbskunder venter vi til userProduct er hentet saa vi ikke
+		// fejlagtigt viser pop-up'en for nogen der har valgt via onboarding.
+		if (ud.accessSource === 'forløb' && userProduct === null) return;
+		// Auto-sync: variant mangler paa userDoc men programValg er sat.
+		if (!ud.mikrotraeningVariant) {
+			const fraProgram = variantForProgramId(userProduct?.programValg?.mikrotraening);
+			if (fraProgram) {
+				void updateDoc(doc_ref(db, 'users', user.uid), {
+					mikrotraeningVariant: fraProgram
+				}).catch((e) => console.warn('Kunne ikke auto-sync variant:', e));
+				return;
+			}
+		}
+		if (harValgtVariant(ud, userProduct)) return;
+		// Modulbrugere (basis-abo der ikke har truffet noget valg endnu)
+		// haandteres af onboarding-flowet paa selve mikrotraenings-siden -
+		// vi viser ikke pop-up til dem foer vi er sikre paa de skal traene.
+		if (ud.state === 'modulbruger' && !ud.accessLevel) return;
+		visVariantModal = true;
+	});
 
 	const modulbrugerIDag = $derived(formaterDato(new Date()));
 	const modulbrugerAktivDato = $derived(modulbrugerValgtDato ?? modulbrugerIDag);
@@ -2233,12 +2272,6 @@
 		class="variant-modal-bag"
 		role="dialog"
 		aria-modal="true"
-		onclick={(e) => {
-			if (e.target === e.currentTarget) visVariantModal = false;
-		}}
-		onkeydown={(e) => {
-			if (e.key === 'Escape') visVariantModal = false;
-		}}
 		tabindex="-1"
 	>
 		<div class="variant-modal">
