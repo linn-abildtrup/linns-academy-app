@@ -222,6 +222,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		flex-shrink: 0;
 	}
 
 	.dialog-head h2 {
@@ -248,10 +249,12 @@
 		color: var(--text2);
 		margin: 12px 16px 8px;
 		line-height: 1.45;
+		flex-shrink: 0;
 	}
 
 	.soege-omraade {
 		padding: 0 16px 8px;
+		flex-shrink: 0;
 	}
 
 	.soege-input {
@@ -273,6 +276,9 @@
 
 	.chips-omraade {
 		padding: 0 16px 8px;
+		flex-shrink: 0;
+		max-height: 30vh;
+		overflow-y: auto;
 	}
 
 	.chips-label {
@@ -319,6 +325,7 @@
 
 	.liste-omraade {
 		flex: 1;
+		min-height: 0;
 		overflow-y: auto;
 		padding: 0 16px 12px;
 		border-top: 1px solid var(--border);
@@ -412,6 +419,7 @@
 		display: flex;
 		gap: 8px;
 		justify-content: flex-end;
+		flex-shrink: 0;
 	}
 
 	.annuller,

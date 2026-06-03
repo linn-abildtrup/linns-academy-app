@@ -86,9 +86,9 @@
 		position: fixed;
 		inset: 0;
 		background: var(--bg);
-		z-index: 1100;
+		z-index: 2000;
 		overflow-y: auto;
-		padding: 0 0 40px;
+		padding: env(safe-area-inset-top) 0 40px;
 	}
 
 	.head {
