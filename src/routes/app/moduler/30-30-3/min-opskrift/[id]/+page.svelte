@@ -45,6 +45,14 @@
 	let nyBilledeFil = $state<File | null>(null);
 	let nyBilledePreview = $state<string | null>(null);
 
+	// Snapshot af original makro + antal portioner taget ved start af rediger.
+	// Bruges af effekten nedenfor til at omberegne makro-pr-portion saa
+	// total-makro bevares naar kunden aendrer antal portioner. Hvis hun fx
+	// retter fra 4 til 2 portioner, bliver pr-portion-makroen fordoblet
+	// (total er det samme — opskriften har ikke aendret indhold).
+	let originalAntalPortioner = $state(1);
+	let originalMakro = $state<MinOpskriftMakro>({ ...DEFAULT_MAKRO });
+
 	// Læg-som-måltid modal
 	let viserMaaltidModal = $state(false);
 
@@ -93,11 +101,33 @@
 		antalPortioner = opskrift.antalPortioner;
 		ingredienser = opskrift.ingredienser.map((i) => ({ ...i }));
 		makro = { ...opskrift.makroPrPortion };
+		originalAntalPortioner = opskrift.antalPortioner;
+		originalMakro = { ...opskrift.makroPrPortion };
 		nyBilledeFil = null;
 		nyBilledePreview = null;
 		editMode = true;
 		gemBesked = null;
 	}
+
+	// Naar kunden aendrer antal portioner i rediger-mode, omberegn makro-
+	// pr-portion saa total-makro bevares. Eksempel: opskrift med 4 portioner
+	// a 2,5g protein = 10g total. Kunden retter til 2 portioner -> 5g protein
+	// pr portion (total stadig 10g). Skipper omberegning hvis vaerdien er
+	// samme som original (rediger lige startet) eller ugyldig (<=0).
+	$effect(() => {
+		if (!editMode) return;
+		const nyt = antalPortioner;
+		if (!Number.isFinite(nyt) || nyt <= 0) return;
+		if (nyt === originalAntalPortioner) return;
+		const faktor = originalAntalPortioner / nyt;
+		makro = {
+			protein: Math.round(originalMakro.protein * faktor * 10) / 10,
+			fiber: Math.round(originalMakro.fiber * faktor * 10) / 10,
+			kh: Math.round(originalMakro.kh * faktor * 10) / 10,
+			fedt: Math.round(originalMakro.fedt * faktor * 10) / 10,
+			kcal: Math.round(originalMakro.kcal * faktor)
+		};
+	});
 
 	function annullerRediger() {
 		editMode = false;
@@ -381,6 +411,9 @@
 				<label class="felt">
 					<span class="felt-label">Antal portioner</span>
 					<input type="number" min="1" max="20" bind:value={antalPortioner} />
+					<span class="felt-hjaelp">
+						Hvis du ændrer antal portioner, omberegnes makro pr portion automatisk så den samlede opskrift har samme værdier.
+					</span>
 				</label>
 			</section>
 
@@ -812,6 +845,15 @@
 
 	.felt:last-child {
 		margin-bottom: 0;
+	}
+
+	.felt-hjaelp {
+		display: block;
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 6px;
+		line-height: 1.4;
+		font-style: italic;
 	}
 
 	.felt-label {
