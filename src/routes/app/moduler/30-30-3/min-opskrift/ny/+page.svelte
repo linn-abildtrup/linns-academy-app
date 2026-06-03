@@ -304,7 +304,7 @@
 					<span>Fedt (g)</span>
 					<input type="number" min="0" step="0.1" bind:value={makro.fedt} />
 				</label>
-				<label class="makro-felt">
+				<label class="makro-felt fuld">
 					<span>Kalorier</span>
 					<input type="number" min="0" bind:value={makro.kcal} />
 				</label>
@@ -654,6 +654,10 @@
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
+	}
+
+	.makro-felt.fuld {
+		grid-column: span 2;
 	}
 
 	.makro-felt span {
