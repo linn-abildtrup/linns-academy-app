@@ -22,6 +22,7 @@
 		fjernNulDageInterval
 	} from '$lib/firestore/mikrotraening';
 	import {
+		forlobTypeForId,
 		programIdForVariant,
 		type Variant
 	} from '$lib/utils/traeningsvariant';
@@ -321,7 +322,7 @@
 			// Hold ogsaa valgtMtProgramId i sync saa program-listen ikke
 			// viser foraeldet 'aktiv'-markering.
 			if (erForlobskunde) {
-				valgtMtProgramId = programIdForVariant(variant);
+				valgtMtProgramId = programIdForVariant(variant, forlobTypeForId(forlobId));
 			}
 		} catch (e) {
 			console.error(e);

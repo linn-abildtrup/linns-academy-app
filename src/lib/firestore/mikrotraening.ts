@@ -23,7 +23,7 @@ import type {
 } from '$lib/content/mikrotraening';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
 import { nulDageDatoer } from '$lib/content/forlob';
-import { programIdForVariant, type Variant } from '$lib/utils/traeningsvariant';
+import { forlobTypeForId, programIdForVariant, type Variant } from '$lib/utils/traeningsvariant';
 
 function userProductDoc(uid: string, productId: string) {
 	return doc(db, `${aktivBrugerBasisPath(uid)}/products/${productId}`);
@@ -255,7 +255,12 @@ export async function synkroniserTraeningsvariant(
 	productId: string | null,
 	forlobId: string | null = null
 ): Promise<void> {
-	const programId = programIdForVariant(variant);
+	// programId udledes fra forloebets type - Kickstart-forloeb bruger
+	// 'mikrotraening_*'-navne, Kropsro bruger 'kropsro_84_*'. Hvis vi
+	// overskriver med forkert id-format, kan klienten ikke finde sit
+	// program.
+	const forlobType = forlobTypeForId(forlobId);
+	const programId = programIdForVariant(variant, forlobType);
 	// userDoc opdateres altid paa selve users/{uid}-doc'en (IKKE
 	// adminKlient-sub-path) - mikrotraeningVariant er et felt paa
 	// brugerens identitets-doc og skal vaere ens i alle modes.
