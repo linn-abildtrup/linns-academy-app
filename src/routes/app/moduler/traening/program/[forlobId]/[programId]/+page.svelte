@@ -4,14 +4,18 @@
 	import { page } from '$app/state';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
-	import type { Exercise, TrainingDay } from '$lib/content/mikrotraening';
+	import type { Exercise, TrainingDay, UserProduct } from '$lib/content/mikrotraening';
 	import {
 		hentAlleExercises,
 		hentForlobsProgram,
+		hentUserProduct,
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
+	import { hentForlob, hentAktivProduktType } from '$lib/firestore/forlob';
+	import { getCurrentDayMedNulDage, nulDageDatoer } from '$lib/content/forlob';
 	import { getVideoUrl } from '$lib/utils/storage';
 	import { alleProdukter } from '$lib/content/produkter';
+	import type { UserDoc } from '$lib/types';
 
 	const getUser = getContext<() => User | null>('user');
 	const user = $derived(getUser());
@@ -23,6 +27,13 @@
 	let exerciseMap = $state<Map<string, Exercise>>(new Map());
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
+
+	// Dagens dag-nummer beregnes ud fra forlob.startDato + dato i dag - nul-dage.
+	// Bruges til at slaa den rigtige dag op i programData.dage.
+	let aktuelDagNummer = $state<number>(1);
+
+	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const userDoc = $derived(getUserDoc?.() ?? null);
 
 	let aabenPreview = $state<Exercise | null>(null);
 	let previewVideoUrl = $state<string | null>(null);
@@ -66,9 +77,12 @@
 			return;
 		}
 		try {
-			const [data, alleEx] = await Promise.all([
+			const ud = userDoc;
+			const [data, alleEx, forlob, produktType] = await Promise.all([
 				hentForlobsProgram(forlobId, programId),
-				hentAlleExercises()
+				hentAlleExercises(),
+				hentForlob(forlobId),
+				hentAktivProduktType(ud?.forlobIds ?? [forlobId])
 			]);
 			if (!data) {
 				fejl = 'Programmet findes ikke.';
@@ -79,6 +93,29 @@
 			const map = new Map<string, Exercise>();
 			for (const ex of alleEx) map.set(ex.id, ex);
 			exerciseMap = map;
+
+			// Bereg dagens dag-nummer ud fra forlob.startDato + nul-dage.
+			// Forsiden bruger samme logik. Dag-nummeret er 1-indekseret —
+			// getCurrentDayMedNulDage returnerer 0 paa dag 1, saa vi adderer 1.
+			if (forlob) {
+				let nulDatoer: string[] = [];
+				try {
+					const up = await hentUserProduct(user.uid, produktType);
+					nulDatoer = nulDageDatoer(up?.nulDage?.intervaller ?? []);
+				} catch {
+					// Best-effort — fortsaet uden nul-dage hvis vi ikke kan hente
+				}
+				const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
+				const idx = getCurrentDayMedNulDage(
+					{ startDato, antalDage: forlob.antalDage },
+					nulDatoer
+				);
+				if (idx !== null) {
+					// idx er 0-indekseret (dag 1 = 0). Vi vil have 1-indekseret dag-nummer.
+					// Klampes til [1, antalDage] for at undgaa out-of-range.
+					aktuelDagNummer = Math.min(forlob.antalDage, idx + 1);
+				}
+			}
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente programmet.';
@@ -87,9 +124,10 @@
 		}
 	});
 
-	// Dag 1 er det vi viser for nu — flere dage er en future enhancement
 	const dag = $derived<TrainingDay | null>(
-		programData?.dage.find((d) => d.dagNummer === 1) ?? programData?.dage[0] ?? null
+		programData?.dage.find((d) => d.dagNummer === aktuelDagNummer) ??
+			programData?.dage[0] ??
+			null
 	);
 	const harOevelser = $derived((dag?.exercises.length ?? 0) > 0);
 
