@@ -570,6 +570,9 @@
 	// Bruges til at vise grønt flueben på forsidens træning-kort når træningen
 	// er gennemført i dag.
 	let aktivtProgramSenestGennemfoert = $state<number | null>(null);
+	// Dag-numre der er gennemført for det aktive tildelte program. Bruges
+	// til at vise flueben paa historiske datoer paa dato-strippen.
+	let aktivtProgramGennemforteDage = $state<number[]>([]);
 
 	$effect(() => {
 		const aktivt = userDoc?.aktivtTraeningsprogram;
@@ -577,6 +580,7 @@
 		if (!aktivt || aktivt.kilde === 'mikrotraening') {
 			aktivtProgramNavn = null;
 			aktivtProgramSenestGennemfoert = null;
+			aktivtProgramGennemforteDage = [];
 			return;
 		}
 		(async () => {
@@ -588,6 +592,7 @@
 					]);
 					aktivtProgramNavn = program?.navn ?? null;
 					aktivtProgramSenestGennemfoert = fremgang?.senestGennemfort ?? null;
+					aktivtProgramGennemforteDage = fremgang?.gennemforteDage ?? [];
 				} else if (
 					aktivt.kilde === 'tildelt' &&
 					aktivt.forlobId &&
@@ -600,14 +605,17 @@
 					]);
 					aktivtProgramNavn = program?.program.navn ?? null;
 					aktivtProgramSenestGennemfoert = fremgang?.senestGennemfort ?? null;
+					aktivtProgramGennemforteDage = fremgang?.gennemforteDage ?? [];
 				} else {
 					aktivtProgramNavn = null;
 					aktivtProgramSenestGennemfoert = null;
+					aktivtProgramGennemforteDage = [];
 				}
 			} catch (e) {
 				console.error('Kunne ikke hente navn på aktivt program:', e);
 				aktivtProgramNavn = null;
 				aktivtProgramSenestGennemfoert = null;
+				aktivtProgramGennemforteDage = [];
 			}
 		})();
 	});
@@ -1296,9 +1304,15 @@
 	const forlobTraeningGennemfoert = $derived.by<boolean>(() => {
 		const n = valgtDagNummer ?? aktivDagNummer;
 		if (n === null) return false;
+		// Tjek mikrotraening-fremgang foerst (gamle data fra mikrotraening-flow).
 		type FremgangShape = { gennemforte?: number[] };
 		const f = userProduct?.fremgang?.mikrotraening as FremgangShape | undefined;
-		return f?.gennemforte?.includes(n) ?? false;
+		if (f?.gennemforte?.includes(n)) return true;
+		// Tjek ogsaa programFremgang for tildelte programmer (Kropsro 84-dage).
+		// Det er der spil-pagen for tildelt-flowet gemmer fluebens efter
+		// 2026-06-03-fixet.
+		if (aktivtProgramGennemforteDage.includes(n)) return true;
+		return false;
 	});
 
 	// Auto-ja for trænings-vane i forløbet når dagens mikrotræning er gennemført.

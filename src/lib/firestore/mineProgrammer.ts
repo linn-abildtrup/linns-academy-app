@@ -146,6 +146,14 @@ export interface ProgramFremgang {
 	forlobId?: string;
 	/** Array af unix-ms tidspunkter for gennemførte træninger, nyeste først. */
 	gennemforte: number[];
+	/**
+	 * Dag-numre (1-indekseret) som kunden har gennemført. Sorteret stigende.
+	 * Bruges af forsiden + traenings-oversigt til at vise grønt flueben pr dag.
+	 * Tilfojet 2026-06-03 efter Lica's "samme oevelser i et par dage"-bug.
+	 * Bevares parallelt med gennemforte (timestamps) for bagudkompatibilitet —
+	 * gennemforteDage er det aut0ritative for fluebens, gennemforte for tid.
+	 */
+	gennemforteDage?: number[];
 	/** Senest gennemførte. Redundant ift gennemforte[0] men nemmere at query. */
 	senestGennemfort: number;
 }
@@ -159,18 +167,27 @@ export async function tilfoejGennemfoersel(
 	uid: string,
 	kilde: 'eget' | 'tildelt',
 	programId: string,
-	forlobId?: string
+	forlobId?: string,
+	dagNummer?: number
 ): Promise<void> {
 	const id = fremgangDocId(kilde, programId, forlobId);
 	const ref = doc(db, 'users', uid, 'programFremgang', id);
 	const nu = Date.now();
 	const snap = await getDoc(ref);
-	const tidligere = snap.exists() ? (snap.data() as ProgramFremgang).gennemforte : [];
+	const tidligereData = snap.exists() ? (snap.data() as ProgramFremgang) : null;
+	const tidligereTimestamps = tidligereData?.gennemforte ?? [];
+	const tidligereDage = tidligereData?.gennemforteDage ?? [];
+	// Saml dag-numre som et set saa samme dag ikke tilfojes flere gange
+	const dageSet = new Set<number>(tidligereDage);
+	if (typeof dagNummer === 'number' && Number.isFinite(dagNummer) && dagNummer > 0) {
+		dageSet.add(dagNummer);
+	}
 	const fremgang: ProgramFremgang = {
 		kilde,
 		programId,
 		...(forlobId ? { forlobId } : {}),
-		gennemforte: [nu, ...tidligere],
+		gennemforte: [nu, ...tidligereTimestamps],
+		gennemforteDage: [...dageSet].sort((a, b) => a - b),
 		senestGennemfort: nu
 	};
 	await setDoc(ref, fremgang);

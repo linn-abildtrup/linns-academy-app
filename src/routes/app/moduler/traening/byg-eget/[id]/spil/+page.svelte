@@ -552,8 +552,8 @@
 		if (!u) return;
 		traeningGennemfoert = true;
 		void sletSpilPause(u.uid, 'eget', programId).catch(() => undefined);
-		void tilfoejGennemfoersel(u.uid, 'eget', programId).catch((e) =>
-			console.warn('Kunne ikke gemme gennemførsel:', e)
+		void tilfoejGennemfoersel(u.uid, 'eget', programId, undefined, dagNummer ?? undefined).catch(
+			(e) => console.warn('Kunne ikke gemme gennemførsel:', e)
 		);
 		void logTraening(u.uid, {
 			dato: formaterHistorikDato(new Date()),
