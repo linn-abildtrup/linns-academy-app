@@ -862,6 +862,7 @@
 	}
 
 	.makro-edit-felt input {
+		width: 100%;
 		padding: 8px 10px;
 		border: 1px solid var(--border);
 		border-radius: 8px;
@@ -870,6 +871,7 @@
 		font-size: max(16px, calc(14px * var(--fs-scale, 1)));
 		color: var(--text);
 		outline: none;
+		box-sizing: border-box;
 	}
 
 	.ing-rad {
