@@ -15,6 +15,12 @@
 
 import type { Timestamp } from 'firebase/firestore';
 
+import {
+	KICKSTART_PRODUCT_ID,
+	KROPSRO_PRODUCT_ID,
+	type ForlobProduct
+} from '../types';
+
 // ==============================================
 // Typer
 // ==============================================
@@ -47,6 +53,29 @@ export interface Forlob {
 	// default (kropsro=premium, kickstart=basis). Bruges fx til Kickstart
 	// juni 2026 hvor alle kunder skal have premium-adgang.
 	adgangsNiveau?: 'basis' | 'premium';
+}
+
+/**
+ * Mapper et forloeb til hvilken products/{X}-doc kundens fremgang
+ * (mikrotraening, kost, vaner) er gemt under.
+ *
+ * Reglerne er:
+ *  - adgangsNiveau='premium' -> KROPSRO_PRODUCT_ID ('premiumforloeb')
+ *  - Kropsro-forloeb uden eksplicit 'basis' -> KROPSRO_PRODUCT_ID
+ *  - Ellers (Kickstart-forloeb, eller udeladt adgangsNiveau) -> KICKSTART_PRODUCT_ID
+ *
+ * Funktionen er kritisk fordi forsiden og spil-page begge skal finde
+ * det SAMME products-doc — ellers gemmes traening ét sted og laeses et
+ * andet, og kundens flueben "forsvinder". Hvis logikken skal aendres,
+ * skal alle kald-steder opdateres samtidigt.
+ */
+export function produktTypeForForlob(
+	forlob: { type?: ForlobType; adgangsNiveau?: 'basis' | 'premium' }
+): ForlobProduct {
+	const erPremium =
+		forlob.adgangsNiveau === 'premium' ||
+		(forlob.adgangsNiveau !== 'basis' && forlob.type === 'kropsro');
+	return erPremium ? KROPSRO_PRODUCT_ID : KICKSTART_PRODUCT_ID;
 }
 
 export type AllowedEmailStatus = 'invited' | 'registered';

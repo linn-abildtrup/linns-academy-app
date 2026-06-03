@@ -7,8 +7,10 @@ import {
 	parseSimpleroCsv,
 	dageSidenStart,
 	unlockedDays,
-	dagDato
+	dagDato,
+	produktTypeForForlob
 } from './forlobAdgang';
+import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID } from '../types';
 
 describe('detectSeparator', () => {
 	it('detekterer tab som separator', () => {
@@ -232,5 +234,49 @@ describe('dagDato', () => {
 		const oprindelig = start.getTime();
 		dagDato(start, 5);
 		expect(start.getTime()).toBe(oprindelig);
+	});
+});
+
+describe('produktTypeForForlob', () => {
+	it('Kropsro-forloeb (uden adgangsNiveau) -> premiumforloeb', () => {
+		expect(produktTypeForForlob({ type: 'kropsro' })).toBe(KROPSRO_PRODUCT_ID);
+	});
+
+	it('Kickstart-forloeb (uden adgangsNiveau) -> kickstart', () => {
+		expect(produktTypeForForlob({ type: 'kickstart' })).toBe(KICKSTART_PRODUCT_ID);
+	});
+
+	it('Kickstart-forloeb med adgangsNiveau=premium -> premiumforloeb (juni-flow)', () => {
+		expect(produktTypeForForlob({ type: 'kickstart', adgangsNiveau: 'premium' })).toBe(
+			KROPSRO_PRODUCT_ID
+		);
+	});
+
+	it('Kropsro-forloeb med adgangsNiveau=basis -> kickstart (hypotetisk basis-Kropsro)', () => {
+		expect(produktTypeForForlob({ type: 'kropsro', adgangsNiveau: 'basis' })).toBe(
+			KICKSTART_PRODUCT_ID
+		);
+	});
+
+	it('Kickstart med adgangsNiveau=basis -> kickstart', () => {
+		expect(produktTypeForForlob({ type: 'kickstart', adgangsNiveau: 'basis' })).toBe(
+			KICKSTART_PRODUCT_ID
+		);
+	});
+
+	it('Kropsro med adgangsNiveau=premium -> premiumforloeb (eksplicit)', () => {
+		expect(produktTypeForForlob({ type: 'kropsro', adgangsNiveau: 'premium' })).toBe(
+			KROPSRO_PRODUCT_ID
+		);
+	});
+
+	it('forloeb uden type defaulter til kickstart-adfaerd', () => {
+		expect(produktTypeForForlob({})).toBe(KICKSTART_PRODUCT_ID);
+	});
+
+	it('tom adgangsNiveau-felt opfoerer sig som udeladt', () => {
+		expect(produktTypeForForlob({ type: 'kropsro', adgangsNiveau: undefined })).toBe(
+			KROPSRO_PRODUCT_ID
+		);
 	});
 });

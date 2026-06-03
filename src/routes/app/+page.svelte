@@ -7,6 +7,7 @@
 	import type { User } from 'firebase/auth';
 	import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type UserDoc } from '$lib/types';
 	import type { Forlob } from '$lib/content/forlobAdgang';
+	import { produktTypeForForlob } from '$lib/content/forlobAdgang';
 	import type { ForlobDag } from '$lib/content/forlob';
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
@@ -1031,7 +1032,8 @@
 			let aktivtUp: typeof kickstartUp = null;
 			for (const f of forløbsData) {
 				if (!f) continue;
-				const up = f.type === 'kropsro' ? kropsroUp : kickstartUp;
+				const produktType = produktTypeForForlob(f);
+				const up = produktType === KROPSRO_PRODUCT_ID ? kropsroUp : kickstartUp;
 				const nulBrugt = nulDageDatoer(up?.nulDage?.intervaller ?? []).length;
 				const startMs = f.startDato.toMillis();
 				const slutMs = forlobSlutMs(startMs, f.antalDage, nulBrugt);
@@ -1042,7 +1044,7 @@
 				}
 			}
 			if (!aktivt) return;
-			aktivProduktType = aktivt.type === 'kropsro' ? KROPSRO_PRODUCT_ID : KICKSTART_PRODUCT_ID;
+			aktivProduktType = produktTypeForForlob(aktivt);
 			if (aktivtUp) userProduct = aktivtUp;
 			else {
 				const fallback = await hentUserProduct(uid, KICKSTART_PRODUCT_ID);

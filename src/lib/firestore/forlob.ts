@@ -22,6 +22,7 @@ import type {
 	CsvRow,
 	Forlob
 } from '$lib/content/forlobAdgang';
+import { produktTypeForForlob } from '$lib/content/forlobAdgang';
 import type { ForlobDag, LektionItem } from '$lib/content/forlob';
 import { tomForlobDag } from '$lib/content/forlob';
 import {
@@ -110,13 +111,7 @@ export async function hentAktivProduktType(
 		const startMs = f.startDato.toMillis();
 		const slutMs = startMs + f.antalDage * 24 * 60 * 60 * 1000;
 		if (idagMs >= startMs && idagMs < slutMs) {
-			// Premium-Kickstart har adgangsNiveau='premium' og bruger samme
-			// product-doc-id som Kropsro ('premiumforløb'), fordi det er der
-			// allowedEmails-flowet opretter doc'en (activeProduct='premiumforløb').
-			const erPremium =
-				f.adgangsNiveau === 'premium' ||
-				(f.adgangsNiveau !== 'basis' && f.type === 'kropsro');
-			return erPremium ? KROPSRO_PRODUCT_ID : KICKSTART_PRODUCT_ID;
+			return produktTypeForForlob(f);
 		}
 	}
 	return KICKSTART_PRODUCT_ID;
@@ -361,12 +356,13 @@ async function adgangsFelterForForlob(forlobId: string): Promise<{
 	activeSubscription: false;
 }> {
 	const fSnap = await getDoc(doc(db, 'forlob', forlobId));
-	const data = fSnap.exists() ? (fSnap.data() as { type?: string; adgangsNiveau?: 'basis' | 'premium' }) : {};
-	// adgangsNiveau-override har forrang. Ellers default ud fra type:
-	// kropsro = premium, andet = basis.
-	const erPremium =
-		data.adgangsNiveau === 'premium' ||
-		(data.adgangsNiveau !== 'basis' && data.type === 'kropsro');
+	const data = fSnap.exists()
+		? (fSnap.data() as { type?: 'kickstart' | 'kropsro'; adgangsNiveau?: 'basis' | 'premium' })
+		: {};
+	// Genbrug pure-helperen saa adgangsNiveau-/type-reglerne holdes samlet
+	// ét sted. Forsiden + spil-page bruger samme funktion.
+	const produktType = produktTypeForForlob(data);
+	const erPremium = produktType === KROPSRO_PRODUCT_ID;
 	return {
 		activeProduct: erPremium ? 'premiumforløb' : 'kickstart',
 		accessLevel: erPremium ? 'premium' : 'basis',
