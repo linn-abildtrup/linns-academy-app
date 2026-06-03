@@ -10,6 +10,7 @@
 	import {
 		erGyldigAnalyse,
 		DEFAULT_MAKRO,
+		omberegnMakroForNytAntalPortioner,
 		type MinOpskriftIngrediens,
 		type MinOpskriftMakro
 	} from '$lib/content/minOpskrift';
@@ -36,6 +37,25 @@
 	let antalPortioner = $state(4);
 	let ingredienser = $state<MinOpskriftIngrediens[]>([]);
 	let makro = $state<MinOpskriftMakro>({ ...DEFAULT_MAKRO });
+
+	// Snapshot af AI-analyserens originale forslag — bruges af effekten
+	// nedenfor til at omberegne makro-pr-portion saa total-makroen bevares
+	// naar kunden retter antal portioner. Saettes naar analyseren returnerer.
+	let originalAntalPortioner = $state(0);
+	let originalMakro = $state<MinOpskriftMakro>({ ...DEFAULT_MAKRO });
+
+	// Naar kunden retter antal portioner efter AI-analyse, omberegn makro
+	// pr portion saa total-makroen bevares. Pure-funktionen er testet i
+	// minOpskrift.test.ts. Skipper omberegning hvis analysen ikke har koert
+	// endnu (originalAntalPortioner=0) eller vaerdien er uaendret.
+	$effect(() => {
+		if (tilstand !== 'redigerer') return;
+		const nyt = antalPortioner;
+		if (!Number.isFinite(nyt) || nyt <= 0) return;
+		if (originalAntalPortioner <= 0) return;
+		if (nyt === originalAntalPortioner) return;
+		makro = omberegnMakroForNytAntalPortioner(originalMakro, originalAntalPortioner, nyt);
+	});
 
 	function tilfojFiler(filer: FileList | File[]) {
 		infoBesked = null;
@@ -104,6 +124,8 @@
 			antalPortioner = data.antalPortioner;
 			ingredienser = data.ingredienser;
 			makro = data.makroPrPortion;
+			originalAntalPortioner = data.antalPortioner;
+			originalMakro = { ...data.makroPrPortion };
 			tilstand = 'redigerer';
 		} catch (e) {
 			console.error(e);
