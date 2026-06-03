@@ -11,6 +11,7 @@
 	// feltet hvis hun spiser noget der ikke er paa listen.
 	import { PLANTE_KATEGORIER, type PlanteKategori } from '$lib/content/challenge';
 	import { normaliserFoedevareListe } from '$lib/firestore/challenge';
+	import { portal } from '$lib/actions/portal';
 
 	interface Props {
 		startListe: string[];
@@ -91,7 +92,7 @@
 	}
 </script>
 
-<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="fg-titel">
+<div class="overlay" use:portal role="dialog" aria-modal="true" aria-labelledby="fg-titel">
 	<div class="dialog">
 		<header class="dialog-head">
 			<h2 id="fg-titel">Indtast planter</h2>

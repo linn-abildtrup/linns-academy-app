@@ -3,6 +3,7 @@
 	// (med terra/sage/gold-farver) og en bar-graf-liste over de resterende
 	// deltagere. Krydset oeverst kalder onLuk → klient er tilbage paa forsiden.
 	import type { StillingRaekke } from '$lib/content/challenge';
+	import { portal } from '$lib/actions/portal';
 
 	interface Props {
 		challengeNavn: string;
@@ -17,7 +18,7 @@
 	const maxScore = $derived(raekker[0]?.score ?? 0);
 </script>
 
-<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="st-titel">
+<div class="overlay" use:portal role="dialog" aria-modal="true" aria-labelledby="st-titel">
 	<header class="head">
 		<button type="button" class="luk" onclick={onLuk} aria-label="Luk">×</button>
 		<div class="head-tekst">
