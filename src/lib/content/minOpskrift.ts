@@ -50,6 +50,38 @@ export function skalerMakro(
 }
 
 /**
+ * Omberegner makro pr portion naar kunden aendrer antal portioner paa en
+ * gemt opskrift. Total-makroen bevares (opskriftens indhold er det samme),
+ * saa per-portion-vaerdierne skaleres med faktor = original/nyt.
+ *
+ * Eksempel: opskrift med 4 portioner a 2,5g protein (total 10g). Kunden
+ * aendrer til 2 portioner -> 5g protein pr portion (total stadig 10g).
+ *
+ * Returnerer original-makroen uaendret hvis nytAntalPortioner er ugyldigt
+ * (<=0 eller ikke-finit), saa kaldere skal selv validere input.
+ */
+export function omberegnMakroForNytAntalPortioner(
+	originalMakroPrPortion: MinOpskriftMakro,
+	originalAntalPortioner: number,
+	nytAntalPortioner: number
+): MinOpskriftMakro {
+	if (!Number.isFinite(nytAntalPortioner) || nytAntalPortioner <= 0) {
+		return { ...originalMakroPrPortion };
+	}
+	if (!Number.isFinite(originalAntalPortioner) || originalAntalPortioner <= 0) {
+		return { ...originalMakroPrPortion };
+	}
+	const faktor = originalAntalPortioner / nytAntalPortioner;
+	return {
+		protein: Math.round(originalMakroPrPortion.protein * faktor * 10) / 10,
+		fiber: Math.round(originalMakroPrPortion.fiber * faktor * 10) / 10,
+		kh: Math.round(originalMakroPrPortion.kh * faktor * 10) / 10,
+		fedt: Math.round(originalMakroPrPortion.fedt * faktor * 10) / 10,
+		kcal: Math.round(originalMakroPrPortion.kcal * faktor)
+	};
+}
+
+/**
  * Validerer at en AI-analyse-respons har de nødvendige felter.
  * Bruges som første sanity-check før vi viser den til brugeren.
  */

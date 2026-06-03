@@ -12,7 +12,7 @@
 		MinOpskriftIngrediens,
 		MinOpskriftMakro
 	} from '$lib/content/minOpskrift';
-	import { DEFAULT_MAKRO, skalerMakro } from '$lib/content/minOpskrift';
+	import { DEFAULT_MAKRO, omberegnMakroForNytAntalPortioner, skalerMakro } from '$lib/content/minOpskrift';
 	import {
 		formatDatoKey,
 		gaetMaaltidstype,
@@ -110,23 +110,15 @@
 	}
 
 	// Naar kunden aendrer antal portioner i rediger-mode, omberegn makro-
-	// pr-portion saa total-makro bevares. Eksempel: opskrift med 4 portioner
-	// a 2,5g protein = 10g total. Kunden retter til 2 portioner -> 5g protein
-	// pr portion (total stadig 10g). Skipper omberegning hvis vaerdien er
-	// samme som original (rediger lige startet) eller ugyldig (<=0).
+	// pr-portion saa total-makro bevares. Pure-funktionen er testet i
+	// minOpskrift.test.ts (alle 5 felter + edge cases). Skipper omberegning
+	// hvis vaerdien er samme som original (rediger lige startet).
 	$effect(() => {
 		if (!editMode) return;
 		const nyt = antalPortioner;
 		if (!Number.isFinite(nyt) || nyt <= 0) return;
 		if (nyt === originalAntalPortioner) return;
-		const faktor = originalAntalPortioner / nyt;
-		makro = {
-			protein: Math.round(originalMakro.protein * faktor * 10) / 10,
-			fiber: Math.round(originalMakro.fiber * faktor * 10) / 10,
-			kh: Math.round(originalMakro.kh * faktor * 10) / 10,
-			fedt: Math.round(originalMakro.fedt * faktor * 10) / 10,
-			kcal: Math.round(originalMakro.kcal * faktor)
-		};
+		makro = omberegnMakroForNytAntalPortioner(originalMakro, originalAntalPortioner, nyt);
 	});
 
 	function annullerRediger() {
