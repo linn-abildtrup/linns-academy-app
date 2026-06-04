@@ -526,6 +526,22 @@ export function findFodevareForIngrediens(
 		if (viaRenset) return viaRenset;
 	}
 
+	// Multi-word match: hvis ingrediensen har 2+ ord >= 3 tegn, foretraek
+	// foedevarer hvis navn indeholder ALLE ord. Loeser fx "rød peber" som
+	// ellers ville falde tilbage til kun "peber" og matche "Peber, hvid"
+	// fordi "rød" er < 4 tegn og dermed udelukket fra single-word fallback.
+	// "Peberfrugt, rød" matcher begge ord og vinder.
+	const ordTilMulti = (renset || raa).split(/\s+/).filter((w) => w.length >= 3);
+	if (ordTilMulti.length >= 2) {
+		const flerords = foods
+			.filter((f) => {
+				const navn = f.name.toLowerCase();
+				return ordTilMulti.every((w) => navn.includes(w));
+			})
+			.sort((a, b) => a.name.length - b.name.length);
+		if (flerords.length > 0) return flerords[0];
+	}
+
 	// Sidste fallback: prøv hvert af de længste ord i den rensede streng
 	// — fanger sammensatte navne som "fed hvidløg" → "hvidløg" når
 	// renseIngrediensNavn ikke har fjernet 'fed'.

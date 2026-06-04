@@ -381,6 +381,56 @@ describe('erManueltItem og beregnItem for manuel', () => {
 	});
 });
 
+describe('findFodevareForIngrediens multi-word', () => {
+	const peberHvid: Fodevare = {
+		id: 'peber_hvid',
+		name: 'Peber, hvid',
+		cat: 'andet',
+		p: 0,
+		f: 0,
+		kh: 0,
+		fedt: 0,
+		kcal: 0
+	};
+	const peberfrugtRod: Fodevare = {
+		id: 'peberfrugt_rod',
+		name: 'Peberfrugt, rød',
+		cat: 'frugt-gront',
+		p: 1,
+		f: 2,
+		kh: 5,
+		fedt: 0,
+		kcal: 25
+	};
+	const peberfrugtGron: Fodevare = {
+		id: 'peberfrugt_gron',
+		name: 'Peberfrugt, grøn',
+		cat: 'frugt-gront',
+		p: 1,
+		f: 2,
+		kh: 4,
+		fedt: 0,
+		kcal: 20
+	};
+	const foods = [peberHvid, peberfrugtRod, peberfrugtGron];
+
+	it('"rød peber" matcher Peberfrugt, rød (ikke Peber, hvid)', () => {
+		const r = findFodevareForIngrediens('rød peber', foods);
+		expect(r?.id).toBe('peberfrugt_rod');
+	});
+
+	it('"grøn peber" matcher Peberfrugt, grøn', () => {
+		const r = findFodevareForIngrediens('grøn peber', foods);
+		expect(r?.id).toBe('peberfrugt_gron');
+	});
+
+	it('kun "peber" matcher korteste peber-fødevare', () => {
+		const r = findFodevareForIngrediens('peber', foods);
+		// "Peber, hvid" (11) < "Peberfrugt, rød" (15) < "Peberfrugt, grøn" (16)
+		expect(r?.id).toBe('peber_hvid');
+	});
+});
+
 describe('splitListeIngrediens', () => {
 	it('returnerer null for enkelt ingrediens', () => {
 		expect(splitListeIngrediens('Æble')).toBeNull();
