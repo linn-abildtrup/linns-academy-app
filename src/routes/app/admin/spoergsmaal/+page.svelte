@@ -88,10 +88,15 @@
 	type Gruppe = { value: string; label: string; antal: number; ubesvaret: number };
 	const forlobsGrupper = $derived.by<Gruppe[]>(() => {
 		// "Ubesvaret" tælles pr SAMTALE (uid), ikke pr enkelt spørgsmål.
-		// Logik: hvis det NYESTE spørgsmål i en kundes samtale har et svar,
-		// regner vi hele samtalen som besvaret (admin har typisk svaret samlet
-		// på det sidste spørgsmål). Kommer der et nyt spørgsmål senere bliver
+		// Logik: hvis det NYESTE spørgsmål i en kundes samtale har et svar
+		// ELLER er manuelt markeret status='besvaret'/'brugt', regner vi hele
+		// samtalen som besvaret. Kommer der et nyt spørgsmål senere bliver
 		// det nyeste igen ubesvaret, og samtalen tælles igen.
+		function erBesvaret(q: KlientSpoergsmaal): boolean {
+			if (q.svar) return true;
+			if (q.status === 'besvaret' || q.status === 'brugt') return true;
+			return false;
+		}
 		function forlobNoegle(q: KlientSpoergsmaal): string {
 			if (q.forlobId) return q.forlobId;
 			if (q.kundeType === 'modulbruger') return '__modulbrugere';
@@ -111,10 +116,10 @@
 			const i = nyestePrUidOgForlob.get(key);
 			if (!i || getTime(q) > getTime(i)) nyestePrUidOgForlob.set(key, q);
 		}
-		const ubesvaredeOverall = [...nyesteOverallPrUid.values()].filter((q) => !q.svar).length;
+		const ubesvaredeOverall = [...nyesteOverallPrUid.values()].filter((q) => !erBesvaret(q)).length;
 		const ubesvaredePrForlob = new Map<string, number>();
 		for (const nyeste of nyestePrUidOgForlob.values()) {
-			if (nyeste.svar) continue;
+			if (erBesvaret(nyeste)) continue;
 			const fk = forlobNoegle(nyeste);
 			ubesvaredePrForlob.set(fk, (ubesvaredePrForlob.get(fk) ?? 0) + 1);
 		}
@@ -468,6 +473,11 @@
 								Markér som læst
 							</button>
 						{/if}
+						{#if q.status !== 'besvaret'}
+							<button type="button" class="ghost-knap sm" onclick={() => aendreStatus(q.id, 'besvaret')}>
+								Markér som besvaret
+							</button>
+						{/if}
 						{#if q.status !== 'brugt'}
 							<button type="button" class="ghost-knap sm" onclick={() => aendreStatus(q.id, 'brugt')}>
 								Markér som brugt
@@ -583,7 +593,7 @@
 									{q.svar ? 'Rediger svar' : 'Svar klienten'}
 								</button>
 							{/if}
-							{#if q.status !== 'besvaret' && q.svar}
+							{#if q.status !== 'besvaret'}
 								<button
 									type="button"
 									class="ghost-knap sm"
