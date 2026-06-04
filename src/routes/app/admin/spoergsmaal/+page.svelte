@@ -87,39 +87,72 @@
 	// senere er slettet.
 	type Gruppe = { value: string; label: string; antal: number; ubesvaret: number };
 	const forlobsGrupper = $derived.by<Gruppe[]>(() => {
+		// "Ubesvaret" tælles pr SAMTALE (uid), ikke pr enkelt spørgsmål.
+		// Logik: hvis det NYESTE spørgsmål i en kundes samtale har et svar,
+		// regner vi hele samtalen som besvaret (admin har typisk svaret samlet
+		// på det sidste spørgsmål). Kommer der et nyt spørgsmål senere bliver
+		// det nyeste igen ubesvaret, og samtalen tælles igen.
+		function forlobNoegle(q: KlientSpoergsmaal): string {
+			if (q.forlobId) return q.forlobId;
+			if (q.kundeType === 'modulbruger') return '__modulbrugere';
+			return '__uden-forlob';
+		}
+		function getTime(q: KlientSpoergsmaal): number {
+			return q.oprettet?.toDate?.()?.getTime?.() ?? 0;
+		}
+		// Nyeste spørgsmål pr uid (til 'Alle')
+		const nyesteOverallPrUid = new Map<string, KlientSpoergsmaal>();
+		// Nyeste spørgsmål pr (uid, forløb) — pr forløbsfilter
+		const nyestePrUidOgForlob = new Map<string, KlientSpoergsmaal>();
+		for (const q of alle) {
+			const o = nyesteOverallPrUid.get(q.uid);
+			if (!o || getTime(q) > getTime(o)) nyesteOverallPrUid.set(q.uid, q);
+			const key = `${q.uid}::${forlobNoegle(q)}`;
+			const i = nyestePrUidOgForlob.get(key);
+			if (!i || getTime(q) > getTime(i)) nyestePrUidOgForlob.set(key, q);
+		}
+		const ubesvaredeOverall = [...nyesteOverallPrUid.values()].filter((q) => !q.svar).length;
+		const ubesvaredePrForlob = new Map<string, number>();
+		for (const nyeste of nyestePrUidOgForlob.values()) {
+			if (nyeste.svar) continue;
+			const fk = forlobNoegle(nyeste);
+			ubesvaredePrForlob.set(fk, (ubesvaredePrForlob.get(fk) ?? 0) + 1);
+		}
+
 		const map = new Map<string, { navn: string; antal: number; ubesvaret: number }>();
 		let modulAntal = 0;
-		let modulUbesvaret = 0;
 		let udenAntal = 0;
-		let udenUbesvaret = 0;
 		for (const q of alle) {
-			const ubesvaret = !q.svar ? 1 : 0;
 			if (q.forlobId) {
 				const eks = map.get(q.forlobId);
 				if (eks) {
 					eks.antal += 1;
-					eks.ubesvaret += ubesvaret;
 				} else {
 					map.set(q.forlobId, {
 						navn: q.forlobNavn ?? q.forlobId,
 						antal: 1,
-						ubesvaret
+						ubesvaret: 0
 					});
 				}
 			} else if (q.kundeType === 'modulbruger') {
 				modulAntal += 1;
-				modulUbesvaret += ubesvaret;
 			} else {
 				udenAntal += 1;
-				udenUbesvaret += ubesvaret;
 			}
 		}
+		// Sæt ubesvaret-tællerne fra samtale-baseret beregning
+		for (const [forlobId, info] of map) {
+			info.ubesvaret = ubesvaredePrForlob.get(forlobId) ?? 0;
+		}
+		const modulUbesvaret = ubesvaredePrForlob.get('__modulbrugere') ?? 0;
+		const udenUbesvaret = ubesvaredePrForlob.get('__uden-forlob') ?? 0;
+
 		const grupper: Gruppe[] = [
 			{
 				value: 'alle',
-				label: `Alle (${alle.length}, ${alle.filter((q) => !q.svar).length} ubesvarede)`,
+				label: `Alle (${alle.length}, ${ubesvaredeOverall} ubesvarede)`,
 				antal: alle.length,
-				ubesvaret: alle.filter((q) => !q.svar).length
+				ubesvaret: ubesvaredeOverall
 			}
 		];
 		// Sikr at alle aktive forloeb i Firestore ogsaa optraeder — selv
