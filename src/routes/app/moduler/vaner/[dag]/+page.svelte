@@ -366,6 +366,14 @@
 				></textarea>
 			</section>
 
+			{#if !editMode}
+				<div class="rediger-mellem">
+					<button class="ghost-knap" type="button" onclick={startEdit}>
+						✏️ Rediger svar
+					</button>
+				</div>
+			{/if}
+
 			{#if visteVaner.length > 0}
 				<section class="card">
 					<div class="section-label">Dagens vaner</div>
@@ -511,17 +519,13 @@
 			<div class="fejl-besked">{gemFejl}</div>
 		{/if}
 
-		<div class="bund-knapper">
-			{#if editMode}
+		{#if editMode}
+			<div class="bund-knapper">
 				<button class="primary-knap" type="button" onclick={gem} disabled={gemmer}>
 					{gemmer ? 'Gemmer...' : `Gem ${dagTitelLabel()} ✓`}
 				</button>
-			{:else}
-				<button class="ghost-knap" type="button" onclick={startEdit}>
-					✏️ Rediger svar
-				</button>
-			{/if}
-		</div>
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -907,6 +911,12 @@
 
 	.bund-knapper {
 		margin-top: 14px;
+	}
+
+	/* Wrapper for "Rediger svar"-knappen mellem Refleksion og Dagens vaner.
+	   Samme margin som mellem cards saa den foeles naturligt placeret. */
+	.rediger-mellem {
+		margin: 14px 0;
 	}
 
 	.primary-knap,
