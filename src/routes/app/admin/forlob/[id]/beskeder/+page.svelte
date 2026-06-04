@@ -15,13 +15,14 @@
 
 	const forlobId = $derived(page.params.id ?? '');
 
-	type Filter = 'alle' | SpoergsmaalStatus;
+	type Filter = 'alle' | SpoergsmaalStatus | 'ubesvarede';
 	const FILTRE: { id: Filter; label: string }[] = [
 		{ id: 'alle', label: 'Alle' },
 		{ id: 'ny', label: 'Nye' },
 		{ id: 'laest', label: 'Læste' },
 		{ id: 'besvaret', label: 'Besvarede' },
-		{ id: 'brugt', label: 'Brugte' }
+		{ id: 'brugt', label: 'Brugte' },
+		{ id: 'ubesvarede', label: 'Ubesvarede' }
 	];
 	const STATUS_LABELS: Record<SpoergsmaalStatus, string> = {
 		ny: 'Ny',
@@ -43,10 +44,36 @@
 	// Kun spørgsmål for dette forløb
 	const forlobSpoergsmaal = $derived(alle.filter((q) => q.forlobId === forlobId));
 
+	function erBesvaret(q: KlientSpoergsmaal): boolean {
+		if (q.svar) return true;
+		if (q.status === 'besvaret' || q.status === 'brugt') return true;
+		return false;
+	}
+
+	// "Ubesvarede"-filter viser kun det NYESTE spm pr ubesvaret samtale.
+	// Samme logik som /app/admin/spoergsmaal — se forklaring der.
+	const ubesvaredeSpmIds = $derived.by<Set<string>>(() => {
+		const set = new Set<string>();
+		const nyestePrUid = new Map<string, KlientSpoergsmaal>();
+		for (const q of forlobSpoergsmaal) {
+			const eks = nyestePrUid.get(q.uid);
+			const qTime = q.oprettet?.toDate?.()?.getTime?.() ?? 0;
+			const eksTime = eks?.oprettet?.toDate?.()?.getTime?.() ?? 0;
+			if (!eks || qTime > eksTime) nyestePrUid.set(q.uid, q);
+		}
+		for (const q of nyestePrUid.values()) {
+			if (erBesvaret(q)) continue;
+			set.add(q.id);
+		}
+		return set;
+	});
+
 	const filtreret = $derived(
-		aktivtFilter === 'alle'
-			? forlobSpoergsmaal
-			: forlobSpoergsmaal.filter((q) => q.status === aktivtFilter)
+		forlobSpoergsmaal.filter((q) => {
+			if (aktivtFilter === 'alle') return true;
+			if (aktivtFilter === 'ubesvarede') return ubesvaredeSpmIds.has(q.id);
+			return q.status === aktivtFilter;
+		})
 	);
 
 	async function genindlaes() {
@@ -147,7 +174,7 @@
 		return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 	}
 
-	const ubesvaretAntal = $derived(forlobSpoergsmaal.filter((q) => !q.svar).length);
+	const ubesvaretAntal = $derived(ubesvaredeSpmIds.size);
 
 	onMount(() => {
 		void genindlaes();
@@ -260,6 +287,11 @@
 						{#if q.status !== 'laest'}
 							<button type="button" class="ghost-knap sm" onclick={() => aendreStatus(q.id, 'laest')}>
 								Markér som læst
+							</button>
+						{/if}
+						{#if q.status !== 'besvaret'}
+							<button type="button" class="ghost-knap sm" onclick={() => aendreStatus(q.id, 'besvaret')}>
+								Markér som besvaret
 							</button>
 						{/if}
 						{#if q.status !== 'brugt'}
