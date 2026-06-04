@@ -74,7 +74,7 @@
 		// "Gem"-knappen var disabled (rapporteret af Mai-Britt: "har svaret
 		// paa alle 16, men kan ikke gemme"). Default-5 svarer til det
 		// visuelle indtryk og er den neutrale midte hvis kunden er enig.
-		sliders = Object.fromEntries(SLIDER_SPORGSMAAL.map((s) => [s.id, 5])) as MrsSliders;
+		sliders = { energi: 5, mave: 5, cravings: 5, humor: 5, sovn: 5 };
 		netop_gemt = null;
 		fejl = null;
 		visning = 'udfyld';
