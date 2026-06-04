@@ -395,7 +395,7 @@ describe('findFodevareForIngrediens multi-word', () => {
 	const peberfrugtRod: Fodevare = {
 		id: 'peberfrugt_rod',
 		name: 'Peberfrugt, rød',
-		cat: 'frugt-gront',
+		cat: 'gront',
 		p: 1,
 		f: 2,
 		kh: 5,
@@ -405,7 +405,7 @@ describe('findFodevareForIngrediens multi-word', () => {
 	const peberfrugtGron: Fodevare = {
 		id: 'peberfrugt_gron',
 		name: 'Peberfrugt, grøn',
-		cat: 'frugt-gront',
+		cat: 'gront',
 		p: 1,
 		f: 2,
 		kh: 4,
