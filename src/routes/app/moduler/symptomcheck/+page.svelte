@@ -69,7 +69,12 @@
 		// rigtigeScores ekskluderer migration-entries (kunSliders).
 		valgtMaalepunkt = rigtigeScores.length === 0 ? 'forste' : 'opfoelgning';
 		scores = {};
-		sliders = {};
+		// Pre-udfyld sliders med 5 (midten). UI'en viste allerede 5 visuelt
+		// hvis kunden ikke interagerede — men sliders[id] var undefined, saa
+		// "Gem"-knappen var disabled (rapporteret af Mai-Britt: "har svaret
+		// paa alle 16, men kan ikke gemme"). Default-5 svarer til det
+		// visuelle indtryk og er den neutrale midte hvis kunden er enig.
+		sliders = Object.fromEntries(SLIDER_SPORGSMAAL.map((s) => [s.id, 5])) as MrsSliders;
 		netop_gemt = null;
 		fejl = null;
 		visning = 'udfyld';
