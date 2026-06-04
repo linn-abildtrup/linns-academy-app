@@ -13,14 +13,15 @@
 	import { hentAlleForlob } from '$lib/firestore/forlob';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 
-	type Filter = 'alle' | SpoergsmaalStatus;
+	type Filter = 'alle' | SpoergsmaalStatus | 'ubesvarede';
 
 	const FILTRE: { id: Filter; label: string }[] = [
 		{ id: 'alle', label: 'Alle' },
 		{ id: 'ny', label: 'Nye' },
 		{ id: 'laest', label: 'Læste' },
 		{ id: 'besvaret', label: 'Besvarede' },
-		{ id: 'brugt', label: 'Brugte' }
+		{ id: 'brugt', label: 'Brugte' },
+		{ id: 'ubesvarede', label: 'Ubesvarede' }
 	];
 
 	const STATUS_LABELS: Record<SpoergsmaalStatus, string> = {
@@ -75,10 +76,34 @@
 		return q.forlobId === aktivtForlobFilter;
 	}
 
+	// "Ubesvarede"-filter viser kun det NYESTE spm pr ubesvaret samtale
+	// (inden for det aktive forløbs-filter). Et spm er "den ubesvarede" hvis
+	// det er det seneste i sin kundes samtale OG hverken har svar-felt
+	// udfyldt eller status='besvaret'/'brugt'. Beregnes pr filter-skift saa
+	// kunden ser praecis hvad der venter i den valgte gruppe.
+	const ubesvaredeSpmIds = $derived.by<Set<string>>(() => {
+		const set = new Set<string>();
+		const nyestePrUid = new Map<string, KlientSpoergsmaal>();
+		for (const q of alle.filter(passerForlobFilter)) {
+			const eks = nyestePrUid.get(q.uid);
+			const qTime = q.oprettet?.toDate?.()?.getTime?.() ?? 0;
+			const eksTime = eks?.oprettet?.toDate?.()?.getTime?.() ?? 0;
+			if (!eks || qTime > eksTime) nyestePrUid.set(q.uid, q);
+		}
+		for (const q of nyestePrUid.values()) {
+			if (q.svar) continue;
+			if (q.status === 'besvaret' || q.status === 'brugt') continue;
+			set.add(q.id);
+		}
+		return set;
+	});
+
 	const filtreret = $derived(
-		alle.filter(passerForlobFilter).filter((q) =>
-			aktivtFilter === 'alle' ? true : q.status === aktivtFilter
-		)
+		alle.filter(passerForlobFilter).filter((q) => {
+			if (aktivtFilter === 'alle') return true;
+			if (aktivtFilter === 'ubesvarede') return ubesvaredeSpmIds.has(q.id);
+			return q.status === aktivtFilter;
+		})
 	);
 
 	// Forløbs-grupper til dropdown-filter med antal og ubesvarede.
