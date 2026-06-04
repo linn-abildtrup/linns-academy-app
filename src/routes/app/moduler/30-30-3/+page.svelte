@@ -1138,18 +1138,23 @@
 		}
 		gemmer = true;
 		gemBesked = null;
+
+		const data = {
+			navn,
+			type: gemType,
+			dato: gemDato,
+			items: maaltid,
+			totalP: Math.round(totaler.protein * 10) / 10,
+			totalF: Math.round(totaler.fiber * 10) / 10,
+			totalKh: Math.round(totaler.kh * 10) / 10,
+			totalFedt: Math.round(totaler.fedt * 10) / 10,
+			totalKcal: Math.round(totaler.kcal)
+		};
+
+		// KRITISK del: skriv måltidet til Firestore. Kun hvis dette fejler,
+		// viser vi 'Kunne ikke gemme'-besked og lader kunden prøve igen. Alt
+		// efter denne blok kan fejle uden datatab — måltidet er allerede gemt.
 		try {
-			const data = {
-				navn,
-				type: gemType,
-				dato: gemDato,
-				items: maaltid,
-				totalP: Math.round(totaler.protein * 10) / 10,
-				totalF: Math.round(totaler.fiber * 10) / 10,
-				totalKh: Math.round(totaler.kh * 10) / 10,
-				totalFedt: Math.round(totaler.fedt * 10) / 10,
-				totalKcal: Math.round(totaler.kcal)
-			};
 			if (redigererMaaltid) {
 				await opdaterMaaltid(u.uid, redigererMaaltid.id, data);
 				redigererMaaltid = null;
@@ -1164,24 +1169,37 @@
 					}
 				}
 			}
-			// Ryd måltid efter gem
-			maaltid = [];
-			pendingMaaltidsNavn = null;
-			localStorage.setItem(STORAGE_KEY, '[]');
-			viserGemModal = false;
-			forhaandsValgtDato = null;
-			// Skift til dagbog og indlæs
-			dagbogDato = gemDato;
-			await indlaesDagbog();
-			// Opdatér Seneste-fanen så de fødevarer hun lige har gemt kan findes
-			// i picker-modalen næste gang.
-			void indlaesSenesteFodevarer(u.uid);
-			skiftTab('dagbog');
 		} catch (e) {
-			console.error(e);
+			console.error('Kunne ikke gemme måltidet:', e);
 			gemBesked = { tekst: 'Kunne ikke gemme måltidet. Prøv igen.', type: 'fejl' };
-		} finally {
 			gemmer = false;
+			return;
+		}
+
+		// Hvis vi når hertil ER måltidet gemt paa serveren. Resten er
+		// kosmetik: t0m UI-state, luk modal, skift til dagbog-fanen.
+		maaltid = [];
+		pendingMaaltidsNavn = null;
+		localStorage.setItem(STORAGE_KEY, '[]');
+		viserGemModal = false;
+		forhaandsValgtDato = null;
+		dagbogDato = gemDato;
+		skiftTab('dagbog');
+		gemmer = false;
+
+		// Genindlæs dagbogen + 'Seneste'-fanen i baggrunden. Hvis dette
+		// fejler (fx WiFi-tab efter selve gemmen lykkedes), undgaar vi
+		// at vise en 'Kunne ikke gemme'-besked der ville faa kunden til
+		// at trykke gem igen og lave en dublet. Det er nok at logge og
+		// haabe paa naeste tab-skift indlaeser dataen.
+		try {
+			await indlaesDagbog();
+			void indlaesSenesteFodevarer(u.uid);
+		} catch (e) {
+			console.warn(
+				'Måltidet blev gemt, men dagbog kunne ikke genindlæses (prøv pull-to-refresh):',
+				e
+			);
 		}
 	}
 
