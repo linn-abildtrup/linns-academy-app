@@ -651,6 +651,65 @@ function vaelgEnhed(food: Fodevare, ingrediensEnhed: string): string | undefined
 }
 
 /**
+ * Tjekker om en ingrediens-streng er en LISTE af flere foedevarer (fx
+ * "blanding af mandler, frø og chokolade" eller "grøntsager (gulerod,
+ * peber, tomat)") og returnerer de individuelle dele. Returnerer null
+ * hvis det er en enkelt ingrediens.
+ *
+ * Tre genkendte moenstre:
+ *  1. Parentes: "X (A, B, C)" -> ["A", "B", "C"]
+ *  2. "Af"-prefix: "X af A, B og C" -> ["A", "B", "C"]
+ *  3. Minst 2 separatorer uden prefix: "A, B og C" -> ["A", "B", "C"]
+ *
+ * Pattern 3 kraever 2+ separatorer for at undgaa falske splits paa
+ * "Æble, rå" (modifier-suffix, ikke liste).
+ */
+export function splitListeIngrediens(navn: string): string[] | null {
+	let kandidat: string | null = null;
+
+	// Pattern 1: parenteser med liste-indhold
+	const parMatch = navn.match(/^[^(]+\(([^)]+)\)/);
+	if (parMatch) {
+		kandidat = parMatch[1];
+	}
+
+	// Pattern 2: "... af A, B og C" — typisk "blanding af ...", "håndfuld af ..."
+	if (!kandidat) {
+		const afMatch = navn.match(/\baf\s+(.+)$/i);
+		if (afMatch) {
+			const afterAf = afMatch[1];
+			if (
+				afterAf.includes(',') ||
+				/\s+og\s+/i.test(afterAf) ||
+				/\s+eller\s+/i.test(afterAf)
+			) {
+				kandidat = afterAf;
+			}
+		}
+	}
+
+	// Pattern 3: 2+ separatorer uden prefix
+	if (!kandidat) {
+		const sep =
+			(navn.match(/,/g)?.length ?? 0) +
+			(navn.match(/\s+og\s+/gi)?.length ?? 0) +
+			(navn.match(/\s+eller\s+/gi)?.length ?? 0);
+		if (sep >= 2) kandidat = navn;
+	}
+
+	if (!kandidat) return null;
+
+	const parts = kandidat
+		.split(/,|\s+og\s+|\s+eller\s+/i)
+		.map((s) => s.trim())
+		// Filter: mindst 1 bogstav + length >= 2 (skipper "70%", "ca.", etc.)
+		.filter((s) => /[a-zA-ZæøåÆØÅ]/.test(s) && s.length >= 2);
+
+	if (parts.length < 2) return null;
+	return parts;
+}
+
+/**
  * Matcher en liste af opskrift-ingredienser mod fødevaredatabasen.
  *
  * Returnerer en komplet liste af måltidsitems — både koblede og manuelle —
@@ -671,6 +730,31 @@ export function matchIngredienserMaltid(
 
 	for (const ing of ingredienser) {
 		if (!ing.navn) continue;
+
+		// Tjek om navnet er en liste af flere foedevarer. Hvis ja, deler vi
+		// maengden lige op mellem dem og matcher hver del separat. Det l0ser
+		// fejl-matches som "blanding af mandler..." -> "Bærblanding, frossen"
+		// og "grøntsager (gulerod, peber...)" -> "Forårsrulle med grøntsager".
+		const dele = ing.maengde > 0 ? splitListeIngrediens(ing.navn) : null;
+		if (dele && dele.length > 1) {
+			const pertDel = ing.maengde / dele.length;
+			for (const delNavn of dele) {
+				const food = findFodevareForIngrediens(delNavn, foods);
+				if (!food) {
+					ikkeMatchede.push({ navn: delNavn, maengde: pertDel, enhed: ing.enhed });
+					items.push({
+						foodId: '',
+						portion: pertDel,
+						manuel: { navn: delNavn, enhed: ing.enhed }
+					});
+				} else {
+					const enhedId = vaelgEnhed(food, ing.enhed);
+					items.push({ foodId: food.id, portion: pertDel, enhedId });
+				}
+			}
+			continue;
+		}
+
 		const food = ing.maengde > 0 ? findFodevareForIngrediens(ing.navn, foods) : null;
 		if (!food) {
 			ikkeMatchede.push(ing);

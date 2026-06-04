@@ -10,6 +10,7 @@ import {
 	findFodevareForIngrediens,
 	matchIngredienserMaltid,
 	renseIngrediensNavn,
+	splitListeIngrediens,
 	type Fodevare,
 	type MaaltidsItem
 } from './kost';
@@ -377,5 +378,133 @@ describe('erManueltItem og beregnItem for manuel', () => {
 		];
 		const r = beregnMaaltid(items, map);
 		expect(r.protein).toBe(11);
+	});
+});
+
+describe('splitListeIngrediens', () => {
+	it('returnerer null for enkelt ingrediens', () => {
+		expect(splitListeIngrediens('Æble')).toBeNull();
+		expect(splitListeIngrediens('Skyr, naturel')).toBeNull(); // 1 komma = modifier, ikke liste
+	});
+
+	it('Pattern 1: parenteser med liste-indhold deles', () => {
+		const r = splitListeIngrediens(
+			'grøntsager (gulerødder, rød peber, tomat, agurk eller bladselleri)'
+		);
+		expect(r).toEqual(['gulerødder', 'rød peber', 'tomat', 'agurk', 'bladselleri']);
+	});
+
+	it('Pattern 1: parenteser med kun procent eller tal returnerer null', () => {
+		// "70%" filtreres ud (intet bogstav), 0 parts -> null
+		expect(splitListeIngrediens('Mørk chokolade (70%)')).toBeNull();
+	});
+
+	it('Pattern 2: "blanding af A, B og C" deles', () => {
+		const r = splitListeIngrediens(
+			'blanding af hakkede mandler, solsikkekerner, hakket mørk chokolade 70% og hasselnødder'
+		);
+		expect(r).toEqual([
+			'hakkede mandler',
+			'solsikkekerner',
+			'hakket mørk chokolade 70%',
+			'hasselnødder'
+		]);
+	});
+
+	it('Pattern 2: "håndfuld af A og B" deles', () => {
+		const r = splitListeIngrediens('lille håndfuld af mandler og rosiner');
+		expect(r).toEqual(['mandler', 'rosiner']);
+	});
+
+	it('Pattern 3: 2+ separatorer uden prefix deles', () => {
+		const r = splitListeIngrediens('mandler, solsikkekerner og hasselnødder');
+		expect(r).toEqual(['mandler', 'solsikkekerner', 'hasselnødder']);
+	});
+
+	it('Pattern 3 udløses IKKE af kun 1 separator (undgår modifier-misfortolkning)', () => {
+		// "Æble, rå" har 1 komma — modifier, ikke liste
+		expect(splitListeIngrediens('Æble, rå')).toBeNull();
+		// "Æble og banan" har 1 og — kunne være liste, men vi vil ikke risikere
+		expect(splitListeIngrediens('Æble og banan')).toBeNull();
+	});
+
+	it('filtrerer tomme dele og kun-tegn-dele', () => {
+		// "ca. 100g" har ingen bogstaver fra tags, men noget kan slippe igennem.
+		// Test at "70%" alene filtreres
+		const r = splitListeIngrediens('chokolade af kakao 70% og smør og mælk');
+		expect(r).toEqual(['kakao 70%', 'smør', 'mælk']);
+	});
+});
+
+describe('matchIngredienserMaltid med liste-splitting', () => {
+	const mandler: Fodevare = {
+		id: 'mandler',
+		name: 'Mandler',
+		cat: 'andet',
+		p: 21,
+		f: 12,
+		kh: 22,
+		fedt: 50,
+		kcal: 580
+	};
+	const solsikkekerner: Fodevare = {
+		id: 'solsikkekerner',
+		name: 'Solsikkekerner',
+		cat: 'andet',
+		p: 20,
+		f: 8,
+		kh: 20,
+		fedt: 51,
+		kcal: 584
+	};
+	const hasselnoedder: Fodevare = {
+		id: 'hasselnoedder',
+		name: 'Hasselnødder',
+		cat: 'andet',
+		p: 15,
+		f: 10,
+		kh: 17,
+		fedt: 61,
+		kcal: 628
+	};
+	const baerblanding: Fodevare = {
+		id: 'baerblanding',
+		name: 'Bærblanding, frossen',
+		cat: 'andet',
+		p: 1,
+		f: 4,
+		kh: 8,
+		fedt: 0,
+		kcal: 40
+	};
+	const foods = [mandler, solsikkekerner, hasselnoedder, baerblanding];
+
+	it('liste-ingrediens splittes til separate items med lige fordelt mængde', () => {
+		const ingredienser = [
+			{
+				navn: 'blanding af hakkede mandler, solsikkekerner og hasselnødder',
+				maengde: 30,
+				enhed: 'g'
+			}
+		];
+		const r = matchIngredienserMaltid(ingredienser, foods);
+		expect(r.items).toHaveLength(3);
+		// 30 / 3 = 10 g hver
+		expect(r.items[0].portion).toBe(10);
+		expect(r.items[1].portion).toBe(10);
+		expect(r.items[2].portion).toBe(10);
+		// Skal IKKE matche "Bærblanding, frossen"
+		expect(r.items.find((i) => i.foodId === 'baerblanding')).toBeUndefined();
+		// Skal matche de 3 rigtige
+		expect(r.items.find((i) => i.foodId === 'mandler')).toBeDefined();
+		expect(r.items.find((i) => i.foodId === 'solsikkekerner')).toBeDefined();
+		expect(r.items.find((i) => i.foodId === 'hasselnoedder')).toBeDefined();
+	});
+
+	it('enkelt ingrediens (uden komma/og) bevares som ét item', () => {
+		const r = matchIngredienserMaltid([{ navn: 'Mandler', maengde: 25, enhed: 'g' }], foods);
+		expect(r.items).toHaveLength(1);
+		expect(r.items[0].foodId).toBe('mandler');
+		expect(r.items[0].portion).toBe(25);
 	});
 });
