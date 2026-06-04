@@ -29,6 +29,29 @@
 		return ud;
 	});
 
+	// Beregn kalenderdato for et dag-nummer ud fra forl0bets startDato.
+	// Dag 1 = startDato, dag 2 = startDato + 1 osv. Baseline (dag 0) =
+	// startDato - 1 dag (dagen f0r forl0bet starter).
+	function datoForDag(dagNummer: number): string {
+		if (!forlob) return '';
+		const start = forlob.startDato.toDate();
+		const d = new Date(start);
+		d.setDate(d.getDate() + dagNummer - 1);
+		return d.toLocaleDateString('da-DK', {
+			weekday: 'short',
+			day: 'numeric',
+			month: 'short'
+		});
+	}
+
+	// Farve-gruppe: dag 0-7 = gruppe A, 8-14 = B, 15-21 = A, osv.
+	// Skifter pr 7. dag, gentager A/B/A/B. Baseline (dag 0) hænger sammen
+	// med dag 1-7 visuelt da den udfyldes f0r forl0bet starter.
+	function ugeGruppe(dagNummer: number): 'a' | 'b' {
+		const offset = Math.max(0, dagNummer - 1);
+		return Math.floor(offset / 7) % 2 === 0 ? 'a' : 'b';
+	}
+
 	onMount(async () => {
 		try {
 			const f = await hentForlob(forlobId);
@@ -69,14 +92,16 @@
 		<div class="dag-liste">
 			{#each programDage as dag (dag.dagNummer)}
 				{@const tael = dag.lektioner.length}
+				{@const gruppe = ugeGruppe(dag.dagNummer)}
 				<a class="dag-row" href="/app/admin/forlob/{forlobId}/lektioner/{dag.dagNummer}">
-					<div class="dag-num">{dag.dagNummer}</div>
+					<div class="dag-num gruppe-{gruppe}">{dag.dagNummer}</div>
 					<div class="dag-tekst">
 						<div class="dag-titel">
 							{dag.dagNummer === 0 ? 'Baseline' : `Dag ${dag.dagNummer}`}
 							{#if dag.dagNummer > 0}
 								<span class="dag-uge">· uge {dag.uge}</span>
 							{/if}
+							<span class="dag-dato">· {datoForDag(dag.dagNummer)}</span>
 						</div>
 						{#if tael > 0}
 							<div class="dag-sub">
@@ -204,6 +229,18 @@
 		flex-shrink: 0;
 	}
 
+	/* Farve-grupper: dag 1-7 = terra, 8-14 = sage, 15-21 = terra osv.
+	   Bruger den daempede pendant som baggrund + den faste farve som tekst,
+	   saa det er tydeligt men ikke aggressivt. */
+	.dag-num.gruppe-a {
+		background: var(--tdim);
+		color: var(--terra);
+	}
+	.dag-num.gruppe-b {
+		background: var(--sdim);
+		color: var(--sage);
+	}
+
 	.dag-tekst {
 		flex: 1;
 		min-width: 0;
@@ -216,6 +253,11 @@
 	}
 
 	.dag-uge {
+		color: var(--text3);
+		font-weight: 400;
+	}
+
+	.dag-dato {
 		color: var(--text3);
 		font-weight: 400;
 	}
