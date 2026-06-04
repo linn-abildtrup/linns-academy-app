@@ -30,13 +30,13 @@
 	});
 
 	// Beregn kalenderdato for et dag-nummer ud fra forl0bets startDato.
-	// Dag 1 = startDato, dag 2 = startDato + 1 osv. Baseline (dag 0) =
-	// startDato - 1 dag (dagen f0r forl0bet starter).
+	// Konvention: startDato = baseline (Dag 0). Dag 1 = startDato + 1,
+	// Dag 2 = startDato + 2 osv.
 	function datoForDag(dagNummer: number): string {
 		if (!forlob) return '';
 		const start = forlob.startDato.toDate();
 		const d = new Date(start);
-		d.setDate(d.getDate() + dagNummer - 1);
+		d.setDate(d.getDate() + dagNummer);
 		return d.toLocaleDateString('da-DK', {
 			weekday: 'short',
 			day: 'numeric',
