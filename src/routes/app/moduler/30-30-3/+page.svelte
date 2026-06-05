@@ -180,6 +180,9 @@
 	let offResultater = $state<OffResultat[]>([]);
 	let offSoegerNu = $state(false);
 	let offGemmer = $state<string | null>(null);
+	// A-Z #11: pr-barcode fejl-besked saa kunden ser hvis OFF-gem fejlede.
+	// Mapping barcode -> fejlbesked. Vi viser den under den ramte raekke.
+	let offFejlBesked = $state<Record<string, string>>({});
 
 	// Stregkode-scanner og 'tilføj ny fødevare'-dialog
 	let viserScanner = $state(false);
@@ -442,6 +445,11 @@
 		const u = user;
 		if (!u || offGemmer) return;
 		offGemmer = off.barcode;
+		// Ryd evt tidligere fejl-besked paa denne barcode foer nyt forsoeg
+		if (offFejlBesked[off.barcode]) {
+			const { [off.barcode]: _, ...rest } = offFejlBesked;
+			offFejlBesked = rest;
+		}
 		try {
 			const ny: Omit<Fodevare, 'id'> = {
 				name: off.navn,
@@ -468,6 +476,14 @@
 			offResultater = offResultater.filter((r) => r.barcode !== off.barcode);
 		} catch (e) {
 			console.error('Kunne ikke gemme OFF-produkt:', e);
+			// A-Z #11: tidligere lukkede modalen stille selvom Firestore fejlede.
+			// Nu viser vi en besked under den ramte raekke saa kunden ved hun
+			// skal proeve igen. Raekken forbliver synlig i offResultater (vi
+			// springer over filter-linjen ovenfor) saa hun kan klikke igen.
+			offFejlBesked = {
+				...offFejlBesked,
+				[off.barcode]: 'Produktet kunne ikke gemmes. Tjek dit internet og prøv igen.'
+			};
 		} finally {
 			offGemmer = null;
 		}
@@ -2517,6 +2533,9 @@
 											</span>
 										</button>
 									</div>
+									{#if offFejlBesked[off.barcode]}
+										<div class="off-fejl">{offFejlBesked[off.barcode]}</div>
+									{/if}
 								</div>
 							{/each}
 						{/if}
@@ -3945,6 +3964,15 @@
 		border-radius: 6px;
 		flex-shrink: 0;
 		background: var(--bg2);
+	}
+
+	.off-fejl {
+		padding: 6px 10px 8px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: #8a4a3e;
+		background: #fbeeea;
+		border-left: 3px solid #c4624a;
+		border-radius: 0 0 8px 8px;
 	}
 
 	/* Container der grupperer favorit-stjerne + picker-row på samme linje.
