@@ -161,6 +161,20 @@
 	async function gem() {
 		const u = user;
 		if (!u || gemmer) return;
+		// A-Z #12: valider navn + ingredienser foer gem. F0r blev tomt navn
+		// gemt som 'Min opskrift' (silent default) og tom ingrediens-liste
+		// gemt som tom array (intet indhold) — saa kunden kunne uforvarende
+		// miste sit indhold ved redigering. Nu viser vi tydelig fejl i UI'et.
+		const navnTrimmet = navn.trim();
+		if (!navnTrimmet) {
+			gemBesked = 'Opskriften skal have et navn.';
+			return;
+		}
+		const rensede = ingredienser.filter((i) => i.navn.trim());
+		if (rensede.length === 0) {
+			gemBesked = 'Opskriften skal have mindst én ingrediens.';
+			return;
+		}
 		gemmer = true;
 		gemBesked = null;
 		try {
@@ -176,9 +190,8 @@
 				gammelBilledeUrl = opskrift?.billedeUrl;
 			}
 
-			const rensede = ingredienser.filter((i) => i.navn.trim());
 			await gemMinOpskrift(u.uid, id, {
-				navn: navn.trim() || 'Min opskrift',
+				navn: navnTrimmet,
 				antalPortioner: Math.max(1, antalPortioner),
 				ingredienser: rensede,
 				makroPrPortion: makro,
