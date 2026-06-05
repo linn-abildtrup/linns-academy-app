@@ -372,6 +372,14 @@ service cloud.firestore {
 			allow update, delete: if isAdmin();
 		}
 
+		// AI svar-udkast historik:
+		//   - Indeholder admin's svar + AI-udkast par til stemme-træning
+		//   - Worker'en /api/svar-udkast læser via service account (uden om rules)
+		//   - Kun admin har adgang via klient-SDK
+		match /svarHistorik/{historikId} {
+			allow read, write: if isAdmin();
+		}
+
 		// Program-tildelinger — admin tildeler træningsprogrammer til kunder
 		// eller forløb. Alle autentificerede kan læse (kunde-siden skal kunne
 		// tjekke hvilke programmer hun har adgang til), kun admin skriver.

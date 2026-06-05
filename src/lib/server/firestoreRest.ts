@@ -299,3 +299,73 @@ export async function hentDocsHvorFeltLig(
 	}
 	return result;
 }
+
+export interface QueryOpts {
+	where?: { felt: string; vaerdi: string };
+	orderBy?: { felt: string; retning?: 'ASCENDING' | 'DESCENDING' };
+	limit?: number;
+}
+
+/**
+ * Generisk query — bruges fx til at hente seneste N svar fra et forløb
+ * sorteret efter oprettelsestidspunkt.
+ *
+ * NB: hvis du både har where + orderBy på FORSKELLIGE felter kræver
+ * Firestore et composite index. Vi bruger (forlobId, oprettet) for
+ * svarHistorik — det index skal oprettes manuelt i Firebase Console
+ * første gang queryen kører (Firestore returnerer en URL i fejlen).
+ */
+export async function runQuery(
+	collection: string,
+	opts: QueryOpts
+): Promise<Array<{ id: string; data: Record<string, unknown> }>> {
+	const sa = laesServiceAccount();
+	const token = await hentAccessToken();
+	const structuredQuery: Record<string, unknown> = {
+		from: [{ collectionId: collection }]
+	};
+	if (opts.where) {
+		structuredQuery.where = {
+			fieldFilter: {
+				field: { fieldPath: opts.where.felt },
+				op: 'EQUAL',
+				value: { stringValue: opts.where.vaerdi }
+			}
+		};
+	}
+	if (opts.orderBy) {
+		structuredQuery.orderBy = [
+			{
+				field: { fieldPath: opts.orderBy.felt },
+				direction: opts.orderBy.retning ?? 'DESCENDING'
+			}
+		];
+	}
+	if (opts.limit) structuredQuery.limit = opts.limit;
+
+	const res = await fetch(`${dbBaseUrl(sa.projectId)}:runQuery`, {
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${token}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ structuredQuery })
+	});
+	if (!res.ok) {
+		throw new Error(`Firestore runQuery fejlede (${res.status}): ${await res.text()}`);
+	}
+	const data = (await res.json()) as Array<{
+		document?: { name: string; fields?: Record<string, FirestoreValue> };
+	}>;
+	const result: Array<{ id: string; data: Record<string, unknown> }> = [];
+	for (const row of data) {
+		if (!row.document) continue;
+		const id = row.document.name.split('/').pop() ?? '';
+		const out: Record<string, unknown> = {};
+		for (const [k, v] of Object.entries(row.document.fields ?? {})) {
+			out[k] = fraFirestoreValue(v);
+		}
+		result.push({ id, data: out });
+	}
+	return result;
+}
