@@ -136,7 +136,19 @@
 	async function gemSomMaaltid() {
 		const u = user;
 		if (!u || !opskrift || gemmerMaaltid) return;
-		const p = Math.max(0.01, maaltidPortioner);
+		// A-Z #9: valider portion-input. F0r faldt vi tilbage til 0,01 portion
+		// hvis input var tomt — kunden gemte saa et maaltid registreret som
+		// 0,01 portion uden at vide det (= 0 protein, 1 kalorie, etc).
+		// Nu viser vi en tydelig fejlbesked og lader hende rette selv.
+		if (!Number.isFinite(maaltidPortioner) || maaltidPortioner < 0.25) {
+			maaltidBesked = 'Skriv et antal portioner mellem 0,25 og 20.';
+			return;
+		}
+		if (maaltidPortioner > 20) {
+			maaltidBesked = 'Antal portioner kan h0jst vaere 20.';
+			return;
+		}
+		const p = maaltidPortioner;
 		gemmerMaaltid = true;
 		maaltidBesked = null;
 		try {

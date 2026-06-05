@@ -228,7 +228,16 @@
 	async function gemSomMaaltid() {
 		const u = user;
 		if (!u || !opskrift || gemmerMaaltid) return;
-		const portioner = Math.max(0.01, maaltidPortioner);
+		// A-Z #9: valider portion-input. Samme fix som paa Linns opskrifter.
+		if (!Number.isFinite(maaltidPortioner) || maaltidPortioner < 0.25) {
+			maaltidBesked = 'Skriv et antal portioner mellem 0,25 og 20.';
+			return;
+		}
+		if (maaltidPortioner > 20) {
+			maaltidBesked = 'Antal portioner kan h0jst vaere 20.';
+			return;
+		}
+		const portioner = maaltidPortioner;
 		gemmerMaaltid = true;
 		maaltidBesked = null;
 		try {
