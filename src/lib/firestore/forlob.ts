@@ -8,6 +8,7 @@ import {
 	doc,
 	getDoc,
 	getDocs,
+	onSnapshot,
 	query,
 	serverTimestamp,
 	setDoc,
@@ -281,6 +282,37 @@ export async function kopierForlobIndhold(
 // ==============================================
 // AllowedEmail-helpers
 // ==============================================
+
+/**
+ * Live-lytter paa kundens egen allowedEmail-doc. Fyrer hver gang
+ * Linn aendrer hendes whitelist-entry (fx flytter hende til et nyt
+ * forl0b). Bruges af +layout.svelte til automatisk re-sync uden
+ * at kunden skal lukke/aabne appen.
+ *
+ * Returnerer en unsubscribe-funktion. Kalderen er ansvarlig for at
+ * kalde den ved cleanup.
+ */
+export function lytTilAllowedEmail(
+	email: string,
+	callback: (allowed: AllowedEmail | null) => void
+): () => void {
+	const id = email.trim().toLowerCase();
+	if (!id) return () => {};
+	const ref = doc(db, 'allowedEmails', id);
+	return onSnapshot(
+		ref,
+		(snap) => {
+			if (!snap.exists()) {
+				callback(null);
+				return;
+			}
+			callback(snap.data() as AllowedEmail);
+		},
+		(err) => {
+			console.warn('lytTilAllowedEmail fejlede:', err);
+		}
+	);
+}
 
 /**
  * Henter en allowedEmail-record ud fra email-adressen.

@@ -9,6 +9,7 @@
 		lytTilUserDoc,
 		synkroniserForlobskundeStatus
 	} from '$lib/userDoc';
+	import { lytTilAllowedEmail } from '$lib/firestore/forlob';
 	import type { UserDoc } from '$lib/types';
 	import TabBar from '$lib/components/TabBar.svelte';
 	import Header from '$lib/components/Header.svelte';
@@ -138,12 +139,52 @@
 
 	onMount(() => {
 		let userDocUnsubscribe: (() => void) | null = null;
+		let allowedEmailUnsubscribe: (() => void) | null = null;
+
+		// Sidste gang vi koerte synkronisering. Bruges af visibility-change-
+		// listeneren til at undgaa for hyppige re-syncs (smaa skift mellem
+		// apps maa ikke trigge sync hver gang). Tærskel: 10 minutter.
+		let sidsteSync = Date.now();
+		const SYNC_TAERSKEL_MS = 10 * 60 * 1000;
+
+		// Hjælper: koer synkroniseringen igen og opdater userDoc lokalt.
+		// Bruges baade af allowedEmail-listeneren og visibility-change.
+		async function genSynkroniser(grund: string) {
+			const u = user;
+			if (!u || !u.email) return;
+			try {
+				const aktuel = userDoc ?? (await getUserDoc(u.uid));
+				if (!aktuel) return;
+				const opdateret = await synkroniserForlobskundeStatus(
+					u.uid,
+					u.email,
+					aktuel
+				);
+				userDoc = opdateret;
+				sidsteSync = Date.now();
+				console.log(`[layout] re-syncede pga ${grund}`);
+			} catch (e) {
+				console.warn(`[layout] re-sync (${grund}) fejlede:`, e);
+			}
+		}
+
+		// B) Visibility-change: naar appen vender tilbage til forgrund efter
+		// at have vaeret skjult > 10 min, koerer vi sync igen. Daekker iPhone-
+		// PWA der "vaagner op" efter timer i baggrund uden ny app-start.
+		function onVisibility() {
+			if (document.visibilityState !== 'visible') return;
+			if (Date.now() - sidsteSync < SYNC_TAERSKEL_MS) return;
+			void genSynkroniser('visibility');
+		}
+		document.addEventListener('visibilitychange', onVisibility);
 
 		const authUnsubscribe = onAuthStateChanged(auth, async (u) => {
 			if (!u) {
 				// Ikke logget ind → send til login
 				userDocUnsubscribe?.();
 				userDocUnsubscribe = null;
+				allowedEmailUnsubscribe?.();
+				allowedEmailUnsubscribe = null;
 				await goto('/login');
 				return;
 			}
@@ -166,6 +207,7 @@
 			if (doc && u.email) {
 				try {
 					doc = await synkroniserForlobskundeStatus(u.uid, u.email, doc);
+					sidsteSync = Date.now();
 				} catch (e) {
 					console.warn('Forløbssync fejlede:', e);
 				}
@@ -180,11 +222,24 @@
 			userDocUnsubscribe = lytTilUserDoc(u.uid, (ny) => {
 				if (ny) userDoc = ny;
 			});
+
+			// A) Live-listener paa kundens allowedEmail-doc. Naar Linn flytter
+			// hende til et nyt forl0b eller aendrer adgangs-felter, kommer
+			// aendringen ind her i real-tid og vi koerer sync igen — uden at
+			// kunden skal lukke/aabne appen.
+			allowedEmailUnsubscribe?.();
+			if (u.email) {
+				allowedEmailUnsubscribe = lytTilAllowedEmail(u.email, () => {
+					void genSynkroniser('allowedEmail-aendring');
+				});
+			}
 		});
 
 		return () => {
 			authUnsubscribe();
 			userDocUnsubscribe?.();
+			allowedEmailUnsubscribe?.();
+			document.removeEventListener('visibilitychange', onVisibility);
 		};
 	});
 </script>
