@@ -224,9 +224,10 @@
 			// foerst ved gem uden hendes vidende. Bug paavist 4. juni 2026
 			// af samme moenster som symptomcheck-bug'en.
 			if (prog.isBaseline || prog.isCheckin) {
+				type SliderId = Exclude<keyof CheckinSvar, 'generelTekst'>;
 				const fyldt: CheckinSvar = { ...checkin };
 				for (const q of CHECKIN_SPORGSMAAL) {
-					const id = q.id as keyof CheckinSvar;
+					const id = q.id as SliderId;
 					if (typeof fyldt[id] !== 'number') {
 						fyldt[id] = 5;
 					}
