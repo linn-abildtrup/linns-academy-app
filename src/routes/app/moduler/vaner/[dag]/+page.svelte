@@ -218,6 +218,21 @@
 			} else {
 				editMode = true;
 			}
+			// Pre-udfyld manglende sliders med 5 paa baseline/check-in dage.
+			// UI'en viste 5 visuelt selvom state var undefined — saa kunden
+			// troede hun havde svaret, men hendes "fallback-5" blev fyldt ind
+			// foerst ved gem uden hendes vidende. Bug paavist 4. juni 2026
+			// af samme moenster som symptomcheck-bug'en.
+			if (prog.isBaseline || prog.isCheckin) {
+				const fyldt: CheckinSvar = { ...checkin };
+				for (const q of CHECKIN_SPORGSMAAL) {
+					const id = q.id as keyof CheckinSvar;
+					if (typeof fyldt[id] !== 'number') {
+						fyldt[id] = 5;
+					}
+				}
+				checkin = fyldt;
+			}
 
 			// Hent baseline-svar separat hvis vi er på sidste MRS-checkin
 			// (slutter forløbet). Vi sammenligner mod baseline (dag 0).
