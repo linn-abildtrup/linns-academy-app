@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { getAuth } from 'firebase/auth';
 	import Icon from '$lib/components/Icon.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import {
@@ -12,6 +13,14 @@
 	} from '$lib/firestore/spoergsmaal';
 	import { hentAlleForlob } from '$lib/firestore/forlob';
 	import type { Forlob } from '$lib/content/forlobAdgang';
+	import { gemSvarHistorik } from '$lib/firestore/svarHistorik';
+
+	interface AiUdkast {
+		udkast: string;
+		lavSikkerhed: boolean;
+		skip: boolean;
+		skipBegrundelse: string | null;
+	}
 
 	type Filter = 'alle' | SpoergsmaalStatus | 'ubesvarede';
 
@@ -44,6 +53,11 @@
 	let svarUdkast = $state<Record<string, string>>({});
 	let svarSender = $state<string | null>(null);
 	let aabenSvarId = $state<string | null>(null);
+	let aiUdkast = $state<Record<string, AiUdkast>>({});
+	let aiUdkastLoader = $state<Record<string, boolean>>({});
+	let aiUdkastFejl = $state<Record<string, string>>({});
+	let aiUdkastSkjult = $state<Record<string, boolean>>({});
+	let aiUdkastBrugt = $state<Record<string, boolean>>({});
 
 	// Hele-samtalen-pop-up: hvis sat, vises alle spørgsmål fra denne uid
 	// kronologisk i en modal med samme svar-funktionalitet som hovedlisten.
@@ -289,24 +303,90 @@
 		aabenSvarId = null;
 	}
 
+	async function genererUdkast(q: KlientSpoergsmaal) {
+		aiUdkastLoader[q.id] = true;
+		aiUdkastFejl[q.id] = '';
+		try {
+			const auth = getAuth();
+			const idToken = await auth.currentUser?.getIdToken();
+			if (!idToken) throw new Error('Du er ikke logget ind');
+			const res = await fetch('/api/svar-udkast', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${idToken}`
+				},
+				body: JSON.stringify({ spoergsmaalId: q.id })
+			});
+			if (!res.ok) {
+				const txt = await res.text();
+				throw new Error(`AI-tjenesten svarede ${res.status}: ${txt}`);
+			}
+			const data = (await res.json()) as AiUdkast;
+			aiUdkast[q.id] = data;
+			aiUdkastSkjult[q.id] = false;
+		} catch (e) {
+			console.error(e);
+			aiUdkastFejl[q.id] = e instanceof Error ? e.message : 'Kunne ikke generere udkast';
+		} finally {
+			aiUdkastLoader[q.id] = false;
+		}
+	}
+
+	function brugUdkast(id: string) {
+		const u = aiUdkast[id];
+		if (!u) return;
+		svarUdkast[id] = u.udkast;
+		aiUdkastBrugt[id] = true;
+		aiUdkastSkjult[id] = true;
+	}
+
+	function skjulUdkast(id: string) {
+		aiUdkastSkjult[id] = true;
+	}
+
+	/** Genvej fra spørgsmål-kortet: åbn svar-formularen + start generering med ét klik. */
+	async function aabnSvarOgGenerer(q: KlientSpoergsmaal) {
+		aabnSvar(q);
+		await genererUdkast(q);
+	}
+
 	async function sendSvar(id: string) {
 		const tekst = (svarUdkast[id] ?? '').trim();
 		if (!tekst) {
 			visToast('Skriv et svar først');
 			return;
 		}
+		const q = alle.find((x) => x.id === id);
 		svarSender = id;
 		try {
 			await svarPaaSpoergsmaal(id, tekst);
-			alle = alle.map((q) =>
-				q.id === id
+			alle = alle.map((qx) =>
+				qx.id === id
 					? {
-							...q,
+							...qx,
 							svar: tekst,
 							status: 'besvaret'
 						}
-					: q
+					: qx
 			);
+			// Gem svarHistorik i baggrunden — bruges som few-shot stemme-eksempler
+			if (q) {
+				const u = aiUdkast[id];
+				const brugte = aiUdkastBrugt[id] === true;
+				void gemSvarHistorik({
+					spoergsmaalId: id,
+					forlobId: q.forlobId ?? '',
+					klientUid: q.uid,
+					klientEmail: q.email,
+					spoergsmaalTekst: q.spoergsmaal,
+					udkastTekst: u ? u.udkast : null,
+					endeligTekst: tekst,
+					brugteUdkast: brugte,
+					redigeretEfterBrug: brugte && u ? tekst !== u.udkast : false,
+					lavSikkerhed: u?.lavSikkerhed === true
+				}).catch((e) => console.warn('Kunne ikke gemme svarHistorik:', e));
+			}
 			aabenSvarId = null;
 			visToast('Svar sendt');
 		} catch (e) {
@@ -450,6 +530,66 @@
 
 					{#if aabenSvarId === q.id}
 						<div class="svar-form">
+							{#if aiUdkast[q.id] && !aiUdkastSkjult[q.id]}
+								{#if aiUdkast[q.id].skip}
+									<div class="ai-boks ai-boks-skip">
+										<div class="ai-boks-head">
+											<span class="ai-label">AI foreslår: spring over</span>
+											<button
+												type="button"
+												class="ai-knap-x"
+												onclick={() => skjulUdkast(q.id)}
+												aria-label="Skjul"
+											>
+												×
+											</button>
+										</div>
+										<div class="ai-skip-tekst">
+											{aiUdkast[q.id].skipBegrundelse ?? 'Beskeden kræver ikke nødvendigvis et substantielt svar.'}
+										</div>
+									</div>
+								{:else}
+									<div class="ai-boks">
+										<div class="ai-boks-head">
+											<span class="ai-label">AI-udkast</span>
+											{#if aiUdkast[q.id].lavSikkerhed}
+												<span class="ai-badge-lav">Lav sikkerhed</span>
+											{/if}
+											<button
+												type="button"
+												class="ai-knap-x"
+												onclick={() => skjulUdkast(q.id)}
+												aria-label="Skjul"
+											>
+												×
+											</button>
+										</div>
+										<div class="ai-udkast-tekst">{aiUdkast[q.id].udkast}</div>
+										<div class="ai-knapper">
+											<button
+												type="button"
+												class="primary-knap sm"
+												onclick={() => brugUdkast(q.id)}
+											>
+												Brug udkast
+											</button>
+											<button
+												type="button"
+												class="ghost-knap sm"
+												onclick={() => void genererUdkast(q)}
+												disabled={aiUdkastLoader[q.id]}
+											>
+												{aiUdkastLoader[q.id] ? 'Genererer...' : 'Generér igen'}
+											</button>
+										</div>
+									</div>
+								{/if}
+							{/if}
+
+							{#if aiUdkastFejl[q.id]}
+								<div class="ai-fejl">{aiUdkastFejl[q.id]}</div>
+							{/if}
+
 							<label class="svar-label" for="svar-{q.id}">Svar til klienten</label>
 							<textarea
 								id="svar-{q.id}"
@@ -468,6 +608,28 @@
 								>
 									{svarSender === q.id ? 'Sender...' : q.svar ? 'Opdater svar' : 'Send svar'}
 								</button>
+								{#if !aiUdkast[q.id] && !aiUdkastLoader[q.id]}
+									<button
+										type="button"
+										class="ghost-knap sm ai-trigger"
+										onclick={() => void genererUdkast(q)}
+										disabled={svarSender === q.id}
+									>
+										<span class="ai-trigger-sparkle">✦</span> Generér AI-udkast
+									</button>
+								{:else if aiUdkastLoader[q.id]}
+									<button type="button" class="ghost-knap sm" disabled>
+										AI tænker...
+									</button>
+								{:else if aiUdkastSkjult[q.id]}
+									<button
+										type="button"
+										class="ghost-knap sm"
+										onclick={() => (aiUdkastSkjult[q.id] = false)}
+									>
+										Vis AI-udkast igen
+									</button>
+								{/if}
 								<button
 									type="button"
 									class="ghost-knap sm"
@@ -489,6 +651,15 @@
 							>
 								{q.svar ? 'Rediger svar' : 'Svar klienten'}
 							</button>
+							{#if !q.svar}
+								<button
+									type="button"
+									class="ghost-knap sm ai-trigger"
+									onclick={() => void aabnSvarOgGenerer(q)}
+								>
+									<span class="ai-trigger-sparkle">✦</span> AI-udkast
+								</button>
+							{/if}
 						{/if}
 						<button type="button" class="ghost-knap sm" onclick={() => aabnSamtale(q.uid)}>
 							💬 Vis hele samtalen
@@ -971,6 +1142,105 @@
 	.svar-knapper {
 		display: flex;
 		gap: 6px;
+		flex-wrap: wrap;
+	}
+
+	.ai-boks {
+		background: linear-gradient(180deg, #fbf7f3 0%, #f6efe7 100%);
+		border: 1px solid #e8dbc8;
+		border-radius: 10px;
+		padding: 10px 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.ai-boks-skip {
+		background: var(--bg2);
+		border-color: var(--border);
+	}
+
+	.ai-boks-head {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.ai-label {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--terra);
+		flex: 1;
+	}
+
+	.ai-badge-lav {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 600;
+		background: #f3e3d3;
+		color: #8a4a3e;
+		padding: 2px 8px;
+		border-radius: 99px;
+	}
+
+	.ai-knap-x {
+		background: transparent;
+		border: none;
+		color: var(--text3);
+		font-size: 18px;
+		cursor: pointer;
+		padding: 0;
+		width: 22px;
+		height: 22px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+	}
+
+	.ai-knap-x:hover {
+		background: rgba(0, 0, 0, 0.05);
+		color: var(--text2);
+	}
+
+	.ai-udkast-tekst {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		line-height: 1.55;
+		white-space: pre-wrap;
+	}
+
+	.ai-skip-tekst {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		font-style: italic;
+	}
+
+	.ai-knapper {
+		display: flex;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+
+	.ai-trigger {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+	}
+
+	.ai-trigger-sparkle {
+		color: var(--terra);
+		font-size: 13px;
+	}
+
+	.ai-fejl {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: #8a4a3e;
+		background: #fbeeea;
+		border: 1px solid #f0d6cf;
+		border-radius: 8px;
+		padding: 8px 10px;
 	}
 
 	.toast {
