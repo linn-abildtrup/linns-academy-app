@@ -551,14 +551,40 @@
 
 	let initialiseret = $state(false);
 
+	// A-Z #10: hvis kladden i localStorage er beskadiget (uparsbar eller
+	// ikke et array), viser vi en lille besked til kunden i stedet for
+	// stille at lade dataen forsvinde. Den beskadigede kladde slettes
+	// aktivt saa naeste session starter rent.
+	let kladdeFejlBesked = $state<string | null>(null);
+
 	onMount(async () => {
 		try {
 			const raw = localStorage.getItem(STORAGE_KEY);
 			if (raw) {
-				const parsed = JSON.parse(raw);
-				if (Array.isArray(parsed)) maaltid = parsed;
+				let parsed: unknown;
+				try {
+					parsed = JSON.parse(raw);
+				} catch (parseFejl) {
+					console.warn('Kladde-tekst kunne ikke parses som JSON:', parseFejl);
+					localStorage.removeItem(STORAGE_KEY);
+					kladdeFejlBesked =
+						'Vi kunne ikke gendanne din tidligere kladde. Du må desværre starte forfra.';
+					parsed = null;
+				}
+				if (Array.isArray(parsed)) {
+					maaltid = parsed;
+				} else if (parsed !== null) {
+					// Parsen lykkedes men formatet er ikke en array — sandsynligvis
+					// gammelt format fra en tidligere appversion. Ryd op.
+					console.warn('Kladde havde uventet format, sletter:', parsed);
+					localStorage.removeItem(STORAGE_KEY);
+					kladdeFejlBesked =
+						'Vi kunne ikke gendanne din tidligere kladde. Du må desværre starte forfra.';
+				}
 			}
 		} catch (e) {
+			// localStorage helt utilgaengelig (fx privat browsing) — log uden
+			// at vise besked, det er ikke en fejl kunden kan g0re noget ved.
 			console.warn('Kunne ikke læse gemt måltid:', e);
 		}
 
@@ -1504,6 +1530,17 @@
 		</div>
 
 		{#if aktivTab === 'maaltid'}
+			{#if kladdeFejlBesked}
+				<div class="kladde-fejl">
+					<span>{kladdeFejlBesked}</span>
+					<button
+						type="button"
+						class="kladde-fejl-luk"
+						onclick={() => (kladdeFejlBesked = null)}
+						aria-label="Luk besked"
+					>×</button>
+				</div>
+			{/if}
 			{#if forhaandsValgtDato && !redigererFavorit && !redigererMaaltid}
 				<div class="dato-hint">
 					Du bygger måltid for <strong>{visningsDato(forhaandsValgtDato)}</strong>.
@@ -4023,6 +4060,33 @@
 
 	.byg-for-dag-knap:hover {
 		filter: brightness(0.95);
+	}
+
+	.kladde-fejl {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 12px;
+		margin-bottom: 12px;
+		background: #fbeeea;
+		border: 1px solid #f0d6cf;
+		border-radius: 10px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: #8a4a3e;
+	}
+
+	.kladde-fejl span {
+		flex: 1;
+	}
+
+	.kladde-fejl-luk {
+		background: transparent;
+		border: none;
+		color: #8a4a3e;
+		font-size: calc(18px * var(--fs-scale, 1));
+		cursor: pointer;
+		padding: 0 4px;
+		line-height: 1;
 	}
 
 	.dato-hint {
