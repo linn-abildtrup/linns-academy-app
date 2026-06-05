@@ -6,6 +6,11 @@ import {
 	markerAllowedEmailRegistreret
 } from '$lib/firestore/forlob';
 import { udledState } from '$lib/utils/userAdgang';
+import {
+	forlobTypeForId,
+	programIdForVariant,
+	type Variant
+} from '$lib/utils/traeningsvariant';
 
 /**
  * Opdaterer brugerens udvidet-næring-toggle og daglige mål. Kaldes fra
@@ -237,6 +242,38 @@ export async function synkroniserForlobskundeStatus(
 		opdateringer.forlobIds = arrayUnion(allowed.forlobId);
 		if (current.state !== 'forlobskunde') {
 			opdateringer.state = 'forlobskunde';
+		}
+
+		// Resync aktivtTraeningsprogram til det NYE forl0b. Bug fundet
+		// 5. juni 2026: 81 ud af 276 juni-Kickstart-kunder havde
+		// aktivtTraeningsprogram der pegede paa kickstart_maj_2026 fordi
+		// vi aldrig syncede ved forl0bsskifte. Resultatet var at
+		// klienten ikke saa indhold fra det nye forl0b (fx 0velser Linn
+		// netop havde lagt paa juni-dag-5).
+		//
+		// Variant (kettlebell/no_kettlebell) er kundens valg og bevares.
+		// programId udledes ud fra forl0bs-type (kickstart/kropsro) +
+		// variant. Hvis kunden endnu ikke har valgt variant, lader vi
+		// aktivtTraeningsprogram vaere indtil onboarding s0tter den.
+		const variant: Variant | null =
+			current.mikrotraeningVariant === 'kettlebell' ||
+			current.mikrotraeningVariant === 'no_kettlebell'
+				? current.mikrotraeningVariant
+				: null;
+		const forventetProgramId = variant
+			? programIdForVariant(variant, forlobTypeForId(allowed.forlobId))
+			: null;
+		const skalResynce =
+			forventetProgramId &&
+			(!current.aktivtTraeningsprogram ||
+				current.aktivtTraeningsprogram.forlobId !== allowed.forlobId ||
+				current.aktivtTraeningsprogram.programId !== forventetProgramId);
+		if (skalResynce && forventetProgramId) {
+			opdateringer.aktivtTraeningsprogram = {
+				kilde: 'tildelt',
+				programId: forventetProgramId,
+				forlobId: allowed.forlobId
+			};
 		}
 
 		// Beregn expiresAt = forløbets slutdato og bonusPeriodEndsAt = slut + 90
