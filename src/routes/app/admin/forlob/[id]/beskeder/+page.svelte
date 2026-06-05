@@ -201,6 +201,12 @@
 		aiUdkastSkjult[id] = true;
 	}
 
+	/** Genvej fra spørgsmål-kortet: åbn svar-formularen + start generering med ét klik. */
+	async function aabnSvarOgGenerer(q: KlientSpoergsmaal) {
+		aabnSvar(q);
+		await genererUdkast(q);
+	}
+
 	async function sendSvar(id: string) {
 		const tekst = (svarUdkast[id] ?? '').trim();
 		if (!tekst) {
@@ -442,6 +448,15 @@
 							<button type="button" class="primary-knap sm" onclick={() => aabnSvar(q)}>
 								{q.svar ? 'Rediger svar' : 'Svar klienten'}
 							</button>
+							{#if !q.svar}
+								<button
+									type="button"
+									class="ghost-knap sm ai-trigger"
+									onclick={() => void aabnSvarOgGenerer(q)}
+								>
+									<span class="ai-trigger-sparkle">✦</span> AI-udkast
+								</button>
+							{/if}
 						{/if}
 						{#if q.status !== 'laest'}
 							<button type="button" class="ghost-knap sm" onclick={() => aendreStatus(q.id, 'laest')}>
