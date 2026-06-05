@@ -381,13 +381,24 @@ service cloud.firestore {
 		//   - Brugeren kan læse SIN egen email-record (til login-flow check)
 		//   - Admin kan læse alle og skrive frit (CSV-upload, status-update)
 		//   - login-flow har brug for at kunne sætte status='registered' for sin egen
+		//
+		// A-Z #7 (5. juni 2026): tidligere kunne kunden frit aendre baade status
+		// og registreret-tidsstempel — saa hun kunne markere sig selv som
+		// "registreret" uden faktisk at have logget ind, eller forfalske
+		// tidsstemplet. Nu skal kunden:
+		//   - Kun kunne ændre 'status' og 'registreret' (uændret)
+		//   - status-overgangen SKAL gaa fra 'invited' til 'registered' (enstrenget)
+		//   - hun kan ikke nulstille til 'invited', skifte til andre vaerdier,
+		//     eller aendre 'registreret' uden samtidig at sette status='registered'
 		match /allowedEmails/{email} {
 			allow read: if request.auth != null
 				&& (isAdmin() || request.auth.token.email.lower() == email);
 			allow update: if request.auth != null
 				&& request.auth.token.email.lower() == email
 				&& request.resource.data.diff(resource.data).affectedKeys()
-					.hasOnly(['status', 'registreret']);
+					.hasOnly(['status', 'registreret'])
+				&& resource.data.status == 'invited'
+				&& request.resource.data.status == 'registered';
 			allow create, delete: if isAdmin();
 			allow write: if isAdmin();
 		}
