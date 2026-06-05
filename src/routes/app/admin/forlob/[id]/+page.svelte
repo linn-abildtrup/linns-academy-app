@@ -82,7 +82,10 @@
 			emails = await hentAllowedEmailsForForlob(forlobId);
 		} catch (e) {
 			console.error(e);
-			tilfoejFejl = 'Kunne ikke tilføje kunden.';
+			tilfoejFejl =
+				e instanceof Error && e.message
+					? e.message
+					: 'Kunne ikke tilføje kunden.';
 		} finally {
 			tilfoejer = false;
 		}
@@ -233,7 +236,12 @@
 			parsResultat = null;
 		} catch (e) {
 			console.error(e);
-			importFejl = 'Kunne ikke importere. Prøv igen.';
+			// Vis specifik fejlbesked fra adgangsFelterForForlob (fx "Forløbet
+			// ... findes ikke") saa Linn kan identificere CSV-typo direkte.
+			importFejl =
+				e instanceof Error && e.message
+					? e.message
+					: 'Kunne ikke importere. Prøv igen.';
 		} finally {
 			importerer = false;
 		}

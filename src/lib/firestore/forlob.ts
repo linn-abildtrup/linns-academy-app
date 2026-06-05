@@ -388,9 +388,19 @@ async function adgangsFelterForForlob(forlobId: string): Promise<{
 	activeSubscription: false;
 }> {
 	const fSnap = await getDoc(doc(db, 'forlob', forlobId));
-	const data = fSnap.exists()
-		? (fSnap.data() as { type?: 'kickstart' | 'kropsro'; adgangsNiveau?: 'basis' | 'premium' })
-		: {};
+	if (!fSnap.exists()) {
+		// Bug #4 fra A-Z-review: f0r returnerede vi stille en basis-default
+		// hvis forl0bet ikke fandtes. CSV-import med typo i forl0bId
+		// importerede dermed alle kunder med basis-adgang uden fejl-besked.
+		// Nu kaster vi i stedet — kalderen skal vise en tydelig besked.
+		throw new Error(
+			`Forløbet "${forlobId}" findes ikke. Tjek stavning af forløbs-id. Ingen kunder er importeret.`
+		);
+	}
+	const data = fSnap.data() as {
+		type?: 'kickstart' | 'kropsro';
+		adgangsNiveau?: 'basis' | 'premium';
+	};
 	// Genbrug pure-helperen saa adgangsNiveau-/type-reglerne holdes samlet
 	// ét sted. Forsiden + spil-page bruger samme funktion.
 	const produktType = produktTypeForForlob(data);
