@@ -1,6 +1,8 @@
 // Firestore-helpers for challenge-feature.
 
 import {
+	arrayRemove,
+	arrayUnion,
 	collection,
 	deleteDoc,
 	doc,
@@ -139,29 +141,73 @@ export async function hentMinIndtastning(
 }
 
 /**
- * Gemmer klientens unikke foedevarer for en challenge. Duplikater fjernes
- * og listen normaliseres til trimmet/case-normaliseret form for at undgaa
- * 'Æble' og 'æble' som to forskellige.
+ * Opdaterer klientens indtastning med en EKSPLICIT diff (tilfoej + fjern).
+ *
+ * Vi bruger arrayUnion/arrayRemove i stedet for at sende hele arrayet, fordi
+ * det er vores eneste reelle beskyttelse mod et data-tab fra klient-state-
+ * bugs: hvis dialog-state ved et uheld nulstilles i UI'en, vil tilfoejen kun
+ * tilføje (ikke skjule), og fjernelser kan kun ske med planter klienten
+ * eksplicit har klikket × på (ikke "alt der ikke er i listen").
+ *
+ * Vivian-incidenten 6/6 2026: gammel kode brugte `setDoc({foedevarer: list},
+ * {merge: true})` der erstattede hele arrayet. Hvis dialog-state nulstilledes
+ * til [] og klienten klikkede Gem, blev alle hendes planter slettet.
  */
-export async function gemMinIndtastning(
-	forlobId: string,
-	challengeId: string,
-	uid: string,
-	foedevarer: string[],
-	fornavn: string,
-	efternavn: string
-): Promise<void> {
-	const normaliseret = normaliserFoedevareListe(foedevarer);
-	await setDoc(
-		doc(db, 'forlob', forlobId, 'challenges', challengeId, 'indtastninger', uid),
-		{
-			foedevarer: normaliseret,
-			fornavn: fornavn ?? '',
-			efternavn: efternavn ?? '',
-			opdateret: serverTimestamp()
-		},
-		{ merge: true }
+export async function opdaterMinIndtastning(args: {
+	forlobId: string;
+	challengeId: string;
+	uid: string;
+	tilfoej: string[];
+	fjern: string[];
+	fornavn: string;
+	efternavn: string;
+}): Promise<void> {
+	const tilfoejNorm = normaliserFoedevareListe(args.tilfoej);
+	const fjernNorm = normaliserFoedevareListe(args.fjern);
+	const ref = doc(
+		db,
+		'forlob',
+		args.forlobId,
+		'challenges',
+		args.challengeId,
+		'indtastninger',
+		args.uid
 	);
+
+	// Firestore tillader ikke arrayUnion + arrayRemove paa samme felt i samme
+	// write — vi laver to writes naar begge sider af diff'en findes.
+	const metaFelter = {
+		fornavn: args.fornavn ?? '',
+		efternavn: args.efternavn ?? '',
+		opdateret: serverTimestamp()
+	};
+
+	if (tilfoejNorm.length > 0) {
+		await setDoc(
+			ref,
+			{
+				foedevarer: arrayUnion(...tilfoejNorm),
+				...metaFelter
+			},
+			{ merge: true }
+		);
+	}
+	if (fjernNorm.length > 0) {
+		await setDoc(
+			ref,
+			{
+				foedevarer: arrayRemove(...fjernNorm),
+				...metaFelter
+			},
+			{ merge: true }
+		);
+	}
+	// Hvis ingen diff: sikr at navne/opdateret stadig flushes saa stillingen
+	// viser frisk navne (og at vi har et opdateret-tidsstempel hvis admin
+	// laver fejlsoegning bagefter).
+	if (tilfoejNorm.length === 0 && fjernNorm.length === 0) {
+		await setDoc(ref, metaFelter, { merge: true });
+	}
 }
 
 /**

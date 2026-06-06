@@ -13,19 +13,31 @@
 	import { normaliserFoedevareListe } from '$lib/firestore/challenge';
 	import { portal } from '$lib/actions/portal';
 
+	interface IndtastningDiff {
+		valgte: string[];
+		tilfoej: string[];
+		fjern: string[];
+	}
+
 	interface Props {
 		startListe: string[];
-		onGem: (foedevarer: string[]) => void | Promise<void>;
+		onGem: (diff: IndtastningDiff) => void | Promise<void>;
 		onLuk: () => void;
 		gemmer?: boolean;
 	}
 
 	let { startListe, onGem, onLuk, gemmer = false }: Props = $props();
 
-	let valgte = $state<string[]>([]);
-	$effect(() => {
-		valgte = [...startListe];
-	});
+	// Snapshot af hvad klienten startede med — bruges til at beregne diff ved Gem.
+	// Sættes EN gang i dialogens levetid. Vi bruger ikke $effect her: tidligere
+	// kode reagerede paa startListe-aendringer og overskrev klientens valg
+	// (Vivian-incidenten 6/6 2026). Hvis startListe-prop ENDRES mens dialogen
+	// er aaben (fx parent re-fetcher data), ignorerer vi det — det er bedre at
+	// klienten ser sin egen aktive redigering end at miste den.
+	// svelte-ignore state_referenced_locally
+	const oprindelige = [...startListe];
+	// svelte-ignore state_referenced_locally
+	let valgte = $state<string[]>([...startListe]);
 
 	let soegeOrd = $state('');
 
@@ -88,7 +100,14 @@
 	}
 
 	async function gem() {
-		await onGem(valgte);
+		// Beregn diff i stedet for at sende hele arrayet. Det betyder en
+		// nulstillet liste ikke kan slette planter paa serveren — server-API'et
+		// bruger arrayUnion(tilfoej) + arrayRemove(fjern).
+		const oprindeligeLower = new Set(oprindelige.map((v) => v.toLowerCase()));
+		const valgteLower = new Set(valgte.map((v) => v.toLowerCase()));
+		const tilfoej = valgte.filter((v) => !oprindeligeLower.has(v.toLowerCase()));
+		const fjern = oprindelige.filter((v) => !valgteLower.has(v.toLowerCase()));
+		await onGem({ valgte, tilfoej, fjern });
 	}
 </script>
 

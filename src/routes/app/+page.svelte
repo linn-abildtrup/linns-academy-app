@@ -23,7 +23,7 @@
 	import type { Challenge, ChallengeIndtastning } from '$lib/content/challenge';
 	import { beregnStilling, challengeDisplayNavn } from '$lib/content/challenge';
 	import {
-		gemMinIndtastning as gemChallengeIndtastning,
+		opdaterMinIndtastning as opdaterChallengeIndtastning,
 		hentAlleIndtastninger as hentAlleChallengeIndtastninger,
 		hentMinIndtastning as hentMinChallengeIndtastning
 	} from '$lib/firestore/challenge';
@@ -1090,7 +1090,11 @@
 		visChallengeDialog = true;
 	}
 
-	async function gemChallengeOgVisStilling(foedevarer: string[]) {
+	async function gemChallengeOgVisStilling(diff: {
+		valgte: string[];
+		tilfoej: string[];
+		fjern: string[];
+	}) {
 		if (!aktivChallenge || !forlob || !user || !userDoc) return;
 		gemmerChallenge = true;
 		try {
@@ -1102,15 +1106,16 @@
 			} catch {
 				// fortsaet uden efternavn
 			}
-			await gemChallengeIndtastning(
-				forlob.id,
-				aktivChallenge.id,
-				user.uid,
-				foedevarer,
-				userDoc.firstName ?? '',
+			await opdaterChallengeIndtastning({
+				forlobId: forlob.id,
+				challengeId: aktivChallenge.id,
+				uid: user.uid,
+				tilfoej: diff.tilfoej,
+				fjern: diff.fjern,
+				fornavn: userDoc.firstName ?? '',
 				efternavn
-			);
-			minChallengeIndtastning = foedevarer;
+			});
+			minChallengeIndtastning = diff.valgte;
 			visChallengeDialog = false;
 			await indlaesChallengeStilling();
 			visChallengeStilling = true;
@@ -1162,15 +1167,24 @@
 		return null;
 	});
 
-	// Hent klientens egen indtastning naar aktiv challenge skifter
+	// Hent klientens egen indtastning naar aktiv challenge skifter.
+	//
+	// Vigtigt: vi nulstiller IKKE minChallengeIndtastning til [] hvis
+	// reaktive deps midlertidigt er null (fx under auto-sync re-emit). Det
+	// vil i baerste fald give en tom liste i dialog-snapshot'et og slette
+	// alt klienten har valgt — det er praecis det der ramte Vivian 6/6 2026.
+	//
+	// I stedet skifter vi kun naar vi har en faktisk ny indtastning at
+	// indlaese. Hvis deps er null, lader vi gamle vaerdi staa.
+	let sidstHentetChallengeNoegle = $state<string | null>(null);
 	$effect(() => {
 		const c = aktivChallenge;
 		const u = user;
 		const f = forlob;
-		if (!c || !u || !f) {
-			minChallengeIndtastning = [];
-			return;
-		}
+		if (!c || !u || !f) return;
+		const noegle = `${f.id}|${c.id}|${u.uid}`;
+		if (noegle === sidstHentetChallengeNoegle) return;
+		sidstHentetChallengeNoegle = noegle;
 		hentMinChallengeIndtastning(f.id, c.id, u.uid)
 			.then((min) => {
 				minChallengeIndtastning = min?.foedevarer ?? [];
