@@ -105,12 +105,19 @@ export interface UserProduct {
 	/**
 	 * Nul-dage = dage kunden skubber forloebet uden aktivitet (ferie/syg).
 	 * Hvert interval er én transaktion — bruges til fortryd-tjek (kun samme
-	 * dag som satMs kan fortrydes). Pulje er hardcoded 21 pr forloeb og
-	 * gaelder kun Kropsro indtil videre.
+	 * dag som satMs kan fortrydes). Pulje er MAX_NUL_DAGE_PR_FORLOB (21) pr
+	 * forloeb og gaelder kun Kropsro indtil videre.
 	 */
 	nulDage?: {
 		intervaller: { fra: string; til: string; satMs: number }[];
 	};
+	/**
+	 * Per-kunde bonus oven paa MAX_NUL_DAGE_PR_FORLOB. Tildeles manuelt af
+	 * admin naar en kunde objektivt er kommet for sent i gang (fx Charlotte
+	 * 6/6 2026 fik 14 ekstra saa hendes effektive pulje blev 35). Brug
+	 * effektivMaxNulDage()-helperen til at laese den effektive maks.
+	 */
+	bonusNulDage?: number;
 	/**
 	 * Egne vaner klienten selv har valgt at f0lge oveni Linn's tildelte.
 	 * Max 3 ad gangen. Kan tilfoejes og slettes frit. Bruges af Kropsro-
@@ -121,6 +128,16 @@ export interface UserProduct {
 
 export const MAX_NUL_DAGE_PR_FORLOB = 21;
 export const MAX_EGNE_VANER = 3;
+
+/**
+ * Effektiv max nul-dage for en kunde — standard pulje plus eventuel
+ * admin-tildelt bonus paa userProducts. Brug ALTID denne i stedet for at
+ * laese MAX_NUL_DAGE_PR_FORLOB direkte, saa bonus-overrides respekteres.
+ */
+export function effektivMaxNulDage(userProduct: UserProduct | null | undefined): number {
+	const bonus = Math.max(0, userProduct?.bonusNulDage ?? 0);
+	return MAX_NUL_DAGE_PR_FORLOB + bonus;
+}
 
 export interface MikrotraeningFremgang {
 	gennemforte: number[];

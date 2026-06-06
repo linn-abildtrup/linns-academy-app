@@ -28,7 +28,7 @@
 	} from '$lib/utils/traeningsvariant';
 	import { hentAktivProduktType } from '$lib/firestore/forlob';
 	import { gemAktivtTraeningsprogram } from '$lib/firestore/mineProgrammer';
-	import { MAX_NUL_DAGE_PR_FORLOB } from '$lib/content/mikrotraening';
+	import { MAX_NUL_DAGE_PR_FORLOB, effektivMaxNulDage } from '$lib/content/mikrotraening';
 	import { nulDageDatoer } from '$lib/content/forlob';
 	import TesterBadge from '$lib/components/TesterBadge.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
@@ -148,6 +148,7 @@
 
 	// Nul-dage (test-feature)
 	let nulIntervaller = $state<{ fra: string; til: string; satMs: number }[]>([]);
+	let nulBonus = $state<number>(0);
 	let nulFra = $state('');
 	let nulTil = $state('');
 	let nulGemmer = $state(false);
@@ -157,7 +158,8 @@
 	const erKropsro = $derived(mtProduktType === KROPSRO_PRODUCT_ID);
 	const visNulDage = $derived(harNulDageTest && erKropsro && !!mtForlobId);
 	const nulBrugt = $derived(nulDageDatoer(nulIntervaller).length);
-	const nulTilbage = $derived(MAX_NUL_DAGE_PR_FORLOB - nulBrugt);
+	const nulMax = $derived(MAX_NUL_DAGE_PR_FORLOB + Math.max(0, nulBonus));
+	const nulTilbage = $derived(nulMax - nulBrugt);
 	const idagIso = idag();
 	function idag(): string {
 		const d = new Date();
@@ -189,6 +191,7 @@
 			mtProgrammer = alle.filter((p) => p.aktiv);
 			valgtMtProgramId = up?.programValg?.mikrotraening ?? null;
 			nulIntervaller = up?.nulDage?.intervaller ?? [];
+			nulBonus = up?.bonusNulDage ?? 0;
 		} catch (e) {
 			console.error('Kunne ikke hente mikrotræning-programmer:', e);
 		} finally {
@@ -236,7 +239,7 @@
 				mtProduktType,
 				nulFra,
 				nulTil,
-				MAX_NUL_DAGE_PR_FORLOB
+				nulMax
 			);
 			if (!res.ok) {
 				nulFejl = res.fejl;
@@ -536,12 +539,11 @@
 			</h2>
 			<p class="sektion-sub">
 				Sæt dit forløb på pause når du er på ferie, syg eller har travlt. Hver nul-dag
-				skubber forløbet én dag frem. Du har {MAX_NUL_DAGE_PR_FORLOB} nul-dage til dette
-				forløb.
+				skubber forløbet én dag frem. Du har {nulMax} nul-dage til dette forløb.
 			</p>
 
 			<div class="nul-tael">
-				<div class="nul-tael-tal">{nulBrugt} / {MAX_NUL_DAGE_PR_FORLOB}</div>
+				<div class="nul-tael-tal">{nulBrugt} / {nulMax}</div>
 				<div class="nul-tael-tekst">brugt — {nulTilbage} tilbage</div>
 			</div>
 
