@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getContext, onMount } from 'svelte';
+	import { getContext } from 'svelte';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
@@ -26,22 +26,60 @@
 	let aktivtForlobId = $state<string | null>(null);
 	let aktivtForlobNavn = $state<string | null>(null);
 
-	onMount(async () => {
+	// Status for forløbskontekst-hentning:
+	//   'venter'  — userDoc er endnu ikke loaded fra Firestore (context tom)
+	//   'henter'  — userDoc klar, vi henter forlobId fra userProducts
+	//   'klar'    — forløbskunde: aktivtForlobId er sat
+	//   'modul'   — modulbruger uden forløb (ingen forlobId at sætte)
+	let forlobStatus = $state<'venter' | 'henter' | 'klar' | 'modul'>('venter');
+
+	// Reaktiv hentning: koerer hver gang user eller userDoc skifter. Tidligere
+	// brugte vi onMount, men da userDoc er en context-derived der starter som
+	// null, kunne onMount ramle naar context endnu ikke var fyldt — saa
+	// fandt vi forkert userProduct og endte uden forlobId. $effect
+	// re-koerer naar userDoc bliver klar.
+	$effect(() => {
 		const u = user;
+		const ud = userDoc;
 		if (!u) return;
-		try {
-			const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
-			const up = await hentUserProduct(u.uid, produktType);
-			const adminForlobId = userDoc?.adminKlientForlobId ?? null;
-			const forlobId =
-				(up as UserProduct & { forlobId?: string } | null)?.forlobId ?? adminForlobId;
-			if (!forlobId) return;
-			aktivtForlobId = forlobId;
-			const f = await hentForlob(forlobId);
-			aktivtForlobNavn = f?.navn ?? null;
-		} catch (e) {
-			console.warn('Kunne ikke hente forløbskontekst:', e);
+		if (!ud) {
+			forlobStatus = 'venter';
+			return;
 		}
+		const forlobIds = ud.forlobIds ?? [];
+		if (forlobIds.length === 0) {
+			forlobStatus = 'modul';
+			return;
+		}
+		if (aktivtForlobId) {
+			forlobStatus = 'klar';
+			return;
+		}
+		forlobStatus = 'henter';
+		void (async () => {
+			try {
+				const produktType = await hentAktivProduktType(forlobIds);
+				const up = await hentUserProduct(u.uid, produktType);
+				const fId =
+					(up as UserProduct & { forlobId?: string } | null)?.forlobId ??
+					ud.adminKlientForlobId ??
+					null;
+				if (!fId) {
+					// Forløbskunde uden klart forløbId — saet status til modul
+					// saa send-knap aktiveres alligevel (kvalifikationsfelter
+					// gemmes uden forlobId, hvilket admin haandterer).
+					forlobStatus = 'modul';
+					return;
+				}
+				aktivtForlobId = fId;
+				const f = await hentForlob(fId);
+				aktivtForlobNavn = f?.navn ?? null;
+				forlobStatus = 'klar';
+			} catch (e) {
+				console.warn('Kunne ikke hente forløbskontekst:', e);
+				forlobStatus = 'modul';
+			}
+		})();
 	});
 
 	let tekst = $state('');
@@ -51,7 +89,14 @@
 	let mine = $state<KlientSpoergsmaal[]>([]);
 
 	const tegnAntal = $derived(tekst.length);
-	const kanSende = $derived(tekst.trim().length > 0 && !gemmer && !!user);
+	// Send er disabled indtil forløbskontekst er afklaret (klar eller modul).
+	// Beskytter mod at race condition glipper med forlobId=undefined.
+	const kanSende = $derived(
+		tekst.trim().length > 0 &&
+			!gemmer &&
+			!!user &&
+			(forlobStatus === 'klar' || forlobStatus === 'modul')
+	);
 
 	async function genindlaesMine() {
 		const u = user;
@@ -69,28 +114,6 @@
 		fejl = null;
 		gemmer = true;
 		try {
-			// Just-in-time fallback: hvis onMount endnu ikke har sat forlobId
-			// (race condition naar klienten skriver hurtigt), saa hent den nu.
-			// Bug 7/6 2026: 55 sporgsmaal fra Kickstart juni-kunder var gemt
-			// uden forlobId fordi send blev kaldt foer onMount var faerdig.
-			if (!aktivtForlobId && (userDoc?.forlobIds?.length ?? 0) > 0) {
-				try {
-					const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
-					const up = await hentUserProduct(user.uid, produktType);
-					const fId =
-						(up as UserProduct & { forlobId?: string } | null)?.forlobId ??
-						userDoc?.adminKlientForlobId ??
-						null;
-					if (fId) {
-						aktivtForlobId = fId;
-						const f = await hentForlob(fId);
-						aktivtForlobNavn = f?.navn ?? null;
-					}
-				} catch (e) {
-					console.warn('Kunne ikke hente forløbskontekst ved send:', e);
-				}
-			}
-
 			const email = user.email ?? userDoc?.email ?? '';
 			await gemSpoergsmaal({
 				uid: user.uid,
@@ -159,7 +182,13 @@
 		{/if}
 
 		<button type="button" class="primary-knap" onclick={send} disabled={!kanSende}>
-			{gemmer ? 'Sender...' : 'Send spørgsmål'}
+			{#if gemmer}
+				Sender...
+			{:else if forlobStatus === 'venter' || forlobStatus === 'henter'}
+				Henter...
+			{:else}
+				Send spørgsmål
+			{/if}
 		</button>
 
 		{#if kvittering}
