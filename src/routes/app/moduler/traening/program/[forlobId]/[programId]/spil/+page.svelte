@@ -168,7 +168,10 @@
 					nulDatoer
 				);
 				if (idx !== null) {
-					aktuelDagNummer = Math.min(forlob.antalDage, idx + 1);
+					// Modulo i stedet for clamp — se kommentar paa oversigt-siden.
+					// Kunder hvis forloeb er slut cykler gennem programmet igen i
+					// stedet for at sidde fast paa sidste dag.
+					aktuelDagNummer = (idx % forlob.antalDage) + 1;
 				}
 			}
 

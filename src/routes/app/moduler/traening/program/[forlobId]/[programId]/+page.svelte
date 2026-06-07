@@ -112,8 +112,11 @@
 				);
 				if (idx !== null) {
 					// idx er 0-indekseret (dag 1 = 0). Vi vil have 1-indekseret dag-nummer.
-					// Klampes til [1, antalDage] for at undgaa out-of-range.
-					aktuelDagNummer = Math.min(forlob.antalDage, idx + 1);
+					// Modulo i stedet for clamp: naar foroebet er slut, cykler vi gennem
+					// programmet igen i stedet for at sidde fast paa sidste dag. Det
+					// betyder en basis-abo-kunde der har gennemfoert et 21-dages forloeb
+					// faar dag 1 igen paa dag 22, ikke dag 21 i evighed.
+					aktuelDagNummer = (idx % forlob.antalDage) + 1;
 				}
 			}
 		} catch (e) {
