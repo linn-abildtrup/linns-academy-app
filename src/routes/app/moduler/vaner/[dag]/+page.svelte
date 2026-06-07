@@ -7,7 +7,6 @@
 	import { dagDato, unlockedDays } from '$lib/content/forlobAdgang';
 	import {
 		beregnDagsStatus,
-		CHECKIN_SPORGSMAAL,
 		type BonusSvar,
 		type CheckinSvar,
 		type VaneProgramDag,
@@ -218,25 +217,8 @@
 			} else {
 				editMode = true;
 			}
-			// Pre-udfyld manglende sliders med 5 paa baseline/check-in dage.
-			// UI'en viste 5 visuelt selvom state var undefined — saa kunden
-			// troede hun havde svaret, men hendes "fallback-5" blev fyldt ind
-			// foerst ved gem uden hendes vidende. Bug paavist 4. juni 2026
-			// af samme moenster som symptomcheck-bug'en.
-			if (prog.isBaseline || prog.isCheckin) {
-				type SliderId = Exclude<keyof CheckinSvar, 'generelTekst'>;
-				const fyldt: CheckinSvar = { ...checkin };
-				for (const q of CHECKIN_SPORGSMAAL) {
-					const id = q.id as SliderId;
-					if (typeof fyldt[id] !== 'number') {
-						fyldt[id] = 5;
-					}
-				}
-				checkin = fyldt;
-			}
-
 			// Hent baseline-svar separat hvis vi er på sidste MRS-checkin
-			// (slutter forløbet). Vi sammenligner mod baseline (dag 0).
+			// (slutter forløbet). Vi sammenligner generelTekst mod baseline.
 			if (prog.isMrsCheckin && dagNummer === f.antalDage) {
 				baselineEntry = await hentVanedag(u.uid, 0, produktType);
 			}
@@ -252,19 +234,8 @@
 		checks = { ...checks, [id]: val };
 	}
 
-	function setSlider(id: keyof CheckinSvar, val: string | number) {
-		const n = typeof val === 'string' ? parseInt(val, 10) : val;
-		if (Number.isFinite(n)) {
-			checkin = { ...checkin, [id]: n };
-		}
-	}
-
 	function setGenerelTekst(val: string) {
 		checkin = { ...checkin, generelTekst: val };
-	}
-
-	function harSliderSvar(id: keyof CheckinSvar): boolean {
-		return typeof checkin[id] === 'number';
 	}
 
 	function toggleBonus(id: string, val: BonusSvar) {
@@ -288,21 +259,6 @@
 		gemFejl = null;
 		gemmer = true;
 		try {
-			// Fyld manglende skydere ud med 5 (neutral default) på alle check-ins.
-			// Klienter der ikke rykker skyderen efterlader ellers ingen måling så
-			// sammenligning på tværs af forløbet bliver umulig.
-			if (prog?.isBaseline || prog?.isCheckin) {
-				type SliderId = Exclude<keyof CheckinSvar, 'generelTekst'>;
-				const fyldt: CheckinSvar = { ...checkin };
-				for (const q of CHECKIN_SPORGSMAAL) {
-					const id = q.id as SliderId;
-					if (typeof fyldt[id] !== 'number') {
-						fyldt[id] = 5;
-					}
-				}
-				checkin = fyldt;
-			}
-
 			await gemVanedag(
 				u.uid,
 				{
@@ -357,13 +313,16 @@
 	{:else if erLaast}
 		<div class="status-besked">🔒 Denne dag er endnu ikke låst op.</div>
 	{:else if prog}
-		{#if prog.isMrsCheckin}
+		{#if prog.isMrsCheckin || prog.isCheckin || prog.isBaseline}
 			<a class="mrs-notice" href="/app/moduler/symptomcheck">
 				<div class="mrs-notice-tekst">
-					<div class="mrs-notice-titel">Tid til symptomcheck</div>
+					<div class="mrs-notice-titel">
+						{prog.isBaseline ? 'Tid til din baseline-symptomtjek' : 'Tid til symptomtjek'}
+					</div>
 					<div class="mrs-notice-sub">
-						I dag skal du udfylde dit MRS-spørgeskema så vi kan måle hvordan
-						kroppen reagerer på forløbet.
+						{prog.isBaseline
+							? 'Mærk efter hvordan du har det lige nu — det er din baseline. Du sammenligner med tallene gennem hele forløbet.'
+							: 'Mærk efter hvordan du har det. Vi sammenligner med din baseline så du kan se din udvikling.'}
 					</div>
 				</div>
 				<Icon name="chevron-r" size={14} color="var(--terra)" />
@@ -467,67 +426,40 @@
 			{/if}
 		{/if}
 
-		{#if prog.isCheckin || prog.isBaseline}
+		{#if prog.isBaseline || prog.dagNummer === 21}
 			<section class="card">
-				<div class="section-label">{prog.isBaseline ? 'Baseline-check-in' : 'Check-in'}</div>
-				<p class="reflection">
-					{prog.isBaseline
-						? 'Dine baseline-målinger. Mærk efter på en skala 1-10, hvor 1 er meget dårligt og 10 er rigtig godt. Du sammenligner med disse tal gennem hele forløbet.'
-						: 'Fem spørgsmål om din uge. Mærk efter på en skala 1-10, hvor 1 er meget dårligt og 10 er rigtig godt.'}
-				</p>
-
-				{#each CHECKIN_SPORGSMAAL as q (q.id)}
-					{@const id = q.id as keyof CheckinSvar}
-					{@const val = harSliderSvar(id) ? (checkin[id] as number) : 5}
-					<div class="slider-row">
-						<div class="slider-head">
-							<div class="slider-label">{q.label}</div>
-							<div class="slider-val">{val}</div>
-						</div>
-						<input
-							type="range"
-							min="1"
-							max="10"
-							step="1"
-							value={val}
-							{disabled}
-							oninput={(e) => setSlider(id, (e.target as HTMLInputElement).value)}
-						/>
-						<div class="slider-skala"><span>1</span><span>5</span><span>10</span></div>
+				<div class="section-label">
+					{prog.isBaseline ? 'Baseline-refleksion' : 'Slut-refleksion'}
+				</div>
+				<div class="generel-felt">
+					<div class="generel-label">Hvordan har jeg det generelt lige nu?</div>
+					<div class="generel-sub">
+						Et samlet billede af hvordan du har det i din krop og dit humør.
 					</div>
-				{/each}
+					<textarea
+						class="textarea"
+						placeholder="Skriv dit svar her..."
+						value={checkin.generelTekst ?? ''}
+						oninput={(e) => setGenerelTekst((e.target as HTMLTextAreaElement).value)}
+						{disabled}
+						rows="4"
+					></textarea>
 
-				{#if prog.isBaseline || prog.dagNummer === 21}
-					<div class="generel-felt">
-						<div class="generel-label">Hvordan har jeg det generelt lige nu?</div>
-						<div class="generel-sub">
-							Et samlet billede af hvordan du har det i din krop og dit humør.
+					{#if prog.dagNummer === 21 && baselineEntry?.checkin?.generelTekst}
+						<div class="baseline-compare">
+							<div class="baseline-compare-label">Dit svar fra dag 0 (baseline)</div>
+							<div class="baseline-compare-tekst">
+								{baselineEntry.checkin.generelTekst}
+							</div>
 						</div>
-						<textarea
-							class="textarea"
-							placeholder="Skriv dit svar her..."
-							value={checkin.generelTekst ?? ''}
-							oninput={(e) => setGenerelTekst((e.target as HTMLTextAreaElement).value)}
-							{disabled}
-							rows="4"
-						></textarea>
-
-						{#if prog.dagNummer === 21 && baselineEntry?.checkin?.generelTekst}
-							<div class="baseline-compare">
-								<div class="baseline-compare-label">Dit svar fra dag 0 (baseline)</div>
-								<div class="baseline-compare-tekst">
-									{baselineEntry.checkin.generelTekst}
-								</div>
+					{:else if prog.dagNummer === 21}
+						<div class="baseline-compare baseline-compare-tom">
+							<div class="baseline-compare-tekst">
+								Du har ikke noteret et baseline-svar på dag 0, så der er ikke noget at sammenligne med.
 							</div>
-						{:else if prog.dagNummer === 21}
-							<div class="baseline-compare baseline-compare-tom">
-								<div class="baseline-compare-tekst">
-									Du har ikke noteret et baseline-svar på dag 0, så der er ikke noget at sammenligne med.
-								</div>
-							</div>
-						{/if}
-					</div>
-				{/if}
+						</div>
+					{/if}
+				</div>
 			</section>
 		{/if}
 
@@ -804,61 +736,6 @@
 		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 6px;
-	}
-
-	.slider-row {
-		padding: 14px 0;
-		border-top: 1px solid var(--border);
-	}
-
-	.slider-row:first-of-type {
-		border-top: none;
-		padding-top: 4px;
-	}
-
-	.slider-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 8px;
-	}
-
-	.slider-label {
-		font-size: calc(13px * var(--fs-scale, 1));
-		color: var(--text);
-		font-weight: 500;
-		flex: 1;
-		min-width: 0;
-		padding-right: 12px;
-	}
-
-	.slider-val {
-		font-family: var(--ff-d);
-		font-size: calc(22px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--terra);
-		flex-shrink: 0;
-		line-height: 1;
-	}
-
-	.slider-row input[type='range'] {
-		width: 100%;
-		accent-color: var(--terra);
-		cursor: pointer;
-	}
-
-	.slider-row input[type='range']:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	.slider-skala {
-		display: flex;
-		justify-content: space-between;
-		font-size: calc(10px * var(--fs-scale, 1));
-		color: var(--text3);
-		margin-top: 2px;
-		padding: 0 2px;
 	}
 
 	.generel-felt {

@@ -50,21 +50,27 @@ const tomEntry = (dagNummer: number): VanedagEntry => ({
 });
 
 describe('beregnDagsStatus', () => {
-	describe('baseline', () => {
-		it('empty når ingen check-in svar er sat', () => {
+	describe('baseline (pr 7/6 2026: kun generelTekst, ingen sliders)', () => {
+		it('empty når baseline-kommentar mangler', () => {
 			expect(beregnDagsStatus(baselineDag, tomEntry(0))).toBe('empty');
 		});
 
-		it('completed når alle 5 check-in svar er sat', () => {
+		it('completed når generelTekst er skrevet', () => {
 			const e = tomEntry(0);
-			e.checkin = { energi: 7, mave: 6, cravings: 5, humor: 8, sovn: 7 };
+			e.checkin = { generelTekst: 'Jeg starter forløbet for at få mere energi.' };
 			expect(beregnDagsStatus(baselineDag, e)).toBe('completed');
 		});
 
-		it('partial når kun nogle check-in svar er sat', () => {
+		it('empty når generelTekst kun er whitespace', () => {
 			const e = tomEntry(0);
-			e.checkin = { energi: 7, mave: 6 };
-			expect(beregnDagsStatus(baselineDag, e)).toBe('partial');
+			e.checkin = { generelTekst: '   \n  ' };
+			expect(beregnDagsStatus(baselineDag, e)).toBe('empty');
+		});
+
+		it('ignorerer gamle slider-svar (legacy data)', () => {
+			const e = tomEntry(0);
+			e.checkin = { energi: 7, mave: 6, cravings: 5, humor: 8, sovn: 7 };
+			expect(beregnDagsStatus(baselineDag, e)).toBe('empty');
 		});
 
 		it('empty når entry er null', () => {
@@ -108,14 +114,14 @@ describe('beregnDagsStatus', () => {
 		});
 	});
 
-	describe('check-in dag (dag 7)', () => {
-		it('partial når alle vaner er ja men check-in mangler', () => {
+	describe('check-in dag (dag 7) — isCheckin paavirker ikke laengere completion', () => {
+		it('completed naar alle vaner er ja (uden checkin)', () => {
 			const e = tomEntry(7);
 			e.checks = { pm: 'ja', fi: 'ja', mk: 'ja' };
-			expect(beregnDagsStatus(dag7, e)).toBe('partial');
+			expect(beregnDagsStatus(dag7, e)).toBe('completed');
 		});
 
-		it('completed når alle vaner og check-in er udfyldt', () => {
+		it('legacy entries med gammel slider-data taeller ikke som partial', () => {
 			const e = tomEntry(7);
 			e.checks = { pm: 'ja', fi: 'ja', mk: 'ja' };
 			e.checkin = { energi: 7, mave: 6, cravings: 5, humor: 8, sovn: 7 };
@@ -170,15 +176,21 @@ describe('beregnFlowerNiveau', () => {
 		expect(beregnFlowerNiveau(dagUdenChecks, tomEntry(3))).toBe('none');
 	});
 
-	it('baseline excellent når alle 5 check-in svar er sat', () => {
+	it('baseline excellent når generelTekst er skrevet', () => {
 		const e = tomEntry(0);
-		e.checkin = { energi: 5, mave: 5, cravings: 5, humor: 5, sovn: 5 };
+		e.checkin = { generelTekst: 'En baseline-kommentar' };
 		expect(beregnFlowerNiveau(baselineDag, e)).toBe('excellent');
 	});
 
-	it('baseline none når check-in er ufuldstændig', () => {
+	it('baseline none når generelTekst mangler', () => {
 		const e = tomEntry(0);
-		e.checkin = { energi: 5, mave: 5 };
+		e.checkin = {};
+		expect(beregnFlowerNiveau(baselineDag, e)).toBe('none');
+	});
+
+	it('baseline none når kun legacy-sliders er sat (uden generelTekst)', () => {
+		const e = tomEntry(0);
+		e.checkin = { energi: 5, mave: 5, cravings: 5, humor: 5, sovn: 5 };
 		expect(beregnFlowerNiveau(baselineDag, e)).toBe('none');
 	});
 });
@@ -240,7 +252,7 @@ describe('beregnSamletFremgang', () => {
 
 	it('udelukker baseline-dag fra fremgangstælling', () => {
 		const e = new Map<number, VanedagEntry>();
-		e.set(0, { ...tomEntry(0), checkin: { energi: 5, mave: 5, cravings: 5, humor: 5, sovn: 5 } });
+		e.set(0, { ...tomEntry(0), checkin: { generelTekst: 'En baseline-kommentar' } });
 		const r = beregnSamletFremgang(program, e, 0);
 		expect(r.iAlt).toBe(0);
 	});

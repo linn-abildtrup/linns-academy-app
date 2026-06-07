@@ -393,7 +393,7 @@ Hvor ofte (altid om søndagen efter første udfyldelse):
 
 Når det er tid til at udfylde, vises et terra "Tag din symptomcheck"-kort på din forside. Klik for at åbne modulet. Når du har udfyldt, viser kortet i stedet datoen for næste udfyldelse — du kan ikke tage en ny check før den dato, så grafen forbliver retvisende.
 
-For Kropsro: når du åbner en dag i Vaner-modulet der er en MRS-checkin-dag (dag 0, 28, 56, 84), vises også et "Tid til symptomcheck"-kort øverst med direkte link til modulet.
+Når du åbner en dag i Vaner-modulet der er en check-in-dag (Kickstart: dag 0, 7, 14, 21 — Kropsro: dag 0, 28, 56, 84), vises et "Tid til symptomtjek"-kort øverst i refleksionen med direkte link til modulet. Selve check-in udfyldes KUN i symptomtjek-modulet, ikke i refleksionen.
 
 I selve checken udfylder du først de 5 sliders (træk fra 1-10), så de 11 MRS-spørgsmål (Ingen / Lidt / En del / Meget / Voldsomt). I alt 16 svar. Resultatet viser:
 - Din MRS total-score (0-44) med fortolkning fra internationalt anerkendt MRS-skala.
@@ -538,9 +538,9 @@ function fagligRedirect(activeProduct: ActiveProduct | undefined): string {
 function brugerKontekst(activeProduct: ActiveProduct | undefined): string {
 	switch (activeProduct) {
 		case KICKSTART_PRODUCT_ID:
-			return `KUNDE-KONTEKST: Denne bruger er forløbskunde paa Kickstart (21-dages forløb). Svar ALTID ud fra Kickstart-flowet — daglige vaner, 21-dages mikrotraening, ugentlige check-ins (dag 7, 14, 21), MRS dag 0/10-11/21. Naevn ALDRIG Kropsro-specifikke features (ugentlige vaner, nul-dage, 84 dage).`;
+			return `KUNDE-KONTEKST: Denne bruger er forløbskunde paa Kickstart (21-dages forløb). Svar ALTID ud fra Kickstart-flowet — daglige vaner, 21-dages mikrotraening, symptomtjek paa dag 0/7/14/21 (udfyldes i Symptomtjek-modulet, ikke i refleksionen), baseline-kommentar paa dag 0 og slut-refleksion paa dag 21. Naevn ALDRIG Kropsro-specifikke features (ugentlige vaner, nul-dage, 84 dage).`;
 		case KROPSRO_PRODUCT_ID:
-			return `KUNDE-KONTEKST: Denne bruger er forløbskunde paa Kropsro (84-dages forløb). Svar ALTID ud fra Kropsro-flowet — UGENTLIGE vaner mandag-soendag (op til 5 pr uge), refleksioner hver dag paa forsiden, MRS-checkin paa dag 0/28/56/84, nul-dage til pauser. Naevn ALDRIG Kickstart-specifikke features (daglige admin-vaner, 21 dage, ugentlige check-ins).`;
+			return `KUNDE-KONTEKST: Denne bruger er forløbskunde paa Kropsro (84-dages forløb). Svar ALTID ud fra Kropsro-flowet — UGENTLIGE vaner mandag-soendag (op til 5 pr uge), refleksioner hver dag paa forsiden, symptomtjek paa dag 0/28/56/84 (udfyldes i Symptomtjek-modulet, ikke i refleksionen), nul-dage til pauser. Naevn ALDRIG Kickstart-specifikke features (daglige admin-vaner, 21 dage).`;
 		case 'basisabo':
 			return `KUNDE-KONTEKST: Denne bruger har Basis-abonnement (modulbruger uden forløb). Svar ud fra abonnementsbruger-flowet. Naevn ALDRIG forløbs-features eller premium-features.`;
 		case 'premiumabo':

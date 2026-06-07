@@ -110,11 +110,13 @@ export const CHECKIN_SPORGSMAAL = [
  * Returnerer 'locked' hvis dagen er låst (kalder skal selv afgøre låsning
  * via unlockedDays — denne funktion antager dagen er åben).
  *
- * Logik:
- * - Baseline: completed når alle 5 check-in svar er sat. Empty hvis ingen.
- * - Almindelig dag: completed når alle checks='ja' OG check-in (hvis relevant) udfyldt.
- * - Empty hvis ingen svar overhovedet.
- * - Partial alt derimellem.
+ * Pr 7/6 2026 er de 5 slider-svar flyttet ud af refleksionen og over i
+ * symptomtjek-modulet (mrs_scores). isCheckin paavirker derfor ikke
+ * laengere completion — kun vaner/bonus taeller. Baseline-dag (dag 0)
+ * bedoemmes paa generelTekst (baseline-kommentar i fritekst).
+ *
+ * Gamle entries (foer 7/6 2026) kan stadig have sliders i checkin —
+ * de bevares uberoert, men status-logikken bygger ikke laengere paa dem.
  */
 export function beregnDagsStatus(
 	prog: VaneProgramDag,
@@ -123,35 +125,21 @@ export function beregnDagsStatus(
 	const e = entry ?? { checks: {}, bonus: {}, checkin: {}, note: '', dagNummer: prog.dagNummer };
 
 	if (prog.isBaseline) {
-		const besvaret = CHECKIN_SPORGSMAAL.filter(
-			(q) => typeof e.checkin?.[q.id as keyof CheckinSvar] === 'number'
-		).length;
-		if (besvaret === 0) return 'empty';
-		if (besvaret === CHECKIN_SPORGSMAAL.length) return 'completed';
-		return 'partial';
+		const generelTekst = (e.checkin?.generelTekst ?? '').trim();
+		if (generelTekst.length === 0) return 'empty';
+		return 'completed';
 	}
 
 	const ja = prog.checks.filter((c) => e.checks?.[c.id] === 'ja').length;
 	const harSvarPaaEnVane = prog.checks.some((c) => e.checks?.[c.id]);
 	const harBonusSvar = prog.bonus && e.bonus?.[prog.bonus.id];
 	const harNote = (e.note ?? '').trim().length > 0;
-	const harCheckinSvar =
-		prog.isCheckin &&
-		e.checkin &&
-		CHECKIN_SPORGSMAAL.some((q) => typeof e.checkin?.[q.id as keyof CheckinSvar] === 'number');
 
-	const harNogetIndhold =
-		harSvarPaaEnVane || harBonusSvar || harNote || harCheckinSvar;
+	const harNogetIndhold = harSvarPaaEnVane || harBonusSvar || harNote;
 	if (!harNogetIndhold) return 'empty';
 
 	const alleVanerJa = prog.checks.length > 0 && ja === prog.checks.length;
-	const checkinOk =
-		!prog.isCheckin ||
-		CHECKIN_SPORGSMAAL.every(
-			(q) => typeof e.checkin?.[q.id as keyof CheckinSvar] === 'number'
-		);
-
-	if (alleVanerJa && checkinOk) return 'completed';
+	if (alleVanerJa) return 'completed';
 	return 'partial';
 }
 
@@ -215,7 +203,9 @@ export function beregnDagsFarve(
  *   1-25%  → poor
  *   0%     → none (eller hvis dagen ingen checks har)
  *
- * Baseline: excellent hvis alle 5 check-in svar er sat, ellers none.
+ * Baseline: excellent hvis baseline-kommentar (generelTekst) er skrevet,
+ * ellers none. Tidligere brugte vi de 5 slider-svar, men de er flyttet
+ * over i symptomtjek-modulet pr 7/6 2026.
  */
 export function beregnFlowerNiveau(
 	prog: VaneProgramDag,
@@ -224,10 +214,8 @@ export function beregnFlowerNiveau(
 	const e = entry ?? { checks: {}, bonus: {}, checkin: {}, note: '', dagNummer: prog.dagNummer };
 
 	if (prog.isBaseline) {
-		const besvaret = CHECKIN_SPORGSMAAL.filter(
-			(q) => typeof e.checkin?.[q.id as keyof CheckinSvar] === 'number'
-		).length;
-		return besvaret === CHECKIN_SPORGSMAAL.length ? 'excellent' : 'none';
+		const generelTekst = (e.checkin?.generelTekst ?? '').trim();
+		return generelTekst.length > 0 ? 'excellent' : 'none';
 	}
 
 	if (prog.checks.length === 0) return 'none';

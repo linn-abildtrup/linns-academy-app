@@ -24,6 +24,8 @@
 	import { hentCheckinHistorikForBruger } from '$lib/firestore/vaner';
 	import type { VanedagEntry, CheckinSvar } from '$lib/content/vaner';
 	import { CHECKIN_SPORGSMAAL } from '$lib/content/vaner';
+	import { hentAlleMrsScores } from '$lib/firestore/mrs';
+	import type { MrsScore } from '$lib/content/mrs';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -64,6 +66,7 @@
 		entry: VanedagEntry;
 	}
 	let checkinHistorik = $state<CheckinHistorikPunkt[]>([]);
+	let mrsScores = $state<MrsScore[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
@@ -72,16 +75,64 @@
 	// (uanset om hun aktiv basis/premium/forløb eller udløbet i bonus).
 	const harForlobsHistorik = $derived((userDoc?.forlobIds?.length ?? 0) > 0);
 
-	// Filtrér historik til kun de punkter der HAR slider-svar (baseline +
-	// ugentlige check-ins). Sorteret kronologisk paa tvaers af forl0b.
+	// Slider-historik merget paa tvaers af to kilder:
+	//   1. mrs_scores (symptomtjek-modulet, kilde fra 7/6 2026 og fremad)
+	//   2. vanedage.checkin (legacy — refleksionens sliders pre-7/6 2026)
+	// Pre-7/6-data forbliver synlig saa grafen er kontinuerlig. Hvis en
+	// dato findes begge steder, vinder mrs_scores (vores nye sandhed).
 	const checkinDage = $derived.by(() => {
-		return checkinHistorik.filter((p) => {
+		const fraVanedage = checkinHistorik.filter((p) => {
 			const c = p.entry.checkin as CheckinSvar | undefined;
 			if (!c) return false;
 			return CHECKIN_SPORGSMAAL.some(
 				(q) => typeof c[q.id as keyof CheckinSvar] === 'number'
 			);
 		});
+
+		// Konverter mrs_scores til samme punkt-form. Tilskriv forlobId+navn+type
+		// ud fra mrs-score's measurePoint hvis muligt, ellers tom (grafen viser
+		// stadig punktet, den bruger ikke forlobNavn til selve linjen).
+		const fraMrs: CheckinHistorikPunkt[] = mrsScores
+			.filter((s) => s.sliders)
+			.map((s) => {
+				const dato = new Date(s.timestamp);
+				const dagNummer = -1; // har ikke dag-nummer paa mrs_scores; vi sorterer paa dato
+				const entry: VanedagEntry = {
+					dagNummer,
+					checks: {},
+					bonus: {},
+					checkin: { ...(s.sliders as CheckinSvar) },
+					note: ''
+				};
+				return {
+					forlobId: '',
+					forlobNavn: '',
+					forlobType: 'kropsro' as const,
+					dagNummer,
+					dato,
+					entry
+				};
+			});
+
+		// Dedupe: hvis samme YYYY-MM-DD findes i begge, prioriter mrs.
+		const datoKey = (d: Date) =>
+			`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+		const seen = new Set<string>();
+		const samlet: CheckinHistorikPunkt[] = [];
+		for (const p of fraMrs) {
+			const k = datoKey(p.dato);
+			if (seen.has(k)) continue;
+			seen.add(k);
+			samlet.push(p);
+		}
+		for (const p of fraVanedage) {
+			const k = datoKey(p.dato);
+			if (seen.has(k)) continue;
+			seen.add(k);
+			samlet.push(p);
+		}
+		samlet.sort((a, b) => a.dato.getTime() - b.dato.getTime());
+		return samlet;
 	});
 
 	const SLIDER_FARVER: Record<string, string> = {
@@ -125,7 +176,8 @@
 			const cutoff = `${yyyy}-${mm}-${dd}`;
 			const promiser: Promise<unknown>[] = [
 				hentMaaltiderIPeriode(u.uid, fraDato, tilDato),
-				hentHistorikSidenDato(u.uid, cutoff)
+				hentHistorikSidenDato(u.uid, cutoff),
+				hentAlleMrsScores(u.uid)
 			];
 			if (visAbo) {
 				promiser.push(hentAlleAboTraeninger(u.uid, cutoff));
@@ -142,7 +194,8 @@
 			const r = await Promise.all(promiser);
 			alle = r[0] as GemtMaaltid[];
 			traeningHistorik = r[1] as TraeningHistorikEntry[];
-			let idx = 2;
+			mrsScores = r[2] as MrsScore[];
+			let idx = 3;
 			if (visAbo) {
 				aboTraeninger = r[idx++] as AboMikrotraeningTraening[];
 				aboVaneOpsaetning = r[idx++] as AboVaneOpsaetning | null;
