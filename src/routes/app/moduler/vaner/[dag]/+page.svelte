@@ -54,10 +54,12 @@
 	let fejl = $state<string | null>(null);
 	let gemmer = $state(false);
 	let gemFejl = $state<string | null>(null);
-	let editMode = $state(false);
 
+	// Pre 7/6 2026: vi havde et editMode-flow hvor felter blev disabled
+	// efter gem. Klienter (Dorthe 7/6) misforstod det og troede deres
+	// noter ikke blev gemt. Felter er nu ALTID skrivbare; "Gemt"-badge
+	// signalerer at noget er gemt og klienten kan altid opdatere.
 	const harGemt = $derived(oprindeligEntry !== null);
-	const disabled = $derived(harGemt && !editMode);
 
 	const dagDatoLabel = $derived(() => {
 		if (!forlob || !Number.isFinite(dagNummer)) return '';
@@ -213,9 +215,6 @@
 				bonus = { ...(entry.bonus ?? {}) };
 				checkin = { ...(entry.checkin ?? {}) };
 				note = entry.note ?? '';
-				editMode = false;
-			} else {
-				editMode = true;
 			}
 			// Hent baseline-svar separat hvis vi er på sidste MRS-checkin
 			// (slutter forløbet). Vi sammenligner generelTekst mod baseline.
@@ -248,11 +247,6 @@
 		bonus = ny;
 	}
 
-	function startEdit() {
-		editMode = true;
-		gemFejl = null;
-	}
-
 	async function gem() {
 		const u = user;
 		if (!u || gemmer) return;
@@ -271,7 +265,6 @@
 				produktType
 			);
 			oprindeligEntry = { dagNummer, checks, bonus, checkin, note };
-			editMode = false;
 		} catch (e) {
 			console.error(e);
 			gemFejl = 'Kunne ikke gemme. Prøv igen.';
@@ -298,10 +291,8 @@
 		{#if prog}
 			<div class="eyebrow">{dagTitelLabel()} · {ugeLabel()}</div>
 			<h1>{prog.isBaseline ? 'Baseline' : 'Dagens vaner'}</h1>
-			{#if !prog.isBaseline && harGemt && !editMode}
+			{#if !prog.isBaseline && harGemt}
 				<span class="status-badge gemt">✓ Gemt</span>
-			{:else if !prog.isBaseline && editMode && harGemt}
-				<span class="status-badge editing">✏️ Redigerer</span>
 			{/if}
 		{/if}
 	</header>
@@ -336,18 +327,9 @@
 					class="textarea"
 					placeholder="Skriv dit svar her..."
 					bind:value={note}
-					{disabled}
 					rows="4"
 				></textarea>
 			</section>
-
-			{#if !editMode}
-				<div class="rediger-mellem">
-					<button class="ghost-knap" type="button" onclick={startEdit}>
-						✏️ Rediger svar
-					</button>
-				</div>
-			{/if}
 
 			{#if visteVaner.length > 0}
 				<section class="card">
@@ -362,7 +344,6 @@
 									class:aktiv={val === 'ja'}
 									type="button"
 									onclick={() => setCheck(c.id, 'ja')}
-									{disabled}
 								>
 									Ja
 								</button>
@@ -371,7 +352,6 @@
 									class:aktiv={val === 'delvist'}
 									type="button"
 									onclick={() => setCheck(c.id, 'delvist')}
-									{disabled}
 								>
 									Delvist
 								</button>
@@ -380,7 +360,6 @@
 									class:aktiv={val === 'nej'}
 									type="button"
 									onclick={() => setCheck(c.id, 'nej')}
-									{disabled}
 								>
 									Nej
 								</button>
@@ -401,7 +380,6 @@
 									class:aktiv={bVal === 'ja'}
 									type="button"
 									onclick={() => toggleBonus(prog!.bonus!.id, 'ja')}
-									{disabled}
 								>
 									Ja
 								</button>
@@ -410,7 +388,6 @@
 									class:aktiv={bVal === 'nej'}
 									type="button"
 									onclick={() => toggleBonus(prog!.bonus!.id, 'nej')}
-									{disabled}
 								>
 									Nej
 								</button>
@@ -441,7 +418,6 @@
 						placeholder="Skriv dit svar her..."
 						value={checkin.generelTekst ?? ''}
 						oninput={(e) => setGenerelTekst((e.target as HTMLTextAreaElement).value)}
-						{disabled}
 						rows="4"
 					></textarea>
 
@@ -467,13 +443,11 @@
 			<div class="fejl-besked">{gemFejl}</div>
 		{/if}
 
-		{#if editMode}
-			<div class="bund-knapper">
-				<button class="primary-knap" type="button" onclick={gem} disabled={gemmer}>
-					{gemmer ? 'Gemmer...' : `Gem ${dagTitelLabel()} ✓`}
-				</button>
-			</div>
-		{/if}
+		<div class="bund-knapper">
+			<button class="primary-knap" type="button" onclick={gem} disabled={gemmer}>
+				{gemmer ? 'Gemmer...' : harGemt ? `Opdater ${dagTitelLabel()} ✓` : `Gem ${dagTitelLabel()} ✓`}
+			</button>
+		</div>
 	{/if}
 </div>
 
@@ -536,10 +510,6 @@
 		color: var(--sage);
 	}
 
-	.status-badge.editing {
-		background: var(--tdim);
-		color: var(--terra);
-	}
 
 	.status-besked {
 		padding: 14px 16px;
@@ -808,12 +778,7 @@
 
 	/* Wrapper for "Rediger svar"-knappen mellem Refleksion og Dagens vaner.
 	   Samme margin som mellem cards saa den foeles naturligt placeret. */
-	.rediger-mellem {
-		margin: 14px 0;
-	}
-
-	.primary-knap,
-	.ghost-knap {
+	.primary-knap {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -826,9 +791,6 @@
 		border: none;
 		cursor: pointer;
 		font-family: var(--ff-b);
-	}
-
-	.primary-knap {
 		background: var(--terra);
 		color: #fff;
 	}
@@ -836,15 +798,5 @@
 	.primary-knap:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
-	}
-
-	.ghost-knap {
-		background: var(--white);
-		border: 1px solid var(--border);
-		color: var(--text2);
-	}
-
-	.ghost-knap:hover {
-		background: var(--bg2);
 	}
 </style>
