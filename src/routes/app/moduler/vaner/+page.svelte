@@ -450,7 +450,7 @@
 			</div>
 		{:else if naeste !== null}
 			<a class="start-knap" href="/app/moduler/vaner/{naeste}">
-				{naeste === 0 ? 'Start dit baseline-check-in' : `Åbn dag ${naeste}`}
+				Åbn dag {naeste}
 				<Icon name="arrow" size={14} color="#fff" />
 			</a>
 		{:else}
@@ -458,35 +458,6 @@
 				<Icon name="check" size={14} color="#fff" />
 				Du er ajour med dine vaner
 			</div>
-		{/if}
-
-		{#if baselineDag}
-			{@const baselineState = dagState(baselineDag)}
-			<a
-				class="baseline-row {baselineState.status === 'locked' ? 'laast' : ''}"
-				class:done={baselineState.status === 'completed'}
-				href={baselineState.status === 'locked' ? '#' : `/app/moduler/vaner/0`}
-				aria-disabled={baselineState.status === 'locked'}
-			>
-				<div class="baseline-icon">
-					{#if baselineState.status === 'completed'}
-						<Icon name="check" size={14} color="#fff" />
-					{:else}
-						0
-					{/if}
-				</div>
-				<div class="baseline-tekst">
-					<div class="baseline-titel">Baseline</div>
-					<div class="baseline-sub">
-						{baselineState.status === 'completed'
-							? 'Udfyldt — du har dit udgangspunkt'
-							: baselineState.status === 'partial'
-								? 'Delvist udfyldt'
-								: 'Mærk efter før du starter'}
-					</div>
-				</div>
-				<Icon name="chevron-r" size={14} color="var(--text3)" />
-			</a>
 		{/if}
 
 		<section class="card">
@@ -913,70 +884,6 @@
 		color: var(--text3);
 		text-align: center;
 		margin: -6px 0 12px;
-	}
-
-	.baseline-row {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		padding: 12px 14px;
-		background: var(--white);
-		border: 1px solid var(--border);
-		border-radius: 12px;
-		margin-bottom: 14px;
-		text-decoration: none;
-		color: inherit;
-	}
-
-	.baseline-row:hover {
-		background: var(--bg2);
-	}
-
-	.baseline-row.laast {
-		opacity: 0.5;
-		pointer-events: none;
-	}
-
-	.baseline-row.done {
-		background: var(--sdim);
-		border-color: var(--sage);
-	}
-
-	.baseline-icon {
-		width: 36px;
-		height: 36px;
-		border-radius: 50%;
-		background: var(--bg2);
-		color: var(--text2);
-		font-family: var(--ff-d);
-		font-size: calc(16px * var(--fs-scale, 1));
-		font-weight: 600;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-	}
-
-	.baseline-row.done .baseline-icon {
-		background: var(--sage);
-		color: #fff;
-	}
-
-	.baseline-tekst {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.baseline-titel {
-		font-size: calc(14px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--text);
-	}
-
-	.baseline-sub {
-		font-size: calc(11.5px * var(--fs-scale, 1));
-		color: var(--text3);
-		margin-top: 2px;
 	}
 
 	.card {
