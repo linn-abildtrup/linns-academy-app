@@ -69,6 +69,28 @@
 		fejl = null;
 		gemmer = true;
 		try {
+			// Just-in-time fallback: hvis onMount endnu ikke har sat forlobId
+			// (race condition naar klienten skriver hurtigt), saa hent den nu.
+			// Bug 7/6 2026: 55 sporgsmaal fra Kickstart juni-kunder var gemt
+			// uden forlobId fordi send blev kaldt foer onMount var faerdig.
+			if (!aktivtForlobId && (userDoc?.forlobIds?.length ?? 0) > 0) {
+				try {
+					const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+					const up = await hentUserProduct(user.uid, produktType);
+					const fId =
+						(up as UserProduct & { forlobId?: string } | null)?.forlobId ??
+						userDoc?.adminKlientForlobId ??
+						null;
+					if (fId) {
+						aktivtForlobId = fId;
+						const f = await hentForlob(fId);
+						aktivtForlobNavn = f?.navn ?? null;
+					}
+				} catch (e) {
+					console.warn('Kunne ikke hente forløbskontekst ved send:', e);
+				}
+			}
+
 			const email = user.email ?? userDoc?.email ?? '';
 			await gemSpoergsmaal({
 				uid: user.uid,
