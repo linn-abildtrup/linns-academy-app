@@ -183,6 +183,11 @@ export async function hentVanedag(
 /**
  * Gemmer brugerens svar for én dag. Sætter savedAt med serverTimestamp.
  * Bruger setDoc med merge så delvise opdateringer ikke nulstiller andre felter.
+ *
+ * VIGTIGT: bruges nu kun fra refleksions-siden hvor klienten har den
+ * FULDE seneste tilstand i UI'et. Forsidens hurtige svar-knapper skal
+ * bruge opdaterVaneSvar/opdaterBonusSvar i stedet — de overskriver
+ * ellers note + checkin + andre felter med stale state.
  */
 export async function gemVanedag(
 	uid: string,
@@ -193,6 +198,67 @@ export async function gemVanedag(
 	await setDoc(
 		vanedagDoc(uid, productId, id),
 		{ ...entry, savedAt: serverTimestamp() },
+		{ merge: true }
+	);
+}
+
+/**
+ * Opdaterer kun ÉT vane-svar i checks-feltet for en dag. Bruges af
+ * forsidens hurtige Ja/Delvist/Nej-knapper saa de ikke overskriver note,
+ * bonus, checkin eller andre vaner med stale state.
+ *
+ * Vivian/Dorthe-incidenten 7/6 2026: 158 juni-kunder mistede deres
+ * refleksioner fordi forsidens gem-flow sendte hele entry-objektet inkl
+ * en stale 'note: ""'. Fix: kun det specifikke felt opdateres.
+ */
+export async function opdaterVaneSvar(
+	uid: string,
+	productId: string,
+	dagNummer: number,
+	vaneId: string,
+	svar: 'ja' | 'delvist' | 'nej'
+): Promise<void> {
+	const id = `dag${dagNummer}`;
+	await setDoc(
+		vanedagDoc(uid, productId, id),
+		{
+			dagNummer,
+			checks: { [vaneId]: svar },
+			savedAt: serverTimestamp()
+		},
+		{ merge: true }
+	);
+}
+
+/**
+ * Opdaterer kun ÉT bonus-svar i bonus-feltet. svar=null fjerner svaret
+ * (klienten trykker paa allerede-aktiv knap for at fortryde).
+ */
+export async function opdaterBonusSvar(
+	uid: string,
+	productId: string,
+	dagNummer: number,
+	bonusId: string,
+	svar: 'ja' | 'nej' | null
+): Promise<void> {
+	const id = `dag${dagNummer}`;
+	const ref = vanedagDoc(uid, productId, id);
+	if (svar === null) {
+		// arrayRemove/delete-field-i-nested-object kraever updateDoc med dot-path
+		const { deleteField, updateDoc } = await import('firebase/firestore');
+		await updateDoc(ref, {
+			[`bonus.${bonusId}`]: deleteField(),
+			savedAt: serverTimestamp()
+		});
+		return;
+	}
+	await setDoc(
+		ref,
+		{
+			dagNummer,
+			bonus: { [bonusId]: svar },
+			savedAt: serverTimestamp()
+		},
 		{ merge: true }
 	);
 }

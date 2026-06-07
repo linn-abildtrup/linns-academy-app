@@ -49,7 +49,8 @@
 	import {
 		hentVaneprogramForForlob,
 		hentVanedag,
-		gemVanedag
+		opdaterVaneSvar,
+		opdaterBonusSvar
 	} from '$lib/firestore/vaner';
 	import type { VaneProgramDag, VanedagEntry, BonusSvar } from '$lib/content/vaner';
 	import {
@@ -1370,12 +1371,14 @@
 		const n = valgtDagNummer ?? aktivDagNummer;
 		if (!u || n === null || gemmerSvar) return;
 		gemmerSvar = true;
+		// Optimistisk lokal opdatering (UI feedback)
 		const aktuel = forlobVanedag ?? tomForlobVanedag(n);
-		const nyChecks = { ...aktuel.checks, [vaneId]: svar };
-		const ny: VanedagEntry = { ...aktuel, checks: nyChecks };
-		forlobVanedag = ny;
+		forlobVanedag = { ...aktuel, checks: { ...aktuel.checks, [vaneId]: svar } };
 		try {
-			await gemVanedag(u.uid, ny, aktivProduktType);
+			// Skriv KUN det specifikke felt. Bug 7/6 2026: tidligere sendte vi
+			// hele entry-objektet, inkl. en stale 'note: ""' der overskrev
+			// klientens refleksioner gemt fra refleksions-siden.
+			await opdaterVaneSvar(u.uid, aktivProduktType, n, vaneId, svar);
 		} catch (e) {
 			console.error('Kunne ikke gemme forløbs-vane-svar:', e);
 		} finally {
@@ -1394,10 +1397,9 @@
 		const nyBonus = { ...aktuel.bonus };
 		if (svar === null) delete nyBonus[bonusId];
 		else nyBonus[bonusId] = svar;
-		const ny: VanedagEntry = { ...aktuel, bonus: nyBonus };
-		forlobVanedag = ny;
+		forlobVanedag = { ...aktuel, bonus: nyBonus };
 		try {
-			await gemVanedag(u.uid, ny, aktivProduktType);
+			await opdaterBonusSvar(u.uid, aktivProduktType, n, bonusId, svar);
 		} catch (e) {
 			console.error('Kunne ikke gemme forløbs-bonus-svar:', e);
 		} finally {
