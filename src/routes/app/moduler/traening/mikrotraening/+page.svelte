@@ -21,6 +21,7 @@
 		hentAboFremgang,
 		hentAboMikrotraeningProgram,
 		hentAlleAboTraeninger,
+		sikrAboStartDato,
 		type AboMikrotraeningProgramMedDage
 	} from '$lib/firestore/aboMikrotraening';
 	import type { AboMikrotraeningTraening } from '$lib/content/aboMikrotraening';
@@ -190,6 +191,9 @@
 	async function indlaesAboData(uid: string) {
 		const produktType = userDoc?.accessLevel === 'premium' ? 'premium' : 'basis';
 		const variant = userDoc?.mikrotraeningVariant ?? 'no_kettlebell';
+		// Saet kalender-anker ved foerste besoeg paa mikrotraenings-siden saa
+		// dato-griddet straks viser korrekt rotation. Idempotent.
+		await sikrAboStartDato(uid, idagDato);
 		const [program, fremgang, traeninger] = await Promise.all([
 			hentAboMikrotraeningProgram(produktType, variant),
 			hentAboFremgang(uid),

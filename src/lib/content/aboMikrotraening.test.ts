@@ -191,8 +191,13 @@ describe('aktuelAboDagForDato (kalender-mode)', () => {
 		expect(aktuelAboDagForDato(medAnker, '2026-06-22')).toBe(1);
 	});
 
-	it('returnerer dag 1 hvis dato er foer aboStartDato', () => {
-		expect(aktuelAboDagForDato(medAnker, '2026-05-25')).toBe(1);
+	it('cykler baglaens for datoer foer aboStartDato (dag-1 = dag 21)', () => {
+		// 2026-05-31 = 1 dag foer 2026-06-01 -> dag 21 (sidste dag i cyklus)
+		expect(aktuelAboDagForDato(medAnker, '2026-05-31')).toBe(21);
+		// 2026-05-30 = 2 dage foer -> dag 20
+		expect(aktuelAboDagForDato(medAnker, '2026-05-30')).toBe(20);
+		// 2026-05-11 = 21 dage foer -> dag 1 (en hel runde tilbage)
+		expect(aktuelAboDagForDato(medAnker, '2026-05-11')).toBe(1);
 	});
 
 	it('falder tilbage til legacy hvis aboStartDato mangler', () => {

@@ -105,7 +105,9 @@ export function dageMellem(fra: string, til: string): number {
  * naar at koere), falder vi tilbage til den legacy gennemfoersels-baserede
  * aktuelAboDag — saa kunden ikke pludselig hopper.
  *
- * Hvis dato er foer aboStartDato (kunden bladrer bagud), returnerer vi 1.
+ * Datoer foer aboStartDato cykler baglaens — diff=-1 giver dag 21, diff=-2
+ * giver dag 20 osv. Det er matematisk konsistent med fremad-rotationen og
+ * lader kunden bladre tilbage uden at se en flad "dag 1"-vaeg.
  */
 export function aktuelAboDagForDato(
 	fremgang: AboMikrotraeningFremgang | null,
@@ -114,8 +116,9 @@ export function aktuelAboDagForDato(
 ): number {
 	if (!fremgang?.aboStartDato) return aktuelAboDag(fremgang, antalDage);
 	const diff = dageMellem(fremgang.aboStartDato, dato);
-	if (diff < 0) return 1;
-	return (diff % antalDage) + 1;
+	// JS-modulo bevarer fortegn (-1 % 21 = -1), saa vi adderer antalDage
+	// foer endelig modulo for at faa positiv rest.
+	return (((diff % antalDage) + antalDage) % antalDage) + 1;
 }
 
 /**
