@@ -17,6 +17,7 @@
 		anslaaetVarighedMinutter,
 		type CustomProgram
 	} from '$lib/content/mineProgrammer';
+	import { hentAboMikrotraeningProgram } from '$lib/firestore/aboMikrotraening';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -89,6 +90,21 @@
 		}
 	});
 
+	// Hent program-navnet (kettlebell vs uden) dynamisk fra Firestore for
+	// abo-kunder. Koeres separat fra forloebs-data fordi det gaelder for
+	// alle abo-kunder (ogsaa basis, ikke kun premium).
+	$effect(() => {
+		const ud = userDoc;
+		if (!ud) return;
+		const produktType: 'basis' | 'premium' = erPremium ? 'premium' : 'basis';
+		const variant = ud.mikrotraeningVariant ?? 'no_kettlebell';
+		void hentAboMikrotraeningProgram(produktType, variant)
+			.then((p) => {
+				if (p?.program.navn) mikrotraeningNavn = p.program.navn;
+			})
+			.catch((e) => console.warn('Kunne ikke hente abo-program-navn:', e));
+	});
+
 	function programInfo(t: ProgramTildeling): ProgramMedForlob | undefined {
 		return alleProgrammerPaaTvaers.find(
 			(p) => p.forlobId === t.forlobId && p.program.id === t.programId
@@ -102,6 +118,12 @@
 	const harTildeltMikrotraening = $derived(
 		tildelteProgrammer.some((t) => t.programId.startsWith('mikrotraening'))
 	);
+
+	// Vis program-navnet med kundens variant — hentes dynamisk fra det
+	// faktiske program-doc i Firestore saa admin kan opdatere navnet uden
+	// at koden skal aendres. Fallback til generisk tekst hvis hent fejler
+	// eller endnu ikke er foerdig.
+	let mikrotraeningNavn = $state<string>('Mikrotræning');
 
 	function forlobNavnFor(id: string): string {
 		const produkt = alleProdukter().find((p) => p.forlobId === id);
@@ -138,7 +160,7 @@
 			</div>
 			<div class="program-tekst">
 				<div class="program-navn">
-					Mikrotræning
+					{mikrotraeningNavn}
 					{#if erAktivt('mikrotraening')}
 						<span class="aktiv-badge">Aktiv</span>
 					{/if}
