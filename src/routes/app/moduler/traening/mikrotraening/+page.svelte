@@ -72,7 +72,9 @@
 	});
 
 	// === Abo-derived ===
-	const aboAktivDag = $derived(aktuelAboDag(aboFremgang));
+	const aboAktivDag = $derived(
+		aktuelAboDag(aboFremgang, aboProgram?.program.antalDage)
+	);
 
 	function dagsDatoStr(d: Date): string {
 		const aar = d.getFullYear();

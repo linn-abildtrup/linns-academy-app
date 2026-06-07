@@ -193,7 +193,7 @@
 			if (eksisterende) {
 				dagNummer = eksisterende.programDag;
 			} else {
-				dagNummer = aktuelAboDag(fremgang);
+				dagNummer = aktuelAboDag(fremgang, data.program.antalDage);
 			}
 			aboFremgang = fremgang;
 
@@ -642,14 +642,15 @@
 		gemmer = true;
 		gemFejl = null;
 		try {
-			const nyTotal = genemfoerAboDag(aboFremgang, dagNummer);
+			const antalDage = programData?.program.antalDage ?? 21;
+			const nyTotal = genemfoerAboDag(aboFremgang, dagNummer, antalDage);
 			if (nyTotal === (aboFremgang?.totalGennemforte ?? 0)) {
 				gemFejl =
 					'Det her er ikke din aktuelle dag. Du kan kun markere dage som gennemført i rækkefølge.';
 				gemmer = false;
 				return;
 			}
-			const runde = Math.floor((nyTotal - 1) / 14) + 1;
+			const runde = Math.floor((nyTotal - 1) / antalDage) + 1;
 
 			await Promise.all([
 				gemAboFremgang(u.uid, nyTotal, aboFremgang?.feedback ?? {}),

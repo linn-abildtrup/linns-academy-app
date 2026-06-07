@@ -3,12 +3,21 @@
 // Modsat forløbs-mikrotræningen (under forlob/{forlobId}/...) er abo-versionen
 // et fast 14-dages program der LOOPER: efter dag 14 starter brugeren forfra
 // på dag 1. Brugerens fremgang spores som totalGennemforte (cumulativ),
-// og aktuel dag i programmet udregnes som (totalGennemforte % 14) + 1.
+// og aktuel dag i programmet udregnes som (totalGennemforte % antalDage) + 1.
+// Looper uendeligt — naar brugeren naar dag 21 starter naeste runde paa dag 1.
 
 import type { Timestamp } from 'firebase/firestore';
 import type { Feedback, TrainingDay, TrainingProgram } from './mikrotraening';
 
-export const ABO_MIKROTRAENING_DAGE = 14;
+/**
+ * Default antal dage hvis caller ikke kender programmets faktiske længde
+ * (fx forsidens preload før programmet er hentet). Alle aktive abo-programmer
+ * pr 7/6 2026 er 21 dage — det gamle 14-dages basis-program er kun fallback.
+ *
+ * Sørg ALTID for at sende program.antalDage ind i aktuelAboDag/genemfoerAboDag
+ * når programmet er kendt. Default'en bruges kun som sikkerhedsnet.
+ */
+export const ABO_MIKROTRAENING_DAGE = 21;
 
 /** Brugerens fremgang i abo-mikrotræning. Single doc pr bruger. */
 export interface AboMikrotraeningFremgang {

@@ -8,10 +8,13 @@ import {
 	type AboMikrotraeningFremgang
 } from './aboMikrotraening';
 
+// ABO_MIKROTRAENING_DAGE er 21 pr 7/6 2026 (default for nye basis_kettlebell
+// og basis_no_kettlebell programmer). Konstanten bruges som default naar
+// caller ikke kender programmets faktiske antalDage.
 const tom: AboMikrotraeningFremgang = { totalGennemforte: 0, feedback: {} };
 const halvejs: AboMikrotraeningFremgang = { totalGennemforte: 7, feedback: {} };
-const slutAfRunde1: AboMikrotraeningFremgang = { totalGennemforte: 14, feedback: {} };
-const midtIRunde2: AboMikrotraeningFremgang = { totalGennemforte: 18, feedback: {} };
+const slutAfRunde1: AboMikrotraeningFremgang = { totalGennemforte: 21, feedback: {} };
+const midtIRunde2: AboMikrotraeningFremgang = { totalGennemforte: 25, feedback: {} };
 
 describe('aktuelAboDag', () => {
 	it('returnerer 1 for null fremgang', () => {
@@ -26,12 +29,19 @@ describe('aktuelAboDag', () => {
 		expect(aktuelAboDag(halvejs)).toBe(8);
 	});
 
-	it('returnerer 1 efter 14 gennemførte (start runde 2)', () => {
+	it('returnerer 1 efter 21 gennemførte (start runde 2)', () => {
 		expect(aktuelAboDag(slutAfRunde1)).toBe(1);
 	});
 
-	it('returnerer 5 midt i runde 2 (totalGennemforte=18)', () => {
+	it('returnerer 5 midt i runde 2 (totalGennemforte=25)', () => {
 		expect(aktuelAboDag(midtIRunde2)).toBe(5);
+	});
+
+	it('respekterer eksplicit antalDage-argument (14-dages program)', () => {
+		// Forløb-kunder paa det gamle 14-dages basis-program har stadig
+		// brug for korrekt beregning. Caller sender da program.antalDage=14.
+		expect(aktuelAboDag({ totalGennemforte: 14, feedback: {} }, 14)).toBe(1);
+		expect(aktuelAboDag({ totalGennemforte: 18, feedback: {} }, 14)).toBe(5);
 	});
 });
 
@@ -40,20 +50,20 @@ describe('aboRundeNummer', () => {
 		expect(aboRundeNummer(tom)).toBe(1);
 	});
 
-	it('runde 1 ved 13 gennemførte', () => {
-		expect(aboRundeNummer({ totalGennemforte: 13, feedback: {} })).toBe(1);
+	it('runde 1 ved 20 gennemførte', () => {
+		expect(aboRundeNummer({ totalGennemforte: 20, feedback: {} })).toBe(1);
 	});
 
-	it('runde 2 ved 14 gennemførte', () => {
+	it('runde 2 ved 21 gennemførte', () => {
 		expect(aboRundeNummer(slutAfRunde1)).toBe(2);
 	});
 
-	it('runde 2 ved 27 gennemførte', () => {
-		expect(aboRundeNummer({ totalGennemforte: 27, feedback: {} })).toBe(2);
+	it('runde 2 ved 41 gennemførte', () => {
+		expect(aboRundeNummer({ totalGennemforte: 41, feedback: {} })).toBe(2);
 	});
 
-	it('runde 3 ved 28 gennemførte', () => {
-		expect(aboRundeNummer({ totalGennemforte: 28, feedback: {} })).toBe(3);
+	it('runde 3 ved 42 gennemførte', () => {
+		expect(aboRundeNummer({ totalGennemforte: 42, feedback: {} })).toBe(3);
 	});
 });
 
@@ -92,12 +102,20 @@ describe('genemfoerAboDag', () => {
 		expect(genemfoerAboDag(tom, 5)).toBe(0);
 	});
 
-	it('starter ny runde efter dag 14', () => {
-		const fremgang: AboMikrotraeningFremgang = { totalGennemforte: 13, feedback: {} };
-		expect(genemfoerAboDag(fremgang, 14)).toBe(14);
+	it('starter ny runde efter dag 21', () => {
+		const fremgang: AboMikrotraeningFremgang = { totalGennemforte: 20, feedback: {} };
+		expect(genemfoerAboDag(fremgang, 21)).toBe(21);
 	});
 
-	it('næste dag i ny runde går fra 14 til 15 (= dag 1 runde 2)', () => {
-		expect(genemfoerAboDag(slutAfRunde1, 1)).toBe(15);
+	it('næste dag i ny runde går fra 21 til 22 (= dag 1 runde 2)', () => {
+		expect(genemfoerAboDag(slutAfRunde1, 1)).toBe(22);
+	});
+
+	it('respekterer eksplicit antalDage=14 for gammelt basis-program', () => {
+		const fremgang: AboMikrotraeningFremgang = { totalGennemforte: 14, feedback: {} };
+		// Paa 14-dages program er aktuel dag = (14 % 14) + 1 = 1
+		expect(genemfoerAboDag(fremgang, 1, 14)).toBe(15);
+		// Forsoeg paa dag 2 fejler (ikke aktuel)
+		expect(genemfoerAboDag(fremgang, 2, 14)).toBe(14);
 	});
 });

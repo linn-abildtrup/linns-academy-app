@@ -925,7 +925,7 @@
 					hentAboFremgang(u.uid)
 				]);
 				if (!program) return;
-				const programDag = aktuelAboDag(fremgang);
+				const programDag = aktuelAboDag(fremgang, program.program.antalDage);
 				const dag = program.dage.find((d) => d.dagNummer === programDag);
 				const exerciseIds = (dag?.exercises ?? []).map((e) => e.exerciseId);
 				if (exerciseIds.length === 0) return;

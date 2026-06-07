@@ -73,7 +73,7 @@
 	const programDag = $derived.by<number | null>(() => {
 		if (eksisterendeTraening) return eksisterendeTraening.programDag;
 		if (datoStatus === 'i_dag' || datoStatus === 'fortid_naer') {
-			return aktuelAboDag(fremgang);
+			return aktuelAboDag(fremgang, programData?.program.antalDage);
 		}
 		return null;
 	});
