@@ -159,7 +159,7 @@
 		aabenSvarId = null;
 	}
 
-	async function genererUdkast(q: KlientSpoergsmaal) {
+	async function genererUdkast(q: KlientSpoergsmaal, force = false) {
 		aiUdkastLoader[q.id] = true;
 		aiUdkastFejl[q.id] = '';
 		try {
@@ -172,7 +172,7 @@
 					'Content-Type': 'application/json',
 					Authorization: `Bearer ${idToken}`
 				},
-				body: JSON.stringify({ spoergsmaalId: q.id })
+				body: JSON.stringify({ spoergsmaalId: q.id, force })
 			});
 			if (!res.ok) {
 				const txt = await res.text();
@@ -347,6 +347,16 @@
 										</div>
 										<div class="ai-skip-tekst">
 											{aiUdkast[q.id].skipBegrundelse ?? 'Beskeden kræver ikke nødvendigvis et substantielt svar.'}
+										</div>
+										<div class="ai-knapper">
+											<button
+												type="button"
+												class="ghost-knap sm"
+												onclick={() => void genererUdkast(q, true)}
+												disabled={aiUdkastLoader[q.id]}
+											>
+												{aiUdkastLoader[q.id] ? 'Genererer...' : 'Generér alligevel'}
+											</button>
 										</div>
 									</div>
 								{:else}

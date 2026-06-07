@@ -28,16 +28,19 @@ export interface UdkastResultat {
 	skipBegrundelse: string | null;
 }
 
-const BASE_INSTRUKTION = `Du er Linn Bildtrup — ernæringsterapeut og forløbsleder for Linns Academy. \
+const TEGNSAETNINGS_REGEL = `Brug ALDRIG em-dash (—) eller en-dash (–). Brug almindelig bindestreg (-) hvor det giver mening, eller omskriv saetningen med komma/punktum.`;
+
+const BASE_INSTRUKTION = `Du er Linn Bildtrup, ernæringsterapeut og forløbsleder for Linns Academy. \
 En klient på et af dine forløb har stillet et spørgsmål via beskeder-modulet, og du skal lave et udkast til et svar.
 
 Stil:
 - Skriv på dansk
-- Vær varm, direkte og personlig — brug klientens fornavn
+- Vær varm, direkte og personlig. Brug klientens fornavn
 - Hold svaret kort (3-8 sætninger) medmindre spørgsmålet kræver mere detalje
 - Brug Linns tidligere svar nedenfor som forbillede for tonen
 - Hvis FAQ'en dækker spørgsmålet direkte, brug formuleringen derfra
-- Skriv ikke "kære" — Linn bruger "hej {navn}"
+- Skriv ikke "kære". Linn bruger "hej {navn}"
+- ${TEGNSAETNINGS_REGEL}
 
 Lav-sikkerhed (sæt lavSikkerhed: true):
 - Spørgsmål om medicin, recepter eller alvorlige symptomer
@@ -51,6 +54,8 @@ Skip (sæt skip: true):
 
 Returnér KUN gyldigt JSON i nøjagtigt denne form (intet andet, ingen markdown):
 {"udkast":"<svartekst>","lavSikkerhed":<bool>,"skip":<bool>,"skipBegrundelse":<null eller string>}`;
+
+const FORCE_INSTRUKTION = `Admin har bedt om et udkast SELV om beskeden umiddelbart ikke kraever et substantielt svar. Lav alligevel et kort venligt udkast (1-3 saetninger) der anerkender klientens besked. Saet ALDRIG skip: true. ${TEGNSAETNINGS_REGEL}`;
 
 const TRIVIELLE_MOENSTRE = [
 	/^tak\b/i,
@@ -126,11 +131,16 @@ interface SystemBlock {
 /**
  * Bygger Anthropic system-prompten som content-blocks med cache_control på
  * den store statiske del. Alt før cache-markeren cacheres i 5 minutter.
+ *
+ * Hvis `force: true` tilfoejes en ekstra instruks der instruerer Claude i
+ * at lave et udkast selv naar beskeden er triviel (admin har eksplicit
+ * bedt om det via "Genereér alligevel"-knappen).
  */
 export function byggSystemBlocks(args: {
 	faqTekst: string;
 	videnbaseTekst: string;
 	tidligereSvarTekst: string;
+	force?: boolean;
 }): SystemBlock[] {
 	const statiskKontekst = [
 		'## FAQ for forløbet (autoritativt indhold)',
@@ -143,10 +153,27 @@ export function byggSystemBlocks(args: {
 		args.tidligereSvarTekst
 	].join('\n');
 
-	return [
+	const blocks: SystemBlock[] = [
 		{ type: 'text', text: BASE_INSTRUKTION },
 		{ type: 'text', text: statiskKontekst, cache_control: { type: 'ephemeral' } }
 	];
+	if (args.force) {
+		blocks.push({ type: 'text', text: FORCE_INSTRUKTION });
+	}
+	return blocks;
+}
+
+/**
+ * Fjerner em-dash (—) og en-dash (–) fra teksten og erstatter dem med
+ * almindelig bindestreg eller intet. Selvom system-prompten siger det
+ * ikke maa bruges, sniger Claude dem nogle gange ind alligevel.
+ */
+export function fjernLangeTankestreger(tekst: string): string {
+	return tekst
+		.replace(/\s—\s/g, ', ')
+		.replace(/\s–\s/g, ', ')
+		.replace(/—/g, '-')
+		.replace(/–/g, '-');
 }
 
 export function byggUserMessage(args: {
@@ -188,11 +215,13 @@ export function parseModelOutput(raw: string): UdkastResultat | null {
 			const parsed = JSON.parse(k) as Partial<UdkastResultat>;
 			if (typeof parsed.udkast !== 'string') continue;
 			return {
-				udkast: parsed.udkast,
+				udkast: fjernLangeTankestreger(parsed.udkast),
 				lavSikkerhed: parsed.lavSikkerhed === true,
 				skip: parsed.skip === true,
 				skipBegrundelse:
-					typeof parsed.skipBegrundelse === 'string' ? parsed.skipBegrundelse : null
+					typeof parsed.skipBegrundelse === 'string'
+						? fjernLangeTankestreger(parsed.skipBegrundelse)
+						: null
 			};
 		} catch {
 			continue;

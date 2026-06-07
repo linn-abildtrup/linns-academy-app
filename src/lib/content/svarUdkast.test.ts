@@ -7,6 +7,7 @@ import {
 	byggUserMessage,
 	byggVidenbaseTekst,
 	erTrivielBesked,
+	fjernLangeTankestreger,
 	parseModelOutput
 } from './svarUdkast';
 
@@ -188,5 +189,57 @@ describe('byggVidenbaseTekst', () => {
 		const tekst = byggVidenbaseTekst(['Første', 'Andet']);
 		expect(tekst).toContain('[1] Første');
 		expect(tekst).toContain('[2] Andet');
+	});
+});
+
+describe('fjernLangeTankestreger', () => {
+	it('erstatter em-dash med komma naar omkranset af mellemrum', () => {
+		expect(fjernLangeTankestreger('hej Lone — godt sporgsmaal')).toBe('hej Lone, godt sporgsmaal');
+	});
+
+	it('erstatter en-dash med komma naar omkranset af mellemrum', () => {
+		expect(fjernLangeTankestreger('hej Lone – godt sporgsmaal')).toBe('hej Lone, godt sporgsmaal');
+	});
+
+	it('erstatter em-dash uden mellemrum med almindelig bindestreg', () => {
+		expect(fjernLangeTankestreger('kropsro—maj')).toBe('kropsro-maj');
+	});
+
+	it('lader almindelig bindestreg vaere uroert', () => {
+		expect(fjernLangeTankestreger('30-30-3 metoden')).toBe('30-30-3 metoden');
+	});
+
+	it('haandterer flere em-dashes i samme tekst', () => {
+		expect(fjernLangeTankestreger('A — B — C')).toBe('A, B, C');
+	});
+});
+
+describe('byggSystemBlocks force', () => {
+	it('tilfoejer FORCE_INSTRUKTION naar force=true', () => {
+		const blocks = byggSystemBlocks({
+			faqTekst: 'FAQ',
+			videnbaseTekst: 'VB',
+			tidligereSvarTekst: 'HS',
+			force: true
+		});
+		expect(blocks).toHaveLength(3);
+		expect(blocks[2].text).toContain('Admin har bedt om et udkast');
+	});
+
+	it('udelader force-block naar force ikke er sat', () => {
+		const blocks = byggSystemBlocks({
+			faqTekst: 'FAQ',
+			videnbaseTekst: 'VB',
+			tidligereSvarTekst: 'HS'
+		});
+		expect(blocks).toHaveLength(2);
+	});
+});
+
+describe('parseModelOutput strips em-dash', () => {
+	it('fjerner em-dash fra udkast automatisk', () => {
+		const raw = '{"udkast":"Hej Lone — godt sporgsmaal","lavSikkerhed":false,"skip":false,"skipBegrundelse":null}';
+		const res = parseModelOutput(raw);
+		expect(res?.udkast).toBe('Hej Lone, godt sporgsmaal');
 	});
 });

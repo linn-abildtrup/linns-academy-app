@@ -265,7 +265,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	const verif = await verificerAdminToken(auth.slice(7));
 	if (!verif) throw error(403, 'Kræver admin');
 
-	let body: { spoergsmaalId?: string };
+	let body: { spoergsmaalId?: string; force?: boolean };
 	try {
 		body = await request.json();
 	} catch {
@@ -273,13 +273,15 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 	const spoergsmaalId = body.spoergsmaalId?.trim();
 	if (!spoergsmaalId) throw error(400, 'Manglende spoergsmaalId');
+	const force = body.force === true;
 
 	const spm = await hentSpoergsmaal(spoergsmaalId);
 	if (!spm) throw error(404, 'Spørgsmål ikke fundet');
 	if (!spm.forlobId) throw error(400, 'Spørgsmålet har intet forlobId');
 
-	// Hurtig skip-tjek inden vi bruger kontekst på Anthropic-kald
-	if (erTrivielBesked(spm.spoergsmaal)) {
+	// Hurtig skip-tjek inden vi bruger kontekst på Anthropic-kald.
+	// Springer over hvis admin har trykket "Genereér alligevel".
+	if (!force && erTrivielBesked(spm.spoergsmaal)) {
 		const res: UdkastResultat = {
 			udkast: '',
 			lavSikkerhed: false,
@@ -300,7 +302,8 @@ export const POST: RequestHandler = async ({ request }) => {
 	const systemBlocks = byggSystemBlocks({
 		faqTekst: byggFaqTekst(faqItems),
 		videnbaseTekst: byggVidenbaseTekst(videnbaseUddrag),
-		tidligereSvarTekst: byggTidligereSvarTekst(tidligereSvar)
+		tidligereSvarTekst: byggTidligereSvarTekst(tidligereSvar),
+		force
 	});
 
 	const userMessage = byggUserMessage({
@@ -338,12 +341,18 @@ export const POST: RequestHandler = async ({ request }) => {
 		.trim();
 
 	const parsed = parseModelOutput(rawText);
-	const resultat: UdkastResultat = parsed ?? {
+	let resultat: UdkastResultat = parsed ?? {
 		udkast: rawText,
 		lavSikkerhed: true,
 		skip: false,
 		skipBegrundelse: null
 	};
+
+	// I force-mode ignorerer vi skip helt. Hvis Claude alligevel returnerede
+	// skip:true (mod instruks), tvinger vi skip=false saa UI'et viser udkastet.
+	if (force && resultat.skip) {
+		resultat = { ...resultat, skip: false, skipBegrundelse: null };
+	}
 
 	return json({
 		...resultat,
