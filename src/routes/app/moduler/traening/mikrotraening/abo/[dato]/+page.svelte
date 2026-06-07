@@ -5,7 +5,7 @@
 	import type { UserDoc } from '$lib/types';
 	import type { Exercise, TrainingDay } from '$lib/content/mikrotraening';
 	import {
-		aktuelAboDag,
+		aktuelAboDagForDato,
 		type AboMikrotraeningFremgang,
 		type AboMikrotraeningTraening
 	} from '$lib/content/aboMikrotraening';
@@ -13,6 +13,7 @@
 		hentAboFremgang,
 		hentAboMikrotraeningProgram,
 		hentAlleAboTraeninger,
+		sikrAboStartDato,
 		type AboMikrotraeningProgramMedDage
 	} from '$lib/firestore/aboMikrotraening';
 	import { hentExercises } from '$lib/firestore/mikrotraening';
@@ -67,13 +68,15 @@
 	let fejl = $state<string | null>(null);
 
 	// ProgramDag bestemmes fra dato:
-	// - Eksisterende træning: brug stored programDag
-	// - I dag eller seneste få dage uden træning: brug aktuelAboDag
+	// - Eksisterende træning: brug stored programDag (saa hun ser hvad hun
+	//   faktisk trenede den dag, hvis programmet siden er flyttet videre)
+	// - I dag eller seneste få dage uden træning: kalender-baseret rotation
+	//   forankret paa aboStartDato — saa hver dato har sin egen oevelse
 	// - Fremtid eller ingen træning langt tilbage: vis fejl
 	const programDag = $derived.by<number | null>(() => {
 		if (eksisterendeTraening) return eksisterendeTraening.programDag;
 		if (datoStatus === 'i_dag' || datoStatus === 'fortid_naer') {
-			return aktuelAboDag(fremgang, programData?.program.antalDage);
+			return aktuelAboDagForDato(fremgang, dato, programData?.program.antalDage);
 		}
 		return null;
 	});
@@ -150,6 +153,11 @@
 
 		const variant = userDoc?.mikrotraeningVariant ?? 'no_kettlebell';
 		try {
+			// sikrAboStartDato sikrer kalender-anker er sat foer vi henter
+			// fremgang. Idempotent — gem-skriver kun hvis aboStartDato mangler.
+			// Bruger I_DAG (ikke route-datoen), saa rotation altid starter ved
+			// foerste reelle aabning, ikke en historisk dato kunden bladrer til.
+			await sikrAboStartDato(u.uid, idagDato);
 			const [program, f, traeninger] = await Promise.all([
 				hentAboMikrotraeningProgram(produktType, variant),
 				hentAboFremgang(u.uid),

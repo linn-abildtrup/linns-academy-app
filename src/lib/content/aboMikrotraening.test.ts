@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
 	aktuelAboDag,
+	aktuelAboDagForDato,
 	aboRundeNummer,
+	dageMellem,
 	harKlaretAboDagIRunde,
 	genemfoerAboDag,
 	ABO_MIKROTRAENING_DAGE,
@@ -93,7 +95,7 @@ describe('harKlaretAboDagIRunde', () => {
 	});
 });
 
-describe('genemfoerAboDag', () => {
+describe('genemfoerAboDag (legacy gennemfoersels-mode)', () => {
 	it('øger total med 1 ved gennemførelse af aktuel dag', () => {
 		expect(genemfoerAboDag(tom, 1)).toBe(1);
 	});
@@ -117,5 +119,93 @@ describe('genemfoerAboDag', () => {
 		expect(genemfoerAboDag(fremgang, 1, 14)).toBe(15);
 		// Forsoeg paa dag 2 fejler (ikke aktuel)
 		expect(genemfoerAboDag(fremgang, 2, 14)).toBe(14);
+	});
+});
+
+describe('genemfoerAboDag (kalender-mode)', () => {
+	const medAnker: AboMikrotraeningFremgang = {
+		totalGennemforte: 3,
+		feedback: {},
+		aboStartDato: '2026-06-01'
+	};
+
+	it('inkrementerer altid uanset hvilken dag der gennemføres', () => {
+		expect(genemfoerAboDag(medAnker, 7)).toBe(4);
+		expect(genemfoerAboDag(medAnker, 1)).toBe(4);
+		expect(genemfoerAboDag(medAnker, 21)).toBe(4);
+	});
+
+	it('starter på 1 hvis fremgang er null+aboStartDato (kantcase)', () => {
+		// Helt frisk fremgang faar gennemfoert sin foerste dag
+		const friskMedAnker: AboMikrotraeningFremgang = {
+			totalGennemforte: 0,
+			feedback: {},
+			aboStartDato: '2026-06-07'
+		};
+		expect(genemfoerAboDag(friskMedAnker, 5)).toBe(1);
+	});
+});
+
+describe('dageMellem', () => {
+	it('returnerer 0 for samme dato', () => {
+		expect(dageMellem('2026-06-07', '2026-06-07')).toBe(0);
+	});
+
+	it('returnerer positivt naar til er senere', () => {
+		expect(dageMellem('2026-06-01', '2026-06-07')).toBe(6);
+	});
+
+	it('returnerer negativt naar til er tidligere', () => {
+		expect(dageMellem('2026-06-07', '2026-06-01')).toBe(-6);
+	});
+
+	it('haandterer maaneds-grænser korrekt', () => {
+		expect(dageMellem('2026-05-30', '2026-06-02')).toBe(3);
+	});
+
+	it('haandterer aars-grænser korrekt', () => {
+		expect(dageMellem('2025-12-30', '2026-01-02')).toBe(3);
+	});
+});
+
+describe('aktuelAboDagForDato (kalender-mode)', () => {
+	const medAnker: AboMikrotraeningFremgang = {
+		totalGennemforte: 0,
+		feedback: {},
+		aboStartDato: '2026-06-01'
+	};
+
+	it('returnerer dag 1 paa aboStartDato selv', () => {
+		expect(aktuelAboDagForDato(medAnker, '2026-06-01')).toBe(1);
+	});
+
+	it('returnerer dag 2 dagen efter start', () => {
+		expect(aktuelAboDagForDato(medAnker, '2026-06-02')).toBe(2);
+	});
+
+	it('returnerer dag 21 paa 20. dag efter start', () => {
+		expect(aktuelAboDagForDato(medAnker, '2026-06-21')).toBe(21);
+	});
+
+	it('returnerer dag 1 paa 21. dag efter start (ny runde)', () => {
+		expect(aktuelAboDagForDato(medAnker, '2026-06-22')).toBe(1);
+	});
+
+	it('returnerer dag 1 hvis dato er foer aboStartDato', () => {
+		expect(aktuelAboDagForDato(medAnker, '2026-05-25')).toBe(1);
+	});
+
+	it('falder tilbage til legacy hvis aboStartDato mangler', () => {
+		// Uden anker bruger den gennemfoersels-baseret som returnerer
+		// (3 % 21) + 1 = 4
+		const utenAnker: AboMikrotraeningFremgang = {
+			totalGennemforte: 3,
+			feedback: {}
+		};
+		expect(aktuelAboDagForDato(utenAnker, '2026-06-07')).toBe(4);
+	});
+
+	it('respekterer eksplicit antalDage (14 for gammelt basis)', () => {
+		expect(aktuelAboDagForDato(medAnker, '2026-06-15', 14)).toBe(1);
 	});
 });

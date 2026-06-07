@@ -7,7 +7,7 @@
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import { naesteDag, beregnProgramFremgang } from '$lib/content/mikrotraening';
 	import {
-		aktuelAboDag,
+		aktuelAboDagForDato,
 		type AboMikrotraeningFremgang
 	} from '$lib/content/aboMikrotraening';
 	import { getCurrentDay } from '$lib/content/forlob';
@@ -71,11 +71,6 @@
 		return getCurrentDay({ startDato, antalDage: forlob.antalDage });
 	});
 
-	// === Abo-derived ===
-	const aboAktivDag = $derived(
-		aktuelAboDag(aboFremgang, aboProgram?.program.antalDage)
-	);
-
 	function dagsDatoStr(d: Date): string {
 		const aar = d.getFullYear();
 		const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -84,6 +79,11 @@
 	}
 
 	const idagDato = $derived(dagsDatoStr(new Date()));
+
+	// === Abo-derived ===
+	const aboAktivDag = $derived(
+		aktuelAboDagForDato(aboFremgang, idagDato, aboProgram?.program.antalDage)
+	);
 
 	// Dage før kontoen blev oprettet vises ikke — brugeren har ikke haft
 	// appen før det tidspunkt, så det giver ingen mening at åbne dem.

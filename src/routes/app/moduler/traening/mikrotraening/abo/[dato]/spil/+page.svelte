@@ -12,7 +12,7 @@
 		sletPause
 	} from '$lib/firestore/mikrotraening';
 	import {
-		aktuelAboDag,
+		aktuelAboDagForDato,
 		genemfoerAboDag,
 		type AboMikrotraeningFremgang
 	} from '$lib/content/aboMikrotraening';
@@ -188,12 +188,12 @@
 			}
 			programData = data;
 
-			// Bestem programDag fra historik eller fremgang
+			// Bestem programDag fra historik eller kalender-baseret rotation
 			const eksisterende = traeninger.find((t) => t.dato === dato);
 			if (eksisterende) {
 				dagNummer = eksisterende.programDag;
 			} else {
-				dagNummer = aktuelAboDag(fremgang, data.program.antalDage);
+				dagNummer = aktuelAboDagForDato(fremgang, dato, data.program.antalDage);
 			}
 			aboFremgang = fremgang;
 

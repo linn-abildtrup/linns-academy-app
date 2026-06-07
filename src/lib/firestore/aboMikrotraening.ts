@@ -124,6 +124,37 @@ export async function hentAboFremgang(uid: string): Promise<AboMikrotraeningFrem
 }
 
 /**
+ * Sikrer at kunden har en aboStartDato sat (kalender-anker for rotation).
+ * Hvis fremgang-doc'et ikke findes eller mangler aboStartDato, skrives
+ * dagens dato ind. Idempotent: kalder du to gange er anden gang en no-op.
+ *
+ * Returnerer den nu-gaeldende aboStartDato (enten den eksisterende eller
+ * den der lige blev sat).
+ *
+ * Bruges af mikrotraenings-sider ved foerste rendering saa kunden faar
+ * en fast rotation der starter paa dag 1 i dag.
+ */
+export async function sikrAboStartDato(uid: string, idagDato: string): Promise<string> {
+	const ref = fremgangRef(uid);
+	const snap = await getDoc(ref);
+	const eksisterende = snap.exists()
+		? (snap.data() as AboMikrotraeningFremgang).aboStartDato
+		: undefined;
+	if (eksisterende) return eksisterende;
+	await setDoc(
+		ref,
+		{
+			aboStartDato: idagDato,
+			// Hvis det er foerste gang vi skriver, init totalGennemforte+feedback
+			...(snap.exists() ? {} : { totalGennemforte: 0, feedback: {} }),
+			opdateretAt: serverTimestamp()
+		},
+		{ merge: true }
+	);
+	return idagDato;
+}
+
+/**
  * Markerer en dag som gennemført. totalGennemforte øges med 1.
  * Idempotent — hvis brugeren forsøger at gennemføre en dag der ikke er
  * den aktuelle, ignoreres kaldet (bestemmes via genemfoerAboDag).

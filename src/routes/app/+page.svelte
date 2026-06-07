@@ -79,7 +79,7 @@
 		type AdminTildeltVane
 	} from '$lib/firestore/admintildelteVaner';
 	import type { ForlobProduct } from '$lib/types';
-	import { aktuelAboDag } from '$lib/content/aboMikrotraening';
+	import { aktuelAboDagForDato } from '$lib/content/aboMikrotraening';
 	import { getVideoUrl, prefetchVideoer } from '$lib/utils/storage';
 	import { hentModulbrugerLektion } from '$lib/firestore/modulbrugerLektioner';
 	import type { ModulbrugerLektion } from '$lib/content/modulbrugerLektioner';
@@ -925,7 +925,11 @@
 					hentAboFremgang(u.uid)
 				]);
 				if (!program) return;
-				const programDag = aktuelAboDag(fremgang, program.program.antalDage);
+				const programDag = aktuelAboDagForDato(
+					fremgang,
+					modulbrugerIDag,
+					program.program.antalDage
+				);
 				const dag = program.dage.find((d) => d.dagNummer === programDag);
 				const exerciseIds = (dag?.exercises ?? []).map((e) => e.exerciseId);
 				if (exerciseIds.length === 0) return;

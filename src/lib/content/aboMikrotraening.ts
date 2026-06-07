@@ -1,10 +1,18 @@
 // Abo-mikrotræning — typer og pure-funktioner.
 //
 // Modsat forløbs-mikrotræningen (under forlob/{forlobId}/...) er abo-versionen
-// et fast 14-dages program der LOOPER: efter dag 14 starter brugeren forfra
-// på dag 1. Brugerens fremgang spores som totalGennemforte (cumulativ),
-// og aktuel dag i programmet udregnes som (totalGennemforte % antalDage) + 1.
-// Looper uendeligt — naar brugeren naar dag 21 starter naeste runde paa dag 1.
+// et fast 21-dages program der LOOPER: efter dag 21 starter brugeren forfra
+// på dag 1.
+//
+// Pr 7/6 2026: kalender-baseret rotation. Hver kunde har en aboStartDato
+// (dagen hun foerste gang aabnede abo-mikrotraening). Aktuel dag i programmet
+// = (dage siden aboStartDato % antalDage) + 1. Hver kalenderdato har sin
+// egen oevelse uanset om kunden har trenet i gaar. Det matcher forloebs-
+// modulets adfaerd og er det kunderne forventer.
+//
+// Tidligere brugte vi gennemfoersels-baseret rotation
+// (totalGennemforte % antalDage + 1) — den gamle aktuelAboDag findes
+// stadig som fallback for brugere uden aboStartDato sat.
 
 import type { Timestamp } from 'firebase/firestore';
 import type { Feedback, TrainingDay, TrainingProgram } from './mikrotraening';
@@ -24,6 +32,10 @@ export interface AboMikrotraeningFremgang {
 	totalGennemforte: number;
 	feedback: Record<string, Feedback>;
 	opdateretAt?: Timestamp;
+	/** YYYY-MM-DD. Dagen kunden foerste gang aabnede abo-mikrotraening.
+	 *  Bruges som anker til kalender-baseret rotation. Hvis null/undefined
+	 *  falder vi tilbage til gennemfoersels-baseret rotation. */
+	aboStartDato?: string;
 }
 
 /**
@@ -56,8 +68,8 @@ export interface AboMikrotraeningProgram extends TrainingProgram {
 export type AboMikrotraeningDag = TrainingDay;
 
 /**
- * Beregner hvilken dag i programmet (1-14) brugeren skal lave næst.
- * Hvis fremgang er null returnerer vi dag 1.
+ * LEGACY (gennemfoersels-baseret). Bevarer som fallback for brugere uden
+ * aboStartDato. Nye callers boer bruge aktuelAboDagForDato.
  */
 export function aktuelAboDag(
 	fremgang: AboMikrotraeningFremgang | null,
@@ -65,6 +77,45 @@ export function aktuelAboDag(
 ): number {
 	if (!fremgang || fremgang.totalGennemforte === 0) return 1;
 	return (fremgang.totalGennemforte % antalDage) + 1;
+}
+
+/**
+ * Beregner antal kalenderdage mellem to ISO-datoer (YYYY-MM-DD). Positiv
+ * hvis 'til' er senere end 'fra'. UTC-baseret for at undgaa DST-fejl.
+ */
+export function dageMellem(fra: string, til: string): number {
+	const a = Date.UTC(
+		Number(fra.slice(0, 4)),
+		Number(fra.slice(5, 7)) - 1,
+		Number(fra.slice(8, 10))
+	);
+	const b = Date.UTC(
+		Number(til.slice(0, 4)),
+		Number(til.slice(5, 7)) - 1,
+		Number(til.slice(8, 10))
+	);
+	return Math.floor((b - a) / (24 * 60 * 60 * 1000));
+}
+
+/**
+ * Beregner hvilken dag i programmet (1..antalDage) en given kalenderdato
+ * peger paa. Kalender-baseret: dag = (dage_siden_aboStartDato % antalDage) + 1.
+ *
+ * Hvis fremgang ikke har aboStartDato sat (gamle kunder, eller foer auto-set
+ * naar at koere), falder vi tilbage til den legacy gennemfoersels-baserede
+ * aktuelAboDag — saa kunden ikke pludselig hopper.
+ *
+ * Hvis dato er foer aboStartDato (kunden bladrer bagud), returnerer vi 1.
+ */
+export function aktuelAboDagForDato(
+	fremgang: AboMikrotraeningFremgang | null,
+	dato: string,
+	antalDage: number = ABO_MIKROTRAENING_DAGE
+): number {
+	if (!fremgang?.aboStartDato) return aktuelAboDag(fremgang, antalDage);
+	const diff = dageMellem(fremgang.aboStartDato, dato);
+	if (diff < 0) return 1;
+	return (diff % antalDage) + 1;
 }
 
 /**
@@ -101,8 +152,15 @@ export function harKlaretAboDagIRunde(
 
 /**
  * Returnerer den nye totalGennemforte efter at brugeren har gennemført dagen.
- * Bruges af gem-handlere i klient-UI'et. Idempotent: hvis brugeren prøver
- * at markere samme dag igen i samme runde, øges count ikke.
+ *
+ * I kalender-mode (fremgang har aboStartDato) er totalGennemforte bare en
+ * raa taeller af antal traeninger — vi inkrementerer altid med 1 uanset
+ * hvilken dag-nummer kunden traener. Daglig rotation bestemmes af kalenderen,
+ * ikke af denne taeller.
+ *
+ * I legacy gennemfoersels-mode (ingen aboStartDato) kan kunden kun
+ * gennemfoere den aktuelle dag (totalGennemforte % antalDage + 1). Ellers
+ * ignoreres kaldet for at undgaa at tableten hopper ud af cyklus.
  */
 export function genemfoerAboDag(
 	fremgang: AboMikrotraeningFremgang | null,
@@ -110,8 +168,8 @@ export function genemfoerAboDag(
 	antalDage: number = ABO_MIKROTRAENING_DAGE
 ): number {
 	const nuvaerende = fremgang?.totalGennemforte ?? 0;
+	if (fremgang?.aboStartDato) return nuvaerende + 1;
 	const aktuelDag = (nuvaerende % antalDage) + 1;
-	// Brugeren skal være på den dag hun forsøger at gennemføre
 	if (dagNummer !== aktuelDag) return nuvaerende;
 	return nuvaerende + 1;
 }
