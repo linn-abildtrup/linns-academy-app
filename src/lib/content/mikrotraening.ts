@@ -307,7 +307,8 @@ export interface GenererConfig {
 export function genererProgramMedConfig(
 	antalDage: number,
 	exercises: Exercise[],
-	config: GenererConfig
+	config: GenererConfig,
+	opts: { markSidsteSomBonus?: boolean } = {}
 ): TrainingDay[] {
 	const ben = exercises.filter((e) => e.cat === 'ben').map((e) => e.id);
 	const overkrop = exercises.filter((e) => e.cat === 'overkrop').map((e) => e.id);
@@ -324,6 +325,8 @@ export function genererProgramMedConfig(
 
 	// Cykler ben → overkrop → core/stab → ben → ... så fordelingen er jævn
 	const kategorier = [ben, overkrop, coreStab];
+	const markSidste = opts.markSidsteSomBonus === true;
+	const sidsteIdx = config.antalOvelser - 1;
 
 	return Array.from({ length: antalDage }, (_, i) => ({
 		dagNummer: i + 1,
@@ -338,7 +341,7 @@ export function genererProgramMedConfig(
 				sets: config.sets,
 				workSec: config.workSec,
 				restSec: config.restSec,
-				bonus: false
+				bonus: markSidste && j === sidsteIdx
 			};
 		})
 	}));

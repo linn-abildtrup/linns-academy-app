@@ -182,7 +182,8 @@
 			const dage: TrainingDay[] = genererProgramMedConfig(
 				ABO_MIKROTRAENING_DAGE,
 				filtrerede,
-				aktivConfig
+				aktivConfig,
+				{ markSidsteSomBonus: true }
 			);
 			await gemAboMikrotraeningDage(aktivKey, dage);
 
