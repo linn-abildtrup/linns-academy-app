@@ -25,7 +25,16 @@ import { ABO_MIKROTRAENING_DAGE } from '$lib/content/aboMikrotraening';
 import type { TrainingDay } from '$lib/content/mikrotraening';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
 
-type ProduktType = 'basis' | 'premium';
+// Tidligere kun 'basis' | 'premium'. Pr 7/6 2026 udvidet til at omfatte
+// variant-suffix (basis_kettlebell, basis_no_kettlebell, premium_*) saa
+// admin kan redigere de variant-specifikke programmer direkte.
+type ProduktType =
+	| 'basis'
+	| 'premium'
+	| 'basis_kettlebell'
+	| 'basis_no_kettlebell'
+	| 'premium_kettlebell'
+	| 'premium_no_kettlebell';
 
 export interface AboMikrotraeningProgramMedDage {
 	id: string;
@@ -48,18 +57,26 @@ export type MikrotraeningVariant = 'kettlebell' | 'no_kettlebell';
  * falder vi tilbage til det gamle `{produktType}`-doc (uden variant-suffix).
  */
 export async function hentAboMikrotraeningProgram(
-	produktType: ProduktType,
+	produktType: 'basis' | 'premium',
 	variant: MikrotraeningVariant = 'no_kettlebell'
 ): Promise<AboMikrotraeningProgramMedDage | null> {
-	const nyDocId = `${produktType}_${variant}`;
-	let programSnap = await getDoc(doc(db, 'aboMikrotraening', nyDocId));
-	let docId = nyDocId;
-	if (!programSnap.exists()) {
-		// Fallback til den gamle docId uden variant-suffix
-		programSnap = await getDoc(doc(db, 'aboMikrotraening', produktType));
-		docId = produktType;
-		if (!programSnap.exists()) return null;
-	}
+	// Pr 7/6 2026: ingen fallback. Variant-doc'et SKAL findes. Hvis ikke
+	// returnerer vi null og kalderen viser "Programmet er ikke sat op endnu".
+	// Det gamle 'basis'-doc (14d) er forladt — vi rammer det ikke laengere
+	// fra klienter for at undgaa at de ser et program admin ikke kan
+	// redigere.
+	return hentAboMikrotraeningProgramVedDocId(`${produktType}_${variant}`);
+}
+
+/**
+ * Henter et program direkte ud fra dets doc-id (fx 'basis_kettlebell').
+ * Bruges af admin-flowet hvor route-paramet er det fulde docId.
+ */
+export async function hentAboMikrotraeningProgramVedDocId(
+	docId: ProduktType
+): Promise<AboMikrotraeningProgramMedDage | null> {
+	const programSnap = await getDoc(doc(db, 'aboMikrotraening', docId));
+	if (!programSnap.exists()) return null;
 	const program = { id: programSnap.id, ...programSnap.data() } as AboMikrotraeningProgram;
 
 	const dageSnap = await getDocs(collection(db, 'aboMikrotraening', docId, 'days'));

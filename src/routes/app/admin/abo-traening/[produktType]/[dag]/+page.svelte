@@ -4,13 +4,29 @@
 	import type { DayExercise, Exercise, TrainingDay } from '$lib/content/mikrotraening';
 	import { hentAlleExercises } from '$lib/firestore/mikrotraening';
 	import {
-		hentAboMikrotraeningProgram,
+		hentAboMikrotraeningProgramVedDocId,
 		gemAboMikrotraeningDag,
 		type AboMikrotraeningProgramMedDage
 	} from '$lib/firestore/aboMikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 
-	const produktType = $derived(page.params.produktType as 'basis' | 'premium');
+	const GYLDIGE_PRODUKT_TYPER = [
+		'basis_kettlebell',
+		'basis_no_kettlebell',
+		'premium_kettlebell',
+		'premium_no_kettlebell'
+	] as const;
+	type ProduktType = (typeof GYLDIGE_PRODUKT_TYPER)[number];
+
+	function visningsNavn(p: string): string {
+		if (p === 'basis_kettlebell') return 'Basis · med kettlebell';
+		if (p === 'basis_no_kettlebell') return 'Basis · uden udstyr';
+		if (p === 'premium_kettlebell') return 'Premium · med kettlebell';
+		if (p === 'premium_no_kettlebell') return 'Premium · uden udstyr';
+		return p;
+	}
+
+	const produktType = $derived(page.params.produktType as ProduktType);
 	const dagNummer = $derived(parseInt(page.params.dag ?? '', 10));
 
 	let programData = $state<AboMikrotraeningProgramMedDage | null>(null);
@@ -32,14 +48,14 @@
 	const totalMinutter = $derived(Math.round(totalSekunder / 60));
 
 	onMount(async () => {
-		if (produktType !== 'basis' && produktType !== 'premium') {
+		if (!(GYLDIGE_PRODUKT_TYPER as readonly string[]).includes(produktType)) {
 			fejl = 'Ugyldig produkt-type.';
 			loading = false;
 			return;
 		}
 		try {
 			const [data, ovelser] = await Promise.all([
-				hentAboMikrotraeningProgram(produktType),
+				hentAboMikrotraeningProgramVedDocId(produktType),
 				hentAlleExercises()
 			]);
 			programData = data;
@@ -130,7 +146,7 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Abo-træning</span>
 		</a>
-		<div class="eyebrow">Admin · {produktType === 'basis' ? 'Basis' : 'Premium'} · Dag {dagNummer}</div>
+		<div class="eyebrow">Admin · {visningsNavn(produktType)} · Dag {dagNummer}</div>
 		<h1>Rediger dag</h1>
 		{#if programData}
 			<p class="page-sub">{programData.program.navn}</p>

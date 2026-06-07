@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { Exercise, GenererConfig, TrainingDay } from '$lib/content/mikrotraening';
+	import type { Exercise, GenererConfig, TrainingDay, Udstyr } from '$lib/content/mikrotraening';
 	import {
 		filtrerOvelserTilProgram,
 		genererProgramMedConfig
@@ -18,14 +18,24 @@
 	import { hentAlleExercises } from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
-	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 
 	type ProduktType = 'basis' | 'premium';
-	let aktivTab = $state<ProduktType>('basis');
+	type Variant = 'kettlebell' | 'no_kettlebell';
+	type ProgramKey = `${ProduktType}_${Variant}`;
 
-	let programData = $state<Record<ProduktType, AboMikrotraeningProgramMedDage | null>>({
-		basis: null,
-		premium: null
+	function nogle(p: ProduktType, v: Variant): ProgramKey {
+		return `${p}_${v}`;
+	}
+
+	let aktivTab = $state<ProduktType>('basis');
+	let aktivVariant = $state<Variant>('kettlebell');
+	const aktivKey = $derived<ProgramKey>(nogle(aktivTab, aktivVariant));
+
+	let programData = $state<Record<ProgramKey, AboMikrotraeningProgramMedDage | null>>({
+		basis_kettlebell: null,
+		basis_no_kettlebell: null,
+		premium_kettlebell: null,
+		premium_no_kettlebell: null
 	});
 	let alleOvelser = $state<Exercise[]>([]);
 	let loading = $state(true);
@@ -35,26 +45,30 @@
 	let genererBesked = $state('');
 
 	// Pre-config-felter — gemmes på programmet og bruges som default
-	// næste gang admin auto-genererer.
+	// næste gang admin auto-genererer. En config pr program-variant.
 	const STANDARD_CONFIG: GenererConfig = {
 		antalOvelser: 3,
 		sets: 3,
-		workSec: 30,
-		restSec: 10
+		workSec: 45,
+		restSec: 15
 	};
-	let configBasis = $state<GenererConfig>({ ...STANDARD_CONFIG });
-	let configPremium = $state<GenererConfig>({ ...STANDARD_CONFIG });
+	let configs = $state<Record<ProgramKey, GenererConfig>>({
+		basis_kettlebell: { ...STANDARD_CONFIG },
+		basis_no_kettlebell: { ...STANDARD_CONFIG },
+		premium_kettlebell: { ...STANDARD_CONFIG },
+		premium_no_kettlebell: { ...STANDARD_CONFIG }
+	});
 
-	const aktivConfig = $derived(aktivTab === 'basis' ? configBasis : configPremium);
+	const aktivConfig = $derived(configs[aktivKey]);
 
 	function setConfig(felt: keyof GenererConfig, val: number) {
-		const nuvaerende = aktivTab === 'basis' ? configBasis : configPremium;
-		const opdateret = { ...nuvaerende, [felt]: val };
-		if (aktivTab === 'basis') configBasis = opdateret;
-		else configPremium = opdateret;
+		configs = {
+			...configs,
+			[aktivKey]: { ...configs[aktivKey], [felt]: val }
+		};
 	}
 
-	const aktivProgram = $derived(programData[aktivTab]);
+	const aktivProgram = $derived(programData[aktivKey]);
 	const tommeDage = $derived(
 		aktivProgram?.dage.filter((d) => d.exercises.length === 0).length ?? 0
 	);
@@ -64,15 +78,30 @@
 
 	onMount(async () => {
 		try {
-			const [basis, premium, ovelser] = await Promise.all([
-				hentAboMikrotraeningProgram('basis'),
-				hentAboMikrotraeningProgram('premium'),
+			const [bk, bn, pk, pn, ovelser] = await Promise.all([
+				hentAboMikrotraeningProgram('basis', 'kettlebell'),
+				hentAboMikrotraeningProgram('basis', 'no_kettlebell'),
+				hentAboMikrotraeningProgram('premium', 'kettlebell'),
+				hentAboMikrotraeningProgram('premium', 'no_kettlebell'),
 				hentAlleExercises()
 			]);
-			programData = { basis, premium };
+			programData = {
+				basis_kettlebell: bk,
+				basis_no_kettlebell: bn,
+				premium_kettlebell: pk,
+				premium_no_kettlebell: pn
+			};
 			alleOvelser = ovelser;
-			if (basis?.program.genererConfig) configBasis = { ...basis.program.genererConfig };
-			if (premium?.program.genererConfig) configPremium = { ...premium.program.genererConfig };
+			// Indlæs eksisterende genererConfig pr program hvis sat
+			for (const key of [
+				'basis_kettlebell',
+				'basis_no_kettlebell',
+				'premium_kettlebell',
+				'premium_no_kettlebell'
+			] as ProgramKey[]) {
+				const p = programData[key]?.program.genererConfig;
+				if (p) configs[key] = { ...p };
+			}
 		} catch (e) {
 			fejl = 'Kunne ikke hente data.';
 			console.error(e);
@@ -86,6 +115,24 @@
 	function aabnAutoGenererBekraeft() {
 		if (genererStatus === 'arbejder') return;
 		viserAutoGenererBekraeft = true;
+	}
+
+	function lukAutoGenererBekraeft() {
+		viserAutoGenererBekraeft = false;
+	}
+
+	function variantNavn(v: Variant): string {
+		return v === 'kettlebell' ? 'med kettlebell' : 'uden udstyr';
+	}
+
+	function programNavn(p: ProduktType, v: Variant): string {
+		const niveau = p === 'basis' ? 'Daglig mikrotræning' : 'Daglig mikrotræning premium';
+		const suffix = v === 'kettlebell' ? ' – kettlebell' : ' – uden udstyr';
+		return niveau + suffix;
+	}
+
+	function udstyrFor(v: Variant): Udstyr[] {
+		return v === 'kettlebell' ? ['kettlebell'] : ['ingen'];
 	}
 
 	async function autoGenerer() {
@@ -105,6 +152,7 @@
 						60
 				)
 			);
+			const udstyr = udstyrFor(aktivVariant);
 			const program: Omit<AboMikrotraeningProgram, 'id'> = aktivProgram?.program
 				? {
 						navn: aktivProgram.program.navn,
@@ -113,22 +161,22 @@
 						antalDage: ABO_MIKROTRAENING_DAGE,
 						dagligTid: beregnetDagligTid,
 						niveau: aktivProgram.program.niveau,
-						udstyr: aktivProgram.program.udstyr ?? ['ingen'],
+						udstyr,
 						aktiv: true,
 						genererConfig: { ...aktivConfig }
 					}
 				: {
-						navn: aktivTab === 'basis' ? 'Daglig mikrotræning' : 'Daglig mikrotræning premium',
+						navn: programNavn(aktivTab, aktivVariant),
 						beskrivelse: 'Daglig træning.',
 						treaningsform: 'mikrotraening',
 						antalDage: ABO_MIKROTRAENING_DAGE,
 						dagligTid: beregnetDagligTid,
 						niveau: 'begynder',
-						udstyr: ['ingen'],
+						udstyr,
 						aktiv: true,
 						genererConfig: { ...aktivConfig }
 					};
-			await gemAboMikrotraeningProgram(aktivTab, program);
+			await gemAboMikrotraeningProgram(aktivKey, program);
 
 			const filtrerede = filtrerOvelserTilProgram(alleOvelser, program.udstyr);
 			const dage: TrainingDay[] = genererProgramMedConfig(
@@ -136,18 +184,18 @@
 				filtrerede,
 				aktivConfig
 			);
-			await gemAboMikrotraeningDage(aktivTab, dage);
+			await gemAboMikrotraeningDage(aktivKey, dage);
 
 			programData = {
 				...programData,
-				[aktivTab]: {
-					id: aktivTab,
-					program: { id: aktivTab, ...program } as AboMikrotraeningProgram,
+				[aktivKey]: {
+					id: aktivKey,
+					program: { id: aktivKey, ...program } as AboMikrotraeningProgram,
 					dage
 				}
 			};
 			genererStatus = 'gemt';
-			genererBesked = `${dage.length} dage genereret og gemt for ${aktivTab}-abo.`;
+			genererBesked = `${dage.length} dage genereret for ${aktivTab}-abo (${variantNavn(aktivVariant)}).`;
 		} catch (e) {
 			genererStatus = 'fejl';
 			genererBesked = e instanceof Error ? e.message : 'Kunne ikke generere program.';
@@ -174,7 +222,8 @@
 		<div class="eyebrow">Admin · Abo-træning</div>
 		<h1>Mikrotræning for abonnenter</h1>
 		<p class="page-sub">
-			Mikrotræning for basis- og premium-abonnenter.
+			To programmer pr abo-niveau: med og uden kettlebell. Kunden vælger sin variant
+			på sin profil, og ser så det program du har redigeret her.
 		</p>
 	</header>
 
@@ -193,6 +242,25 @@
 				onclick={() => (aktivTab = 'premium')}
 			>
 				Premium-app
+			</button>
+		</div>
+
+		<div class="variant-tabs">
+			<button
+				class="variant-tab"
+				class:aktiv={aktivVariant === 'kettlebell'}
+				onclick={() => (aktivVariant = 'kettlebell')}
+			>
+				<Icon name="kettlebell" size={14} />
+				<span>Med kettlebell</span>
+			</button>
+			<button
+				class="variant-tab"
+				class:aktiv={aktivVariant === 'no_kettlebell'}
+				onclick={() => (aktivVariant = 'no_kettlebell')}
+			>
+				<Icon name="stretch" size={14} />
+				<span>Uden udstyr</span>
 			</button>
 		</div>
 
@@ -263,10 +331,9 @@
 				{/if}
 			</button>
 			<p class="hint">
-				Cykler gennem ben → overkrop → core/stabilitet og forskyder valg pr. dag
-				så samme øvelse ikke gentages. Indstillingerne ovenfor gemmes med programmet
-				og er default næste gang du auto-genererer. Klik på en dag nedenfor for at
-				redigere den manuelt bagefter.
+				Cykler gennem ben → overkrop → core/stabilitet og forskyder valg pr dag
+				så samme øvelse ikke gentages. Klik på en dag nedenfor for at redigere
+				den manuelt bagefter.
 			</p>
 			{#if genererStatus === 'gemt'}
 				<div class="besked ok">{genererBesked}</div>
@@ -277,9 +344,14 @@
 
 		{#if aktivProgram}
 			<section class="dage-card">
-				<div class="section-label">Programmets {aktivProgram.dage.length} dage</div>
+				<div class="section-label">
+					{aktivProgram.program.navn} · {aktivProgram.dage.length} dage
+				</div>
 				{#each aktivProgram.dage as dag (dag.dagNummer)}
-					<a class="dag-row" href="/app/admin/abo-traening/{aktivTab}/{dag.dagNummer}">
+					<a
+						class="dag-row"
+						href="/app/admin/abo-traening/{aktivKey}/{dag.dagNummer}"
+					>
 						<div class="dag-num">{dag.dagNummer}</div>
 						<div class="dag-tekst">
 							<div class="dag-titel">Dag {dag.dagNummer}</div>
@@ -298,28 +370,36 @@
 </div>
 
 {#if viserAutoGenererBekraeft}
-	<BekraeftModal
-		titel="{aktivProgram ? 'Overskriv' : 'Opret'} programmet?"
-		beskrivelse="Det vil {aktivProgram
-			? 'overskrive det eksisterende program'
-			: 'oprette et nyt program'} for {aktivTab}-abo. Er du sikker?"
-		bekraeftTekst={aktivProgram ? 'Overskriv' : 'Opret'}
-		destruktiv={!!aktivProgram}
-		arbejder={genererStatus === 'arbejder'}
-		onBekraeft={() => void autoGenerer()}
-		onAnnuller={() => (viserAutoGenererBekraeft = false)}
-	/>
+	<div class="modal-overlay" role="presentation" onclick={lukAutoGenererBekraeft}>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div class="modal" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()}>
+			<h3 class="modal-titel">Auto-generér program?</h3>
+			<p class="modal-tekst">
+				Du er ved at auto-generere programmet for <strong
+					>{aktivTab}-abo, {variantNavn(aktivVariant)}</strong
+				>. Hvis programmet allerede har manuelle ændringer, bliver de overskrevet.
+			</p>
+			<div class="modal-knapper">
+				<button class="ghost-knap" type="button" onclick={lukAutoGenererBekraeft}>
+					Annullér
+				</button>
+				<button class="primary-knap" type="button" onclick={autoGenerer}>
+					Ja, generér
+				</button>
+			</div>
+		</div>
+	</div>
 {/if}
 
 <style>
 	.page {
 		padding: 18px 18px 100px;
-		max-width: 640px;
+		max-width: 720px;
 		margin: 0 auto;
 	}
 
 	.page-header {
-		margin-bottom: 18px;
+		margin-bottom: 14px;
 	}
 
 	.back {
@@ -342,44 +422,74 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: calc(28px * var(--fs-scale, 1));
+		font-size: calc(26px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
-		margin: 4px 0 0;
+		margin: 4px 0 4px;
 		line-height: 1.05;
 		color: var(--text);
 	}
 
 	.page-sub {
-		font-size: calc(13px * var(--fs-scale, 1));
-		color: var(--text2);
-		margin: 6px 0 0;
-		line-height: 1.4;
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin: 0;
 	}
 
 	.tabs {
 		display: flex;
-		gap: 4px;
-		margin-bottom: 14px;
+		gap: 6px;
+		margin-bottom: 8px;
+		background: var(--bg2);
+		padding: 4px;
+		border-radius: 10px;
 	}
 
 	.tab {
 		flex: 1;
-		padding: 10px 12px;
-		border-radius: 8px;
-		border: 1px solid var(--border);
-		background: var(--white);
-		color: var(--text2);
+		background: transparent;
+		border: none;
+		padding: 10px;
+		font-family: inherit;
 		font-size: calc(13px * var(--fs-scale, 1));
-		font-weight: 600;
+		font-weight: 500;
+		color: var(--text2);
+		border-radius: 8px;
 		cursor: pointer;
-		font-family: var(--ff-b);
 	}
 
 	.tab.aktiv {
+		background: var(--white);
+		color: var(--text);
+		font-weight: 600;
+	}
+
+	.variant-tabs {
+		display: flex;
+		gap: 6px;
+		margin-bottom: 14px;
+	}
+
+	.variant-tab {
+		flex: 1;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		padding: 8px 12px;
+		font-family: inherit;
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text2);
+		border-radius: 99px;
+		cursor: pointer;
+	}
+
+	.variant-tab.aktiv {
 		background: var(--terra);
-		color: #fff;
 		border-color: var(--terra);
+		color: var(--white);
 	}
 
 	.actions-card,
@@ -394,82 +504,16 @@
 	.section-label {
 		font-size: calc(10px * var(--fs-scale, 1));
 		font-weight: 600;
-		letter-spacing: 0.16em;
+		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		color: var(--text3);
-		margin-bottom: 10px;
-	}
-
-	.primary-knap {
-		display: block;
-		width: 100%;
-		padding: 12px;
-		background: var(--terra);
-		color: #fff;
-		font-size: calc(14px * var(--fs-scale, 1));
-		font-weight: 600;
-		border-radius: 10px;
-		border: none;
-		cursor: pointer;
-		font-family: var(--ff-b);
-	}
-
-	.primary-knap:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	.hint {
-		font-size: calc(12px * var(--fs-scale, 1));
-		color: var(--text3);
-		line-height: 1.5;
-		margin: 8px 0 0;
-	}
-
-	.besked {
-		margin-top: 10px;
-		padding: 8px 12px;
-		border-radius: 8px;
-		font-size: calc(12px * var(--fs-scale, 1));
-		text-align: center;
-	}
-
-	.besked.ok {
-		background: var(--sdim);
-		border: 1px solid var(--sage);
-		color: var(--text);
-	}
-
-	.besked.fejl {
-		background: #fbeeea;
-		border: 1px solid #f0d6cf;
-		color: #8a4a3e;
-	}
-
-	.dag-row {
-		display: flex;
-		gap: 12px;
-		align-items: center;
-		padding: 10px 0;
-		border-top: 1px solid var(--border);
-		text-decoration: none;
-		color: inherit;
-	}
-
-	.dag-row:first-child {
-		border-top: none;
-	}
-
-	.dag-row:hover {
-		background: var(--bg2);
-		margin: 0 -8px;
-		padding: 10px 8px;
+		margin-bottom: 12px;
 	}
 
 	.config-grid {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 8px;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 10px;
 		margin-bottom: 14px;
 	}
 
@@ -481,40 +525,98 @@
 
 	.config-lbl {
 		font-size: calc(11px * var(--fs-scale, 1));
-		color: var(--text3);
-		font-weight: 500;
+		color: var(--text2);
 	}
 
 	.config-felt input {
-		padding: 9px 10px;
+		font-family: inherit;
 		font-size: calc(14px * var(--fs-scale, 1));
-		font-family: var(--ff-b);
+		padding: 8px 10px;
 		border: 1px solid var(--border);
 		border-radius: 8px;
-		background: var(--white);
-		color: var(--text);
-		width: 100%;
-		box-sizing: border-box;
+		background: var(--bg2);
 	}
 
-	.config-felt input:focus {
-		outline: 2px solid var(--terra);
-		outline-offset: -1px;
+	.primary-knap {
+		width: 100%;
+		background: var(--terra);
+		color: #fff;
+		border: none;
+		padding: 12px;
+		border-radius: 10px;
+		font-family: inherit;
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.primary-knap:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.ghost-knap {
+		background: var(--white);
+		color: var(--text2);
+		border: 1px solid var(--border);
+		padding: 10px 14px;
+		border-radius: 8px;
+		font-family: inherit;
+		font-size: calc(13px * var(--fs-scale, 1));
+		cursor: pointer;
+	}
+
+	.hint {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin: 10px 0 0;
+		line-height: 1.5;
+	}
+
+	.besked {
+		font-size: calc(12px * var(--fs-scale, 1));
+		padding: 8px 12px;
+		border-radius: 8px;
+		margin-top: 10px;
+	}
+
+	.besked.ok {
+		background: rgba(143, 168, 144, 0.18);
+		color: #4f6f5b;
+	}
+
+	.besked.fejl {
+		background: #fbeeea;
+		color: #8a4a3e;
+	}
+
+	.dag-row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 12px;
+		border-radius: 10px;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.dag-row:hover {
+		background: var(--bg2);
 	}
 
 	.dag-num {
-		width: 30px;
-		height: 30px;
+		width: 32px;
+		height: 32px;
 		border-radius: 50%;
 		background: var(--bg2);
 		color: var(--text2);
 		font-family: var(--ff-d);
 		font-weight: 600;
+		font-size: calc(14px * var(--fs-scale, 1));
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
-		font-size: calc(13px * var(--fs-scale, 1));
 	}
 
 	.dag-tekst {
@@ -523,7 +625,7 @@
 	}
 
 	.dag-titel {
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
@@ -531,8 +633,10 @@
 	.dag-sub {
 		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--text3);
-		margin-top: 2px;
-		line-height: 1.4;
+		margin-top: 1px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.status-besked {
@@ -540,7 +644,7 @@
 		background: var(--white);
 		border: 1px solid var(--border);
 		border-radius: 12px;
-		color: var(--text2);
+		color: var(--text3);
 		font-size: calc(13px * var(--fs-scale, 1));
 		text-align: center;
 	}
@@ -549,5 +653,50 @@
 		color: #8a4a3e;
 		background: #fbeeea;
 		border-color: #f0d6cf;
+	}
+
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 100;
+		padding: 20px;
+	}
+
+	.modal {
+		background: var(--white);
+		border-radius: 14px;
+		padding: 20px;
+		max-width: 380px;
+		width: 100%;
+	}
+
+	.modal-titel {
+		font-family: var(--ff-d);
+		font-size: calc(18px * var(--fs-scale, 1));
+		font-weight: 600;
+		margin: 0 0 10px;
+		color: var(--text);
+	}
+
+	.modal-tekst {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.5;
+		margin: 0 0 14px;
+	}
+
+	.modal-knapper {
+		display: flex;
+		gap: 8px;
+		justify-content: flex-end;
+	}
+
+	.modal-knapper .primary-knap {
+		width: auto;
+		padding: 10px 16px;
 	}
 </style>
