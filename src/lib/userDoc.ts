@@ -319,6 +319,19 @@ export async function synkroniserForlobskundeStatus(
 			// et andet program end Moduler -> Traening fordi den brugte
 			// aktivtTraeningsprogram direkte, mens Moduler-overblikket viste
 			// "Mikrotraening"-row der peger paa abo-programmet.
+
+			// Saet ogsaa userDoc.state='modulbruger' hvis kunden reelt er
+			// abo-kunde nu. effektivState() haandterer mismatchet via
+			// accessLevel/accessSource, men det rene state-felt bliver stale
+			// hvis vi ikke ogsaa opdaterer det her — og noget kode kan ende
+			// med at laese det direkte.
+			const erReeltAbo =
+				current.accessSource === 'abonnement' &&
+				current.activeSubscription === true;
+			if (erReeltAbo && current.state === 'forlobskunde') {
+				opdateringer.state = 'modulbruger';
+			}
+
 			if (
 				current.aktivtTraeningsprogram?.kilde === 'tildelt' &&
 				current.aktivtTraeningsprogram?.forlobId === allowed.forlobId
