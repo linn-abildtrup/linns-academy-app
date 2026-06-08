@@ -87,9 +87,17 @@ export function erTrivielBesked(tekst: string): boolean {
 	return false;
 }
 
+/**
+ * Trimmer en streng til maksimalt `maks` tegn — men sliter pr code-point
+ * (Array.from) i stedet for code-unit (s.slice), saa vi aldrig breaker
+ * midt i et surrogate pair (emoji). Tidligere ramte vi midt i emoji som
+ * 🌸 hvilket fik Anthropic til at afvise hele JSON-body'en med
+ * "no low surrogate in string"-fejlen 8/6 2026.
+ */
 function trimTekst(s: string, maks: number): string {
-	if (s.length <= maks) return s;
-	return s.slice(0, maks - 1).trimEnd() + '…';
+	const chars = Array.from(s);
+	if (chars.length <= maks) return s;
+	return chars.slice(0, maks - 1).join('').trimEnd() + '…';
 }
 
 export function byggFaqTekst(items: FaqItem[]): string {

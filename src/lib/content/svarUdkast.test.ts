@@ -63,6 +63,26 @@ describe('byggFaqTekst', () => {
 		expect(tekst.length).toBeLessThan(langSvar.length);
 		expect(tekst).toContain('…');
 	});
+
+	it('breaker ikke midt i emoji (surrogate pair)', () => {
+		// 🌸 er et surrogate pair. Hvis trimTekst bruger s.slice(0, n) kan
+		// vi ramme midt i parret og faa en orphan high surrogate, som
+		// Anthropic afviser i deres JSON-parser.
+		const svar = '🌸'.repeat(700); // 700 emoji × 2 code-units = 1400 length
+		const tekst = byggFaqTekst([{ titel: 'Test', svar }]);
+		// JSON.stringify skal kunne serialisere uden at smide fejl
+		expect(() => JSON.stringify(tekst)).not.toThrow();
+		// Og resultatet skal ikke indeholde orphan high surrogates
+		for (let i = 0; i < tekst.length; i++) {
+			const code = tekst.charCodeAt(i);
+			if (code >= 0xd800 && code <= 0xdbff) {
+				// High surrogate — naeste tegn skal vaere low surrogate
+				const naeste = tekst.charCodeAt(i + 1);
+				expect(naeste).toBeGreaterThanOrEqual(0xdc00);
+				expect(naeste).toBeLessThanOrEqual(0xdfff);
+			}
+		}
+	});
 });
 
 describe('byggTidligereSvarTekst', () => {
