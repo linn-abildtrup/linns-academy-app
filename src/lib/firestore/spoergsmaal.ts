@@ -10,6 +10,7 @@ import {
 	collection,
 	deleteDoc,
 	doc,
+	getDoc,
 	getDocs,
 	limit,
 	orderBy,
@@ -67,6 +68,49 @@ export async function gemSpoergsmaal(kontekst: NytSpoergsmaalKontekst): Promise<
 		throw new Error(`Spørgsmål må højst være ${SPOERGSMAAL_MAX_LAENGDE} tegn`);
 	}
 
+	// Self-healing: hvis caller ikke gav forlobId med, prov at finde det
+	// fra brugerens userDoc + userProducts foer vi skriver. Det daekker
+	// race conditions hvor onMount/effect endnu ikke har hentet kontekst,
+	// og PWA-brugere paa cached gammel kode der ikke havde fix'et.
+	// Bug 7-8/6 2026: ~60 sporgsmaal fra Kickstart juni-kunder var gemt
+	// uden forlobId og kunne ikke faa AI-udkast bagefter.
+	let forlobId = kontekst.forlobId;
+	let forlobNavn = kontekst.forlobNavn;
+	let kundeType = kontekst.kundeType;
+	if (!forlobId) {
+		try {
+			const uDoc = await getDoc(doc(db, `users/${kontekst.uid}`));
+			const ud = uDoc.exists() ? uDoc.data() : null;
+			const forlobIds = (ud?.forlobIds as string[] | undefined) ?? [];
+			if (forlobIds.length > 0) {
+				// Forsoeg userProducts.premiumforløb, derefter kickstart
+				for (const productId of ['premiumforløb', 'kickstart']) {
+					const p = await getDoc(doc(db, `users/${kontekst.uid}/products/${productId}`));
+					const fId = p.exists() ? (p.data().forlobId as string | undefined) : undefined;
+					if (fId) {
+						forlobId = fId;
+						break;
+					}
+				}
+				// Sidste fallback: brug seneste forløb i forlobIds-arrayet
+				if (!forlobId) forlobId = forlobIds[forlobIds.length - 1];
+
+				// Hent forlobNavn + bekraeft kundeType
+				if (forlobId && !forlobNavn) {
+					const f = await getDoc(doc(db, `forlob/${forlobId}`));
+					forlobNavn = (f.data()?.navn as string | undefined) ?? undefined;
+				}
+				if (!kundeType && ud?.state === 'forlobskunde') {
+					kundeType = 'forlobskunde';
+				}
+			}
+		} catch (e) {
+			// Self-healing er best-effort. Hvis det fejler, gemmer vi uden
+			// forlobId og admin ser det stadig under "Uden forløb"-filteret.
+			console.warn('Kunne ikke berige forlobId ved gem:', e);
+		}
+	}
+
 	const data: Record<string, unknown> = {
 		uid: kontekst.uid,
 		email: kontekst.email,
@@ -74,9 +118,9 @@ export async function gemSpoergsmaal(kontekst: NytSpoergsmaalKontekst): Promise<
 		status: 'ny' as SpoergsmaalStatus,
 		oprettet: serverTimestamp()
 	};
-	if (kontekst.forlobId) data.forlobId = kontekst.forlobId;
-	if (kontekst.forlobNavn) data.forlobNavn = kontekst.forlobNavn;
-	if (kontekst.kundeType) data.kundeType = kontekst.kundeType;
+	if (forlobId) data.forlobId = forlobId;
+	if (forlobNavn) data.forlobNavn = forlobNavn;
+	if (kundeType) data.kundeType = kundeType;
 
 	const ref = await addDoc(collection(db, 'klientspoergsmaal'), data);
 	return ref.id;
