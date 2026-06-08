@@ -330,7 +330,20 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!anthropicRes.ok) {
 		const errorText = await anthropicRes.text();
 		console.error('Anthropic API fejl:', anthropicRes.status, errorText);
-		throw error(502, 'AI-tjenesten svarede ikke. Prøv igen om lidt.');
+		// Forkort sandsynlige error-payloads saa fejlmeddelelsen ikke bliver
+		// kaempe. Parse Anthropics JSON-fejl hvis muligt for praecis info.
+		let detalje = errorText.slice(0, 300);
+		try {
+			const parsed = JSON.parse(errorText) as {
+				error?: { type?: string; message?: string };
+			};
+			if (parsed.error?.message) {
+				detalje = `${parsed.error.type ?? 'fejl'}: ${parsed.error.message}`;
+			}
+		} catch {
+			// Ikke gyldig JSON, brug raa tekst
+		}
+		throw error(502, `Anthropic ${anthropicRes.status}: ${detalje}`);
 	}
 
 	const anthropicData = (await anthropicRes.json()) as AnthropicSvar;
