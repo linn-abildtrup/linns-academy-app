@@ -1,4 +1,12 @@
-import { arrayUnion, doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
+import {
+	arrayUnion,
+	deleteField,
+	doc,
+	getDoc,
+	onSnapshot,
+	setDoc,
+	updateDoc
+} from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { BrugerProfil, DagligeMaal, UserDoc, UserState } from '$lib/types';
 import {
@@ -240,74 +248,92 @@ export async function synkroniserForlobskundeStatus(
 		// Append forløbet til userDoc.forlobIds — historik bevares så
 		// bibliotek kan vise materiale fra alle tidligere forløb.
 		opdateringer.forlobIds = arrayUnion(allowed.forlobId);
-		if (current.state !== 'forlobskunde') {
-			opdateringer.state = 'forlobskunde';
-		}
 
-		// Resync aktivtTraeningsprogram til det NYE forl0b. Bug fundet
-		// 5. juni 2026: 81 ud af 276 juni-Kickstart-kunder havde
-		// aktivtTraeningsprogram der pegede paa kickstart_maj_2026 fordi
-		// vi aldrig syncede ved forl0bsskifte. Resultatet var at
-		// klienten ikke saa indhold fra det nye forl0b (fx 0velser Linn
-		// netop havde lagt paa juni-dag-5).
-		//
-		// Variant (kettlebell/no_kettlebell) er kundens valg og bevares.
-		// programId udledes ud fra forl0bs-type (kickstart/kropsro) +
-		// variant. Hvis kunden endnu ikke har valgt variant, lader vi
-		// aktivtTraeningsprogram vaere indtil onboarding s0tter den.
-		const variant: Variant | null =
-			current.mikrotraeningVariant === 'kettlebell' ||
-			current.mikrotraeningVariant === 'no_kettlebell'
-				? current.mikrotraeningVariant
+		// Hent forløbet en gang — bruges baade til udloebs-tjek og expiresAt.
+		let forlobStartMs = 0;
+		let forlobAntalDage = 0;
+		try {
+			const forlobSnap = await getDoc(doc(db, 'forlob', allowed.forlobId));
+			if (forlobSnap.exists()) {
+				const data = forlobSnap.data() as {
+					startDato?: { toMillis?: () => number; seconds?: number };
+					antalDage?: number;
+				};
+				forlobStartMs =
+					data.startDato?.toMillis?.() ?? (data.startDato?.seconds ?? 0) * 1000;
+				forlobAntalDage = data.antalDage ?? 0;
+			}
+		} catch (e) {
+			console.warn('Kunne ikke hente forloeb:', e);
+		}
+		const dayMs = 24 * 60 * 60 * 1000;
+		const forlobSlutMs =
+			forlobStartMs > 0 && forlobAntalDage > 0
+				? forlobStartMs + (forlobAntalDage + 1) * dayMs
+				: 0;
+		const forlobUdloebet = forlobSlutMs > 0 && Date.now() > forlobSlutMs;
+
+		if (!forlobUdloebet) {
+			// Aktivt forl0b — sat state + resync aktivtTraeningsprogram.
+			if (current.state !== 'forlobskunde') {
+				opdateringer.state = 'forlobskunde';
+			}
+
+			// Resync aktivtTraeningsprogram til det NYE forl0b. Bug fundet
+			// 5. juni 2026: 81 ud af 276 juni-Kickstart-kunder havde
+			// aktivtTraeningsprogram der pegede paa kickstart_maj_2026 fordi
+			// vi aldrig syncede ved forl0bsskifte.
+			//
+			// Variant (kettlebell/no_kettlebell) er kundens valg og bevares.
+			// programId udledes ud fra forl0bs-type (kickstart/kropsro) +
+			// variant. Hvis kunden endnu ikke har valgt variant, lader vi
+			// aktivtTraeningsprogram vaere indtil onboarding s0tter den.
+			const variant: Variant | null =
+				current.mikrotraeningVariant === 'kettlebell' ||
+				current.mikrotraeningVariant === 'no_kettlebell'
+					? current.mikrotraeningVariant
+					: null;
+			const forventetProgramId = variant
+				? programIdForVariant(variant, forlobTypeForId(allowed.forlobId))
 				: null;
-		const forventetProgramId = variant
-			? programIdForVariant(variant, forlobTypeForId(allowed.forlobId))
-			: null;
-		const skalResynce =
-			forventetProgramId &&
-			(!current.aktivtTraeningsprogram ||
-				current.aktivtTraeningsprogram.forlobId !== allowed.forlobId ||
-				current.aktivtTraeningsprogram.programId !== forventetProgramId);
-		if (skalResynce && forventetProgramId) {
-			opdateringer.aktivtTraeningsprogram = {
-				kilde: 'tildelt',
-				programId: forventetProgramId,
-				forlobId: allowed.forlobId
-			};
+			const skalResynce =
+				forventetProgramId &&
+				(!current.aktivtTraeningsprogram ||
+					current.aktivtTraeningsprogram.forlobId !== allowed.forlobId ||
+					current.aktivtTraeningsprogram.programId !== forventetProgramId);
+			if (skalResynce && forventetProgramId) {
+				opdateringer.aktivtTraeningsprogram = {
+					kilde: 'tildelt',
+					programId: forventetProgramId,
+					forlobId: allowed.forlobId
+				};
+			}
+		} else {
+			// Udl0bet forl0b — kunden er reelt modulbruger nu. Slet stale
+			// aktivtTraeningsprogram der peger paa det udl0bne forl0b, saa
+			// forsiden ikke router hende til programmet bag "Dagens
+			// mikrotraening" (typisk Kickstart maj 2026 med fejl-data).
+			// Hun falder dermed tilbage paa abo-mikrotraeningen.
+			//
+			// Bug fundet 8/6 2026 (Annette Buhl-Soerensen): forsiden viste
+			// et andet program end Moduler -> Traening fordi den brugte
+			// aktivtTraeningsprogram direkte, mens Moduler-overblikket viste
+			// "Mikrotraening"-row der peger paa abo-programmet.
+			if (
+				current.aktivtTraeningsprogram?.kilde === 'tildelt' &&
+				current.aktivtTraeningsprogram?.forlobId === allowed.forlobId
+			) {
+				opdateringer.aktivtTraeningsprogram = deleteField();
+			}
 		}
 
-		// Beregn expiresAt = forløbets slutdato og bonusPeriodEndsAt = slut + 90
-		// dage ud fra forløb-dokumentet. Det er forudsætningen for at brugeren
-		// automatisk overgår til "udlobet med bibliotek-adgang" når forløbet
-		// slutter. Webhook-flow'et bruger sin egen mekanisme — her sætter vi
-		// kun felterne hvis de ikke allerede er på userDoc (eller hvis
-		// forløbet er ændret).
-		if (!current.expiresAt || !current.bonusPeriodEndsAt) {
-			try {
-				const forlobSnap = await getDoc(doc(db, 'forlob', allowed.forlobId));
-				if (forlobSnap.exists()) {
-					const data = forlobSnap.data() as {
-						startDato?: { toMillis?: () => number; seconds?: number };
-						antalDage?: number;
-					};
-					const startMs =
-						data.startDato?.toMillis?.() ?? (data.startDato?.seconds ?? 0) * 1000;
-					const antalDage = data.antalDage ?? 0;
-					if (startMs && antalDage > 0) {
-						// Forløbet løber fra Dag 0 (startDato) til og med Dag {antalDage}
-						// kl. 23:59. expiresAt sættes til midnatten EFTER sidste dag, så
-						// `expiresAt > now` returnerer true så længe vi er inden for
-						// Dag {antalDage}. Bonus-periode er 90 dage efter forløbet slutter.
-						const dayMs = 24 * 60 * 60 * 1000;
-						const slutMs = startMs + (antalDage + 1) * dayMs;
-						if (!current.expiresAt) opdateringer.expiresAt = slutMs;
-						if (!current.bonusPeriodEndsAt) {
-							opdateringer.bonusPeriodEndsAt = slutMs + 90 * dayMs;
-						}
-					}
-				}
-			} catch (e) {
-				console.warn('Kunne ikke hente forløb til at sætte expiresAt:', e);
+		// Beregn expiresAt + bonusPeriodEndsAt hvis de mangler. Det er
+		// forudsaetningen for at brugeren automatisk overgaar til "udlobet
+		// med bibliotek-adgang" naar forl0bet slutter.
+		if (forlobSlutMs > 0 && (!current.expiresAt || !current.bonusPeriodEndsAt)) {
+			if (!current.expiresAt) opdateringer.expiresAt = forlobSlutMs;
+			if (!current.bonusPeriodEndsAt) {
+				opdateringer.bonusPeriodEndsAt = forlobSlutMs + 90 * dayMs;
 			}
 		}
 	}
