@@ -21,12 +21,19 @@
 	import { setAktivKlientForlobId } from '$lib/state/adminKlientState.svelte';
 	import { harIngenAdgang } from '$lib/utils/userAdgang';
 	import { isAdmin } from '$lib/admin';
+	import { hentFeatureMatrix } from '$lib/firestore/featureAdgang';
+	import { STANDARD_MATRIX, type FeatureMatrix } from '$lib/content/features';
 
 	let { children } = $props();
 
 	let user = $state<User | null>(null);
 	let userDoc = $state<UserDoc | null>(null);
 	let loading = $state(true);
+
+	// Feature-adgangs-matrixen hentes én gang og deles via context, saa alle
+	// sider afgoer feature-adgang ud fra SAMME kilde (via harFeatureAdgang).
+	// Falder tilbage til STANDARD_MATRIX indtil hentningen er faerdig / ved fejl.
+	let featureMatrix = $state<FeatureMatrix>(STANDARD_MATRIX);
 
 	// Når admin er i klient-mode, override'r vi adgangs-felterne så
 	// klient-modulerne reagerer som om admin var den valgte klient-type.
@@ -116,6 +123,7 @@
 	// Gør userDoc tilgængeligt for alle undersider via Svelte context
 	setContext('userDoc', () => effektivUserDoc(userDoc));
 	setContext('user', () => user);
+	setContext('featureMatrix', () => featureMatrix);
 	// Eksponér adminKlientForlobId så firestore-helpers kan scope deres
 	// læs/skriv-paths. Returnerer null når admin er i normal admin-mode
 	// eller når brugeren er en almindelig klient.
@@ -210,6 +218,14 @@
 
 			userDoc = doc;
 			loading = false;
+
+			// Hent feature-adgangs-matrixen (best-effort). Fejler den, beholder
+			// vi STANDARD_MATRIX saa adgangen aldrig falder bort.
+			hentFeatureMatrix()
+				.then((m) => {
+					featureMatrix = m;
+				})
+				.catch((e) => console.warn('Kunne ikke hente feature-matrix:', e));
 
 			// Start live-listener så ændringer (fx markerSpoergsmaalLaest)
 			// propageres uden manuel reload

@@ -81,6 +81,20 @@ describe('harFeatureAdgang', () => {
 		expect(harFeatureAdgang(udloebetKunde, null, 'linn-ai')).toBe(false);
 	});
 
+	it('tester-undtagelse: udvalgt tester får funktionen uanset skemaet', () => {
+		// app-kunde har normalt IKKE linn-ai, men som tester får hun den
+		const tester = ud({
+			accessLevel: 'basis',
+			accessSource: 'abonnement',
+			activeSubscription: true,
+			testerFeatures: ['linn-ai']
+		});
+		expect(harFeatureAdgang(appKunde, null, 'linn-ai')).toBe(false);
+		expect(harFeatureAdgang(tester, null, 'linn-ai')).toBe(true);
+		// men kun for den funktion hun er tester for
+		expect(harFeatureAdgang(tester, null, 'ai-madplan')).toBe(false);
+	});
+
 	it('falder tilbage til standard for en funktion uden gemt værdi', () => {
 		// matrix mangler 'ai-opskrift' for kickstart -> brug standard (true)
 		const delvis = {

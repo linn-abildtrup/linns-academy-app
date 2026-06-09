@@ -16,7 +16,7 @@ import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentAlleDocs, hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
 import { byggKontekst, byggSystemPrompt, MAX_QUERIES_PR_DAG, quotaNoegle } from '$lib/content/linnAi';
 import type { VidenbaseDokument } from '$lib/content/linnAi';
-import { harPremium } from '$lib/utils/userAdgang';
+import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 import type { UserDoc } from '$lib/types';
 
 const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
@@ -81,15 +81,16 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!besked) throw error(400, 'Tom besked');
 	const historik = body.samtaleHistorik ?? [];
 
-	// Tjek bruger-adgang: skal være premium for at bruge AI'en.
-	// harPremium håndterer udlobet/bonus-periode korrekt — en premium-
-	// forløb-kunde hvis forløb er slut har stadig accessLevel='premium'
-	// men ikke længere aktiv adgang.
+	// Tjek bruger-adgang via feature-skemaet — SAMME kilde som klient-siden
+	// (harFeatureAdgang tjekker baade tester-undtagelse og skema pr kundetype).
+	// adminKlientMode='premiumapp' bevares saa admin kan teste premium-app.
 	const userDoc = (await hentDoc(`users/${uid}`)) as UserDoc | null;
-	const erPremium =
-		harPremium(userDoc) || userDoc?.adminKlientMode === 'premiumapp';
-	if (!erPremium) {
-		throw error(403, 'Linn AI kræver premium-adgang');
+	const matrix = (await hentDoc('featureAdgang/aktiv')) as FeatureMatrix | null;
+	const harAdgang =
+		harFeatureAdgang(userDoc, matrix, 'linn-ai') ||
+		userDoc?.adminKlientMode === 'premiumapp';
+	if (!harAdgang) {
+		throw error(403, 'Linn AI er ikke en del af din adgang');
 	}
 
 	// Rate-limit

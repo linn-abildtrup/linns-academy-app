@@ -115,15 +115,25 @@ export function kundetypeFor(userDoc: UserDoc | null | undefined): Kundetype | n
 }
 
 /**
- * True hvis kunden har adgang til en funktion. Slaar kundens type op i
- * matrixen. Mangler matrixen (ikke hentet endnu), bruges STANDARD_MATRIX saa
- * adgangen aldrig falder bort ved en hente-fejl.
+ * DEN ENESTE funktion der afgør om en kunde har adgang til en funktion.
+ * Bruges overalt hvor en funktion vises/skjules — saa skema og testere
+ * aldrig kan komme ud af trit. To lag i samme svar:
+ *
+ *   1. Tester-undtagelse: er kunden udvalgt som tester for funktionen
+ *      (userDoc.testerFeatures), faar hun adgang uanset skemaet. Bruges til
+ *      at proeve en funktion af paa enkelte navngivne kunder foer bred
+ *      udrulning (se /admin/testere).
+ *   2. Skemaet: ellers afgoer admin-matrixen pr kundetype.
+ *
+ * Mangler matrixen (ikke hentet endnu), bruges STANDARD_MATRIX saa adgangen
+ * aldrig falder bort ved en hente-fejl.
  */
 export function harFeatureAdgang(
 	userDoc: UserDoc | null | undefined,
 	matrix: FeatureMatrix | null | undefined,
 	feature: FeatureKey
 ): boolean {
+	if (userDoc?.testerFeatures?.includes(feature)) return true;
 	const kt = kundetypeFor(userDoc);
 	if (!kt) return false;
 	const m = matrix ?? STANDARD_MATRIX;

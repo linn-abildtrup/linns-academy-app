@@ -2,7 +2,7 @@
 	import { getContext, onMount, tick } from 'svelte';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
-	import { harPremium } from '$lib/utils/userAdgang';
+	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 	import {
 		hentSamtaler,
 		hentSamtale,
@@ -20,9 +20,10 @@
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const getFeatureMatrix = getContext<() => FeatureMatrix | null>('featureMatrix');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
-	const harAdgang = $derived(harPremium(userDoc));
+	const harAdgang = $derived(harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'linn-ai'));
 
 	let samtaler = $state<AiSamtale[]>([]);
 	let aktivSamtale = $state<AiSamtale | null>(null);
@@ -224,7 +225,7 @@
 		<Loading tekst="Henter..." />
 	{:else if !harAdgang}
 		<div class="status-besked">
-			Linn AI er kun tilgængelig for premium-abonnenter og Kropsro.
+			Linn AI er ikke en del af din adgang lige nu.
 		</div>
 	{:else}
 		<div class="layout">

@@ -22,6 +22,12 @@ export interface TestFeature {
  */
 export const TEST_FEATURES: TestFeature[] = [
 	{
+		key: 'linn-ai',
+		navn: 'Linn AI',
+		beskrivelse:
+			'Chat med en AI-version af Linn. Styres normalt af funktions-skemaet pr kundetype (/admin/feature-adgang); tilføj enkelte kunder her for at lade dem teste den uanset skemaet.'
+	},
+	{
 		key: 'foreslaa-madplan',
 		navn: 'Foreslå madplan',
 		beskrivelse:
