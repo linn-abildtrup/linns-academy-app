@@ -9,16 +9,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { BrugerProfil, DagligeMaal, UserDoc, UserState } from '$lib/types';
-import {
-	hentAllowedEmail,
-	markerAllowedEmailRegistreret
-} from '$lib/firestore/forlob';
-import { udledState } from '$lib/utils/userAdgang';
-import {
-	forlobTypeForId,
-	programIdForVariant,
-	type Variant
-} from '$lib/utils/traeningsvariant';
+import { hentAllowedEmail, markerAllowedEmailRegistreret } from '$lib/firestore/forlob';
+import { forlobTypeForId, programIdForVariant, type Variant } from '$lib/utils/traeningsvariant';
 import { forlobSlutMs, bibliotekBonusSlutMs } from '$lib/content/forlobAdgang';
 
 /**
@@ -73,10 +65,7 @@ export async function gemAdminKlientForlob(uid: string, forlobId: string): Promi
 		adminKlientAktivProdukt: productId
 	});
 
-	const productRef = doc(
-		db,
-		`users/${uid}/adminKlient/${forlobId}/products/${productId}`
-	);
+	const productRef = doc(db, `users/${uid}/adminKlient/${forlobId}/products/${productId}`);
 	const eks = await getDoc(productRef);
 	if (!eks.exists()) {
 		await setDoc(productRef, {
@@ -199,14 +188,13 @@ export async function createUserDoc(
  * Den håndterer to typer allowedEmails-records:
  *
  * 1. **Forløbs-records** (oprettet via CSV-import) har `forlobId` sat:
- *    - userDoc.state = 'forlobskunde'
+ *    - accessLevel/accessSource sættes til forløbs-adgang
  *    - users/{uid}/products/kickstart oprettes med forlobId
  *    - allowedEmails-status sættes til 'registered'
  *
  * 2. **Abonnements-records** (oprettet af Simplero-webhook) har
  *    `accessLevel` sat:
  *    - userDoc får accessLevel/accessSource/activeProduct/etc kopieret over
- *    - userDoc.state synces fra accessLevel via udledState-helperen
  *    - simpleroCustomerId gemmes så vi kan koble til Simplero ved cancel
  *
  * En record kan have begge dele (forløbs-køb via Simplero i fremtiden) —
@@ -267,8 +255,7 @@ export async function synkroniserForlobskundeStatus(
 					startDato?: { toMillis?: () => number; seconds?: number };
 					antalDage?: number;
 				};
-				forlobStartMs =
-					data.startDato?.toMillis?.() ?? (data.startDato?.seconds ?? 0) * 1000;
+				forlobStartMs = data.startDato?.toMillis?.() ?? (data.startDato?.seconds ?? 0) * 1000;
 				forlobAntalDage = data.antalDage ?? 0;
 			}
 		} catch (e) {
@@ -280,10 +267,8 @@ export async function synkroniserForlobskundeStatus(
 		const forlobUdloebet = slutMs > 0 && Date.now() > slutMs;
 
 		if (!forlobUdloebet) {
-			// Aktivt forl0b — sat state + resync aktivtTraeningsprogram.
-			if (current.state !== 'forlobskunde') {
-				opdateringer.state = 'forlobskunde';
-			}
+			// Aktivt forl0b. state-feltet opdateres ikke laengere (A2 etape B) -
+			// effektivState udleder tilstanden af accessLevel/accessSource.
 
 			// Resync aktivtTraeningsprogram til det NYE forl0b. Bug fundet
 			// 5. juni 2026: 81 ud af 276 juni-Kickstart-kunder havde
@@ -326,17 +311,10 @@ export async function synkroniserForlobskundeStatus(
 			// aktivtTraeningsprogram direkte, mens Moduler-overblikket viste
 			// "Mikrotraening"-row der peger paa abo-programmet.
 
-			// Saet ogsaa userDoc.state='modulbruger' hvis kunden reelt er
-			// abo-kunde nu. effektivState() haandterer mismatchet via
-			// accessLevel/accessSource, men det rene state-felt bliver stale
-			// hvis vi ikke ogsaa opdaterer det her — og noget kode kan ende
-			// med at laese det direkte.
-			const erReeltAbo =
-				current.accessSource === 'abonnement' &&
-				current.activeSubscription === true;
-			if (erReeltAbo && current.state === 'forlobskunde') {
-				opdateringer.state = 'modulbruger';
-			}
+			// (Tidligere blev userDoc.state sat til 'modulbruger' her for en
+			// udl0bet forl0bskunde der reelt var abo-kunde. Fjernet i A2 etape
+			// B - effektivState udleder nu tilstanden af accessLevel/
+			// accessSource, saa state-feltet skrives ikke mere.)
 
 			if (
 				current.aktivtTraeningsprogram?.kilde === 'tildelt' &&
@@ -377,10 +355,7 @@ export async function synkroniserForlobskundeStatus(
 		}
 		if (allowed.expiresAt !== undefined) opdateringer.expiresAt = allowed.expiresAt;
 		opdateringer.updatedAt = Date.now();
-		// Hold legacy state-feltet i sync med accessLevel/accessSource så
-		// de gamle 12 kald-steder (der falder tilbage til state) virker.
-		const udledtState = udledState(allowed.accessLevel, allowed.accessSource);
-		if (current.state !== udledtState) opdateringer.state = udledtState;
+		// (state-feltet holdes ikke laengere i sync - A2 etape B.)
 	}
 
 	if (!current.firstName && allowed.firstName) {

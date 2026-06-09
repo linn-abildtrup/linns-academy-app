@@ -13,7 +13,6 @@ import {
 	opdaterBrugerEllerWhitelist
 } from '$lib/server/simpleroWebhook';
 import { findProduktAdgang } from '$lib/simplero/produktMapping';
-import { udledState } from '$lib/utils/userAdgang';
 
 const EVENT = 'purchase.renewed';
 
@@ -45,7 +44,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		accessSource: adgang.accessSource,
 		activeProduct: adgang.activeProduct,
 		activeSubscription: true,
-		state: udledState(adgang.accessLevel, adgang.accessSource),
+		// state-feltet skrives ikke laengere (A2 etape B).
 		paymentFailedAt: null,
 		updatedAt: Date.now()
 	};

@@ -23,7 +23,6 @@ import {
 	type SimpleroPayload
 } from '$lib/server/simpleroWebhook';
 import { findProduktAdgang } from '$lib/simplero/produktMapping';
-import { udledState } from '$lib/utils/userAdgang';
 
 function uddragEvent(payload: SimpleroPayload): string {
 	if (payload.event) return String(payload.event);
@@ -57,8 +56,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		await opdaterBrugerEllerWhitelist(email, {
 			accessLevel: 'none',
 			activeSubscription: false,
-			updatedAt: Date.now(),
-			state: 'udlobet'
+			updatedAt: Date.now()
+			// state-feltet skrives ikke laengere (A2 etape B).
 		});
 		await gemILog(event, payload, 'cancelled', `adgang fjernet for ${email}`);
 		return json({ ok: true, status: 'cancelled', email });
@@ -80,7 +79,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		accessSource: adgang.accessSource,
 		activeProduct: adgang.activeProduct,
 		activeSubscription: adgang.activeSubscription,
-		state: udledState(adgang.accessLevel, adgang.accessSource),
+		// state-feltet skrives ikke laengere (A2 etape B).
 		updatedAt: Date.now()
 	};
 	if (kundeId) opdatering.simpleroCustomerId = kundeId;
