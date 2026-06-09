@@ -35,6 +35,14 @@
 			icon: 'flame' as const
 		},
 		{
+			id: 'feature-adgang',
+			navn: 'Funktioner og adgang',
+			beskrivelse: 'Styr hvilke funktioner hver kundetype (Kickstart/Kropsro/App) har adgang til',
+			rute: '/app/admin/feature-adgang',
+			accent: '#7A8CA0',
+			icon: 'unlock' as const
+		},
+		{
 			id: 'spoergsmaal',
 			navn: 'Spørgsmål fra klienter',
 			beskrivelse: 'Læs, sortér og eksportér klienternes spørgsmål',
