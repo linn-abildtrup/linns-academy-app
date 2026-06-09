@@ -16,6 +16,8 @@ import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentAlleDocs, hentDoc, runQuery } from '$lib/server/firestoreRest';
+import { effektivState } from '$lib/utils/userAdgang';
+import type { UserDoc } from '$lib/types';
 import {
 	byggFaqTekst,
 	byggKlientKontekstTekst,
@@ -234,7 +236,7 @@ async function hentKlientKontekst(uid: string, forlobId: string): Promise<Klient
 		bestemDagIForlob(forlobId)
 	]);
 	const fornavn = (userDoc?.firstName as string) ?? 'klienten';
-	const kundeType = (userDoc?.state as string) ?? null;
+	const kundeType = effektivState(userDoc as UserDoc | null) ?? null;
 	const programValg =
 		((productDoc?.programValg as Record<string, unknown> | undefined)?.mikrotraening as
 			| string

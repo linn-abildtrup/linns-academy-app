@@ -523,10 +523,10 @@
 			}
 		}
 		if (harValgtVariant(ud, userProduct)) return;
-		// Modulbrugere (basis-abo der ikke har truffet noget valg endnu)
-		// haandteres af onboarding-flowet paa selve mikrotraenings-siden -
-		// vi viser ikke pop-up til dem foer vi er sikre paa de skal traene.
-		if (ud.state === 'modulbruger' && !ud.accessLevel) return;
+		// Alle klienttyper (forloeb + abo) skal vaelge kettlebell/uden udstyr.
+		// Har kunden ikke valgt endnu, viser vi pop-up'en. (Tidligere undtog en
+		// linje her modulbrugere, men den byggede paa det gamle state-felt og
+		// virkede ikke laengere - se A2-oprydning.)
 		visVariantModal = true;
 	});
 

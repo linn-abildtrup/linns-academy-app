@@ -173,12 +173,19 @@ export async function createUserDoc(
 	uid: string,
 	email: string,
 	firstName: string = '',
-	state: UserState = 'modulbruger'
+	state: UserState = 'udlobet'
 ): Promise<void> {
 	const ref = doc(db, 'users', uid);
+	// Nye brugere starter UDEN adgang (accessLevel='none'). Hvis kunden har
+	// koebt eller er paa et forloeb, opgraderer login-sync
+	// (synkroniserForlobskundeStatus) straks felterne fra allowedEmails. Vi
+	// saetter accessLevel fra start saa ingen bruger nogensinde mangler de nye
+	// felter og falder tilbage paa det gamle state-felt (A2-livlinen). state
+	// holdes konsistent ('udlobet' = ingen adgang) indtil feltet udfases.
 	const userDoc: UserDoc = {
 		firstName,
 		email,
+		accessLevel: 'none',
 		state,
 		createdAt: Date.now()
 	};

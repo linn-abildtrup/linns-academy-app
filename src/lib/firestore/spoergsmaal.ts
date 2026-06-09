@@ -21,6 +21,8 @@ import {
 	type Timestamp
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
+import { erForlobsklient } from '$lib/utils/userAdgang';
+import type { UserDoc } from '$lib/types';
 
 export type SpoergsmaalStatus = 'ny' | 'laest' | 'besvaret' | 'brugt';
 export type SpoergsmaalKundeType = 'forlobskunde' | 'modulbruger' | 'udlobet';
@@ -100,7 +102,7 @@ export async function gemSpoergsmaal(kontekst: NytSpoergsmaalKontekst): Promise<
 					const f = await getDoc(doc(db, `forlob/${forlobId}`));
 					forlobNavn = (f.data()?.navn as string | undefined) ?? undefined;
 				}
-				if (!kundeType && ud?.state === 'forlobskunde') {
+				if (!kundeType && erForlobsklient(ud as UserDoc | null)) {
 					kundeType = 'forlobskunde';
 				}
 			}
