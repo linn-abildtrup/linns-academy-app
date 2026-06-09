@@ -36,6 +36,9 @@ export interface AiBesked {
 	rolle: AiRolle;
 	indhold: string;
 	tidspunkt: Timestamp;
+	// Sikkerheds-score (0-100) for assistant-svar — hvor godt Linns tidligere
+	// svar dækkede spørgsmålet. null for bruger-beskeder og svar uden score.
+	sikkerhed?: number | null;
 }
 
 /**

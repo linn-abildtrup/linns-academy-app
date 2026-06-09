@@ -15,6 +15,9 @@
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import { effektivState } from '$lib/utils/userAdgang';
 	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
+	import { hentSamtaler, hentSamtale, opretSamtale, tilfojBeskeder } from '$lib/firestore/linnAi';
+	import type { AiBesked, AiSamtale } from '$lib/content/linnAi';
+	import { Timestamp } from 'firebase/firestore';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -143,23 +146,31 @@
 		return d.toLocaleDateString('da-DK', { day: 'numeric', month: 'long' });
 	}
 
-	// ====== Linn AI (kun for kunder med adgang) ======
+	// ====== Linn AI chat (kun for kunder med adgang) ======
+	// Hele korrespondancen bevares som én løbende samtale (multi-turn), saa
+	// den staar naar kunden kommer tilbage — ligesom hendes spoergsmaal til Linn.
+	let aiSamtale = $state<AiSamtale | null>(null);
 	let aiInput = $state('');
-	let aiSpurgt = $state(''); // spoergsmaalet AI'en svarede paa
-	let aiSvar = $state<string | null>(null);
-	let aiSikkerhed = $state<number | null>(null);
 	let aiLoader = $state(false);
 	let aiFejl = $state<string | null>(null);
-	let aiSendt = $state(false); // sendt videre til Linn
+	let aiHentet = $state(false);
+	// Index på de assistant-svar kunden allerede har sendt videre til Linn.
+	let aiSendtIndex = $state<Set<number>>(new Set());
 
-	function nulstilAi() {
-		aiInput = '';
-		aiSpurgt = '';
-		aiSvar = null;
-		aiSikkerhed = null;
-		aiFejl = null;
-		aiSendt = false;
-	}
+	// Hent kundens seneste Linn AI-samtale naar hun har adgang.
+	$effect(() => {
+		const u = user;
+		if (!u || !harLinnAi || aiHentet) return;
+		aiHentet = true;
+		void (async () => {
+			try {
+				const samtaler = await hentSamtaler(u.uid);
+				if (samtaler.length > 0) aiSamtale = samtaler[0];
+			} catch (e) {
+				console.warn('Kunne ikke hente Linn AI-samtale:', e);
+			}
+		})();
+	});
 
 	async function spoergLinnAi() {
 		const u = user;
@@ -167,46 +178,81 @@
 		if (!u || !besked || aiLoader) return;
 		aiLoader = true;
 		aiFejl = null;
-		aiSvar = null;
-		aiSikkerhed = null;
-		aiSendt = false;
 		try {
+			// Sikr en aktiv samtale (opret ved foerste spoergsmaal).
+			let samtale = aiSamtale;
+			if (!samtale) {
+				const id = await opretSamtale(u.uid, besked.slice(0, 40));
+				samtale = await hentSamtale(u.uid, id);
+				if (!samtale) throw new Error('Kunne ikke oprette samtale');
+				aiSamtale = samtale;
+			}
+
+			const brugerBesked: AiBesked = {
+				rolle: 'user',
+				indhold: besked,
+				tidspunkt: Timestamp.now(),
+				sikkerhed: null
+			};
+			// Vis bruger-besked optimistisk.
+			aiSamtale = { ...samtale, beskeder: [...samtale.beskeder, brugerBesked] };
+			aiInput = '';
+
 			const idToken = await u.getIdToken();
+			const historik = samtale.beskeder.map((b) => ({ rolle: b.rolle, indhold: b.indhold }));
 			const res = await fetch('/api/linn-ai', {
 				method: 'POST',
 				headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-				body: JSON.stringify({ besked })
+				body: JSON.stringify({ besked, samtaleHistorik: historik })
 			});
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
 			const data = (await res.json()) as { svar: string; sikkerhed: number | null };
-			aiSpurgt = besked;
-			aiSvar = data.svar;
-			aiSikkerhed = data.sikkerhed ?? null;
+
+			const aiBesked: AiBesked = {
+				rolle: 'assistant',
+				indhold: data.svar,
+				tidspunkt: Timestamp.now(),
+				sikkerhed: data.sikkerhed ?? null
+			};
+			await tilfojBeskeder(u.uid, samtale.id, [brugerBesked, aiBesked]);
+			aiSamtale = (await hentSamtale(u.uid, samtale.id)) ?? aiSamtale;
 		} catch (e) {
 			console.error('Linn AI fejlede:', e);
 			aiFejl = 'Linn AI kunne ikke svare lige nu. Du kan sende dit spørgsmål til Linn i stedet.';
+			// Gen-hent for at fjerne den optimistiske (ugemte) bruger-besked.
+			if (aiSamtale && u) {
+				try {
+					aiSamtale = (await hentSamtale(u.uid, aiSamtale.id)) ?? aiSamtale;
+				} catch {
+					/* behold nuvaerende */
+				}
+			}
 		} finally {
 			aiLoader = false;
 		}
 	}
 
-	// Sender det AI-besvarede spoergsmaal videre til Linn MED AI-svaret, saa
-	// admin kan se hvad Linn AI svarede kunden.
-	async function sendAiTilLinn() {
+	// Sender et bestemt AI-svar (+ det forudgaaende spoergsmaal) videre til Linn,
+	// saa admin kan se baade spoergsmaalet og hvad Linn AI svarede.
+	async function sendAiTilLinn(assistantIndex: number) {
 		const u = user;
-		if (!u || !aiSpurgt || aiSendt) return;
+		const samtale = aiSamtale;
+		if (!u || !samtale || aiSendtIndex.has(assistantIndex)) return;
+		const svarBesked = samtale.beskeder[assistantIndex];
+		const spoergsmaalBesked = samtale.beskeder[assistantIndex - 1];
+		if (!svarBesked || svarBesked.rolle !== 'assistant' || !spoergsmaalBesked) return;
 		try {
 			const email = u.email ?? userDoc?.email ?? '';
 			await gemSpoergsmaal({
 				uid: u.uid,
 				email,
-				spoergsmaal: aiSpurgt,
+				spoergsmaal: spoergsmaalBesked.indhold,
 				forlobId: aktivtForlobId ?? undefined,
 				forlobNavn: aktivtForlobNavn ?? undefined,
 				kundeType: userState ?? undefined,
-				aiSvar: aiSvar ?? undefined
+				aiSvar: svarBesked.indhold
 			});
-			aiSendt = true;
+			aiSendtIndex = new Set([...aiSendtIndex, assistantIndex]);
 			void genindlaesMine();
 		} catch (e) {
 			console.error(e);
@@ -240,60 +286,62 @@
 				</div>
 			</div>
 
-			{#if !aiSvar}
-				<label class="felt">
-					<textarea
-						class="felt-input"
-						placeholder="Skriv dit spørgsmål til Linn AI..."
-						rows="4"
-						bind:value={aiInput}
-						disabled={aiLoader}
-					></textarea>
-				</label>
-				<button
-					type="button"
-					class="primary-knap"
-					onclick={spoergLinnAi}
-					disabled={aiLoader || !aiInput.trim()}
-				>
-					{aiLoader ? 'Linn AI tænker...' : 'Spørg Linn AI'}
-				</button>
-			{:else}
-				<div class="ai-svar">
-					<div class="ai-spurgt">Du spurgte: {aiSpurgt}</div>
-					<div class="ai-svar-tekst">{aiSvar}</div>
-					{#if aiSikkerhed !== null}
-						<div class="ai-sikkerhed" class:lav={aiSikkerhed < 60}>
-							<Icon
-								name={aiSikkerhed < 60 ? 'lightbulb' : 'check'}
-								size={12}
-								color="currentColor"
-							/>
-							<span>
-								{aiSikkerhed}% sikker på at dette er som Linn ville svare{aiSikkerhed < 60
-									? ' — overvej at spørge Linn'
-									: ''}
-							</span>
-						</div>
-					{/if}
+			{#if aiSamtale && aiSamtale.beskeder.length > 0}
+				<div class="ai-traad">
+					{#each aiSamtale.beskeder as b, i (i)}
+						{#if b.rolle === 'user'}
+							<div class="ai-besked ai-bruger">{b.indhold}</div>
+						{:else}
+							<div class="ai-besked ai-assistant">
+								<div class="ai-svar-tekst">{b.indhold}</div>
+								{#if b.sikkerhed !== null && b.sikkerhed !== undefined}
+									<div class="ai-sikkerhed" class:lav={b.sikkerhed < 60}>
+										<Icon
+											name={b.sikkerhed < 60 ? 'lightbulb' : 'check'}
+											size={12}
+											color="currentColor"
+										/>
+										<span>
+											{b.sikkerhed}% sikker på at dette er som Linn ville svare{b.sikkerhed < 60
+												? ' — overvej at spørge Linn'
+												: ''}
+										</span>
+									</div>
+								{/if}
+								{#if aiSendtIndex.has(i)}
+									<div class="ai-sendt-note">Sendt til Linn ✓</div>
+								{:else}
+									<button
+										type="button"
+										class="ghost-knap ai-send-knap"
+										onclick={() => sendAiTilLinn(i)}
+									>
+										Send til Linn i stedet
+									</button>
+								{/if}
+							</div>
+						{/if}
+					{/each}
 				</div>
-
-				{#if aiSendt}
-					<div class="status ok">Sendt til Linn — hun ser også hvad Linn AI svarede dig.</div>
-					<button type="button" class="ghost-knap" onclick={nulstilAi}>
-						Stil et nyt spørgsmål
-					</button>
-				{:else}
-					<div class="ai-handlinger">
-						<button type="button" class="ghost-knap" onclick={nulstilAi}>
-							Tak, det var fint
-						</button>
-						<button type="button" class="primary-knap" onclick={sendAiTilLinn}>
-							Send til Linn i stedet
-						</button>
-					</div>
-				{/if}
 			{/if}
+
+			<label class="felt">
+				<textarea
+					class="felt-input"
+					placeholder="Skriv dit spørgsmål til Linn AI..."
+					rows="3"
+					bind:value={aiInput}
+					disabled={aiLoader}
+				></textarea>
+			</label>
+			<button
+				type="button"
+				class="primary-knap"
+				onclick={spoergLinnAi}
+				disabled={aiLoader || !aiInput.trim()}
+			>
+				{aiLoader ? 'Linn AI tænker...' : 'Spørg Linn AI'}
+			</button>
 
 			{#if aiFejl}
 				<div class="status fejl">{aiFejl}</div>
@@ -468,20 +516,41 @@
 		margin-top: 2px;
 	}
 
-	.ai-svar {
+	.ai-traad {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.ai-besked {
+		padding: 10px 12px;
+		border-radius: 12px;
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		line-height: 1.55;
+		white-space: pre-wrap;
+	}
+
+	.ai-bruger {
+		background: var(--terra);
+		color: #fff;
+		align-self: flex-end;
+		max-width: 85%;
+		border-bottom-right-radius: 4px;
+	}
+
+	.ai-assistant {
+		background: var(--bg2);
+		color: var(--text);
+		align-self: flex-start;
+		max-width: 92%;
+		border-bottom-left-radius: 4px;
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
 	}
 
-	.ai-spurgt {
-		font-size: calc(12px * var(--fs-scale, 1));
-		color: var(--text3);
-		font-style: italic;
-	}
-
 	.ai-svar-tekst {
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1));
 		color: var(--text);
 		line-height: 1.6;
 		white-space: pre-wrap;
@@ -503,16 +572,16 @@
 		color: #b8860b;
 	}
 
-	.ai-handlinger {
-		display: flex;
-		gap: 10px;
-		flex-wrap: wrap;
+	.ai-sendt-note {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		align-self: flex-start;
 	}
 
-	.ai-handlinger .ghost-knap,
-	.ai-handlinger .primary-knap {
-		flex: 1;
-		min-width: 140px;
+	.ai-send-knap {
+		align-self: flex-start;
+		font-size: calc(12px * var(--fs-scale, 1));
+		padding: 6px 12px;
 	}
 
 	.intro {
