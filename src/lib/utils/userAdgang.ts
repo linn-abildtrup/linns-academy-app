@@ -56,13 +56,21 @@ export function erModulbruger(userDoc: UserDoc | null | undefined): boolean {
 	return effektivState(userDoc) === 'modulbruger';
 }
 
-/** True hvis brugerens adgang er udløbet eller hun aldrig har haft adgang. */
+/**
+ * True hvis brugerens adgang er udløbet eller hun aldrig har haft adgang.
+ * BEMÆRK: kaldes pt. ingen steder. Beholdt som del af state-trioen
+ * (erForlobsklient / erModulbruger / erUdlobet) til fremtidig brug.
+ */
 export function erUdlobet(userDoc: UserDoc | null | undefined): boolean {
 	return effektivState(userDoc) === 'udlobet';
 }
 
-function erUdloebet(userDoc: UserDoc | null | undefined): boolean {
-	// Aktive abonnenter er aldrig udløbet via expiresAt — det felt repræsenterer
+// Intern udløbs-tjek der KUN ser på udløbsdatoen (expiresAt), modsat den
+// eksporterede erUdlobet ovenfor der ser på den fulde effektivState. Holdt
+// adskilt med et tydeligt navn så de to ikke forveksles (de gjorde det nemt
+// før, da navnene kun adskilte sig med ét bogstav: erUdlobet vs erUdloebet).
+function erUdloebetViaUdloebsdato(userDoc: UserDoc | null | undefined): boolean {
+	// Aktive abonnenter er aldrig udløbet via expiresAt. Feltet repræsenterer
 	// næste fornyelse for dem, ikke adgangs-slut. Cancel-webhook sætter
 	// activeSubscription=false når abonnementet ophører.
 	const erAktivAbonnent =
@@ -73,7 +81,7 @@ function erUdloebet(userDoc: UserDoc | null | undefined): boolean {
 
 /** True hvis brugeren har premium-niveau (og adgangen ikke er udløbet). */
 export function harPremium(userDoc: UserDoc | null | undefined): boolean {
-	if (erUdloebet(userDoc)) return false;
+	if (erUdloebetViaUdloebsdato(userDoc)) return false;
 	return userDoc?.accessLevel === 'premium';
 }
 
@@ -107,7 +115,7 @@ export function erKickstartForlobskunde(userDoc: UserDoc | null | undefined): bo
 
 /** True hvis brugeren har mindst basis-niveau (basis eller premium) og adgangen ikke er udløbet. */
 export function harBasisAdgang(userDoc: UserDoc | null | undefined): boolean {
-	if (erUdloebet(userDoc)) return false;
+	if (erUdloebetViaUdloebsdato(userDoc)) return false;
 	return userDoc?.accessLevel === 'basis' || userDoc?.accessLevel === 'premium';
 }
 
