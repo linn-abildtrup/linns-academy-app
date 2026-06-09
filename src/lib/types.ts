@@ -85,6 +85,10 @@ export interface BrugerProfil {
 
 export interface UserDoc {
 	firstName: string;
+
+	/** Efternavn. Sat af Simplero-webhook (køb/legacy) når payload har det. */
+	lastName?: string;
+
 	email: string;
 
 	/**
@@ -133,6 +137,15 @@ export interface UserDoc {
 
 	/** Hvornår adgangsfelterne sidst blev opdateret af webhook eller migration. */
 	updatedAt?: number;
+
+	/**
+	 * Sat af betaling-fejlede-webhook hvis et fornyelses-forsøg fejler.
+	 * Nulstilles til null af køb/fornyelse-webhook når betaling går igennem.
+	 */
+	paymentFailedAt?: number | null;
+
+	/** Sat af afbrudt-webhook når kunden opsiger sit abonnement. */
+	cancelledAt?: number;
 
 	// Senest tidspunkt brugeren åbnede /app/spoergsmaal og så sine svar.
 	// Bruges til at detektere ubeskrevne svar (svar.besvaretAt > dette).
