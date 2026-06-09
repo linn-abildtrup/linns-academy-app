@@ -50,20 +50,30 @@ describe('kundetypeFor', () => {
 	});
 });
 
-describe('STANDARD_MATRIX matcher nuværende adgang', () => {
-	it('Kickstart + Kropsro har alle funktioner, app ingen', () => {
+describe('STANDARD_MATRIX', () => {
+	it('Kickstart + Kropsro har funktionerne (undtagen Linn AI); app ingen', () => {
 		for (const f of FEATURES) {
-			expect(STANDARD_MATRIX.kickstart[f.key]).toBe(true);
-			expect(STANDARD_MATRIX.kropsro[f.key]).toBe(true);
+			const forventetForlob = f.key === 'linn-ai' ? false : true;
+			expect(STANDARD_MATRIX.kickstart[f.key]).toBe(forventetForlob);
+			expect(STANDARD_MATRIX.kropsro[f.key]).toBe(forventetForlob);
 			expect(STANDARD_MATRIX.app[f.key]).toBe(false);
 		}
+	});
+
+	it('Linn AI er slukket for alle (ikke lanceret endnu)', () => {
+		expect(STANDARD_MATRIX.kickstart['linn-ai']).toBe(false);
+		expect(STANDARD_MATRIX.kropsro['linn-ai']).toBe(false);
+		expect(STANDARD_MATRIX.app['linn-ai']).toBe(false);
 	});
 });
 
 describe('harFeatureAdgang', () => {
 	it('bruger STANDARD_MATRIX som fallback når matrix er null', () => {
-		expect(harFeatureAdgang(kickstartKunde, null, 'linn-ai')).toBe(true);
-		expect(harFeatureAdgang(appKunde, null, 'linn-ai')).toBe(false);
+		// udvidet-naering er taendt for Kickstart, slukket for app i standard
+		expect(harFeatureAdgang(kickstartKunde, null, 'udvidet-naering')).toBe(true);
+		expect(harFeatureAdgang(appKunde, null, 'udvidet-naering')).toBe(false);
+		// Linn AI er slukket for alle i standard
+		expect(harFeatureAdgang(kickstartKunde, null, 'linn-ai')).toBe(false);
 	});
 
 	it('respekterer en custom matrix', () => {

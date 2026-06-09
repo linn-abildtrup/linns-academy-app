@@ -89,14 +89,18 @@ function alleFeatures(vaerdi: boolean): Record<FeatureKey, boolean> {
 }
 
 /**
- * Standard-matrix = den adgang kunderne har I DAG (premium-niveau = Kickstart
- * + Kropsro har alle funktioner; app-kunder har ingen). Bruges som seed naar
- * matrixen oprettes, OG som fail-safe fallback hvis matrixen ikke kan hentes —
- * saa en hente-fejl aldrig fjerner adgang fra en kunde der har den i dag.
+ * Standard-matrixen — default-adgangen indtil admin aendrer skemaet. Bruges
+ * som seed naar matrixen oprettes, OG som fail-safe fallback hvis matrixen
+ * ikke kan hentes.
+ *
+ * Udgangspunkt: de oevrige funktioner foelger den hidtidige premium-adgang
+ * (Kickstart + Kropsro har dem, app-kunder ikke). UNDTAGELSE: Linn AI er
+ * slukket for ALLE — den er ikke lanceret endnu, saa ingen skal have den
+ * foer Linn bevidst taender den i skemaet (besluttet 9/6 2026).
  */
 export const STANDARD_MATRIX: FeatureMatrix = {
-	kickstart: alleFeatures(true),
-	kropsro: alleFeatures(true),
+	kickstart: { ...alleFeatures(true), 'linn-ai': false },
+	kropsro: { ...alleFeatures(true), 'linn-ai': false },
 	app: alleFeatures(false)
 };
 
