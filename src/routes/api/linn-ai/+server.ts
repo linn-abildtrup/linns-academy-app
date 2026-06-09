@@ -17,6 +17,7 @@ import { hentAlleDocs, hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
 import {
 	byggKontekst,
 	byggSystemPrompt,
+	parseSikkerhed,
 	MAX_QUERIES_PR_DAG,
 	quotaNoegle
 } from '$lib/content/linnAi';
@@ -166,13 +167,15 @@ export const POST: RequestHandler = async ({ request }) => {
 	const anthropicData = (await anthropicRes.json()) as {
 		content: Array<{ type: string; text?: string }>;
 	};
-	const svar = anthropicData.content
+	const raat = anthropicData.content
 		.filter((c) => c.type === 'text')
 		.map((c) => c.text ?? '')
 		.join('');
+	// Udtraek sikkerheds-markoeren saa den ikke vises til brugeren.
+	const { svar, sikkerhed } = parseSikkerhed(raat);
 
 	// Opdater quota efter succesfuld kald (så fejlede kald ikke tæller)
 	await gemDocMerge(quotaPath, { antal: antalIDag + 1, sidste: Date.now() });
 
-	return json({ svar, queriesIDag: antalIDag + 1, queriesMaks: MAX_QUERIES_PR_DAG });
+	return json({ svar, sikkerhed, queriesIDag: antalIDag + 1, queriesMaks: MAX_QUERIES_PR_DAG });
 };

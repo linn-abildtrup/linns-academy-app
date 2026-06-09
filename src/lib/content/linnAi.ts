@@ -203,6 +203,15 @@ Når du svarer, skriv direkte og personligt — ikke 'Som AI vil jeg...'. Tal so
  * videnbase-kontekst. Hvis customPrompt er givet, bruges den som persona;
  * ellers bruges DEFAULT_SYSTEM_PROMPT.
  */
+/**
+ * Fast instruktion (uafhaengig af admin's custom persona) der beder modellen
+ * afslutte hvert svar med en sikkerheds-markoer. Tallet angiver hvor godt
+ * Linns tidligere svar daekkede spoergsmaalet — bruges af kunde-UI'et til at
+ * vise hvor sikker svaret er, og til at opfordre til at spoerge Linn ved tvivl.
+ * Markoeren parses ud og vises ALDRIG til brugeren (se parseSikkerhed).
+ */
+const SIKKERHEDS_INSTRUKTION = `\n\nAFSLUT ALTID dit svar med en sikkerheds-markør på en helt ny linje i præcis dette format: [[SIKKERHED:N]] — hvor N er et tal fra 0 til 100 der angiver hvor godt LINNS TIDLIGERE SVAR ovenfor dækkede spørgsmålet. 100 = der fandtes et meget tæt matchende svar fra Linn. Lavt tal = du måtte gætte eller bruge almen viden. Skriv kun markøren én gang, til sidst.`;
+
 export function byggSystemPrompt(
 	videnbaseKontekst: string,
 	customPrompt?: string,
@@ -219,8 +228,22 @@ export function byggSystemPrompt(
 		? `\n\nVIDENBASE (Linns materialer):\n${videnbaseKontekst}`
 		: '';
 	const grundlag = svar + videnbase;
-	return grundlag
+	const base = grundlag
 		? persona + svar + videnbase
 		: persona +
-				'\n\n(Intet videns-grundlag endnu — brug din almene viden indtil Linn har svaret på spørgsmål.)';
+			'\n\n(Intet videns-grundlag endnu — brug din almene viden indtil Linn har svaret på spørgsmål.)';
+	return base + SIKKERHEDS_INSTRUKTION;
+}
+
+/**
+ * Udtraekker sikkerheds-markoeren [[SIKKERHED:N]] fra modellens raa svar.
+ * Returnerer det rensede svar (uden markoer) + sikkerhed 0-100, eller null
+ * hvis markoeren mangler/er ugyldig.
+ */
+export function parseSikkerhed(raat: string): { svar: string; sikkerhed: number | null } {
+	const match = raat.match(/\[\[\s*SIKKERHED\s*:\s*(\d{1,3})\s*\]\]/i);
+	if (!match) return { svar: raat.trim(), sikkerhed: null };
+	const n = Math.max(0, Math.min(100, parseInt(match[1], 10)));
+	const svar = raat.replace(match[0], '').trim();
+	return { svar, sikkerhed: n };
 }

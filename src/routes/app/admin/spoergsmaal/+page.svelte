@@ -486,7 +486,12 @@
 				</button>
 			{/each}
 		</div>
-		<button type="button" class="primary-knap" onclick={eksporterCSV} disabled={filtreret.length === 0}>
+		<button
+			type="button"
+			class="primary-knap"
+			onclick={eksporterCSV}
+			disabled={filtreret.length === 0}
+		>
 			Download som CSV
 		</button>
 		<div class="hint">
@@ -521,6 +526,13 @@
 					</div>
 					<div class="spq-tekst">{q.spoergsmaal}</div>
 
+					{#if q.aiSvar}
+						<div class="ai-svar-vist">
+							<div class="ai-svar-label">Linn AI svarede kunden</div>
+							<div class="ai-svar-tekst">{q.aiSvar}</div>
+						</div>
+					{/if}
+
 					{#if q.svar && aabenSvarId !== q.id}
 						<div class="svar-vist">
 							<div class="svar-label">Svar fra Linn</div>
@@ -545,7 +557,8 @@
 											</button>
 										</div>
 										<div class="ai-skip-tekst">
-											{aiUdkast[q.id].skipBegrundelse ?? 'Beskeden kræver ikke nødvendigvis et substantielt svar.'}
+											{aiUdkast[q.id].skipBegrundelse ??
+												'Beskeden kræver ikke nødvendigvis et substantielt svar.'}
 										</div>
 										<div class="ai-knapper">
 											<button
@@ -628,9 +641,7 @@
 										<span class="ai-trigger-sparkle">✦</span> Generér AI-udkast
 									</button>
 								{:else if aiUdkastLoader[q.id]}
-									<button type="button" class="ghost-knap sm" disabled>
-										AI tænker...
-									</button>
+									<button type="button" class="ghost-knap sm" disabled> AI tænker... </button>
 								{:else if aiUdkastSkjult[q.id]}
 									<button
 										type="button"
@@ -654,11 +665,7 @@
 
 					<div class="spq-knapper">
 						{#if aabenSvarId !== q.id}
-							<button
-								type="button"
-								class="primary-knap sm"
-								onclick={() => aabnSvar(q)}
-							>
+							<button type="button" class="primary-knap sm" onclick={() => aabnSvar(q)}>
 								{q.svar ? 'Rediger svar' : 'Svar klienten'}
 							</button>
 							{#if !q.svar}
@@ -675,17 +682,29 @@
 							💬 Vis hele samtalen
 						</button>
 						{#if q.status !== 'laest'}
-							<button type="button" class="ghost-knap sm" onclick={() => aendreStatus(q.id, 'laest')}>
+							<button
+								type="button"
+								class="ghost-knap sm"
+								onclick={() => aendreStatus(q.id, 'laest')}
+							>
 								Markér som læst
 							</button>
 						{/if}
 						{#if q.status !== 'besvaret'}
-							<button type="button" class="ghost-knap sm" onclick={() => aendreStatus(q.id, 'besvaret')}>
+							<button
+								type="button"
+								class="ghost-knap sm"
+								onclick={() => aendreStatus(q.id, 'besvaret')}
+							>
 								Markér som besvaret
 							</button>
 						{/if}
 						{#if q.status !== 'brugt'}
-							<button type="button" class="ghost-knap sm" onclick={() => aendreStatus(q.id, 'brugt')}>
+							<button
+								type="button"
+								class="ghost-knap sm"
+								onclick={() => aendreStatus(q.id, 'brugt')}
+							>
 								Markér som brugt
 							</button>
 						{/if}
@@ -694,7 +713,11 @@
 								Tilbage til ny
 							</button>
 						{/if}
-						<button type="button" class="ghost-knap sm danger" onclick={() => aabnSletBekraeft(q.id)}>
+						<button
+							type="button"
+							class="ghost-knap sm danger"
+							onclick={() => aabnSletBekraeft(q.id)}
+						>
 							Slet
 						</button>
 					</div>
@@ -778,7 +801,8 @@
 												</button>
 											</div>
 											<div class="ai-skip-tekst">
-												{aiUdkast[q.id].skipBegrundelse ?? 'Beskeden kræver ikke nødvendigvis et substantielt svar.'}
+												{aiUdkast[q.id].skipBegrundelse ??
+													'Beskeden kræver ikke nødvendigvis et substantielt svar.'}
 											</div>
 										</div>
 									{:else}
@@ -851,9 +875,7 @@
 											<span class="ai-trigger-sparkle">✦</span> Generér AI-udkast
 										</button>
 									{:else if aiUdkastLoader[q.id]}
-										<button type="button" class="ghost-knap sm" disabled>
-											AI tænker...
-										</button>
+										<button type="button" class="ghost-knap sm" disabled> AI tænker... </button>
 									{:else if aiUdkastSkjult[q.id]}
 										<button
 											type="button"
@@ -1197,6 +1219,31 @@
 		border-left: 3px solid var(--terra);
 		padding: 10px 12px;
 		border-radius: 8px;
+	}
+
+	.ai-svar-vist {
+		background: var(--bg2);
+		border-left: 3px solid var(--text3);
+		padding: 10px 12px;
+		border-radius: 8px;
+		margin-top: 8px;
+	}
+
+	.ai-svar-label {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-bottom: 4px;
+		display: block;
+	}
+
+	.ai-svar-tekst {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.5;
+		white-space: pre-wrap;
 	}
 
 	.svar-label {

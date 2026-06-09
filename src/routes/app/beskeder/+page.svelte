@@ -14,12 +14,15 @@
 	import { hentAktivProduktType, hentForlob } from '$lib/firestore/forlob';
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import { effektivState } from '$lib/utils/userAdgang';
+	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const getFeatureMatrix = getContext<() => FeatureMatrix | null>('featureMatrix');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
 	const userState = $derived(effektivState(userDoc));
+	const harLinnAi = $derived(harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'linn-ai'));
 
 	// Forløbskontekst — fastfryses på spørgsmål når brugeren sender, så
 	// admin kan filtrere pr forløb selv hvis kunden senere flytter.
@@ -61,7 +64,7 @@
 				const produktType = await hentAktivProduktType(forlobIds);
 				const up = await hentUserProduct(u.uid, produktType);
 				const fId =
-					(up as UserProduct & { forlobId?: string } | null)?.forlobId ??
+					(up as (UserProduct & { forlobId?: string }) | null)?.forlobId ??
 					ud.adminKlientForlobId ??
 					null;
 				if (!fId) {
@@ -140,6 +143,77 @@
 		return d.toLocaleDateString('da-DK', { day: 'numeric', month: 'long' });
 	}
 
+	// ====== Linn AI (kun for kunder med adgang) ======
+	let aiInput = $state('');
+	let aiSpurgt = $state(''); // spoergsmaalet AI'en svarede paa
+	let aiSvar = $state<string | null>(null);
+	let aiSikkerhed = $state<number | null>(null);
+	let aiLoader = $state(false);
+	let aiFejl = $state<string | null>(null);
+	let aiSendt = $state(false); // sendt videre til Linn
+
+	function nulstilAi() {
+		aiInput = '';
+		aiSpurgt = '';
+		aiSvar = null;
+		aiSikkerhed = null;
+		aiFejl = null;
+		aiSendt = false;
+	}
+
+	async function spoergLinnAi() {
+		const u = user;
+		const besked = aiInput.trim();
+		if (!u || !besked || aiLoader) return;
+		aiLoader = true;
+		aiFejl = null;
+		aiSvar = null;
+		aiSikkerhed = null;
+		aiSendt = false;
+		try {
+			const idToken = await u.getIdToken();
+			const res = await fetch('/api/linn-ai', {
+				method: 'POST',
+				headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+				body: JSON.stringify({ besked })
+			});
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			const data = (await res.json()) as { svar: string; sikkerhed: number | null };
+			aiSpurgt = besked;
+			aiSvar = data.svar;
+			aiSikkerhed = data.sikkerhed ?? null;
+		} catch (e) {
+			console.error('Linn AI fejlede:', e);
+			aiFejl = 'Linn AI kunne ikke svare lige nu. Du kan sende dit spørgsmål til Linn i stedet.';
+		} finally {
+			aiLoader = false;
+		}
+	}
+
+	// Sender det AI-besvarede spoergsmaal videre til Linn MED AI-svaret, saa
+	// admin kan se hvad Linn AI svarede kunden.
+	async function sendAiTilLinn() {
+		const u = user;
+		if (!u || !aiSpurgt || aiSendt) return;
+		try {
+			const email = u.email ?? userDoc?.email ?? '';
+			await gemSpoergsmaal({
+				uid: u.uid,
+				email,
+				spoergsmaal: aiSpurgt,
+				forlobId: aktivtForlobId ?? undefined,
+				forlobNavn: aktivtForlobNavn ?? undefined,
+				kundeType: userState ?? undefined,
+				aiSvar: aiSvar ?? undefined
+			});
+			aiSendt = true;
+			void genindlaesMine();
+		} catch (e) {
+			console.error(e);
+			aiFejl = 'Kunne ikke sende til Linn. Prøv igen.';
+		}
+	}
+
 	$effect(() => {
 		if (user) void genindlaesMine();
 	});
@@ -151,11 +225,87 @@
 		<h1>Stil et <em>spørgsmål</em></h1>
 	</header>
 
+	{#if harLinnAi}
+		<section class="ai-card">
+			<div class="ai-header">
+				<div class="ai-ikon">
+					<Icon name="sparkle" size={18} color="#fff" />
+				</div>
+				<div>
+					<div class="ai-titel">Spørg Linn AI</div>
+					<div class="ai-sub">
+						Få svar med det samme — bygget på alle de svar Linn har givet andre. Er svaret ikke godt
+						nok, kan du sende dit spørgsmål videre til Linn.
+					</div>
+				</div>
+			</div>
+
+			{#if !aiSvar}
+				<label class="felt">
+					<textarea
+						class="felt-input"
+						placeholder="Skriv dit spørgsmål til Linn AI..."
+						rows="4"
+						bind:value={aiInput}
+						disabled={aiLoader}
+					></textarea>
+				</label>
+				<button
+					type="button"
+					class="primary-knap"
+					onclick={spoergLinnAi}
+					disabled={aiLoader || !aiInput.trim()}
+				>
+					{aiLoader ? 'Linn AI tænker...' : 'Spørg Linn AI'}
+				</button>
+			{:else}
+				<div class="ai-svar">
+					<div class="ai-spurgt">Du spurgte: {aiSpurgt}</div>
+					<div class="ai-svar-tekst">{aiSvar}</div>
+					{#if aiSikkerhed !== null}
+						<div class="ai-sikkerhed" class:lav={aiSikkerhed < 60}>
+							<Icon
+								name={aiSikkerhed < 60 ? 'lightbulb' : 'check'}
+								size={12}
+								color="currentColor"
+							/>
+							<span>
+								{aiSikkerhed}% sikker på at dette er som Linn ville svare{aiSikkerhed < 60
+									? ' — overvej at spørge Linn'
+									: ''}
+							</span>
+						</div>
+					{/if}
+				</div>
+
+				{#if aiSendt}
+					<div class="status ok">Sendt til Linn — hun ser også hvad Linn AI svarede dig.</div>
+					<button type="button" class="ghost-knap" onclick={nulstilAi}>
+						Stil et nyt spørgsmål
+					</button>
+				{:else}
+					<div class="ai-handlinger">
+						<button type="button" class="ghost-knap" onclick={nulstilAi}>
+							Tak, det var fint
+						</button>
+						<button type="button" class="primary-knap" onclick={sendAiTilLinn}>
+							Send til Linn i stedet
+						</button>
+					</div>
+				{/if}
+			{/if}
+
+			{#if aiFejl}
+				<div class="status fejl">{aiFejl}</div>
+			{/if}
+		</section>
+	{/if}
+
 	<section class="card">
 		<p class="intro">
-			Skriv dit spørgsmål til Linn. Hun læser alle spørgsmål og bruger dem til at skabe videoer, live
-			og kommende indhold. Du får ikke nødvendigvis et personligt svar, men du er med til at forme
-			hvad der bliver lavet.
+			Skriv dit spørgsmål til Linn. Hun læser alle spørgsmål og bruger dem til at skabe videoer,
+			live og kommende indhold. Du får ikke nødvendigvis et personligt svar, men du er med til at
+			forme hvad der bliver lavet.
 		</p>
 
 		<label class="felt">
@@ -275,6 +425,94 @@
 		display: flex;
 		flex-direction: column;
 		gap: 14px;
+	}
+
+	.ai-card {
+		background: var(--white);
+		border: 1px solid var(--terra);
+		border-radius: 14px;
+		padding: 16px 18px;
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+		margin-bottom: 16px;
+	}
+
+	.ai-header {
+		display: flex;
+		gap: 12px;
+		align-items: flex-start;
+	}
+
+	.ai-ikon {
+		flex: 0 0 auto;
+		width: 34px;
+		height: 34px;
+		border-radius: 10px;
+		background: var(--terra);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.ai-titel {
+		font-family: var(--ff-d);
+		font-size: calc(16px * var(--fs-scale, 1));
+		color: var(--text);
+	}
+
+	.ai-sub {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.5;
+		margin-top: 2px;
+	}
+
+	.ai-svar {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.ai-spurgt {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		font-style: italic;
+	}
+
+	.ai-svar-tekst {
+		font-size: calc(14px * var(--fs-scale, 1));
+		color: var(--text);
+		line-height: 1.6;
+		white-space: pre-wrap;
+	}
+
+	.ai-sikkerhed {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		align-self: flex-start;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--terra);
+		background: var(--bg2);
+		padding: 4px 10px;
+		border-radius: 99px;
+	}
+
+	.ai-sikkerhed.lav {
+		color: #b8860b;
+	}
+
+	.ai-handlinger {
+		display: flex;
+		gap: 10px;
+		flex-wrap: wrap;
+	}
+
+	.ai-handlinger .ghost-knap,
+	.ai-handlinger .primary-knap {
+		flex: 1;
+		min-width: 140px;
 	}
 
 	.intro {

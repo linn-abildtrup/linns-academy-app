@@ -4,8 +4,27 @@ import {
 	quotaNoegle,
 	byggSystemPrompt,
 	byggKontekst,
+	parseSikkerhed,
 	type VidenbaseDokument
 } from './linnAi';
+
+describe('parseSikkerhed', () => {
+	it('udtrækker sikkerhed og fjerner markøren fra svaret', () => {
+		const r = parseSikkerhed('Her er mit svar.\n[[SIKKERHED:85]]');
+		expect(r.sikkerhed).toBe(85);
+		expect(r.svar).toBe('Her er mit svar.');
+	});
+
+	it('returnerer null sikkerhed når markøren mangler', () => {
+		const r = parseSikkerhed('Bare et svar uden markør.');
+		expect(r.sikkerhed).toBeNull();
+		expect(r.svar).toBe('Bare et svar uden markør.');
+	});
+
+	it('klamper værdier til 0-100', () => {
+		expect(parseSikkerhed('x [[SIKKERHED:150]]').sikkerhed).toBe(100);
+	});
+});
 
 describe('chunkTekst', () => {
 	it('returnerer enkelt chunk hvis tekst er under maks', () => {

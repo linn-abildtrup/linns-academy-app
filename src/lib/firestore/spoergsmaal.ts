@@ -43,6 +43,10 @@ export interface KlientSpoergsmaal {
 	forlobId?: string;
 	forlobNavn?: string;
 	kundeType?: SpoergsmaalKundeType;
+
+	// Linn AI's svar, hvis spørgsmålet blev sendt videre fra Linn AI (kunden
+	// var ikke tilfreds med AI-svaret). Ren information til admin. Etape 4.
+	aiSvar?: string;
 }
 
 export const SPOERGSMAAL_MAX_LAENGDE = 500;
@@ -54,6 +58,7 @@ interface NytSpoergsmaalKontekst {
 	forlobId?: string;
 	forlobNavn?: string;
 	kundeType?: SpoergsmaalKundeType;
+	aiSvar?: string;
 }
 
 /**
@@ -123,6 +128,7 @@ export async function gemSpoergsmaal(kontekst: NytSpoergsmaalKontekst): Promise<
 	if (forlobId) data.forlobId = forlobId;
 	if (forlobNavn) data.forlobNavn = forlobNavn;
 	if (kundeType) data.kundeType = kundeType;
+	if (kontekst.aiSvar) data.aiSvar = kontekst.aiSvar;
 
 	const ref = await addDoc(collection(db, 'klientspoergsmaal'), data);
 	return ref.id;
@@ -133,11 +139,7 @@ export async function gemSpoergsmaal(kontekst: NytSpoergsmaalKontekst): Promise<
  * læseadgang i Firestore-rules. Begrænset til 500 for performance.
  */
 export async function hentAlleSpoergsmaal(): Promise<KlientSpoergsmaal[]> {
-	const q = query(
-		collection(db, 'klientspoergsmaal'),
-		orderBy('oprettet', 'desc'),
-		limit(500)
-	);
+	const q = query(collection(db, 'klientspoergsmaal'), orderBy('oprettet', 'desc'), limit(500));
 	const snap = await getDocs(q);
 	return snap.docs.map((d) => {
 		const data = d.data();
@@ -152,7 +154,8 @@ export async function hentAlleSpoergsmaal(): Promise<KlientSpoergsmaal[]> {
 			besvaretAt: data.besvaretAt ?? undefined,
 			forlobId: data.forlobId ?? undefined,
 			forlobNavn: data.forlobNavn ?? undefined,
-			kundeType: (data.kundeType as SpoergsmaalKundeType | undefined) ?? undefined
+			kundeType: (data.kundeType as SpoergsmaalKundeType | undefined) ?? undefined,
+			aiSvar: data.aiSvar ?? undefined
 		};
 	});
 }
@@ -205,11 +208,7 @@ export async function markerSpoergsmaalLaest(uid: string): Promise<void> {
  * meget få spørgsmål så det er billigt.
  */
 export async function hentMineSpoergsmaal(uid: string): Promise<KlientSpoergsmaal[]> {
-	const q = query(
-		collection(db, 'klientspoergsmaal'),
-		where('uid', '==', uid),
-		limit(100)
-	);
+	const q = query(collection(db, 'klientspoergsmaal'), where('uid', '==', uid), limit(100));
 	const snap = await getDocs(q);
 	const items = snap.docs.map((d) => {
 		const data = d.data();
