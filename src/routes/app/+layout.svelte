@@ -55,7 +55,10 @@
 		// Naar admin tester et specifikt forloeb, skal forlobId vaere i
 		// forlobIds saa forsidens indlaesForlob-flow finder det. Vi tilfoejer
 		// adminKlientForlobId hvis det ikke allerede er der.
-		function medAdminForlobId(forlobIds: string[] | undefined, id: string | undefined): string[] | undefined {
+		function medAdminForlobId(
+			forlobIds: string[] | undefined,
+			id: string | undefined
+		): string[] | undefined {
 			if (!id) return forlobIds;
 			const liste = forlobIds ?? [];
 			return liste.includes(id) ? liste : [...liste, id];
@@ -71,7 +74,6 @@
 			return {
 				...d,
 				...klientOverride,
-				state: 'forlobskunde',
 				accessLevel: erKropsroKlient ? 'premium' : 'basis',
 				accessSource: 'forløb',
 				activeProduct: klientForlobProdukt,
@@ -82,7 +84,6 @@
 			return {
 				...d,
 				...klientOverride,
-				state: 'forlobskunde',
 				accessLevel: erKropsroKlient ? 'premium' : 'basis',
 				accessSource: 'forløb',
 				activeProduct: klientForlobProdukt,
@@ -93,7 +94,6 @@
 			return {
 				...d,
 				...klientOverride,
-				state: 'modulbruger',
 				accessLevel: 'basis',
 				accessSource: 'abonnement',
 				activeProduct: 'basisabo',
@@ -104,7 +104,6 @@
 			return {
 				...d,
 				...klientOverride,
-				state: 'modulbruger',
 				accessLevel: 'premium',
 				accessSource: 'abonnement',
 				activeProduct: 'premiumabo',
@@ -155,11 +154,7 @@
 			try {
 				const aktuel = userDoc ?? (await getUserDoc(u.uid));
 				if (!aktuel) return;
-				const opdateret = await synkroniserForlobskundeStatus(
-					u.uid,
-					u.email,
-					aktuel
-				);
+				const opdateret = await synkroniserForlobskundeStatus(u.uid, u.email, aktuel);
 				userDoc = opdateret;
 				sidsteSync = Date.now();
 				console.log(`[layout] re-syncede pga ${grund}`);

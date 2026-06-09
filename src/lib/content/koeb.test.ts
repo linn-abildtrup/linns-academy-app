@@ -6,7 +6,6 @@ function lavUserDoc(overrides: Partial<UserDoc>): UserDoc {
 	return {
 		firstName: 'Test',
 		email: 'test@example.com',
-		state: 'modulbruger',
 		createdAt: Date.now(),
 		...overrides
 	};
@@ -43,7 +42,6 @@ describe('getKoebForUser', () => {
 	it('returnerer Kickstart for kickstart-forløbskunde', () => {
 		const koeb = getKoebForUser(
 			lavUserDoc({
-				state: 'forlobskunde',
 				activeProduct: 'kickstart',
 				accessLevel: 'basis',
 				accessSource: 'forløb'
@@ -58,7 +56,6 @@ describe('getKoebForUser', () => {
 	it('returnerer Kropsro for premiumforløb-kunde', () => {
 		const koeb = getKoebForUser(
 			lavUserDoc({
-				state: 'forlobskunde',
 				activeProduct: 'premiumforløb',
 				accessLevel: 'premium',
 				accessSource: 'forløb'
@@ -72,7 +69,6 @@ describe('getKoebForUser', () => {
 		const fremtid = Date.now() + 30 * 24 * 60 * 60 * 1000;
 		const koeb = getKoebForUser(
 			lavUserDoc({
-				state: 'udlobet',
 				activeProduct: 'kickstart',
 				accessLevel: 'none',
 				accessSource: 'forløb',

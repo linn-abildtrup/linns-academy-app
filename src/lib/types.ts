@@ -1,7 +1,7 @@
 /**
- * @deprecated Erstattes af accessLevel/accessSource/activeProduct. Beholdes
- * indtil etape 2 hvor alle 12 kald-steder er refactoreret. Læs adgangs-
- * status via helpers i $lib/utils/userAdgang.
+ * Intern enum for en brugers UI-tilstand. Udledes af adgangs-felterne via
+ * effektivState i $lib/utils/userAdgang - det er IKKE et lagret felt (det
+ * gamle userDoc.state-felt blev udfaset i A2-oprydningen).
  *
  * 'modulbruger' = abonnent der ikke er på et aktivt forløb (ser variant B)
  * 'forlobskunde' = bruger på et aktivt forløb (ser variant A1)
@@ -90,13 +90,6 @@ export interface UserDoc {
 	lastName?: string;
 
 	email: string;
-
-	/**
-	 * @deprecated Læses via helpers i $lib/utils/userAdgang i stedet.
-	 * Beholdt for backwards compat indtil de 12 kald-steder er refactoreret.
-	 * Migrationen sætter dette automatisk fra accessLevel/accessSource.
-	 */
-	state: UserState;
 
 	createdAt: number; // Unix timestamp i millisekunder
 

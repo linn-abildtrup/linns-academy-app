@@ -1,26 +1,21 @@
-// Helpers til at læse en brugers adgangs-status. Erstatter direkte tjek på
-// userDoc.state med funktioner der læser fra de nye felter
-// (accessLevel/accessSource/activeProduct).
+// Helpers til at læse en brugers adgangs-status ud fra adgangs-felterne
+// (accessLevel/accessSource/activeProduct). UserState er nu en ren intern
+// enum (resultatet af effektivState) - ikke et lagret felt mere.
 //
-// Brugerens UI-variant bestemmes nu af accessSource + accessLevel:
+// Brugerens UI-variant bestemmes af accessSource + accessLevel:
 //
 //   forløb        + basis    → forløbskunde (Maria-flow, Kickstart)
 //   forløb        + premium  → forløbskunde på Kropsro
 //   abonnement    + basis    → modulbruger (basisapp)
 //   abonnement    + premium  → modulbruger på premiumapp
 //   ingenting / none          → udlobet (eller ny bruger uden adgang)
-//
-// Helpers her returnerer den gamle UserState-værdi indtil etape 2 hvor de
-// 12 kald-steder skiftes over til at bruge accessLevel/accessSource direkte.
-//
-// Hvis userDoc.accessLevel mangler (gamle brugere før migration) falder vi
-// tilbage til userDoc.state — det giver kontinuitet under overgangen.
 
-import type { AccessLevel, AccessSource, UserDoc, UserState } from '$lib/types';
+import type { UserDoc, UserState } from '$lib/types';
 
 /**
- * Returnerer den effektive UserState baseret på de nye adgangs-felter.
- * Hvis adgangs-felterne mangler bruger vi userDoc.state direkte (legacy).
+ * Returnerer den effektive UserState baseret på adgangs-felterne.
+ * Mangler accessLevel (kun yderst sjældent - nye brugere får 'none' fra
+ * createUserDoc) behandles brugeren som 'udlobet' (ingen adgang).
  *
  * `expiresAt` har FORSKELLIG semantik afhængigt af accessSource:
  * - Forløb: forløbets slutdato — passeret = udlobet (med 90 dages bibliotek-
@@ -35,15 +30,12 @@ export function effektivState(userDoc: UserDoc | null | undefined): UserState | 
 	if (!userDoc) return null;
 	const erAktivAbonnent =
 		userDoc.accessSource === 'abonnement' && userDoc.activeSubscription === true;
-	const udloebet =
-		!erAktivAbonnent && !!(userDoc.expiresAt && userDoc.expiresAt < Date.now());
-	if (userDoc.accessLevel !== undefined) {
-		if (userDoc.accessLevel === 'none' || udloebet) return 'udlobet';
-		if (userDoc.accessSource === 'forløb') return 'forlobskunde';
-		return 'modulbruger';
+	const udloebet = !erAktivAbonnent && !!(userDoc.expiresAt && userDoc.expiresAt < Date.now());
+	if (userDoc.accessLevel === undefined || userDoc.accessLevel === 'none' || udloebet) {
+		return 'udlobet';
 	}
-	if (udloebet) return 'udlobet';
-	return userDoc.state ?? null;
+	if (userDoc.accessSource === 'forløb') return 'forlobskunde';
+	return 'modulbruger';
 }
 
 /** True hvis brugeren er på et aktivt forløb. */
@@ -167,20 +159,6 @@ export function harGennemfoertForlob(userDoc: UserDoc | null | undefined): boole
 export const BONUS_PERIODE_DAGE = 90;
 
 /**
- * Mapping fra accessLevel + accessSource → den gamle UserState-værdi.
- * Bruges af migration-script og synkroniserings-flows der skal sætte
- * begge formater korrekt indtil etape 2.
- */
-export function udledState(
-	accessLevel: AccessLevel | undefined,
-	accessSource: AccessSource | undefined
-): UserState {
-	if (!accessLevel || accessLevel === 'none') return 'udlobet';
-	if (accessSource === 'forløb') return 'forlobskunde';
-	return 'modulbruger';
-}
-
-/**
  * Returnerer true hvis brugeren har test-adgang til den givne feature-key.
  * Bruges til at gate eksperimentelle funktioner: kun brugere på testere-
  * listen ser dem indtil de er klar til alle.
@@ -190,9 +168,6 @@ export function udledState(
  * Når funktionen er produktionsklar fjernes tjekken — alle brugere får
  * adgangen, og testere-listen i Firestore er stadig der til næste runde.
  */
-export function harTestAdgang(
-	userDoc: UserDoc | null | undefined,
-	feature: string
-): boolean {
+export function harTestAdgang(userDoc: UserDoc | null | undefined, feature: string): boolean {
 	return userDoc?.testerFeatures?.includes(feature) ?? false;
 }

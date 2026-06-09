@@ -8,7 +8,7 @@ import {
 	updateDoc
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
-import type { BrugerProfil, DagligeMaal, UserDoc, UserState } from '$lib/types';
+import type { BrugerProfil, DagligeMaal, UserDoc } from '$lib/types';
 import { hentAllowedEmail, markerAllowedEmailRegistreret } from '$lib/firestore/forlob';
 import { forlobTypeForId, programIdForVariant, type Variant } from '$lib/utils/traeningsvariant';
 import { forlobSlutMs, bibliotekBonusSlutMs } from '$lib/content/forlobAdgang';
@@ -161,21 +161,16 @@ export function lytTilUserDoc(
 export async function createUserDoc(
 	uid: string,
 	email: string,
-	firstName: string = '',
-	state: UserState = 'udlobet'
+	firstName: string = ''
 ): Promise<void> {
 	const ref = doc(db, 'users', uid);
 	// Nye brugere starter UDEN adgang (accessLevel='none'). Hvis kunden har
 	// koebt eller er paa et forloeb, opgraderer login-sync
-	// (synkroniserForlobskundeStatus) straks felterne fra allowedEmails. Vi
-	// saetter accessLevel fra start saa ingen bruger nogensinde mangler de nye
-	// felter og falder tilbage paa det gamle state-felt (A2-livlinen). state
-	// holdes konsistent ('udlobet' = ingen adgang) indtil feltet udfases.
+	// (synkroniserForlobskundeStatus) straks felterne fra allowedEmails.
 	const userDoc: UserDoc = {
 		firstName,
 		email,
 		accessLevel: 'none',
-		state,
 		createdAt: Date.now()
 	};
 	await setDoc(ref, userDoc);
