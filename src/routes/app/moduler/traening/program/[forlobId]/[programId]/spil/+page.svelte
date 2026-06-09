@@ -173,6 +173,19 @@
 					// stedet for at sidde fast paa sidste dag.
 					aktuelDagNummer = (idx % forlob.antalDage) + 1;
 				}
+
+				// Dag-vaelger: hvis ?dag=N er sat (fra moduler-oversigten), koerer
+				// vi den valgte dag i stedet for dagens. Kun gyldigt 1..aktuelDag —
+				// fremtidige dage afvises saa man ikke kan laase op via URL'en.
+				// Uden ?dag er adfaerden uaendret (default = dagens dag).
+				const valgtDagParam = Number(page.url.searchParams.get('dag'));
+				if (
+					Number.isInteger(valgtDagParam) &&
+					valgtDagParam >= 1 &&
+					valgtDagParam <= aktuelDagNummer
+				) {
+					aktuelDagNummer = valgtDagParam;
+				}
 			}
 
 			const dagData =

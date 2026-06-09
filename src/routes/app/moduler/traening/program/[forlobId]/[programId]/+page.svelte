@@ -32,6 +32,11 @@
 	// Bruges til at slaa den rigtige dag op i programData.dage.
 	let aktuelDagNummer = $state<number>(1);
 
+	// Hvilken dag kunden kigger paa. Default = dagens dag, men hun kan vaelge
+	// en tidligere dag i dag-vaelgeren (til og med i dag — fremtidige dage er
+	// laast indtil de kommer).
+	let valgtDag = $state<number>(1);
+
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const userDoc = $derived(getUserDoc?.() ?? null);
 
@@ -117,6 +122,7 @@
 					// betyder en basis-abo-kunde der har gennemfoert et 21-dages forloeb
 					// faar dag 1 igen paa dag 22, ikke dag 21 i evighed.
 					aktuelDagNummer = (idx % forlob.antalDage) + 1;
+					valgtDag = aktuelDagNummer;
 				}
 			}
 		} catch (e) {
@@ -128,7 +134,7 @@
 	});
 
 	const dag = $derived<TrainingDay | null>(
-		programData?.dage.find((d) => d.dagNummer === aktuelDagNummer) ??
+		programData?.dage.find((d) => d.dagNummer === valgtDag) ??
 			programData?.dage[0] ??
 			null
 	);
@@ -160,11 +166,30 @@
 	{:else if !dag || !harOevelser}
 		<div class="status-besked">Programmet har ingen øvelser endnu.</div>
 	{:else if programData}
+		{#if aktuelDagNummer > 1}
+			<div class="dag-vaelger" role="tablist" aria-label="Vælg dag">
+				{#each Array.from({ length: aktuelDagNummer }, (_, i) => i + 1) as d (d)}
+					<button
+						type="button"
+						class="dag-chip"
+						class:valgt={valgtDag === d}
+						class:idag={d === aktuelDagNummer}
+						role="tab"
+						aria-selected={valgtDag === d}
+						onclick={() => (valgtDag = d)}
+					>
+						<span class="dag-chip-label">Dag</span>
+						<span class="dag-chip-num">{d}</span>
+					</button>
+				{/each}
+			</div>
+		{/if}
+
 		<a
 			class="start-knap top"
-			href={`/app/moduler/traening/program/${forlobId}/${programId}/spil`}
+			href={`/app/moduler/traening/program/${forlobId}/${programId}/spil?dag=${valgtDag}`}
 		>
-			Start træning
+			{valgtDag === aktuelDagNummer ? 'Start træning' : `Start dag ${valgtDag}`}
 			<Icon name="arrow" size={14} color="#fff" />
 		</a>
 
@@ -440,6 +465,56 @@
 
 	.start-knap.top {
 		margin-bottom: 14px;
+	}
+
+	.dag-vaelger {
+		display: flex;
+		gap: 8px;
+		overflow-x: auto;
+		padding: 4px 0 12px;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+	}
+
+	.dag-vaelger::-webkit-scrollbar {
+		display: none;
+	}
+
+	.dag-chip {
+		flex: 0 0 auto;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
+		min-width: 48px;
+		padding: 8px 4px;
+		background: var(--bg2);
+		color: var(--text2);
+		border: 1px solid transparent;
+		border-radius: 12px;
+		cursor: pointer;
+		font-family: var(--ff-d);
+	}
+
+	.dag-chip-label {
+		font-size: calc(10px * var(--fs-scale, 1));
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+
+	.dag-chip-num {
+		font-size: calc(16px * var(--fs-scale, 1));
+		font-weight: 600;
+	}
+
+	.dag-chip.idag {
+		border-color: var(--terra);
+	}
+
+	.dag-chip.valgt {
+		background: var(--terra);
+		color: #fff;
+		border-color: var(--terra);
 	}
 
 	.preview-overlay {
