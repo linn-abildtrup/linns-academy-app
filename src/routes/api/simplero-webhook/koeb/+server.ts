@@ -57,16 +57,12 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (navn.firstName) opdatering.firstName = navn.firstName;
 	if (navn.lastName) opdatering.lastName = navn.lastName;
 
-	// Forløbs-køb giver 90 dages bibliotek-bonus efter forløb-slut.
-	if (adgang.accessSource === 'forløb') {
-		const periodEndsAt = payload.period_ends_at;
-		if (periodEndsAt) {
-			const slut = new Date(periodEndsAt).getTime();
-			if (Number.isFinite(slut)) {
-				opdatering.bonusPeriodEndsAt = slut + 90 * 24 * 60 * 60 * 1000;
-			}
-		}
-	}
+	// A4-oprydning: webhook'en saetter IKKE laengere bonusPeriodEndsAt selv.
+	// Den blev tidligere udledt af Simperos period_ends_at, mens login-sync
+	// udleder den af forloebets startdato + antal dage. To kilder kunne give
+	// forskellige datoer. Nu er login-sync (synkroniserForlobskundeStatus i
+	// $lib/userDoc) den ENESTE kilde - den saetter expiresAt + bonus fra
+	// forloebet foerste gang kunden logger ind (selv-helbredende).
 
 	await opdaterBrugerEllerWhitelist(email, opdatering, adgang.forlobId);
 	await gemILog(EVENT, payload, 'granted', `${adgang.navn} til ${email}`);

@@ -8,9 +8,13 @@ import {
 	dageSidenStart,
 	unlockedDays,
 	dagDato,
-	produktTypeForForlob
+	produktTypeForForlob,
+	forlobSlutMs,
+	bibliotekBonusSlutMs
 } from './forlobAdgang';
 import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID } from '../types';
+
+const MS_PER_DAG = 24 * 60 * 60 * 1000;
 
 describe('detectSeparator', () => {
 	it('detekterer tab som separator', () => {
@@ -278,5 +282,48 @@ describe('produktTypeForForlob', () => {
 		expect(produktTypeForForlob({ type: 'kropsro', adgangsNiveau: undefined })).toBe(
 			KROPSRO_PRODUCT_ID
 		);
+	});
+});
+
+describe('forlobSlutMs', () => {
+	const start = new Date('2026-06-01T00:00:00Z').getTime();
+
+	it('returnerer 0 hvis startMs mangler', () => {
+		expect(forlobSlutMs(0, 21)).toBe(0);
+	});
+
+	it('returnerer 0 hvis antalDage mangler', () => {
+		expect(forlobSlutMs(start, 0)).toBe(0);
+	});
+
+	it('returnerer 0 ved negative vaerdier', () => {
+		expect(forlobSlutMs(-1, 21)).toBe(0);
+		expect(forlobSlutMs(start, -5)).toBe(0);
+	});
+
+	it('Kickstart (21 dage): slut = start + 22 dage (hele sidste dag med)', () => {
+		expect(forlobSlutMs(start, 21)).toBe(start + 22 * MS_PER_DAG);
+	});
+
+	it('Kropsro (84 dage): slut = start + 85 dage', () => {
+		expect(forlobSlutMs(start, 84)).toBe(start + 85 * MS_PER_DAG);
+	});
+});
+
+describe('bibliotekBonusSlutMs', () => {
+	const start = new Date('2026-06-01T00:00:00Z').getTime();
+
+	it('returnerer 0 hvis forloebets slut ikke kan beregnes', () => {
+		expect(bibliotekBonusSlutMs(0, 21)).toBe(0);
+		expect(bibliotekBonusSlutMs(start, 0)).toBe(0);
+	});
+
+	it('= forloebets slut + 90 dage', () => {
+		const slut = forlobSlutMs(start, 21);
+		expect(bibliotekBonusSlutMs(start, 21)).toBe(slut + 90 * MS_PER_DAG);
+	});
+
+	it('Kickstart (21 dage): start + 22 + 90 = start + 112 dage', () => {
+		expect(bibliotekBonusSlutMs(start, 21)).toBe(start + 112 * MS_PER_DAG);
 	});
 });

@@ -19,6 +19,7 @@ import {
 	programIdForVariant,
 	type Variant
 } from '$lib/utils/traeningsvariant';
+import { forlobSlutMs, bibliotekBonusSlutMs } from '$lib/content/forlobAdgang';
 
 /**
  * Opdaterer brugerens udvidet-næring-toggle og daglige mål. Kaldes fra
@@ -266,12 +267,10 @@ export async function synkroniserForlobskundeStatus(
 		} catch (e) {
 			console.warn('Kunne ikke hente forloeb:', e);
 		}
-		const dayMs = 24 * 60 * 60 * 1000;
-		const forlobSlutMs =
-			forlobStartMs > 0 && forlobAntalDage > 0
-				? forlobStartMs + (forlobAntalDage + 1) * dayMs
-				: 0;
-		const forlobUdloebet = forlobSlutMs > 0 && Date.now() > forlobSlutMs;
+		// Fælles slut-beregning (forlobSlutMs i $lib/content/forlobAdgang) så
+		// login-sync og webhooks aldrig regner forskelligt. Se A4-oprydning.
+		const slutMs = forlobSlutMs(forlobStartMs, forlobAntalDage);
+		const forlobUdloebet = slutMs > 0 && Date.now() > slutMs;
 
 		if (!forlobUdloebet) {
 			// Aktivt forl0b — sat state + resync aktivtTraeningsprogram.
@@ -342,11 +341,12 @@ export async function synkroniserForlobskundeStatus(
 
 		// Beregn expiresAt + bonusPeriodEndsAt hvis de mangler. Det er
 		// forudsaetningen for at brugeren automatisk overgaar til "udlobet
-		// med bibliotek-adgang" naar forl0bet slutter.
-		if (forlobSlutMs > 0 && (!current.expiresAt || !current.bonusPeriodEndsAt)) {
-			if (!current.expiresAt) opdateringer.expiresAt = forlobSlutMs;
+		// med bibliotek-adgang" naar forl0bet slutter. Dette er den ENESTE
+		// kilde til bonus-datoen (webhooks saetter den ikke laengere - A4).
+		if (slutMs > 0 && (!current.expiresAt || !current.bonusPeriodEndsAt)) {
+			if (!current.expiresAt) opdateringer.expiresAt = slutMs;
 			if (!current.bonusPeriodEndsAt) {
-				opdateringer.bonusPeriodEndsAt = forlobSlutMs + 90 * dayMs;
+				opdateringer.bonusPeriodEndsAt = bibliotekBonusSlutMs(forlobStartMs, forlobAntalDage);
 			}
 		}
 	}

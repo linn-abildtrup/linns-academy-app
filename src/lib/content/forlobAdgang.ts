@@ -20,6 +20,9 @@ import {
 	KROPSRO_PRODUCT_ID,
 	type ForlobProduct
 } from '../types';
+import { BONUS_PERIODE_DAGE } from '../utils/userAdgang';
+
+const MS_PER_DAG = 24 * 60 * 60 * 1000;
 
 // ==============================================
 // Typer
@@ -324,4 +327,40 @@ export function dagDato(startDato: Date, dagNummer: number): Date {
 	d.setHours(12, 0, 0, 0);
 	d.setDate(d.getDate() + dagNummer);
 	return d;
+}
+
+// ==============================================
+// Forløbs-slut og bibliotek-bonus (90 dage)
+//
+// ÉN fælles kilde til hvornår et forløb slutter, så login-sync og
+// (fremtidige) webhooks aldrig regner forskelligt. Slutdatoen udledes af
+// startdato + antal dage og er FÆLLES for alle deltagere. Individuelle
+// pause-/nul-dage rykker den IKKE (besluttet 9. juni 2026 for at holde
+// reglen enkel).
+// ==============================================
+
+/**
+ * Forløbets slut-tidspunkt i millisekunder: tidspunktet hvor adgangen
+ * lukker, dvs. ved slutningen af forløbets sidste dag. Returnerer 0 hvis
+ * forløbet mangler gyldig startdato eller antal dage, så kalderen kan
+ * springe udløbs-beregningen over.
+ *
+ * Formlen (antalDage + 1) giver kunden hele sin sidste dag: er sidste
+ * lektion på dag N (= start + N dage), lukker adgangen først ved
+ * start + (N + 1) dage. Bevaret uændret fra den hidtidige login-sync så
+ * ingen eksisterende kundes udløbsdato flytter sig.
+ */
+export function forlobSlutMs(startMs: number, antalDage: number): number {
+	if (startMs <= 0 || antalDage <= 0) return 0;
+	return startMs + (antalDage + 1) * MS_PER_DAG;
+}
+
+/**
+ * Hvornår bibliotek-bonus-perioden slutter: forløbets slutdato plus 90
+ * dage (BONUS_PERIODE_DAGE). Returnerer 0 hvis forløbets slut ikke kan
+ * beregnes.
+ */
+export function bibliotekBonusSlutMs(startMs: number, antalDage: number): number {
+	const slut = forlobSlutMs(startMs, antalDage);
+	return slut > 0 ? slut + BONUS_PERIODE_DAGE * MS_PER_DAG : 0;
 }

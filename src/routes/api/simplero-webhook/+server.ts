@@ -88,15 +88,9 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (navn.firstName) opdatering.firstName = navn.firstName;
 	if (navn.lastName) opdatering.lastName = navn.lastName;
 
-	if (adgang.accessSource === 'forløb') {
-		const periodEndsAt = payload.period_ends_at;
-		if (periodEndsAt) {
-			const slut = new Date(periodEndsAt).getTime();
-			if (Number.isFinite(slut)) {
-				opdatering.bonusPeriodEndsAt = slut + 90 * 24 * 60 * 60 * 1000;
-			}
-		}
-	}
+	// A4-oprydning: bonusPeriodEndsAt saettes ikke laengere her. Login-sync
+	// (synkroniserForlobskundeStatus i $lib/userDoc) er nu eneste kilde og
+	// udleder bonus af forloebets startdato + antal dage. Se koeb-handleren.
 
 	await opdaterBrugerEllerWhitelist(email, opdatering, adgang.forlobId);
 	await gemILog(event, payload, 'granted', `${adgang.navn} til ${email}`);
