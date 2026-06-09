@@ -30,23 +30,41 @@ export interface Feature {
 
 /** Listen vist i admin-skemaet. Tilfoej nye funktioner her. */
 export const FEATURES: Feature[] = [
-	{ key: 'linn-ai', navn: 'Linn AI', beskrivelse: 'Chat med en AI-version af Linn' },
+	{
+		key: 'linn-ai',
+		navn: 'Linn AI',
+		beskrivelse:
+			'Kunden kan chatte med en AI-version af dig og få svar på spørgsmål om træning, kost og vaner, når som helst. Findes som eget punkt i Moduler.'
+	},
 	{
 		key: 'udvidet-naering',
 		navn: 'Udvidet næringsdata',
-		beskrivelse: 'Kulhydrat, fedt og kalorier ud over protein og fiber'
+		beskrivelse:
+			'I mad-modulet (30-30-3) ser kunden også kulhydrat, fedt og kalorier, ikke kun protein og fiber. Hun kan desuden sætte sine egne daglige makromål.'
 	},
-	{ key: 'udvidet-vaner', navn: 'Udvidet vanetracker', beskrivelse: 'Flere vaner end basis-versionen' },
+	{
+		key: 'udvidet-vaner',
+		navn: 'Udvidet vanetracker',
+		beskrivelse:
+			'Kunden får en udvidet vanetracker med flere vaner end standard-versionen, så hun kan følge flere ting på én gang.'
+	},
 	{
 		key: 'byg-eget-program',
 		navn: 'Byg eget træningsprogram',
-		beskrivelse: 'Kunden sammensætter selv øvelser til et program'
+		beskrivelse:
+			'Kunden kan selv bygge et træningsprogram ved at vælge øvelser, sæt, gentagelser og pauser, og køre det som sit aktive program.'
 	},
-	{ key: 'ai-madplan', navn: 'AI-madplan', beskrivelse: 'Foreslår en madplan automatisk' },
+	{
+		key: 'ai-madplan',
+		navn: 'AI-madplan',
+		beskrivelse:
+			'Kunden kan få appen til automatisk at foreslå en madplan ud fra hendes ønsker og behov.'
+	},
 	{
 		key: 'ai-opskrift',
 		navn: 'AI-opskriftsanalyse',
-		beskrivelse: 'Regner næring ud fra en opskrift eller et billede'
+		beskrivelse:
+			'Kunden kan indtaste en opskrift eller tage et billede af en ret, og appen regner næringsindholdet ud automatisk.'
 	}
 ];
 
