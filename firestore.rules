@@ -359,6 +359,14 @@ service cloud.firestore {
 			allow write: if isAdmin();
 		}
 
+		// Feature-adgang: admin-styret matrix over hvilke funktioner hver
+		// kundetype (kickstart/kropsro/app) har adgang til. Alle
+		// autentificerede kan laese, kun admin kan skrive (fra admin-skemaet).
+		match /featureAdgang/{docId} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
 		// Klientspørgsmål til Linn:
 		//   - Klienter kan oprette deres egne spørgsmål (uid skal matche)
 		//   - Klienter kan læse SINE egne spørgsmål (for at se Linns svar)
