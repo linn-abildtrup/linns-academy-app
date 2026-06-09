@@ -14,9 +14,17 @@ import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentAlleDocs, hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
-import { byggKontekst, byggSystemPrompt, MAX_QUERIES_PR_DAG, quotaNoegle } from '$lib/content/linnAi';
+import {
+	byggKontekst,
+	byggSystemPrompt,
+	MAX_QUERIES_PR_DAG,
+	quotaNoegle
+} from '$lib/content/linnAi';
 import type { VidenbaseDokument } from '$lib/content/linnAi';
 import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
+import { hentTidligereSvarMedBackup } from '$lib/server/svarViden';
+import { byggTidligereSvarTekst } from '$lib/content/svarUdkast';
+import { aktivtForlobId } from '$lib/utils/traeningsvariant';
 import type { UserDoc } from '$lib/types';
 
 const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
@@ -87,8 +95,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	const userDoc = (await hentDoc(`users/${uid}`)) as UserDoc | null;
 	const matrix = (await hentDoc('featureAdgang/aktiv')) as FeatureMatrix | null;
 	const harAdgang =
-		harFeatureAdgang(userDoc, matrix, 'linn-ai') ||
-		userDoc?.adminKlientMode === 'premiumapp';
+		harFeatureAdgang(userDoc, matrix, 'linn-ai') || userDoc?.adminKlientMode === 'premiumapp';
 	if (!harAdgang) {
 		throw error(403, 'Linn AI er ikke en del af din adgang');
 	}
@@ -99,7 +106,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	const quotaDoc = (await hentDoc(quotaPath)) as { antal?: number } | null;
 	const antalIDag = quotaDoc?.antal ?? 0;
 	if (antalIDag >= MAX_QUERIES_PR_DAG) {
-		throw error(429, `Du har brugt dine ${MAX_QUERIES_PR_DAG} daglige queries. Prøv igen i morgen.`);
+		throw error(
+			429,
+			`Du har brugt dine ${MAX_QUERIES_PR_DAG} daglige queries. Prøv igen i morgen.`
+		);
 	}
 
 	// Hent videnbase
@@ -113,11 +123,16 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	const kontekst = byggKontekst(videnbaseDokumenter, besked);
 
+	// Hent Linns FAKTISKE tidligere svar (samme videns-motor som admin-svar-
+	// vaerktoejet): kundens eget forloeb foerst, suppleret paa tvaers. Det er
+	// chattens vigtigste grundlag — saa den svarer "som Linn" (etape 1).
+	const forlobId = aktivtForlobId(userDoc) ?? '';
+	const tidligereSvar = await hentTidligereSvarMedBackup(forlobId);
+	const tidligereSvarTekst = byggTidligereSvarTekst(tidligereSvar);
+
 	// Hent admin's custom system-prompt hvis sat
-	const konfig = (await hentDoc('linnAiKonfiguration/aktiv')) as
-		| { systemPrompt?: string }
-		| null;
-	const systemPrompt = byggSystemPrompt(kontekst, konfig?.systemPrompt);
+	const konfig = (await hentDoc('linnAiKonfiguration/aktiv')) as { systemPrompt?: string } | null;
+	const systemPrompt = byggSystemPrompt(kontekst, konfig?.systemPrompt, tidligereSvarTekst);
 
 	// Byg messages-array til Anthropic
 	const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];

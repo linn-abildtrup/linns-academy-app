@@ -42,9 +42,16 @@ describe('byggSystemPrompt', () => {
 		expect(p).toContain('Linns notater her');
 	});
 
-	it('giver fallback når videnbase er tom', () => {
+	it('giver fallback når der intet videns-grundlag er', () => {
 		const p = byggSystemPrompt('');
-		expect(p).toContain('Videnbasen er endnu tom');
+		expect(p).toContain('Intet videns-grundlag endnu');
+	});
+
+	it('inkluderer Linns tidligere svar når de gives', () => {
+		const svarTekst = '--- Eksempel 1 ---\nKlient spurgte: Hvordan?\nLinn svarede: Sådan her.';
+		const p = byggSystemPrompt('', undefined, svarTekst);
+		expect(p).toContain('LINNS TIDLIGERE SVAR');
+		expect(p).toContain('Sådan her');
 	});
 
 	it('inkluderer scope og disclaimer', () => {

@@ -15,7 +15,8 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
-import { hentAlleDocs, hentDoc, runQuery } from '$lib/server/firestoreRest';
+import { hentAlleDocs, hentDoc } from '$lib/server/firestoreRest';
+import { hentTidligereSvar } from '$lib/server/svarViden';
 import { effektivState } from '$lib/utils/userAdgang';
 import type { UserDoc } from '$lib/types';
 import {
@@ -36,7 +37,6 @@ import { ADMIN_EMAILS } from '$lib/admin';
 
 const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS = 800;
-const MAX_SVAR_HISTORIK = 30;
 const MAX_VIDENBASE_DOCS = 10;
 
 interface VerifResultat {
@@ -113,93 +113,8 @@ async function hentFaq(forlobId: string): Promise<FaqItem[]> {
 	}
 }
 
-interface SvarKandidat {
-	spoergsmaalId: string;
-	spoergsmaal: string;
-	svar: string;
-	tidsstempel: number;
-}
-
-async function hentSvarFraSvarHistorik(forlobId: string): Promise<SvarKandidat[]> {
-	try {
-		const docs = await runQuery('svarHistorik', {
-			where: { felt: 'forlobId', vaerdi: forlobId },
-			orderBy: { felt: 'oprettet', retning: 'DESCENDING' },
-			limit: MAX_SVAR_HISTORIK
-		});
-		return docs
-			.map((d) => {
-				const t = d.data.oprettet as string | undefined;
-				const ms = t ? new Date(t).getTime() : 0;
-				return {
-					spoergsmaalId: (d.data.spoergsmaalId as string) ?? '',
-					spoergsmaal: (d.data.spoergsmaalTekst as string) ?? '',
-					svar: (d.data.endeligTekst as string) ?? '',
-					tidsstempel: Number.isFinite(ms) ? ms : 0
-				};
-			})
-			.filter((s) => s.spoergsmaal && s.svar);
-	} catch (e) {
-		console.warn('svarHistorik-query fejlede (mangler index?):', e);
-		return [];
-	}
-}
-
-async function hentSvarFraKlientspoergsmaal(forlobId: string): Promise<SvarKandidat[]> {
-	try {
-		const docs = await runQuery('klientspoergsmaal', {
-			where: { felt: 'forlobId', vaerdi: forlobId },
-			limit: 200
-		});
-		const ud: SvarKandidat[] = [];
-		for (const d of docs) {
-			const svar = d.data.svar as string | undefined;
-			if (!svar) continue;
-			const sp = d.data.spoergsmaal as string | undefined;
-			if (!sp) continue;
-			const besvaretAt = d.data.besvaretAt as string | undefined;
-			const oprettet = d.data.oprettet as string | undefined;
-			const tStr = besvaretAt ?? oprettet;
-			const ms = tStr ? new Date(tStr).getTime() : 0;
-			ud.push({
-				spoergsmaalId: d.id,
-				spoergsmaal: sp,
-				svar,
-				tidsstempel: Number.isFinite(ms) ? ms : 0
-			});
-		}
-		return ud;
-	} catch (e) {
-		console.warn('klientspoergsmaal-query fejlede:', e);
-		return [];
-	}
-}
-
-/**
- * Henter tidligere svar fra BÅDE svarHistorik (nye, med diff-data) OG
- * klientspoergsmaal (eksisterende, ren tekst). svarHistorik vinder ved
- * id-overlap — det er den nyere/redigerede version. Sorteres efter
- * tidsstempel desc og begrænses til MAX_SVAR_HISTORIK.
- *
- * Hvorfor begge kilder: nye svar sendt via /api/svar-udkast-flowet havner
- * i svarHistorik, men ALLE eksisterende svar (incl pre-AI-tid) ligger kun
- * i klientspoergsmaal. Worker'en skal kunne lære stemme + indhold fra dem.
- */
-async function hentTidligereSvar(forlobId: string): Promise<TidligereSvar[]> {
-	if (!forlobId) return [];
-	const [fraHistorik, fraSpoergsmaal] = await Promise.all([
-		hentSvarFraSvarHistorik(forlobId),
-		hentSvarFraKlientspoergsmaal(forlobId)
-	]);
-
-	const set = new Map<string, SvarKandidat>();
-	for (const s of fraSpoergsmaal) set.set(s.spoergsmaalId, s);
-	for (const s of fraHistorik) set.set(s.spoergsmaalId, s); // overskriver
-	const samlet = [...set.values()].sort((a, b) => b.tidsstempel - a.tidsstempel);
-	return samlet
-		.slice(0, MAX_SVAR_HISTORIK)
-		.map((s) => ({ spoergsmaal: s.spoergsmaal, svar: s.svar }));
-}
+// hentTidligereSvar + hjaelpere er flyttet til $lib/server/svarViden, saa
+// Linn AI kunde-chat bruger SAMME videns-motor (etape 1).
 
 async function hentVidenbase(): Promise<string[]> {
 	try {

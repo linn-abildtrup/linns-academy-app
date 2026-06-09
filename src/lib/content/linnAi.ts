@@ -140,11 +140,11 @@ export function byggKontekst(
 	return dele.join('');
 }
 
-function sorterEfterRelevans(
-	dokumenter: VidenbaseDokument[],
-	besked: string
-): VidenbaseDokument[] {
-	const ord = besked.toLowerCase().split(/\s+/).filter((w) => w.length >= 3);
+function sorterEfterRelevans(dokumenter: VidenbaseDokument[], besked: string): VidenbaseDokument[] {
+	const ord = besked
+		.toLowerCase()
+		.split(/\s+/)
+		.filter((w) => w.length >= 3);
 	if (ord.length === 0) return dokumenter;
 
 	const score = (d: VidenbaseDokument): number => {
@@ -205,11 +205,22 @@ Når du svarer, skriv direkte og personligt — ikke 'Som AI vil jeg...'. Tal so
  */
 export function byggSystemPrompt(
 	videnbaseKontekst: string,
-	customPrompt?: string
+	customPrompt?: string,
+	tidligereSvarTekst?: string
 ): string {
 	const persona = customPrompt?.trim() || DEFAULT_SYSTEM_PROMPT;
+	// Linns FAKTISKE tidligere svar (samme kilde som admin-svar-vaerktoejet) —
+	// brug som forbillede for baade tone og indhold. Etape 1.
+	const svar =
+		tidligereSvarTekst && tidligereSvarTekst.trim()
+			? `\n\nLINNS TIDLIGERE SVAR (dit vigtigste grundlag — svar som Linn ville, i tone og indhold):\n${tidligereSvarTekst}`
+			: '';
 	const videnbase = videnbaseKontekst
-		? `\n\nVIDENBASE (Linns materialer + tidligere klient-svar):\n${videnbaseKontekst}`
-		: '\n\n(Videnbasen er endnu tom — brug din almene viden indtil indhold tilføjes.)';
-	return persona + videnbase;
+		? `\n\nVIDENBASE (Linns materialer):\n${videnbaseKontekst}`
+		: '';
+	const grundlag = svar + videnbase;
+	return grundlag
+		? persona + svar + videnbase
+		: persona +
+				'\n\n(Intet videns-grundlag endnu — brug din almene viden indtil Linn har svaret på spørgsmål.)';
 }
