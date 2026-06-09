@@ -75,3 +75,21 @@ export function harValgtVariant(
 ): boolean {
 	return udledVariant(userDoc, userProduct) !== null;
 }
+
+/**
+ * Finder forløbskundens aktive forlobId. Primær kilde er
+ * aktivtTraeningsprogram.forlobId, som login-sync saetter til kundens
+ * aktuelle forløb. Har kunden endnu ikke valgt variant (saa
+ * aktivtTraeningsprogram ikke er sat), falder vi tilbage til det seneste
+ * forløb i forlobIds — login-sync appender kronologisk, saa sidste = nyeste.
+ * Returnerer null hvis kunden ikke har nogen forløb.
+ *
+ * Bruges af Moduler→Træning saa den viser SAMME forløbs-programmer som
+ * forsiden (der laeser aktivtTraeningsprogram direkte).
+ */
+export function aktivtForlobId(userDoc: UserDoc | null | undefined): string | null {
+	const fraProgram = userDoc?.aktivtTraeningsprogram?.forlobId;
+	if (fraProgram) return fraProgram;
+	const ids = userDoc?.forlobIds ?? [];
+	return ids.length > 0 ? ids[ids.length - 1] : null;
+}

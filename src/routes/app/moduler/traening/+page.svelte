@@ -18,6 +18,9 @@
 		type CustomProgram
 	} from '$lib/content/mineProgrammer';
 	import { hentAboMikrotraeningProgram } from '$lib/firestore/aboMikrotraening';
+	import { hentForlobsProgrammer } from '$lib/firestore/mikrotraening';
+	import type { TrainingProgram } from '$lib/content/mikrotraening';
+	import { aktivtForlobId } from '$lib/utils/traeningsvariant';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -33,6 +36,13 @@
 	let harCustomBuilderTildelt = $state(false);
 	let indlaeserNyt = $state(false);
 	let gemmerAktiv = $state(false);
+
+	// Forløbskundens egne to programmer (med/uden kettlebell) hentet direkte
+	// fra forløbet. Bruges af forløbskunde-grenen saa moduler og forside er
+	// synkroniseret.
+	let forlobsProgrammer = $state<TrainingProgram[]>([]);
+	const erForlobskunde = $derived(erForlobsklient(userDoc));
+	const aktivtForlob = $derived(aktivtForlobId(userDoc));
 
 	const harBygEgetTestAdgang = $derived(harTestAdgang(userDoc, 'byg-eget-program'));
 	const visCustomBuilder = $derived(
@@ -71,7 +81,29 @@
 	}
 
 	onMount(async () => {
-		if (!erPremium || !user || !userDoc) return;
+		if (!user || !userDoc) return;
+
+		// Forløbskunde: hent forløbets EGNE to programmer direkte (med/uden
+		// kettlebell) — uafhaengigt af premium og af programTildelinger-tabellen.
+		// Saa Moduler→Træning viser samme programmer som forsiden (der laeser
+		// aktivtTraeningsprogram). Etape 1 af traenings-oprydningen.
+		if (erForlobsklient(userDoc)) {
+			const fId = aktivtForlobId(userDoc);
+			if (!fId) return;
+			indlaeserNyt = true;
+			try {
+				forlobsProgrammer = await hentForlobsProgrammer(fId);
+			} catch (e) {
+				console.error('Kunne ikke hente forløbets programmer:', e);
+			} finally {
+				indlaeserNyt = false;
+			}
+			return;
+		}
+
+		// App-kunde (modulbruger): eksisterende premium-flow med tildelinger,
+		// programmer paa tvaers og egne programmer.
+		if (!erPremium) return;
 		indlaeserNyt = true;
 		try {
 			const [tildelinger, allePaaTvaers, mine] = await Promise.all([
@@ -149,6 +181,52 @@
 	</header>
 
 	<div class="program-liste">
+		{#if erForlobskunde}
+			{#if indlaeserNyt}
+				<div class="status-rad">Henter dine programmer…</div>
+			{:else if forlobsProgrammer.length === 0}
+				<div class="status-rad">Ingen træningsprogrammer fundet for dit forløb.</div>
+			{:else}
+				{#each forlobsProgrammer as p (p.id)}
+					<a
+						class="program-row"
+						class:aktiv={erAktivt('tildelt', p.id, aktivtForlob ?? undefined)}
+						href={`/app/moduler/traening/program/${aktivtForlob}/${p.id}`}
+					>
+						<div class="program-icon">
+							<Icon name="flame" size={18} color="#fff" />
+						</div>
+						<div class="program-tekst">
+							<div class="program-navn">
+								{p.navn}
+								{#if erAktivt('tildelt', p.id, aktivtForlob ?? undefined)}
+									<span class="aktiv-badge">Aktiv</span>
+								{/if}
+							</div>
+							<div class="program-sub">{p.antalDage} dage · {p.udstyr.join(', ')}</div>
+						</div>
+						{#if !erAktivt('tildelt', p.id, aktivtForlob ?? undefined)}
+							<button
+								type="button"
+								class="vaelg-knap"
+								disabled={gemmerAktiv}
+								onclick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									vaelgAktiv('tildelt', p.id, aktivtForlob ?? undefined);
+								}}
+							>
+								Vælg
+							</button>
+						{:else}
+							<div class="program-pil">
+								<Icon name="chevron-r" size={14} color="var(--text3)" />
+							</div>
+						{/if}
+					</a>
+				{/each}
+			{/if}
+		{:else}
 		{#if !harTildeltMikrotraening}
 		<a
 			class="program-row"
@@ -281,6 +359,7 @@
 				{/each}
 				{/if}
 			{/if}
+		{/if}
 		{/if}
 	</div>
 
