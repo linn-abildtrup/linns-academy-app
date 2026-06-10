@@ -31,9 +31,7 @@ const ALLE_ASSETS = [...build, ...files];
 sw.addEventListener('install', (event) => {
 	// Pre-cache alle assets — det tager 1-2 sek ved første besøg, men
 	// efter det er appen instant.
-	event.waitUntil(
-		caches.open(ASSET_CACHE).then((cache) => cache.addAll(ALLE_ASSETS))
-	);
+	event.waitUntil(caches.open(ASSET_CACHE).then((cache) => cache.addAll(ALLE_ASSETS)));
 	sw.skipWaiting();
 });
 
@@ -85,7 +83,9 @@ sw.addEventListener('fetch', (event) => {
 				const cached = await cache.match(req);
 				if (cached) return cached;
 				const res = await fetch(req);
-				cache.put(req, res.clone());
+				// Cache kun gode svar — ellers kan en enkelt 404 (fx en asset der
+				// mangler under en deploy) blive gemt permanent i cachen.
+				if (res.ok) cache.put(req, res.clone());
 				return res;
 			})
 		);
@@ -100,8 +100,10 @@ sw.addEventListener('fetch', (event) => {
 			(async () => {
 				try {
 					const res = await fetch(req);
-					const cache = await caches.open(NAVIGATION_CACHE);
-					cache.put(req, res.clone());
+					if (res.ok) {
+						const cache = await caches.open(NAVIGATION_CACHE);
+						cache.put(req, res.clone());
+					}
 					return res;
 				} catch {
 					const cached = await caches.match(req);

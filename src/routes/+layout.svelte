@@ -34,9 +34,36 @@
 		});
 	}
 
+	// Selv-helbredelse: naar en ny version er deployet skifter app'ens JS-filer
+	// navn. Har brugeren en gammel version cached (typisk PWA), kan en lazy-
+	// loaded fil mangle — saa haenger appen i stedet for at loade. Vite
+	// dispatcher 'vite:preloadError' i det tilfaelde; vi genindlaeser saa den
+	// nye version hentes. Loop-guard via sessionStorage saa vi ikke kan ende i
+	// en uendelig reload (fx hvis serveren faktisk er nede).
+	function startChunkFejlSelvhelbredelse() {
+		if (typeof window === 'undefined') return;
+		window.addEventListener('vite:preloadError', (event) => {
+			event.preventDefault();
+			let sidst = 0;
+			try {
+				sidst = Number(sessionStorage.getItem('chunkReloadAt') ?? '0');
+			} catch {
+				/* sessionStorage utilgaengelig — fortsaet */
+			}
+			if (Date.now() - sidst < 10_000) return; // allerede genindlaest for nylig
+			try {
+				sessionStorage.setItem('chunkReloadAt', String(Date.now()));
+			} catch {
+				/* ignore */
+			}
+			window.location.reload();
+		});
+	}
+
 	onMount(() => {
 		initTextScale();
 		startServiceWorkerAutoUpdate();
+		startChunkFejlSelvhelbredelse();
 	});
 </script>
 
