@@ -27,6 +27,10 @@
 	const userState = $derived(effektivState(userDoc));
 	const harLinnAi = $derived(harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'linn-ai'));
 
+	// Aktiv fane (kun relevant naar harLinnAi). Linn AI er default — saa den er
+	// foerste stop — men kunden kan frit skifte til at skrive direkte til Linn.
+	let aktivFane = $state<'ai' | 'linn'>('ai');
+
 	// Forløbskontekst — fastfryses på spørgsmål når brugeren sender, så
 	// admin kan filtrere pr forløb selv hvis kunden senere flytter.
 	let aktivtForlobId = $state<string | null>(null);
@@ -253,6 +257,9 @@
 				aiSvar: svarBesked.indhold
 			});
 			aiSendtIndex = new Set([...aiSendtIndex, assistantIndex]);
+			// Skift til "Skriv til Linn"-fanen saa kunden ser at spoergsmaalet
+			// er landet i hendes korrespondance med Linn.
+			aktivFane = 'linn';
 			void genindlaesMine();
 		} catch (e) {
 			console.error(e);
@@ -272,83 +279,117 @@
 	</header>
 
 	{#if harLinnAi}
-		<section class="ai-card">
-			<div class="ai-header">
-				<div class="ai-ikon">
-					<Icon name="sparkle" size={18} color="#fff" />
-				</div>
-				<div>
-					<div class="ai-titel">Spørg Linn AI</div>
-					<div class="ai-sub">
-						Få svar med det samme — bygget på alle de svar Linn har givet andre. Er svaret ikke godt
-						nok, kan du sende dit spørgsmål videre til Linn.
-					</div>
-				</div>
-			</div>
-
-			{#if aiSamtale && aiSamtale.beskeder.length > 0}
-				<div class="ai-traad">
-					{#each aiSamtale.beskeder as b, i (i)}
-						{#if b.rolle === 'user'}
-							<div class="ai-besked ai-bruger">{b.indhold}</div>
-						{:else}
-							<div class="ai-besked ai-assistant">
-								<div class="ai-svar-tekst">{b.indhold}</div>
-								{#if b.sikkerhed !== null && b.sikkerhed !== undefined}
-									<div class="ai-sikkerhed" class:lav={b.sikkerhed < 60}>
-										<Icon
-											name={b.sikkerhed < 60 ? 'lightbulb' : 'check'}
-											size={12}
-											color="currentColor"
-										/>
-										<span>
-											{b.sikkerhed}% sikker på at dette er som Linn ville svare{b.sikkerhed < 60
-												? ' — overvej at spørge Linn'
-												: ''}
-										</span>
-									</div>
-								{/if}
-								{#if aiSendtIndex.has(i)}
-									<div class="ai-sendt-note">Sendt til Linn ✓</div>
-								{:else}
-									<button
-										type="button"
-										class="ghost-knap ai-send-knap"
-										onclick={() => sendAiTilLinn(i)}
-									>
-										Send til Linn i stedet
-									</button>
-								{/if}
-							</div>
-						{/if}
-					{/each}
-				</div>
-			{/if}
-
-			<label class="felt">
-				<textarea
-					class="felt-input"
-					placeholder="Skriv dit spørgsmål til Linn AI..."
-					rows="3"
-					bind:value={aiInput}
-					disabled={aiLoader}
-				></textarea>
-			</label>
+		<div class="faner" role="tablist">
 			<button
 				type="button"
-				class="primary-knap"
-				onclick={spoergLinnAi}
-				disabled={aiLoader || !aiInput.trim()}
+				role="tab"
+				class="fane"
+				class:aktiv={aktivFane === 'ai'}
+				aria-selected={aktivFane === 'ai'}
+				onclick={() => (aktivFane = 'ai')}
 			>
-				{aiLoader ? 'Linn AI tænker...' : 'Spørg Linn AI'}
+				Linn AI
 			</button>
-
-			{#if aiFejl}
-				<div class="status fejl">{aiFejl}</div>
-			{/if}
-		</section>
+			<button
+				type="button"
+				role="tab"
+				class="fane"
+				class:aktiv={aktivFane === 'linn'}
+				aria-selected={aktivFane === 'linn'}
+				onclick={() => (aktivFane = 'linn')}
+			>
+				Skriv til Linn
+			</button>
+		</div>
+		{#if aktivFane === 'ai'}
+			{@render linnAiFane()}
+		{:else}
+			{@render skrivTilLinnFane()}
+		{/if}
+	{:else}
+		{@render skrivTilLinnFane()}
 	{/if}
+</div>
 
+{#snippet linnAiFane()}
+	<section class="ai-card">
+		<div class="ai-header">
+			<div class="ai-ikon">
+				<Icon name="sparkle" size={18} color="#fff" />
+			</div>
+			<div>
+				<div class="ai-titel">Spørg Linn AI</div>
+				<div class="ai-sub">
+					Få svar med det samme — bygget på alle de svar Linn har givet andre. Er svaret ikke godt
+					nok, kan du sende dit spørgsmål videre til Linn.
+				</div>
+			</div>
+		</div>
+
+		{#if aiSamtale && aiSamtale.beskeder.length > 0}
+			<div class="ai-traad">
+				{#each aiSamtale.beskeder as b, i (i)}
+					{#if b.rolle === 'user'}
+						<div class="ai-besked ai-bruger">{b.indhold}</div>
+					{:else}
+						<div class="ai-besked ai-assistant">
+							<div class="ai-svar-tekst">{b.indhold}</div>
+							{#if b.sikkerhed !== null && b.sikkerhed !== undefined}
+								<div class="ai-sikkerhed" class:lav={b.sikkerhed < 60}>
+									<Icon
+										name={b.sikkerhed < 60 ? 'lightbulb' : 'check'}
+										size={12}
+										color="currentColor"
+									/>
+									<span>
+										{b.sikkerhed}% sikker på at dette er som Linn ville svare{b.sikkerhed < 60
+											? ' — overvej at spørge Linn'
+											: ''}
+									</span>
+								</div>
+							{/if}
+							{#if aiSendtIndex.has(i)}
+								<div class="ai-sendt-note">Sendt til Linn ✓</div>
+							{:else}
+								<button
+									type="button"
+									class="ghost-knap ai-send-knap"
+									onclick={() => sendAiTilLinn(i)}
+								>
+									Send til Linn i stedet
+								</button>
+							{/if}
+						</div>
+					{/if}
+				{/each}
+			</div>
+		{/if}
+
+		<label class="felt">
+			<textarea
+				class="felt-input"
+				placeholder="Skriv dit spørgsmål til Linn AI..."
+				rows="3"
+				bind:value={aiInput}
+				disabled={aiLoader}
+			></textarea>
+		</label>
+		<button
+			type="button"
+			class="primary-knap"
+			onclick={spoergLinnAi}
+			disabled={aiLoader || !aiInput.trim()}
+		>
+			{aiLoader ? 'Linn AI tænker...' : 'Spørg Linn AI'}
+		</button>
+
+		{#if aiFejl}
+			<div class="status fejl">{aiFejl}</div>
+		{/if}
+	</section>
+{/snippet}
+
+{#snippet skrivTilLinnFane()}
 	<section class="card">
 		<p class="intro">
 			Skriv dit spørgsmål til Linn. Hun læser alle spørgsmål og bruger dem til at skabe videoer,
@@ -428,7 +469,7 @@
 			</div>
 		</section>
 	{/if}
-</div>
+{/snippet}
 
 <style>
 	.page {
@@ -457,6 +498,35 @@
 		margin: 4px 0 0;
 		line-height: 1.05;
 		color: var(--text);
+	}
+
+	.faner {
+		display: flex;
+		gap: 4px;
+		background: var(--bg2);
+		padding: 4px;
+		border-radius: 12px;
+		margin-bottom: 16px;
+	}
+
+	.fane {
+		flex: 1;
+		padding: 9px 12px;
+		border: none;
+		background: transparent;
+		border-radius: 9px;
+		font-family: var(--ff-b);
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-weight: 500;
+		color: var(--text2);
+		cursor: pointer;
+	}
+
+	.fane.aktiv {
+		background: var(--white);
+		color: var(--text);
+		font-weight: 600;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 	}
 
 	h1 em {
