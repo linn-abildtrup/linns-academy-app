@@ -99,6 +99,11 @@ export interface SpilPauseState {
 	phase: SpilPhase;
 	/** Sekunder tilbage af fasen da state'en blev gemt. */
 	rem: number;
+	/** Hvilken dag i programmet pausen hoerer til. Pausen genoptages KUN paa
+	 *  samme dag, saa en halvfaerdig traening fra én dag ikke genoptages — eller
+	 *  fejlmarkeres som gennemfoert — paa en anden dag. Optional af bagudkompat:
+	 *  gamle pauser uden dagNummer genoptages ikke (starter trygt forfra). */
+	dagNummer?: number;
 	/** Unix-ms da state'en blev gemt. Bruges til at fjerne meget gamle pauser. */
 	savedAt: number;
 }

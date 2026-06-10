@@ -223,7 +223,11 @@
 			// Forsøg at genoptage hvor brugeren slap
 			try {
 				const gemt = await hentSpilPause(u.uid, 'tildelt', programId, forlobId);
-				if (gemt && erGyldigPause(gemt, dagData?.exercises ?? [])) {
+				// Genoptag KUN hvis pausen hoerer til den dag vi viser nu — ellers
+				// ville en halvfaerdig traening fra en anden dag blive genoptaget
+				// (og evt. fejlmarkeret som gennemfoert). Gamle pauser uden
+				// dagNummer (undefined) genoptages ikke -> starter trygt forfra.
+				if (gemt && gemt.dagNummer === aktuelDagNummer && erGyldigPause(gemt, dagData?.exercises ?? [])) {
 					ei = gemt.ei;
 					si = gemt.si;
 					phase = gemt.phase;
@@ -555,6 +559,7 @@
 			si,
 			phase: phase as 'prep' | 'work' | 'rest' | 'switch',
 			rem: Math.max(0, rem),
+			dagNummer: aktuelDagNummer,
 			savedAt: Date.now()
 		}).catch((e) => console.warn('Kunne ikke gemme pause:', e));
 	}
