@@ -1616,7 +1616,7 @@
 				<div class="total-card protein">
 					<div class="total-head">
 						<span class="total-label">Protein</span>
-						<span class="total-mål">mål {PROTEIN_MAALTIDS_MAAL}g</span>
+						<span class="total-mål">pr. måltid {PROTEIN_MAALTIDS_MAAL}g</span>
 					</div>
 					<div class="total-val">{formatGram(totaler.protein)}</div>
 					<div class="total-bar">
@@ -1626,7 +1626,7 @@
 				<div class="total-card fiber">
 					<div class="total-head">
 						<span class="total-label">Fibre</span>
-						<span class="total-mål">dagsmål {FIBER_DAGS_MAAL}g</span>
+						<span class="total-mål">af {FIBER_DAGS_MAAL}g pr. dag</span>
 					</div>
 					<div class="total-val">{formatGram(totaler.fiber)}</div>
 					<div class="total-bar">
