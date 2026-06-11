@@ -25,14 +25,6 @@ export interface ProgramTildeling {
 	tildeltAf: string;
 }
 
-export interface CustomBuilderTildeling {
-	id?: string;
-	modtagerType: ModtagerType;
-	modtagerId: string;
-	tildeltAt: number;
-	tildeltAf: string;
-}
-
 /**
  * Beregner om en kunde har adgang til et bestemt program ud fra alle
  * tildelinger og kundens forløbs-tilhørsforhold.
@@ -48,20 +40,6 @@ export function harProgramAdgang(
 ): boolean {
 	return tildelinger.some((t) => {
 		if (t.programId !== programId) return false;
-		if (t.modtagerType === 'kunde') return t.modtagerId === uid;
-		return kundensForlobIds.includes(t.modtagerId);
-	});
-}
-
-/**
- * Som harProgramAdgang men for custom-builder-tildelinger (uden program-id).
- */
-export function harCustomBuilderAdgang(
-	uid: string,
-	kundensForlobIds: string[],
-	tildelinger: CustomBuilderTildeling[]
-): boolean {
-	return tildelinger.some((t) => {
 		if (t.modtagerType === 'kunde') return t.modtagerId === uid;
 		return kundensForlobIds.includes(t.modtagerId);
 	});

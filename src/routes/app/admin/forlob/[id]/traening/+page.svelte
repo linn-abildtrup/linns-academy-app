@@ -14,17 +14,11 @@
 	} from '$lib/firestore/mikrotraening';
 	import { hentForlob } from '$lib/firestore/forlob';
 	import type { Forlob } from '$lib/content/forlobAdgang';
-	import type {
-		CustomBuilderTildeling,
-		ProgramTildeling
-	} from '$lib/content/tildelinger';
+	import type { ProgramTildeling } from '$lib/content/tildelinger';
 	import {
-		fjernCustomBuilderTildeling,
 		fjernProgramTildeling,
-		hentAlleCustomBuilderTildelinger,
 		hentAlleProgramTildelinger,
 		hentAlleProgrammerPaaTvaers,
-		tildelCustomBuilder,
 		tildelProgram,
 		type ProgramMedForlob
 	} from '$lib/firestore/tildelinger';
@@ -63,7 +57,6 @@
 	let deltagere = $state<Deltager[]>([]);
 	let alleProgrammerPaaTvaers = $state<ProgramMedForlob[]>([]);
 	let programTildelinger = $state<ProgramTildeling[]>([]);
-	let customBuilderTildelinger = $state<CustomBuilderTildeling[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
@@ -83,14 +76,7 @@
 	let tildelingsGemmer = $state(false);
 
 	const forlobsProgramTildelinger = $derived(
-		programTildelinger.filter(
-			(t) => t.modtagerType === 'forlob' && t.modtagerId === forlobId
-		)
-	);
-	const forlobsCustomBuilder = $derived(
-		customBuilderTildelinger.find(
-			(t) => t.modtagerType === 'forlob' && t.modtagerId === forlobId
-		) ?? null
+		programTildelinger.filter((t) => t.modtagerType === 'forlob' && t.modtagerId === forlobId)
 	);
 
 	onMount(async () => {
@@ -101,20 +87,17 @@
 		loading = true;
 		fejl = null;
 		try {
-			const [f, progs, allePaaTvaers, progTilds, cbTilds, usersSnap] =
-				await Promise.all([
-					hentForlob(forlobId),
-					hentForlobsProgrammer(forlobId),
-					hentAlleProgrammerPaaTvaers(),
-					hentAlleProgramTildelinger(),
-					hentAlleCustomBuilderTildelinger(),
-					getDocs(collection(db, 'users'))
-				]);
+			const [f, progs, allePaaTvaers, progTilds, usersSnap] = await Promise.all([
+				hentForlob(forlobId),
+				hentForlobsProgrammer(forlobId),
+				hentAlleProgrammerPaaTvaers(),
+				hentAlleProgramTildelinger(),
+				getDocs(collection(db, 'users'))
+			]);
 			forlob = f;
 			programmer = progs;
 			alleProgrammerPaaTvaers = allePaaTvaers;
 			programTildelinger = progTilds;
-			customBuilderTildelinger = cbTilds;
 			deltagere = usersSnap.docs
 				.filter((d) => {
 					const data = d.data() as { forlobIds?: string[] };
@@ -133,9 +116,7 @@
 						lastName: data.lastName ?? ''
 					};
 				})
-				.sort((a, b) =>
-					(a.firstName || a.email).localeCompare(b.firstName || b.email, 'da')
-				);
+				.sort((a, b) => (a.firstName || a.email).localeCompare(b.firstName || b.email, 'da'));
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente data.';
@@ -160,9 +141,7 @@
 	}
 
 	function toggleUdstyr(u: Udstyr) {
-		dlgUdstyr = dlgUdstyr.includes(u)
-			? dlgUdstyr.filter((x) => x !== u)
-			: [...dlgUdstyr, u];
+		dlgUdstyr = dlgUdstyr.includes(u) ? dlgUdstyr.filter((x) => x !== u) : [...dlgUdstyr, u];
 	}
 
 	async function opret() {
@@ -268,33 +247,6 @@
 		}
 	}
 
-	async function toggleCustomBuilder() {
-		if (!adminUser || tildelingsGemmer) return;
-		tildelingsGemmer = true;
-		try {
-			if (forlobsCustomBuilder) {
-				await fjernCustomBuilderTildeling(forlobsCustomBuilder.id!);
-				customBuilderTildelinger = customBuilderTildelinger.filter(
-					(t) => t.id !== forlobsCustomBuilder.id
-				);
-			} else {
-				const ny = await tildelCustomBuilder({
-					modtagerType: 'forlob',
-					modtagerId: forlobId,
-					tildeltAf: adminUser.uid
-				});
-				if (!customBuilderTildelinger.some((t) => t.id === ny.id)) {
-					customBuilderTildelinger = [...customBuilderTildelinger, ny];
-				}
-			}
-		} catch (e) {
-			console.error(e);
-			fejl = 'Kunne ikke ændre custom-builder-adgang.';
-		} finally {
-			tildelingsGemmer = false;
-		}
-	}
-
 	function programNavn(progForlobId: string, programId: string): string {
 		const p = alleProgrammerPaaTvaers.find(
 			(pr) => pr.forlobId === progForlobId && pr.program.id === programId
@@ -317,7 +269,7 @@
 		<div class="eyebrow">Admin · Træning</div>
 		<h1>Træning</h1>
 		<p class="page-sub">
-			Programmer, tildelinger og custom-builder for {forlob?.navn ?? 'dette forløb'}.
+			Programmer og tildelinger for {forlob?.navn ?? 'dette forløb'}.
 		</p>
 	</header>
 
@@ -331,8 +283,8 @@
 		<section class="sektion">
 			<div class="sektion-titel">Programmer</div>
 			<p class="sektion-sub">
-				Programmer specifikke for {forlob?.navn ?? 'dette forløb'}. Klienten vælger
-				imellem dem ved onboarding.
+				Programmer specifikke for {forlob?.navn ?? 'dette forløb'}. Klienten vælger imellem dem ved
+				onboarding.
 			</p>
 
 			<button class="primary-knap full" type="button" onclick={aabnDialog}>+ Nyt program</button>
@@ -378,9 +330,8 @@
 		<section class="sektion">
 			<div class="sektion-titel">Tildelinger til hele forløbet</div>
 			<p class="sektion-sub">
-				Tildelinger her gælder alle {deltagere.length} deltager{deltagere.length === 1
-					? ''
-					: 'e'} på forløbet.
+				Tildelinger her gælder alle {deltagere.length} deltager{deltagere.length === 1 ? '' : 'e'} på
+				forløbet.
 			</p>
 
 			{#if forlobsProgramTildelinger.length === 0}
@@ -425,25 +376,6 @@
 					disabled={!valgtProgramKey || tildelingsGemmer}
 				>
 					{tildelingsGemmer ? 'Gemmer…' : 'Tildel til hele forløbet'}
-				</button>
-			</div>
-
-			<div class="status-rad">
-				<div class="status-tekst">
-					Custom-builder:
-					{#if forlobsCustomBuilder}
-						<strong>Aktiv for alle deltagere</strong>
-					{:else}
-						<strong>Ikke aktiv</strong>
-					{/if}
-				</div>
-				<button
-					type="button"
-					class="sekundaer-knap"
-					onclick={toggleCustomBuilder}
-					disabled={tildelingsGemmer}
-				>
-					{forlobsCustomBuilder ? 'Fjern adgang' : 'Aktivér for hele forløbet'}
 				</button>
 			</div>
 		</section>
@@ -515,13 +447,7 @@
 
 		<label class="felt">
 			<span class="felt-label">Antal dage</span>
-			<input
-				type="number"
-				min="1"
-				max="365"
-				bind:value={dlgAntalDage}
-				disabled={dlgGemmer}
-			/>
+			<input type="number" min="1" max="365" bind:value={dlgAntalDage} disabled={dlgGemmer} />
 		</label>
 
 		<div class="felt">
@@ -675,22 +601,6 @@
 	}
 
 	.primary-knap.full:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.sekundaer-knap {
-		padding: 8px 12px;
-		background: var(--bg2);
-		border: 1px solid var(--border);
-		color: var(--text);
-		border-radius: 8px;
-		font-size: calc(13px * var(--fs-scale, 1));
-		cursor: pointer;
-		font-family: var(--ff-b);
-	}
-
-	.sekundaer-knap:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
@@ -908,20 +818,6 @@
 	.felt textarea:focus,
 	.felt-input:focus {
 		border-color: var(--terra);
-	}
-
-	.status-rad {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		padding-top: 12px;
-		border-top: 1px dashed var(--border);
-	}
-
-	.status-tekst {
-		font-size: calc(13px * var(--fs-scale, 1));
-		color: var(--text2);
 	}
 
 	.dialog-overlay {

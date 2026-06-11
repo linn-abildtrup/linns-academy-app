@@ -6,17 +6,11 @@
 	import { db } from '$lib/firebase';
 	import Icon from '$lib/components/Icon.svelte';
 	import { alleProdukter } from '$lib/content/produkter';
-	import type {
-		CustomBuilderTildeling,
-		ProgramTildeling
-	} from '$lib/content/tildelinger';
+	import type { ProgramTildeling } from '$lib/content/tildelinger';
 	import {
-		fjernCustomBuilderTildeling,
 		fjernProgramTildeling,
-		hentAlleCustomBuilderTildelinger,
 		hentAlleProgramTildelinger,
 		hentAlleProgrammerPaaTvaers,
-		tildelCustomBuilder,
 		tildelProgram,
 		type ProgramMedForlob
 	} from '$lib/firestore/tildelinger';
@@ -38,7 +32,6 @@
 	let kunde = $state<KundeInfo | null>(null);
 	let alleProgrammer = $state<ProgramMedForlob[]>([]);
 	let programTildelinger = $state<ProgramTildeling[]>([]);
-	let customBuilderTildelinger = $state<CustomBuilderTildeling[]>([]);
 	let indlaeser = $state(true);
 	let fejl = $state<string | null>(null);
 
@@ -51,22 +44,8 @@
 	);
 	const forlobsProgramTildelinger = $derived(
 		programTildelinger.filter(
-			(t) =>
-				t.modtagerType === 'forlob' &&
-				(kunde?.forlobIds ?? []).includes(t.modtagerId)
+			(t) => t.modtagerType === 'forlob' && (kunde?.forlobIds ?? []).includes(t.modtagerId)
 		)
-	);
-	const direkteCustomBuilder = $derived(
-		customBuilderTildelinger.find(
-			(t) => t.modtagerType === 'kunde' && t.modtagerId === uid
-		) ?? null
-	);
-	const forlobsCustomBuilder = $derived(
-		customBuilderTildelinger.find(
-			(t) =>
-				t.modtagerType === 'forlob' &&
-				(kunde?.forlobIds ?? []).includes(t.modtagerId)
-		) ?? null
 	);
 	const forlobNavne = $derived.by(() => {
 		const map = new Map<string, string>();
@@ -100,10 +79,9 @@
 				forlobIds: data.forlobIds ?? []
 			};
 
-			[alleProgrammer, programTildelinger, customBuilderTildelinger] = await Promise.all([
+			[alleProgrammer, programTildelinger] = await Promise.all([
 				hentAlleProgrammerPaaTvaers(),
-				hentAlleProgramTildelinger(),
-				hentAlleCustomBuilderTildelinger()
+				hentAlleProgramTildelinger()
 			]);
 		} catch (e) {
 			console.error(e);
@@ -155,37 +133,8 @@
 		}
 	}
 
-	async function toggleCustomBuilder() {
-		if (!adminUser || gemmer) return;
-		gemmer = true;
-		try {
-			if (direkteCustomBuilder) {
-				await fjernCustomBuilderTildeling(direkteCustomBuilder.id!);
-				customBuilderTildelinger = customBuilderTildelinger.filter(
-					(t) => t.id !== direkteCustomBuilder.id
-				);
-			} else {
-				const ny = await tildelCustomBuilder({
-					modtagerType: 'kunde',
-					modtagerId: uid,
-					tildeltAf: adminUser.uid
-				});
-				if (!customBuilderTildelinger.some((t) => t.id === ny.id)) {
-					customBuilderTildelinger = [...customBuilderTildelinger, ny];
-				}
-			}
-		} catch (e) {
-			console.error(e);
-			fejl = 'Kunne ikke ændre custom-builder-adgang.';
-		} finally {
-			gemmer = false;
-		}
-	}
-
 	function programNavn(forlobId: string, programId: string): string {
-		const p = alleProgrammer.find(
-			(pr) => pr.forlobId === forlobId && pr.program.id === programId
-		);
+		const p = alleProgrammer.find((pr) => pr.forlobId === forlobId && pr.program.id === programId);
 		return p ? p.program.navn : programId;
 	}
 
@@ -291,54 +240,6 @@
 					{gemmer ? 'Gemmer…' : 'Tildel'}
 				</button>
 			</div>
-		</section>
-
-		<section class="card">
-			<div class="card-titel">Custom-builder-adgang</div>
-			<p class="card-sub">
-				Med custom-builder-adgang kan kunden bygge sit eget træningsprogram (vælge øvelser,
-				sæt, reps og pause).
-			</p>
-
-			<div class="status-rad">
-				<div class="status-tekst">
-					Status:
-					{#if direkteCustomBuilder}
-						<strong>Aktiv (direkte)</strong>
-					{:else if forlobsCustomBuilder}
-						<strong>
-							Aktiv (via {forlobNavne.get(forlobsCustomBuilder.modtagerId) ??
-								forlobsCustomBuilder.modtagerId})
-						</strong>
-					{:else}
-						<strong>Ikke aktiv</strong>
-					{/if}
-				</div>
-				<button
-					type="button"
-					class="sekundaer-knap"
-					onclick={toggleCustomBuilder}
-					disabled={gemmer || (forlobsCustomBuilder !== null && !direkteCustomBuilder)}
-					title={forlobsCustomBuilder && !direkteCustomBuilder
-						? 'Adgangen kommer fra forløbet og kan kun fjernes der.'
-						: ''}
-				>
-					{#if direkteCustomBuilder}
-						Fjern direkte adgang
-					{:else if forlobsCustomBuilder}
-						Aktiv via forløb
-					{:else}
-						Aktivér for denne kunde
-					{/if}
-				</button>
-			</div>
-
-			{#if forlobsCustomBuilder && !direkteCustomBuilder}
-				<p class="hint">
-					Kunden har allerede adgang via forløbet. Hvis du fjerner forløbets adgang
-					mister hun den — medmindre du også tildeler hende direkte først.
-				</p>
-			{/if}
 		</section>
 	{/if}
 </div>
@@ -515,7 +416,7 @@
 		display: block;
 		width: 100%;
 		padding: 11px 14px;
-		background: var(--accent, #B87B6E);
+		background: var(--accent, #b87b6e);
 		color: white;
 		border: none;
 		border-radius: 10px;
@@ -527,40 +428,6 @@
 	.primary-knap:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
-	}
-
-	.sekundaer-knap {
-		padding: 8px 12px;
-		background: var(--bg2);
-		border: 1px solid var(--border);
-		color: var(--text);
-		border-radius: 8px;
-		font-size: calc(13px * var(--fs-scale, 1));
-		cursor: pointer;
-	}
-
-	.sekundaer-knap:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.status-rad {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-	}
-
-	.status-tekst {
-		font-size: calc(13px * var(--fs-scale, 1));
-		color: var(--text2);
-	}
-
-	.hint {
-		font-size: calc(11.5px * var(--fs-scale, 1));
-		color: var(--text3);
-		margin: 10px 0 0;
-		line-height: 1.5;
 	}
 
 	.status {

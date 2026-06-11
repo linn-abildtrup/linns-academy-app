@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	harProgramAdgang,
-	harCustomBuilderAdgang,
-	tildelingerForKunde,
-	type ProgramTildeling,
-	type CustomBuilderTildeling
-} from './tildelinger';
+import { harProgramAdgang, tildelingerForKunde, type ProgramTildeling } from './tildelinger';
 
 const tildelt: ProgramTildeling = {
 	id: 't1',
@@ -41,9 +35,9 @@ describe('harProgramAdgang', () => {
 	});
 
 	it('giver adgang via forløb når kunde er på forløbet', () => {
-		expect(
-			harProgramAdgang('uid-anne', 'prog-b', ['kickstart_maj_2026'], [tildeltViaForlob])
-		).toBe(true);
+		expect(harProgramAdgang('uid-anne', 'prog-b', ['kickstart_maj_2026'], [tildeltViaForlob])).toBe(
+			true
+		);
 	});
 
 	it('nægter adgang via forløb når kunde IKKE er på forløbet', () => {
@@ -54,47 +48,12 @@ describe('harProgramAdgang', () => {
 
 	it('giver adgang når enten direkte ELLER forløb matcher', () => {
 		expect(
-			harProgramAdgang(
-				'uid-maria',
-				'prog-a',
-				['kickstart_maj_2026'],
-				[tildelt, tildeltViaForlob]
-			)
+			harProgramAdgang('uid-maria', 'prog-a', ['kickstart_maj_2026'], [tildelt, tildeltViaForlob])
 		).toBe(true);
 	});
 
 	it('tom liste = ingen adgang', () => {
 		expect(harProgramAdgang('uid-maria', 'prog-a', [], [])).toBe(false);
-	});
-});
-
-describe('harCustomBuilderAdgang', () => {
-	const direkte: CustomBuilderTildeling = {
-		id: 'c1',
-		modtagerType: 'kunde',
-		modtagerId: 'uid-maria',
-		tildeltAt: 1,
-		tildeltAf: 'admin'
-	};
-
-	const viaForlob: CustomBuilderTildeling = {
-		id: 'c2',
-		modtagerType: 'forlob',
-		modtagerId: 'kickstart_maj_2026',
-		tildeltAt: 1,
-		tildeltAf: 'admin'
-	};
-
-	it('giver adgang ved direkte kunde-tildeling', () => {
-		expect(harCustomBuilderAdgang('uid-maria', [], [direkte])).toBe(true);
-	});
-
-	it('giver adgang via forløb', () => {
-		expect(harCustomBuilderAdgang('uid-anne', ['kickstart_maj_2026'], [viaForlob])).toBe(true);
-	});
-
-	it('nægter adgang når intet matcher', () => {
-		expect(harCustomBuilderAdgang('uid-anne', ['andet'], [direkte, viaForlob])).toBe(false);
 	});
 });
 

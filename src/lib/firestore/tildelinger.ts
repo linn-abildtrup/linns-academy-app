@@ -2,30 +2,14 @@
 //
 // Datamodel:
 //   - programTildelinger/{tildelingId}           ← admin tildeler program til kunde/forløb
-//   - customBuilderTildelinger/{tildelingId}     ← admin tildeler custom-builder-adgang
 //
 // Pure-funktionerne ligger i $lib/content/tildelinger så de kan testes uden
 // firebase-runtime.
 
-import {
-	addDoc,
-	collection,
-	deleteDoc,
-	doc,
-	getDocs,
-	query,
-	where
-} from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '$lib/firebase';
-import type {
-	CustomBuilderTildeling,
-	ModtagerType,
-	ProgramTildeling
-} from '$lib/content/tildelinger';
-import {
-	harCustomBuilderAdgang,
-	tildelingerForKunde
-} from '$lib/content/tildelinger';
+import type { ModtagerType, ProgramTildeling } from '$lib/content/tildelinger';
+import { tildelingerForKunde } from '$lib/content/tildelinger';
 import { alleProdukter } from '$lib/content/produkter';
 import type { TrainingProgram } from '$lib/content/mikrotraening';
 import { hentForlobsProgrammer } from './mikrotraening';
@@ -54,7 +38,6 @@ export async function hentAlleProgrammerPaaTvaers(): Promise<ProgramMedForlob[]>
 }
 
 const PROGRAM_COL = 'programTildelinger';
-const CUSTOM_BUILDER_COL = 'customBuilderTildelinger';
 
 // ==============================================
 // Hentning
@@ -63,14 +46,6 @@ const CUSTOM_BUILDER_COL = 'customBuilderTildelinger';
 export async function hentAlleProgramTildelinger(): Promise<ProgramTildeling[]> {
 	const snap = await getDocs(collection(db, PROGRAM_COL));
 	return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ProgramTildeling, 'id'>) }));
-}
-
-export async function hentAlleCustomBuilderTildelinger(): Promise<CustomBuilderTildeling[]> {
-	const snap = await getDocs(collection(db, CUSTOM_BUILDER_COL));
-	return snap.docs.map((d) => ({
-		id: d.id,
-		...(d.data() as Omit<CustomBuilderTildeling, 'id'>)
-	}));
 }
 
 /**
@@ -122,35 +97,12 @@ export async function fjernProgramTildeling(tildelingId: string): Promise<void> 
 	await deleteDoc(doc(db, PROGRAM_COL, tildelingId));
 }
 
-export async function tildelCustomBuilder(
-	args: Omit<CustomBuilderTildeling, 'id' | 'tildeltAt'>
-): Promise<CustomBuilderTildeling> {
-	const q = query(
-		collection(db, CUSTOM_BUILDER_COL),
-		where('modtagerType', '==', args.modtagerType),
-		where('modtagerId', '==', args.modtagerId)
-	);
-	const eksisterende = await getDocs(q);
-	if (!eksisterende.empty) {
-		const d = eksisterende.docs[0];
-		return { id: d.id, ...(d.data() as Omit<CustomBuilderTildeling, 'id'>) };
-	}
-	const nu = Date.now();
-	const docRef = await addDoc(collection(db, CUSTOM_BUILDER_COL), { ...args, tildeltAt: nu });
-	return { id: docRef.id, ...args, tildeltAt: nu };
-}
-
-export async function fjernCustomBuilderTildeling(tildelingId: string): Promise<void> {
-	await deleteDoc(doc(db, CUSTOM_BUILDER_COL, tildelingId));
-}
-
 // ==============================================
 // Kunde-side helpers
 // ==============================================
 
 export interface KundeTildelinger {
 	programmer: ProgramTildeling[];
-	harCustomBuilder: boolean;
 }
 
 /**
@@ -162,12 +114,8 @@ export async function hentTildelingerForBruger(
 	uid: string,
 	forlobIds: string[]
 ): Promise<KundeTildelinger> {
-	const [alleProgTilds, alleCbTilds] = await Promise.all([
-		hentAlleProgramTildelinger(),
-		hentAlleCustomBuilderTildelinger()
-	]);
+	const alleProgTilds = await hentAlleProgramTildelinger();
 	return {
-		programmer: tildelingerForKunde(uid, forlobIds, alleProgTilds),
-		harCustomBuilder: harCustomBuilderAdgang(uid, forlobIds, alleCbTilds)
+		programmer: tildelingerForKunde(uid, forlobIds, alleProgTilds)
 	};
 }
