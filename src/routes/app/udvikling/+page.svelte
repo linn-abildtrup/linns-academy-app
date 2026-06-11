@@ -3,16 +3,8 @@
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import { hentMaaltiderIPeriode } from '$lib/firestore/kost';
-	import {
-		formatDatoKey,
-		formatGram,
-		type GemtMaaltid
-	} from '$lib/content/kost';
-	import {
-		dagligeMalForBruger,
-		NAERING_LABELS,
-		NAERING_ENHEDER
-	} from '$lib/content/naering';
+	import { formatDatoKey, formatGram, type GemtMaaltid } from '$lib/content/kost';
+	import { dagligeMalForBruger, NAERING_LABELS, NAERING_ENHEDER } from '$lib/content/naering';
 	import Loading from '$lib/components/Loading.svelte';
 	import { erModulbruger, harPremium } from '$lib/utils/userAdgang';
 	import { hentAlleAboTraeninger } from '$lib/firestore/aboMikrotraening';
@@ -84,9 +76,7 @@
 		const fraVanedage = checkinHistorik.filter((p) => {
 			const c = p.entry.checkin as CheckinSvar | undefined;
 			if (!c) return false;
-			return CHECKIN_SPORGSMAAL.some(
-				(q) => typeof c[q.id as keyof CheckinSvar] === 'number'
-			);
+			return CHECKIN_SPORGSMAAL.some((q) => typeof c[q.id as keyof CheckinSvar] === 'number');
 		});
 
 		// Konverter mrs_scores til samme punkt-form. Tilskriv forlobId+navn+type
@@ -239,6 +229,15 @@
 		return dage.map((d) => map.get(d) ?? 0);
 	}
 
+	// Gennemsnit KUN over de dage der faktisk har logget mad (vaerdi > 0), saa
+	// dage uden logging ikke traekker snittet kunstigt ned. Bruges af baade
+	// 7- og 30-dages-grafen, saa de altid beregner ens.
+	function gennemsnitLoggede(vaerdier: number[]): number {
+		const medData = vaerdier.filter((v) => v > 0);
+		if (medData.length === 0) return 0;
+		return medData.reduce((s, v) => s + v, 0) / medData.length;
+	}
+
 	function formatVal(metric: Metric, v: number): string {
 		if (metric === 'kcal') return Math.round(v) + ' kcal';
 		return formatGram(v);
@@ -257,16 +256,12 @@
 	// 7-dages data
 	const syvDageMeta = $derived(dageBack(7));
 	const syvDageVaerdier = $derived(summerPrDag(aktivMetric, syvDageMeta.dage));
-	const syvDageMax = $derived(
-		Math.max(dagligeMaal[aktivMetric], ...syvDageVaerdier, 1)
-	);
+	const syvDageMax = $derived(Math.max(dagligeMaal[aktivMetric], ...syvDageVaerdier, 1));
 
 	// 30-dages data (linjegraf)
 	const tredive = $derived(dageBack(30));
 	const trediveVaerdier = $derived(summerPrDag(aktivMetric, tredive.dage));
-	const trediveMax = $derived(
-		Math.max(dagligeMaal[aktivMetric], ...trediveVaerdier, 1)
-	);
+	const trediveMax = $derived(Math.max(dagligeMaal[aktivMetric], ...trediveVaerdier, 1));
 
 	// Linje-path for 30-dages graf (SVG path)
 	const linjePath = $derived.by(() => {
@@ -293,12 +288,8 @@
 		return set;
 	});
 
-	const syvDageTraening = $derived(
-		syvDageMeta.dage.map((d) => (traenetDatoer.has(d) ? 1 : 0))
-	);
-	const trediveTraening = $derived(
-		tredive.dage.map((d) => (traenetDatoer.has(d) ? 1 : 0))
-	);
+	const syvDageTraening = $derived(syvDageMeta.dage.map((d) => (traenetDatoer.has(d) ? 1 : 0)));
+	const trediveTraening = $derived(tredive.dage.map((d) => (traenetDatoer.has(d) ? 1 : 0)));
 	const trediveTraeningPath = $derived.by(() => {
 		const w = 100;
 		const h = 60;
@@ -512,7 +503,8 @@
 		<div class="status-besked fejl">{fejl}</div>
 	{:else if alle.length === 0}
 		<div class="status-besked">
-			Du har endnu ikke gemt nogen måltider. Brug 30-30 til at logge dine måltider, og kom tilbage her for at se din udvikling.
+			Du har endnu ikke gemt nogen måltider. Brug 30-30 til at logge dine måltider, og kom tilbage
+			her for at se din udvikling.
 		</div>
 	{:else if aktivTab === 'syv'}
 		<section class="kort">
@@ -528,7 +520,7 @@
 					{@const harData = v > 0}
 					<div class="soejle-spalte" title={formatVal(aktivMetric, v)}>
 						<div class="soejle-tal" class:synlig={harData} class:opfyldt>
-							{aktivMetric === 'kcal' ? Math.round(v) : (Math.round(v * 10) / 10)}
+							{aktivMetric === 'kcal' ? Math.round(v) : Math.round(v * 10) / 10}
 						</div>
 						<div class="soejle-baar">
 							<div class="soejle-fyld" class:opfyldt style:height="{pct}%"></div>
@@ -539,10 +531,18 @@
 				{/each}
 			</div>
 			<div class="kort-statistik">
-				<span>Højeste: <strong>{formatVal(aktivMetric, Math.max(...syvDageVaerdier))}</strong></span>
+				<span>Højeste: <strong>{formatVal(aktivMetric, Math.max(...syvDageVaerdier))}</strong></span
+				>
 				<span>·</span>
-				<span>Gennemsnit: <strong>{formatVal(aktivMetric, syvDageVaerdier.reduce((s, v) => s + v, 0) / 7)}</strong></span>
+				<span
+					>Gennemsnit: <strong>{formatVal(aktivMetric, gennemsnitLoggede(syvDageVaerdier))}</strong
+					></span
+				>
 			</div>
+			<p class="snit-note">
+				Gennemsnittet er kun for de dage, du har logget mad — så dage uden logging trækker det ikke
+				ned.
+			</p>
 		</section>
 	{:else if aktivTab === 'tredive'}
 		<section class="kort">
@@ -567,10 +567,18 @@
 				<span>i dag</span>
 			</div>
 			<div class="kort-statistik">
-				<span>Højeste: <strong>{formatVal(aktivMetric, Math.max(...trediveVaerdier))}</strong></span>
+				<span>Højeste: <strong>{formatVal(aktivMetric, Math.max(...trediveVaerdier))}</strong></span
+				>
 				<span>·</span>
-				<span>Gennemsnit: <strong>{formatVal(aktivMetric, trediveVaerdier.reduce((s, v) => s + v, 0) / trediveVaerdier.filter((v) => v > 0).length || 0)}</strong></span>
+				<span
+					>Gennemsnit: <strong>{formatVal(aktivMetric, gennemsnitLoggede(trediveVaerdier))}</strong
+					></span
+				>
 			</div>
+			<p class="snit-note">
+				Gennemsnittet er kun for de dage, du har logget mad — så dage uden logging trækker det ikke
+				ned.
+			</p>
 		</section>
 	{:else}
 		<section class="kort">
@@ -588,7 +596,9 @@
 					<div class="mal-lbl">længste streak (30 dage)</div>
 				</div>
 				<div class="mal-kort">
-					<div class="mal-tal">{malRapport.dageNåetMaal} <span class="mal-tal-sub">/ {malRapport.dageMedData}</span></div>
+					<div class="mal-tal">
+						{malRapport.dageNåetMaal} <span class="mal-tal-sub">/ {malRapport.dageMedData}</span>
+					</div>
 					<div class="mal-lbl">dage hvor du nåede målet</div>
 				</div>
 				<div class="mal-kort">
@@ -625,14 +635,19 @@
 					{/each}
 				</div>
 				<div class="kort-statistik">
-					<span>Trænet: <strong>{syvDageTraening.reduce<number>((s, v) => s + v, 0)} af 7 dage</strong></span>
+					<span
+						>Trænet: <strong>{syvDageTraening.reduce<number>((s, v) => s + v, 0)} af 7 dage</strong
+						></span
+					>
 				</div>
 			</section>
 
 			<section class="kort">
 				<div class="kort-titel">
 					Træningsdage pr uge (sidste 8 uger)
-					<span class="kort-mål">{traeningPrUge[traeningPrUge.length - 1]?.antal ?? 0} denne uge</span>
+					<span class="kort-mål"
+						>{traeningPrUge[traeningPrUge.length - 1]?.antal ?? 0} denne uge</span
+					>
 				</div>
 				<div class="soejler">
 					{#each traeningPrUge as u (u.ugeStart)}
@@ -651,7 +666,9 @@
 			<section class="kort">
 				<div class="kort-titel">
 					Trænet sidste 30 dage
-					<span class="kort-mål">{trediveTraening.reduce<number>((s, v) => s + v, 0)} af 30 dage</span>
+					<span class="kort-mål"
+						>{trediveTraening.reduce<number>((s, v) => s + v, 0)} af 30 dage</span
+					>
 				</div>
 				<svg class="linje-graf" viewBox="0 0 100 60" preserveAspectRatio="none">
 					<path d={trediveTraeningPath} fill="none" stroke="var(--terra)" stroke-width="0.8" />
@@ -674,7 +691,9 @@
 						<div class="mal-lbl">længste streak (30 dage)</div>
 					</div>
 					<div class="mal-kort">
-						<div class="mal-tal">{traeningRapport.dageNåetMaal} <span class="mal-tal-sub">/ 30</span></div>
+						<div class="mal-tal">
+							{traeningRapport.dageNåetMaal} <span class="mal-tal-sub">/ 30</span>
+						</div>
 						<div class="mal-lbl">dage trænet (30 dage)</div>
 					</div>
 				</div>
@@ -747,7 +766,10 @@
 							<div class="mal-lbl">længste streak (30 dage)</div>
 						</div>
 						<div class="mal-kort">
-							<div class="mal-tal">{vanerRapport.dageNåetMaal} <span class="mal-tal-sub">/ {vanerRapport.dageMedData}</span></div>
+							<div class="mal-tal">
+								{vanerRapport.dageNåetMaal}
+								<span class="mal-tal-sub">/ {vanerRapport.dageMedData}</span>
+							</div>
 							<div class="mal-lbl">dage med alle vaner ja</div>
 						</div>
 					</div>
@@ -784,14 +806,42 @@
 			</p>
 
 			<div class="checkin-graf-wrap">
-				<svg viewBox="0 0 {grafBredde} {grafHojde}" class="checkin-graf" preserveAspectRatio="xMidYMid meet">
+				<svg
+					viewBox="0 0 {grafBredde} {grafHojde}"
+					class="checkin-graf"
+					preserveAspectRatio="xMidYMid meet"
+				>
 					<!-- Y-akse grid: 1, 5, 10 -->
-					<line x1={padX} y1={padY} x2={grafBredde - padX} y2={padY} stroke="var(--border)" stroke-width="0.5" />
-					<line x1={padX} y1={padY + innerH / 2} x2={grafBredde - padX} y2={padY + innerH / 2} stroke="var(--border)" stroke-width="0.5" stroke-dasharray="2 2" />
-					<line x1={padX} y1={padY + innerH} x2={grafBredde - padX} y2={padY + innerH} stroke="var(--border)" stroke-width="0.5" />
+					<line
+						x1={padX}
+						y1={padY}
+						x2={grafBredde - padX}
+						y2={padY}
+						stroke="var(--border)"
+						stroke-width="0.5"
+					/>
+					<line
+						x1={padX}
+						y1={padY + innerH / 2}
+						x2={grafBredde - padX}
+						y2={padY + innerH / 2}
+						stroke="var(--border)"
+						stroke-width="0.5"
+						stroke-dasharray="2 2"
+					/>
+					<line
+						x1={padX}
+						y1={padY + innerH}
+						x2={grafBredde - padX}
+						y2={padY + innerH}
+						stroke="var(--border)"
+						stroke-width="0.5"
+					/>
 					<!-- Y-akse labels -->
 					<text x={padX - 4} y={padY + 4} text-anchor="end" class="graf-y-label">10</text>
-					<text x={padX - 4} y={padY + innerH / 2 + 4} text-anchor="end" class="graf-y-label">5</text>
+					<text x={padX - 4} y={padY + innerH / 2 + 4} text-anchor="end" class="graf-y-label"
+						>5</text
+					>
 					<text x={padX - 4} y={padY + innerH + 4} text-anchor="end" class="graf-y-label">1</text>
 
 					<!-- Vertikal stiplet linje hvor nyt forl0b starter (kun ved flere forl0b) -->
@@ -799,7 +849,15 @@
 						{#each checkinDage as d, i (d.forlobId + '-' + d.dagNummer)}
 							{#if i > 0 && checkinDage[i - 1].forlobId !== d.forlobId}
 								{@const x = padX + (i / (n - 1)) * innerW}
-								<line x1={x} y1={padY} x2={x} y2={padY + innerH} stroke="var(--text3)" stroke-width="0.5" stroke-dasharray="3 2" />
+								<line
+									x1={x}
+									y1={padY}
+									x2={x}
+									y2={padY + innerH}
+									stroke="var(--text3)"
+									stroke-width="0.5"
+									stroke-dasharray="3 2"
+								/>
 							{/if}
 						{/each}
 					{/if}
@@ -807,20 +865,22 @@
 					<!-- X-akse labels (dag-numre, evt med forl0b-prefiks) -->
 					{#each checkinDage as d, i (d.forlobId + '-' + d.dagNummer)}
 						{@const x = n === 1 ? padX + innerW / 2 : padX + (i / (n - 1)) * innerW}
-						<text x={x} y={grafHojde - 2} text-anchor="middle" class="graf-x-label">
+						<text {x} y={grafHojde - 2} text-anchor="middle" class="graf-x-label">
 							{d.dagNummer === 0 ? 'Base' : `D${d.dagNummer}`}
 						</text>
 					{/each}
 
 					<!-- Linjer pr slider -->
 					{#each CHECKIN_SPORGSMAAL as q (q.id)}
-						{@const punkter = checkinDage.map((d, i) => {
-							const v = d.entry.checkin[q.id as keyof CheckinSvar] as number | undefined;
-							if (typeof v !== 'number') return null;
-							const x = n === 1 ? padX + innerW / 2 : padX + (i / (n - 1)) * innerW;
-							const y = padY + ((10 - v) / 9) * innerH;
-							return { x, y, v };
-						}).filter((p): p is { x: number; y: number; v: number } => p !== null)}
+						{@const punkter = checkinDage
+							.map((d, i) => {
+								const v = d.entry.checkin[q.id as keyof CheckinSvar] as number | undefined;
+								if (typeof v !== 'number') return null;
+								const x = n === 1 ? padX + innerW / 2 : padX + (i / (n - 1)) * innerW;
+								const y = padY + ((10 - v) / 9) * innerH;
+								return { x, y, v };
+							})
+							.filter((p): p is { x: number; y: number; v: number } => p !== null)}
 						{#if punkter.length > 0}
 							<path
 								d={'M ' + punkter.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ')}
@@ -1053,6 +1113,13 @@
 	.kort-statistik strong {
 		color: var(--text);
 		font-weight: 600;
+	}
+
+	.snit-note {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		line-height: 1.45;
+		margin: 8px 0 0;
 	}
 
 	.linje-graf {
