@@ -14,7 +14,7 @@
 		hentAboVaneOpsaetning,
 		gemAboVaneOpsaetning
 	} from '$lib/firestore/aboVaner';
-	import { harPremium, erModulbruger } from '$lib/utils/userAdgang';
+	import { erModulbruger } from '$lib/utils/userAdgang';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -23,8 +23,9 @@
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
 
-	const produktType = $derived<'basis' | 'premium'>(harPremium(userDoc) ? 'premium' : 'basis');
-	const maks = $derived(maksAntalVaner(produktType));
+	// Alle app-kunder har samme vanetracker (3 vaner) — premium-tier fjernet 11/6.
+	const produktType = 'basis' as const;
+	const maks = maksAntalVaner(produktType);
 
 	let forslag = $state<AboVaneForslag[]>([]);
 	let opsaetning = $state<AboVaneOpsaetning | null>(null);
@@ -125,13 +126,8 @@
 		<div class="eyebrow">Vaner · Opsætning</div>
 		<h1>Vælg dine vaner</h1>
 		<p class="page-sub">
-			{#if produktType === 'basis'}
-				Vælg op til 3 vaner du vil arbejde med dagligt. Du kan vælge fra forslagene eller
-				skrive dine egne — eller du kan gemme uden at vælge nogen og komme tilbage senere.
-			{:else}
-				Vælg op til 7 vaner du vil arbejde med dagligt. Du kan vælge fra forslagene eller
-				skrive dine egne — eller du kan gemme uden at vælge nogen og komme tilbage senere.
-			{/if}
+			Vælg op til 3 vaner du vil arbejde med dagligt. Du kan vælge fra forslagene eller skrive dine
+			egne — eller du kan gemme uden at vælge nogen og komme tilbage senere.
 		</p>
 	</header>
 
@@ -188,20 +184,12 @@
 						placeholder="Skriv din egen vane"
 						bind:value={e.label}
 					/>
-					<button
-						class="slet-btn"
-						aria-label="Fjern"
-						onclick={() => fjernEgenVane(e.tempId)}
-					>
+					<button class="slet-btn" aria-label="Fjern" onclick={() => fjernEgenVane(e.tempId)}>
 						×
 					</button>
 				</div>
 			{/each}
-			<button
-				class="tilfoj-btn"
-				onclick={tilfojEgenVane}
-				disabled={antalValgt >= maks}
-			>
+			<button class="tilfoj-btn" onclick={tilfojEgenVane} disabled={antalValgt >= maks}>
 				<Icon name="plus" size={14} color="var(--text2)" />
 				Tilføj egen vane
 			</button>

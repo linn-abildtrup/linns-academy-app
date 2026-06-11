@@ -21,7 +21,7 @@
 		hentAboVanedag,
 		gemAboVanedag
 	} from '$lib/firestore/aboVaner';
-	import { erModulbruger, harPremium } from '$lib/utils/userAdgang';
+	import { erModulbruger } from '$lib/utils/userAdgang';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -134,11 +134,9 @@
 				console.warn('Kunne ikke hente admin-vaner:', e);
 			}
 
-			// Brug kundens NUVAERENDE adgang — ikke det gemte produktType-snapshot
-			// i opsaetningen, som kan vaere foraeldet hvis hun er opgraderet fra
-			// basis til premium efter foerste opsaetning.
-			const aktuelType = harPremium(userDoc) ? 'premium' : 'basis';
-			const pulje = await hentAboBonusPulje(aktuelType);
+			// Alle app-kunder har samme vanetracker — bonus-puljen er altid 'basis'
+			// (premium-tier fjernet 11/6).
+			const pulje = await hentAboBonusPulje('basis');
 			bonus = dagensBonus(pulje, dato);
 
 			const entry = await hentAboVanedag(u.uid, dato);

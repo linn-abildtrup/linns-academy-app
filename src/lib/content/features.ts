@@ -14,7 +14,6 @@ import { aktivtForlobId } from '$lib/utils/traeningsvariant';
 export type FeatureKey =
 	| 'linn-ai'
 	| 'udvidet-naering'
-	| 'udvidet-vaner'
 	| 'byg-eget-program'
 	| 'ai-madplan'
 	| 'ai-opskrift'
@@ -49,13 +48,6 @@ export const FEATURES: Feature[] = [
 		navn: 'Udvidet næringsdata',
 		beskrivelse:
 			'I mad-modulet (30-30-3) ser kunden også kulhydrat, fedt og kalorier, ikke kun protein og fiber. Hun kan desuden sætte sine egne daglige makromål.'
-	},
-	{
-		key: 'udvidet-vaner',
-		koblet: false,
-		navn: 'Udvidet vanetracker',
-		beskrivelse:
-			'Kunden får en udvidet vanetracker med flere vaner end standard-versionen, så hun kan følge flere ting på én gang.'
 	},
 	{
 		key: 'byg-eget-program',

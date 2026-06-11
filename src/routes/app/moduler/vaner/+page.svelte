@@ -43,7 +43,7 @@
 		hentAdminVanerForKunde,
 		type AdminTildeltVane
 	} from '$lib/firestore/admintildelteVaner';
-	import { erForlobsklient, erModulbruger, harPremium } from '$lib/utils/userAdgang';
+	import { erForlobsklient, erModulbruger } from '$lib/utils/userAdgang';
 	import { effektivtUnlocket, getPreviewDag } from '$lib/utils/forlobPreview';
 	import { isAdmin } from '$lib/admin';
 	import Icon from '$lib/components/Icon.svelte';
@@ -279,11 +279,10 @@
 			console.warn('Kunne ikke hente admin-vaner:', e);
 		}
 		if (o) {
-			// Brug kundens NUVAERENDE adgang — ikke det gemte produktType-snapshot,
-			// som kan vaere foraeldet hvis hun er opgraderet til premium.
-			const aktuelType = harPremium(userDoc) ? 'premium' : 'basis';
+			// Alle app-kunder har samme vanetracker — bonus-puljen er altid 'basis'
+			// (premium-tier fjernet 11/6).
 			[aboBonusPulje, aboEntries] = await Promise.all([
-				hentAboBonusPulje(aktuelType),
+				hentAboBonusPulje('basis'),
 				hentAlleAboVanedage(uid)
 			]);
 		}
@@ -552,12 +551,8 @@
 			<div class="onboarding-card">
 				<div class="onboarding-titel">Velkommen til vanetrackeren</div>
 				<p class="onboarding-tekst">
-					{#if harPremium(userDoc)}
-						Vælg op til 7 vaner du vil arbejde med dagligt.
-					{:else}
-						Vælg op til 3 vaner du vil arbejde med dagligt.
-					{/if}
-					Dine vaner er låst i 21 dage så du har tid til at danne dem som vaner.
+					Vælg op til 3 vaner du vil arbejde med dagligt. Dine vaner er låst i 21 dage så du har tid
+					til at danne dem som vaner.
 				</p>
 				<a class="start-knap" href="/app/moduler/vaner/opsaetning">
 					Vælg dine vaner
