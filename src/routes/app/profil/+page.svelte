@@ -10,7 +10,12 @@
 	import { doc as doc_ref, updateDoc } from 'firebase/firestore';
 	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
-	import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type ForlobProduct, type UserDoc } from '$lib/types';
+	import {
+		KICKSTART_PRODUCT_ID,
+		KROPSRO_PRODUCT_ID,
+		type ForlobProduct,
+		type UserDoc
+	} from '$lib/types';
 	import { getKoebForUser, formatUdlobsdato } from '$lib/content/koeb';
 	import type { TrainingProgram, UserProduct } from '$lib/content/mikrotraening';
 	import {
@@ -21,11 +26,7 @@
 		tilfoejNulDageInterval,
 		fjernNulDageInterval
 	} from '$lib/firestore/mikrotraening';
-	import {
-		forlobTypeForId,
-		programIdForVariant,
-		type Variant
-	} from '$lib/utils/traeningsvariant';
+	import { forlobTypeForId, programIdForVariant, type Variant } from '$lib/utils/traeningsvariant';
 	import { hentAktivProduktType } from '$lib/firestore/forlob';
 	import { gemAktivtTraeningsprogram } from '$lib/firestore/mineProgrammer';
 	import { MAX_NUL_DAGE_PR_FORLOB, effektivMaxNulDage } from '$lib/content/mikrotraening';
@@ -33,20 +34,12 @@
 	import TesterBadge from '$lib/components/TesterBadge.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import Icon, { type IconName } from '$lib/components/Icon.svelte';
-	import {
-		anvendScale,
-		gemScale,
-		laesGemtScale,
-		type TextScale
-	} from '$lib/utils/textScale';
-	import {
-		dagligeMalForBruger,
-		NAERING_LABELS,
-		NAERING_ENHEDER
-	} from '$lib/content/naering';
+	import { anvendScale, gemScale, laesGemtScale, type TextScale } from '$lib/utils/textScale';
+	import { dagligeMalForBruger, NAERING_LABELS, NAERING_ENHEDER } from '$lib/content/naering';
 	import { gemBrugerProfilOgMaal, gemNaeringsindstillinger } from '$lib/userDoc';
 	import type { BrugerProfil, DagligeMaal } from '$lib/types';
 	import BeregnMaalWizard from '$lib/components/BeregnMaalWizard.svelte';
+	import AppVersion from '$lib/components/AppVersion.svelte';
 	import { effektivState, erKropsroForlobskunde, harPremium } from '$lib/utils/userAdgang';
 	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 
@@ -186,7 +179,7 @@
 			const up = await hentUserProduct(u.uid, mtProduktType);
 			const adminForlobId = userDoc?.adminKlientForlobId ?? null;
 			const forlobId =
-				(up as UserProduct & { forlobId?: string } | null)?.forlobId ?? adminForlobId;
+				(up as (UserProduct & { forlobId?: string }) | null)?.forlobId ?? adminForlobId;
 			if (!forlobId) return;
 			mtForlobId = forlobId;
 			const alle = await hentForlobsProgrammer(forlobId);
@@ -236,21 +229,12 @@
 		nulGemmer = true;
 		nulFejl = null;
 		try {
-			const res = await tilfoejNulDageInterval(
-				user.uid,
-				mtProduktType,
-				nulFra,
-				nulTil,
-				nulMax
-			);
+			const res = await tilfoejNulDageInterval(user.uid, mtProduktType, nulFra, nulTil, nulMax);
 			if (!res.ok) {
 				nulFejl = res.fejl;
 				return;
 			}
-			nulIntervaller = [
-				...nulIntervaller,
-				{ fra: nulFra, til: nulTil, satMs: Date.now() }
-			];
+			nulIntervaller = [...nulIntervaller, { fra: nulFra, til: nulTil, satMs: Date.now() }];
 			nulFra = '';
 			nulTil = '';
 		} catch (e) {
@@ -540,8 +524,8 @@
 				<TesterBadge />
 			</h2>
 			<p class="sektion-sub">
-				Sæt dit forløb på pause når du er på ferie, syg eller har travlt. Hver nul-dag
-				skubber forløbet én dag frem. Du har {nulMax} nul-dage til dette forløb.
+				Sæt dit forløb på pause når du er på ferie, syg eller har travlt. Hver nul-dag skubber
+				forløbet én dag frem. Du har {nulMax} nul-dage til dette forløb.
 			</p>
 
 			<div class="nul-tael">
@@ -561,12 +545,7 @@
 					</label>
 					<label class="nul-felt">
 						<span class="nul-label">Til</span>
-						<input
-							type="date"
-							bind:value={nulTil}
-							min={nulFra || idagIso}
-							disabled={nulGemmer}
-						/>
+						<input type="date" bind:value={nulTil} min={nulFra || idagIso} disabled={nulGemmer} />
 					</label>
 					<button
 						class="nul-knap"
@@ -590,7 +569,9 @@
 						<li class="nul-rad">
 							<div class="nul-rad-tekst">
 								<div class="nul-rad-datoer">
-									{formaterDatoKort(iv.fra)}{iv.fra !== iv.til ? ' – ' + formaterDatoKort(iv.til) : ''}
+									{formaterDatoKort(iv.fra)}{iv.fra !== iv.til
+										? ' – ' + formaterDatoKort(iv.til)
+										: ''}
 								</div>
 								<div class="nul-rad-meta">
 									{dage} dag{dage === 1 ? '' : 'e'}
@@ -600,11 +581,7 @@
 								</div>
 							</div>
 							{#if kanFortryde}
-								<button
-									class="nul-fortryd"
-									type="button"
-									onclick={() => (nulFortrydMs = iv.satMs)}
-								>
+								<button class="nul-fortryd" type="button" onclick={() => (nulFortrydMs = iv.satMs)}>
 									Fortryd
 								</button>
 							{/if}
@@ -702,66 +679,63 @@
 	</section>
 
 	{#if erPremium}
-	<section class="sektion">
-		<h2 class="sektion-titel">Næringsdata</h2>
-		<p class="sektion-sub">
-			Som standard ser du protein og fiber. Slå udvidet til hvis du også vil følge med i kulhydrater, fedt og kalorier.
-		</p>
-		<button
-			type="button"
-			class="naering-toggle"
-			class:on={visUdvidet}
-			onclick={toggleUdvidet}
-			disabled={gemmerNaering}
-		>
-			<div class="naering-toggle-tekst">
-				<div class="naering-toggle-titel">Vis udvidet næringsdata</div>
-				<div class="naering-toggle-sub">
-					{visUdvidet ? 'Slået til' : 'Slået fra'}
-				</div>
-			</div>
-			<div class="naering-switch" class:on={visUdvidet}>
-				<div class="naering-switch-knob"></div>
-			</div>
-		</button>
-
-		{#if visUdvidet}
+		<section class="sektion">
+			<h2 class="sektion-titel">Næringsdata</h2>
+			<p class="sektion-sub">
+				Som standard ser du protein og fiber. Slå udvidet til hvis du også vil følge med i
+				kulhydrater, fedt og kalorier.
+			</p>
 			<button
 				type="button"
-				class="beregn-knap"
-				onclick={() => (viserWizard = true)}
+				class="naering-toggle"
+				class:on={visUdvidet}
+				onclick={toggleUdvidet}
+				disabled={gemmerNaering}
 			>
-				<Icon name="sparkle" size={16} color="#fff" />
-				<span class="beregn-knap-tekst">
-					<span class="beregn-knap-titel">Beregn mine mål automatisk</span>
-					<span class="beregn-knap-sub">Få et udgangspunkt baseret på din profil</span>
-				</span>
-				<Icon name="chevron-r" size={14} color="rgba(255,255,255,0.7)" />
+				<div class="naering-toggle-tekst">
+					<div class="naering-toggle-titel">Vis udvidet næringsdata</div>
+					<div class="naering-toggle-sub">
+						{visUdvidet ? 'Slået til' : 'Slået fra'}
+					</div>
+				</div>
+				<div class="naering-switch" class:on={visUdvidet}>
+					<div class="naering-switch-knob"></div>
+				</div>
 			</button>
 
-			<div class="naering-mal-card">
-				<div class="naering-mal-titel">Daglige mål</div>
-				<p class="naering-mal-sub">Bruges som reference på dagbogen og udviklings-siden.</p>
-				<div class="naering-mal-grid">
-					{#each NAERINGSFELTER as felt (felt)}
-						<label class="naering-felt">
-							<span class="naering-felt-lbl">{NAERING_LABELS[felt]}</span>
-							<div class="naering-felt-rad">
-								<input
-									type="number"
-									bind:value={dagligeMaal[felt]}
-									onchange={maalAendret}
-									min="0"
-									step={felt === 'kcal' ? 50 : 5}
-								/>
-								<span class="naering-felt-enhed">{NAERING_ENHEDER[felt]}</span>
-							</div>
-						</label>
-					{/each}
+			{#if visUdvidet}
+				<button type="button" class="beregn-knap" onclick={() => (viserWizard = true)}>
+					<Icon name="sparkle" size={16} color="#fff" />
+					<span class="beregn-knap-tekst">
+						<span class="beregn-knap-titel">Beregn mine mål automatisk</span>
+						<span class="beregn-knap-sub">Få et udgangspunkt baseret på din profil</span>
+					</span>
+					<Icon name="chevron-r" size={14} color="rgba(255,255,255,0.7)" />
+				</button>
+
+				<div class="naering-mal-card">
+					<div class="naering-mal-titel">Daglige mål</div>
+					<p class="naering-mal-sub">Bruges som reference på dagbogen og udviklings-siden.</p>
+					<div class="naering-mal-grid">
+						{#each NAERINGSFELTER as felt (felt)}
+							<label class="naering-felt">
+								<span class="naering-felt-lbl">{NAERING_LABELS[felt]}</span>
+								<div class="naering-felt-rad">
+									<input
+										type="number"
+										bind:value={dagligeMaal[felt]}
+										onchange={maalAendret}
+										min="0"
+										step={felt === 'kcal' ? 50 : 5}
+									/>
+									<span class="naering-felt-enhed">{NAERING_ENHEDER[felt]}</span>
+								</div>
+							</label>
+						{/each}
+					</div>
 				</div>
-			</div>
-		{/if}
-	</section>
+			{/if}
+		</section>
 	{/if}
 
 	<section class="sektion">
@@ -781,11 +755,7 @@
 			<div class="password-form">
 				<label class="field">
 					<span class="label">Nuværende adgangskode</span>
-					<input
-						type="password"
-						bind:value={nuPassword}
-						autocomplete="current-password"
-					/>
+					<input type="password" bind:value={nuPassword} autocomplete="current-password" />
 				</label>
 				<label class="field">
 					<span class="label">Ny adgangskode (mindst 6 tegn)</span>
@@ -793,11 +763,7 @@
 				</label>
 				<label class="field">
 					<span class="label">Bekræft ny adgangskode</span>
-					<input
-						type="password"
-						bind:value={bekraeftPassword}
-						autocomplete="new-password"
-					/>
+					<input type="password" bind:value={bekraeftPassword} autocomplete="new-password" />
 				</label>
 				{#if passwordBesked}
 					<div class="password-besked {passwordBesked.type}">{passwordBesked.tekst}</div>
@@ -832,16 +798,22 @@
 	<section class="sektion">
 		<h2 class="sektion-titel">Problemer med appen?</h2>
 		<p class="sektion-sub">
-			Hvis appen opfører sig mærkeligt — fx hvis dine data ser forkerte ud, hvis
-			noget ikke vil indlæse, eller hvis appen viser den gamle version efter en
-			opdatering — så prøv at nulstille den på din enhed. Det rydder gemte
-			indstillinger og cache på telefonen. Dine data (måltider, vaner, træninger)
-			er gemt i skyen og bliver IKKE rørt.
+			Hvis appen opfører sig mærkeligt — fx hvis dine data ser forkerte ud, hvis noget ikke vil
+			indlæse, eller hvis appen viser den gamle version efter en opdatering — så prøv at nulstille
+			den på din enhed. Det rydder gemte indstillinger og cache på telefonen. Dine data (måltider,
+			vaner, træninger) er gemt i skyen og bliver IKKE rørt.
 		</p>
-		<button class="nulstil-app" type="button" onclick={aabnNulstilBekraeft} disabled={nulstillerApp}>
+		<button
+			class="nulstil-app"
+			type="button"
+			onclick={aabnNulstilBekraeft}
+			disabled={nulstillerApp}
+		>
 			{nulstillerApp ? 'Nulstiller…' : '🔄 Nulstil appen på denne enhed'}
 		</button>
 	</section>
+
+	<AppVersion />
 
 	<button class="logout" onclick={handleLogout}>Log ud</button>
 </div>
