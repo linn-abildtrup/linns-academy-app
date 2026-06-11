@@ -47,15 +47,12 @@
 	import { gemBrugerProfilOgMaal, gemNaeringsindstillinger } from '$lib/userDoc';
 	import type { BrugerProfil, DagligeMaal } from '$lib/types';
 	import BeregnMaalWizard from '$lib/components/BeregnMaalWizard.svelte';
-	import {
-		effektivState,
-		erKropsroForlobskunde,
-		harPremium,
-		harTestAdgang
-	} from '$lib/utils/userAdgang';
+	import { effektivState, erKropsroForlobskunde, harPremium } from '$lib/utils/userAdgang';
+	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const getFeatureMatrix = getContext<() => FeatureMatrix | null>('featureMatrix');
 
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
@@ -154,7 +151,12 @@
 	let nulGemmer = $state(false);
 	let nulFejl = $state<string | null>(null);
 	let nulFortrydMs = $state<number | null>(null);
-	const harNulDageTest = $derived(harTestAdgang(userDoc, 'nul-dage'));
+	// Nul-dage styres nu af feature-skemaet (som de oevrige funktioner).
+	// Tester-undtagelsen er indbygget i harFeatureAdgang, saa nuvaerende
+	// nul-dage-testere bevarer adgangen. Standard er slukket for alle.
+	const harNulDageTest = $derived(
+		harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'nul-dage')
+	);
 	const erKropsro = $derived(mtProduktType === KROPSRO_PRODUCT_ID);
 	const visNulDage = $derived(harNulDageTest && erKropsro && !!mtForlobId);
 	const nulBrugt = $derived(nulDageDatoer(nulIntervaller).length);

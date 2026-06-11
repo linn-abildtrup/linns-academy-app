@@ -17,7 +17,8 @@ export type FeatureKey =
 	| 'udvidet-vaner'
 	| 'byg-eget-program'
 	| 'ai-madplan'
-	| 'ai-opskrift';
+	| 'ai-opskrift'
+	| 'nul-dage';
 
 /** De kundetyper adgangen styres pr. */
 export type Kundetype = 'kickstart' | 'kropsro' | 'app';
@@ -65,6 +66,12 @@ export const FEATURES: Feature[] = [
 		navn: 'AI-opskriftsanalyse',
 		beskrivelse:
 			'Kunden kan indtaste en opskrift eller tage et billede af en ret, og appen regner næringsindholdet ud automatisk.'
+	},
+	{
+		key: 'nul-dage',
+		navn: 'Nul-dage',
+		beskrivelse:
+			'Kunden kan markere dage som pause (fx ferie eller sygdom), så forløbet ikke skrider frem på de dage. Kun relevant for forløbskunder (Kickstart/Kropsro) — app-kunder har ikke et forløb at sætte på pause.'
 	}
 ];
 
@@ -94,13 +101,14 @@ function alleFeatures(vaerdi: boolean): Record<FeatureKey, boolean> {
  * ikke kan hentes.
  *
  * Udgangspunkt: de oevrige funktioner foelger den hidtidige premium-adgang
- * (Kickstart + Kropsro har dem, app-kunder ikke). UNDTAGELSE: Linn AI er
- * slukket for ALLE — den er ikke lanceret endnu, saa ingen skal have den
- * foer Linn bevidst taender den i skemaet (besluttet 9/6 2026).
+ * (Kickstart + Kropsro har dem, app-kunder ikke). UNDTAGELSER: Linn AI og
+ * nul-dage er slukket for ALLE — de styres via testere indtil Linn bevidst
+ * taender dem i skemaet (Linn AI besluttet 9/6, nul-dage 11/6 2026). For
+ * nul-dage bevarer det dagens adgang praecis: kun testere har den.
  */
 export const STANDARD_MATRIX: FeatureMatrix = {
-	kickstart: { ...alleFeatures(true), 'linn-ai': false },
-	kropsro: { ...alleFeatures(true), 'linn-ai': false },
+	kickstart: { ...alleFeatures(true), 'linn-ai': false, 'nul-dage': false },
+	kropsro: { ...alleFeatures(true), 'linn-ai': false, 'nul-dage': false },
 	app: alleFeatures(false)
 };
 
