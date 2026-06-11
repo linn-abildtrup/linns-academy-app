@@ -126,17 +126,33 @@ export interface UserProduct {
 	egneVaner?: { id: string; label: string; oprettetAt: number }[];
 }
 
-export const MAX_NUL_DAGE_PR_FORLOB = 21;
+// Nul-dage-pulje pr forloebstype. Kropsro er et laengere forloeb (84 dage) og
+// faar 21; Kickstart er kortere og faar 14. MAX_NUL_DAGE_PR_FORLOB beholdes som
+// bagudkompat-alias for Kropsro-puljen.
+export const MAX_NUL_DAGE_KROPSRO = 21;
+export const MAX_NUL_DAGE_KICKSTART = 14;
+export const MAX_NUL_DAGE_PR_FORLOB = MAX_NUL_DAGE_KROPSRO;
 export const MAX_EGNE_VANER = 3;
 
 /**
- * Effektiv max nul-dage for en kunde — standard pulje plus eventuel
- * admin-tildelt bonus paa userProducts. Brug ALTID denne i stedet for at
- * laese MAX_NUL_DAGE_PR_FORLOB direkte, saa bonus-overrides respekteres.
+ * Standard nul-dage-pulje for et forloeb, afgjort af forloebs-id-prefixet:
+ * 'kropsro_' -> 21, alt andet (Kickstart) -> 14. Bonus laegges ovenpaa.
  */
-export function effektivMaxNulDage(userProduct: UserProduct | null | undefined): number {
+export function maxNulDageForForlob(forlobId: string | null | undefined): number {
+	return forlobId?.startsWith('kropsro_') ? MAX_NUL_DAGE_KROPSRO : MAX_NUL_DAGE_KICKSTART;
+}
+
+/**
+ * Effektiv max nul-dage for en kunde — forloebs-puljen plus eventuel
+ * admin-tildelt bonus paa userProducts. Brug ALTID denne i stedet for at
+ * laese pulje-konstanterne direkte, saa bonus-overrides respekteres.
+ */
+export function effektivMaxNulDage(
+	userProduct: UserProduct | null | undefined,
+	forlobId: string | null | undefined
+): number {
 	const bonus = Math.max(0, userProduct?.bonusNulDage ?? 0);
-	return MAX_NUL_DAGE_PR_FORLOB + bonus;
+	return maxNulDageForForlob(forlobId) + bonus;
 }
 
 export interface MikrotraeningFremgang {

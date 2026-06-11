@@ -29,7 +29,7 @@
 	import { forlobTypeForId, programIdForVariant, type Variant } from '$lib/utils/traeningsvariant';
 	import { hentAktivProduktType } from '$lib/firestore/forlob';
 	import { gemAktivtTraeningsprogram } from '$lib/firestore/mineProgrammer';
-	import { MAX_NUL_DAGE_PR_FORLOB, effektivMaxNulDage } from '$lib/content/mikrotraening';
+	import { maxNulDageForForlob } from '$lib/content/mikrotraening';
 	import { nulDageDatoer } from '$lib/content/forlob';
 	import TesterBadge from '$lib/components/TesterBadge.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
@@ -153,10 +153,11 @@
 	const harNulDageTest = $derived(
 		harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'nul-dage')
 	);
-	const erKropsro = $derived(mtProduktType === KROPSRO_PRODUCT_ID);
-	const visNulDage = $derived(harNulDageTest && erKropsro && !!mtForlobId);
+	// Nul-dage vises for ENHVER forløbskunde med adgang (skema/tester) — ikke
+	// længere kun Kropsro. Puljen er forløbs-afhængig (Kropsro 21, Kickstart 14).
+	const visNulDage = $derived(harNulDageTest && userDoc?.accessSource === 'forløb' && !!mtForlobId);
 	const nulBrugt = $derived(nulDageDatoer(nulIntervaller).length);
-	const nulMax = $derived(MAX_NUL_DAGE_PR_FORLOB + Math.max(0, nulBonus));
+	const nulMax = $derived(maxNulDageForForlob(mtForlobId) + Math.max(0, nulBonus));
 	const nulTilbage = $derived(nulMax - nulBrugt);
 	const idagIso = idag();
 	function idag(): string {
