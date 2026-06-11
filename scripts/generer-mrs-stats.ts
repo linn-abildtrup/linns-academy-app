@@ -171,6 +171,20 @@ function beregnScope(kunder: KundeMrs[]) {
 		})
 	) as Record<keyof Sliders, { gns: number; antal: number }[]>;
 
+	// Samlet velvaere-rejse: gns af ALLE 5 sliders ved 1., 2., 3. maaling. Bruges
+	// til hold-sammenligning paa velvaere-grafen (én linje pr forloeb).
+	const velvaereSamletRejse: { gns: number; antal: number }[] = [];
+	for (let i = 0; i < MAX_REJSE_PUNKTER; i++) {
+		const scores = kunder
+			.filter((k) => k.sliderMaalinger.length > i)
+			.map((k) => {
+				const s = k.sliderMaalinger[i];
+				return (s.energi + s.mave + s.cravings + s.humor + s.sovn) / 5;
+			});
+		if (scores.length < 5) break;
+		velvaereSamletRejse.push({ gns: r1(gns(scores)), antal: scores.length });
+	}
+
 	return {
 		antalMedData: kunder.filter((k) => k.harMrs).length,
 		antalMedUdvikling: udv.length,
@@ -190,6 +204,7 @@ function beregnScope(kunder: KundeMrs[]) {
 		demografi,
 		velvaere,
 		velvaereRejse,
+		velvaereSamletRejse,
 		antalVelvaere: sliderUdv.length,
 		forbedringsFordeling: fordeling
 	};

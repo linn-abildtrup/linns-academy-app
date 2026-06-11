@@ -24,6 +24,7 @@
 		};
 		velvaere: Record<'energi' | 'mave' | 'cravings' | 'humor' | 'sovn', SubResultat>;
 		velvaereRejse: Record<'energi' | 'mave' | 'cravings' | 'humor' | 'sovn', Rejsepunkt[]>;
+		velvaereSamletRejse: Rejsepunkt[];
 		antalVelvaere: number;
 		forbedringsFordeling: {
 			megetBedre: number;
@@ -48,6 +49,8 @@
 	let valgtForlobId = $state<string | null>(null);
 	let valgteLinjer = $state<Set<string>>(new Set(['alle', 'kickstart', 'kropsro']));
 	let linjeVaelgerAaben = $state(false);
+	let valgteVelvaereLinjer = $state<Set<string>>(new Set(['alle', 'kickstart', 'kropsro']));
+	let velvaereVaelgerAaben = $state(false);
 
 	onMount(async () => {
 		try {
@@ -81,78 +84,105 @@
 	const G = { w: 600, h: 230, padL: 30, padR: 14, padT: 14, padB: 26 };
 
 	// Alle linjer der kan vises: Alle / Alle Kickstart / Kropsro alle + hvert hold.
-	type GrafLinje = { id: string; navn: string; farve: string; rejse: Rejsepunkt[] };
+	// Hver linje har baade MRS-rejse og samlet velvaere-rejse.
+	type GrafLinje = {
+		id: string;
+		navn: string;
+		farve: string;
+		rejse: Rejsepunkt[];
+		velvaere: Rejsepunkt[];
+	};
 	const tilgaengeligeLinjer = $derived.by<GrafLinje[]>(() => {
 		if (!snapshot) return [];
+		const fra = (id: string, navn: string, farve: string, sc: Scope): GrafLinje => ({
+			id,
+			navn,
+			farve,
+			rejse: sc.rejse,
+			velvaere: sc.velvaereSamletRejse
+		});
 		const linjer: GrafLinje[] = [
-			{ id: 'alle', navn: 'Alle', farve: '#2d2a26', rejse: snapshot.samlet.rejse },
-			{
-				id: 'kickstart',
-				navn: 'Alle Kickstart',
-				farve: '#6F9E7E',
-				rejse: snapshot.prType.kickstart.rejse
-			},
-			{
-				id: 'kropsro',
-				navn: 'Kropsro alle',
-				farve: '#B87B6E',
-				rejse: snapshot.prType.kropsro.rejse
-			}
+			fra('alle', 'Alle', '#2d2a26', snapshot.samlet),
+			fra('kickstart', 'Alle Kickstart', '#6F9E7E', snapshot.prType.kickstart),
+			fra('kropsro', 'Kropsro alle', '#B87B6E', snapshot.prType.kropsro)
 		];
 		snapshot.prForlob.forEach((f, i) =>
-			linjer.push({
-				id: f.forlobId,
-				navn: f.navn,
-				farve: FORLOB_FARVER[i % FORLOB_FARVER.length],
-				rejse: f.rejse
-			})
+			linjer.push(fra(f.forlobId, f.navn, FORLOB_FARVER[i % FORLOB_FARVER.length], f))
 		);
 		return linjer;
 	});
 
-	const graf = $derived.by(() => {
-		if (!snapshot) return null;
-		// Alle-fanen: de linjer brugeren har valgt. Vælg-forløb-fanen: 'Alle'
-		// (nedtonet benchmark) + det valgte hold.
-		let valgte: { linje: GrafLinje; fremhaev: boolean }[];
-		if (aktivFane === 'alle') {
-			valgte = tilgaengeligeLinjer
-				.filter((l) => valgteLinjer.has(l.id))
-				.map((l) => ({ linje: l, fremhaev: true }));
-		} else {
-			const alle = tilgaengeligeLinjer.find((l) => l.id === 'alle');
-			const f = tilgaengeligeLinjer.find((l) => l.id === valgtForlobId);
-			valgte = [
-				...(alle ? [{ linje: alle, fremhaev: false }] : []),
-				...(f ? [{ linje: f, fremhaev: true }] : [])
-			];
-		}
-		// Ingen valgte linjer: behold aksen (tom graf), saa kortet + linje-vaelgeren
-		// ikke forsvinder og brugeren kan vaelge linjer til igen.
-		const maxP = Math.max(2, ...valgte.map((v) => v.linje.rejse.length));
-		const alleGns = valgte.flatMap((v) => v.linje.rejse.map((p) => p.gns));
-		const yMax = alleGns.length ? Math.max(...alleGns) * 1.15 : 20;
+	// Faelles graf-bygger: valgte linjer (rejse-punkter) -> SVG-koordinater.
+	// fastYMax sat (fx 10 for velvaere-skalaen) ellers dynamisk efter data.
+	type ValgtLinje = { navn: string; farve: string; rejse: Rejsepunkt[]; fremhaev: boolean };
+	function bygGraf(valgte: ValgtLinje[], fastYMax: number | null) {
+		const maxP = Math.max(2, ...valgte.map((v) => v.rejse.length));
+		const alleGns = valgte.flatMap((v) => v.rejse.map((p) => p.gns));
+		const yMax = fastYMax ?? (alleGns.length ? Math.max(...alleGns) * 1.15 : 20);
 		const gx = (i: number) => G.padL + (maxP <= 1 ? 0 : (i / (maxP - 1)) * (G.w - G.padL - G.padR));
 		const gy = (v: number) => G.padT + (1 - v / yMax) * (G.h - G.padT - G.padB);
-
 		return {
-			linjer: valgte.map(({ linje, fremhaev }) => ({
-				navn: linje.navn,
-				farve: linje.farve,
-				fremhaev,
-				pkt: linje.rejse.map((p, i) => ({ x: gx(i), y: gy(p.gns), ...p })),
-				path: linje.rejse.map((p, i) => `${i === 0 ? 'M' : 'L'}${gx(i)},${gy(p.gns)}`).join(' ')
+			linjer: valgte.map((l) => ({
+				navn: l.navn,
+				farve: l.farve,
+				fremhaev: l.fremhaev,
+				pkt: l.rejse.map((p, i) => ({ x: gx(i), y: gy(p.gns), ...p })),
+				path: l.rejse.map((p, i) => `${i === 0 ? 'M' : 'L'}${gx(i)},${gy(p.gns)}`).join(' ')
 			})),
 			yTicks: [0, yMax / 2, yMax].map((v) => ({ v: Math.round(v), y: gy(v) })),
 			xLabels: Array.from({ length: maxP }, (_, i) => ({ x: gx(i), label: `${i + 1}.` }))
 		};
-	});
+	}
 
-	function toggleLinje(id: string) {
-		const ny = new Set(valgteLinjer);
+	// Vaelger linjerne ud fra fanen + valgte-saet. Alle-fanen: de afkrydsede.
+	// Vaelg-forloeb-fanen: 'Alle' (nedtonet benchmark) + det valgte hold.
+	function valgteLinjerFor(
+		valgtSaet: Set<string>,
+		rejseFelt: (l: GrafLinje) => Rejsepunkt[]
+	): ValgtLinje[] {
+		if (aktivFane === 'alle') {
+			return tilgaengeligeLinjer
+				.filter((l) => valgtSaet.has(l.id))
+				.map((l) => ({ navn: l.navn, farve: l.farve, rejse: rejseFelt(l), fremhaev: true }));
+		}
+		const alle = tilgaengeligeLinjer.find((l) => l.id === 'alle');
+		const f = tilgaengeligeLinjer.find((l) => l.id === valgtForlobId);
+		return [
+			...(alle
+				? [{ navn: alle.navn, farve: alle.farve, rejse: rejseFelt(alle), fremhaev: false }]
+				: []),
+			...(f ? [{ navn: f.navn, farve: f.farve, rejse: rejseFelt(f), fremhaev: true }] : [])
+		];
+	}
+
+	const graf = $derived(
+		snapshot
+			? bygGraf(
+					valgteLinjerFor(valgteLinjer, (l) => l.rejse),
+					null
+				)
+			: null
+	);
+	const velvaereGraf = $derived(
+		snapshot
+			? bygGraf(
+					valgteLinjerFor(valgteVelvaereLinjer, (l) => l.velvaere),
+					10
+				)
+			: null
+	);
+
+	function toggle(saet: Set<string>, id: string): Set<string> {
+		const ny = new Set(saet);
 		if (ny.has(id)) ny.delete(id);
 		else ny.add(id);
-		valgteLinjer = ny;
+		return ny;
+	}
+	function toggleLinje(id: string) {
+		valgteLinjer = toggle(valgteLinjer, id);
+	}
+	function toggleVelvaereLinje(id: string) {
+		valgteVelvaereLinjer = toggle(valgteVelvaereLinjer, id);
 	}
 
 	const SUBSKALA_NAVN = {
@@ -181,30 +211,6 @@
 		{ key: 'sovn', navn: 'Søvn', farve: '#8C5C7A' }
 	] as const;
 
-	// Velvære-rejse-graf (5 slider-linjer, skala 1–10, højere = bedre).
-	const velvaereGraf = $derived.by(() => {
-		if (!scope) return null;
-		const linjer = VELVAERE.map((v) => ({
-			navn: v.navn,
-			farve: v.farve,
-			rejse: scope.velvaereRejse?.[v.key] ?? []
-		})).filter((l) => l.rejse.length > 0);
-		if (linjer.length === 0) return null;
-		const maxP = Math.max(2, ...linjer.map((l) => l.rejse.length));
-		const yMax = 10;
-		const gx = (i: number) => G.padL + (maxP <= 1 ? 0 : (i / (maxP - 1)) * (G.w - G.padL - G.padR));
-		const gy = (val: number) => G.padT + (1 - val / yMax) * (G.h - G.padT - G.padB);
-		return {
-			linjer: linjer.map((l) => ({
-				navn: l.navn,
-				farve: l.farve,
-				pkt: l.rejse.map((p, i) => ({ x: gx(i), y: gy(p.gns), ...p })),
-				path: l.rejse.map((p, i) => `${i === 0 ? 'M' : 'L'}${gx(i)},${gy(p.gns)}`).join(' ')
-			})),
-			yTicks: [0, 5, 10].map((val) => ({ v: val, y: gy(val) })),
-			xLabels: Array.from({ length: maxP }, (_, i) => ({ x: gx(i), label: `${i + 1}.` }))
-		};
-	});
 	function fbProcent(
 		f: { megetBedre: number; lidtBedre: number; uaendret: number; vaerre: number },
 		key: 'megetBedre' | 'lidtBedre' | 'uaendret' | 'vaerre'
@@ -497,7 +503,36 @@
 
 			{#if s.antalVelvaere > 0}
 				<section class="card">
-					<div class="kort-titel">Velvære ({s.antalVelvaere} kunder)</div>
+					<div class="graf-top">
+						<div class="kort-titel" style="margin:0">Velvære ({s.antalVelvaere} kunder)</div>
+						{#if aktivFane === 'alle'}
+							<div class="linje-vaelger">
+								<button
+									class="linje-vaelger-knap"
+									onclick={() => (velvaereVaelgerAaben = !velvaereVaelgerAaben)}
+								>
+									Vælg linjer ({valgteVelvaereLinjer.size})
+									<Icon name="chevron-d" size={12} color="var(--text2)" />
+								</button>
+								{#if velvaereVaelgerAaben}
+									<div class="linje-menu">
+										{#each tilgaengeligeLinjer as l, i (l.id)}
+											{#if i === 3}<div class="linje-divider">Enkelte hold</div>{/if}
+											<label class="linje-option">
+												<input
+													type="checkbox"
+													checked={valgteVelvaereLinjer.has(l.id)}
+													onchange={() => toggleVelvaereLinje(l.id)}
+												/>
+												<span class="linje-prik" style="background:{l.farve}"></span>
+												{l.navn}
+											</label>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{/if}
+					</div>
 					{#if velvaereGraf}
 						<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
 							{#each velvaereGraf.yTicks as t (t.v)}
@@ -512,15 +547,19 @@
 									d={l.path}
 									fill="none"
 									stroke={l.farve}
-									stroke-width="2.5"
+									stroke-width={l.fremhaev ? 2.5 : 1.5}
+									stroke-opacity={l.fremhaev ? 1 : 0.5}
 									stroke-linecap="round"
 									stroke-linejoin="round"
 								/>
 								{#each l.pkt as p (p.x)}
-									<circle cx={p.x} cy={p.y} r="4" fill={l.farve} />
+									<circle cx={p.x} cy={p.y} r={l.fremhaev ? 4 : 3} fill={l.farve} />
 								{/each}
 							{/each}
 						</svg>
+						{#if velvaereGraf.linjer.length === 0}
+							<p class="skala-note">Vælg en eller flere linjer i menuen for at se udviklingen.</p>
+						{/if}
 						<div class="legende">
 							{#each velvaereGraf.linjer as l (l.navn)}
 								<span class="legende-item"
@@ -528,7 +567,9 @@
 								>
 							{/each}
 						</div>
-						<p class="skala-note">Skala 1–10 · højere = bedre · pr. måling (1., 2., 3.)</p>
+						<p class="skala-note">
+							Samlet velvære (gns. af de 5 mål) · skala 1–10 · højere = bedre
+						</p>
 					{/if}
 					{#each VELVAERE as v (v.key)}
 						{@const vv = s.velvaere[v.key]}
