@@ -195,10 +195,40 @@ function beregnScope(kunder: KundeMrs[]) {
 	};
 }
 
-// Forloeb-navne
+// Forloeb-navne + start-tidspunkt (til pr-forloeb-tilskrivning).
 const forlobSnap = await db.collection('forlob').get();
 const forlobNavn = new Map<string, string>();
-for (const d of forlobSnap.docs) forlobNavn.set(d.id, (d.data() as { navn?: string }).navn ?? d.id);
+const forlobStart = new Map<string, number>();
+for (const d of forlobSnap.docs) {
+	const f = d.data() as { navn?: string; startDato?: { toDate?: () => Date } };
+	forlobNavn.set(d.id, f.navn ?? d.id);
+	const start = f.startDato?.toDate?.()?.getTime();
+	if (start) forlobStart.set(d.id, start);
+}
+
+// Bygger én KundeMrs ud fra et sæt maalinger (allerede sorteret aeldst->nyest).
+function bygKunde(docs: MrsDoc[], alder?: number, menopaus?: string): KundeMrs {
+	const maalinger = docs.filter((m) => !m.kunSliders && typeof m.total === 'number');
+	const sliderM = docs.filter((m) => m.sliders);
+	return {
+		totaler: maalinger.map((m) => m.total!),
+		baseline: maalinger[0]?.total ?? 0,
+		seneste: maalinger[maalinger.length - 1]?.total ?? 0,
+		harMrs: maalinger.length > 0,
+		harUdvikling: maalinger.length >= 2,
+		subBaseline: maalinger[0]?.subscales,
+		subSeneste: maalinger[maalinger.length - 1]?.subscales,
+		alder,
+		menopaus,
+		sliderMaalinger: sliderM.map((m) => m.sliders!),
+		sliderBaseline: sliderM[0]?.sliders,
+		sliderSeneste: sliderM[sliderM.length - 1]?.sliders,
+		harSliderUdvikling: sliderM.length >= 2
+	};
+}
+
+// Buffer saa en baseline taget lige FOER forloebsstart stadig tilskrives forloebet.
+const TILSKRIV_BUFFER_MS = 3 * 86400000;
 
 const alleKunder: KundeMrs[] = [];
 const prForlobKunder = new Map<string, KundeMrs[]>();
@@ -214,40 +244,39 @@ for (const d of users.docs) {
 	const alle = mrsSnap.docs
 		.map((m) => m.data() as MrsDoc)
 		.sort((x, y) => (x.timestamp ?? 0) - (y.timestamp ?? 0));
-	// MRS-total: kun rigtige maalinger (ikke kun-slider).
-	const maalinger = alle.filter((m) => !m.kunSliders && typeof m.total === 'number');
-	// Slider-rejse: ALLE maalinger med sliders (ogsaa kun-slider).
-	const sliderMaalinger = alle.filter((m) => m.sliders);
-	// Inkluder kunden hvis hun har ENTEN fuldt MRS ELLER slider-data. Maj-
-	// Kickstart lavede fx KUN velvaere-checks (ingen fulde MRS-skemaer).
-	if (maalinger.length === 0 && sliderMaalinger.length === 0) continue;
-
 	const u = d.data() as {
 		forlobIds?: string[];
 		brugerProfil?: { alder?: number; menopaus?: string };
 	};
-	const kunde: KundeMrs = {
-		totaler: maalinger.map((m) => m.total!),
-		baseline: maalinger[0]?.total ?? 0,
-		seneste: maalinger[maalinger.length - 1]?.total ?? 0,
-		harMrs: maalinger.length > 0,
-		harUdvikling: maalinger.length >= 2,
-		subBaseline: maalinger[0]?.subscales,
-		subSeneste: maalinger[maalinger.length - 1]?.subscales,
-		alder: u.brugerProfil?.alder,
-		menopaus: u.brugerProfil?.menopaus,
-		sliderMaalinger: sliderMaalinger.map((m) => m.sliders!),
-		sliderBaseline: sliderMaalinger[0]?.sliders,
-		sliderSeneste: sliderMaalinger[sliderMaalinger.length - 1]?.sliders,
-		harSliderUdvikling: sliderMaalinger.length >= 2
-	};
 
-	const forlobId =
-		u.forlobIds && u.forlobIds.length > 0 ? u.forlobIds[u.forlobIds.length - 1] : 'app';
+	// Kundens kendte forloeb, sorteret efter start. App-kunder uden forloeb faar
+	// ét pseudo-forloeb 'app' der "starter" ved tid 0 (alle maalinger samles der).
+	const kundeForlob = (u.forlobIds ?? [])
+		.filter((id) => forlobStart.has(id))
+		.map((id) => ({ id, start: forlobStart.get(id)! }))
+		.sort((a, b) => a.start - b.start);
+	if (kundeForlob.length === 0) kundeForlob.push({ id: 'app', start: 0 });
 
-	alleKunder.push(kunde);
-	if (!prForlobKunder.has(forlobId)) prForlobKunder.set(forlobId, []);
-	prForlobKunder.get(forlobId)!.push(kunde);
+	// Tilskriv hver maaling til det forloeb der var SENEST startet paa
+	// maaletidspunktet — saa en kickstart->kropsro-kundes maalinger aldrig
+	// blandes mellem forloebene.
+	const perForlob = new Map<string, MrsDoc[]>();
+	for (const m of alle) {
+		let valgt = kundeForlob[0].id;
+		for (const f of kundeForlob)
+			if (f.start <= (m.timestamp ?? 0) + TILSKRIV_BUFFER_MS) valgt = f.id;
+		if (!perForlob.has(valgt)) perForlob.set(valgt, []);
+		perForlob.get(valgt)!.push(m);
+	}
+
+	// Ét KundeMrs-bidrag pr forloeb kunden har maalinger i.
+	for (const [forlobId, docs] of perForlob) {
+		const kunde = bygKunde(docs, u.brugerProfil?.alder, u.brugerProfil?.menopaus);
+		if (!kunde.harMrs && kunde.sliderMaalinger.length === 0) continue;
+		alleKunder.push(kunde);
+		if (!prForlobKunder.has(forlobId)) prForlobKunder.set(forlobId, []);
+		prForlobKunder.get(forlobId)!.push(kunde);
+	}
 }
 
 const prForlob = [...prForlobKunder.entries()]
