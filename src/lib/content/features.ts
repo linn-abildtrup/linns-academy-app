@@ -59,7 +59,7 @@ export const FEATURES: Feature[] = [
 	},
 	{
 		key: 'byg-eget-program',
-		koblet: false,
+		koblet: true,
 		navn: 'Byg eget træningsprogram',
 		beskrivelse:
 			'Kunden kan selv bygge et træningsprogram ved at vælge øvelser, sæt, gentagelser og pauser, og køre det som sit aktive program.'
@@ -113,14 +113,23 @@ function alleFeatures(vaerdi: boolean): Record<FeatureKey, boolean> {
  * ikke kan hentes.
  *
  * Udgangspunkt: de oevrige funktioner foelger den hidtidige premium-adgang
- * (Kickstart + Kropsro har dem, app-kunder ikke). UNDTAGELSER: Linn AI og
- * nul-dage er slukket for ALLE — de styres via testere indtil Linn bevidst
- * taender dem i skemaet (Linn AI besluttet 9/6, nul-dage 11/6 2026). For
- * nul-dage bevarer det dagens adgang praecis: kun testere har den.
+ * (Kickstart + Kropsro har dem, app-kunder ikke). UNDTAGELSER (slukket for
+ * ALLE, styres via testere indtil Linn bevidst taender dem): Linn AI (9/6),
+ * nul-dage (11/6) og byg-eget-program (11/6 — aldrig lanceret, 0 havde den).
  */
 export const STANDARD_MATRIX: FeatureMatrix = {
-	kickstart: { ...alleFeatures(true), 'linn-ai': false, 'nul-dage': false },
-	kropsro: { ...alleFeatures(true), 'linn-ai': false, 'nul-dage': false },
+	kickstart: {
+		...alleFeatures(true),
+		'linn-ai': false,
+		'nul-dage': false,
+		'byg-eget-program': false
+	},
+	kropsro: {
+		...alleFeatures(true),
+		'linn-ai': false,
+		'nul-dage': false,
+		'byg-eget-program': false
+	},
 	app: alleFeatures(false)
 };
 

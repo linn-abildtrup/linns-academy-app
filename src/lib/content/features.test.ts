@@ -21,12 +21,20 @@ function ud(overrides: Partial<UserDoc>): UserDoc {
 
 const kickstartKunde = ud({
 	accessSource: 'forløb',
-	aktivtTraeningsprogram: { kilde: 'tildelt', programId: 'mikrotraening_kettlebell', forlobId: 'kickstart_juni_2026' },
+	aktivtTraeningsprogram: {
+		kilde: 'tildelt',
+		programId: 'mikrotraening_kettlebell',
+		forlobId: 'kickstart_juni_2026'
+	},
 	forlobIds: ['kickstart_juni_2026']
 });
 const kropsroKunde = ud({
 	accessSource: 'forløb',
-	aktivtTraeningsprogram: { kilde: 'tildelt', programId: 'kropsro_84_med_kb', forlobId: 'kropsro_maj_2026' },
+	aktivtTraeningsprogram: {
+		kilde: 'tildelt',
+		programId: 'kropsro_84_med_kb',
+		forlobId: 'kropsro_maj_2026'
+	},
 	forlobIds: ['kropsro_maj_2026']
 });
 const appKunde = ud({ accessLevel: 'basis', accessSource: 'abonnement', activeSubscription: true });
@@ -52,7 +60,7 @@ describe('kundetypeFor', () => {
 
 describe('STANDARD_MATRIX', () => {
 	it('Kickstart + Kropsro har funktionerne (undtagen Linn AI + nul-dage); app ingen', () => {
-		const slukketForAlle: string[] = ['linn-ai', 'nul-dage'];
+		const slukketForAlle: string[] = ['linn-ai', 'nul-dage', 'byg-eget-program'];
 		for (const f of FEATURES) {
 			const forventetForlob = !slukketForAlle.includes(f.key);
 			expect(STANDARD_MATRIX.kickstart[f.key]).toBe(forventetForlob);
@@ -61,8 +69,8 @@ describe('STANDARD_MATRIX', () => {
 		}
 	});
 
-	it('Linn AI + nul-dage er slukket for alle (styres via testere indtil tændt)', () => {
-		for (const key of ['linn-ai', 'nul-dage'] as const) {
+	it('Linn AI + nul-dage + byg-eget er slukket for alle (styres via testere indtil tændt)', () => {
+		for (const key of ['linn-ai', 'nul-dage', 'byg-eget-program'] as const) {
 			expect(STANDARD_MATRIX.kickstart[key]).toBe(false);
 			expect(STANDARD_MATRIX.kropsro[key]).toBe(false);
 			expect(STANDARD_MATRIX.app[key]).toBe(false);

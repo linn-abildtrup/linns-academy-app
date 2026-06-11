@@ -4,7 +4,8 @@
 	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import TesterBadge from '$lib/components/TesterBadge.svelte';
-	import { erForlobsklient, erModulbruger, harPremium, harTestAdgang } from '$lib/utils/userAdgang';
+	import { erForlobsklient, erModulbruger, harPremium } from '$lib/utils/userAdgang';
+	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 	import {
 		hentAlleProgrammerPaaTvaers,
 		hentTildelingerForBruger,
@@ -13,10 +14,7 @@
 	import type { ProgramTildeling } from '$lib/content/tildelinger';
 	import { alleProdukter } from '$lib/content/produkter';
 	import { hentMineProgrammer, gemAktivtTraeningsprogram } from '$lib/firestore/mineProgrammer';
-	import {
-		anslaaetVarighedMinutter,
-		type CustomProgram
-	} from '$lib/content/mineProgrammer';
+	import { anslaaetVarighedMinutter, type CustomProgram } from '$lib/content/mineProgrammer';
 	import { hentAboMikrotraeningProgram } from '$lib/firestore/aboMikrotraening';
 	import { hentForlobsProgrammer } from '$lib/firestore/mikrotraening';
 	import type { TrainingProgram } from '$lib/content/mikrotraening';
@@ -24,6 +22,7 @@
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const getFeatureMatrix = getContext<() => FeatureMatrix | null>('featureMatrix');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
 
@@ -33,7 +32,6 @@
 	let tildelteProgrammer = $state<ProgramTildeling[]>([]);
 	let alleProgrammerPaaTvaers = $state<ProgramMedForlob[]>([]);
 	let mineProgrammer = $state<CustomProgram[]>([]);
-	let harCustomBuilderTildelt = $state(false);
 	let indlaeserNyt = $state(false);
 	let gemmerAktiv = $state(false);
 
@@ -44,9 +42,10 @@
 	const erForlobskunde = $derived(erForlobsklient(userDoc));
 	const aktivtForlob = $derived(aktivtForlobId(userDoc));
 
-	const harBygEgetTestAdgang = $derived(harTestAdgang(userDoc, 'byg-eget-program'));
+	// Byg eget program styres nu af feature-skemaet (koblet 11/6) + tester-
+	// override — erstatter det gamle test-flag + (app-kunde / admin-tildeling).
 	const visCustomBuilder = $derived(
-		harBygEgetTestAdgang && (erAppKunde || harCustomBuilderTildelt)
+		harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'byg-eget-program')
 	);
 
 	type AktivKilde = 'mikrotraening' | 'eget' | 'tildelt';
@@ -60,11 +59,7 @@
 		return aktivt.programId === programId && aktivt.forlobId === forlobId;
 	}
 
-	async function vaelgAktiv(
-		kilde: AktivKilde,
-		programId?: string,
-		forlobId?: string
-	) {
+	async function vaelgAktiv(kilde: AktivKilde, programId?: string, forlobId?: string) {
 		if (!user || gemmerAktiv) return;
 		gemmerAktiv = true;
 		try {
@@ -112,7 +107,6 @@
 				hentMineProgrammer(user.uid)
 			]);
 			tildelteProgrammer = tildelinger.programmer;
-			harCustomBuilderTildelt = tildelinger.harCustomBuilder;
 			alleProgrammerPaaTvaers = allePaaTvaers;
 			mineProgrammer = mine;
 		} catch (e) {
@@ -227,139 +221,139 @@
 				{/each}
 			{/if}
 		{:else}
-		{#if !harTildeltMikrotraening}
-		<a
-			class="program-row"
-			class:aktiv={erAktivt('mikrotraening')}
-			href="/app/moduler/traening/mikrotraening"
-		>
-			<div class="program-icon mikro">
-				<Icon name="flame" size={18} color="#fff" />
-			</div>
-			<div class="program-tekst">
-				<div class="program-navn">
-					{mikrotraeningNavn}
-					{#if erAktivt('mikrotraening')}
-						<span class="aktiv-badge">Aktiv</span>
-					{/if}
-				</div>
-				<div class="program-sub">Daglig træning</div>
-			</div>
-			{#if !erAktivt('mikrotraening') && erPremium}
-				<button
-					type="button"
-					class="vaelg-knap"
-					disabled={gemmerAktiv}
-					onclick={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-						vaelgAktiv('mikrotraening');
-					}}
+			{#if !harTildeltMikrotraening}
+				<a
+					class="program-row"
+					class:aktiv={erAktivt('mikrotraening')}
+					href="/app/moduler/traening/mikrotraening"
 				>
-					Vælg
-				</button>
-			{:else}
-				<div class="program-pil">
-					<Icon name="chevron-r" size={14} color="var(--text3)" />
-				</div>
+					<div class="program-icon mikro">
+						<Icon name="flame" size={18} color="#fff" />
+					</div>
+					<div class="program-tekst">
+						<div class="program-navn">
+							{mikrotraeningNavn}
+							{#if erAktivt('mikrotraening')}
+								<span class="aktiv-badge">Aktiv</span>
+							{/if}
+						</div>
+						<div class="program-sub">Daglig træning</div>
+					</div>
+					{#if !erAktivt('mikrotraening') && erPremium}
+						<button
+							type="button"
+							class="vaelg-knap"
+							disabled={gemmerAktiv}
+							onclick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								vaelgAktiv('mikrotraening');
+							}}
+						>
+							Vælg
+						</button>
+					{:else}
+						<div class="program-pil">
+							<Icon name="chevron-r" size={14} color="var(--text3)" />
+						</div>
+					{/if}
+				</a>
 			{/if}
-		</a>
-		{/if}
 
-		{#if erPremium}
-			{#if indlaeserNyt}
-				<div class="status-rad">Henter dine programmer…</div>
-			{:else}
-				{#each tildelteProgrammer as t (t.id)}
-					{@const info = programInfo(t)}
-					<a
-						class="program-row"
-						class:aktiv={erAktivt('tildelt', t.programId, t.forlobId)}
-						href={`/app/moduler/traening/program/${t.forlobId}/${t.programId}`}
-					>
-						<div class="program-icon">
-							<Icon name="flame" size={18} color="#fff" />
-						</div>
-						<div class="program-tekst">
-							<div class="program-navn">
-								{info?.program.navn ?? t.programId}
-								{#if erAktivt('tildelt', t.programId, t.forlobId)}
-									<span class="aktiv-badge">Aktiv</span>
-								{/if}
+			{#if erPremium}
+				{#if indlaeserNyt}
+					<div class="status-rad">Henter dine programmer…</div>
+				{:else}
+					{#each tildelteProgrammer as t (t.id)}
+						{@const info = programInfo(t)}
+						<a
+							class="program-row"
+							class:aktiv={erAktivt('tildelt', t.programId, t.forlobId)}
+							href={`/app/moduler/traening/program/${t.forlobId}/${t.programId}`}
+						>
+							<div class="program-icon">
+								<Icon name="flame" size={18} color="#fff" />
 							</div>
-							<div class="program-sub">
-								{#if info}
-									{info.program.antalDage} dage · {info.program.udstyr.join(', ')}
+							<div class="program-tekst">
+								<div class="program-navn">
+									{info?.program.navn ?? t.programId}
+									{#if erAktivt('tildelt', t.programId, t.forlobId)}
+										<span class="aktiv-badge">Aktiv</span>
+									{/if}
+								</div>
+								<div class="program-sub">
+									{#if info}
+										{info.program.antalDage} dage · {info.program.udstyr.join(', ')}
+									{:else}
+										Fra {forlobNavnFor(t.forlobId)}
+									{/if}
+								</div>
+							</div>
+							{#if !erAktivt('tildelt', t.programId, t.forlobId)}
+								<button
+									type="button"
+									class="vaelg-knap"
+									disabled={gemmerAktiv}
+									onclick={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
+										vaelgAktiv('tildelt', t.programId, t.forlobId);
+									}}
+								>
+									Vælg
+								</button>
+							{:else}
+								<div class="program-pil">
+									<Icon name="chevron-r" size={14} color="var(--text3)" />
+								</div>
+							{/if}
+						</a>
+					{/each}
+
+					{#if visCustomBuilder}
+						{#each mineProgrammer as p (p.id)}
+							<a
+								class="program-row"
+								class:aktiv={erAktivt('eget', p.id)}
+								href={`/app/moduler/traening/byg-eget/${p.id}/lav`}
+							>
+								<div class="program-icon">
+									<Icon name="flame" size={18} color="#fff" />
+								</div>
+								<div class="program-tekst">
+									<div class="program-navn">
+										{p.navn}
+										{#if erAktivt('eget', p.id)}
+											<span class="aktiv-badge">Aktiv</span>
+										{/if}
+									</div>
+									<div class="program-sub">
+										{p.oevelser.length} øvelser · ca. {anslaaetVarighedMinutter(p)} min · selvbygget
+									</div>
+								</div>
+								{#if !erAktivt('eget', p.id)}
+									<button
+										type="button"
+										class="vaelg-knap"
+										disabled={gemmerAktiv}
+										onclick={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											vaelgAktiv('eget', p.id);
+										}}
+									>
+										Vælg
+									</button>
 								{:else}
-									Fra {forlobNavnFor(t.forlobId)}
+									<div class="program-pil">
+										<Icon name="chevron-r" size={14} color="var(--text3)" />
+									</div>
 								{/if}
-							</div>
-						</div>
-						{#if !erAktivt('tildelt', t.programId, t.forlobId)}
-							<button
-								type="button"
-								class="vaelg-knap"
-								disabled={gemmerAktiv}
-								onclick={(e) => {
-									e.preventDefault();
-									e.stopPropagation();
-									vaelgAktiv('tildelt', t.programId, t.forlobId);
-								}}
-							>
-								Vælg
-							</button>
-						{:else}
-							<div class="program-pil">
-								<Icon name="chevron-r" size={14} color="var(--text3)" />
-							</div>
-						{/if}
-					</a>
-				{/each}
-
-				{#if harBygEgetTestAdgang}
-					{#each mineProgrammer as p (p.id)}
-					<a
-						class="program-row"
-						class:aktiv={erAktivt('eget', p.id)}
-						href={`/app/moduler/traening/byg-eget/${p.id}/lav`}
-					>
-						<div class="program-icon">
-							<Icon name="flame" size={18} color="#fff" />
-						</div>
-						<div class="program-tekst">
-							<div class="program-navn">
-								{p.navn}
-								{#if erAktivt('eget', p.id)}
-									<span class="aktiv-badge">Aktiv</span>
-								{/if}
-							</div>
-							<div class="program-sub">
-								{p.oevelser.length} øvelser · ca. {anslaaetVarighedMinutter(p)} min · selvbygget
-							</div>
-						</div>
-						{#if !erAktivt('eget', p.id)}
-							<button
-								type="button"
-								class="vaelg-knap"
-								disabled={gemmerAktiv}
-								onclick={(e) => {
-									e.preventDefault();
-									e.stopPropagation();
-									vaelgAktiv('eget', p.id);
-								}}
-							>
-								Vælg
-							</button>
-						{:else}
-							<div class="program-pil">
-								<Icon name="chevron-r" size={14} color="var(--text3)" />
-							</div>
-						{/if}
-					</a>
-				{/each}
+							</a>
+						{/each}
+					{/if}
 				{/if}
 			{/if}
-		{/if}
 		{/if}
 	</div>
 
@@ -556,7 +550,7 @@
 		align-items: center;
 		gap: 12px;
 		padding: 16px 14px;
-		background: #6F9E7E;
+		background: #6f9e7e;
 		border-radius: 14px;
 		text-decoration: none;
 		color: #fff;
