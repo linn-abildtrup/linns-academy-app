@@ -263,20 +263,6 @@
 	const trediveVaerdier = $derived(summerPrDag(aktivMetric, tredive.dage));
 	const trediveMax = $derived(Math.max(dagligeMaal[aktivMetric], ...trediveVaerdier, 1));
 
-	// Linje-path for 30-dages graf (SVG path)
-	const linjePath = $derived.by(() => {
-		const w = 100;
-		const h = 60;
-		const n = trediveVaerdier.length;
-		if (n === 0) return '';
-		const punkter = trediveVaerdier.map((v, i) => {
-			const x = (i / (n - 1)) * w;
-			const y = h - (v / trediveMax) * h;
-			return `${x.toFixed(2)},${y.toFixed(2)}`;
-		});
-		return 'M ' + punkter.join(' L ');
-	});
-
 	// === Træning: 0/1 pr dag ===
 	// Unionér datoer fra abo-mikrotræning OG den samlede traeningHistorik.
 	// Set dedupliker automatisk hvis samme dato logges fra begge kilder
@@ -290,19 +276,6 @@
 
 	const syvDageTraening = $derived(syvDageMeta.dage.map((d) => (traenetDatoer.has(d) ? 1 : 0)));
 	const trediveTraening = $derived(tredive.dage.map((d) => (traenetDatoer.has(d) ? 1 : 0)));
-	const trediveTraeningPath = $derived.by(() => {
-		const w = 100;
-		const h = 60;
-		const n = trediveTraening.length;
-		if (n === 0) return '';
-		const pkt = trediveTraening.map((v, i) => {
-			const x = (i / (n - 1)) * w;
-			const y = h - v * h;
-			return `${x.toFixed(2)},${y.toFixed(2)}`;
-		});
-		return 'M ' + pkt.join(' L ');
-	});
-
 	// === Træning: pr uge (mandag-søndag) ===
 	function ugeNoegle(d: Date): string {
 		const kopi = new Date(d);
@@ -350,18 +323,6 @@
 
 	const syvDageVaner = $derived(syvDageMeta.dage.map(antalJaForDato));
 	const trediveVaner = $derived(tredive.dage.map(antalJaForDato));
-	const trediveVanerPath = $derived.by(() => {
-		const w = 100;
-		const h = 60;
-		const n = trediveVaner.length;
-		if (n === 0 || maxVaner === 0) return '';
-		const pkt = trediveVaner.map((v, i) => {
-			const x = (i / (n - 1)) * w;
-			const y = h - (v / maxVaner) * h;
-			return `${x.toFixed(2)},${y.toFixed(2)}`;
-		});
-		return 'M ' + pkt.join(' L ');
-	});
 
 	// Streak-rapport for træning og vaner
 	const traeningRapport = $derived.by(() => {
@@ -550,18 +511,18 @@
 				{NAERING_LABELS[aktivMetric]} sidste 30 dage
 				<span class="kort-mål">mål: {dagligeMaal[aktivMetric]} {NAERING_ENHEDER[aktivMetric]}</span>
 			</div>
-			<svg class="linje-graf" viewBox="0 0 100 60" preserveAspectRatio="none">
-				<line
-					x1="0"
-					y1={60 - (dagligeMaal[aktivMetric] / trediveMax) * 60}
-					x2="100"
-					y2={60 - (dagligeMaal[aktivMetric] / trediveMax) * 60}
-					stroke="var(--sage, #6f9e7e)"
-					stroke-width="0.4"
-					stroke-dasharray="1.5 1.5"
-				/>
-				<path d={linjePath} fill="none" stroke="var(--terra)" stroke-width="0.8" />
-			</svg>
+			<div class="soejler soejler-tredive">
+				{#each tredive.dage as d, i (d)}
+					{@const v = trediveVaerdier[i]}
+					{@const pct = (v / trediveMax) * 100}
+					{@const opfyldt = v >= dagligeMaal[aktivMetric]}
+					<div class="soejle-spalte" title="{d}: {formatVal(aktivMetric, v)}">
+						<div class="soejle-baar">
+							<div class="soejle-fyld" class:opfyldt style:height="{pct}%"></div>
+						</div>
+					</div>
+				{/each}
+			</div>
 			<div class="linje-meta">
 				<span>{tredive.dage[0]}</span>
 				<span>i dag</span>
@@ -670,9 +631,16 @@
 						>{trediveTraening.reduce<number>((s, v) => s + v, 0)} af 30 dage</span
 					>
 				</div>
-				<svg class="linje-graf" viewBox="0 0 100 60" preserveAspectRatio="none">
-					<path d={trediveTraeningPath} fill="none" stroke="var(--terra)" stroke-width="0.8" />
-				</svg>
+				<div class="soejler soejler-tredive">
+					{#each tredive.dage as d, i (d)}
+						{@const v = trediveTraening[i]}
+						<div class="soejle-spalte" title="{d}: {v ? 'trænet' : 'ikke trænet'}">
+							<div class="soejle-baar">
+								<div class="soejle-fyld" class:opfyldt={v > 0} style:height="{v * 100}%"></div>
+							</div>
+						</div>
+					{/each}
+				</div>
 				<div class="linje-meta">
 					<span>{tredive.dage[0]}</span>
 					<span>i dag</span>
@@ -736,18 +704,18 @@
 						Vaner med ja sidste 30 dage
 						<span class="kort-mål">mål: {maxVaner} pr dag</span>
 					</div>
-					<svg class="linje-graf" viewBox="0 0 100 60" preserveAspectRatio="none">
-						<line
-							x1="0"
-							y1="0"
-							x2="100"
-							y2="0"
-							stroke="var(--sage, #6f9e7e)"
-							stroke-width="0.4"
-							stroke-dasharray="1.5 1.5"
-						/>
-						<path d={trediveVanerPath} fill="none" stroke="var(--terra)" stroke-width="0.8" />
-					</svg>
+					<div class="soejler soejler-tredive">
+						{#each tredive.dage as d, i (d)}
+							{@const v = trediveVaner[i]}
+							{@const pct = (v / maxVaner) * 100}
+							{@const opfyldt = v === maxVaner}
+							<div class="soejle-spalte" title="{d}: {v} af {maxVaner}">
+								<div class="soejle-baar">
+									<div class="soejle-fyld" class:opfyldt style:height="{pct}%"></div>
+								</div>
+							</div>
+						{/each}
+					</div>
 					<div class="linje-meta">
 						<span>{tredive.dage[0]}</span>
 						<span>i dag</span>
@@ -1043,6 +1011,14 @@
 		margin-bottom: 12px;
 	}
 
+	/* 30-dages: samme søjler som 7-dages, bare flere og smallere — uden
+	   per-søjle tal/labels (for trangt), datoerne står i meta nedenunder. */
+	.soejler-tredive {
+		grid-template-columns: repeat(30, 1fr);
+		gap: 2px;
+		height: 140px;
+	}
+
 	.soejle-spalte {
 		display: flex;
 		flex-direction: column;
@@ -1120,12 +1096,6 @@
 		color: var(--text3);
 		line-height: 1.45;
 		margin: 8px 0 0;
-	}
-
-	.linje-graf {
-		width: 100%;
-		height: 140px;
-		margin-bottom: 6px;
 	}
 
 	.linje-meta {
