@@ -22,6 +22,8 @@
 			menopause: Record<string, SegmentGruppe>;
 			alder: Record<string, SegmentGruppe>;
 		};
+		velvaere: Record<'energi' | 'mave' | 'cravings' | 'humor' | 'sovn', SubResultat>;
+		antalVelvaere: number;
 		forbedringsFordeling: {
 			megetBedre: number;
 			lidtBedre: number;
@@ -169,6 +171,13 @@
 		{ key: 'ukendt', navn: 'Ukendt' }
 	];
 	const ALDER_ORDEN = ['0-40', '41-45', '46-50', '51-55', '56-60', '60+', 'ukendt'];
+	const VELVAERE = [
+		{ key: 'energi', navn: 'Energi' },
+		{ key: 'mave', navn: 'Mave & fordøjelse' },
+		{ key: 'cravings', navn: 'Cravings' },
+		{ key: 'humor', navn: 'Humør & overskud' },
+		{ key: 'sovn', navn: 'Søvn' }
+	] as const;
 	function fbProcent(
 		f: { megetBedre: number; lidtBedre: number; uaendret: number; vaerre: number },
 		key: 'megetBedre' | 'lidtBedre' | 'uaendret' | 'vaerre'
@@ -443,6 +452,31 @@
 					</div>
 				{/each}
 			</section>
+
+			<!-- Velvære-sliders (højere = bedre) -->
+			{#if s.antalVelvaere > 0}
+				<section class="card">
+					<div class="kort-titel">Velvære ({s.antalVelvaere} kunder)</div>
+					{#each VELVAERE as v (v.key)}
+						{@const vv = s.velvaere[v.key]}
+						<div class="sub-rad">
+							<div class="sub-navn">{v.navn}</div>
+							<div class="sub-tal">
+								<span>{tal(vv.gnsBaseline)}</span>
+								<Icon name="chevron-r" size={12} color="var(--text3)" />
+								<span>{tal(vv.gnsSeneste)}</span>
+								<span class="sub-aendring" class:bedre={vv.gnsAendring > 0}>
+									{vv.gnsAendring > 0 ? '↑' : vv.gnsAendring < 0 ? '↓' : ''}
+									{tal(Math.abs(vv.gnsAendring))}
+								</span>
+							</div>
+						</div>
+					{/each}
+					<p class="skala-note">
+						Skala 1–10 · højere = bedre. Egen måling, så flere kunder end MRS-totalen.
+					</p>
+				</section>
+			{/if}
 		{/if}
 
 		<div class="opdateret">

@@ -21,14 +21,19 @@ const db = getFirestore();
 
 const MAX_REJSE_PUNKTER = 4; // de fleste har <=4 maalinger
 type Sub = { somatisk: number; psykologisk: number; urogenital: number };
+type Sliders = { energi: number; mave: number; cravings: number; humor: number; sovn: number };
+const SLIDER_KEYS = ['energi', 'mave', 'cravings', 'humor', 'sovn'] as const;
 interface MrsDoc {
 	timestamp?: number;
 	total?: number;
 	subscales?: Sub;
+	sliders?: Sliders;
 	kunSliders?: boolean;
 }
 
 // Én kundes destillerede MRS-rejse — raa-data vi aggregerer pr scope.
+// Slider-rejsen er SEPARAT fra MRS-total (sliders findes ogsaa paa kun-slider-
+// maalinger, og HOEJERE slider = bedre, modsat MRS).
 interface KundeMrs {
 	totaler: number[]; // alle rigtige maalinger i rækkefølge (til rejse-grafen)
 	baseline: number;
@@ -38,6 +43,9 @@ interface KundeMrs {
 	subSeneste?: Sub;
 	alder?: number;
 	menopaus?: string;
+	sliderBaseline?: Sliders;
+	sliderSeneste?: Sliders;
+	harSliderUdvikling: boolean; // >=2 maalinger med sliders
 }
 
 const gns = (a: number[]) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
@@ -125,6 +133,27 @@ function beregnScope(kunder: KundeMrs[]) {
 		gnsAendring: r1(subGns((k) => k.subSeneste, key) - subGns((k) => k.subBaseline, key))
 	});
 
+	// Velvaere-sliders (egen population: kunder med >=2 slider-maalinger).
+	const sliderUdv = kunder.filter((k) => k.harSliderUdvikling);
+	const sliderGns = (vaelg: (k: KundeMrs) => Sliders | undefined, key: keyof Sliders) => {
+		const v = sliderUdv
+			.map((k) => vaelg(k)?.[key])
+			.filter((x): x is number => typeof x === 'number');
+		return v.length ? gns(v) : 0;
+	};
+	const velvaere = Object.fromEntries(
+		SLIDER_KEYS.map((key) => [
+			key,
+			{
+				gnsBaseline: r1(sliderGns((k) => k.sliderBaseline, key)),
+				gnsSeneste: r1(sliderGns((k) => k.sliderSeneste, key)),
+				gnsAendring: r1(
+					sliderGns((k) => k.sliderSeneste, key) - sliderGns((k) => k.sliderBaseline, key)
+				)
+			}
+		])
+	) as Record<keyof Sliders, { gnsBaseline: number; gnsSeneste: number; gnsAendring: number }>;
+
 	return {
 		antalMedData: kunder.length,
 		antalMedUdvikling: udv.length,
@@ -142,6 +171,8 @@ function beregnScope(kunder: KundeMrs[]) {
 		rejse,
 		baselineSvaergrad,
 		demografi,
+		velvaere,
+		antalVelvaere: sliderUdv.length,
 		forbedringsFordeling: fordeling
 	};
 }
@@ -162,10 +193,13 @@ for (const d of users.docs) {
 	const mrsSnap = await db.collection('users').doc(d.id).collection('mrs_scores').get();
 	if (mrsSnap.empty) continue;
 
-	const maalinger = mrsSnap.docs
+	const alle = mrsSnap.docs
 		.map((m) => m.data() as MrsDoc)
-		.filter((m) => !m.kunSliders && typeof m.total === 'number')
 		.sort((x, y) => (x.timestamp ?? 0) - (y.timestamp ?? 0));
+	// MRS-total: kun rigtige maalinger (ikke kun-slider).
+	const maalinger = alle.filter((m) => !m.kunSliders && typeof m.total === 'number');
+	// Slider-rejse: ALLE maalinger med sliders (ogsaa kun-slider).
+	const sliderMaalinger = alle.filter((m) => m.sliders);
 	if (maalinger.length === 0) continue;
 
 	const u = d.data() as {
@@ -180,7 +214,10 @@ for (const d of users.docs) {
 		subBaseline: maalinger[0].subscales,
 		subSeneste: maalinger[maalinger.length - 1].subscales,
 		alder: u.brugerProfil?.alder,
-		menopaus: u.brugerProfil?.menopaus
+		menopaus: u.brugerProfil?.menopaus,
+		sliderBaseline: sliderMaalinger[0]?.sliders,
+		sliderSeneste: sliderMaalinger[sliderMaalinger.length - 1]?.sliders,
+		harSliderUdvikling: sliderMaalinger.length >= 2
 	};
 
 	const forlobId =
