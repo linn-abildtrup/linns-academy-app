@@ -40,7 +40,7 @@
 	import type { BrugerProfil, DagligeMaal } from '$lib/types';
 	import BeregnMaalWizard from '$lib/components/BeregnMaalWizard.svelte';
 	import AppVersion from '$lib/components/AppVersion.svelte';
-	import { effektivState, erKropsroForlobskunde, harPremium } from '$lib/utils/userAdgang';
+	import { effektivState, erKropsroForlobskunde } from '$lib/utils/userAdgang';
 	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 
 	const getUser = getContext<() => User | null>('user');
@@ -50,7 +50,10 @@
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
 	const userState = $derived(effektivState(userDoc));
-	const erPremium = $derived(harPremium(userDoc));
+	// Udvidet næringsdata styres nu af feature-skemaet (koblet 11/6).
+	const harUdvidetNaering = $derived(
+		harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'udvidet-naering')
+	);
 
 	// Tekststørrelse
 	let aktivScale = $state<TextScale>('normal');
@@ -678,7 +681,7 @@
 		</div>
 	</section>
 
-	{#if erPremium}
+	{#if harUdvidetNaering}
 		<section class="sektion">
 			<h2 class="sektion-titel">Næringsdata</h2>
 			<p class="sektion-sub">

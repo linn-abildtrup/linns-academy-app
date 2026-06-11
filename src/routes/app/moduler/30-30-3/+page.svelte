@@ -63,13 +63,18 @@
 
 	const getUser = getContext<() => User | null>('user');
 	import { harPremium, harTestAdgang } from '$lib/utils/userAdgang';
+	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 	import TesterBadge from '$lib/components/TesterBadge.svelte';
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const getFeatureMatrix = getContext<() => FeatureMatrix | null>('featureMatrix');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc?.() ?? null);
-	// Udvidet næring (kh/fedt/kcal) er kun for premium. Brugerens toggle
-	// huskes på userDoc, men gælder kun hvis hun har premium-niveau.
-	const visUdvidet = $derived(harPremium(userDoc) && userDoc?.visUdvidetNaering === true);
+	// Udvidet næring (kh/fedt/kcal) styres af feature-skemaet (koblet 11/6).
+	// Brugerens toggle huskes på userDoc, men gælder kun hvis hun har adgang.
+	const visUdvidet = $derived(
+		harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'udvidet-naering') &&
+			userDoc?.visUdvidetNaering === true
+	);
 	// Stregkode-scanner er aaben for alle kundetyper - ikke laengere premium-gated.
 	const kanScanne = true;
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';

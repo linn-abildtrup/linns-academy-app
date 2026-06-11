@@ -6,7 +6,8 @@
 	import { formatDatoKey, formatGram, type GemtMaaltid } from '$lib/content/kost';
 	import { dagligeMalForBruger, NAERING_LABELS, NAERING_ENHEDER } from '$lib/content/naering';
 	import Loading from '$lib/components/Loading.svelte';
-	import { erModulbruger, harPremium } from '$lib/utils/userAdgang';
+	import { erModulbruger } from '$lib/utils/userAdgang';
+	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 	import { hentAlleAboTraeninger } from '$lib/firestore/aboMikrotraening';
 	import type { AboMikrotraeningTraening } from '$lib/content/aboMikrotraening';
 	import { hentHistorikSidenDato } from '$lib/firestore/traeningHistorik';
@@ -21,10 +22,14 @@
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const getFeatureMatrix = getContext<() => FeatureMatrix | null>('featureMatrix');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc?.() ?? null);
-	// Udvidet næring (kh/fedt/kcal) er kun for premium-brugere.
-	const visUdvidet = $derived(harPremium(userDoc) && userDoc?.visUdvidetNaering === true);
+	// Udvidet næring (kh/fedt/kcal) styres af feature-skemaet (koblet 11/6).
+	const visUdvidet = $derived(
+		harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'udvidet-naering') &&
+			userDoc?.visUdvidetNaering === true
+	);
 	const dagligeMaal = $derived(dagligeMalForBruger(userDoc?.dagligeMaal));
 
 	type Tab = 'syv' | 'tredive' | 'maal';

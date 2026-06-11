@@ -45,7 +45,7 @@ export const FEATURES: Feature[] = [
 	},
 	{
 		key: 'udvidet-naering',
-		koblet: false,
+		koblet: true,
 		navn: 'Udvidet næringsdata',
 		beskrivelse:
 			'I mad-modulet (30-30-3) ser kunden også kulhydrat, fedt og kalorier, ikke kun protein og fiber. Hun kan desuden sætte sine egne daglige makromål.'
