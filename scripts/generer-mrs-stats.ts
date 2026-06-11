@@ -35,10 +35,11 @@ interface MrsDoc {
 // Slider-rejsen er SEPARAT fra MRS-total (sliders findes ogsaa paa kun-slider-
 // maalinger, og HOEJERE slider = bedre, modsat MRS).
 interface KundeMrs {
-	totaler: number[]; // alle rigtige maalinger i rækkefølge (til rejse-grafen)
-	baseline: number;
+	totaler: number[]; // fulde MRS-maalinger i rækkefølge (til rejse-grafen)
+	baseline: number; // 0 hvis kunden aldrig lavede et fuldt MRS-skema
 	seneste: number;
-	harUdvikling: boolean; // >=2 maalinger
+	harMrs: boolean; // >=1 fuldt MRS-skema
+	harUdvikling: boolean; // >=2 fulde MRS-skemaer
 	subBaseline?: Sub;
 	subSeneste?: Sub;
 	alder?: number;
@@ -171,7 +172,7 @@ function beregnScope(kunder: KundeMrs[]) {
 	) as Record<keyof Sliders, { gns: number; antal: number }[]>;
 
 	return {
-		antalMedData: kunder.length,
+		antalMedData: kunder.filter((k) => k.harMrs).length,
 		antalMedUdvikling: udv.length,
 		gnsBaseline: r1(gns(baselineT)),
 		gnsSeneste: r1(gns(senesteT)),
@@ -217,7 +218,9 @@ for (const d of users.docs) {
 	const maalinger = alle.filter((m) => !m.kunSliders && typeof m.total === 'number');
 	// Slider-rejse: ALLE maalinger med sliders (ogsaa kun-slider).
 	const sliderMaalinger = alle.filter((m) => m.sliders);
-	if (maalinger.length === 0) continue;
+	// Inkluder kunden hvis hun har ENTEN fuldt MRS ELLER slider-data. Maj-
+	// Kickstart lavede fx KUN velvaere-checks (ingen fulde MRS-skemaer).
+	if (maalinger.length === 0 && sliderMaalinger.length === 0) continue;
 
 	const u = d.data() as {
 		forlobIds?: string[];
@@ -225,11 +228,12 @@ for (const d of users.docs) {
 	};
 	const kunde: KundeMrs = {
 		totaler: maalinger.map((m) => m.total!),
-		baseline: maalinger[0].total!,
-		seneste: maalinger[maalinger.length - 1].total!,
+		baseline: maalinger[0]?.total ?? 0,
+		seneste: maalinger[maalinger.length - 1]?.total ?? 0,
+		harMrs: maalinger.length > 0,
 		harUdvikling: maalinger.length >= 2,
-		subBaseline: maalinger[0].subscales,
-		subSeneste: maalinger[maalinger.length - 1].subscales,
+		subBaseline: maalinger[0]?.subscales,
+		subSeneste: maalinger[maalinger.length - 1]?.subscales,
 		alder: u.brugerProfil?.alder,
 		menopaus: u.brugerProfil?.menopaus,
 		sliderMaalinger: sliderMaalinger.map((m) => m.sliders!),
@@ -252,8 +256,12 @@ const prForlob = [...prForlobKunder.entries()]
 		navn: forlobNavn.get(forlobId) ?? forlobId,
 		...beregnScope(kunder)
 	}))
-	.filter((g) => g.antalMedData >= 3) // skjul mini-grupper (stoej/privatliv)
-	.sort((a, b) => b.antalMedUdvikling - a.antalMedUdvikling);
+	.filter((g) => g.antalMedData >= 3 || g.antalVelvaere >= 3) // skjul mini-grupper
+	.sort(
+		(a, b) =>
+			Math.max(b.antalMedUdvikling, b.antalVelvaere) -
+			Math.max(a.antalMedUdvikling, a.antalVelvaere)
+	);
 
 // Type-aggregater til graf-linjerne 'Alle Kickstart' og 'Kropsro alle'.
 const kickstartKunder = [...prForlobKunder.entries()]

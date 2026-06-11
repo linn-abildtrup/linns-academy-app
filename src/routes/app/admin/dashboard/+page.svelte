@@ -262,6 +262,7 @@
 			<div class="status-besked">Ingen hold med nok data endnu.</div>
 		{:else}
 			{@const s = scope}
+			{@const harNokMrs = s.antalMedUdvikling >= 5}
 			<!-- Nøgletal -->
 			<div class="kpi-grid">
 				<div class="kpi-kort">
@@ -283,203 +284,213 @@
 				</div>
 			</div>
 
-			<!-- Rejse-graf -->
-			{#if graf}
+			{#if harNokMrs}
+				<!-- Rejse-graf -->
+				{#if graf}
+					<section class="card">
+						<div class="graf-top">
+							<div class="kort-titel" style="margin:0">Udvikling over målinger</div>
+							{#if aktivFane === 'alle'}
+								<div class="linje-vaelger">
+									<button
+										class="linje-vaelger-knap"
+										onclick={() => (linjeVaelgerAaben = !linjeVaelgerAaben)}
+									>
+										Vælg linjer ({valgteLinjer.size})
+										<Icon name="chevron-d" size={12} color="var(--text2)" />
+									</button>
+									{#if linjeVaelgerAaben}
+										<div class="linje-menu">
+											{#each tilgaengeligeLinjer as l, i (l.id)}
+												{#if i === 3}<div class="linje-divider">Enkelte hold</div>{/if}
+												<label class="linje-option">
+													<input
+														type="checkbox"
+														checked={valgteLinjer.has(l.id)}
+														onchange={() => toggleLinje(l.id)}
+													/>
+													<span class="linje-prik" style="background:{l.farve}"></span>
+													{l.navn}
+												</label>
+											{/each}
+										</div>
+									{/if}
+								</div>
+							{/if}
+						</div>
+						<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
+							<!-- y-gitter -->
+							{#each graf.yTicks as t (t.v)}
+								<line x1={G.padL} y1={t.y} x2={G.w - G.padR} y2={t.y} class="gitter" />
+								<text x={G.padL - 5} y={t.y + 3} class="akse-tekst" text-anchor="end">{t.v}</text>
+							{/each}
+							<!-- x-labels -->
+							{#each graf.xLabels as x (x.label)}
+								<text x={x.x} y={G.h - 8} class="akse-tekst" text-anchor="middle">{x.label}</text>
+							{/each}
+							<!-- linjer -->
+							{#each graf.linjer as l (l.navn)}
+								<path
+									d={l.path}
+									fill="none"
+									stroke={l.farve}
+									stroke-width={l.fremhaev ? 2.5 : 1.5}
+									stroke-opacity={l.fremhaev ? 1 : 0.5}
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+								{#each l.pkt as p (p.x)}
+									<circle cx={p.x} cy={p.y} r={l.fremhaev ? 4 : 3} fill={l.farve} />
+								{/each}
+							{/each}
+						</svg>
+						<div class="legende">
+							{#each graf.linjer as l (l.navn)}
+								<span class="legende-item">
+									<span class="legende-prik" style="background:{l.farve}"></span>
+									{l.navn}
+								</span>
+							{/each}
+						</div>
+						<p class="skala-note">
+							Hvert punkt = kundens 1., 2., 3. måling · tal ved punkterne = antal kunder bag
+						</p>
+						<div class="punkt-antal">
+							{#each graf.linjer.find((l) => l.fremhaev)?.pkt ?? [] as p, i (i)}
+								<span>{i + 1}. måling: {p.antal} kunder</span>
+							{/each}
+						</div>
+					</section>
+				{/if}
+
+				<!-- Baseline-sværhedsgrad -->
 				<section class="card">
-					<div class="graf-top">
-						<div class="kort-titel" style="margin:0">Udvikling over målinger</div>
-						{#if aktivFane === 'alle'}
-							<div class="linje-vaelger">
-								<button
-									class="linje-vaelger-knap"
-									onclick={() => (linjeVaelgerAaben = !linjeVaelgerAaben)}
-								>
-									Vælg linjer ({valgteLinjer.size})
-									<Icon name="chevron-d" size={12} color="var(--text2)" />
-								</button>
-								{#if linjeVaelgerAaben}
-									<div class="linje-menu">
-										{#each tilgaengeligeLinjer as l, i (l.id)}
-											{#if i === 3}<div class="linje-divider">Enkelte hold</div>{/if}
-											<label class="linje-option">
-												<input
-													type="checkbox"
-													checked={valgteLinjer.has(l.id)}
-													onchange={() => toggleLinje(l.id)}
-												/>
-												<span class="linje-prik" style="background:{l.farve}"></span>
-												{l.navn}
-											</label>
-										{/each}
-									</div>
-								{/if}
+					<div class="kort-titel">Hvem forbedres mest? (efter start-sværhedsgrad)</div>
+					{#each SVAERGRAD as grad (grad.key)}
+						{@const g = s.baselineSvaergrad[grad.key]}
+						<div class="svaer-rad">
+							<div class="svaer-navn">
+								{grad.navn} <span class="svaer-interval">{grad.interval}</span>
+							</div>
+							<div class="svaer-antal">{g.antal} kunder</div>
+							<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
+								{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
+								{tal(Math.abs(g.gnsAendring))}
+							</div>
+						</div>
+					{/each}
+					<p class="skala-note">Tallet til højre er gns. ændring i MRS-point.</p>
+				</section>
+
+				<!-- Forbedrings-fordeling -->
+				<section class="card">
+					<div class="kort-titel">Fordeling ({s.antalMedUdvikling} kunder)</div>
+					<div class="fordeling-bar">
+						<div
+							class="fb-del meget"
+							style="width:{fbProcent(s.forbedringsFordeling, 'megetBedre')}%"
+						></div>
+						<div
+							class="fb-del lidt"
+							style="width:{fbProcent(s.forbedringsFordeling, 'lidtBedre')}%"
+						></div>
+						<div
+							class="fb-del uaendret"
+							style="width:{fbProcent(s.forbedringsFordeling, 'uaendret')}%"
+						></div>
+						<div
+							class="fb-del vaerre"
+							style="width:{fbProcent(s.forbedringsFordeling, 'vaerre')}%"
+						></div>
+					</div>
+					<div class="fordeling-tegnforklaring">
+						<span
+							><span class="fb-prik meget"></span>Meget bedre ({s.forbedringsFordeling.megetBedre} ·
+							{Math.round(fbProcent(s.forbedringsFordeling, 'megetBedre'))}%)</span
+						>
+						<span
+							><span class="fb-prik lidt"></span>Lidt bedre ({s.forbedringsFordeling.lidtBedre} ·
+							{Math.round(fbProcent(s.forbedringsFordeling, 'lidtBedre'))}%)</span
+						>
+						<span
+							><span class="fb-prik uaendret"></span>Uændret ({s.forbedringsFordeling.uaendret} ·
+							{Math.round(fbProcent(s.forbedringsFordeling, 'uaendret'))}%)</span
+						>
+						<span
+							><span class="fb-prik vaerre"></span>Værre ({s.forbedringsFordeling.vaerre} ·
+							{Math.round(fbProcent(s.forbedringsFordeling, 'vaerre'))}%)</span
+						>
+					</div>
+					<p class="skala-note">"Meget bedre" = MRS faldt 5+ point.</p>
+				</section>
+
+				<!-- Demografi: menopause-status -->
+				<section class="card">
+					<div class="kort-titel">Forbedring efter menopause-status</div>
+					{#each MENOPAUSE as m (m.key)}
+						{@const g = s.demografi.menopause[m.key]}
+						{#if g && g.antal > 0}
+							<div class="svaer-rad">
+								<div class="svaer-navn">{m.navn}</div>
+								<div class="svaer-antal">{g.antal} kunder</div>
+								<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
+									{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
+									{tal(Math.abs(g.gnsAendring))}
+								</div>
 							</div>
 						{/if}
-					</div>
-					<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
-						<!-- y-gitter -->
-						{#each graf.yTicks as t (t.v)}
-							<line x1={G.padL} y1={t.y} x2={G.w - G.padR} y2={t.y} class="gitter" />
-							<text x={G.padL - 5} y={t.y + 3} class="akse-tekst" text-anchor="end">{t.v}</text>
-						{/each}
-						<!-- x-labels -->
-						{#each graf.xLabels as x (x.label)}
-							<text x={x.x} y={G.h - 8} class="akse-tekst" text-anchor="middle">{x.label}</text>
-						{/each}
-						<!-- linjer -->
-						{#each graf.linjer as l (l.navn)}
-							<path
-								d={l.path}
-								fill="none"
-								stroke={l.farve}
-								stroke-width={l.fremhaev ? 2.5 : 1.5}
-								stroke-opacity={l.fremhaev ? 1 : 0.5}
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-							{#each l.pkt as p (p.x)}
-								<circle cx={p.x} cy={p.y} r={l.fremhaev ? 4 : 3} fill={l.farve} />
-							{/each}
-						{/each}
-					</svg>
-					<div class="legende">
-						{#each graf.linjer as l (l.navn)}
-							<span class="legende-item">
-								<span class="legende-prik" style="background:{l.farve}"></span>
-								{l.navn}
-							</span>
-						{/each}
-					</div>
-					<p class="skala-note">
-						Hvert punkt = kundens 1., 2., 3. måling · tal ved punkterne = antal kunder bag
-					</p>
-					<div class="punkt-antal">
-						{#each graf.linjer.find((l) => l.fremhaev)?.pkt ?? [] as p, i (i)}
-							<span>{i + 1}. måling: {p.antal} kunder</span>
-						{/each}
-					</div>
+					{/each}
 				</section>
+
+				<!-- Demografi: alder -->
+				<section class="card">
+					<div class="kort-titel">Forbedring efter aldersgruppe</div>
+					{#each ALDER_ORDEN as key (key)}
+						{@const g = s.demografi.alder[key]}
+						{#if g && g.antal > 0}
+							<div class="svaer-rad">
+								<div class="svaer-navn">{key === 'ukendt' ? 'Ukendt' : `${key} år`}</div>
+								<div class="svaer-antal">{g.antal} kunder</div>
+								<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
+									{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
+									{tal(Math.abs(g.gnsAendring))}
+								</div>
+							</div>
+						{/if}
+					{/each}
+					<p class="skala-note">
+						"Ukendt" = kunder uden udfyldt profil. Tallet er gns. MRS-ændring.
+					</p>
+				</section>
+
+				<!-- Subskalaer -->
+				<section class="card">
+					<div class="kort-titel">Hvor sker forbedringen?</div>
+					{#each subskalaListe as key (key)}
+						{@const sub = s.subskalaer[key]}
+						<div class="sub-rad">
+							<div class="sub-navn">{SUBSKALA_NAVN[key]}</div>
+							<div class="sub-tal">
+								<span>{tal(sub.gnsBaseline)}</span>
+								<Icon name="chevron-r" size={12} color="var(--text3)" />
+								<span>{tal(sub.gnsSeneste)}</span>
+								<span class="sub-aendring" class:bedre={sub.gnsAendring < 0}>
+									{sub.gnsAendring < 0 ? '↓' : sub.gnsAendring > 0 ? '↑' : ''}
+									{tal(Math.abs(sub.gnsAendring))}
+								</span>
+							</div>
+						</div>
+					{/each}
+				</section>
+
+				<!-- Velvære-sliders (højere = bedre) -->
+			{:else}
+				<div class="hint-kort">
+					Dette hold lavede primært det ugentlige velvære-check, ikke det fulde MRS-skema — se
+					velvære-udviklingen nedenfor.
+				</div>
 			{/if}
 
-			<!-- Baseline-sværhedsgrad -->
-			<section class="card">
-				<div class="kort-titel">Hvem forbedres mest? (efter start-sværhedsgrad)</div>
-				{#each SVAERGRAD as grad (grad.key)}
-					{@const g = s.baselineSvaergrad[grad.key]}
-					<div class="svaer-rad">
-						<div class="svaer-navn">
-							{grad.navn} <span class="svaer-interval">{grad.interval}</span>
-						</div>
-						<div class="svaer-antal">{g.antal} kunder</div>
-						<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
-							{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
-							{tal(Math.abs(g.gnsAendring))}
-						</div>
-					</div>
-				{/each}
-				<p class="skala-note">Tallet til højre er gns. ændring i MRS-point.</p>
-			</section>
-
-			<!-- Forbedrings-fordeling -->
-			<section class="card">
-				<div class="kort-titel">Fordeling ({s.antalMedUdvikling} kunder)</div>
-				<div class="fordeling-bar">
-					<div
-						class="fb-del meget"
-						style="width:{fbProcent(s.forbedringsFordeling, 'megetBedre')}%"
-					></div>
-					<div
-						class="fb-del lidt"
-						style="width:{fbProcent(s.forbedringsFordeling, 'lidtBedre')}%"
-					></div>
-					<div
-						class="fb-del uaendret"
-						style="width:{fbProcent(s.forbedringsFordeling, 'uaendret')}%"
-					></div>
-					<div
-						class="fb-del vaerre"
-						style="width:{fbProcent(s.forbedringsFordeling, 'vaerre')}%"
-					></div>
-				</div>
-				<div class="fordeling-tegnforklaring">
-					<span
-						><span class="fb-prik meget"></span>Meget bedre ({s.forbedringsFordeling.megetBedre} ·
-						{Math.round(fbProcent(s.forbedringsFordeling, 'megetBedre'))}%)</span
-					>
-					<span
-						><span class="fb-prik lidt"></span>Lidt bedre ({s.forbedringsFordeling.lidtBedre} ·
-						{Math.round(fbProcent(s.forbedringsFordeling, 'lidtBedre'))}%)</span
-					>
-					<span
-						><span class="fb-prik uaendret"></span>Uændret ({s.forbedringsFordeling.uaendret} ·
-						{Math.round(fbProcent(s.forbedringsFordeling, 'uaendret'))}%)</span
-					>
-					<span
-						><span class="fb-prik vaerre"></span>Værre ({s.forbedringsFordeling.vaerre} ·
-						{Math.round(fbProcent(s.forbedringsFordeling, 'vaerre'))}%)</span
-					>
-				</div>
-				<p class="skala-note">"Meget bedre" = MRS faldt 5+ point.</p>
-			</section>
-
-			<!-- Demografi: menopause-status -->
-			<section class="card">
-				<div class="kort-titel">Forbedring efter menopause-status</div>
-				{#each MENOPAUSE as m (m.key)}
-					{@const g = s.demografi.menopause[m.key]}
-					{#if g && g.antal > 0}
-						<div class="svaer-rad">
-							<div class="svaer-navn">{m.navn}</div>
-							<div class="svaer-antal">{g.antal} kunder</div>
-							<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
-								{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
-								{tal(Math.abs(g.gnsAendring))}
-							</div>
-						</div>
-					{/if}
-				{/each}
-			</section>
-
-			<!-- Demografi: alder -->
-			<section class="card">
-				<div class="kort-titel">Forbedring efter aldersgruppe</div>
-				{#each ALDER_ORDEN as key (key)}
-					{@const g = s.demografi.alder[key]}
-					{#if g && g.antal > 0}
-						<div class="svaer-rad">
-							<div class="svaer-navn">{key === 'ukendt' ? 'Ukendt' : `${key} år`}</div>
-							<div class="svaer-antal">{g.antal} kunder</div>
-							<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
-								{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
-								{tal(Math.abs(g.gnsAendring))}
-							</div>
-						</div>
-					{/if}
-				{/each}
-				<p class="skala-note">"Ukendt" = kunder uden udfyldt profil. Tallet er gns. MRS-ændring.</p>
-			</section>
-
-			<!-- Subskalaer -->
-			<section class="card">
-				<div class="kort-titel">Hvor sker forbedringen?</div>
-				{#each subskalaListe as key (key)}
-					{@const sub = s.subskalaer[key]}
-					<div class="sub-rad">
-						<div class="sub-navn">{SUBSKALA_NAVN[key]}</div>
-						<div class="sub-tal">
-							<span>{tal(sub.gnsBaseline)}</span>
-							<Icon name="chevron-r" size={12} color="var(--text3)" />
-							<span>{tal(sub.gnsSeneste)}</span>
-							<span class="sub-aendring" class:bedre={sub.gnsAendring < 0}>
-								{sub.gnsAendring < 0 ? '↓' : sub.gnsAendring > 0 ? '↑' : ''}
-								{tal(Math.abs(sub.gnsAendring))}
-							</span>
-						</div>
-					</div>
-				{/each}
-			</section>
-
-			<!-- Velvære-sliders (højere = bedre) -->
 			{#if s.antalVelvaere > 0}
 				<section class="card">
 					<div class="kort-titel">Velvære ({s.antalVelvaere} kunder)</div>
