@@ -27,48 +27,60 @@ export interface Feature {
 	key: FeatureKey;
 	navn: string;
 	beskrivelse: string;
+	/** Om funktionen faktisk er koblet til at styre adgang endnu. De features
+	 *  der stadig koerer paa det gamle premium-system (koblet=false) viser en
+	 *  markering i admin-skemaet — at aendre dem har ingen effekt foer de er
+	 *  koblet via harFeatureAdgang. */
+	koblet: boolean;
 }
 
 /** Listen vist i admin-skemaet. Tilfoej nye funktioner her. */
 export const FEATURES: Feature[] = [
 	{
 		key: 'linn-ai',
+		koblet: true,
 		navn: 'Linn AI',
 		beskrivelse:
 			'Kunden kan chatte med en AI-version af dig og få svar på spørgsmål om træning, kost og vaner, når som helst. Findes som eget punkt i Moduler.'
 	},
 	{
 		key: 'udvidet-naering',
+		koblet: false,
 		navn: 'Udvidet næringsdata',
 		beskrivelse:
 			'I mad-modulet (30-30-3) ser kunden også kulhydrat, fedt og kalorier, ikke kun protein og fiber. Hun kan desuden sætte sine egne daglige makromål.'
 	},
 	{
 		key: 'udvidet-vaner',
+		koblet: false,
 		navn: 'Udvidet vanetracker',
 		beskrivelse:
 			'Kunden får en udvidet vanetracker med flere vaner end standard-versionen, så hun kan følge flere ting på én gang.'
 	},
 	{
 		key: 'byg-eget-program',
+		koblet: false,
 		navn: 'Byg eget træningsprogram',
 		beskrivelse:
 			'Kunden kan selv bygge et træningsprogram ved at vælge øvelser, sæt, gentagelser og pauser, og køre det som sit aktive program.'
 	},
 	{
 		key: 'ai-madplan',
+		koblet: false,
 		navn: 'AI-madplan',
 		beskrivelse:
 			'Kunden kan få appen til automatisk at foreslå en madplan ud fra hendes ønsker og behov.'
 	},
 	{
 		key: 'ai-opskrift',
+		koblet: false,
 		navn: 'AI-opskriftsanalyse',
 		beskrivelse:
 			'Kunden kan indtaste en opskrift eller tage et billede af en ret, og appen regner næringsindholdet ud automatisk.'
 	},
 	{
 		key: 'nul-dage',
+		koblet: true,
 		navn: 'Nul-dage',
 		beskrivelse:
 			'Kunden kan markere dage som pause (fx ferie eller sygdom), så forløbet ikke skrider frem på de dage. Kun relevant for forløbskunder (Kickstart/Kropsro) — app-kunder har ikke et forløb at sætte på pause.'

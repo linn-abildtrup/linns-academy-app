@@ -59,8 +59,10 @@
 		<div class="eyebrow">Admin</div>
 		<h1>Funktioner og adgang</h1>
 		<p class="page-sub">
-			Sæt flueben for hvilke funktioner hver kundetype har adgang til. Ændringer
-			træder i kraft for kunderne, så snart du gemmer.
+			Sæt flueben for hvilke funktioner hver kundetype har adgang til. Ændringer træder i kraft for
+			kunderne, så snart du gemmer. NB: funktioner mærket
+			<strong>"Virker ikke endnu"</strong> er ikke koblet til skemaet endnu — at ændre dem har ingen effekt,
+			før de er sat i drift.
 		</p>
 	</header>
 
@@ -81,7 +83,17 @@
 					{#each FEATURES as f (f.key)}
 						<tr>
 							<td class="funktion">
-								<div class="funktion-navn">{f.navn}</div>
+								<div class="funktion-navn">
+									{f.navn}
+									{#if !f.koblet}
+										<span
+											class="ikke-aktiv"
+											title="Ændringer for denne funktion har ingen effekt endnu — den kører stadig på det gamle premium-system."
+										>
+											Virker ikke endnu
+										</span>
+									{/if}
+								</div>
 								<div class="funktion-beskrivelse">{f.beskrivelse}</div>
 							</td>
 							{#each KUNDETYPER as kt (kt.key)}
@@ -187,6 +199,20 @@
 		font-family: var(--ff-d);
 		font-size: calc(14px * var(--fs-scale, 1));
 		color: var(--text);
+	}
+
+	.ikke-aktiv {
+		display: inline-block;
+		margin-left: 6px;
+		font-family: var(--ff-b);
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: #9a6a00;
+		background: #fdf0d5;
+		padding: 1px 8px;
+		border-radius: 99px;
+		vertical-align: middle;
+		white-space: nowrap;
 	}
 
 	.funktion-beskrivelse {
