@@ -28,11 +28,7 @@
 		type AboVanedagEntry
 	} from '$lib/content/aboVaner';
 	import { unlockedDays } from '$lib/content/forlobAdgang';
-	import {
-		fjernEgenVane,
-		hentUserProduct,
-		tilfoejEgenVane
-	} from '$lib/firestore/mikrotraening';
+	import { fjernEgenVane, hentUserProduct, tilfoejEgenVane } from '$lib/firestore/mikrotraening';
 	import { MAX_EGNE_VANER } from '$lib/content/mikrotraening';
 	import { hentAktivProduktType, hentForlob } from '$lib/firestore/forlob';
 	import { hentAlleVanedage, hentVaneprogramForForlob } from '$lib/firestore/vaner';
@@ -47,11 +43,7 @@
 		hentAdminVanerForKunde,
 		type AdminTildeltVane
 	} from '$lib/firestore/admintildelteVaner';
-	import {
-		erForlobsklient,
-		erModulbruger,
-		harPremium
-	} from '$lib/utils/userAdgang';
+	import { erForlobsklient, erModulbruger, harPremium } from '$lib/utils/userAdgang';
 	import { effektivtUnlocket, getPreviewDag } from '$lib/utils/forlobPreview';
 	import { isAdmin } from '$lib/admin';
 	import Icon from '$lib/components/Icon.svelte';
@@ -130,9 +122,7 @@
 			const entry = aboEntries.get(datoStr) ?? null;
 			r.push({
 				dato: datoStr,
-				flower: aboOpsaetning
-					? beregnAboFlowerNiveau(aboOpsaetning.valgteVaner, entry)
-					: 'none'
+				flower: aboOpsaetning ? beregnAboFlowerNiveau(aboOpsaetning.valgteVaner, entry) : 'none'
 			});
 		}
 		return r;
@@ -252,7 +242,7 @@
 		}
 
 		const forlobId =
-			(up as UserProduct & { forlobId?: string } | null)?.forlobId ?? adminForlobId;
+			(up as (UserProduct & { forlobId?: string }) | null)?.forlobId ?? adminForlobId;
 		if (!forlobId) {
 			fejl = 'Du er ikke tilknyttet et forløb endnu. Kontakt Linn.';
 			return;
@@ -289,8 +279,11 @@
 			console.warn('Kunne ikke hente admin-vaner:', e);
 		}
 		if (o) {
+			// Brug kundens NUVAERENDE adgang — ikke det gemte produktType-snapshot,
+			// som kan vaere foraeldet hvis hun er opgraderet til premium.
+			const aktuelType = harPremium(userDoc) ? 'premium' : 'basis';
 			[aboBonusPulje, aboEntries] = await Promise.all([
-				hentAboBonusPulje(o.produktType),
+				hentAboBonusPulje(aktuelType),
 				hentAlleAboVanedage(uid)
 			]);
 		}
@@ -468,9 +461,7 @@
 			<div class="prog-bar">
 				<div
 					class="prog-fill"
-					style="width: {antalDage > 0
-						? Math.round((fremgang.gennemforte / antalDage) * 100)
-						: 0}%"
+					style="width: {antalDage > 0 ? Math.round((fremgang.gennemforte / antalDage) * 100) : 0}%"
 				></div>
 			</div>
 			<p class="hint">Klik på en dag for at åbne den</p>
@@ -507,8 +498,8 @@
 				<div class="egne-vaner-tael">{egneVaner.length} / {MAX_EGNE_VANER}</div>
 			</div>
 			<p class="egne-vaner-hint">
-				Tilføj 1-{MAX_EGNE_VANER} egne vaner du selv vil arbejde med oveni Linns
-				ugentlige vaner. Du kan fjerne eller tilføje nye når som helst.
+				Tilføj 1-{MAX_EGNE_VANER} egne vaner du selv vil arbejde med oveni Linns ugentlige vaner. Du kan
+				fjerne eller tilføje nye når som helst.
 			</p>
 			{#if egneVaner.length > 0}
 				<div class="egne-vaner-liste">
@@ -647,10 +638,7 @@
 							{#if aaben}
 								<div class="maaned-dage">
 									{#each dage as d (d.dato)}
-										<a
-											class="maaned-dag flower-{d.flower}"
-											href="/app/moduler/vaner/abo/{d.dato}"
-										>
+										<a class="maaned-dag flower-{d.flower}" href="/app/moduler/vaner/abo/{d.dato}">
 											{dagINummer(d.dato)}
 										</a>
 									{/each}
@@ -665,12 +653,15 @@
 				<section class="card procent-card">
 					<div class="card-head">
 						<div class="section-label">Vaner opnået</div>
-						<div class="card-tael">{samletProcent.antalDage} {samletProcent.antalDage === 1 ? 'dag' : 'dage'} indtastet</div>
+						<div class="card-tael">
+							{samletProcent.antalDage}
+							{samletProcent.antalDage === 1 ? 'dag' : 'dage'} indtastet
+						</div>
 					</div>
 					<div class="procent-stor">{samletProcent.score}%</div>
 					<p class="hint procent-hint">
-						Beregnet på tværs af alle de dage du har indtastet. Hver vane vægtes
-						lige — 'ja' tæller som 1, 'delvist' som 0,5, 'nej' som 0.
+						Beregnet på tværs af alle de dage du har indtastet. Hver vane vægtes lige — 'ja' tæller
+						som 1, 'delvist' som 0,5, 'nej' som 0.
 					</p>
 				</section>
 			{/if}
@@ -682,23 +673,29 @@
 					</div>
 					<div class="trend-grid">
 						<div class="trend-blok">
-							<div class="trend-tal">{trend7.antal > 0 ? trend7.score : '–'}{trend7.antal > 0 ? '%' : ''}</div>
+							<div class="trend-tal">
+								{trend7.antal > 0 ? trend7.score : '–'}{trend7.antal > 0 ? '%' : ''}
+							</div>
 							<div class="trend-label">Sidste 7 dage</div>
 							<div class="trend-sub">
-								{trend7.antal} {trend7.antal === 1 ? 'svar' : 'svar'}
+								{trend7.antal}
+								{trend7.antal === 1 ? 'svar' : 'svar'}
 							</div>
 						</div>
 						<div class="trend-blok">
-							<div class="trend-tal">{trend30.antal > 0 ? trend30.score : '–'}{trend30.antal > 0 ? '%' : ''}</div>
+							<div class="trend-tal">
+								{trend30.antal > 0 ? trend30.score : '–'}{trend30.antal > 0 ? '%' : ''}
+							</div>
 							<div class="trend-label">Sidste 30 dage</div>
 							<div class="trend-sub">
-								{trend30.antal} {trend30.antal === 1 ? 'svar' : 'svar'}
+								{trend30.antal}
+								{trend30.antal === 1 ? 'svar' : 'svar'}
 							</div>
 						</div>
 					</div>
 					<p class="hint trend-hint">
-						Procent positive svar på dagens bonus-spørgsmål. Et samlet billede af
-						dit velvære over tid.
+						Procent positive svar på dagens bonus-spørgsmål. Et samlet billede af dit velvære over
+						tid.
 					</p>
 				</section>
 			{/if}

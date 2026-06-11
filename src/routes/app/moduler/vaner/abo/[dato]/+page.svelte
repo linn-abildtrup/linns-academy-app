@@ -14,17 +14,14 @@
 		type AboVanedagEntry
 	} from '$lib/content/aboVaner';
 	import { type CheckinSvar, type VaneSvar } from '$lib/content/vaner';
-	import {
-		hentAdminVanerForKunde,
-		type AdminTildeltVane
-	} from '$lib/firestore/admintildelteVaner';
+	import { hentAdminVanerForKunde, type AdminTildeltVane } from '$lib/firestore/admintildelteVaner';
 	import {
 		hentAboBonusPulje,
 		hentAboVaneOpsaetning,
 		hentAboVanedag,
 		gemAboVanedag
 	} from '$lib/firestore/aboVaner';
-	import { erModulbruger } from '$lib/utils/userAdgang';
+	import { erModulbruger, harPremium } from '$lib/utils/userAdgang';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -137,7 +134,11 @@
 				console.warn('Kunne ikke hente admin-vaner:', e);
 			}
 
-			const pulje = await hentAboBonusPulje(o.produktType);
+			// Brug kundens NUVAERENDE adgang — ikke det gemte produktType-snapshot
+			// i opsaetningen, som kan vaere foraeldet hvis hun er opgraderet fra
+			// basis til premium efter foerste opsaetning.
+			const aktuelType = harPremium(userDoc) ? 'premium' : 'basis';
+			const pulje = await hentAboBonusPulje(aktuelType);
 			bonus = dagensBonus(pulje, dato);
 
 			const entry = await hentAboVanedag(u.uid, dato);
@@ -352,9 +353,7 @@
 					{gemmer ? 'Gemmer...' : 'Gem dagen ✓'}
 				</button>
 			{:else}
-				<button class="ghost-knap" type="button" onclick={startEdit}>
-					✏️ Rediger svar
-				</button>
+				<button class="ghost-knap" type="button" onclick={startEdit}> ✏️ Rediger svar </button>
 			{/if}
 		</div>
 	{/if}
