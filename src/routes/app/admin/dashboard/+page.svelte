@@ -127,10 +127,11 @@
 				...(f ? [{ linje: f, fremhaev: true }] : [])
 			];
 		}
-		if (valgte.length === 0) return null;
-
+		// Ingen valgte linjer: behold aksen (tom graf), saa kortet + linje-vaelgeren
+		// ikke forsvinder og brugeren kan vaelge linjer til igen.
 		const maxP = Math.max(2, ...valgte.map((v) => v.linje.rejse.length));
-		const yMax = Math.max(...valgte.flatMap((v) => v.linje.rejse.map((p) => p.gns)), 1) * 1.15;
+		const alleGns = valgte.flatMap((v) => v.linje.rejse.map((p) => p.gns));
+		const yMax = alleGns.length ? Math.max(...alleGns) * 1.15 : 20;
 		const gx = (i: number) => G.padL + (maxP <= 1 ? 0 : (i / (maxP - 1)) * (G.w - G.padL - G.padR));
 		const gy = (v: number) => G.padT + (1 - v / yMax) * (G.h - G.padT - G.padB);
 
@@ -344,6 +345,9 @@
 								{/each}
 							{/each}
 						</svg>
+						{#if graf.linjer.length === 0}
+							<p class="skala-note">Vælg en eller flere linjer i menuen for at se udviklingen.</p>
+						{/if}
 						<div class="legende">
 							{#each graf.linjer as l (l.navn)}
 								<span class="legende-item">
