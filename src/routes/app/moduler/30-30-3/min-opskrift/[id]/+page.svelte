@@ -7,12 +7,17 @@
 	import { gemMaaltid } from '$lib/firestore/kost';
 	import { storage } from '$lib/firebase';
 	import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+	import { komprimerBillede } from '$lib/utils/billede';
 	import type {
 		MinOpskrift,
 		MinOpskriftIngrediens,
 		MinOpskriftMakro
 	} from '$lib/content/minOpskrift';
-	import { DEFAULT_MAKRO, omberegnMakroForNytAntalPortioner, skalerMakro } from '$lib/content/minOpskrift';
+	import {
+		DEFAULT_MAKRO,
+		omberegnMakroForNytAntalPortioner,
+		skalerMakro
+	} from '$lib/content/minOpskrift';
 	import {
 		formatDatoKey,
 		gaetMaaltidstype,
@@ -181,11 +186,12 @@
 			let nyBilledeUrl: string | undefined;
 			let gammelBilledeUrl: string | undefined;
 			if (nyBilledeFil) {
-				// Upload nyt billede
+				// Upload nyt billede (komprimeret — sparer plads + hurtigere upload)
+				const thumbnail = await komprimerBillede(nyBilledeFil);
 				const billedeId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 				const sti = `users/${u.uid}/opskrift-billeder/${billedeId}`;
 				const billedeRef = ref(storage, sti);
-				await uploadBytes(billedeRef, nyBilledeFil);
+				await uploadBytes(billedeRef, thumbnail, { contentType: thumbnail.type });
 				nyBilledeUrl = await getDownloadURL(billedeRef);
 				gammelBilledeUrl = opskrift?.billedeUrl;
 			}
@@ -330,7 +336,10 @@
 					<span>Rediger</span>
 				</button>
 			</div>
-			<div class="meta">{opskrift.antalPortioner} {opskrift.antalPortioner === 1 ? 'portion' : 'portioner'}</div>
+			<div class="meta">
+				{opskrift.antalPortioner}
+				{opskrift.antalPortioner === 1 ? 'portion' : 'portioner'}
+			</div>
 
 			<section class="card">
 				<div class="section-label">Makro pr portion</div>
@@ -426,7 +435,8 @@
 					<span class="felt-label">Antal portioner</span>
 					<input type="number" min="1" max="20" bind:value={antalPortioner} />
 					<span class="felt-hjaelp">
-						Hvis du ændrer antal portioner, omberegnes makro pr portion automatisk så den samlede opskrift har samme værdier.
+						Hvis du ændrer antal portioner, omberegnes makro pr portion automatisk så den samlede
+						opskrift har samme værdier.
 					</span>
 				</label>
 			</section>
@@ -485,7 +495,11 @@
 			</section>
 
 			{#if gemBesked}
-				<div class="status-besked" class:fejl={gemBesked.startsWith('Kunne')} class:ok={!gemBesked.startsWith('Kunne')}>
+				<div
+					class="status-besked"
+					class:fejl={gemBesked.startsWith('Kunne')}
+					class:ok={!gemBesked.startsWith('Kunne')}
+				>
 					{gemBesked}
 				</div>
 			{/if}
@@ -589,12 +603,7 @@
 			>
 				{gemmerMaaltid ? 'Gemmer...' : 'Læg ind i dagbog'}
 			</button>
-			<button
-				class="annuller-btn"
-				type="button"
-				onclick={lukMaaltidModal}
-				disabled={gemmerMaaltid}
-			>
+			<button class="annuller-btn" type="button" onclick={lukMaaltidModal} disabled={gemmerMaaltid}>
 				Annullér
 			</button>
 		</div>

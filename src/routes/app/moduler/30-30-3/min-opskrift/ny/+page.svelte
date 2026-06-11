@@ -14,6 +14,7 @@
 		type MinOpskriftIngrediens,
 		type MinOpskriftMakro
 	} from '$lib/content/minOpskrift';
+	import { komprimerBillede, blobTilBase64 } from '$lib/utils/billede';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -97,11 +98,12 @@
 		tilstand = 'analyserer';
 		fejlBesked = null;
 		try {
+			// Komprimer foer upload — goer AI-vision-kaldet markant hurtigere/billigere.
 			const billeder = await Promise.all(
-				billedeFiler.map(async (fil) => ({
-					billedeBase64: await filTilBase64(fil),
-					mediaType: fil.type
-				}))
+				billedeFiler.map(async (fil) => {
+					const komp = await komprimerBillede(fil);
+					return { billedeBase64: await blobTilBase64(komp), mediaType: komp.type };
+				})
 			);
 			const idToken = await u.getIdToken();
 			const res = await fetch('/api/analyser-opskrift', {
@@ -134,20 +136,6 @@
 		}
 	}
 
-	function filTilBase64(fil: File): Promise<string> {
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onload = () => {
-				const r = reader.result as string;
-				// Fjerner "data:image/jpeg;base64," præfix
-				const komma = r.indexOf(',');
-				resolve(komma >= 0 ? r.slice(komma + 1) : r);
-			};
-			reader.onerror = () => reject(reader.error);
-			reader.readAsDataURL(fil);
-		});
-	}
-
 	function tilfojIngrediens() {
 		ingredienser = [...ingredienser, { navn: '', maengde: 0, enhed: 'g' }];
 	}
@@ -164,11 +152,11 @@
 		try {
 			// Vi gemmer kun det første billede som thumbnail. AI har allerede
 			// udvundet alle data fra de øvrige, så de behøver ikke gemmes.
-			const forsteFil = billedeFiler[0];
+			const thumbnail = await komprimerBillede(billedeFiler[0]);
 			const billedeId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 			const sti = `users/${u.uid}/opskrift-billeder/${billedeId}`;
 			const billedeRef = ref(storage, sti);
-			await uploadBytes(billedeRef, forsteFil);
+			await uploadBytes(billedeRef, thumbnail, { contentType: thumbnail.type });
 			const billedeUrl = await getDownloadURL(billedeRef);
 
 			await opretMinOpskrift(u.uid, {
@@ -205,15 +193,13 @@
 	</header>
 
 	{#if !harAdgang}
-		<div class="status-besked">
-			Denne funktion er kun tilgængelig for premium-app og Kropsro.
-		</div>
+		<div class="status-besked">Denne funktion er kun tilgængelig for premium-app og Kropsro.</div>
 	{:else if tilstand === 'vaelg'}
 		<div class="vaelg-card">
 			<p class="hint">
-				Tag et billede af en opskrift, upload fra galleri, eller paste en
-				screenshot. AI'en læser opskriften og estimerer makro pr portion.
-				Du kan tilføje op til {MAX_BILLEDER} billeder hvis opskriften fylder over flere sider.
+				Tag et billede af en opskrift, upload fra galleri, eller paste en screenshot. AI'en læser
+				opskriften og estimerer makro pr portion. Du kan tilføje op til {MAX_BILLEDER} billeder hvis opskriften
+				fylder over flere sider.
 			</p>
 
 			{#if billedePreviews.length > 0}
@@ -340,12 +326,7 @@
 			</div>
 			{#each ingredienser as ing, i (i)}
 				<div class="ing-rad">
-					<input
-						type="text"
-						class="ing-navn"
-						placeholder="Navn"
-						bind:value={ing.navn}
-					/>
+					<input type="text" class="ing-navn" placeholder="Navn" bind:value={ing.navn} />
 					<input
 						type="number"
 						class="ing-maengde"
@@ -354,12 +335,7 @@
 						step="any"
 						bind:value={ing.maengde}
 					/>
-					<input
-						type="text"
-						class="ing-enhed"
-						placeholder="g"
-						bind:value={ing.enhed}
-					/>
+					<input type="text" class="ing-enhed" placeholder="g" bind:value={ing.enhed} />
 					<button class="ing-slet" type="button" onclick={() => fjernIngrediens(i)}>×</button>
 				</div>
 			{/each}
