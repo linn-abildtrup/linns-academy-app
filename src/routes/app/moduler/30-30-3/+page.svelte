@@ -62,7 +62,6 @@
 	} from '$lib/firestore/kost';
 
 	const getUser = getContext<() => User | null>('user');
-	import { harPremium, harTestAdgang } from '$lib/utils/userAdgang';
 	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 	import TesterBadge from '$lib/components/TesterBadge.svelte';
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -296,8 +295,10 @@
 
 	// Madplan er bag test-flag indtil den er færdig-testet. Kun premium-
 	// kunder med dagligeMaal sat OG som er på testere-listen ser den.
+	// AI-madplan styres af feature-skemaet (koblet 11/6). Mål-kravet beholdes —
+	// madplanen skal have et dagligt mål at sigte efter.
 	const kanBrugeMadplan = $derived(
-		harPremium(userDoc) && !!userDoc?.dagligeMaal && harTestAdgang(userDoc, 'foreslaa-madplan')
+		harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'ai-madplan') && !!userDoc?.dagligeMaal
 	);
 
 	// Gem-måltid-modal state

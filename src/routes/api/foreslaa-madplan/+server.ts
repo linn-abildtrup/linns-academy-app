@@ -19,7 +19,7 @@ import {
 	type MadplanSvar
 } from '$lib/content/foreslaaMadplan';
 import type { UserDoc } from '$lib/types';
-import { harPremium } from '$lib/utils/userAdgang';
+import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 
 const MODEL = 'claude-haiku-4-5-20251001';
 const MAX_TOKENS = 2048;
@@ -165,7 +165,9 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (valFejl) throw error(400, valFejl);
 
 	const userDoc = (await hentDoc(`users/${uid}`)) as UserDoc | null;
-	const erPremium = harPremium(userDoc) || userDoc?.adminKlientMode === 'premiumapp';
+	const matrix = (await hentDoc('featureAdgang/aktiv')) as FeatureMatrix | null;
+	const erPremium =
+		harFeatureAdgang(userDoc, matrix, 'ai-madplan') || userDoc?.adminKlientMode === 'premiumapp';
 	if (!erPremium) throw error(403, 'Funktionen kræver premium-adgang');
 
 	const noegle = quotaNoegle();
@@ -173,7 +175,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	const quotaDoc = (await hentDoc(quotaPath)) as { antal?: number } | null;
 	const antalIDag = quotaDoc?.antal ?? 0;
 	if (antalIDag >= MAX_QUERIES_PR_DAG) {
-		throw error(429, `Du har brugt dine ${MAX_QUERIES_PR_DAG} daglige AI-queries. Prøv igen i morgen.`);
+		throw error(
+			429,
+			`Du har brugt dine ${MAX_QUERIES_PR_DAG} daglige AI-queries. Prøv igen i morgen.`
+		);
 	}
 
 	const kandidatKatalog = byggKandidatKatalog(body.kandidater);

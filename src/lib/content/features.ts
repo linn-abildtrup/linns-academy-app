@@ -66,7 +66,7 @@ export const FEATURES: Feature[] = [
 	},
 	{
 		key: 'ai-madplan',
-		koblet: false,
+		koblet: true,
 		navn: 'AI-madplan',
 		beskrivelse:
 			'Kunden kan få appen til automatisk at foreslå en madplan ud fra hendes ønsker og behov.'
@@ -115,20 +115,23 @@ function alleFeatures(vaerdi: boolean): Record<FeatureKey, boolean> {
  * Udgangspunkt: de oevrige funktioner foelger den hidtidige premium-adgang
  * (Kickstart + Kropsro har dem, app-kunder ikke). UNDTAGELSER (slukket for
  * ALLE, styres via testere indtil Linn bevidst taender dem): Linn AI (9/6),
- * nul-dage (11/6) og byg-eget-program (11/6 — aldrig lanceret, 0 havde den).
+ * nul-dage (11/6), byg-eget-program (11/6 — aldrig lanceret) og ai-madplan
+ * (11/6 — kun en test-funktion endnu, ikke lanceret bredt).
  */
 export const STANDARD_MATRIX: FeatureMatrix = {
 	kickstart: {
 		...alleFeatures(true),
 		'linn-ai': false,
 		'nul-dage': false,
-		'byg-eget-program': false
+		'byg-eget-program': false,
+		'ai-madplan': false
 	},
 	kropsro: {
 		...alleFeatures(true),
 		'linn-ai': false,
 		'nul-dage': false,
-		'byg-eget-program': false
+		'byg-eget-program': false,
+		'ai-madplan': false
 	},
 	app: alleFeatures(false)
 };

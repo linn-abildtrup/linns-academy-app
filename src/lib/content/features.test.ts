@@ -60,7 +60,7 @@ describe('kundetypeFor', () => {
 
 describe('STANDARD_MATRIX', () => {
 	it('Kickstart + Kropsro har funktionerne (undtagen Linn AI + nul-dage); app ingen', () => {
-		const slukketForAlle: string[] = ['linn-ai', 'nul-dage', 'byg-eget-program'];
+		const slukketForAlle: string[] = ['linn-ai', 'nul-dage', 'byg-eget-program', 'ai-madplan'];
 		for (const f of FEATURES) {
 			const forventetForlob = !slukketForAlle.includes(f.key);
 			expect(STANDARD_MATRIX.kickstart[f.key]).toBe(forventetForlob);
@@ -69,8 +69,8 @@ describe('STANDARD_MATRIX', () => {
 		}
 	});
 
-	it('Linn AI + nul-dage + byg-eget er slukket for alle (styres via testere indtil tændt)', () => {
-		for (const key of ['linn-ai', 'nul-dage', 'byg-eget-program'] as const) {
+	it('Linn AI + nul-dage + byg-eget + ai-madplan er slukket for alle (styres via testere)', () => {
+		for (const key of ['linn-ai', 'nul-dage', 'byg-eget-program', 'ai-madplan'] as const) {
 			expect(STANDARD_MATRIX.kickstart[key]).toBe(false);
 			expect(STANDARD_MATRIX.kropsro[key]).toBe(false);
 			expect(STANDARD_MATRIX.app[key]).toBe(false);

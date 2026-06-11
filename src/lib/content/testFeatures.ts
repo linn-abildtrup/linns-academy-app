@@ -28,10 +28,10 @@ export const TEST_FEATURES: TestFeature[] = [
 			'Chat med en AI-version af Linn. Styres normalt af funktions-skemaet pr kundetype (/admin/feature-adgang); tilføj enkelte kunder her for at lade dem teste den uanset skemaet.'
 	},
 	{
-		key: 'foreslaa-madplan',
-		navn: 'Foreslå madplan',
+		key: 'ai-madplan',
+		navn: 'AI-madplan',
 		beskrivelse:
-			'AI-genereret madplan-forslag i 30-30-3-beregneren. Tab i tabbaren og knap der åbner modal med konfiguration (antal forslag, glutenfri, undgå-ingredienser) og resultat med 1-3 opskriftforslag pr måltidstype + snack-suppleringer.'
+			'AI-genereret madplan-forslag i 30-30-3-beregneren. Tab i tabbaren og knap der åbner modal med konfiguration (antal forslag, glutenfri, undgå-ingredienser) og resultat med 1-3 opskriftforslag pr måltidstype + snack-suppleringer. Styres normalt af funktions-skemaet; tilføj enkelte kunder her for at teste den.'
 	},
 	{
 		key: 'byg-eget-program',
