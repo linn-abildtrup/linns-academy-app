@@ -75,6 +75,11 @@
 		harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'udvidet-naering') &&
 			userDoc?.visUdvidetNaering === true
 	);
+	// AI-opskriftsanalyse — styrer "Mine"-fanen + hentning af egne opskrifter
+	// (koblet til feature-skemaet 11/6).
+	const harAiOpskrift = $derived(
+		harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'ai-opskrift')
+	);
 	// Stregkode-scanner er aaben for alle kundetyper - ikke laengere premium-gated.
 	const kanScanne = true;
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
@@ -603,7 +608,7 @@
 			const [allFoods, allOpskrifter, mine, mineCustom] = await Promise.all([
 				hentAlleFodevarer(),
 				hentAlleOpskrifter(true),
-				u && harPremium(userDoc) ? hentMineOpskrifter(u.uid) : Promise.resolve([]),
+				u && harAiOpskrift ? hentMineOpskrifter(u.uid) : Promise.resolve([]),
 				u
 					? hentMineCustomFodevarer(u.uid).catch(() => [] as Fodevare[])
 					: Promise.resolve([] as Fodevare[])
@@ -1527,7 +1532,7 @@
 			>
 				Opskrifter
 			</button>
-			{#if harPremium(userDoc)}
+			{#if harAiOpskrift}
 				<button
 					class="tab-knap"
 					class:aktiv={aktivTab === 'mine'}

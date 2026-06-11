@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
-	import { harPremium } from '$lib/utils/userAdgang';
+	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 	import { storage } from '$lib/firebase';
 	import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 	import { opretMinOpskrift } from '$lib/firestore/minOpskrift';
@@ -20,9 +20,13 @@
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const getFeatureMatrix = getContext<() => FeatureMatrix | null>('featureMatrix');
 	const user = $derived(getUser());
 	const userDoc = $derived(getUserDoc());
-	const harAdgang = $derived(harPremium(userDoc));
+	// AI-opskriftsanalyse styres af feature-skemaet (koblet 11/6).
+	const harAdgang = $derived(
+		harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'ai-opskrift')
+	);
 
 	const MAX_BILLEDER = 3;
 

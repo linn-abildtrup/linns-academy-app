@@ -14,7 +14,7 @@ import { env } from '$env/dynamic/private';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
 import { MAX_QUERIES_PR_DAG, quotaNoegle } from '$lib/content/linnAi';
-import { harPremium } from '$lib/utils/userAdgang';
+import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 import type { UserDoc } from '$lib/types';
 
 const MODEL = 'claude-haiku-4-5-20251001';
@@ -102,8 +102,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				? [{ billedeBase64: body.billedeBase64, mediaType: body.mediaType }]
 				: [];
 	if (billeder.length === 0) throw error(400, 'Mangler billede');
-	if (billeder.length > MAX_BILLEDER)
-		throw error(400, `Max ${MAX_BILLEDER} billeder pr opskrift`);
+	if (billeder.length > MAX_BILLEDER) throw error(400, `Max ${MAX_BILLEDER} billeder pr opskrift`);
 	for (const b of billeder) {
 		if (!b.billedeBase64 || !b.mediaType) throw error(400, 'Ugyldig billede-data');
 		const estStr = b.billedeBase64.length * 0.75;
@@ -112,8 +111,9 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	// Premium-adgang. harPremium håndterer udlobet/bonus-periode korrekt.
 	const userDoc = (await hentDoc(`users/${uid}`)) as UserDoc | null;
+	const matrix = (await hentDoc('featureAdgang/aktiv')) as FeatureMatrix | null;
 	const erPremium =
-		harPremium(userDoc) || userDoc?.adminKlientMode === 'premiumapp';
+		harFeatureAdgang(userDoc, matrix, 'ai-opskrift') || userDoc?.adminKlientMode === 'premiumapp';
 	if (!erPremium) throw error(403, 'Funktionen kræver premium-adgang');
 
 	// Rate-limit (deler kvota med Linn AI)
@@ -122,7 +122,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	const quotaDoc = (await hentDoc(quotaPath)) as { antal?: number } | null;
 	const antalIDag = quotaDoc?.antal ?? 0;
 	if (antalIDag >= MAX_QUERIES_PR_DAG) {
-		throw error(429, `Du har brugt dine ${MAX_QUERIES_PR_DAG} daglige AI-queries. Prøv igen i morgen.`);
+		throw error(
+			429,
+			`Du har brugt dine ${MAX_QUERIES_PR_DAG} daglige AI-queries. Prøv igen i morgen.`
+		);
 	}
 
 	// Kald Anthropic med vision

@@ -73,7 +73,7 @@ export const FEATURES: Feature[] = [
 	},
 	{
 		key: 'ai-opskrift',
-		koblet: false,
+		koblet: true,
 		navn: 'AI-opskriftsanalyse',
 		beskrivelse:
 			'Kunden kan indtaste en opskrift eller tage et billede af en ret, og appen regner næringsindholdet ud automatisk.'
