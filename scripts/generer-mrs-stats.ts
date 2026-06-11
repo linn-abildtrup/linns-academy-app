@@ -36,6 +36,8 @@ interface KundeMrs {
 	harUdvikling: boolean; // >=2 maalinger
 	subBaseline?: Sub;
 	subSeneste?: Sub;
+	alder?: number;
+	menopaus?: string;
 }
 
 const gns = (a: number[]) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
@@ -45,6 +47,39 @@ function svaergrad(total: number): 'mild' | 'moderat' | 'svaer' {
 	if (total <= 8) return 'mild'; // officielle MRS-cutoffs: 0-8 mild, 9-16 moderat, 17+ svaer
 	if (total <= 16) return 'moderat';
 	return 'svaer';
+}
+
+// Generisk: grupperer udviklings-kunder og giver antal + gns forbedring pr gruppe.
+function segmentGruppe<K extends string>(
+	udv: KundeMrs[],
+	grupper: readonly K[],
+	klassificer: (k: KundeMrs) => K
+): Record<K, { antal: number; gnsAendring: number }> {
+	const buckets = Object.fromEntries(grupper.map((g) => [g, [] as number[]])) as Record<
+		K,
+		number[]
+	>;
+	for (const k of udv) buckets[klassificer(k)].push(k.seneste - k.baseline);
+	return Object.fromEntries(
+		grupper.map((g) => [g, { antal: buckets[g].length, gnsAendring: r1(gns(buckets[g])) }])
+	) as Record<K, { antal: number; gnsAendring: number }>;
+}
+
+const ALDERSGRUPPER = ['0-40', '41-45', '46-50', '51-55', '56-60', '60+', 'ukendt'] as const;
+function aldersgruppe(alder?: number): (typeof ALDERSGRUPPER)[number] {
+	if (alder === undefined) return 'ukendt';
+	if (alder <= 40) return '0-40';
+	if (alder <= 45) return '41-45';
+	if (alder <= 50) return '46-50';
+	if (alder <= 55) return '51-55';
+	if (alder <= 60) return '56-60';
+	return '60+';
+}
+const MENOPAUSE = ['praemenopause', 'perimenopause', 'postmenopause', 'ukendt'] as const;
+function menopauseGruppe(m?: string): (typeof MENOPAUSE)[number] {
+	return (MENOPAUSE as readonly string[]).includes(m ?? '')
+		? (m as (typeof MENOPAUSE)[number])
+		: 'ukendt';
 }
 
 // Beregner ÉN scope (samlet eller ét forloeb) ud fra kundernes raa-data.
@@ -61,15 +96,14 @@ function beregnScope(kunder: KundeMrs[]) {
 		rejse.push({ gns: r1(gns(vaerdier)), antal: vaerdier.length });
 	}
 
-	// Baseline-svaergrad — antal + gns forbedring pr gruppe (over udviklings-kunder).
-	const svaergradGrupper = { mild: [] as number[], moderat: [] as number[], svaer: [] as number[] };
-	for (const k of udv) svaergradGrupper[svaergrad(k.baseline)].push(k.seneste - k.baseline);
-	const svaergradResultat = Object.fromEntries(
-		(['mild', 'moderat', 'svaer'] as const).map((g) => [
-			g,
-			{ antal: svaergradGrupper[g].length, gnsAendring: r1(gns(svaergradGrupper[g])) }
-		])
-	) as Record<'mild' | 'moderat' | 'svaer', { antal: number; gnsAendring: number }>;
+	// Segmenter (antal + gns forbedring pr gruppe, over udviklings-kunder).
+	const baselineSvaergrad = segmentGruppe(udv, ['mild', 'moderat', 'svaer'] as const, (k) =>
+		svaergrad(k.baseline)
+	);
+	const demografi = {
+		menopause: segmentGruppe(udv, MENOPAUSE, (k) => menopauseGruppe(k.menopaus)),
+		alder: segmentGruppe(udv, ALDERSGRUPPER, (k) => aldersgruppe(k.alder))
+	};
 
 	// Forbedrings-fordeling (over udviklings-kunder).
 	const fordeling = { megetBedre: 0, lidtBedre: 0, uaendret: 0, vaerre: 0 };
@@ -106,7 +140,8 @@ function beregnScope(kunder: KundeMrs[]) {
 			urogenital: subResultat('urogenital')
 		},
 		rejse,
-		baselineSvaergrad: svaergradResultat,
+		baselineSvaergrad,
+		demografi,
 		forbedringsFordeling: fordeling
 	};
 }
@@ -133,16 +168,21 @@ for (const d of users.docs) {
 		.sort((x, y) => (x.timestamp ?? 0) - (y.timestamp ?? 0));
 	if (maalinger.length === 0) continue;
 
+	const u = d.data() as {
+		forlobIds?: string[];
+		brugerProfil?: { alder?: number; menopaus?: string };
+	};
 	const kunde: KundeMrs = {
 		totaler: maalinger.map((m) => m.total!),
 		baseline: maalinger[0].total!,
 		seneste: maalinger[maalinger.length - 1].total!,
 		harUdvikling: maalinger.length >= 2,
 		subBaseline: maalinger[0].subscales,
-		subSeneste: maalinger[maalinger.length - 1].subscales
+		subSeneste: maalinger[maalinger.length - 1].subscales,
+		alder: u.brugerProfil?.alder,
+		menopaus: u.brugerProfil?.menopaus
 	};
 
-	const u = d.data() as { forlobIds?: string[] };
 	const forlobId =
 		u.forlobIds && u.forlobIds.length > 0 ? u.forlobIds[u.forlobIds.length - 1] : 'app';
 
@@ -160,10 +200,22 @@ const prForlob = [...prForlobKunder.entries()]
 	.filter((g) => g.antalMedData >= 3) // skjul mini-grupper (stoej/privatliv)
 	.sort((a, b) => b.antalMedUdvikling - a.antalMedUdvikling);
 
+// Type-aggregater til graf-linjerne 'Alle Kickstart' og 'Kropsro alle'.
+const kickstartKunder = [...prForlobKunder.entries()]
+	.filter(([id]) => id.startsWith('kickstart_'))
+	.flatMap(([, k]) => k);
+const kropsroKunder = [...prForlobKunder.entries()]
+	.filter(([id]) => id.startsWith('kropsro_'))
+	.flatMap(([, k]) => k);
+
 const snapshot = {
 	genereretAt: Date.now(),
 	kunderTjekket,
 	samlet: beregnScope(alleKunder),
+	prType: {
+		kickstart: beregnScope(kickstartKunder),
+		kropsro: beregnScope(kropsroKunder)
+	},
 	prForlob
 };
 

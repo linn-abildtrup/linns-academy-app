@@ -7,7 +7,7 @@
 
 	type SubResultat = { gnsBaseline: number; gnsSeneste: number; gnsAendring: number };
 	type Rejsepunkt = { gns: number; antal: number };
-	type SvaergradGruppe = { antal: number; gnsAendring: number };
+	type SegmentGruppe = { antal: number; gnsAendring: number };
 	type Scope = {
 		antalMedData: number;
 		antalMedUdvikling: number;
@@ -17,7 +17,11 @@
 		andelForbedret: number;
 		subskalaer: Record<'somatisk' | 'psykologisk' | 'urogenital', SubResultat>;
 		rejse: Rejsepunkt[];
-		baselineSvaergrad: Record<'mild' | 'moderat' | 'svaer', SvaergradGruppe>;
+		baselineSvaergrad: Record<'mild' | 'moderat' | 'svaer', SegmentGruppe>;
+		demografi: {
+			menopause: Record<string, SegmentGruppe>;
+			alder: Record<string, SegmentGruppe>;
+		};
 		forbedringsFordeling: {
 			megetBedre: number;
 			lidtBedre: number;
@@ -30,6 +34,7 @@
 		genereretAt: number;
 		kunderTjekket: number;
 		samlet: Scope;
+		prType: { kickstart: Scope; kropsro: Scope };
 		prForlob: Forlob[];
 	};
 
@@ -38,6 +43,8 @@
 	let fejl = $state<string | null>(null);
 	let aktivFane = $state<'alle' | 'forlob'>('alle');
 	let valgtForlobId = $state<string | null>(null);
+	let valgteLinjer = $state<Set<string>>(new Set(['alle', 'kickstart', 'kropsro']));
+	let linjeVaelgerAaben = $state(false);
 
 	onMount(async () => {
 		try {
@@ -67,51 +74,82 @@
 	);
 
 	// --- Rejse-graf ---
-	const FARVER = ['#6F9E7E', '#B87B6E', '#7A8CA0', '#C9A07A', '#8C5C7A', '#5C7A8C'];
+	const FORLOB_FARVER = ['#7A8CA0', '#C9A07A', '#8C5C7A', '#5C7A8C', '#9D6358', '#A37F66'];
 	const G = { w: 600, h: 230, padL: 30, padR: 14, padT: 14, padB: 26 };
+
+	// Alle linjer der kan vises: Alle / Alle Kickstart / Kropsro alle + hvert hold.
+	type GrafLinje = { id: string; navn: string; farve: string; rejse: Rejsepunkt[] };
+	const tilgaengeligeLinjer = $derived.by<GrafLinje[]>(() => {
+		if (!snapshot) return [];
+		const linjer: GrafLinje[] = [
+			{ id: 'alle', navn: 'Alle', farve: '#2d2a26', rejse: snapshot.samlet.rejse },
+			{
+				id: 'kickstart',
+				navn: 'Alle Kickstart',
+				farve: '#6F9E7E',
+				rejse: snapshot.prType.kickstart.rejse
+			},
+			{
+				id: 'kropsro',
+				navn: 'Kropsro alle',
+				farve: '#B87B6E',
+				rejse: snapshot.prType.kropsro.rejse
+			}
+		];
+		snapshot.prForlob.forEach((f, i) =>
+			linjer.push({
+				id: f.forlobId,
+				navn: f.navn,
+				farve: FORLOB_FARVER[i % FORLOB_FARVER.length],
+				rejse: f.rejse
+			})
+		);
+		return linjer;
+	});
 
 	const graf = $derived.by(() => {
 		if (!snapshot) return null;
-		// Linjer: 'Alle' (benchmark) altid med. Plus alle forløb (Alle-fanen)
-		// eller kun det valgte (Vælg forløb-fanen).
-		const linjer: { navn: string; farve: string; rejse: Rejsepunkt[]; fremhaev: boolean }[] = [
-			{
-				navn: 'Alle',
-				farve: '#2d2a26',
-				rejse: snapshot.samlet.rejse,
-				fremhaev: aktivFane === 'alle'
-			}
-		];
-		const forlob =
-			aktivFane === 'alle'
-				? snapshot.prForlob
-				: snapshot.prForlob.filter((f) => f.forlobId === valgtForlobId);
-		forlob.forEach((f, i) =>
-			linjer.push({
-				navn: f.navn,
-				farve: FARVER[i % FARVER.length],
-				rejse: f.rejse,
-				fremhaev: true
-			})
-		);
+		// Alle-fanen: de linjer brugeren har valgt. Vælg-forløb-fanen: 'Alle'
+		// (nedtonet benchmark) + det valgte hold.
+		let valgte: { linje: GrafLinje; fremhaev: boolean }[];
+		if (aktivFane === 'alle') {
+			valgte = tilgaengeligeLinjer
+				.filter((l) => valgteLinjer.has(l.id))
+				.map((l) => ({ linje: l, fremhaev: true }));
+		} else {
+			const alle = tilgaengeligeLinjer.find((l) => l.id === 'alle');
+			const f = tilgaengeligeLinjer.find((l) => l.id === valgtForlobId);
+			valgte = [
+				...(alle ? [{ linje: alle, fremhaev: false }] : []),
+				...(f ? [{ linje: f, fremhaev: true }] : [])
+			];
+		}
+		if (valgte.length === 0) return null;
 
-		const maxP = Math.max(2, ...linjer.map((l) => l.rejse.length));
-		const yMax = Math.max(...linjer.flatMap((l) => l.rejse.map((p) => p.gns)), 1) * 1.15;
+		const maxP = Math.max(2, ...valgte.map((v) => v.linje.rejse.length));
+		const yMax = Math.max(...valgte.flatMap((v) => v.linje.rejse.map((p) => p.gns)), 1) * 1.15;
 		const gx = (i: number) => G.padL + (maxP <= 1 ? 0 : (i / (maxP - 1)) * (G.w - G.padL - G.padR));
 		const gy = (v: number) => G.padT + (1 - v / yMax) * (G.h - G.padT - G.padB);
 
 		return {
-			gx,
-			gy,
-			linjer: linjer.map((l) => ({
-				...l,
-				pkt: l.rejse.map((p, i) => ({ x: gx(i), y: gy(p.gns), ...p })),
-				path: l.rejse.map((p, i) => `${i === 0 ? 'M' : 'L'}${gx(i)},${gy(p.gns)}`).join(' ')
+			linjer: valgte.map(({ linje, fremhaev }) => ({
+				navn: linje.navn,
+				farve: linje.farve,
+				fremhaev,
+				pkt: linje.rejse.map((p, i) => ({ x: gx(i), y: gy(p.gns), ...p })),
+				path: linje.rejse.map((p, i) => `${i === 0 ? 'M' : 'L'}${gx(i)},${gy(p.gns)}`).join(' ')
 			})),
 			yTicks: [0, yMax / 2, yMax].map((v) => ({ v: Math.round(v), y: gy(v) })),
 			xLabels: Array.from({ length: maxP }, (_, i) => ({ x: gx(i), label: `${i + 1}.` }))
 		};
 	});
+
+	function toggleLinje(id: string) {
+		const ny = new Set(valgteLinjer);
+		if (ny.has(id)) ny.delete(id);
+		else ny.add(id);
+		valgteLinjer = ny;
+	}
 
 	const SUBSKALA_NAVN = {
 		somatisk: 'Kropslige (somatisk)',
@@ -124,6 +162,13 @@
 		{ key: 'moderat', navn: 'Moderat', interval: '9–16' },
 		{ key: 'svaer', navn: 'Svær', interval: '17+' }
 	] as const;
+	const MENOPAUSE = [
+		{ key: 'praemenopause', navn: 'Præmenopause' },
+		{ key: 'perimenopause', navn: 'Perimenopause' },
+		{ key: 'postmenopause', navn: 'Postmenopause' },
+		{ key: 'ukendt', navn: 'Ukendt' }
+	];
+	const ALDER_ORDEN = ['0-40', '41-45', '46-50', '51-55', '56-60', '60+', 'ukendt'];
 	function fbProcent(
 		f: { megetBedre: number; lidtBedre: number; uaendret: number; vaerre: number },
 		key: 'megetBedre' | 'lidtBedre' | 'uaendret' | 'vaerre'
@@ -206,7 +251,36 @@
 			<!-- Rejse-graf -->
 			{#if graf}
 				<section class="card">
-					<div class="kort-titel">Udvikling over målinger</div>
+					<div class="graf-top">
+						<div class="kort-titel" style="margin:0">Udvikling over målinger</div>
+						{#if aktivFane === 'alle'}
+							<div class="linje-vaelger">
+								<button
+									class="linje-vaelger-knap"
+									onclick={() => (linjeVaelgerAaben = !linjeVaelgerAaben)}
+								>
+									Vælg linjer ({valgteLinjer.size})
+									<Icon name="chevron-d" size={12} color="var(--text2)" />
+								</button>
+								{#if linjeVaelgerAaben}
+									<div class="linje-menu">
+										{#each tilgaengeligeLinjer as l, i (l.id)}
+											{#if i === 3}<div class="linje-divider">Enkelte hold</div>{/if}
+											<label class="linje-option">
+												<input
+													type="checkbox"
+													checked={valgteLinjer.has(l.id)}
+													onchange={() => toggleLinje(l.id)}
+												/>
+												<span class="linje-prik" style="background:{l.farve}"></span>
+												{l.navn}
+											</label>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{/if}
+					</div>
 					<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
 						<!-- y-gitter -->
 						{#each graf.yTicks as t (t.v)}
@@ -294,18 +368,60 @@
 				</div>
 				<div class="fordeling-tegnforklaring">
 					<span
-						><span class="fb-prik meget"></span>Meget bedre ({s.forbedringsFordeling
-							.megetBedre})</span
+						><span class="fb-prik meget"></span>Meget bedre ({s.forbedringsFordeling.megetBedre} ·
+						{Math.round(fbProcent(s.forbedringsFordeling, 'megetBedre'))}%)</span
 					>
 					<span
-						><span class="fb-prik lidt"></span>Lidt bedre ({s.forbedringsFordeling.lidtBedre})</span
+						><span class="fb-prik lidt"></span>Lidt bedre ({s.forbedringsFordeling.lidtBedre} ·
+						{Math.round(fbProcent(s.forbedringsFordeling, 'lidtBedre'))}%)</span
 					>
 					<span
-						><span class="fb-prik uaendret"></span>Uændret ({s.forbedringsFordeling.uaendret})</span
+						><span class="fb-prik uaendret"></span>Uændret ({s.forbedringsFordeling.uaendret} ·
+						{Math.round(fbProcent(s.forbedringsFordeling, 'uaendret'))}%)</span
 					>
-					<span><span class="fb-prik vaerre"></span>Værre ({s.forbedringsFordeling.vaerre})</span>
+					<span
+						><span class="fb-prik vaerre"></span>Værre ({s.forbedringsFordeling.vaerre} ·
+						{Math.round(fbProcent(s.forbedringsFordeling, 'vaerre'))}%)</span
+					>
 				</div>
 				<p class="skala-note">"Meget bedre" = MRS faldt 5+ point.</p>
+			</section>
+
+			<!-- Demografi: menopause-status -->
+			<section class="card">
+				<div class="kort-titel">Forbedring efter menopause-status</div>
+				{#each MENOPAUSE as m (m.key)}
+					{@const g = s.demografi.menopause[m.key]}
+					{#if g && g.antal > 0}
+						<div class="svaer-rad">
+							<div class="svaer-navn">{m.navn}</div>
+							<div class="svaer-antal">{g.antal} kunder</div>
+							<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
+								{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
+								{tal(Math.abs(g.gnsAendring))}
+							</div>
+						</div>
+					{/if}
+				{/each}
+			</section>
+
+			<!-- Demografi: alder -->
+			<section class="card">
+				<div class="kort-titel">Forbedring efter aldersgruppe</div>
+				{#each ALDER_ORDEN as key (key)}
+					{@const g = s.demografi.alder[key]}
+					{#if g && g.antal > 0}
+						<div class="svaer-rad">
+							<div class="svaer-navn">{key === 'ukendt' ? 'Ukendt' : `${key} år`}</div>
+							<div class="svaer-antal">{g.antal} kunder</div>
+							<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
+								{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
+								{tal(Math.abs(g.gnsAendring))}
+							</div>
+						</div>
+					{/if}
+				{/each}
+				<p class="skala-note">"Ukendt" = kunder uden udfyldt profil. Tallet er gns. MRS-ændring.</p>
 			</section>
 
 			<!-- Subskalaer -->
@@ -487,6 +603,69 @@
 	}
 
 	/* Graf */
+	.graf-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 10px;
+		margin-bottom: 14px;
+	}
+	.linje-vaelger {
+		position: relative;
+		flex-shrink: 0;
+	}
+	.linje-vaelger-knap {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 10px;
+		border: 1px solid var(--border, #e7e2d9);
+		border-radius: 9px;
+		background: var(--white, #fff);
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text);
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.linje-menu {
+		position: absolute;
+		right: 0;
+		top: calc(100% + 4px);
+		z-index: 10;
+		min-width: 190px;
+		background: var(--white, #fff);
+		border: 1px solid var(--border, #e7e2d9);
+		border-radius: 11px;
+		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+		padding: 6px;
+	}
+	.linje-divider {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text3);
+		padding: 8px 8px 4px;
+	}
+	.linje-option {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 7px 8px;
+		border-radius: 7px;
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		cursor: pointer;
+	}
+	.linje-option:hover {
+		background: var(--bg2, #f4f1ec);
+	}
+	.linje-prik {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
 	.graf {
 		width: 100%;
 		height: auto;
