@@ -23,6 +23,7 @@
 			alder: Record<string, SegmentGruppe>;
 		};
 		velvaere: Record<'energi' | 'mave' | 'cravings' | 'humor' | 'sovn', SubResultat>;
+		velvaereRejse: Record<'energi' | 'mave' | 'cravings' | 'humor' | 'sovn', Rejsepunkt[]>;
 		antalVelvaere: number;
 		forbedringsFordeling: {
 			megetBedre: number;
@@ -172,12 +173,37 @@
 	];
 	const ALDER_ORDEN = ['0-40', '41-45', '46-50', '51-55', '56-60', '60+', 'ukendt'];
 	const VELVAERE = [
-		{ key: 'energi', navn: 'Energi' },
-		{ key: 'mave', navn: 'Mave & fordøjelse' },
-		{ key: 'cravings', navn: 'Cravings' },
-		{ key: 'humor', navn: 'Humør & overskud' },
-		{ key: 'sovn', navn: 'Søvn' }
+		{ key: 'energi', navn: 'Energi', farve: '#C9A07A' },
+		{ key: 'mave', navn: 'Mave & fordøjelse', farve: '#6F9E7E' },
+		{ key: 'cravings', navn: 'Cravings', farve: '#B87B6E' },
+		{ key: 'humor', navn: 'Humør & overskud', farve: '#7A8CA0' },
+		{ key: 'sovn', navn: 'Søvn', farve: '#8C5C7A' }
 	] as const;
+
+	// Velvære-rejse-graf (5 slider-linjer, skala 1–10, højere = bedre).
+	const velvaereGraf = $derived.by(() => {
+		if (!scope) return null;
+		const linjer = VELVAERE.map((v) => ({
+			navn: v.navn,
+			farve: v.farve,
+			rejse: scope.velvaereRejse?.[v.key] ?? []
+		})).filter((l) => l.rejse.length > 0);
+		if (linjer.length === 0) return null;
+		const maxP = Math.max(2, ...linjer.map((l) => l.rejse.length));
+		const yMax = 10;
+		const gx = (i: number) => G.padL + (maxP <= 1 ? 0 : (i / (maxP - 1)) * (G.w - G.padL - G.padR));
+		const gy = (val: number) => G.padT + (1 - val / yMax) * (G.h - G.padT - G.padB);
+		return {
+			linjer: linjer.map((l) => ({
+				navn: l.navn,
+				farve: l.farve,
+				pkt: l.rejse.map((p, i) => ({ x: gx(i), y: gy(p.gns), ...p })),
+				path: l.rejse.map((p, i) => `${i === 0 ? 'M' : 'L'}${gx(i)},${gy(p.gns)}`).join(' ')
+			})),
+			yTicks: [0, 5, 10].map((val) => ({ v: val, y: gy(val) })),
+			xLabels: Array.from({ length: maxP }, (_, i) => ({ x: gx(i), label: `${i + 1}.` }))
+		};
+	});
 	function fbProcent(
 		f: { megetBedre: number; lidtBedre: number; uaendret: number; vaerre: number },
 		key: 'megetBedre' | 'lidtBedre' | 'uaendret' | 'vaerre'
@@ -457,6 +483,38 @@
 			{#if s.antalVelvaere > 0}
 				<section class="card">
 					<div class="kort-titel">Velvære ({s.antalVelvaere} kunder)</div>
+					{#if velvaereGraf}
+						<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
+							{#each velvaereGraf.yTicks as t (t.v)}
+								<line x1={G.padL} y1={t.y} x2={G.w - G.padR} y2={t.y} class="gitter" />
+								<text x={G.padL - 5} y={t.y + 3} class="akse-tekst" text-anchor="end">{t.v}</text>
+							{/each}
+							{#each velvaereGraf.xLabels as x (x.label)}
+								<text x={x.x} y={G.h - 8} class="akse-tekst" text-anchor="middle">{x.label}</text>
+							{/each}
+							{#each velvaereGraf.linjer as l (l.navn)}
+								<path
+									d={l.path}
+									fill="none"
+									stroke={l.farve}
+									stroke-width="2.5"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+								{#each l.pkt as p (p.x)}
+									<circle cx={p.x} cy={p.y} r="4" fill={l.farve} />
+								{/each}
+							{/each}
+						</svg>
+						<div class="legende">
+							{#each velvaereGraf.linjer as l (l.navn)}
+								<span class="legende-item"
+									><span class="legende-prik" style="background:{l.farve}"></span>{l.navn}</span
+								>
+							{/each}
+						</div>
+						<p class="skala-note">Skala 1–10 · højere = bedre · pr. måling (1., 2., 3.)</p>
+					{/if}
 					{#each VELVAERE as v (v.key)}
 						{@const vv = s.velvaere[v.key]}
 						<div class="sub-rad">

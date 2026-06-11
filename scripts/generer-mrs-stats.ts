@@ -43,6 +43,7 @@ interface KundeMrs {
 	subSeneste?: Sub;
 	alder?: number;
 	menopaus?: string;
+	sliderMaalinger: Sliders[]; // alle slider-maalinger i rækkefølge (til velvaere-graf)
 	sliderBaseline?: Sliders;
 	sliderSeneste?: Sliders;
 	harSliderUdvikling: boolean; // >=2 maalinger med sliders
@@ -154,6 +155,21 @@ function beregnScope(kunder: KundeMrs[]) {
 		])
 	) as Record<keyof Sliders, { gnsBaseline: number; gnsSeneste: number; gnsAendring: number }>;
 
+	// Velvaere-rejse: gns slider-vaerdi ved 1., 2., 3. slider-maaling pr slider.
+	const velvaereRejse = Object.fromEntries(
+		SLIDER_KEYS.map((key) => {
+			const punkter: { gns: number; antal: number }[] = [];
+			for (let i = 0; i < MAX_REJSE_PUNKTER; i++) {
+				const v = kunder
+					.filter((k) => k.sliderMaalinger.length > i)
+					.map((k) => k.sliderMaalinger[i][key]);
+				if (v.length < 5) break;
+				punkter.push({ gns: r1(gns(v)), antal: v.length });
+			}
+			return [key, punkter];
+		})
+	) as Record<keyof Sliders, { gns: number; antal: number }[]>;
+
 	return {
 		antalMedData: kunder.length,
 		antalMedUdvikling: udv.length,
@@ -172,6 +188,7 @@ function beregnScope(kunder: KundeMrs[]) {
 		baselineSvaergrad,
 		demografi,
 		velvaere,
+		velvaereRejse,
 		antalVelvaere: sliderUdv.length,
 		forbedringsFordeling: fordeling
 	};
@@ -215,6 +232,7 @@ for (const d of users.docs) {
 		subSeneste: maalinger[maalinger.length - 1].subscales,
 		alder: u.brugerProfil?.alder,
 		menopaus: u.brugerProfil?.menopaus,
+		sliderMaalinger: sliderMaalinger.map((m) => m.sliders!),
 		sliderBaseline: sliderMaalinger[0]?.sliders,
 		sliderSeneste: sliderMaalinger[sliderMaalinger.length - 1]?.sliders,
 		harSliderUdvikling: sliderMaalinger.length >= 2
