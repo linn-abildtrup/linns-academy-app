@@ -418,6 +418,42 @@
 	});
 </script>
 
+{#snippet naeringsGraf(vaerdier: number[], dage: string[], max: number, visDagLabels: boolean)}
+	{@const maal = dagligeMaal[aktivMetric]}
+	{@const malPct = Math.min(100, (maal / max) * 100)}
+	<div class="ng-wrap">
+		<div class="ng-yakse">
+			<span>{formatVal(aktivMetric, max)}</span>
+			<span>{formatVal(aktivMetric, max / 2)}</span>
+			<span>0</span>
+		</div>
+		<div class="ng-kol">
+			<div class="ng-plot">
+				<div class="ng-mal" style:bottom="{malPct}%">
+					<span class="ng-mal-lbl">mål {maal}</span>
+				</div>
+				<div class="ng-baarer" class:smal={!visDagLabels}>
+					{#each dage as d, i (d)}
+						{@const v = vaerdier[i]}
+						{@const pct = (v / max) * 100}
+						{@const opfyldt = v >= maal}
+						<div class="ng-spalte" title="{d}: {formatVal(aktivMetric, v)}">
+							<div class="ng-baar" class:opfyldt style:height="{pct}%"></div>
+						</div>
+					{/each}
+				</div>
+			</div>
+			{#if visDagLabels}
+				<div class="ng-xlabels">
+					{#each dage as d (d)}
+						<div class="ng-xlabel">{dagNum(d)}<span>{ugedagKort(d)}</span></div>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	</div>
+{/snippet}
+
 <div class="page">
 	<header class="page-header">
 		<div class="eyebrow">Min udvikling</div>
@@ -473,24 +509,7 @@
 				{NAERING_LABELS[aktivMetric]} sidste 7 dage
 				<span class="kort-mål">mål: {dagligeMaal[aktivMetric]} {NAERING_ENHEDER[aktivMetric]}</span>
 			</div>
-			<div class="soejler">
-				{#each syvDageMeta.dage as d, i (d)}
-					{@const v = syvDageVaerdier[i]}
-					{@const pct = (v / syvDageMax) * 100}
-					{@const opfyldt = v >= dagligeMaal[aktivMetric]}
-					{@const harData = v > 0}
-					<div class="soejle-spalte" title={formatVal(aktivMetric, v)}>
-						<div class="soejle-tal" class:synlig={harData} class:opfyldt>
-							{aktivMetric === 'kcal' ? Math.round(v) : Math.round(v * 10) / 10}
-						</div>
-						<div class="soejle-baar">
-							<div class="soejle-fyld" class:opfyldt style:height="{pct}%"></div>
-						</div>
-						<div class="soejle-dag">{dagNum(d)}</div>
-						<div class="soejle-uge">{ugedagKort(d)}</div>
-					</div>
-				{/each}
-			</div>
+			{@render naeringsGraf(syvDageVaerdier, syvDageMeta.dage, syvDageMax, true)}
 			<div class="kort-statistik">
 				<span>Højeste: <strong>{formatVal(aktivMetric, Math.max(...syvDageVaerdier))}</strong></span
 				>
@@ -511,18 +530,7 @@
 				{NAERING_LABELS[aktivMetric]} sidste 30 dage
 				<span class="kort-mål">mål: {dagligeMaal[aktivMetric]} {NAERING_ENHEDER[aktivMetric]}</span>
 			</div>
-			<div class="soejler soejler-tredive">
-				{#each tredive.dage as d, i (d)}
-					{@const v = trediveVaerdier[i]}
-					{@const pct = (v / trediveMax) * 100}
-					{@const opfyldt = v >= dagligeMaal[aktivMetric]}
-					<div class="soejle-spalte" title="{d}: {formatVal(aktivMetric, v)}">
-						<div class="soejle-baar">
-							<div class="soejle-fyld" class:opfyldt style:height="{pct}%"></div>
-						</div>
-					</div>
-				{/each}
-			</div>
+			{@render naeringsGraf(trediveVaerdier, tredive.dage, trediveMax, false)}
 			<div class="linje-meta">
 				<span>{tredive.dage[0]}</span>
 				<span>i dag</span>
@@ -1017,6 +1025,115 @@
 		grid-template-columns: repeat(30, 1fr);
 		gap: 2px;
 		height: 140px;
+	}
+
+	/* Nærings-graf med y-akse + stiplet mål-linje (7- og 30-dages) */
+	.ng-wrap {
+		display: flex;
+		gap: 6px;
+		margin-bottom: 8px;
+	}
+
+	.ng-yakse {
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		align-items: flex-end;
+		height: 160px;
+		min-width: 30px;
+		font-size: calc(9.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		line-height: 1;
+	}
+
+	.ng-kol {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.ng-plot {
+		position: relative;
+		height: 160px;
+		border-left: 1px solid var(--border);
+		border-bottom: 1px solid var(--border);
+	}
+
+	.ng-mal {
+		position: absolute;
+		left: 0;
+		right: 0;
+		border-top: 1.5px dashed var(--sage, #6f9e7e);
+		pointer-events: none;
+	}
+
+	.ng-mal-lbl {
+		position: absolute;
+		right: 2px;
+		top: -7px;
+		font-size: calc(9px * var(--fs-scale, 1));
+		color: var(--sage, #6f9e7e);
+		background: var(--white);
+		padding: 0 4px;
+		border-radius: 4px;
+		white-space: nowrap;
+	}
+
+	.ng-baarer {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: 1fr;
+		gap: 6px;
+		align-items: end;
+		padding: 0 3px;
+	}
+
+	.ng-baarer.smal {
+		gap: 2px;
+		padding: 0 1px;
+	}
+
+	.ng-spalte {
+		display: flex;
+		align-items: end;
+		height: 100%;
+	}
+
+	.ng-baar {
+		width: 100%;
+		min-height: 2px;
+		border-radius: 4px 4px 0 0;
+		background: var(--terra);
+	}
+
+	.ng-baar.opfyldt {
+		background: var(--sage, #6f9e7e);
+	}
+
+	.ng-xlabels {
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: 1fr;
+		gap: 6px;
+		padding: 5px 3px 0;
+		text-align: center;
+	}
+
+	.ng-xlabel {
+		font-family: var(--ff-d);
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		line-height: 1.2;
+	}
+
+	.ng-xlabel span {
+		display: block;
+		font-family: var(--ff-b);
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 400;
+		color: var(--text3);
 	}
 
 	.soejle-spalte {
