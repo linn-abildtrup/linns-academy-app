@@ -367,6 +367,14 @@ service cloud.firestore {
 			allow write: if isAdmin();
 		}
 
+		// Admin-statistik (KPI-snapshots til dashboardet). Genereres af
+		// scripts/generer-*-stats.ts via firebase-admin (uden om rules). Kun
+		// admin kan laese; ingen klient-skrivning (snapshots laves server-side).
+		match /adminStats/{docId} {
+			allow read: if isAdmin();
+			allow write: if false;
+		}
+
 		// Klientspørgsmål til Linn:
 		//   - Klienter kan oprette deres egne spørgsmål (uid skal matche)
 		//   - Klienter kan læse SINE egne spørgsmål (for at se Linns svar)

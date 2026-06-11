@@ -3,6 +3,14 @@
 
 	const omraader = [
 		{
+			id: 'dashboard',
+			navn: 'Dashboard',
+			beskrivelse: 'KPI-overblik — udvikling i MRS-score samlet og pr hold',
+			rute: '/app/admin/dashboard',
+			accent: '#6F9E7E',
+			icon: 'grid' as const
+		},
+		{
 			id: 'forlob',
 			navn: 'Forløb',
 			beskrivelse: 'Opret runder, upload whitelist og rediger forløbets vaneprogram',
@@ -77,7 +85,7 @@
 		{
 			id: 'linn-ai',
 			navn: 'Linn AI — videnbase',
-			beskrivelse: 'Upload PDFs og slides som AI\'en bruger til at svare premium-klienter',
+			beskrivelse: "Upload PDFs og slides som AI'en bruger til at svare premium-klienter",
 			rute: '/app/admin/linn-ai',
 			accent: '#5C7A8C',
 			icon: 'sparkle' as const
