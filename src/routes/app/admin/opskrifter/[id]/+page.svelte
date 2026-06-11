@@ -7,16 +7,13 @@
 		ALLE_KATEGORIER,
 		DIET_LABELS,
 		KATEGORI_LABELS,
+		parseOpskriftMakro,
 		type DietTag,
 		type Ingrediens,
 		type Opskrift,
 		type OpskriftKategori
 	} from '$lib/content/opskrifter';
-	import {
-		gemOpskrift,
-		hentOpskrift,
-		sletOpskrift
-	} from '$lib/firestore/opskrifter';
+	import { gemOpskrift, hentOpskrift, sletOpskrift } from '$lib/firestore/opskrifter';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const opskriftId = $derived(page.params.id ?? '');
@@ -31,6 +28,23 @@
 	let formDefaultPortioner = $state(4);
 	let formIngredienser = $state<Ingrediens[]>([]);
 	let formInstruktioner = $state('');
+
+	// Live-aflæsning af makro fra instruktioner-feltet, saa admin med det samme
+	// kan se om makroen kan parses (kunderne ser '—' hvis ikke). Protein, fiber
+	// og kalorier er de "vigtige" felter 30-30-3 viser.
+	const makroAflaest = $derived(parseOpskriftMakro(formInstruktioner));
+	const makroMangler = $derived(
+		makroAflaest.protein === null || makroAflaest.fiber === null || makroAflaest.kalorier === null
+	);
+	const makroResume = $derived(
+		[
+			`Protein ${makroAflaest.protein ?? '—'} g`,
+			`Fiber ${makroAflaest.fiber ?? '—'} g`,
+			`Kulhydrat ${makroAflaest.kh ?? '—'} g`,
+			`Fedt ${makroAflaest.fedt ?? '—'} g`,
+			`Kalorier ${makroAflaest.kalorier ?? '—'} kcal`
+		].join(' · ')
+	);
 	let formAktiv = $state(false);
 
 	let loading = $state(true);
@@ -84,10 +98,7 @@
 	}
 
 	function tilfoejIngrediens() {
-		formIngredienser = [
-			...formIngredienser,
-			{ navn: '', maengde: 0, enhed: 'g' }
-		];
+		formIngredienser = [...formIngredienser, { navn: '', maengde: 0, enhed: 'g' }];
 	}
 
 	function fjernIngrediens(index: number) {
@@ -198,12 +209,7 @@
 
 			<label class="felt">
 				<span class="felt-label">Billede-URL</span>
-				<input
-					type="url"
-					bind:value={formBilledeUrl}
-					disabled={gemmer}
-					placeholder="https://..."
-				/>
+				<input type="url" bind:value={formBilledeUrl} disabled={gemmer} placeholder="https://..." />
 				<span class="felt-hint">
 					Brug en hosted URL for nu. Upload via Firebase Storage tilføjes senere.
 				</span>
@@ -245,13 +251,7 @@
 
 			<label class="felt">
 				<span class="felt-label">Default antal portioner</span>
-				<input
-					type="number"
-					min="1"
-					max="20"
-					bind:value={formDefaultPortioner}
-					disabled={gemmer}
-				/>
+				<input type="number" min="1" max="20" bind:value={formDefaultPortioner} disabled={gemmer} />
 				<span class="felt-hint">Brugeren kan justere op/ned, og mængderne skaleres.</span>
 			</label>
 
@@ -300,31 +300,26 @@
 							class="ikon-knap"
 							onclick={() => flytIngrediens(i, -1)}
 							disabled={gemmer || i === 0}
-							aria-label="Flyt op"
-						>↑</button>
+							aria-label="Flyt op">↑</button
+						>
 						<button
 							type="button"
 							class="ikon-knap"
 							onclick={() => flytIngrediens(i, 1)}
 							disabled={gemmer || i === formIngredienser.length - 1}
-							aria-label="Flyt ned"
-						>↓</button>
+							aria-label="Flyt ned">↓</button
+						>
 						<button
 							type="button"
 							class="ikon-knap"
 							onclick={() => fjernIngrediens(i)}
 							disabled={gemmer}
-							aria-label="Fjern"
-						>×</button>
+							aria-label="Fjern">×</button
+						>
 					</div>
 				</div>
 			{/each}
-			<button
-				class="ghost-knap"
-				type="button"
-				onclick={tilfoejIngrediens}
-				disabled={gemmer}
-			>
+			<button class="ghost-knap" type="button" onclick={tilfoejIngrediens} disabled={gemmer}>
 				+ Tilføj ingrediens
 			</button>
 		</section>
@@ -339,6 +334,23 @@
 				placeholder="1. Start med...&#10;2. Fortsæt med..."
 			></textarea>
 			<p class="hint">Skriv hvert trin på sin egen linje. Tomme linjer giver afsnit.</p>
+			{#if formInstruktioner.trim()}
+				<div class="makro-aflaest" class:advarsel={makroMangler}>
+					{#if makroMangler}
+						<strong>⚠️ Kunne ikke aflæse al makro fra teksten.</strong>
+						<span>
+							Kunden ser "—" for de manglende felter. Skriv makroen et sted i teksten, fx:
+							<code
+								>Protein: 30 g · Fiber: 8 g · Kulhydrater: 40 g · Fedt: 12 g · Kalorier: 380 kcal</code
+							>
+						</span>
+						<span class="aflaest-nu">Aflæst nu: {makroResume}</span>
+					{:else}
+						<strong>✓ Makro aflæst:</strong>
+						<span>{makroResume}</span>
+					{/if}
+				</div>
+			{/if}
 		</section>
 
 		{#if gemFejl}
@@ -456,6 +468,37 @@
 		color: var(--text3);
 		margin: 0;
 		line-height: 1.45;
+	}
+
+	.makro-aflaest {
+		margin-top: 10px;
+		padding: 10px 12px;
+		border-radius: 8px;
+		background: #eef4ef;
+		border-left: 3px solid var(--sage, #6f9e7e);
+		font-size: calc(12px * var(--fs-scale, 1));
+		line-height: 1.5;
+		color: var(--text2);
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.makro-aflaest.advarsel {
+		background: #fdf0d5;
+		border-left-color: #b8860b;
+	}
+
+	.makro-aflaest code {
+		font-size: calc(11px * var(--fs-scale, 1));
+		background: rgba(0, 0, 0, 0.05);
+		padding: 1px 5px;
+		border-radius: 4px;
+	}
+
+	.makro-aflaest .aflaest-nu {
+		color: var(--text3);
+		font-size: calc(11px * var(--fs-scale, 1));
 	}
 
 	.felt {
