@@ -121,13 +121,7 @@
 
 	function tabFraQuery(): Tab {
 		const t = page.url.searchParams.get('tab');
-		if (
-			t === 'maaltid' ||
-			t === 'opskrifter' ||
-			t === 'mine' ||
-			t === 'madplan' ||
-			t === 'dagbog'
-		)
+		if (t === 'maaltid' || t === 'opskrifter' || t === 'mine' || t === 'madplan' || t === 'dagbog')
 			return t;
 		return 'maaltid';
 	}
@@ -293,9 +287,7 @@
 	// Madplan er bag test-flag indtil den er færdig-testet. Kun premium-
 	// kunder med dagligeMaal sat OG som er på testere-listen ser den.
 	const kanBrugeMadplan = $derived(
-		harPremium(userDoc) &&
-			!!userDoc?.dagligeMaal &&
-			harTestAdgang(userDoc, 'foreslaa-madplan')
+		harPremium(userDoc) && !!userDoc?.dagligeMaal && harTestAdgang(userDoc, 'foreslaa-madplan')
 	);
 
 	// Gem-måltid-modal state
@@ -385,13 +377,9 @@
 		filtrerOpskrifter(opskrifter, opskriftSoeg, valgteOpskriftKategorier, valgteDietTags)
 	);
 
-	const synligeOpskrifter = $derived(
-		filtreredeOpskrifter.slice(0, synligeOpskriftAntal)
-	);
+	const synligeOpskrifter = $derived(filtreredeOpskrifter.slice(0, synligeOpskriftAntal));
 
-	const harFlereOpskrifter = $derived(
-		synligeOpskriftAntal < filtreredeOpskrifter.length
-	);
+	const harFlereOpskrifter = $derived(synligeOpskriftAntal < filtreredeOpskrifter.length);
 
 	// Nulstil pagination når filtre eller søgning ændres, så brugeren ikke
 	// pludselig ser fragmenter af en gammel resultatside.
@@ -427,9 +415,7 @@
 			const resultater = await searchProducts(q);
 			// Filtrer dem der allerede findes som lokal foedevare (cf_-prefix)
 			// eller som klientens egne customs (matcher pr barcode hvis sat).
-			const lokaleBarcodes = new Set(
-				foods.flatMap((f) => (f.barcode ? [f.barcode] : []))
-			);
+			const lokaleBarcodes = new Set(foods.flatMap((f) => (f.barcode ? [f.barcode] : [])));
 			offResultater = resultater.filter((r) => !lokaleBarcodes.has(r.barcode));
 			offSoegerNu = false;
 		}, 400);
@@ -533,7 +519,6 @@
 		}
 	}
 
-
 	async function indlaesSenesteFodevarer(uid: string) {
 		// Henter måltider fra de seneste 90 dage, sortér nyeste først, og
 		// udled de seneste 30 unikke fødevarer brugeren har valgt.
@@ -541,11 +526,7 @@
 		const fra = new Date(idag);
 		fra.setDate(fra.getDate() - 90);
 		try {
-			const maaltider = await hentMaaltiderIPeriode(
-				uid,
-				formatDatoKey(fra),
-				formatDatoKey(idag)
-			);
+			const maaltider = await hentMaaltiderIPeriode(uid, formatDatoKey(fra), formatDatoKey(idag));
 			maaltider.sort((a, b) => b.dato.localeCompare(a.dato));
 			const seen = new Set<string>();
 			const result: string[] = [];
@@ -618,7 +599,9 @@
 				hentAlleFodevarer(),
 				hentAlleOpskrifter(true),
 				u && harPremium(userDoc) ? hentMineOpskrifter(u.uid) : Promise.resolve([]),
-				u ? hentMineCustomFodevarer(u.uid).catch(() => [] as Fodevare[]) : Promise.resolve([] as Fodevare[])
+				u
+					? hentMineCustomFodevarer(u.uid).catch(() => [] as Fodevare[])
+					: Promise.resolve([] as Fodevare[])
 			]);
 			// Merge egne fødevarer ind i den globale liste så de kan søges
 			// + bruges som almindelige fødevarer i picker.
@@ -699,8 +682,7 @@
 		if (maaltid.length > 0) {
 			bekraeft = {
 				titel: 'Erstat dit nuværende måltid?',
-				beskrivelse:
-					'Du har et måltid i gang. Det erstattes af favoritten du vil redigere.',
+				beskrivelse: 'Du har et måltid i gang. Det erstattes af favoritten du vil redigere.',
 				bekraeftTekst: 'Fortsæt',
 				onBekraeft: apply
 			};
@@ -792,10 +774,7 @@
 			const standardPortion = standardEnhed ? 1 : 100;
 			// Prepend så den nytilføjede fødevare ligger øverst i listen — nemmere
 			// at se hvad man lige har valgt uden at scrolle.
-			maaltid = [
-				{ foodId: food.id, portion: standardPortion, enhedId: standardEnhed },
-				...maaltid
-			];
+			maaltid = [{ foodId: food.id, portion: standardPortion, enhedId: standardEnhed }, ...maaltid];
 			skiftTab('maaltid');
 		}
 		viserPicker = false;
@@ -829,7 +808,8 @@
 		// Auto-juster portion-tal naar enheden skifter type, saa kunden
 		// ikke ender med absurde vaerdier som '100 skiver'. Gar fra g/ml
 		// til navngivet enhed -> portion = 1. Modsat vej -> portion = 100.
-		const gammelErGram = !eksisterende.enhedId || eksisterende.enhedId === 'g' || eksisterende.enhedId === 'ml';
+		const gammelErGram =
+			!eksisterende.enhedId || eksisterende.enhedId === 'g' || eksisterende.enhedId === 'ml';
 		const nyErGram = !ny || ny === 'g' || ny === 'ml';
 		let portion = eksisterende.portion;
 		if (gammelErGram && !nyErGram) portion = 1;
@@ -1089,8 +1069,7 @@
 		if (maaltid.length > 0 && redigererMaaltid?.id !== m.id) {
 			bekraeft = {
 				titel: 'Erstat dit nuværende måltid?',
-				beskrivelse:
-					'Du har et måltid i gang. Det erstattes af måltidet du vil redigere.',
+				beskrivelse: 'Du har et måltid i gang. Det erstattes af måltidet du vil redigere.',
 				bekraeftTekst: 'Fortsæt',
 				onBekraeft: apply
 			};
@@ -1132,9 +1111,7 @@
 			} else if (maaltid.length === 1) {
 				const item = maaltid[0];
 				gemNavn =
-					item.manuel?.navn ??
-					foodMap.get(item.foodId)?.name ??
-					MAALTIDSTYPE_LABELS[gemType];
+					item.manuel?.navn ?? foodMap.get(item.foodId)?.name ?? MAALTIDSTYPE_LABELS[gemType];
 			} else {
 				gemNavn = MAALTIDSTYPE_LABELS[gemType];
 			}
@@ -1284,9 +1261,9 @@
 		for (const o of opskrifter) {
 			// Tag første matchende måltids-kategori (de fleste opskrifter
 			// har præcis én af morgenmad/frokost/aftensmad)
-			const kat = o.kategorier.find((k) =>
-				MAALTIDSKATEGORIER.includes(k as Maaltidskategori)
-			) as Maaltidskategori | undefined;
+			const kat = o.kategorier.find((k) => MAALTIDSKATEGORIER.includes(k as Maaltidskategori)) as
+				| Maaltidskategori
+				| undefined;
 			if (!kat) continue;
 			const mk = parseOpskriftMakro(o.instruktioner);
 			out.push({
@@ -1330,9 +1307,7 @@
 			// kan deles via prompt-cache på serveren.
 			const filtrerede = filtrerKandidater(alleKandidater, madplanGlutenfri);
 			if (filtrerede.length === 0) {
-				throw new Error(
-					'Ingen glutenfri opskrifter fundet. Prøv at fjerne glutenfri-filteret.'
-				);
+				throw new Error('Ingen glutenfri opskrifter fundet. Prøv at fjerne glutenfri-filteret.');
 			}
 			// Send navne på favorit-fødevarer (ikke ids — AI'en kender ikke ids)
 			const favoritNavne = (userDoc.favoritFodevarer ?? [])
@@ -1369,10 +1344,7 @@
 	}
 
 	/** Tilføjer en AI-foreslået opskrift som et nyt måltid i dagbogen. */
-	async function tilfoejForslagTilDagbog(
-		forslag: MadplanForslag,
-		kategori: Maaltidskategori
-	) {
+	async function tilfoejForslagTilDagbog(forslag: MadplanForslag, kategori: Maaltidskategori) {
 		const u = user;
 		if (!u) return;
 		madplanTilfoejer = forslag.opskriftId;
@@ -1432,6 +1404,43 @@
 		}
 	}
 
+	// Protein + fiber for ét madplan-forslag (slaar opskriften op).
+	function makroForForslag(forslag: MadplanForslag): { protein: number; fiber: number } {
+		if (forslag.erEgen) {
+			const e = mineOpskrifter.find((x) => x.id === forslag.opskriftId);
+			if (e) return { protein: e.makroPrPortion.protein, fiber: e.makroPrPortion.fiber };
+		} else {
+			const o = opskrifter.find((x) => x.id === forslag.opskriftId);
+			if (o) {
+				const mk = parseOpskriftMakro(o.instruktioner);
+				return { protein: mk.protein ?? 0, fiber: mk.fiber ?? 0 };
+			}
+		}
+		return { protein: 0, fiber: 0 };
+	}
+
+	// Estimeret dags-total hvis kunden vaelger det FOERSTE (primaere) forslag i
+	// hver kategori + alle snacks — samme maade AI'en regner paa. Saa kunden kan
+	// se om planen rammer hendes protein- og fiber-maal, ikke kun AI'ens tekst.
+	const madplanTotaler = $derived.by(() => {
+		if (!madplanSvar) return null;
+		let protein = 0;
+		let fiber = 0;
+		for (const kat of MAALTIDSKATEGORIER) {
+			const foerste = madplanSvar[kat][0];
+			if (foerste) {
+				const m = makroForForslag(foerste);
+				protein += m.protein;
+				fiber += m.fiber;
+			}
+		}
+		for (const s of madplanSvar.snacks) {
+			protein += s.protein;
+			fiber += s.fiber;
+		}
+		return { protein: Math.round(protein), fiber: Math.round(fiber) };
+	});
+
 	// Sub-modal til "Se opskrift" — bruges både fra madplan-modalen og fra
 	// dagbog-måltider der har opskriftRef. Discriminated union så vi kan
 	// vise enten en global Opskrift eller en MinOpskrift.
@@ -1483,7 +1492,8 @@
 		<div class="eyebrow">Mad</div>
 		<h1>30-30 beregner</h1>
 		<p class="page-sub">
-			Sigt efter mindst 30g protein pr. måltid og 30g fiber i alt over dagen. Det holder dig mæt længere og støtter et stabilt blodsukker gennem overgangsalderen.
+			Sigt efter mindst 30g protein pr. måltid og 30g fiber i alt over dagen. Det holder dig mæt
+			længere og støtter et stabilt blodsukker gennem overgangsalderen.
 		</p>
 	</header>
 
@@ -1553,14 +1563,14 @@
 						type="button"
 						class="kladde-fejl-luk"
 						onclick={() => (kladdeFejlBesked = null)}
-						aria-label="Luk besked"
-					>×</button>
+						aria-label="Luk besked">×</button
+					>
 				</div>
 			{/if}
 			{#if forhaandsValgtDato && !redigererFavorit && !redigererMaaltid}
 				<div class="dato-hint">
-					Du bygger måltid for <strong>{visningsDato(forhaandsValgtDato)}</strong>.
-					Gem-datoen er pre-valgt.
+					Du bygger måltid for <strong>{visningsDato(forhaandsValgtDato)}</strong>. Gem-datoen er
+					pre-valgt.
 				</div>
 			{/if}
 			{#if redigererFavorit}
@@ -1700,15 +1710,13 @@
 										<span class="manuel-badge">Manuel</span>
 									</div>
 									<div class="item-meta">
-										{item.portion > 0 ? `${item.portion} ${item.manuel?.enhed ?? ''}` : 'efter smag'}
+										{item.portion > 0
+											? `${item.portion} ${item.manuel?.enhed ?? ''}`
+											: 'efter smag'}
 										· ingen protein/fiber-beregning
 									</div>
 								</div>
-								<button
-									class="erstat-knap"
-									type="button"
-									onclick={() => aabnErstat(i)}
-								>
+								<button class="erstat-knap" type="button" onclick={() => aabnErstat(i)}>
 									Find
 								</button>
 								<button
@@ -1735,16 +1743,14 @@
 									min="0"
 									step="0.5"
 									value={item.portion}
-									oninput={(e) =>
-										opdaterPortion(i, (e.target as HTMLInputElement).value)}
+									oninput={(e) => opdaterPortion(i, (e.target as HTMLInputElement).value)}
 								/>
 								{@const basisEnhed = food?.liquid ? 'ml' : 'g'}
 								{@const enheder = getEnheder(food)}
 								<select
 									class="enhed-select"
 									value={item.enhedId ?? basisEnhed}
-									onchange={(e) =>
-										opdaterEnhed(i, (e.target as HTMLSelectElement).value)}
+									onchange={(e) => opdaterEnhed(i, (e.target as HTMLSelectElement).value)}
 								>
 									<option value={basisEnhed}>{basisEnhed}</option>
 									{#each enheder as u (u.u)}
@@ -1787,11 +1793,10 @@
 			<div class="hint-boks">
 				<span class="hint-ikon">+</span>
 				<span class="hint-tekst">
-					Klik på <strong>+</strong> på en opskrift for at samle ingredienserne i én indkøbsliste.
-					Vælg flere på tværs af kategorier og få listen som tekst eller PDF.
+					Klik på <strong>+</strong> på en opskrift for at samle ingredienserne i én indkøbsliste. Vælg
+					flere på tværs af kategorier og få listen som tekst eller PDF.
 				</span>
 			</div>
-
 
 			<input
 				type="search"
@@ -1827,9 +1832,7 @@
 			</div>
 
 			{#if opskrifter.length === 0}
-				<div class="status-besked">
-					Linn er ved at lægge opskrifter ind. Kig forbi senere.
-				</div>
+				<div class="status-besked">Linn er ved at lægge opskrifter ind. Kig forbi senere.</div>
 			{:else if filtreredeOpskrifter.length === 0}
 				<div class="status-besked">Ingen opskrifter matcher dine filtre.</div>
 			{:else}
@@ -1837,7 +1840,11 @@
 					{#each synligeOpskrifter as o, i (o.id)}
 						{@const erValgt = valgteOpskrifter.has(o.id)}
 						{@const portioner = valgteOpskrifter.get(o.id) ?? o.defaultPortioner}
-						<a class="opskrift-kort" class:valgt={erValgt} href="/app/moduler/30-30-3/opskrifter/{o.id}">
+						<a
+							class="opskrift-kort"
+							class:valgt={erValgt}
+							href="/app/moduler/30-30-3/opskrifter/{o.id}"
+						>
 							<div class="opskrift-billede">
 								{#if o.billedeUrl}
 									<img
@@ -1900,11 +1907,7 @@
 				</div>
 
 				{#if harFlereOpskrifter}
-					<button
-						type="button"
-						class="vis-flere-knap"
-						onclick={visFlereOpskrifter}
-					>
+					<button type="button" class="vis-flere-knap" onclick={visFlereOpskrifter}>
 						Vis flere ({filtreredeOpskrifter.length - synligeOpskriftAntal} tilbage)
 					</button>
 				{/if}
@@ -1928,8 +1931,8 @@
 			<div class="hint-boks">
 				<span class="hint-ikon">✨</span>
 				<span class="hint-tekst">
-					AI'en bygger en madplan til dig ud fra opskrifterne her i appen og dine egne. Vælg
-					antal alternativer, glutenfri og ingredienser du vil undgå.
+					AI'en bygger en madplan til dig ud fra opskrifterne her i appen og dine egne. Vælg antal
+					alternativer, glutenfri og ingredienser du vil undgå.
 				</span>
 			</div>
 			<button type="button" class="primary-knap mine-tilfoj" onclick={aabnMadplanModal}>
@@ -1947,7 +1950,10 @@
 			</a>
 			{#if mineOpskrifter.length === 0}
 				<div class="tom-boks">
-					<p>Du har ingen private opskrifter endnu. Tryk på knappen ovenfor for at tilføje din første.</p>
+					<p>
+						Du har ingen private opskrifter endnu. Tryk på knappen ovenfor for at tilføje din
+						første.
+					</p>
 				</div>
 			{:else}
 				<ul class="mine-liste">
@@ -1961,7 +1967,8 @@
 							<div class="mine-tekst">
 								<div class="mine-navn">{o.navn}</div>
 								<div class="mine-meta">
-									{o.makroPrPortion.protein}g protein · {o.makroPrPortion.kcal} kcal · {o.antalPortioner} {o.antalPortioner === 1 ? 'portion' : 'portioner'}
+									{o.makroPrPortion.protein}g protein · {o.makroPrPortion.kcal} kcal · {o.antalPortioner}
+									{o.antalPortioner === 1 ? 'portion' : 'portioner'}
 								</div>
 							</div>
 						</a>
@@ -1986,8 +1993,7 @@
 					class="dato-input"
 					type="date"
 					value={dagbogDato}
-					onchange={(e) =>
-						void aendreDagbogDato((e.target as HTMLInputElement).value)}
+					onchange={(e) => void aendreDagbogDato((e.target as HTMLInputElement).value)}
 				/>
 				<button
 					class="dato-knap"
@@ -2064,7 +2070,6 @@
 						</div>
 					</div>
 				{/if}
-
 
 				<div class="dagbog-liste">
 					{#each MAALTIDSTYPER as type (type)}
@@ -2187,12 +2192,7 @@
 							I morgen
 						</button>
 					</div>
-					<input
-						type="date"
-						class="felt-input"
-						bind:value={kopierDato}
-						disabled={kopierer}
-					/>
+					<input type="date" class="felt-input" bind:value={kopierDato} disabled={kopierer} />
 				</div>
 
 				<div class="felt">
@@ -2208,12 +2208,7 @@
 					<div class="gem-besked {kopierBesked.type}">{kopierBesked.tekst}</div>
 				{/if}
 
-				<button
-					class="primary-knap"
-					type="button"
-					onclick={udforKopier}
-					disabled={kopierer}
-				>
+				<button class="primary-knap" type="button" onclick={udforKopier} disabled={kopierer}>
 					{kopierer ? 'Kopierer...' : 'Kopiér måltidet'}
 				</button>
 			</div>
@@ -2349,12 +2344,7 @@
 
 					<label class="felt">
 						<span class="felt-label">Dato</span>
-						<input
-							type="date"
-							class="felt-input"
-							bind:value={gemDato}
-							disabled={gemmer}
-						/>
+						<input type="date" class="felt-input" bind:value={gemDato} disabled={gemmer} />
 					</label>
 
 					{#if !redigererMaaltid}
@@ -2406,9 +2396,7 @@
 					<div class="modal-titel">
 						{erstatterIndex !== null ? 'Erstat med fødevare' : 'Vælg fødevare'}
 					</div>
-					<button class="modal-luk" type="button" onclick={lukPicker} aria-label="Luk">
-						×
-					</button>
+					<button class="modal-luk" type="button" onclick={lukPicker} aria-label="Luk"> × </button>
 				</div>
 				<input
 					type="search"
@@ -2469,11 +2457,7 @@
 										filled={erFavorit}
 									/>
 								</button>
-								<button
-									class="picker-row"
-									type="button"
-									onclick={() => tilfoejTilMaaltid(food)}
-								>
+								<button class="picker-row" type="button" onclick={() => tilfoejTilMaaltid(food)}>
 									<div class="picker-tekst">
 										<div class="food-navn">{food.name}</div>
 										<div class="food-meta">
@@ -2563,12 +2547,8 @@
 {/if}
 
 {#if viserScanner}
-	<BarcodeScanner
-		onDetected={efterScan}
-		onClose={() => (viserScanner = false)}
-	/>
+	<BarcodeScanner onDetected={efterScan} onClose={() => (viserScanner = false)} />
 {/if}
-
 
 {#if bekraeft}
 	<BekraeftModal
@@ -2635,9 +2615,8 @@
 
 			{#if !madplanSvar}
 				<p class="madplan-intro">
-					AI'en bygger en madplan til dig ud fra opskrifterne her i appen og dine egne.
-					Du vælger hvor mange alternativer du vil have, og om der er ingredienser du
-					ikke ønsker.
+					AI'en bygger en madplan til dig ud fra opskrifterne her i appen og dine egne. Du vælger
+					hvor mange alternativer du vil have, og om der er ingredienser du ikke ønsker.
 				</p>
 
 				<div class="madplan-felt">
@@ -2693,6 +2672,34 @@
 					<div class="status-besked advarsel">{madplanSvar.advarsel}</div>
 				{/if}
 
+				{#if madplanTotaler && userDoc?.dagligeMaal}
+					<div class="madplan-totaler">
+						<div class="mt-titel">Følger du planen, rammer du cirka:</div>
+						<div class="mt-celler">
+							<div
+								class="mt-celle"
+								class:naaet={madplanTotaler.protein >= userDoc.dagligeMaal.protein * 0.8}
+							>
+								<span class="mt-tal">{madplanTotaler.protein} g</span>
+								<span class="mt-lbl">protein</span>
+								<span class="mt-maal">mål {userDoc.dagligeMaal.protein} g</span>
+							</div>
+							<div
+								class="mt-celle"
+								class:naaet={madplanTotaler.fiber >= userDoc.dagligeMaal.fiber * 0.8}
+							>
+								<span class="mt-tal">{madplanTotaler.fiber} g</span>
+								<span class="mt-lbl">fibre</span>
+								<span class="mt-maal">mål {userDoc.dagligeMaal.fiber} g</span>
+							</div>
+						</div>
+						<div class="mt-note">
+							Beregnet ud fra det første forslag i hver kategori plus snacks. Vælger du et andet
+							alternativ, ændrer tallene sig lidt.
+						</div>
+					</div>
+				{/if}
+
 				{#each MAALTIDSKATEGORIER as kat (kat)}
 					{@const liste = madplanSvar[kat]}
 					<div class="madplan-sektion">
@@ -2705,8 +2712,8 @@
 									? mineOpskrifter.find((x) => x.id === forslag.opskriftId)
 									: opskrifter.find((x) => x.id === forslag.opskriftId)}
 								{@const navn = forslag.erEgen
-									? (opsk as MinOpskrift | undefined)?.navn ?? '(ukendt)'
-									: (opsk as Opskrift | undefined)?.titel ?? '(ukendt)'}
+									? ((opsk as MinOpskrift | undefined)?.navn ?? '(ukendt)')
+									: ((opsk as Opskrift | undefined)?.titel ?? '(ukendt)')}
 								{@const erTilfoejet = madplanTilfoejede.has(forslag.opskriftId)}
 								<div class="madplan-forslag" class:tilfoejet={erTilfoejet}>
 									<div class="madplan-forslag-titel">
@@ -2782,9 +2789,7 @@
 					>
 						Generer nye forslag
 					</button>
-					<button type="button" class="primary-knap" onclick={lukMadplanModal}>
-						Færdig
-					</button>
+					<button type="button" class="primary-knap" onclick={lukMadplanModal}> Færdig </button>
 				</div>
 			{/if}
 		</div>
@@ -3582,8 +3587,12 @@
 	}
 
 	@keyframes billede-fade-in {
-		from { opacity: 0; }
-		to { opacity: 1; }
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
 	}
 
 	.opskrift-emoji {
@@ -4738,6 +4747,67 @@
 		line-height: 1.5;
 	}
 
+	.madplan-totaler {
+		margin: 12px 0;
+		padding: 12px;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: var(--white);
+	}
+
+	.mt-titel {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text2);
+		font-family: var(--ff-b);
+		margin-bottom: 8px;
+	}
+
+	.mt-celler {
+		display: flex;
+		gap: 10px;
+	}
+
+	.mt-celle {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1px;
+		padding: 10px 6px;
+		border-radius: 8px;
+		background: var(--bg2);
+		border: 1.5px solid transparent;
+	}
+
+	.mt-celle.naaet {
+		border-color: var(--sage, #6f9e7e);
+		background: #eef4ef;
+	}
+
+	.mt-tal {
+		font-family: var(--ff-d);
+		font-size: calc(18px * var(--fs-scale, 1));
+		color: var(--text);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.mt-lbl {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text2);
+	}
+
+	.mt-maal {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.mt-note {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		line-height: 1.4;
+		margin-top: 8px;
+	}
+
 	.madplan-sektion {
 		display: flex;
 		flex-direction: column;
@@ -4969,5 +5039,4 @@
 		color: var(--text);
 		font-variant-numeric: tabular-nums;
 	}
-
 </style>
