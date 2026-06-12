@@ -10,7 +10,7 @@
 // ADMIN_EMAILS. Selve læsning/skrivning sker via service-account (uden om rules).
 
 import type { RequestHandler } from '@sveltejs/kit';
-import { json, error } from '@sveltejs/kit';
+import { json, error, isHttpError } from '@sveltejs/kit';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { ADMIN_EMAILS } from '$lib/admin';
 import {
@@ -68,81 +68,96 @@ export const POST: RequestHandler = async ({ request }) => {
 	const adminEmail = await verificerAdminToken(auth.slice(7));
 	if (!adminEmail) throw error(403, 'Ikke autoriseret som admin');
 
-	// 1. Cursor: hvornår blev snapshottet sidst genereret? Vi henter kun
-	//    målinger nyere end det.
-	const snapDoc = await hentDoc('adminStats/mrs');
-	const siden = typeof snapDoc?.genereretAt === 'number' ? snapDoc.genereretAt : 0;
+	try {
+		// 1. Cursor: hvornår blev snapshottet sidst genereret? Vi henter kun
+		//    målinger nyere end det.
+		const snapDoc = await hentDoc('adminStats/mrs');
+		const siden = typeof snapDoc?.genereretAt === 'number' ? snapDoc.genereretAt : 0;
 
-	// 2. Forløb-navne + start-tidspunkt (til pr-forløb-tilskrivning). startDato er
-	//    en Firestore-timestamp → kommer som ISO-streng via REST.
-	const forlobDocs = await hentAlleDocs('forlob');
-	const forlobNavn = new Map<string, string>();
-	const forlobStart = new Map<string, number>();
-	for (const f of forlobDocs) {
-		forlobNavn.set(f.id, (f.data.navn as string) ?? f.id);
-		const sd = f.data.startDato;
-		const start = typeof sd === 'string' ? new Date(sd).getTime() : undefined;
-		if (start && !Number.isNaN(start)) forlobStart.set(f.id, start);
-	}
+		// 2. Forløb-navne + start-tidspunkt (til pr-forløb-tilskrivning). startDato er
+		//    en Firestore-timestamp → kommer som ISO-streng via REST.
+		const forlobDocs = await hentAlleDocs('forlob');
+		const forlobNavn = new Map<string, string>();
+		const forlobStart = new Map<string, number>();
+		for (const f of forlobDocs) {
+			forlobNavn.set(f.id, (f.data.navn as string) ?? f.id);
+			const sd = f.data.startDato;
+			const start = typeof sd === 'string' ? new Date(sd).getTime() : undefined;
+			if (start && !Number.isNaN(start)) forlobStart.set(f.id, start);
+		}
 
-	// 3. Find præcis de kunder der har en ny måling siden sidst.
-	const aendredeUids = await hentForaeldreIdsMedNyereEnd('mrs_scores', 'users', 'timestamp', siden);
-
-	// 4. Re-destillér hver ændret kunde og opdatér hendes cache-doc.
-	let opdaterede = 0;
-	await medGraense(aendredeUids, 8, async (uid) => {
-		const brugerDoc = await hentDoc(`users/${uid}`);
-		const mrsDocs = (await hentAlleDocs(`users/${uid}/mrs_scores`)).map((d) => d.data as MrsDoc);
-		const forlobIds = (brugerDoc?.forlobIds as string[]) ?? [];
-		const profil = (brugerDoc?.brugerProfil as { alder?: number; menopaus?: string }) ?? {};
-		const entries = distillerKunde(mrsDocs, forlobIds, forlobStart, profil);
-		// Kunde uden brugbar data længere: vi lader cache-doc'en blive (ryddes ved
-		// næste fulde genberegning) — REST-klienten har ingen delete-funktion endnu.
-		if (entries.length === 0) return;
-		await gemDocMerge(`mrsCache/${uid}`, { entries });
-		opdaterede++;
-	});
-
-	// 5. Læs hele cachen og rekonstruér kunde-bidragene.
-	const cacheDocs = await hentHeleCollection('mrsCache');
-	if (cacheDocs.length === 0) {
-		throw error(
-			409,
-			'Ingen cache fundet — kør den fulde genberegning (scripts/generer-mrs-stats.ts) først.'
+		// 3. Find præcis de kunder der har en ny måling siden sidst.
+		const aendredeUids = await hentForaeldreIdsMedNyereEnd(
+			'mrs_scores',
+			'users',
+			'timestamp',
+			siden
 		);
-	}
-	const alleKunder: KundeMrs[] = [];
-	const prForlobKunder = new Map<string, KundeMrs[]>();
-	for (const c of cacheDocs) {
-		const entries = (c.data.entries as KundeForlobBidrag[]) ?? [];
-		for (const { forlobId, kunde } of entries) {
-			alleKunder.push(kunde);
-			if (!prForlobKunder.has(forlobId)) prForlobKunder.set(forlobId, []);
-			prForlobKunder.get(forlobId)!.push(kunde);
-		}
-	}
 
-	// 6. Byg og gem det friske snapshot.
-	const snapshot = byggSnapshot(
-		alleKunder,
-		prForlobKunder,
-		forlobNavn,
-		Date.now(),
-		cacheDocs.length
-	);
-	await gemDocMerge('adminStats/mrs', snapshot as unknown as Record<string, unknown>);
+		// 4. Re-destillér hver ændret kunde og opdatér hendes cache-doc.
+		let opdaterede = 0;
+		await medGraense(aendredeUids, 8, async (uid) => {
+			const brugerDoc = await hentDoc(`users/${uid}`);
+			const mrsDocs = (await hentAlleDocs(`users/${uid}/mrs_scores`)).map((d) => d.data as MrsDoc);
+			const forlobIds = (brugerDoc?.forlobIds as string[]) ?? [];
+			const profil = (brugerDoc?.brugerProfil as { alder?: number; menopaus?: string }) ?? {};
+			const entries = distillerKunde(mrsDocs, forlobIds, forlobStart, profil);
+			// Kunde uden brugbar data længere: vi lader cache-doc'en blive (ryddes ved
+			// næste fulde genberegning) — REST-klienten har ingen delete-funktion endnu.
+			if (entries.length === 0) return;
+			await gemDocMerge(`mrsCache/${uid}`, { entries });
+			opdaterede++;
+		});
 
-	return json({
-		ok: true,
-		opdateredeKunder: opdaterede,
-		fundneAendringer: aendredeUids.length,
-		kunderICache: cacheDocs.length,
-		genereretAt: snapshot.genereretAt,
-		samlet: {
-			antalMedData: snapshot.samlet.antalMedData,
-			antalMedUdvikling: snapshot.samlet.antalMedUdvikling,
-			gnsAendring: snapshot.samlet.gnsAendring,
-			andelForbedret: snapshot.samlet.andelForbedret
+		// 5. Læs hele cachen og rekonstruér kunde-bidragene.
+		const cacheDocs = await hentHeleCollection('mrsCache');
+		if (cacheDocs.length === 0) {
+			throw error(
+				409,
+				'Ingen cache fundet — kør den fulde genberegning (scripts/generer-mrs-stats.ts) først.'
+			);
 		}
-	});
+		const alleKunder: KundeMrs[] = [];
+		const prForlobKunder = new Map<string, KundeMrs[]>();
+		for (const c of cacheDocs) {
+			const entries = (c.data.entries as KundeForlobBidrag[]) ?? [];
+			for (const { forlobId, kunde } of entries) {
+				alleKunder.push(kunde);
+				if (!prForlobKunder.has(forlobId)) prForlobKunder.set(forlobId, []);
+				prForlobKunder.get(forlobId)!.push(kunde);
+			}
+		}
+
+		// 6. Byg og gem det friske snapshot.
+		const snapshot = byggSnapshot(
+			alleKunder,
+			prForlobKunder,
+			forlobNavn,
+			Date.now(),
+			cacheDocs.length
+		);
+		await gemDocMerge('adminStats/mrs', snapshot as unknown as Record<string, unknown>);
+
+		return json({
+			ok: true,
+			opdateredeKunder: opdaterede,
+			fundneAendringer: aendredeUids.length,
+			kunderICache: cacheDocs.length,
+			genereretAt: snapshot.genereretAt,
+			samlet: {
+				antalMedData: snapshot.samlet.antalMedData,
+				antalMedUdvikling: snapshot.samlet.antalMedUdvikling,
+				gnsAendring: snapshot.samlet.gnsAendring,
+				andelForbedret: snapshot.samlet.andelForbedret
+			}
+		});
+	} catch (e) {
+		if (isHttpError(e)) throw e; // bevar fx 409 + dens besked
+		// Vis den RIGTIGE fejl til admin (ellers skjuler SvelteKit den som
+		// "Internal Error"). Typisk: collection-group-index mangler — så
+		// indeholder beskeden en URL der opretter det.
+		console.error('genberegn-mrs fejlede:', e);
+		const besked = e instanceof Error ? e.message : 'Ukendt fejl';
+		throw error(500, besked);
+	}
 };
