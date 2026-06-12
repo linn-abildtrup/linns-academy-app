@@ -359,13 +359,20 @@ export async function hentForaeldreIdsMedNyereEnd(
  */
 export async function hentCollectionGroupAlle(
 	subcollectionId: string,
-	foraeldreCollection: string
+	foraeldreCollection: string,
+	selectFelter?: string[]
 ): Promise<Array<{ parentId: string; path: string; data: Record<string, unknown> }>> {
 	const sa = laesServiceAccount();
 	const token = await hentAccessToken();
-	const body = {
-		structuredQuery: { from: [{ collectionId: subcollectionId, allDescendants: true }] }
+	const structuredQuery: Record<string, unknown> = {
+		from: [{ collectionId: subcollectionId, allDescendants: true }]
 	};
+	// Projektér til kun de nødvendige felter (fx kun et tidsstempel) — så svaret
+	// bliver lille selv ved mange tusinde docs.
+	if (selectFelter?.length) {
+		structuredQuery.select = { fields: selectFelter.map((f) => ({ fieldPath: f })) };
+	}
+	const body = { structuredQuery };
 	const res = await fetch(`${dbBaseUrl(sa.projectId)}:runQuery`, {
 		method: 'POST',
 		headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
