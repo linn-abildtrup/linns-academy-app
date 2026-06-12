@@ -101,13 +101,36 @@
 		prType: { kickstart: ReflScope; kropsro: ReflScope };
 		prForlob: ReflForlob[];
 	};
+	// Manglende kundeaktivitet (eget snapshot, adminStats/aktivitet).
+	type AtRisk = {
+		uid: string;
+		fornavn: string;
+		email: string;
+		forlobNavn: string;
+		forlobType: 'kickstart' | 'kropsro';
+		sidstAktiv: number | null;
+		dageSiden: number | null;
+		status: 'inaktiv' | 'faldende';
+		sidste7: number;
+		forrige7: number;
+	};
+	type AktSnapshot = {
+		genereretAt: number;
+		antalOvervaaget: number;
+		inaktive: AtRisk[];
+		faldende: AtRisk[];
+	};
 
 	let snapshot = $state<MrsSnapshot | null>(null);
 	let reflSnapshot = $state<ReflSnapshot | null>(null);
+	let aktSnapshot = $state<AktSnapshot | null>(null);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
-	// Måletype: MRS / velvære / refleksioner — hver sin fane allerøverst.
-	let aktivMaaling = $state<'mrs' | 'velvaere' | 'refleksioner'>('mrs');
+	// Måletype: MRS / velvære / refleksioner / aktivitet — hver sin fane.
+	let aktivMaaling = $state<'mrs' | 'velvaere' | 'refleksioner' | 'aktivitet'>('mrs');
+	let aktVis = $state<'inaktiv' | 'faldende'>('inaktiv');
+	let aktOpdaterer = $state(false);
+	let aktBesked = $state<string | null>(null);
 	// Refleksions-fanens udsnit: 'samlet', 'kickstart'/'kropsro' (alle af typen),
 	// eller et specifikt forlobId.
 	let reflValg = $state<string>('samlet');
@@ -125,9 +148,10 @@
 	let mrsPop = $state<'alle' | 'gennemfoerte'>('alle');
 
 	async function indlaesSnapshot() {
-		const [d, rd] = await Promise.all([
+		const [d, rd, ad] = await Promise.all([
 			getDoc(doc(db, 'adminStats', 'mrs')),
-			getDoc(doc(db, 'adminStats', 'refleksioner'))
+			getDoc(doc(db, 'adminStats', 'refleksioner')),
+			getDoc(doc(db, 'adminStats', 'aktivitet'))
 		]);
 		if (d.exists()) {
 			snapshot = d.data() as MrsSnapshot;
@@ -138,6 +162,29 @@
 			fejl = 'Ingen MRS-statistik endnu — kør scriptet for at generere den.';
 		}
 		reflSnapshot = rd.exists() ? (rd.data() as ReflSnapshot) : null;
+		aktSnapshot = ad.exists() ? (ad.data() as AktSnapshot) : null;
+	}
+
+	// "Opdater liste"-knap på Manglende aktivitet-fanen (tung, egen knap).
+	async function genberegnAktivitet() {
+		if (aktOpdaterer) return;
+		aktOpdaterer = true;
+		aktBesked = null;
+		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error('Du er ikke logget ind som admin.');
+			const res = await fetch('/api/admin/genberegn-aktivitet', {
+				method: 'POST',
+				headers: { Authorization: `Bearer ${token}` }
+			});
+			if (!res.ok) throw new Error(`Kunne ikke opdatere (${res.status}): ${await res.text()}`);
+			await indlaesSnapshot();
+			aktBesked = 'Listen er opdateret.';
+		} catch (e) {
+			aktBesked = e instanceof Error ? e.message : 'Kunne ikke opdatere listen.';
+		} finally {
+			aktOpdaterer = false;
+		}
 	}
 
 	onMount(async () => {
@@ -411,8 +458,11 @@
 			{:else if aktivMaaling === 'velvaere'}
 				Vores egen velvære-måling (energi, mave, cravings, humør, søvn) — højere score er bedre. En
 				anden måling end MRS.
-			{:else}
+			{:else if aktivMaaling === 'refleksioner'}
 				Hvor flittigt klienterne skriver dagens refleksion i forløbet (abo-kunder skriver ikke).
+			{:else}
+				Kunder i et igangværende forløb uden aktivitet (måltid/vanedag/træning) i mindst 3 dage —
+				eller hvis aktiviteten er på vej ned. Til at række ud.
 			{/if}
 		</p>
 	</header>
@@ -448,6 +498,13 @@
 				onclick={() => (aktivMaaling = 'refleksioner')}
 			>
 				Refleksioner
+			</button>
+			<button
+				class="fane"
+				class:aktiv={aktivMaaling === 'aktivitet'}
+				onclick={() => (aktivMaaling = 'aktivitet')}
+			>
+				Manglende aktivitet
 			</button>
 		</div>
 
@@ -577,6 +634,61 @@
 						{/if}
 					{/if}
 				</section>
+			{/if}
+		{:else if aktivMaaling === 'aktivitet'}
+			{#if !aktSnapshot}
+				<div class="hint-kort">Ingen aktivitets-liste endnu — tryk "Opdater liste".</div>
+			{:else}
+				{@const liste = aktVis === 'inaktiv' ? aktSnapshot.inaktive : aktSnapshot.faldende}
+				<div class="opdateret-rad" style="margin-bottom: 12px">
+					<span class="opdateret-note">
+						Overvåger {aktSnapshot.antalOvervaaget} kunder i igangværende forløb · opdateret {datoTekst(
+							aktSnapshot.genereretAt
+						)}
+					</span>
+					<button class="opdater-knap" onclick={genberegnAktivitet} disabled={aktOpdaterer}>
+						{aktOpdaterer ? 'Opdaterer…' : 'Opdater liste'}
+					</button>
+				</div>
+				{#if aktBesked}<p class="opdater-besked">{aktBesked}</p>{/if}
+				<div class="velv-toggle">
+					<button class:aktiv={aktVis === 'inaktiv'} onclick={() => (aktVis = 'inaktiv')}>
+						Inaktive ({aktSnapshot.inaktive.length})
+					</button>
+					<button class:aktiv={aktVis === 'faldende'} onclick={() => (aktVis = 'faldende')}>
+						Faldende ({aktSnapshot.faldende.length})
+					</button>
+				</div>
+				<p class="figur-note">
+					{aktVis === 'inaktiv'
+						? 'Ingen aktivitet (måltid/vanedag/træning) i mindst 3 dage. Flest dage væk øverst.'
+						: 'Stadig lidt aktive, men sidste uge er under halvdelen af ugen før.'}
+				</p>
+				{#if liste.length === 0}
+					<div class="hint-kort">Ingen kunder i denne kategori — godt nyt!</div>
+				{:else}
+					<div class="akt-liste">
+						{#each liste as k (k.uid)}
+							<div class="akt-rad">
+								<div class="akt-navn">
+									{k.fornavn || '(uden navn)'}
+									<a class="akt-email" href="mailto:{k.email}">{k.email}</a>
+								</div>
+								<div class="akt-meta">
+									<span class="akt-forlob">{k.forlobNavn}</span>
+									{#if k.status === 'inaktiv'}
+										<span class="akt-status inaktiv"
+											>{k.dageSiden === null ? 'aldrig aktiv' : `${k.dageSiden} dage siden`}</span
+										>
+									{:else}
+										<span class="akt-status faldende">{k.sidste7} vs {k.forrige7} (uge nu/før)</span
+										>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
 			{/if}
 		{:else}
 			<!-- Scope-faner: gælder inden i begge måletyper -->
@@ -1506,6 +1618,59 @@
 		line-height: 1.5;
 		margin: -6px 0 12px;
 	}
+	/* Manglende aktivitet — liste */
+	.akt-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+		background: var(--border, #e7e2d9);
+		border-radius: 12px;
+		overflow: hidden;
+	}
+	.akt-rad {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 12px;
+		background: var(--white, #fff);
+		flex-wrap: wrap;
+	}
+	.akt-navn {
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+	.akt-email {
+		font-weight: 400;
+		color: var(--text2);
+		font-size: calc(12px * var(--fs-scale, 1));
+		margin-left: 4px;
+	}
+	.akt-meta {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+	}
+	.akt-forlob {
+		color: var(--text3);
+	}
+	.akt-status {
+		font-weight: 600;
+		padding: 2px 8px;
+		border-radius: 8px;
+		white-space: nowrap;
+	}
+	.akt-status.inaktiv {
+		background: #f6e3e0;
+		color: #a8483c;
+	}
+	.akt-status.faldende {
+		background: #f5edd9;
+		color: #97772a;
+	}
+
 	/* Refleksions-engagement: søjlediagram pr forløbsdag */
 	.refl-bar {
 		fill: var(--accent, #b87b6e);
