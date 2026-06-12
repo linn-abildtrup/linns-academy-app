@@ -4,10 +4,21 @@
 //
 // En "refleksion" = en vanedag hvor klienten har skrevet noget i note-feltet.
 // Abo-kunder skriver ikke refleksioner (intet spørgsmål), så dette er forløb.
+//
+// VIGTIGT: refleksioner grupperes pr SPECIFIKT forløb (forlobId), IKKE pr
+// produkt-id. Juni-Kickstart's vanedage blev migreret til 'premiumforløb'-
+// produktet, så produkt-id'et lyver om holdet. forlobId kommer fra
+// product-dokumentets forlobId-felt.
+
+export type ReflForlobType = 'kickstart' | 'kropsro';
+export interface ReflForlobMeta {
+	navn: string;
+	type: ReflForlobType;
+}
 
 // Ét rå-bidrag pr vanedag (udtrukket af scriptet/endpointet).
 export interface ReflRecord {
-	produkt: string; // 'kickstart' | 'premiumforløb' (Firestore-productId)
+	forlobId: string;
 	uid: string;
 	dagNummer: number;
 	laengde: number; // antal tegn i note (0 = ingen refleksion)
@@ -45,20 +56,47 @@ function beregnGruppe(records: ReflRecord[]) {
 }
 
 export type ReflScope = ReturnType<typeof beregnGruppe>;
+export type ReflForlob = { forlobId: string; navn: string; type: ReflForlobType } & ReflScope;
 export interface ReflSnapshot {
 	genereretAt: number;
 	samlet: ReflScope;
-	prProdukt: { kickstart: ReflScope; kropsro: ReflScope };
+	prType: { kickstart: ReflScope; kropsro: ReflScope };
+	prForlob: ReflForlob[];
 }
 
-// Samler hele refleksions-snapshottet (samlet + pr produkt).
-export function byggRefleksionSnapshot(records: ReflRecord[], genereretAt: number): ReflSnapshot {
+// Samler hele refleksions-snapshottet: samlet + pr type (alle kickstart/kropsro)
+// + pr specifikt forløb. forlobMeta giver navn + type pr forlobId.
+export function byggRefleksionSnapshot(
+	records: ReflRecord[],
+	forlobMeta: Map<string, ReflForlobMeta>,
+	genereretAt: number
+): ReflSnapshot {
+	const medType = records.filter((r) => forlobMeta.has(r.forlobId));
+	const afType = (t: ReflForlobType) =>
+		medType.filter((r) => forlobMeta.get(r.forlobId)!.type === t);
+
+	const prForlobMap = new Map<string, ReflRecord[]>();
+	for (const r of medType) {
+		if (!prForlobMap.has(r.forlobId)) prForlobMap.set(r.forlobId, []);
+		prForlobMap.get(r.forlobId)!.push(r);
+	}
+	const prForlob: ReflForlob[] = [...prForlobMap.entries()]
+		.map(([forlobId, recs]) => ({
+			forlobId,
+			navn: forlobMeta.get(forlobId)!.navn,
+			type: forlobMeta.get(forlobId)!.type,
+			...beregnGruppe(recs)
+		}))
+		.filter((g) => g.antalRefleksioner >= 10) // skjul test/junk-forløb
+		.sort((a, b) => b.antalRefleksioner - a.antalRefleksioner);
+
 	return {
 		genereretAt,
 		samlet: beregnGruppe(records),
-		prProdukt: {
-			kickstart: beregnGruppe(records.filter((r) => r.produkt === 'kickstart')),
-			kropsro: beregnGruppe(records.filter((r) => r.produkt === 'premiumforløb'))
-		}
+		prType: {
+			kickstart: beregnGruppe(afType('kickstart')),
+			kropsro: beregnGruppe(afType('kropsro'))
+		},
+		prForlob
 	};
 }

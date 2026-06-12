@@ -33,7 +33,11 @@ import {
 	type KundeMrs,
 	type KundeForlobBidrag
 } from '$lib/stats/mrsBeregning';
-import { byggRefleksionSnapshot, type ReflRecord } from '$lib/stats/refleksionBeregning';
+import {
+	byggRefleksionSnapshot,
+	type ReflRecord,
+	type ReflForlobMeta
+} from '$lib/stats/refleksionBeregning';
 
 async function verificerAdminToken(idToken: string): Promise<string | null> {
 	if (!PUBLIC_FIREBASE_API_KEY) {
@@ -83,11 +87,14 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		const forlobDocs = await hentAlleDocs('forlob');
 		const forlobNavn = new Map<string, string>();
 		const forlobStart = new Map<string, number>();
+		const forlobMeta = new Map<string, ReflForlobMeta>();
 		for (const f of forlobDocs) {
-			forlobNavn.set(f.id, (f.data.navn as string) ?? f.id);
+			const navn = (f.data.navn as string) ?? f.id;
+			forlobNavn.set(f.id, navn);
 			const sd = f.data.startDato;
 			const start = typeof sd === 'string' ? new Date(sd).getTime() : undefined;
 			if (start && !Number.isNaN(start)) forlobStart.set(f.id, start);
+			forlobMeta.set(f.id, { navn, type: f.data.type === 'kropsro' ? 'kropsro' : 'kickstart' });
 		}
 
 		let opdaterede = 0;
@@ -181,22 +188,36 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		);
 		await gemDocMerge('adminStats/mrs', snapshot as unknown as Record<string, unknown>);
 
-		// Refleksions-aktivitet (begge modes): ét collection-group-opslag henter
-		// alle vanedage; produkt + uid udledes af stien. abo skriver ikke, så kun
-		// forløbs-vanedage tæller.
+		// Refleksions-aktivitet (begge modes): grupperes pr SPECIFIKT forløb via
+		// product-dokumentets forlobId (produkt-id'et lyver — juni-Kickstart ligger
+		// under premiumforløb-produktet). abo skriver ikke → kun forløbs-vanedage.
+		const productDocs = await hentCollectionGroupAlle('products', 'users');
+		const key2forlob = new Map<string, string>();
+		for (const pd of productDocs) {
+			const fid = pd.data.forlobId as string | undefined;
+			const pid = pd.path.split('/').pop() ?? '';
+			if (fid) key2forlob.set(`${pd.parentId}/${pid}`, fid);
+		}
 		const vanedage = await hentCollectionGroupAlle('vanedage', 'users');
-		const reflRecords: ReflRecord[] = vanedage.map((vd) => {
+		const reflRecords: ReflRecord[] = [];
+		for (const vd of vanedage) {
 			const dele = vd.path.split('/');
-			const pi = dele.lastIndexOf('products');
-			const produkt = pi >= 0 && pi + 1 < dele.length ? dele[pi + 1] : '?';
+			const pid = dele[dele.length - 3] ?? ''; // .../products/{pid}/vanedage/{dagId}
+			const forlobId = key2forlob.get(`${vd.parentId}/${pid}`);
+			if (!forlobId) continue;
 			const d = vd.data as { dagNummer?: number; note?: string };
 			const dagNummer =
 				typeof d.dagNummer === 'number'
 					? d.dagNummer
 					: Number((dele[dele.length - 1] ?? '').replace('dag', '')) || 0;
-			return { produkt, uid: vd.parentId, dagNummer, laengde: (d.note ?? '').trim().length };
-		});
-		const reflSnapshot = byggRefleksionSnapshot(reflRecords, Date.now());
+			reflRecords.push({
+				forlobId,
+				uid: vd.parentId,
+				dagNummer,
+				laengde: (d.note ?? '').trim().length
+			});
+		}
+		const reflSnapshot = byggRefleksionSnapshot(reflRecords, forlobMeta, Date.now());
 		await gemDocMerge(
 			'adminStats/refleksioner',
 			reflSnapshot as unknown as Record<string, unknown>
