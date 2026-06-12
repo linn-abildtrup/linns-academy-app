@@ -3,11 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
-	import type {
-		DayExercise,
-		Exercise,
-		TrainingDay
-	} from '$lib/content/mikrotraening';
+	import type { DayExercise, Exercise, TrainingDay } from '$lib/content/mikrotraening';
 	import {
 		hentExercises,
 		hentForlobsProgram,
@@ -82,9 +78,7 @@
 	let traeningGennemfoert = $state(false);
 
 	const dag = $derived<TrainingDay | null>(
-		programData?.dage.find((d) => d.dagNummer === aktuelDagNummer) ??
-			programData?.dage[0] ??
-			null
+		programData?.dage.find((d) => d.dagNummer === aktuelDagNummer) ?? programData?.dage[0] ?? null
 	);
 	const exercises = $derived<DayExercise[]>(dag?.exercises ?? []);
 	const aktuelOvelse = $derived<DayExercise | null>(exercises[ei] ?? null);
@@ -125,9 +119,7 @@
 	);
 	const ringRadius = 52;
 	const ringOmkreds = 2 * Math.PI * ringRadius;
-	const ringOffset = $derived(
-		phaseTotal > 0 ? ringOmkreds * (1 - rem / phaseTotal) : 0
-	);
+	const ringOffset = $derived(phaseTotal > 0 ? ringOmkreds * (1 - rem / phaseTotal) : 0);
 
 	onMount(async () => {
 		const u = user;
@@ -163,15 +155,13 @@
 					// best-effort
 				}
 				const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
-				const idx = getCurrentDayMedNulDage(
-					{ startDato, antalDage: forlob.antalDage },
-					nulDatoer
-				);
+				const idx = getCurrentDayMedNulDage({ startDato, antalDage: forlob.antalDage }, nulDatoer);
 				if (idx !== null) {
-					// Modulo i stedet for clamp — se kommentar paa oversigt-siden.
-					// Kunder hvis forloeb er slut cykler gennem programmet igen i
-					// stedet for at sidde fast paa sidste dag.
-					aktuelDagNummer = (idx % forlob.antalDage) + 1;
+					// idx er forloebsdagen (aligned med program-dagene + forsiden). Modulo
+					// cykler om naar forloebet er slut. FOER 12/6 2026: '(idx % antalDage)
+					// + 1' var off-by-one og gemte gennemfoersler paa dag+1 — se oversigt-
+					// siden.
+					aktuelDagNummer = idx <= 0 ? 1 : ((idx - 1) % forlob.antalDage) + 1;
 				}
 
 				// Dag-vaelger: hvis ?dag=N er sat (fra moduler-oversigten), koerer
@@ -227,7 +217,11 @@
 				// ville en halvfaerdig traening fra en anden dag blive genoptaget
 				// (og evt. fejlmarkeret som gennemfoert). Gamle pauser uden
 				// dagNummer (undefined) genoptages ikke -> starter trygt forfra.
-				if (gemt && gemt.dagNummer === aktuelDagNummer && erGyldigPause(gemt, dagData?.exercises ?? [])) {
+				if (
+					gemt &&
+					gemt.dagNummer === aktuelDagNummer &&
+					erGyldigPause(gemt, dagData?.exercises ?? [])
+				) {
 					ei = gemt.ei;
 					si = gemt.si;
 					phase = gemt.phase;
@@ -534,10 +528,7 @@
 		return ['prep', 'work', 'rest', 'switch'].includes(gemt.phase);
 	}
 
-	function phaseTotalForResume(
-		gemt: { phase: string; ei: number },
-		exs: DayExercise[]
-	): number {
+	function phaseTotalForResume(gemt: { phase: string; ei: number }, exs: DayExercise[]): number {
 		const ex = exs[gemt.ei];
 		if (gemt.phase === 'prep') return PREP_SEC;
 		if (gemt.phase === 'switch') return SWITCH_SEC;
@@ -596,8 +587,8 @@
 		if (!u) return;
 		traeningGennemfoert = true;
 		void sletSpilPause(u.uid, 'tildelt', programId, forlobId).catch(() => undefined);
-		void tilfoejGennemfoersel(u.uid, 'tildelt', programId, forlobId, aktuelDagNummer).catch(
-			(e) => console.warn('Kunne ikke gemme gennemførsel:', e)
+		void tilfoejGennemfoersel(u.uid, 'tildelt', programId, forlobId, aktuelDagNummer).catch((e) =>
+			console.warn('Kunne ikke gemme gennemførsel:', e)
 		);
 		void logTraening(u.uid, {
 			dato: formaterHistorikDato(new Date()),
@@ -711,14 +702,34 @@
 				aria-pressed={fuldskaerm}
 			>
 				{#if fuldskaerm}
-					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<svg
+						viewBox="0 0 24 24"
+						width="18"
+						height="18"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
 						<path d="M9 4H4v5"></path>
 						<path d="M15 4h5v5"></path>
 						<path d="M4 15v5h5"></path>
 						<path d="M20 15v5h-5"></path>
 					</svg>
 				{:else}
-					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<svg
+						viewBox="0 0 24 24"
+						width="18"
+						height="18"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
 						<path d="M3 9V3h6"></path>
 						<path d="M21 9V3h-6"></path>
 						<path d="M3 15v6h6"></path>
@@ -736,13 +747,33 @@
 					aria-pressed={lydSlaaetTil}
 				>
 					{#if lydSlaaetTil}
-						<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<svg
+							viewBox="0 0 24 24"
+							width="18"
+							height="18"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
 							<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
 							<path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
 							<path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
 						</svg>
 					{:else}
-						<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<svg
+							viewBox="0 0 24 24"
+							width="18"
+							height="18"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
 							<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
 							<line x1="23" y1="9" x2="17" y2="15"></line>
 							<line x1="17" y1="9" x2="23" y2="15"></line>
@@ -757,12 +788,34 @@
 					aria-pressed={wakeSlaaetTil}
 				>
 					{#if wakeSlaaetTil}
-						<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<svg
+							viewBox="0 0 24 24"
+							width="18"
+							height="18"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
 							<circle cx="12" cy="12" r="4"></circle>
-							<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+							<path
+								d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+							></path>
 						</svg>
 					{:else}
-						<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<svg
+							viewBox="0 0 24 24"
+							width="18"
+							height="18"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
 							<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
 						</svg>
 					{/if}
@@ -838,7 +891,17 @@
 			</button>
 
 			<button class="fs-bund-knap" type="button" onclick={toggleFuldskaerm}>
-				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<svg
+					viewBox="0 0 24 24"
+					width="16"
+					height="16"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
 					<path d="M3 9V3h6"></path>
 					<path d="M21 9V3h-6"></path>
 					<path d="M3 15v6h6"></path>
@@ -944,8 +1007,10 @@
 	}
 
 	.hovedvideo {
-		transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-			border-radius 0.5s ease, box-shadow 0.5s ease;
+		transition:
+			transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+			border-radius 0.5s ease,
+			box-shadow 0.5s ease;
 		width: 100%;
 		height: 100%;
 		object-fit: contain;

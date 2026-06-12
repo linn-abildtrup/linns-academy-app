@@ -100,8 +100,7 @@
 			exerciseMap = map;
 
 			// Bereg dagens dag-nummer ud fra forlob.startDato + nul-dage.
-			// Forsiden bruger samme logik. Dag-nummeret er 1-indekseret —
-			// getCurrentDayMedNulDage returnerer 0 paa dag 1, saa vi adderer 1.
+			// Forsiden bruger samme logik (se if-blokken nedenfor).
 			if (forlob) {
 				let nulDatoer: string[] = [];
 				try {
@@ -111,17 +110,16 @@
 					// Best-effort — fortsaet uden nul-dage hvis vi ikke kan hente
 				}
 				const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
-				const idx = getCurrentDayMedNulDage(
-					{ startDato, antalDage: forlob.antalDage },
-					nulDatoer
-				);
+				const idx = getCurrentDayMedNulDage({ startDato, antalDage: forlob.antalDage }, nulDatoer);
 				if (idx !== null) {
-					// idx er 0-indekseret (dag 1 = 0). Vi vil have 1-indekseret dag-nummer.
-					// Modulo i stedet for clamp: naar foroebet er slut, cykler vi gennem
-					// programmet igen i stedet for at sidde fast paa sidste dag. Det
-					// betyder en basis-abo-kunde der har gennemfoert et 21-dages forloeb
-					// faar dag 1 igen paa dag 22, ikke dag 21 i evighed.
-					aktuelDagNummer = (idx % forlob.antalDage) + 1;
+					// idx er forloebsdagen (0=baseline, 1..antalDage=traeningsdage) — SAMME
+					// nummerering som forsiden + vaneprogrammet. Programdagene er
+					// 1-indekserede og aligned (forloebsdag N = program-dag N). Modulo
+					// cykler om naar forloebet er slut (basis-abo faar dag 1 igen paa dag
+					// 22). FOER 12/6 2026: '(idx % antalDage) + 1' var off-by-one — den
+					// viste/gemte dag+1, saa forsidens mikrotraening-vane blev auto-ja'et
+					// paa forkert dag.
+					aktuelDagNummer = idx <= 0 ? 1 : ((idx - 1) % forlob.antalDage) + 1;
 					valgtDag = aktuelDagNummer;
 				}
 			}
@@ -134,9 +132,7 @@
 	});
 
 	const dag = $derived<TrainingDay | null>(
-		programData?.dage.find((d) => d.dagNummer === valgtDag) ??
-			programData?.dage[0] ??
-			null
+		programData?.dage.find((d) => d.dagNummer === valgtDag) ?? programData?.dage[0] ?? null
 	);
 	const harOevelser = $derived((dag?.exercises.length ?? 0) > 0);
 
@@ -153,9 +149,7 @@
 		</a>
 		<div class="eyebrow">Dagens træning</div>
 		<h1>{programData?.program.navn ?? 'Dagens øvelser'}</h1>
-		<p class="page-sub">
-			Tryk på en øvelse for at se den. Tryk Start træning for at gå i gang.
-		</p>
+		<p class="page-sub">Tryk på en øvelse for at se den. Tryk Start træning for at gå i gang.</p>
 		<div class="meta-pille">Tildelt fra {forlobNavn}</div>
 	</header>
 
