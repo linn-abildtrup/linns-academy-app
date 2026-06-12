@@ -33,6 +33,7 @@ import {
 	type KundeMrs,
 	type KundeForlobBidrag
 } from '$lib/stats/mrsBeregning';
+import { byggRefleksionSnapshot, type ReflRecord } from '$lib/stats/refleksionBeregning';
 
 async function verificerAdminToken(idToken: string): Promise<string | null> {
 	if (!PUBLIC_FIREBASE_API_KEY) {
@@ -180,9 +181,31 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		);
 		await gemDocMerge('adminStats/mrs', snapshot as unknown as Record<string, unknown>);
 
+		// Refleksions-aktivitet (begge modes): ét collection-group-opslag henter
+		// alle vanedage; produkt + uid udledes af stien. abo skriver ikke, så kun
+		// forløbs-vanedage tæller.
+		const vanedage = await hentCollectionGroupAlle('vanedage', 'users');
+		const reflRecords: ReflRecord[] = vanedage.map((vd) => {
+			const dele = vd.path.split('/');
+			const pi = dele.lastIndexOf('products');
+			const produkt = pi >= 0 && pi + 1 < dele.length ? dele[pi + 1] : '?';
+			const d = vd.data as { dagNummer?: number; note?: string };
+			const dagNummer =
+				typeof d.dagNummer === 'number'
+					? d.dagNummer
+					: Number((dele[dele.length - 1] ?? '').replace('dag', '')) || 0;
+			return { produkt, uid: vd.parentId, dagNummer, laengde: (d.note ?? '').trim().length };
+		});
+		const reflSnapshot = byggRefleksionSnapshot(reflRecords, Date.now());
+		await gemDocMerge(
+			'adminStats/refleksioner',
+			reflSnapshot as unknown as Record<string, unknown>
+		);
+
 		return json({
 			ok: true,
 			mode,
+			refleksioner: reflSnapshot.samlet.antalRefleksioner,
 			opdateredeKunder: opdaterede,
 			fundneAendringer: fundne,
 			kunderICache: cacheDocs.length,

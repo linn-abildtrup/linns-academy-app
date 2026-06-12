@@ -360,7 +360,7 @@ export async function hentForaeldreIdsMedNyereEnd(
 export async function hentCollectionGroupAlle(
 	subcollectionId: string,
 	foraeldreCollection: string
-): Promise<Array<{ parentId: string; data: Record<string, unknown> }>> {
+): Promise<Array<{ parentId: string; path: string; data: Record<string, unknown> }>> {
 	const sa = laesServiceAccount();
 	const token = await hentAccessToken();
 	const body = {
@@ -377,7 +377,7 @@ export async function hentCollectionGroupAlle(
 	const rows = (await res.json()) as Array<{
 		document?: { name: string; fields?: Record<string, FirestoreValue> };
 	}>;
-	const out: Array<{ parentId: string; data: Record<string, unknown> }> = [];
+	const out: Array<{ parentId: string; path: string; data: Record<string, unknown> }> = [];
 	for (const row of rows) {
 		if (!row.document) continue;
 		const dele = row.document.name.split('/');
@@ -387,7 +387,7 @@ export async function hentCollectionGroupAlle(
 		for (const [k, v] of Object.entries(row.document.fields ?? {})) {
 			data[k] = fraFirestoreValue(v);
 		}
-		out.push({ parentId, data });
+		out.push({ parentId, path: row.document.name, data });
 	}
 	return out;
 }
