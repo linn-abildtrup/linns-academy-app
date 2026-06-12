@@ -8,6 +8,20 @@
 	type SubResultat = { gnsBaseline: number; gnsSeneste: number; gnsAendring: number };
 	type Rejsepunkt = { gns: number; antal: number };
 	type SegmentGruppe = { antal: number; gnsAendring: number };
+	type SliderKey = 'energi' | 'mave' | 'cravings' | 'humor' | 'sovn';
+	// Matchet check-in (som rapportens "uge for uge"): pr slutpunkt mod egen baseline.
+	type CheckInMaal = {
+		gnsBaseline: number;
+		gnsCheckin: number;
+		delta: number;
+		forbedretPct: number;
+	};
+	type VelvCheckIn = {
+		checkin: number;
+		antalMatchede: number;
+		perMaal: Record<SliderKey, CheckInMaal>;
+		composite: CheckInMaal;
+	};
 	type Scope = {
 		antalMedData: number;
 		antalMedUdvikling: number;
@@ -22,9 +36,10 @@
 			menopause: Record<string, SegmentGruppe>;
 			alder: Record<string, SegmentGruppe>;
 		};
-		velvaere: Record<'energi' | 'mave' | 'cravings' | 'humor' | 'sovn', SubResultat>;
-		velvaereRejse: Record<'energi' | 'mave' | 'cravings' | 'humor' | 'sovn', Rejsepunkt[]>;
+		velvaere: Record<SliderKey, SubResultat>;
+		velvaereRejse: Record<SliderKey, Rejsepunkt[]>;
 		velvaereSamletRejse: Rejsepunkt[];
+		velvaereCheckIns?: VelvCheckIn[]; // valgfrit: gamle snapshots har det ikke
 		antalVelvaere: number;
 		forbedringsFordeling: {
 			megetBedre: number;
@@ -597,6 +612,7 @@
 								Samlet velvære (gns. af de 5 mål) · skala 1–10 · højere = bedre
 							</p>
 						{/if}
+						<div class="rubrik-titel">Samlet: baseline → seneste måling</div>
 						{#each VELVAERE as v (v.key)}
 							{@const vv = s.velvaere[v.key]}
 							<div class="sub-rad">
@@ -616,6 +632,67 @@
 							Skala 1–10 · højere = bedre. Egen måling, så flere kunder end MRS-totalen.
 						</p>
 					</section>
+
+					<!-- Check-in for check-in: matchet/parret pr slutpunkt mod egen baseline
+					     (som den eksterne statistik-rapports "udvikling uge for uge"). Hvert
+					     slutpunkt bruger kun de kunder der nåede dertil — derfor stiger
+					     forbedringen jo længere ud man kommer, modsat samlet-tabellen. -->
+					{@const checkIns = s.velvaereCheckIns ?? []}
+					{#if checkIns.length > 0}
+						<section class="card">
+							<div class="kort-titel">Check-in for check-in</div>
+							<p class="skala-note" style="margin-top:0">
+								Hvert slutpunkt sammenligner kun de kunder der nåede dertil, mod deres egen baseline
+								— samme metode som statistik-rapporten. Derfor vokser forbedringen udad.
+							</p>
+							{#each checkIns as ci (ci.checkin)}
+								{@const c = ci.composite}
+								<div class="ci-blok">
+									<div class="rubrik-titel">
+										Baseline → check-in {ci.checkin}
+										<span class="ci-antal">{ci.antalMatchede} matchede</span>
+									</div>
+									<table class="ci-tabel">
+										<thead>
+											<tr>
+												<th>Mål</th>
+												<th>Baseline</th>
+												<th>Check-in {ci.checkin}</th>
+												<th>Δ</th>
+												<th>Forbedret</th>
+											</tr>
+										</thead>
+										<tbody>
+											{#each VELVAERE as v (v.key)}
+												{@const m = ci.perMaal[v.key]}
+												<tr>
+													<td class="ci-navn">{v.navn}</td>
+													<td>{tal(m.gnsBaseline)}</td>
+													<td>{tal(m.gnsCheckin)}</td>
+													<td class="ci-delta" class:bedre={m.delta > 0}>
+														{m.delta > 0 ? '+' : ''}{tal(m.delta)}
+													</td>
+													<td>{m.forbedretPct}%</td>
+												</tr>
+											{/each}
+											<tr class="ci-samlet">
+												<td class="ci-navn">Samlet</td>
+												<td>{tal(c.gnsBaseline)}</td>
+												<td>{tal(c.gnsCheckin)}</td>
+												<td class="ci-delta" class:bedre={c.delta > 0}>
+													{c.delta > 0 ? '+' : ''}{tal(c.delta)}
+												</td>
+												<td>{c.forbedretPct}%</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							{/each}
+							<p class="skala-note">
+								Skala 1–10 · højere = bedre. "Forbedret" = andel hvis værdi er steget fra baseline.
+							</p>
+						</section>
+					{/if}
 				{:else}
 					<div class="hint-kort">Ingen velvære-data for dette valg endnu.</div>
 				{/if}
@@ -789,6 +866,65 @@
 		font-weight: 600;
 		color: var(--text);
 		margin-bottom: 14px;
+	}
+
+	/* Rubrik-titel: mindre overskrift inde i et kort (adskiller to tabeller) */
+	.rubrik-titel {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text2);
+		margin: 18px 0 8px;
+	}
+	.rubrik-titel:first-child {
+		margin-top: 0;
+	}
+	.ci-antal {
+		font-weight: 500;
+		color: var(--text3);
+	}
+
+	/* Check-in for check-in-tabel */
+	.ci-blok + .ci-blok {
+		margin-top: 6px;
+	}
+	.ci-tabel {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+	}
+	.ci-tabel th {
+		text-align: right;
+		font-weight: 500;
+		color: var(--text3);
+		padding: 4px 6px;
+		border-bottom: 1px solid var(--border, #e7e2d9);
+	}
+	.ci-tabel th:first-child {
+		text-align: left;
+	}
+	.ci-tabel td {
+		text-align: right;
+		padding: 5px 6px;
+		color: var(--text);
+		border-bottom: 1px solid var(--surface2, #f4f1ec);
+	}
+	.ci-navn {
+		text-align: left !important;
+		color: var(--text2) !important;
+	}
+	.ci-delta {
+		color: var(--text3);
+	}
+	.ci-delta.bedre {
+		color: var(--accent, #b87b6e);
+		font-weight: 600;
+	}
+	.ci-samlet td {
+		font-weight: 600;
+		border-bottom: none;
 	}
 
 	/* Graf */
