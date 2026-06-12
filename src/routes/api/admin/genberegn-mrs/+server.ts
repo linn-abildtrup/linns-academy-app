@@ -1,11 +1,15 @@
-// Admin-endpoint: incremental genberegning af MRS-/velvære-dashboardet.
+// Admin-endpoint: genberegning af MRS-/velvære-dashboardet. To modes:
 //
-// I stedet for at læse alle 600+ kunders historik (som den fulde genberegning,
-// scripts/generer-mrs-stats.ts) henter dette KUN de kunder der har lavet en ny
-// måling siden sidste snapshot, re-destillerer dem, og genberegner snapshottet
-// ud fra per-kunde cachen (mrsCache). Dermed kan det køre serverless på
-// Cloudflare uden at ramme timeout/subrequest-loftet.
+//   ?mode=incremental (standard) — "Opdater tal". Henter KUN kunder med en ny
+//     måling siden sidste snapshot (collection-group-query), re-destillerer dem
+//     og genberegner ud fra per-kunde cachen (mrsCache). Lynhurtig, dagligt.
 //
+//   ?mode=fuld — "Fuld genberegning". Læser alle brugere + alle målinger i få
+//     store opslag (læs-alt + bunke-skriv), re-destillerer ALLE kunder og rydder
+//     stale cache. Bruges efter profil-rettelser / sletninger. Tungere men holder
+//     sig stadig under Cloudflares loft fordi den læser i bulk, ikke pr kunde.
+//
+// Begge bruger samme beregnings-logik (mrsBeregning.ts) som det lokale script.
 // Sikkerhed: kalderens Firebase ID-token verificeres og email tjekkes mod
 // ADMIN_EMAILS. Selve læsning/skrivning sker via service-account (uden om rules).
 
@@ -18,7 +22,9 @@ import {
 	gemDocMerge,
 	hentAlleDocs,
 	hentHeleCollection,
-	hentForaeldreIdsMedNyereEnd
+	hentForaeldreIdsMedNyereEnd,
+	hentCollectionGroupAlle,
+	batchWrite
 } from '$lib/server/firestoreRest';
 import {
 	distillerKunde,
@@ -62,20 +68,17 @@ async function medGraense<T>(items: T[], graense: number, fn: (t: T) => Promise<
 	}
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, url }) => {
 	const auth = request.headers.get('Authorization');
 	if (!auth?.startsWith('Bearer ')) throw error(401, 'Manglende Bearer-token');
 	const adminEmail = await verificerAdminToken(auth.slice(7));
 	if (!adminEmail) throw error(403, 'Ikke autoriseret som admin');
 
 	try {
-		// 1. Cursor: hvornår blev snapshottet sidst genereret? Vi henter kun
-		//    målinger nyere end det.
-		const snapDoc = await hentDoc('adminStats/mrs');
-		const siden = typeof snapDoc?.genereretAt === 'number' ? snapDoc.genereretAt : 0;
+		const mode = url.searchParams.get('mode') === 'fuld' ? 'fuld' : 'incremental';
 
-		// 2. Forløb-navne + start-tidspunkt (til pr-forløb-tilskrivning). startDato er
-		//    en Firestore-timestamp → kommer som ISO-streng via REST.
+		// Forløb-navne + start-tidspunkt (bruges i begge modes). startDato er en
+		// Firestore-timestamp → kommer som ISO-streng via REST.
 		const forlobDocs = await hentAlleDocs('forlob');
 		const forlobNavn = new Map<string, string>();
 		const forlobStart = new Map<string, number>();
@@ -86,36 +89,74 @@ export const POST: RequestHandler = async ({ request }) => {
 			if (start && !Number.isNaN(start)) forlobStart.set(f.id, start);
 		}
 
-		// 3. Find præcis de kunder der har en ny måling siden sidst.
-		const aendredeUids = await hentForaeldreIdsMedNyereEnd(
-			'mrs_scores',
-			'users',
-			'timestamp',
-			siden
-		);
-
-		// 4. Re-destillér hver ændret kunde og opdatér hendes cache-doc.
 		let opdaterede = 0;
-		await medGraense(aendredeUids, 8, async (uid) => {
-			const brugerDoc = await hentDoc(`users/${uid}`);
-			const mrsDocs = (await hentAlleDocs(`users/${uid}/mrs_scores`)).map((d) => d.data as MrsDoc);
-			const forlobIds = (brugerDoc?.forlobIds as string[]) ?? [];
-			const profil = (brugerDoc?.brugerProfil as { alder?: number; menopaus?: string }) ?? {};
-			const entries = distillerKunde(mrsDocs, forlobIds, forlobStart, profil);
-			// Kunde uden brugbar data længere: vi lader cache-doc'en blive (ryddes ved
-			// næste fulde genberegning) — REST-klienten har ingen delete-funktion endnu.
-			if (entries.length === 0) return;
-			await gemDocMerge(`mrsCache/${uid}`, { entries });
-			opdaterede++;
-		});
+		let fundne = 0;
 
-		// 5. Læs hele cachen og rekonstruér kunde-bidragene.
+		if (mode === 'fuld') {
+			// FULD: læs alle brugere + alle målinger (få store opslag), re-destillér
+			// ALLE kunder, skriv cachen i bunker, og ryd stale cache-docs.
+			const brugere = new Map<string, Record<string, unknown>>();
+			for (const u of await hentHeleCollection('users')) brugere.set(u.id, u.data);
+
+			const maalingerPerUid = new Map<string, MrsDoc[]>();
+			for (const m of await hentCollectionGroupAlle('mrs_scores', 'users')) {
+				if (!m.parentId) continue;
+				if (!maalingerPerUid.has(m.parentId)) maalingerPerUid.set(m.parentId, []);
+				maalingerPerUid.get(m.parentId)!.push(m.data as MrsDoc);
+			}
+
+			const cacheWrites: Array<
+				{ path: string; data: Record<string, unknown> } | { path: string; delete: true }
+			> = [];
+			const nyeIds = new Set<string>();
+			for (const [uid, maalinger] of maalingerPerUid) {
+				const u = brugere.get(uid) ?? {};
+				const entries = distillerKunde(
+					maalinger,
+					(u.forlobIds as string[]) ?? [],
+					forlobStart,
+					(u.brugerProfil as { alder?: number; menopaus?: string }) ?? {}
+				);
+				if (entries.length === 0) continue;
+				nyeIds.add(uid);
+				cacheWrites.push({ path: `mrsCache/${uid}`, data: { entries } });
+			}
+			// Ryd cache-docs for kunder der ikke længere har data.
+			for (const c of await hentHeleCollection('mrsCache')) {
+				if (!nyeIds.has(c.id)) cacheWrites.push({ path: `mrsCache/${c.id}`, delete: true });
+			}
+			await batchWrite(cacheWrites);
+			opdaterede = nyeIds.size;
+			fundne = nyeIds.size;
+		} else {
+			// INCREMENTAL: kun kunder med en ny måling siden sidste snapshot.
+			const snapDoc = await hentDoc('adminStats/mrs');
+			const siden = typeof snapDoc?.genereretAt === 'number' ? snapDoc.genereretAt : 0;
+			const aendredeUids = await hentForaeldreIdsMedNyereEnd(
+				'mrs_scores',
+				'users',
+				'timestamp',
+				siden
+			);
+			fundne = aendredeUids.length;
+			await medGraense(aendredeUids, 8, async (uid) => {
+				const brugerDoc = await hentDoc(`users/${uid}`);
+				const mrsDocs = (await hentAlleDocs(`users/${uid}/mrs_scores`)).map(
+					(d) => d.data as MrsDoc
+				);
+				const forlobIds = (brugerDoc?.forlobIds as string[]) ?? [];
+				const profil = (brugerDoc?.brugerProfil as { alder?: number; menopaus?: string }) ?? {};
+				const entries = distillerKunde(mrsDocs, forlobIds, forlobStart, profil);
+				if (entries.length === 0) return;
+				await gemDocMerge(`mrsCache/${uid}`, { entries });
+				opdaterede++;
+			});
+		}
+
+		// Læs hele cachen og genberegn snapshottet (begge modes).
 		const cacheDocs = await hentHeleCollection('mrsCache');
 		if (cacheDocs.length === 0) {
-			throw error(
-				409,
-				'Ingen cache fundet — kør den fulde genberegning (scripts/generer-mrs-stats.ts) først.'
-			);
+			throw error(409, 'Ingen cache fundet — prøv en fuld genberegning.');
 		}
 		const alleKunder: KundeMrs[] = [];
 		const prForlobKunder = new Map<string, KundeMrs[]>();
@@ -127,8 +168,6 @@ export const POST: RequestHandler = async ({ request }) => {
 				prForlobKunder.get(forlobId)!.push(kunde);
 			}
 		}
-
-		// 6. Byg og gem det friske snapshot.
 		const snapshot = byggSnapshot(
 			alleKunder,
 			prForlobKunder,
@@ -140,8 +179,9 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		return json({
 			ok: true,
+			mode,
 			opdateredeKunder: opdaterede,
-			fundneAendringer: aendredeUids.length,
+			fundneAendringer: fundne,
 			kunderICache: cacheDocs.length,
 			genereretAt: snapshot.genereretAt,
 			samlet: {
