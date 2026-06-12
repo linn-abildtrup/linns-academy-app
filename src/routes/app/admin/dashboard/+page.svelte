@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { doc, getDoc } from 'firebase/firestore';
-	import { db } from '$lib/firebase';
+	import { db, auth } from '$lib/firebase';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
@@ -70,13 +70,21 @@
 	let valgteVelvaereLinjer = $state<Set<string>>(new Set(['alle', 'kickstart', 'kropsro']));
 	let velvaereVaelgerAaben = $state(false);
 
+	async function indlaesSnapshot() {
+		const d = await getDoc(doc(db, 'adminStats', 'mrs'));
+		if (d.exists()) {
+			snapshot = d.data() as MrsSnapshot;
+			if (!snapshot.prForlob.some((f) => f.forlobId === valgtForlobId)) {
+				valgtForlobId = snapshot.prForlob[0]?.forlobId ?? null;
+			}
+		} else {
+			fejl = 'Ingen MRS-statistik endnu — kør scriptet for at generere den.';
+		}
+	}
+
 	onMount(async () => {
 		try {
-			const d = await getDoc(doc(db, 'adminStats', 'mrs'));
-			if (d.exists()) {
-				snapshot = d.data() as MrsSnapshot;
-				valgtForlobId = snapshot.prForlob[0]?.forlobId ?? null;
-			} else fejl = 'Ingen MRS-statistik endnu — kør scriptet for at generere den.';
+			await indlaesSnapshot();
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente statistik. Tjek at firestore-reglen for adminStats er deployet.';
@@ -84,6 +92,36 @@
 			loading = false;
 		}
 	});
+
+	// "Opdater tal"-knappen: kalder serverens incremental genberegning (henter kun
+	// kunder med nye målinger), og genindlæser så snapshottet med de friske tal.
+	let opdaterer = $state(false);
+	let opdaterBesked = $state<string | null>(null);
+	async function genberegn() {
+		if (opdaterer) return;
+		opdaterer = true;
+		opdaterBesked = null;
+		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error('Du er ikke logget ind som admin.');
+			const res = await fetch('/api/admin/genberegn-mrs', {
+				method: 'POST',
+				headers: { Authorization: `Bearer ${token}` }
+			});
+			if (!res.ok) {
+				const fejltekst = await res.text();
+				throw new Error(`Genberegning fejlede (${res.status}): ${fejltekst}`);
+			}
+			const data = (await res.json()) as { opdateredeKunder: number };
+			await indlaesSnapshot();
+			opdaterBesked = `Opdateret · ${data.opdateredeKunder} kunde(r) med nye målinger`;
+		} catch (e) {
+			console.error(e);
+			opdaterBesked = e instanceof Error ? e.message : 'Kunne ikke opdatere tallene.';
+		} finally {
+			opdaterer = false;
+		}
+	}
 
 	const tal = (n: number) => n.toLocaleString('da-DK', { maximumFractionDigits: 1 });
 	const datoTekst = (ms: number) =>
@@ -700,8 +738,19 @@
 		{/if}
 
 		<div class="opdateret">
-			<span>Sidst opdateret: {datoTekst(snapshot.genereretAt)}</span>
-			<span>Genberegn: <code>npx tsx scripts/generer-mrs-stats.ts</code></span>
+			<div class="opdateret-rad">
+				<span>Sidst opdateret: {datoTekst(snapshot.genereretAt)}</span>
+				<button class="opdater-knap" onclick={genberegn} disabled={opdaterer}>
+					{opdaterer ? 'Opdaterer…' : 'Opdater tal'}
+				</button>
+			</div>
+			{#if opdaterBesked}
+				<span class="opdater-besked">{opdaterBesked}</span>
+			{/if}
+			<span class="opdateret-note">
+				Henter kun kunder med nye målinger. Fuld genberegning (fx efter profil-rettelser):
+				<code>npx tsx scripts/generer-mrs-stats.ts</code>
+			</span>
 		</div>
 	{/if}
 </div>
@@ -1162,5 +1211,36 @@
 		margin-top: 18px;
 		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
+	}
+	.opdateret-rad {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+	}
+	.opdater-knap {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		padding: 7px 14px;
+		border: none;
+		border-radius: 9px;
+		background: var(--accent, #b87b6e);
+		color: var(--white, #fff);
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.opdater-knap:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+	.opdater-besked {
+		color: var(--accent, #b87b6e);
+		font-weight: 600;
+	}
+	.opdateret-note {
+		line-height: 1.5;
 	}
 </style>
