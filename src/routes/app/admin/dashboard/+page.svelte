@@ -41,6 +41,16 @@
 		velvaereSamletRejse: Rejsepunkt[];
 		velvaereCheckIns?: VelvCheckIn[]; // valgfrit: gamle snapshots har det ikke
 		antalVelvaere: number;
+		// "Gennemførte": samme velvære-tal men kun kunder med en måling ved hvert
+		// check-in. Valgfrit (gamle snapshots har det ikke).
+		velvaereCompletere?: {
+			velvaere: Record<SliderKey, SubResultat>;
+			velvaereSamletRejse: Rejsepunkt[];
+			velvaereCheckIns: VelvCheckIn[];
+			antalVelvaere: number;
+			antalGennemfoerte: number;
+			checkInsKraevet: number;
+		};
 		forbedringsFordeling: {
 			megetBedre: number;
 			lidtBedre: number;
@@ -69,6 +79,9 @@
 	let linjeVaelgerAaben = $state(false);
 	let valgteVelvaereLinjer = $state<Set<string>>(new Set(['alle', 'kickstart', 'kropsro']));
 	let velvaereVaelgerAaben = $state(false);
+	// Velvære-population: alle slider-kunder, eller kun "gennemførte" (måling ved
+	// hvert check-in). Styrer graf + begge tabeller i Velvære-fanen.
+	let velvaerePop = $state<'alle' | 'gennemfoerte'>('alle');
 
 	async function indlaesSnapshot() {
 		const d = await getDoc(doc(db, 'adminStats', 'mrs'));
@@ -155,7 +168,11 @@
 			navn,
 			farve,
 			rejse: sc.rejse,
-			velvaere: sc.velvaereSamletRejse
+			// Velvære-grafen følger Alle/Gennemførte-toggle.
+			velvaere:
+				velvaerePop === 'gennemfoerte'
+					? (sc.velvaereCompletere?.velvaereSamletRejse ?? [])
+					: sc.velvaereSamletRejse
 		});
 		const linjer: GrafLinje[] = [
 			fra('alle', 'Alle', '#2d2a26', snapshot.samlet),
@@ -581,155 +598,191 @@
 			{:else}
 				<!-- Velvære-udvikling: vores egen måling (højere = bedre) -->
 				{#if s.antalVelvaere > 0}
-					<section class="card">
-						<div class="graf-top">
-							<div class="kort-titel" style="margin:0">Velvære ({s.antalVelvaere} kunder)</div>
-							{#if aktivFane === 'alle'}
-								<div class="linje-vaelger">
-									<button
-										class="linje-vaelger-knap"
-										onclick={() => (velvaereVaelgerAaben = !velvaereVaelgerAaben)}
-									>
-										Vælg linjer ({valgteVelvaereLinjer.size})
-										<Icon name="chevron-d" size={12} color="var(--text2)" />
-									</button>
-									{#if velvaereVaelgerAaben}
-										<div class="linje-menu">
-											{#each tilgaengeligeLinjer as l, i (l.id)}
-												{#if i === 3}<div class="linje-divider">Enkelte hold</div>{/if}
-												<label class="linje-option">
-													<input
-														type="checkbox"
-														checked={valgteVelvaereLinjer.has(l.id)}
-														onchange={() => toggleVelvaereLinje(l.id)}
-													/>
-													<span class="linje-prik" style="background:{l.farve}"></span>
-													{l.navn}
-												</label>
-											{/each}
-										</div>
-									{/if}
-								</div>
-							{/if}
-						</div>
-						{#if velvaereGraf}
-							<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
-								{#each velvaereGraf.yTicks as t (t.v)}
-									<line x1={G.padL} y1={t.y} x2={G.w - G.padR} y2={t.y} class="gitter" />
-									<text x={G.padL - 5} y={t.y + 3} class="akse-tekst" text-anchor="end">{t.v}</text>
-								{/each}
-								{#each velvaereGraf.xLabels as x (x.label)}
-									<text x={x.x} y={G.h - 8} class="akse-tekst" text-anchor="middle">{x.label}</text>
-								{/each}
-								{#each velvaereGraf.linjer as l (l.navn)}
-									<path
-										d={l.path}
-										fill="none"
-										stroke={l.farve}
-										stroke-width={l.fremhaev ? 2.5 : 1.5}
-										stroke-opacity={l.fremhaev ? 1 : 0.5}
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-									{#each l.pkt as p (p.x)}
-										<circle cx={p.x} cy={p.y} r={l.fremhaev ? 4 : 3} fill={l.farve} />
-									{/each}
-								{/each}
-							</svg>
-							{#if velvaereGraf.linjer.length === 0}
-								<p class="skala-note">Vælg en eller flere linjer i menuen for at se udviklingen.</p>
-							{/if}
-							<div class="legende">
-								{#each velvaereGraf.linjer as l (l.navn)}
-									<span class="legende-item"
-										><span class="legende-prik" style="background:{l.farve}"></span>{l.navn}</span
-									>
-								{/each}
-							</div>
-							<p class="skala-note">
-								Samlet velvære (gns. af de 5 mål) · skala 1–10 · højere = bedre
-							</p>
-						{/if}
-						<div class="rubrik-titel">Samlet: baseline → seneste måling</div>
-						{#each VELVAERE as v (v.key)}
-							{@const vv = s.velvaere[v.key]}
-							<div class="sub-rad">
-								<div class="sub-navn">{v.navn}</div>
-								<div class="sub-tal">
-									<span>{tal(vv.gnsBaseline)}</span>
-									<Icon name="chevron-r" size={12} color="var(--text3)" />
-									<span>{tal(vv.gnsSeneste)}</span>
-									<span class="sub-aendring" class:bedre={vv.gnsAendring > 0}>
-										{vv.gnsAendring > 0 ? '↑' : vv.gnsAendring < 0 ? '↓' : ''}
-										{tal(Math.abs(vv.gnsAendring))}
-									</span>
-								</div>
-							</div>
-						{/each}
-						<p class="skala-note">
-							Skala 1–10 · højere = bedre. Egen måling, så flere kunder end MRS-totalen.
-						</p>
-					</section>
-
-					<!-- Check-in for check-in: matchet/parret pr slutpunkt mod egen baseline
-					     (som den eksterne statistik-rapports "udvikling uge for uge"). Hvert
-					     slutpunkt bruger kun de kunder der nåede dertil — derfor stiger
-					     forbedringen jo længere ud man kommer, modsat samlet-tabellen. -->
-					{@const checkIns = s.velvaereCheckIns ?? []}
-					{#if checkIns.length > 0}
+					{@const velvData =
+						velvaerePop === 'gennemfoerte' && s.velvaereCompletere
+							? {
+									antal: s.velvaereCompletere.antalGennemfoerte,
+									velvaere: s.velvaereCompletere.velvaere,
+									checkIns: s.velvaereCompletere.velvaereCheckIns
+								}
+							: {
+									antal: s.antalVelvaere,
+									velvaere: s.velvaere,
+									checkIns: s.velvaereCheckIns ?? []
+								}}
+					<!-- Alle / Gennemførte (måling ved hvert check-in) -->
+					<div class="velv-toggle">
+						<button class:aktiv={velvaerePop === 'alle'} onclick={() => (velvaerePop = 'alle')}>
+							Alle ({s.antalVelvaere})
+						</button>
+						<button
+							class:aktiv={velvaerePop === 'gennemfoerte'}
+							onclick={() => (velvaerePop = 'gennemfoerte')}
+							disabled={!s.velvaereCompletere || s.velvaereCompletere.antalGennemfoerte === 0}
+						>
+							Gennemførte ({s.velvaereCompletere?.antalGennemfoerte ?? 0})
+						</button>
+					</div>
+					{#if velvData.antal > 0}
 						<section class="card">
-							<div class="kort-titel">Check-in for check-in</div>
-							<p class="skala-note" style="margin-top:0">
-								Hvert slutpunkt sammenligner kun de kunder der nåede dertil, mod deres egen baseline
-								— samme metode som statistik-rapporten. Derfor vokser forbedringen udad.
-							</p>
-							{#each checkIns as ci (ci.checkin)}
-								{@const c = ci.composite}
-								<div class="ci-blok">
-									<div class="rubrik-titel">
-										Baseline → check-in {ci.checkin}
-										<span class="ci-antal">{ci.antalMatchede} matchede</span>
+							<div class="graf-top">
+								<div class="kort-titel" style="margin:0">Velvære ({velvData.antal} kunder)</div>
+								{#if aktivFane === 'alle'}
+									<div class="linje-vaelger">
+										<button
+											class="linje-vaelger-knap"
+											onclick={() => (velvaereVaelgerAaben = !velvaereVaelgerAaben)}
+										>
+											Vælg linjer ({valgteVelvaereLinjer.size})
+											<Icon name="chevron-d" size={12} color="var(--text2)" />
+										</button>
+										{#if velvaereVaelgerAaben}
+											<div class="linje-menu">
+												{#each tilgaengeligeLinjer as l, i (l.id)}
+													{#if i === 3}<div class="linje-divider">Enkelte hold</div>{/if}
+													<label class="linje-option">
+														<input
+															type="checkbox"
+															checked={valgteVelvaereLinjer.has(l.id)}
+															onchange={() => toggleVelvaereLinje(l.id)}
+														/>
+														<span class="linje-prik" style="background:{l.farve}"></span>
+														{l.navn}
+													</label>
+												{/each}
+											</div>
+										{/if}
 									</div>
-									<table class="ci-tabel">
-										<thead>
-											<tr>
-												<th>Mål</th>
-												<th>Baseline</th>
-												<th>Check-in {ci.checkin}</th>
-												<th>Δ</th>
-												<th>Forbedret</th>
-											</tr>
-										</thead>
-										<tbody>
-											{#each VELVAERE as v (v.key)}
-												{@const m = ci.perMaal[v.key]}
-												<tr>
-													<td class="ci-navn">{v.navn}</td>
-													<td>{tal(m.gnsBaseline)}</td>
-													<td>{tal(m.gnsCheckin)}</td>
-													<td class="ci-delta" class:bedre={m.delta > 0}>
-														{m.delta > 0 ? '+' : ''}{tal(m.delta)}
-													</td>
-													<td>{m.forbedretPct}%</td>
-												</tr>
-											{/each}
-											<tr class="ci-samlet">
-												<td class="ci-navn">Samlet</td>
-												<td>{tal(c.gnsBaseline)}</td>
-												<td>{tal(c.gnsCheckin)}</td>
-												<td class="ci-delta" class:bedre={c.delta > 0}>
-													{c.delta > 0 ? '+' : ''}{tal(c.delta)}
-												</td>
-												<td>{c.forbedretPct}%</td>
-											</tr>
-										</tbody>
-									</table>
+								{/if}
+							</div>
+							{#if velvaereGraf}
+								<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
+									{#each velvaereGraf.yTicks as t (t.v)}
+										<line x1={G.padL} y1={t.y} x2={G.w - G.padR} y2={t.y} class="gitter" />
+										<text x={G.padL - 5} y={t.y + 3} class="akse-tekst" text-anchor="end"
+											>{t.v}</text
+										>
+									{/each}
+									{#each velvaereGraf.xLabels as x (x.label)}
+										<text x={x.x} y={G.h - 8} class="akse-tekst" text-anchor="middle"
+											>{x.label}</text
+										>
+									{/each}
+									{#each velvaereGraf.linjer as l (l.navn)}
+										<path
+											d={l.path}
+											fill="none"
+											stroke={l.farve}
+											stroke-width={l.fremhaev ? 2.5 : 1.5}
+											stroke-opacity={l.fremhaev ? 1 : 0.5}
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										/>
+										{#each l.pkt as p (p.x)}
+											<circle cx={p.x} cy={p.y} r={l.fremhaev ? 4 : 3} fill={l.farve} />
+										{/each}
+									{/each}
+								</svg>
+								{#if velvaereGraf.linjer.length === 0}
+									<p class="skala-note">
+										Vælg en eller flere linjer i menuen for at se udviklingen.
+									</p>
+								{/if}
+								<div class="legende">
+									{#each velvaereGraf.linjer as l (l.navn)}
+										<span class="legende-item"
+											><span class="legende-prik" style="background:{l.farve}"></span>{l.navn}</span
+										>
+									{/each}
+								</div>
+								<p class="skala-note">
+									Samlet velvære (gns. af de 5 mål) · skala 1–10 · højere = bedre
+								</p>
+							{/if}
+							<div class="rubrik-titel">Samlet: baseline → seneste måling</div>
+							{#each VELVAERE as v (v.key)}
+								{@const vv = velvData.velvaere[v.key]}
+								<div class="sub-rad">
+									<div class="sub-navn">{v.navn}</div>
+									<div class="sub-tal">
+										<span>{tal(vv.gnsBaseline)}</span>
+										<Icon name="chevron-r" size={12} color="var(--text3)" />
+										<span>{tal(vv.gnsSeneste)}</span>
+										<span class="sub-aendring" class:bedre={vv.gnsAendring > 0}>
+											{vv.gnsAendring > 0 ? '↑' : vv.gnsAendring < 0 ? '↓' : ''}
+											{tal(Math.abs(vv.gnsAendring))}
+										</span>
+									</div>
 								</div>
 							{/each}
 							<p class="skala-note">
-								Skala 1–10 · højere = bedre. "Forbedret" = andel hvis værdi er steget fra baseline.
+								Skala 1–10 · højere = bedre. Egen måling, så flere kunder end MRS-totalen.
 							</p>
 						</section>
+
+						<!-- Check-in for check-in: matchet/parret pr slutpunkt mod egen baseline
+					     (som den eksterne statistik-rapports "udvikling uge for uge"). Hvert
+					     slutpunkt bruger kun de kunder der nåede dertil — derfor stiger
+					     forbedringen jo længere ud man kommer, modsat samlet-tabellen. -->
+						{@const checkIns = velvData.checkIns}
+						{#if checkIns.length > 0}
+							<section class="card">
+								<div class="kort-titel">Check-in for check-in</div>
+								<p class="skala-note" style="margin-top:0">
+									Hvert slutpunkt sammenligner kun de kunder der nåede dertil, mod deres egen
+									baseline — samme metode som statistik-rapporten. Derfor vokser forbedringen udad.
+								</p>
+								{#each checkIns as ci (ci.checkin)}
+									{@const c = ci.composite}
+									<div class="ci-blok">
+										<div class="rubrik-titel">
+											Baseline → check-in {ci.checkin}
+											<span class="ci-antal">{ci.antalMatchede} matchede</span>
+										</div>
+										<table class="ci-tabel">
+											<thead>
+												<tr>
+													<th>Mål</th>
+													<th>Baseline</th>
+													<th>Check-in {ci.checkin}</th>
+													<th>Δ</th>
+													<th>Forbedret</th>
+												</tr>
+											</thead>
+											<tbody>
+												{#each VELVAERE as v (v.key)}
+													{@const m = ci.perMaal[v.key]}
+													<tr>
+														<td class="ci-navn">{v.navn}</td>
+														<td>{tal(m.gnsBaseline)}</td>
+														<td>{tal(m.gnsCheckin)}</td>
+														<td class="ci-delta" class:bedre={m.delta > 0}>
+															{m.delta > 0 ? '+' : ''}{tal(m.delta)}
+														</td>
+														<td>{m.forbedretPct}%</td>
+													</tr>
+												{/each}
+												<tr class="ci-samlet">
+													<td class="ci-navn">Samlet</td>
+													<td>{tal(c.gnsBaseline)}</td>
+													<td>{tal(c.gnsCheckin)}</td>
+													<td class="ci-delta" class:bedre={c.delta > 0}>
+														{c.delta > 0 ? '+' : ''}{tal(c.delta)}
+													</td>
+													<td>{c.forbedretPct}%</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+								{/each}
+								<p class="skala-note">
+									Skala 1–10 · højere = bedre. "Forbedret" = andel hvis værdi er steget fra
+									baseline.
+								</p>
+							</section>
+						{/if}
+					{:else}
+						<div class="hint-kort">Ingen gennemførte kunder i dette valg endnu.</div>
 					{/if}
 				{:else}
 					<div class="hint-kort">Ingen velvære-data for dette valg endnu.</div>
@@ -974,6 +1027,36 @@
 	.ci-samlet td {
 		font-weight: 600;
 		border-bottom: none;
+	}
+
+	/* Alle / Gennemførte-toggle i Velvære-fanen */
+	.velv-toggle {
+		display: flex;
+		gap: 6px;
+		background: var(--surface2, #f4f1ec);
+		padding: 4px;
+		border-radius: 12px;
+		margin-bottom: 14px;
+	}
+	.velv-toggle button {
+		flex: 1;
+		padding: 8px 12px;
+		border: none;
+		background: transparent;
+		border-radius: 9px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text2);
+		cursor: pointer;
+	}
+	.velv-toggle button.aktiv {
+		background: var(--white, #fff);
+		color: var(--text);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	}
+	.velv-toggle button:disabled {
+		opacity: 0.45;
+		cursor: default;
 	}
 
 	/* Graf */
