@@ -55,7 +55,8 @@
 		hentAboBonusPulje,
 		hentAboVanedag,
 		hentAlleAboVanedage,
-		gemAboVanedag
+		gemAboVanedag,
+		opdaterAboVaneSvar
 	} from '$lib/firestore/aboVaner';
 	import {
 		hentAlleAboTraeninger,
@@ -947,21 +948,30 @@
 
 	let gemmerSvar = $state(false);
 
-	async function gemVaneSvar(vaneId: string, svar: VaneSvar) {
+	// svar=null fjerner vane-svaret igen (toggle/undo) — klienten klikker
+	// på den allerede aktive knap for at fortryde dagens lille skridt.
+	async function gemVaneSvar(vaneId: string, svar: VaneSvar | null) {
 		const u = user;
 		if (!u || gemmerSvar) return;
 		gemmerSvar = true;
 		const aktuel = modulbrugerVanedag ?? tomVanedag(modulbrugerAktivDato);
-		const nyChecks = { ...aktuel.checks, [vaneId]: svar };
-		const ny: AboVanedagEntry = { ...aktuel, checks: nyChecks };
-		modulbrugerVanedag = ny;
+		const nyChecks = { ...aktuel.checks };
+		if (svar === null) delete nyChecks[vaneId];
+		else nyChecks[vaneId] = svar;
+		modulbrugerVanedag = { ...aktuel, checks: nyChecks };
 		try {
-			await gemAboVanedag(u.uid, ny);
+			// Skriv KUN det specifikke felt, så note/andre vaner ikke overskrives.
+			await opdaterAboVaneSvar(u.uid, modulbrugerAktivDato, vaneId, svar);
 		} catch (e) {
 			console.error('Kunne ikke gemme vane-svar:', e);
 		} finally {
 			gemmerSvar = false;
 		}
+	}
+
+	function vaelgEllerFjernVane(vaneId: string, svar: VaneSvar) {
+		const aktiv = modulbrugerVanedag?.checks?.[vaneId] === svar;
+		void gemVaneSvar(vaneId, aktiv ? null : svar);
 	}
 
 	// svar=null fjerner bonus-svaret igen (toggle/undo). Bruges når klienten
@@ -1341,14 +1351,19 @@
 		return { dagNummer, checks: {}, bonus: {}, checkin: {}, note: '' };
 	}
 
-	async function gemForlobVaneSvar(vaneId: string, svar: VaneSvar) {
+	// svar=null fjerner vane-svaret igen (toggle/undo) — klienten klikker
+	// på den allerede aktive knap for at fortryde dagens lille skridt.
+	async function gemForlobVaneSvar(vaneId: string, svar: VaneSvar | null) {
 		const u = user;
 		const n = valgtDagNummer ?? aktivDagNummer;
 		if (!u || n === null || gemmerSvar) return;
 		gemmerSvar = true;
 		// Optimistisk lokal opdatering (UI feedback)
 		const aktuel = forlobVanedag ?? tomForlobVanedag(n);
-		forlobVanedag = { ...aktuel, checks: { ...aktuel.checks, [vaneId]: svar } };
+		const nyChecks = { ...aktuel.checks };
+		if (svar === null) delete nyChecks[vaneId];
+		else nyChecks[vaneId] = svar;
+		forlobVanedag = { ...aktuel, checks: nyChecks };
 		try {
 			// Skriv KUN det specifikke felt. Bug 7/6 2026: tidligere sendte vi
 			// hele entry-objektet, inkl. en stale 'note: ""' der overskrev
@@ -1359,6 +1374,11 @@
 		} finally {
 			gemmerSvar = false;
 		}
+	}
+
+	function vaelgEllerFjernForlobVane(vaneId: string, svar: VaneSvar) {
+		const aktiv = forlobVanedag?.checks?.[vaneId] === svar;
+		void gemForlobVaneSvar(vaneId, aktiv ? null : svar);
 	}
 
 	// svar=null fjerner bonus-svaret igen (toggle/undo) — klienten klikker
@@ -1711,7 +1731,7 @@
 											class="svar-knap svar-knap-{opt.v}"
 											class:aktiv={svar === opt.v}
 											disabled={gemmerSvar}
-											onclick={() => gemForlobVaneSvar(vane.id, opt.v)}
+											onclick={() => vaelgEllerFjernForlobVane(vane.id, opt.v)}
 										>
 											{opt.l}
 										</button>
@@ -2053,7 +2073,7 @@
 											class="svar-knap svar-knap-{opt.v}"
 											class:aktiv={svar === opt.v}
 											disabled={gemmerSvar}
-											onclick={() => gemVaneSvar(vane.id, opt.v)}
+											onclick={() => vaelgEllerFjernVane(vane.id, opt.v)}
 										>
 											{opt.l}
 										</button>

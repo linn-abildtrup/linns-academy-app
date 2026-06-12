@@ -7,14 +7,7 @@
 //                                                  (hver forløb har sit eget)
 //   - users/{uid}/products/{productId}/vanedage/{dagId}  ← brugerens svar
 
-import {
-	collection,
-	doc,
-	getDoc,
-	getDocs,
-	serverTimestamp,
-	setDoc
-} from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { VaneProgramDag, VanedagEntry } from '$lib/content/vaner';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
@@ -37,9 +30,7 @@ function vanedagDoc(uid: string, productId: string, dagId: string) {
  */
 export async function hentVaneprogramForForlob(forlobId: string): Promise<VaneProgramDag[]> {
 	const snap = await getDocs(collection(db, 'forlob', forlobId, 'vaneprogram'));
-	return snap.docs
-		.map((d) => d.data() as VaneProgramDag)
-		.sort((a, b) => a.dagNummer - b.dagNummer);
+	return snap.docs.map((d) => d.data() as VaneProgramDag).sort((a, b) => a.dagNummer - b.dagNummer);
 }
 
 /**
@@ -58,10 +49,7 @@ export async function hentVaneprogramDag(
 /**
  * Gemmer en vaneprogram-dag for et forløb (admin-skrivning).
  */
-export async function gemVaneprogramDag(
-	forlobId: string,
-	dag: VaneProgramDag
-): Promise<void> {
+export async function gemVaneprogramDag(forlobId: string, dag: VaneProgramDag): Promise<void> {
 	const id = `dag${dag.dagNummer}`;
 	const ref = doc(db, 'forlob', forlobId, 'vaneprogram', id);
 	await setDoc(ref, dag);
@@ -216,11 +204,23 @@ export async function opdaterVaneSvar(
 	productId: string,
 	dagNummer: number,
 	vaneId: string,
-	svar: 'ja' | 'delvist' | 'nej'
+	svar: 'ja' | 'delvist' | 'nej' | null
 ): Promise<void> {
 	const id = `dag${dagNummer}`;
+	const ref = vanedagDoc(uid, productId, id);
+	if (svar === null) {
+		// svar=null fjerner vane-svaret igen (toggle/undo) — klienten klikker
+		// på den allerede aktive knap for at fortryde. delete-field-i-nested-
+		// object kraever updateDoc med dot-path (samme som opdaterBonusSvar).
+		const { deleteField, updateDoc } = await import('firebase/firestore');
+		await updateDoc(ref, {
+			[`checks.${vaneId}`]: deleteField(),
+			savedAt: serverTimestamp()
+		});
+		return;
+	}
 	await setDoc(
-		vanedagDoc(uid, productId, id),
+		ref,
 		{
 			dagNummer,
 			checks: { [vaneId]: svar },

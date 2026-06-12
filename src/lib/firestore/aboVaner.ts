@@ -111,11 +111,7 @@ export async function gemAboVaneOpsaetning(
  * ændrer sig.
  */
 export async function nulstilAboBaseline(uid: string): Promise<void> {
-	await setDoc(
-		opsaetningRef(uid),
-		{ baselineNulstilletAt: Timestamp.now() },
-		{ merge: true }
-	);
+	await setDoc(opsaetningRef(uid), { baselineNulstilletAt: Timestamp.now() }, { merge: true });
 }
 
 // ==============================================
@@ -143,6 +139,38 @@ export async function gemAboVanedag(
 	await setDoc(
 		vanedagDoc(uid, entry.dato),
 		{ ...entry, savedAt: serverTimestamp() },
+		{ merge: true }
+	);
+}
+
+/**
+ * Opdaterer kun ÉT vane-svar i checks-feltet for en dag. svar=null fjerner
+ * svaret igen (klienten trykker på den allerede-aktive knap for at fortryde).
+ * Skriver KUN det specifikke felt, så note/andre vaner ikke overskrives —
+ * samme mønster som forløbskundernes opdaterVaneSvar i firestore/vaner.ts.
+ */
+export async function opdaterAboVaneSvar(
+	uid: string,
+	dato: string,
+	vaneId: string,
+	svar: 'ja' | 'delvist' | 'nej' | null
+): Promise<void> {
+	const ref = vanedagDoc(uid, dato);
+	if (svar === null) {
+		const { deleteField, updateDoc } = await import('firebase/firestore');
+		await updateDoc(ref, {
+			[`checks.${vaneId}`]: deleteField(),
+			savedAt: serverTimestamp()
+		});
+		return;
+	}
+	await setDoc(
+		ref,
+		{
+			dato,
+			checks: { [vaneId]: svar },
+			savedAt: serverTimestamp()
+		},
 		{ merge: true }
 	);
 }
