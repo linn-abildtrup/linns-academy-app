@@ -350,6 +350,81 @@ export async function hentForaeldreIdsMedNyereEnd(
 	return [...ids];
 }
 
+/**
+ * Hent ALLE dokumenter i en collection-group (uden filter), med deres forælder-
+ * id. Bruges af den fulde genberegning: ét stort opslag henter alle kunders
+ * målinger på én gang i stedet for ét opslag pr kunde. runQuery streamer hele
+ * resultatet i ét svar (ingen sidedeling). Kræver intet custom index (et bart
+ * collection-group-opslag bruger det automatiske __name__-index).
+ */
+export async function hentCollectionGroupAlle(
+	subcollectionId: string,
+	foraeldreCollection: string
+): Promise<Array<{ parentId: string; data: Record<string, unknown> }>> {
+	const sa = laesServiceAccount();
+	const token = await hentAccessToken();
+	const body = {
+		structuredQuery: { from: [{ collectionId: subcollectionId, allDescendants: true }] }
+	};
+	const res = await fetch(`${dbBaseUrl(sa.projectId)}:runQuery`, {
+		method: 'POST',
+		headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+		body: JSON.stringify(body)
+	});
+	if (!res.ok) {
+		throw new Error(`Firestore collection-group-read fejlede (${res.status}): ${await res.text()}`);
+	}
+	const rows = (await res.json()) as Array<{
+		document?: { name: string; fields?: Record<string, FirestoreValue> };
+	}>;
+	const out: Array<{ parentId: string; data: Record<string, unknown> }> = [];
+	for (const row of rows) {
+		if (!row.document) continue;
+		const dele = row.document.name.split('/');
+		const i = dele.lastIndexOf(foraeldreCollection);
+		const parentId = i >= 0 && i + 1 < dele.length ? dele[i + 1] : '';
+		const data: Record<string, unknown> = {};
+		for (const [k, v] of Object.entries(row.document.fields ?? {})) {
+			data[k] = fraFirestoreValue(v);
+		}
+		out.push({ parentId, data });
+	}
+	return out;
+}
+
+/**
+ * Skriv mange dokumenter i bunker (Firestore :batchWrite, op til 500 pr kald).
+ * Bruges af den fulde genberegning til at skrive ~600 cache-docs i 2 kald i
+ * stedet for 600 enkelt-skrivninger. Et 'update' SÆTTER hele dokumentet (ingen
+ * mask) — fint for cache-docs der kun har ét felt. Ikke-transaktionelt.
+ */
+export async function batchWrite(
+	writes: Array<{ path: string; data: Record<string, unknown> } | { path: string; delete: true }>
+): Promise<void> {
+	if (writes.length === 0) return;
+	const sa = laesServiceAccount();
+	const token = await hentAccessToken();
+	const base = `projects/${sa.projectId}/databases/(default)/documents`;
+	for (let i = 0; i < writes.length; i += 500) {
+		const chunk = writes.slice(i, i + 500);
+		const body = {
+			writes: chunk.map((w) =>
+				'delete' in w
+					? { delete: `${base}/${w.path}` }
+					: { update: { name: `${base}/${w.path}`, fields: konverterFields(w.data) } }
+			)
+		};
+		const res = await fetch(`https://firestore.googleapis.com/v1/${base}:batchWrite`, {
+			method: 'POST',
+			headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+			body: JSON.stringify(body)
+		});
+		if (!res.ok) {
+			throw new Error(`Firestore batchWrite fejlede (${res.status}): ${await res.text()}`);
+		}
+	}
+}
+
 /** Søg efter dokumenter i en collection hvor et felt matcher en værdi. */
 export async function hentDocsHvorFeltLig(
 	collection: string,
