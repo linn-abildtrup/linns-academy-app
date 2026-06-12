@@ -211,8 +211,10 @@ function velvaereStats(kunder: KundeMrs[]) {
 	};
 }
 
-// Beregner ÉN scope (samlet eller ét forloeb) ud fra kundernes raa-data.
-export function beregnScope(kunder: KundeMrs[]) {
+// Alle MRS-total-tal for en given kunde-delmaengde. Kaldes to gange pr scope:
+// for ALLE udviklings-kunder, og for "gennemfoerte" (et fuldt MRS-skema ved
+// hvert rejse-punkt). Samme logik begge gange → tallene er konsistente.
+function mrsStats(kunder: KundeMrs[]) {
 	const udv = kunder.filter((k) => k.harUdvikling);
 	const baselineT = udv.map((k) => k.baseline);
 	const senesteT = udv.map((k) => k.seneste);
@@ -254,16 +256,7 @@ export function beregnScope(kunder: KundeMrs[]) {
 		gnsAendring: r1(subGns((k) => k.subSeneste, key) - subGns((k) => k.subBaseline, key))
 	});
 
-	// Velvaere — for ALLE slider-kunder, og separat for "gennemfoerte" (har en
-	// slider-maaling ved hvert check-in: baseline + alle check-ins der findes).
-	const v = velvaereStats(kunder);
-	const antalCheckIns = v.velvaereCheckIns.length;
-	const gennemfoerte =
-		antalCheckIns > 0 ? kunder.filter((k) => k.sliderMaalinger.length >= antalCheckIns + 1) : [];
-	const vGennemfoerte = velvaereStats(gennemfoerte);
-
 	return {
-		antalMedData: kunder.filter((k) => k.harMrs).length,
 		antalMedUdvikling: udv.length,
 		gnsBaseline: r1(gns(baselineT)),
 		gnsSeneste: r1(gns(senesteT)),
@@ -279,14 +272,43 @@ export function beregnScope(kunder: KundeMrs[]) {
 		rejse,
 		baselineSvaergrad,
 		demografi,
+		forbedringsFordeling: fordeling
+	};
+}
+
+// Beregner ÉN scope (samlet eller ét forloeb) ud fra kundernes raa-data.
+export function beregnScope(kunder: KundeMrs[]) {
+	// MRS — for ALLE udviklings-kunder, og separat for "gennemfoerte" (et fuldt
+	// MRS-skema ved hvert rejse-punkt: totaler.length >= antal rejse-punkter).
+	const m = mrsStats(kunder);
+	const mrsGennemfoerte =
+		m.rejse.length > 0 ? kunder.filter((k) => k.totaler.length >= m.rejse.length) : [];
+	const mGennemfoerte = mrsStats(mrsGennemfoerte);
+
+	// Velvaere — for ALLE slider-kunder, og separat for "gennemfoerte" (en
+	// slider-maaling ved hvert check-in: baseline + alle check-ins der findes).
+	const v = velvaereStats(kunder);
+	const antalCheckIns = v.velvaereCheckIns.length;
+	const gennemfoerte =
+		antalCheckIns > 0 ? kunder.filter((k) => k.sliderMaalinger.length >= antalCheckIns + 1) : [];
+	const vGennemfoerte = velvaereStats(gennemfoerte);
+
+	return {
+		antalMedData: kunder.filter((k) => k.harMrs).length,
+		...m,
+		// "Gennemfoerte" MRS = kunder med et fuldt MRS-skema ved hvert rejse-punkt.
+		// Samme tal-typer som top-niveau, blot over delmaengden.
+		mrsCompletere: {
+			...mGennemfoerte,
+			antalGennemfoerte: mrsGennemfoerte.length,
+			maalingerKraevet: m.rejse.length
+		},
 		velvaere: v.velvaere,
 		velvaereRejse: v.velvaereRejse,
 		velvaereSamletRejse: v.velvaereSamletRejse,
 		velvaereCheckIns: v.velvaereCheckIns,
 		antalVelvaere: v.antalVelvaere,
-		// "Gennemfoerte" = kunder med en slider-maaling ved hvert check-in.
-		// Samme tal-typer som ovenfor, blot over den delmaengde — dashboardets
-		// Alle/Gennemfoerte-toggle vaelger hvilket saet der vises.
+		// "Gennemfoerte" velvaere = kunder med en slider-maaling ved hvert check-in.
 		velvaereCompletere: {
 			velvaere: vGennemfoerte.velvaere,
 			velvaereSamletRejse: vGennemfoerte.velvaereSamletRejse,
@@ -294,8 +316,7 @@ export function beregnScope(kunder: KundeMrs[]) {
 			antalVelvaere: vGennemfoerte.antalVelvaere,
 			antalGennemfoerte: gennemfoerte.length,
 			checkInsKraevet: antalCheckIns
-		},
-		forbedringsFordeling: fordeling
+		}
 	};
 }
 
