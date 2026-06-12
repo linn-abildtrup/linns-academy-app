@@ -22,8 +22,28 @@
 		perMaal: Record<SliderKey, CheckInMaal>;
 		composite: CheckInMaal;
 	};
+	type Fordeling = { megetBedre: number; lidtBedre: number; uaendret: number; vaerre: number };
+	// MRS-total-tallene — findes både på top-niveau (alle) og i mrsCompletere.
+	type MrsTal = {
+		antalMedUdvikling: number;
+		gnsBaseline: number;
+		gnsSeneste: number;
+		gnsAendring: number;
+		andelForbedret: number;
+		subskalaer: Record<'somatisk' | 'psykologisk' | 'urogenital', SubResultat>;
+		rejse: Rejsepunkt[];
+		baselineSvaergrad: Record<'mild' | 'moderat' | 'svaer', SegmentGruppe>;
+		demografi: {
+			menopause: Record<string, SegmentGruppe>;
+			alder: Record<string, SegmentGruppe>;
+		};
+		forbedringsFordeling: Fordeling;
+	};
 	type Scope = {
 		antalMedData: number;
+		// "Gennemførte" MRS: samme tal men kun kunder med fuldt skema ved hvert
+		// rejse-punkt. Valgfrit (gamle snapshots har det ikke).
+		mrsCompletere?: MrsTal & { antalGennemfoerte: number; maalingerKraevet: number };
 		antalMedUdvikling: number;
 		gnsBaseline: number;
 		gnsSeneste: number;
@@ -82,6 +102,9 @@
 	// Velvære-population: alle slider-kunder, eller kun "gennemførte" (måling ved
 	// hvert check-in). Styrer graf + begge tabeller i Velvære-fanen.
 	let velvaerePop = $state<'alle' | 'gennemfoerte'>('alle');
+	// Samme toggle for MRS-fanen: alle udviklings-kunder, eller kun dem med et
+	// fuldt MRS-skema ved hvert rejse-punkt.
+	let mrsPop = $state<'alle' | 'gennemfoerte'>('alle');
 
 	async function indlaesSnapshot() {
 		const d = await getDoc(doc(db, 'adminStats', 'mrs'));
@@ -177,8 +200,8 @@
 			id,
 			navn,
 			farve,
-			rejse: sc.rejse,
-			// Velvære-grafen følger Alle/Gennemførte-toggle.
+			// Begge grafer følger hver sin Alle/Gennemførte-toggle.
+			rejse: mrsPop === 'gennemfoerte' ? (sc.mrsCompletere?.rejse ?? []) : sc.rejse,
 			velvaere:
 				velvaerePop === 'gennemfoerte'
 					? (sc.velvaereCompletere?.velvaereSamletRejse ?? [])
@@ -376,7 +399,21 @@
 		{:else}
 			{@const s = scope}
 			{#if aktivMaaling === 'mrs'}
-				{@const harNokMrs = s.antalMedUdvikling >= 5}
+				{@const mrsData = mrsPop === 'gennemfoerte' && s.mrsCompletere ? s.mrsCompletere : s}
+				{@const harNokMrs = mrsData.antalMedUdvikling >= 5}
+				<!-- Alle / Gennemførte (fuldt MRS-skema ved hvert målepunkt) -->
+				<div class="velv-toggle">
+					<button class:aktiv={mrsPop === 'alle'} onclick={() => (mrsPop = 'alle')}>
+						Alle ({s.antalMedUdvikling})
+					</button>
+					<button
+						class:aktiv={mrsPop === 'gennemfoerte'}
+						onclick={() => (mrsPop = 'gennemfoerte')}
+						disabled={!s.mrsCompletere || s.mrsCompletere.antalGennemfoerte === 0}
+					>
+						Gennemførte ({s.mrsCompletere?.antalGennemfoerte ?? 0})
+					</button>
+				</div>
 				<!-- Nøgletal -->
 				<div class="kpi-grid">
 					<div class="kpi-kort">
@@ -384,16 +421,18 @@
 						<div class="kpi-label">kunder målt</div>
 					</div>
 					<div class="kpi-kort">
-						<div class="kpi-tal">{s.antalMedUdvikling}</div>
-						<div class="kpi-label">har flere målinger</div>
+						<div class="kpi-tal">{mrsData.antalMedUdvikling}</div>
+						<div class="kpi-label">
+							{mrsPop === 'gennemfoerte' ? 'gennemførte alle' : 'har flere målinger'}
+						</div>
 					</div>
 					<div class="kpi-kort fremhaev">
-						<div class="kpi-tal">↓ {tal(Math.abs(s.gnsAendring))}</div>
+						<div class="kpi-tal">↓ {tal(Math.abs(mrsData.gnsAendring))}</div>
 						<div class="kpi-label">gns. forbedring</div>
-						<div class="kpi-sub">{tal(s.gnsBaseline)} → {tal(s.gnsSeneste)} point</div>
+						<div class="kpi-sub">{tal(mrsData.gnsBaseline)} → {tal(mrsData.gnsSeneste)} point</div>
 					</div>
 					<div class="kpi-kort fremhaev">
-						<div class="kpi-tal">{s.andelForbedret}%</div>
+						<div class="kpi-tal">{mrsData.andelForbedret}%</div>
 						<div class="kpi-label">er blevet bedre</div>
 					</div>
 				</div>
@@ -484,7 +523,7 @@
 					<section class="card">
 						<div class="kort-titel">Hvem forbedres mest? (efter start-sværhedsgrad)</div>
 						{#each SVAERGRAD as grad (grad.key)}
-							{@const g = s.baselineSvaergrad[grad.key]}
+							{@const g = mrsData.baselineSvaergrad[grad.key]}
 							<div class="svaer-rad">
 								<div class="svaer-navn">
 									{grad.navn} <span class="svaer-interval">{grad.interval}</span>
@@ -501,41 +540,44 @@
 
 					<!-- Forbedrings-fordeling -->
 					<section class="card">
-						<div class="kort-titel">Fordeling ({s.antalMedUdvikling} kunder)</div>
+						<div class="kort-titel">Fordeling ({mrsData.antalMedUdvikling} kunder)</div>
 						<div class="fordeling-bar">
 							<div
 								class="fb-del meget"
-								style="width:{fbProcent(s.forbedringsFordeling, 'megetBedre')}%"
+								style="width:{fbProcent(mrsData.forbedringsFordeling, 'megetBedre')}%"
 							></div>
 							<div
 								class="fb-del lidt"
-								style="width:{fbProcent(s.forbedringsFordeling, 'lidtBedre')}%"
+								style="width:{fbProcent(mrsData.forbedringsFordeling, 'lidtBedre')}%"
 							></div>
 							<div
 								class="fb-del uaendret"
-								style="width:{fbProcent(s.forbedringsFordeling, 'uaendret')}%"
+								style="width:{fbProcent(mrsData.forbedringsFordeling, 'uaendret')}%"
 							></div>
 							<div
 								class="fb-del vaerre"
-								style="width:{fbProcent(s.forbedringsFordeling, 'vaerre')}%"
+								style="width:{fbProcent(mrsData.forbedringsFordeling, 'vaerre')}%"
 							></div>
 						</div>
 						<div class="fordeling-tegnforklaring">
 							<span
-								><span class="fb-prik meget"></span>Meget bedre ({s.forbedringsFordeling.megetBedre} ·
-								{Math.round(fbProcent(s.forbedringsFordeling, 'megetBedre'))}%)</span
+								><span class="fb-prik meget"></span>Meget bedre ({mrsData.forbedringsFordeling
+									.megetBedre} ·
+								{Math.round(fbProcent(mrsData.forbedringsFordeling, 'megetBedre'))}%)</span
 							>
 							<span
-								><span class="fb-prik lidt"></span>Lidt bedre ({s.forbedringsFordeling.lidtBedre} ·
-								{Math.round(fbProcent(s.forbedringsFordeling, 'lidtBedre'))}%)</span
+								><span class="fb-prik lidt"></span>Lidt bedre ({mrsData.forbedringsFordeling
+									.lidtBedre} ·
+								{Math.round(fbProcent(mrsData.forbedringsFordeling, 'lidtBedre'))}%)</span
 							>
 							<span
-								><span class="fb-prik uaendret"></span>Uændret ({s.forbedringsFordeling.uaendret} ·
-								{Math.round(fbProcent(s.forbedringsFordeling, 'uaendret'))}%)</span
+								><span class="fb-prik uaendret"></span>Uændret ({mrsData.forbedringsFordeling
+									.uaendret} ·
+								{Math.round(fbProcent(mrsData.forbedringsFordeling, 'uaendret'))}%)</span
 							>
 							<span
-								><span class="fb-prik vaerre"></span>Værre ({s.forbedringsFordeling.vaerre} ·
-								{Math.round(fbProcent(s.forbedringsFordeling, 'vaerre'))}%)</span
+								><span class="fb-prik vaerre"></span>Værre ({mrsData.forbedringsFordeling.vaerre} ·
+								{Math.round(fbProcent(mrsData.forbedringsFordeling, 'vaerre'))}%)</span
 							>
 						</div>
 						<p class="skala-note">"Meget bedre" = MRS faldt 5+ point.</p>
@@ -545,7 +587,7 @@
 					<section class="card">
 						<div class="kort-titel">Forbedring efter menopause-status</div>
 						{#each MENOPAUSE as m (m.key)}
-							{@const g = s.demografi.menopause[m.key]}
+							{@const g = mrsData.demografi.menopause[m.key]}
 							{#if g && g.antal > 0}
 								<div class="svaer-rad">
 									<div class="svaer-navn">{m.navn}</div>
@@ -563,7 +605,7 @@
 					<section class="card">
 						<div class="kort-titel">Forbedring efter aldersgruppe</div>
 						{#each ALDER_ORDEN as key (key)}
-							{@const g = s.demografi.alder[key]}
+							{@const g = mrsData.demografi.alder[key]}
 							{#if g && g.antal > 0}
 								<div class="svaer-rad">
 									<div class="svaer-navn">{key === 'ukendt' ? 'Ukendt' : `${key} år`}</div>
@@ -584,7 +626,7 @@
 					<section class="card">
 						<div class="kort-titel">Hvor sker forbedringen?</div>
 						{#each subskalaListe as key (key)}
-							{@const sub = s.subskalaer[key]}
+							{@const sub = mrsData.subskalaer[key]}
 							<div class="sub-rad">
 								<div class="sub-navn">{SUBSKALA_NAVN[key]}</div>
 								<div class="sub-tal">
