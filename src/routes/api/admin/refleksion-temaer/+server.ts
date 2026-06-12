@@ -97,10 +97,11 @@ export const POST: RequestHandler = async ({ request }) => {
 			`Forløb: ${PRODUKT_NAVN[produkt]}, dag ${dag}.` +
 			(spoergsmaal ? `\nDagens refleksions-spørgsmål: "${spoergsmaal}"` : '') +
 			`\n\nHer er ${valgte.length} anonyme svar:\n\n${svarTekst}\n\n` +
-			'Giv en kort opsummering i punktform med disse afsnit:\n' +
-			'**Gennemgående temaer** (3-5 punkter)\n' +
-			'**Mønstre og stemning** (hvad går igen følelsesmæssigt)\n' +
-			'**Vær opmærksom på** (evt. bekymringer eller noget Linn bør reagere på — ellers skriv "intet særligt").\n' +
+			'Giv en kort opsummering. Brug IKKE markdown — brug korte overskrifter ' +
+			'efterfulgt af kolon og punkter med "- ". Brug disse tre afsnit:\n' +
+			'Gennemgående temaer: (3-5 punkter)\n' +
+			'Mønstre og stemning: (hvad går igen følelsesmæssigt)\n' +
+			'Vær opmærksom på: (evt. bekymringer eller noget Linn bør reagere på — ellers "intet særligt").\n' +
 			'Hold det konkret og kort.';
 
 		const apiKey = env.ANTHROPIC_API_KEY;

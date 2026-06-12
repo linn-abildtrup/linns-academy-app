@@ -188,6 +188,45 @@
 		}
 	}
 
+	// AI-tema-opsummering (on-demand) for en produkt-dag i Refleksioner-fanen.
+	let valgtDag = $state<number | null>(null);
+	let aiKoerer = $state(false);
+	let aiResultat = $state<{
+		dag: number;
+		spoergsmaal: string;
+		antalSvar: number;
+		opsummering: string;
+	} | null>(null);
+	let aiFejl = $state<string | null>(null);
+	async function genererTemaer() {
+		if (aiKoerer || valgtDag === null || reflPop === 'samlet') return;
+		aiKoerer = true;
+		aiFejl = null;
+		aiResultat = null;
+		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error('Du er ikke logget ind som admin.');
+			const produkt = reflPop === 'kropsro' ? 'premiumforløb' : 'kickstart';
+			const res = await fetch('/api/admin/refleksion-temaer', {
+				method: 'POST',
+				headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+				body: JSON.stringify({ produkt, dag: valgtDag })
+			});
+			if (!res.ok) throw new Error(`Kunne ikke opsummere (${res.status}): ${await res.text()}`);
+			const data = (await res.json()) as {
+				dag: number;
+				spoergsmaal: string;
+				antalSvar: number;
+				opsummering: string;
+			};
+			aiResultat = data;
+		} catch (e) {
+			aiFejl = e instanceof Error ? e.message : 'Kunne ikke opsummere.';
+		} finally {
+			aiKoerer = false;
+		}
+	}
+
 	const tal = (n: number) => n.toLocaleString('da-DK', { maximumFractionDigits: 1 });
 	const datoTekst = (ms: number) =>
 		new Date(ms).toLocaleString('da-DK', { dateStyle: 'long', timeStyle: 'short' });
@@ -485,6 +524,45 @@
 						<p class="skala-note">Højeste søjle = {maxAntal} kunder. Hver søjle = én forløbsdag.</p>
 					</section>
 				{/if}
+				<section class="card">
+					<div class="kort-titel">AI-temaer for en dag</div>
+					{#if reflPop === 'samlet'}
+						<p class="figur-note">
+							Vælg <strong>Kickstart</strong> eller <strong>Kropsro</strong> ovenfor for at opsummere
+							en bestemt dags refleksioner.
+						</p>
+					{:else}
+						<p class="figur-note">
+							Vælg en dag — Claude læser dagens anonyme svar og opsummerer temaerne. Kun selve
+							svar-teksten sendes (ingen navne).
+						</p>
+						<div class="ai-raekke">
+							<select class="forlob-vaelg" bind:value={valgtDag}>
+								<option value={null} disabled>Vælg dag…</option>
+								{#each rs.prDag as d (d.dagNummer)}
+									<option value={d.dagNummer}>Dag {d.dagNummer} ({d.antal} svar)</option>
+								{/each}
+							</select>
+							<button
+								class="opdater-knap"
+								onclick={genererTemaer}
+								disabled={aiKoerer || valgtDag === null}
+							>
+								{aiKoerer ? 'Opsummerer…' : 'Opsummer temaer'}
+							</button>
+						</div>
+						{#if aiFejl}<p class="ai-fejl">{aiFejl}</p>{/if}
+						{#if aiResultat}
+							<div class="ai-resultat">
+								{#if aiResultat.spoergsmaal}<p class="ai-spm">"{aiResultat.spoergsmaal}"</p>{/if}
+								<p class="skala-note" style="margin-top:0">
+									Dag {aiResultat.dag} · baseret på {aiResultat.antalSvar} svar.
+								</p>
+								<div class="ai-tekst">{aiResultat.opsummering}</div>
+							</div>
+						{/if}
+					{/if}
+				</section>
 			{/if}
 		{:else}
 			<!-- Scope-faner: gælder inden i begge måletyper -->
@@ -1417,6 +1495,41 @@
 	/* Refleksions-engagement: søjlediagram pr forløbsdag */
 	.refl-bar {
 		fill: var(--accent, #b87b6e);
+	}
+	/* AI-temaer */
+	.ai-raekke {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+		flex-wrap: wrap;
+	}
+	.ai-raekke .forlob-vaelg {
+		flex: 1;
+		min-width: 140px;
+		margin: 0;
+	}
+	.ai-fejl {
+		color: var(--danger, #b04a4a);
+		font-size: calc(12px * var(--fs-scale, 1));
+		margin: 10px 0 0;
+	}
+	.ai-resultat {
+		margin-top: 14px;
+		padding: 14px;
+		border-radius: 12px;
+		background: var(--accent-soft, #eef3ee);
+	}
+	.ai-spm {
+		font-style: italic;
+		color: var(--text2);
+		margin: 0 0 6px;
+	}
+	.ai-tekst {
+		white-space: pre-wrap;
+		line-height: 1.55;
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		margin-top: 6px;
 	}
 	.refl-akse {
 		display: flex;
