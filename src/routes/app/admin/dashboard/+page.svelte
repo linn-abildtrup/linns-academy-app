@@ -180,6 +180,8 @@
 	const scope = $derived<Scope | null>(
 		aktivFane === 'alle' ? (snapshot?.samlet ?? null) : valgtForlob
 	);
+	// Navn på det valgte udsnit — bruges i de dynamiske figur-beskrivelser.
+	const scopeNavn = $derived(aktivFane === 'alle' ? 'alle hold samlet' : (valgtForlob?.navn ?? ''));
 
 	// --- Rejse-graf ---
 	const FORLOB_FARVER = ['#7A8CA0', '#C9A07A', '#8C5C7A', '#5C7A8C', '#9D6358', '#A37F66'];
@@ -437,6 +439,13 @@
 					</div>
 				</div>
 
+				<p class="figur-note">
+					MRS-score 0–44, hvor <strong>lavere = færre symptomer</strong>. Regnet over {mrsData.antalMedUdvikling}
+					{mrsPop === 'gennemfoerte'
+						? 'kunder der lavede et fuldt MRS-skema ved hvert målepunkt'
+						: 'kunder med mindst 2 MRS-skemaer'} ({scopeNavn}). Gns. forbedring = hvor mange point
+					scoren i snit er faldet; er blevet bedre = andelen der er gået ned.
+				</p>
 				{#if harNokMrs}
 					<!-- Rejse-graf -->
 					{#if graf}
@@ -471,6 +480,14 @@
 									</div>
 								{/if}
 							</div>
+							<p class="figur-note">
+								Gennemsnitlig MRS-score ved kundernes 1., 2. og 3. måling — <strong
+									>lavere kurve = færre symptomer</strong
+								>.
+								{mrsPop === 'gennemfoerte' ? 'Kun gennemførte kunder. ' : ''}{aktivFane === 'alle'
+									? 'Vælg hvilke hold der vises i menuen.'
+									: 'Den sorte linje er alle hold til sammenligning.'}
+							</p>
 							<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
 								<!-- y-gitter -->
 								{#each graf.yTicks as t (t.v)}
@@ -522,6 +539,10 @@
 					<!-- Baseline-sværhedsgrad -->
 					<section class="card">
 						<div class="kort-titel">Hvem forbedres mest? (efter start-sværhedsgrad)</div>
+						<p class="figur-note">
+							Kunderne delt efter hvor høj MRS de havde ved start. Tallet til højre = gns. ændring;
+							↓ = forbedring (færre symptomer).
+						</p>
 						{#each SVAERGRAD as grad (grad.key)}
 							{@const g = mrsData.baselineSvaergrad[grad.key]}
 							<div class="svaer-rad">
@@ -541,6 +562,10 @@
 					<!-- Forbedrings-fordeling -->
 					<section class="card">
 						<div class="kort-titel">Fordeling ({mrsData.antalMedUdvikling} kunder)</div>
+						<p class="figur-note">
+							Hvor mange kunder der er blevet meget bedre, lidt bedre, uændret eller værre fra start
+							til seneste MRS-måling.
+						</p>
 						<div class="fordeling-bar">
 							<div
 								class="fb-del meget"
@@ -586,6 +611,9 @@
 					<!-- Demografi: menopause-status -->
 					<section class="card">
 						<div class="kort-titel">Forbedring efter menopause-status</div>
+						<p class="figur-note">
+							Gns. MRS-ændring fordelt på menopause-status. ↓ = færre symptomer.
+						</p>
 						{#each MENOPAUSE as m (m.key)}
 							{@const g = mrsData.demografi.menopause[m.key]}
 							{#if g && g.antal > 0}
@@ -604,6 +632,7 @@
 					<!-- Demografi: alder -->
 					<section class="card">
 						<div class="kort-titel">Forbedring efter aldersgruppe</div>
+						<p class="figur-note">Gns. MRS-ændring fordelt på aldersgruppe. ↓ = færre symptomer.</p>
 						{#each ALDER_ORDEN as key (key)}
 							{@const g = mrsData.demografi.alder[key]}
 							{#if g && g.antal > 0}
@@ -625,6 +654,10 @@
 					<!-- Subskalaer -->
 					<section class="card">
 						<div class="kort-titel">Hvor sker forbedringen?</div>
+						<p class="figur-note">
+							MRS opdelt i tre symptom-grupper — gennemsnit ved start → seneste. ↓ = færre
+							symptomer.
+						</p>
 						{#each subskalaListe as key (key)}
 							{@const sub = mrsData.subskalaer[key]}
 							<div class="sub-rad">
@@ -707,6 +740,12 @@
 									</div>
 								{/if}
 							</div>
+							<p class="figur-note">
+								Samlet velvære (gns. af de 5 mål) ved hver måling — <strong
+									>højere = bedre trivsel</strong
+								>.
+								{velvaerePop === 'gennemfoerte' ? 'Kun gennemførte kunder.' : ''}
+							</p>
 							{#if velvaereGraf}
 								<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
 									{#each velvaereGraf.yTicks as t (t.v)}
@@ -752,6 +791,10 @@
 								</p>
 							{/if}
 							<div class="rubrik-titel">Samlet: baseline → seneste måling</div>
+							<p class="figur-note">
+								Hver kundes FØRSTE velvære-måling vs. hendes SENESTE (blander tidlige og sene
+								målinger). Skala 1–10, højere = bedre.
+							</p>
 							{#each VELVAERE as v (v.key)}
 								{@const vv = velvData.velvaere[v.key]}
 								<div class="sub-rad">
@@ -1233,6 +1276,13 @@
 		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin: 10px 0 0;
+	}
+	/* Kort, dynamisk forklaring under en figur-titel — så intet misforstås. */
+	.figur-note {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.5;
+		margin: -6px 0 12px;
 	}
 
 	/* Sværhedsgrad */
