@@ -35,11 +35,7 @@
 		hentForlobsProgrammer,
 		synkroniserTraeningsvariant
 	} from '$lib/firestore/mikrotraening';
-	import {
-		harValgtVariant,
-		variantForProgramId,
-		type Variant
-	} from '$lib/utils/traeningsvariant';
+	import { harValgtVariant, variantForProgramId, type Variant } from '$lib/utils/traeningsvariant';
 	import { hentMitProgram, hentProgramFremgang } from '$lib/firestore/mineProgrammer';
 	import { hentHistorikForDato } from '$lib/firestore/traeningHistorik';
 	import { senesteEntry, type TraeningHistorikEntry } from '$lib/content/traeningHistorik';
@@ -53,10 +49,7 @@
 		opdaterBonusSvar
 	} from '$lib/firestore/vaner';
 	import type { VaneProgramDag, VanedagEntry, BonusSvar } from '$lib/content/vaner';
-	import {
-		hentMaaltiderIPeriode,
-		hentMaaltiderForDato
-	} from '$lib/firestore/kost';
+	import { hentMaaltiderIPeriode, hentMaaltiderForDato } from '$lib/firestore/kost';
 	import {
 		hentAboVaneOpsaetning,
 		hentAboBonusPulje,
@@ -95,11 +88,7 @@
 	import type { GemtMaaltid } from '$lib/content/kost';
 	import { dagligeMalForBruger } from '$lib/content/naering';
 	import Loading from '$lib/components/Loading.svelte';
-	import {
-		effektivState,
-		erKickstartForlobskunde,
-		harPremium
-	} from '$lib/utils/userAdgang';
+	import { effektivState, erKickstartForlobskunde, harPremium } from '$lib/utils/userAdgang';
 	import {
 		detekterGuideType,
 		erInspirationLektion,
@@ -185,10 +174,7 @@
 	const naturligAktivDagNummer = $derived.by<number | null>(() => {
 		if (!forlob) return null;
 		const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
-		return getCurrentDayMedNulDage(
-			{ startDato, antalDage: forlob.antalDage },
-			nulDatoer
-		);
+		return getCurrentDayMedNulDage({ startDato, antalDage: forlob.antalDage }, nulDatoer);
 	});
 
 	// Admin-preview: bypasser den naturlige dag-laas, saa admin kan se
@@ -204,9 +190,7 @@
 
 	// 'aktivDagNummer' bruges i hele forsiden som 'den dag der er aaben i dag'.
 	// I preview-mode er det preview-dag'en; ellers den naturlige dag.
-	const aktivDagNummer = $derived(
-		previewDag !== null ? previewDag : naturligAktivDagNummer
-	);
+	const aktivDagNummer = $derived(previewDag !== null ? previewDag : naturligAktivDagNummer);
 
 	// Bagudkompatibel alias indtil vi får ryddet i template'n
 	const dayNumber = $derived(aktivDagNummer);
@@ -263,12 +247,14 @@
 	}
 
 	// Bygger strip-data for alle dage i forløbet (inkl baseline 0)
-	const stripDage = $derived.by<{
-		dagNummer: number | null;
-		dato: Date;
-		erNulDag: boolean;
-		status: 'fortid' | 'aktiv' | 'fremtid';
-	}[]>(() => {
+	const stripDage = $derived.by<
+		{
+			dagNummer: number | null;
+			dato: Date;
+			erNulDag: boolean;
+			status: 'fortid' | 'aktiv' | 'fremtid';
+		}[]
+	>(() => {
 		if (!forlob) return [];
 		const start = forlob.startDato.toDate();
 		const totalKalender = forlob.antalDage + nulDatoer.length;
@@ -315,9 +301,7 @@
 		return d.toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long' });
 	}
 
-	const valgtErIDag = $derived(
-		valgtDagNummer === null || valgtDagNummer === aktivDagNummer
-	);
+	const valgtErIDag = $derived(valgtDagNummer === null || valgtDagNummer === aktivDagNummer);
 
 	// Auto-scroll strip til aktiv dag når data er klar
 	let stripEl = $state<HTMLDivElement | null>(null);
@@ -331,7 +315,6 @@
 			stripEl.scrollLeft = Math.max(0, left);
 		}
 	});
-
 
 	$effect(() => {
 		// Kun for forløbskunder skal vi hente forløb og dagens lektion
@@ -559,9 +542,7 @@
 		}
 		return modulbrugerMikroHref;
 	});
-	const modulbrugerErMikro = $derived(
-		modulbrugerTraeningHref === modulbrugerMikroHref
-	);
+	const modulbrugerErMikro = $derived(modulbrugerTraeningHref === modulbrugerMikroHref);
 
 	// Navn på aktivt træningsprogram. Hentet asynkront når aktivtTraeningsprogram
 	// peger på et eget eller tildelt program. null for mikrotræning eller når
@@ -594,12 +575,7 @@
 					aktivtProgramNavn = program?.navn ?? null;
 					aktivtProgramSenestGennemfoert = fremgang?.senestGennemfort ?? null;
 					aktivtProgramGennemforteDage = fremgang?.gennemforteDage ?? [];
-				} else if (
-					aktivt.kilde === 'tildelt' &&
-					aktivt.forlobId &&
-					aktivt.programId &&
-					u
-				) {
+				} else if (aktivt.kilde === 'tildelt' && aktivt.forlobId && aktivt.programId && u) {
 					const [program, fremgang] = await Promise.all([
 						hentForlobsProgram(aktivt.forlobId, aktivt.programId),
 						hentProgramFremgang(u.uid, 'tildelt', aktivt.programId, aktivt.forlobId)
@@ -634,8 +610,7 @@
 	// til at vise det grønne flueben. Ellers fald tilbage til den eksisterende
 	// mikrotræning-check (forlobTraening/modulbrugerTraening).
 	const brugerAktivtProgram = $derived(
-		!!userDoc?.aktivtTraeningsprogram &&
-			userDoc.aktivtTraeningsprogram.kilde !== 'mikrotraening'
+		!!userDoc?.aktivtTraeningsprogram && userDoc.aktivtTraeningsprogram.kilde !== 'mikrotraening'
 	);
 
 	// Træning-historik for den valgte dato på forsidens datostrip. Bruges når
@@ -723,7 +698,6 @@
 		modulbrugerValgtDato = null;
 	}
 
-
 	$effect(() => {
 		const u = user;
 		const ud = userDoc;
@@ -801,8 +775,7 @@
 			`[data-dato="${modulbrugerAktivDato}"]`
 		);
 		if (target) {
-			const left =
-				target.offsetLeft - modulbrugerStripEl.clientWidth / 2 + target.offsetWidth / 2;
+			const left = target.offsetLeft - modulbrugerStripEl.clientWidth / 2 + target.offsetWidth / 2;
 			modulbrugerStripEl.scrollLeft = Math.max(0, left);
 		}
 	});
@@ -1140,10 +1113,7 @@
 	async function indlaesChallengeStilling() {
 		if (!aktivChallenge || !forlob) return;
 		try {
-			challengeIndtastninger = await hentAlleChallengeIndtastninger(
-				forlob.id,
-				aktivChallenge.id
-			);
+			challengeIndtastninger = await hentAlleChallengeIndtastninger(forlob.id, aktivChallenge.id);
 		} catch (e) {
 			console.warn('Kunne ikke hente challenge-stilling:', e);
 			challengeIndtastninger = [];
@@ -1339,9 +1309,21 @@
 		aktivVaneprogramDag?.checks?.find((v) => v.label.toLowerCase().includes('træn')) ?? null
 	);
 
+	// Samme "er dagens traening gennemfoert?"-tjek som traening-thumbnailen, saa
+	// vanen og thumbnailen ALTID er enige. For et aktivt tildelt/eget program paa
+	// i dag bruges en DATO-tjek (gennemfoert i dag?) i stedet for dag-nummer — saa
+	// historisk forkerte dag-numre ikke kan forudfylde vanen forkert.
+	const forlobTraeningGennemfoertVist = $derived(
+		!valgtErIDag
+			? forlobTraeningGennemfoert
+			: brugerAktivtProgram
+				? aktivtProgramGennemfoertIDag
+				: forlobTraeningGennemfoert
+	);
+
 	$effect(() => {
 		const vane = forlobTraeningsVane;
-		if (!vane || !forlobTraeningGennemfoert) return;
+		if (!vane || !forlobTraeningGennemfoertVist) return;
 		// Auto-ja KUN hvis brugeren ikke selv har valgt et svar.
 		if (forlobVanedag?.checks?.[vane.id] !== undefined) return;
 		void gemForlobVaneSvar(vane.id, 'ja');
@@ -1451,15 +1433,14 @@
 								Tilbage til i dag
 							</button>
 						{:else if kanStartePreview}
-							<a class="strip-tilbage" href="?previewDag=0">
-								Forhåndsvis dage
-							</a>
+							<a class="strip-tilbage" href="?previewDag=0"> Forhåndsvis dage </a>
 						{/if}
 					</div>
 					<div class="strip" bind:this={stripEl}>
 						{#each stripDage as chip (chip.dato.toISOString())}
 							{@const fmt = formatStripChipDato(chip.dato)}
-							{@const erValgt = chip.dagNummer !== null && (valgtDagNummer ?? aktivDagNummer) === chip.dagNummer}
+							{@const erValgt =
+								chip.dagNummer !== null && (valgtDagNummer ?? aktivDagNummer) === chip.dagNummer}
 							<button
 								type="button"
 								class="strip-chip"
@@ -1499,9 +1480,7 @@
 						</div>
 						<div class="mrs-cta-tekst">
 							<div class="mrs-cta-eyebrow">
-								{mrsSidsteUdfyldelseAt === null
-									? 'Første udfyldelse'
-									: 'Tid til opfølgning'}
+								{mrsSidsteUdfyldelseAt === null ? 'Første udfyldelse' : 'Tid til opfølgning'}
 							</div>
 							<div class="mrs-cta-titel">Tag din symptomcheck</div>
 						</div>
@@ -1519,7 +1498,8 @@
 						</div>
 						<div class="nyt-svar-spoergsmaal">{nyestUbeskrevneSvar.spoergsmaal}</div>
 						<div class="nyt-svar-tekst">{nyestUbeskrevneSvar.svar}</div>
-						<div class="nyt-svar-link">Læs alle dine spørgsmål
+						<div class="nyt-svar-link">
+							Læs alle dine spørgsmål
 							<Icon name="arrow" size={12} color="var(--terra)" />
 						</div>
 					</a>
@@ -1533,13 +1513,13 @@
 					? `/app/moduler/traening/mikrotraening/${dagensDag.dagNummer}`
 					: '/app/moduler/traening/mikrotraening'}
 				{@const traeningHref = !valgtErIDag
-					? (historikForValgtDato?.kilde === 'eget' && historikForValgtDato.programId
+					? historikForValgtDato?.kilde === 'eget' && historikForValgtDato.programId
 						? `/app/moduler/traening/byg-eget/${historikForValgtDato.programId}/lav`
 						: historikForValgtDato?.kilde === 'tildelt' &&
-								  historikForValgtDato.programId &&
-								  historikForValgtDato.forlobId
+							  historikForValgtDato.programId &&
+							  historikForValgtDato.forlobId
 							? `/app/moduler/traening/program/${historikForValgtDato.forlobId}/${historikForValgtDato.programId}`
-							: mikroHrefForDag)
+							: mikroHrefForDag
 					: aktivtProgram?.kilde === 'eget' && aktivtProgram.programId
 						? `/app/moduler/traening/byg-eget/${aktivtProgram.programId}/lav`
 						: aktivtProgram?.kilde === 'tildelt' &&
@@ -1559,7 +1539,11 @@
 								{@const erInspiration = erInspirationLektion(lektion.url)}
 								{@const erZoom = erZoomLektion(lektion.url)}
 								{@const visThumb = erVideoLektion(lektion.url) || erLyd || erInspiration || erZoom}
-								{@const visFormat = erInspiration ? 'Inspiration' : erZoom ? 'Zoom-møde' : lektion.format}
+								{@const visFormat = erInspiration
+									? 'Inspiration'
+									: erZoom
+										? 'Zoom-møde'
+										: lektion.format}
 								{@const guideType = detekterGuideType(lektion.url)}
 								{@const erEksternt = guideType === 'pdf' || guideType === 'link'}
 								<a
@@ -1608,7 +1592,9 @@
 											</span>
 											{#if lektion.varighedMin > 0 || visFormat}
 												<span class="lektion-duration">
-													{lektion.varighedMin > 0 ? lektion.varighedMin + ' min' : ''}{lektion.varighedMin > 0 && visFormat ? ' · ' : ''}{visFormat}
+													{lektion.varighedMin > 0
+														? lektion.varighedMin + ' min'
+														: ''}{lektion.varighedMin > 0 && visFormat ? ' · ' : ''}{visFormat}
 												</span>
 											{/if}
 										</div>
@@ -1617,21 +1603,11 @@
 							{/each}
 						{/if}
 						{#if dagensDag.dagNummer >= 0}
-							{@const forlobGennemfoertCheck = !valgtErIDag
-								? forlobTraeningGennemfoert
-								: brugerAktivtProgram
-									? aktivtProgramGennemfoertIDag
-									: forlobTraeningGennemfoert}
+							{@const forlobGennemfoertCheck = forlobTraeningGennemfoertVist}
 							<a class="action-card" href={traeningHref}>
 								{#if forlobTraeningsVideo}
 									<div class="traening-thumb">
-										<video
-											src={forlobTraeningsVideo}
-											autoplay
-											muted
-											loop
-											playsinline
-											preload="auto"
+										<video src={forlobTraeningsVideo} autoplay muted loop playsinline preload="auto"
 										></video>
 										{#if forlobGennemfoertCheck}
 											<div class="traening-thumb-check">
@@ -1717,7 +1693,11 @@
 							<button type="button" class="challenge-knap primaer" onclick={aabnChallengeDialog}>
 								Indtast plante
 							</button>
-							<button type="button" class="challenge-knap sekundaer" onclick={aabnChallengeStilling}>
+							<button
+								type="button"
+								class="challenge-knap sekundaer"
+								onclick={aabnChallengeStilling}
+							>
 								Se stillingen
 							</button>
 						</div>
@@ -1761,7 +1741,8 @@
 											class="svar-knap svar-knap-{opt.v}"
 											class:aktiv={forlobVanedag?.bonus?.[aktivVaneprogramDag.bonus!.id] === opt.v}
 											disabled={gemmerSvar}
-											onclick={() => vaelgEllerFjernForlobBonus(aktivVaneprogramDag!.bonus!.id, opt.v)}
+											onclick={() =>
+												vaelgEllerFjernForlobBonus(aktivVaneprogramDag!.bonus!.id, opt.v)}
 										>
 											{opt.l}
 										</button>
@@ -1779,10 +1760,7 @@
 
 			{#if dagensDag && valgtDagDato}
 				<section class="mad-section">
-					<a
-						class="action-card mad-action-card"
-						href={`/app/moduler/30-30-3?dato=${valgtDagDato}`}
-					>
+					<a class="action-card mad-action-card" href={`/app/moduler/30-30-3?dato=${valgtDagDato}`}>
 						<div class="action-icon" style="background: var(--sdim)">
 							<Icon name="leaf" size={15} color="var(--sage)" />
 						</div>
@@ -1862,7 +1840,6 @@
 					<Icon name="chevron-r" size={14} color="var(--text3)" />
 				</a>
 			</section>
-
 		</div>
 	</div>
 {:else if userState === 'modulbruger'}
@@ -1873,11 +1850,7 @@
 					<div class="strip-head">
 						<div class="eyebrow eyebrow-muted">Din rejse</div>
 						{#if !modulbrugerErIDag}
-							<button
-								class="strip-tilbage"
-								type="button"
-								onclick={nulstilModulbrugerTilIDag}
-							>
+							<button class="strip-tilbage" type="button" onclick={nulstilModulbrugerTilIDag}>
 								Tilbage til i dag
 							</button>
 						{/if}
@@ -1915,9 +1888,7 @@
 						</div>
 						<div class="mrs-cta-tekst">
 							<div class="mrs-cta-eyebrow">
-								{mrsSidsteUdfyldelseAt === null
-									? 'Første udfyldelse'
-									: 'Tid til opfølgning'}
+								{mrsSidsteUdfyldelseAt === null ? 'Første udfyldelse' : 'Tid til opfølgning'}
 							</div>
 							<div class="mrs-cta-titel">Tag din symptomcheck</div>
 						</div>
@@ -1932,14 +1903,19 @@
 				</div>
 				<div class="actions-list">
 					{#if modulbrugerLektion && modulbrugerLektion.titel}
-						{@const modulThumbUrl = modulbrugerLektion.url ? videoThumbnail(modulbrugerLektion.url) : null}
+						{@const modulThumbUrl = modulbrugerLektion.url
+							? videoThumbnail(modulbrugerLektion.url)
+							: null}
 						{@const modulErLyd = !!modulbrugerLektion.url && erLydLektion(modulbrugerLektion.url)}
 						{@const modulErInspiration =
 							!!modulbrugerLektion.url && erInspirationLektion(modulbrugerLektion.url)}
 						{@const modulErZoom = !!modulbrugerLektion.url && erZoomLektion(modulbrugerLektion.url)}
 						{@const modulVisThumb =
 							!!modulbrugerLektion.url &&
-							(erVideoLektion(modulbrugerLektion.url) || modulErLyd || modulErInspiration || modulErZoom)}
+							(erVideoLektion(modulbrugerLektion.url) ||
+								modulErLyd ||
+								modulErInspiration ||
+								modulErZoom)}
 						{@const modulVisFormat = modulErInspiration
 							? 'Inspiration'
 							: modulErZoom
@@ -2112,7 +2088,8 @@
 											class="svar-knap svar-knap-{variant}"
 											class:aktiv={modulbrugerVanedag?.bonus?.svar === i}
 											disabled={gemmerSvar}
-											onclick={() => vaelgEllerFjernBonus(modulbrugerBonusIDag!.id, i as AboBonusSvar)}
+											onclick={() =>
+												vaelgEllerFjernBonus(modulbrugerBonusIDag!.id, i as AboBonusSvar)}
 										>
 											{erBonusskridt && modulbrugerVanedag?.bonus?.svar === i ? '✓ ' : ''}{s}
 										</button>
@@ -2120,7 +2097,6 @@
 								</div>
 							</div>
 						{/if}
-
 					</div>
 				{/if}
 			</section>
@@ -2305,17 +2281,11 @@
 {/if}
 
 {#if visVariantModal}
-	<div
-		class="variant-modal-bag"
-		role="dialog"
-		aria-modal="true"
-		tabindex="-1"
-	>
+	<div class="variant-modal-bag" role="dialog" aria-modal="true" tabindex="-1">
 		<div class="variant-modal">
 			<div class="variant-modal-titel">Har du kettlebells?</div>
 			<p class="variant-modal-sub">
-				Dit daglige mikrotrænings-program tilpasses derefter. Du kan altid skifte
-				igen senere.
+				Dit daglige mikrotrænings-program tilpasses derefter. Du kan altid skifte igen senere.
 			</p>
 			<button
 				class="variant-knap"
@@ -2340,21 +2310,14 @@
 {/if}
 
 {#if visBuddyModal}
-	<div
-		class="variant-modal-bag"
-		role="dialog"
-		aria-modal="true"
-		tabindex="-1"
-	>
+	<div class="variant-modal-bag" role="dialog" aria-modal="true" tabindex="-1">
 		<div class="variant-modal">
 			<div class="variant-modal-titel">Buddy-gruppe på Kropsro</div>
 			<p class="variant-modal-sub">
-				På Kropsro bliver der mulighed for at vælge at være med i en
-				buddy-gruppe på fire til fem personer fra forløbet, der holder
-				hinanden oppe i hverdagen. En slags minifællesskab indenfor det
-				store fællesskab. I skriver sammen, deler hvad der er svært, fejrer
-				jeres små wins og holder hinanden ansvarlig. Det er frivilligt at
-				deltage.
+				På Kropsro bliver der mulighed for at vælge at være med i en buddy-gruppe på fire til fem
+				personer fra forløbet, der holder hinanden oppe i hverdagen. En slags minifællesskab
+				indenfor det store fællesskab. I skriver sammen, deler hvad der er svært, fejrer jeres små
+				wins og holder hinanden ansvarlig. Det er frivilligt at deltage.
 			</p>
 			<button
 				class="variant-knap"
@@ -2379,17 +2342,12 @@
 {/if}
 
 {#if visFacebookModal}
-	<div
-		class="variant-modal-bag"
-		role="dialog"
-		aria-modal="true"
-		tabindex="-1"
-	>
+	<div class="variant-modal-bag" role="dialog" aria-modal="true" tabindex="-1">
 		<div class="variant-modal">
 			<div class="variant-modal-titel">Er du kommet ind i Facebook-gruppen?</div>
 			<p class="variant-modal-sub">
-				Facebook-gruppen er hvor Kropsro-deltagerne mødes, deler oplevelser og
-				stiller spørgsmål til Linn. Det er en vigtig del af forløbet.
+				Facebook-gruppen er hvor Kropsro-deltagerne mødes, deler oplevelser og stiller spørgsmål til
+				Linn. Det er en vigtig del af forløbet.
 			</p>
 			<button
 				class="variant-knap"
@@ -2759,7 +2717,6 @@
 		background: var(--terra);
 	}
 
-
 	/* ── C1 hilsen ─────────────────────────────────────────────── */
 
 	.c1-greeting {
@@ -2851,7 +2808,9 @@
 		font-family: var(--ff-b);
 		cursor: pointer;
 		position: relative;
-		transition: transform 0.1s, border-color 0.18s;
+		transition:
+			transform 0.1s,
+			border-color 0.18s;
 	}
 
 	.strip-chip:active {
