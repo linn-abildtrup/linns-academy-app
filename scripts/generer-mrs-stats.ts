@@ -185,6 +185,68 @@ function beregnScope(kunder: KundeMrs[]) {
 		velvaereSamletRejse.push({ gns: r1(gns(scores)), antal: scores.length });
 	}
 
+	// Velvaere check-in-for-check-in (MATCHET/PARRET — som den eksterne
+	// statistik-rapports "udvikling uge for uge"). For HVERT slutpunkt i
+	// (check-in 1, 2, 3 ...) bruges KUN kunder der naaede dertil, parret mod
+	// deres EGEN baseline (slider-maaling index 0). Derfor skifter baade
+	// population og baseline-gns pr slutpunkt — og forbedringen vokser jo
+	// laengere ud man kommer, modsat den samlede "baseline->sidste maaling"-
+	// tabel der blander tidlige drop-outs ind. Positionel index (samme
+	// forbehold som velvaereRejse): check-in N = N'te slider-maaling.
+	const sliderComposite = (s: Sliders) => (s.energi + s.mave + s.cravings + s.humor + s.sovn) / 5;
+	const velvaereCheckIns: {
+		checkin: number;
+		antalMatchede: number;
+		perMaal: Record<
+			keyof Sliders,
+			{ gnsBaseline: number; gnsCheckin: number; delta: number; forbedretPct: number }
+		>;
+		composite: { gnsBaseline: number; gnsCheckin: number; delta: number; forbedretPct: number };
+	}[] = [];
+	for (let i = 1; i < MAX_REJSE_PUNKTER; i++) {
+		const matchede = kunder.filter((k) => k.sliderMaalinger.length > i);
+		if (matchede.length < 5) break; // for lille n — slutpunktet er upaalideligt
+		const procentForbedret = (faar: (k: KundeMrs) => number, ved: (k: KundeMrs) => number) =>
+			Math.round((matchede.filter((k) => ved(k) > faar(k)).length / matchede.length) * 100);
+		const perMaal = Object.fromEntries(
+			SLIDER_KEYS.map((key) => {
+				const bl = matchede.map((k) => k.sliderMaalinger[0][key]);
+				const ci = matchede.map((k) => k.sliderMaalinger[i][key]);
+				return [
+					key,
+					{
+						gnsBaseline: r1(gns(bl)),
+						gnsCheckin: r1(gns(ci)),
+						delta: r1(gns(ci) - gns(bl)),
+						forbedretPct: procentForbedret(
+							(k) => k.sliderMaalinger[0][key],
+							(k) => k.sliderMaalinger[i][key]
+						)
+					}
+				];
+			})
+		) as Record<
+			keyof Sliders,
+			{ gnsBaseline: number; gnsCheckin: number; delta: number; forbedretPct: number }
+		>;
+		const compBl = matchede.map((k) => sliderComposite(k.sliderMaalinger[0]));
+		const compCi = matchede.map((k) => sliderComposite(k.sliderMaalinger[i]));
+		velvaereCheckIns.push({
+			checkin: i,
+			antalMatchede: matchede.length,
+			perMaal,
+			composite: {
+				gnsBaseline: r1(gns(compBl)),
+				gnsCheckin: r1(gns(compCi)),
+				delta: r1(gns(compCi) - gns(compBl)),
+				forbedretPct: procentForbedret(
+					(k) => sliderComposite(k.sliderMaalinger[0]),
+					(k) => sliderComposite(k.sliderMaalinger[i])
+				)
+			}
+		});
+	}
+
 	return {
 		antalMedData: kunder.filter((k) => k.harMrs).length,
 		antalMedUdvikling: udv.length,
@@ -205,6 +267,7 @@ function beregnScope(kunder: KundeMrs[]) {
 		velvaere,
 		velvaereRejse,
 		velvaereSamletRejse,
+		velvaereCheckIns,
 		antalVelvaere: sliderUdv.length,
 		forbedringsFordeling: fordeling
 	};
@@ -343,4 +406,7 @@ console.log(
 	`  Svaergrad: ${(['mild', 'moderat', 'svaer'] as const).map((g) => `${g} ${snapshot.samlet.baselineSvaergrad[g].antal}st/${snapshot.samlet.baselineSvaergrad[g].gnsAendring}`).join(', ')}`
 );
 console.log(`  Fordeling: ${JSON.stringify(snapshot.samlet.forbedringsFordeling)}`);
+console.log(
+	`  Velvaere check-ins: ${snapshot.samlet.velvaereCheckIns.map((c) => `ci${c.checkin} comp ${c.composite.gnsBaseline}->${c.composite.gnsCheckin} (${c.composite.delta}, ${c.composite.forbedretPct}% forbedret, n=${c.antalMatchede})`).join(' | ')}`
+);
 console.log(`  Forloebs-grupper: ${prForlob.length}`);
