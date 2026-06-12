@@ -1304,15 +1304,12 @@
 		return false;
 	});
 
-	// Auto-ja for trænings-vane i forløbet når dagens mikrotræning er gennemført.
-	const forlobTraeningsVane = $derived(
-		aktivVaneprogramDag?.checks?.find((v) => v.label.toLowerCase().includes('træn')) ?? null
-	);
-
-	// Samme "er dagens traening gennemfoert?"-tjek som traening-thumbnailen, saa
-	// vanen og thumbnailen ALTID er enige. For et aktivt tildelt/eget program paa
-	// i dag bruges en DATO-tjek (gennemfoert i dag?) i stedet for dag-nummer — saa
-	// historisk forkerte dag-numre ikke kan forudfylde vanen forkert.
+	// "Er dagens traening gennemfoert?" — bruges KUN af traening-thumbnailens
+	// flueben (visuel indikator). Mikrotraening-vanen i 'Dagens smaa skridt'
+	// krydser kunden selv af, praecis som de oevrige vaner: der er bevidst INGEN
+	// auto-udfyldning (fjernet 12/6 2026), saa et forkert dag-nummer aldrig kan
+	// forudfylde vanen. For et aktivt tildelt/eget program i dag bruges en DATO-
+	// tjek (gennemfoert i dag?) i stedet for dag-nummer.
 	const forlobTraeningGennemfoertVist = $derived(
 		!valgtErIDag
 			? forlobTraeningGennemfoert
@@ -1320,14 +1317,6 @@
 				? aktivtProgramGennemfoertIDag
 				: forlobTraeningGennemfoert
 	);
-
-	$effect(() => {
-		const vane = forlobTraeningsVane;
-		if (!vane || !forlobTraeningGennemfoertVist) return;
-		// Auto-ja KUN hvis brugeren ikke selv har valgt et svar.
-		if (forlobVanedag?.checks?.[vane.id] !== undefined) return;
-		void gemForlobVaneSvar(vane.id, 'ja');
-	});
 
 	const forlobMaaltidsTotaler = $derived.by(() => {
 		let p = 0;
