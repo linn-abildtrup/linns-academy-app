@@ -73,7 +73,11 @@ async function genererJwt(sa: ServiceAccount): Promise<string> {
 	const claimB64 = base64UrlEncode(JSON.stringify(claim));
 	const signing = `${headerB64}.${claimB64}`;
 	const key = await importerPrivateKey(sa.privateKey);
-	const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(signing));
+	const signature = await crypto.subtle.sign(
+		'RSASSA-PKCS1-v1_5',
+		key,
+		new TextEncoder().encode(signing)
+	);
 	return `${signing}.${base64UrlEncode(new Uint8Array(signature))}`;
 }
 
@@ -227,13 +231,10 @@ export async function hentAlleDocs(
 ): Promise<Array<{ id: string; data: Record<string, unknown> }>> {
 	const sa = laesServiceAccount();
 	const token = await hentAccessToken();
-	const res = await fetch(
-		`${dbBaseUrl(sa.projectId)}/${collection}?pageSize=300`,
-		{
-			method: 'GET',
-			headers: { Authorization: `Bearer ${token}` }
-		}
-	);
+	const res = await fetch(`${dbBaseUrl(sa.projectId)}/${collection}?pageSize=300`, {
+		method: 'GET',
+		headers: { Authorization: `Bearer ${token}` }
+	});
 	if (!res.ok) {
 		throw new Error(`Firestore list fejlede (${res.status}): ${await res.text()}`);
 	}
@@ -250,6 +251,103 @@ export async function hentAlleDocs(
 		result.push({ id, data: out });
 	}
 	return result;
+}
+
+/**
+ * Hent ALLE dokumenter i en collection — følger nextPageToken til der ikke er
+ * flere sider. hentAlleDocs() stopper ved 300; denne bruges når en collection
+ * kan være større (fx mrsCache med 500+ kunder).
+ */
+export async function hentHeleCollection(
+	collection: string
+): Promise<Array<{ id: string; data: Record<string, unknown> }>> {
+	const sa = laesServiceAccount();
+	const token = await hentAccessToken();
+	const result: Array<{ id: string; data: Record<string, unknown> }> = [];
+	let pageToken: string | undefined;
+	do {
+		const url = new URL(`${dbBaseUrl(sa.projectId)}/${collection}`);
+		url.searchParams.set('pageSize', '300');
+		if (pageToken) url.searchParams.set('pageToken', pageToken);
+		const res = await fetch(url.toString(), {
+			method: 'GET',
+			headers: { Authorization: `Bearer ${token}` }
+		});
+		if (!res.ok) {
+			throw new Error(`Firestore list fejlede (${res.status}): ${await res.text()}`);
+		}
+		const data = (await res.json()) as {
+			documents?: Array<{ name: string; fields?: Record<string, FirestoreValue> }>;
+			nextPageToken?: string;
+		};
+		for (const d of data.documents ?? []) {
+			const id = d.name.split('/').pop() ?? '';
+			const out: Record<string, unknown> = {};
+			for (const [k, v] of Object.entries(d.fields ?? {})) {
+				out[k] = fraFirestoreValue(v);
+			}
+			result.push({ id, data: out });
+		}
+		pageToken = data.nextPageToken;
+	} while (pageToken);
+	return result;
+}
+
+/**
+ * Collection-group-query: find alle FORÆLDRE-ids hvor en subcollection har et
+ * dokument med timestampFelt > siden. Bruges af "Opdater tal" til at finde
+ * præcis de kunder der har lavet en ny måling siden sidste snapshot — så vi
+ * slipper for at læse alle kunders historik igen.
+ *
+ * NB: collection-group-queries med et range-filter kræver et collection-group-
+ * index. Første gang queryen kører returnerer Firestore en fejl med en URL der
+ * opretter indexet i Console (skal gøres manuelt én gang).
+ */
+export async function hentForaeldreIdsMedNyereEnd(
+	subcollectionId: string,
+	foraeldreCollection: string,
+	timestampFelt: string,
+	siden: number
+): Promise<string[]> {
+	const sa = laesServiceAccount();
+	const token = await hentAccessToken();
+	const body = {
+		structuredQuery: {
+			from: [{ collectionId: subcollectionId, allDescendants: true }],
+			where: {
+				fieldFilter: {
+					field: { fieldPath: timestampFelt },
+					op: 'GREATER_THAN',
+					value: { integerValue: String(Math.floor(siden)) }
+				}
+			},
+			// Vi behøver kun dokument-stierne (for at udlede forælder-id'erne),
+			// ikke felterne — så projektér til kun __name__.
+			select: { fields: [{ fieldPath: '__name__' }] }
+		}
+	};
+	const res = await fetch(`${dbBaseUrl(sa.projectId)}:runQuery`, {
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${token}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(body)
+	});
+	if (!res.ok) {
+		throw new Error(
+			`Firestore collection-group-query fejlede (${res.status}): ${await res.text()}`
+		);
+	}
+	const data = (await res.json()) as Array<{ document?: { name: string } }>;
+	const ids = new Set<string>();
+	for (const row of data) {
+		if (!row.document) continue;
+		const dele = row.document.name.split('/');
+		const i = dele.lastIndexOf(foraeldreCollection);
+		if (i >= 0 && i + 1 < dele.length) ids.add(dele[i + 1]);
+	}
+	return [...ids];
 }
 
 /** Søg efter dokumenter i en collection hvor et felt matcher en værdi. */
