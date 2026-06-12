@@ -110,7 +110,10 @@ export const POST: RequestHandler = async ({ request, url }) => {
 			> = [];
 			const nyeIds = new Set<string>();
 			for (const [uid, maalinger] of maalingerPerUid) {
-				const u = brugere.get(uid) ?? {};
+				// Spring forældreløse målinger over (bruger-doc slettet) — så tæller vi
+				// kun nuværende kunder, præcis som det lokale script.
+				const u = brugere.get(uid);
+				if (!u) continue;
 				const entries = distillerKunde(
 					maalinger,
 					(u.forlobIds as string[]) ?? [],
