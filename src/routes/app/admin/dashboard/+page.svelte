@@ -86,13 +86,28 @@
 		prType: { kickstart: Scope; kropsro: Scope };
 		prForlob: Forlob[];
 	};
+	// Refleksions-aktivitet (eget snapshot, adminStats/refleksioner).
+	type ReflScope = {
+		antalRefleksioner: number;
+		antalKunder: number;
+		gnsPrKunde: number;
+		gnsLaengde: number;
+		prDag: { dagNummer: number; antal: number }[];
+	};
+	type ReflSnapshot = {
+		genereretAt: number;
+		samlet: ReflScope;
+		prProdukt: { kickstart: ReflScope; kropsro: ReflScope };
+	};
 
 	let snapshot = $state<MrsSnapshot | null>(null);
+	let reflSnapshot = $state<ReflSnapshot | null>(null);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
-	// Måletype: MRS og vores egen velvære-måling er TO forskellige målinger —
-	// derfor hver sin fane allerøverst.
-	let aktivMaaling = $state<'mrs' | 'velvaere'>('mrs');
+	// Måletype: MRS / velvære / refleksioner — hver sin fane allerøverst.
+	let aktivMaaling = $state<'mrs' | 'velvaere' | 'refleksioner'>('mrs');
+	// Refleksions-fanens udsnit: samlet eller pr produkt.
+	let reflPop = $state<'samlet' | 'kickstart' | 'kropsro'>('samlet');
 	let aktivFane = $state<'alle' | 'forlob'>('alle');
 	let valgtForlobId = $state<string | null>(null);
 	let valgteLinjer = $state<Set<string>>(new Set(['alle', 'kickstart', 'kropsro']));
@@ -107,7 +122,10 @@
 	let mrsPop = $state<'alle' | 'gennemfoerte'>('alle');
 
 	async function indlaesSnapshot() {
-		const d = await getDoc(doc(db, 'adminStats', 'mrs'));
+		const [d, rd] = await Promise.all([
+			getDoc(doc(db, 'adminStats', 'mrs')),
+			getDoc(doc(db, 'adminStats', 'refleksioner'))
+		]);
 		if (d.exists()) {
 			snapshot = d.data() as MrsSnapshot;
 			if (!snapshot.prForlob.some((f) => f.forlobId === valgtForlobId)) {
@@ -116,6 +134,7 @@
 		} else {
 			fejl = 'Ingen MRS-statistik endnu — kør scriptet for at generere den.';
 		}
+		reflSnapshot = rd.exists() ? (rd.data() as ReflSnapshot) : null;
 	}
 
 	onMount(async () => {
@@ -340,9 +359,11 @@
 			{#if aktivMaaling === 'mrs'}
 				Menopause Rating Scale — lavere score betyder færre symptomer. Baseline er kundens første
 				måling, sammenlignet med hendes seneste.
-			{:else}
+			{:else if aktivMaaling === 'velvaere'}
 				Vores egen velvære-måling (energi, mave, cravings, humør, søvn) — højere score er bedre. En
 				anden måling end MRS.
+			{:else}
+				Hvor flittigt klienterne skriver dagens refleksion i forløbet (abo-kunder skriver ikke).
 			{/if}
 		</p>
 	</header>
@@ -372,394 +393,236 @@
 			>
 				Velvære-udvikling
 			</button>
-		</div>
-
-		<!-- Scope-faner: gælder inden i begge måletyper -->
-		<div class="faner">
-			<button class="fane" class:aktiv={aktivFane === 'alle'} onclick={() => (aktivFane = 'alle')}>
-				Alle resultater
-			</button>
 			<button
 				class="fane"
-				class:aktiv={aktivFane === 'forlob'}
-				onclick={() => (aktivFane = 'forlob')}
+				class:aktiv={aktivMaaling === 'refleksioner'}
+				onclick={() => (aktivMaaling = 'refleksioner')}
 			>
-				Vælg forløb
+				Refleksioner
 			</button>
 		</div>
 
-		{#if aktivFane === 'forlob'}
-			<select class="forlob-vaelg" bind:value={valgtForlobId}>
-				{#each snapshot.prForlob as f (f.forlobId)}
-					<option value={f.forlobId}>{f.navn} ({f.antalMedUdvikling})</option>
-				{/each}
-			</select>
-		{/if}
-
-		{#if aktivFane === 'forlob' && !valgtForlob}
-			<div class="status-besked">Ingen hold med nok data endnu.</div>
-		{:else}
-			{@const s = scope}
-			{#if aktivMaaling === 'mrs'}
-				{@const mrsData = mrsPop === 'gennemfoerte' && s.mrsCompletere ? s.mrsCompletere : s}
-				{@const harNokMrs = mrsData.antalMedUdvikling >= 5}
-				<!-- Alle / Gennemførte (fuldt MRS-skema ved hvert målepunkt) -->
+		{#if aktivMaaling === 'refleksioner'}
+			{#if !reflSnapshot}
+				<div class="hint-kort">
+					Ingen refleksions-tal endnu — tryk "Opdater tal" eller "Fuld genberegning" nedenfor.
+				</div>
+			{:else}
+				{@const rs =
+					reflPop === 'kickstart'
+						? reflSnapshot.prProdukt.kickstart
+						: reflPop === 'kropsro'
+							? reflSnapshot.prProdukt.kropsro
+							: reflSnapshot.samlet}
 				<div class="velv-toggle">
-					<button class:aktiv={mrsPop === 'alle'} onclick={() => (mrsPop = 'alle')}>
-						Alle ({s.antalMedUdvikling})
+					<button class:aktiv={reflPop === 'samlet'} onclick={() => (reflPop = 'samlet')}>
+						Samlet ({reflSnapshot.samlet.antalKunder})
 					</button>
-					<button
-						class:aktiv={mrsPop === 'gennemfoerte'}
-						onclick={() => (mrsPop = 'gennemfoerte')}
-						disabled={!s.mrsCompletere || s.mrsCompletere.antalGennemfoerte === 0}
-					>
-						Gennemførte ({s.mrsCompletere?.antalGennemfoerte ?? 0})
+					<button class:aktiv={reflPop === 'kickstart'} onclick={() => (reflPop = 'kickstart')}>
+						Kickstart ({reflSnapshot.prProdukt.kickstart.antalKunder})
+					</button>
+					<button class:aktiv={reflPop === 'kropsro'} onclick={() => (reflPop = 'kropsro')}>
+						Kropsro ({reflSnapshot.prProdukt.kropsro.antalKunder})
 					</button>
 				</div>
-				<!-- Nøgletal -->
 				<div class="kpi-grid">
 					<div class="kpi-kort">
-						<div class="kpi-tal">{s.antalMedData}</div>
-						<div class="kpi-label">kunder målt</div>
+						<div class="kpi-tal">{rs.antalRefleksioner}</div>
+						<div class="kpi-label">refleksioner i alt</div>
 					</div>
 					<div class="kpi-kort">
-						<div class="kpi-tal">{mrsData.antalMedUdvikling}</div>
-						<div class="kpi-label">
-							{mrsPop === 'gennemfoerte' ? 'gennemførte alle' : 'har flere målinger'}
-						</div>
+						<div class="kpi-tal">{rs.antalKunder}</div>
+						<div class="kpi-label">kunder skrev</div>
 					</div>
 					<div class="kpi-kort fremhaev">
-						<div class="kpi-tal">↓ {tal(Math.abs(mrsData.gnsAendring))}</div>
-						<div class="kpi-label">gns. forbedring</div>
-						<div class="kpi-sub">{tal(mrsData.gnsBaseline)} → {tal(mrsData.gnsSeneste)} point</div>
+						<div class="kpi-tal">{tal(rs.gnsPrKunde)}</div>
+						<div class="kpi-label">refleksioner pr. kunde</div>
 					</div>
 					<div class="kpi-kort fremhaev">
-						<div class="kpi-tal">{mrsData.andelForbedret}%</div>
-						<div class="kpi-label">er blevet bedre</div>
+						<div class="kpi-tal">{rs.gnsLaengde}</div>
+						<div class="kpi-label">tegn i snit</div>
 					</div>
 				</div>
-
 				<p class="figur-note">
-					MRS-score 0–44, hvor <strong>lavere = færre symptomer</strong>. Regnet over {mrsData.antalMedUdvikling}
-					{mrsPop === 'gennemfoerte'
-						? 'kunder der lavede et fuldt MRS-skema ved hvert målepunkt'
-						: 'kunder med mindst 2 MRS-skemaer'} ({scopeNavn}). Gns. forbedring = hvor mange point
-					scoren i snit er faldet; er blevet bedre = andelen der er gået ned.
+					En refleksion = en forløbsdag hvor kunden skrev et svar. Vist for {reflPop === 'samlet'
+						? 'alle forløb'
+						: reflPop === 'kickstart'
+							? 'Kickstart'
+							: 'Kropsro'}.
 				</p>
-				{#if harNokMrs}
-					<!-- Rejse-graf -->
-					{#if graf}
-						<section class="card">
-							<div class="graf-top">
-								<div class="kort-titel" style="margin:0">Udvikling over målinger</div>
-								{#if aktivFane === 'alle'}
-									<div class="linje-vaelger">
-										<button
-											class="linje-vaelger-knap"
-											onclick={() => (linjeVaelgerAaben = !linjeVaelgerAaben)}
-										>
-											Vælg linjer ({valgteLinjer.size})
-											<Icon name="chevron-d" size={12} color="var(--text2)" />
-										</button>
-										{#if linjeVaelgerAaben}
-											<div class="linje-menu">
-												{#each tilgaengeligeLinjer as l, i (l.id)}
-													{#if i === 3}<div class="linje-divider">Enkelte hold</div>{/if}
-													<label class="linje-option">
-														<input
-															type="checkbox"
-															checked={valgteLinjer.has(l.id)}
-															onchange={() => toggleLinje(l.id)}
-														/>
-														<span class="linje-prik" style="background:{l.farve}"></span>
-														{l.navn}
-													</label>
-												{/each}
-											</div>
-										{/if}
-									</div>
-								{/if}
-							</div>
-							<p class="figur-note">
-								Gennemsnitlig MRS-score ved kundernes 1., 2. og 3. måling — <strong
-									>lavere kurve = færre symptomer</strong
-								>.
-								{mrsPop === 'gennemfoerte' ? 'Kun gennemførte kunder. ' : ''}{aktivFane === 'alle'
-									? 'Vælg hvilke hold der vises i menuen.'
-									: 'Den sorte linje er alle hold til sammenligning.'}
-							</p>
-							<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
-								<!-- y-gitter -->
-								{#each graf.yTicks as t (t.v)}
-									<line x1={G.padL} y1={t.y} x2={G.w - G.padR} y2={t.y} class="gitter" />
-									<text x={G.padL - 5} y={t.y + 3} class="akse-tekst" text-anchor="end">{t.v}</text>
-								{/each}
-								<!-- x-labels -->
-								{#each graf.xLabels as x (x.label)}
-									<text x={x.x} y={G.h - 8} class="akse-tekst" text-anchor="middle">{x.label}</text>
-								{/each}
-								<!-- linjer -->
-								{#each graf.linjer as l (l.navn)}
-									<path
-										d={l.path}
-										fill="none"
-										stroke={l.farve}
-										stroke-width={l.fremhaev ? 2.5 : 1.5}
-										stroke-opacity={l.fremhaev ? 1 : 0.5}
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-									{#each l.pkt as p (p.x)}
-										<circle cx={p.x} cy={p.y} r={l.fremhaev ? 4 : 3} fill={l.farve} />
-									{/each}
-								{/each}
-							</svg>
-							{#if graf.linjer.length === 0}
-								<p class="skala-note">Vælg en eller flere linjer i menuen for at se udviklingen.</p>
-							{/if}
-							<div class="legende">
-								{#each graf.linjer as l (l.navn)}
-									<span class="legende-item">
-										<span class="legende-prik" style="background:{l.farve}"></span>
-										{l.navn}
-									</span>
-								{/each}
-							</div>
-							<p class="skala-note">
-								Hvert punkt = kundens 1., 2., 3. måling · tal ved punkterne = antal kunder bag
-							</p>
-							<div class="punkt-antal">
-								{#each graf.linjer.find((l) => l.fremhaev)?.pkt ?? [] as p, i (i)}
-									<span>{i + 1}. måling: {p.antal} kunder</span>
-								{/each}
-							</div>
-						</section>
-					{/if}
-
-					<!-- Baseline-sværhedsgrad -->
+				{#if rs.prDag.length > 0}
+					{@const maxAntal = Math.max(...rs.prDag.map((d) => d.antal))}
 					<section class="card">
-						<div class="kort-titel">Hvem forbedres mest? (efter start-sværhedsgrad)</div>
+						<div class="kort-titel">Engagement pr. forløbsdag</div>
 						<p class="figur-note">
-							Kunderne delt efter hvor høj MRS de havde ved start. Tallet til højre = gns. ændring;
-							↓ = forbedring (færre symptomer).
+							Hvor mange kunder skrev en refleksion på hver dag i forløbet — viser hvornår
+							engagementet topper og falder.
 						</p>
-						{#each SVAERGRAD as grad (grad.key)}
-							{@const g = mrsData.baselineSvaergrad[grad.key]}
-							<div class="svaer-rad">
-								<div class="svaer-navn">
-									{grad.navn} <span class="svaer-interval">{grad.interval}</span>
-								</div>
-								<div class="svaer-antal">{g.antal} kunder</div>
-								<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
-									{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
-									{tal(Math.abs(g.gnsAendring))}
-								</div>
-							</div>
-						{/each}
-						<p class="skala-note">Tallet til højre er gns. ændring i MRS-point.</p>
-					</section>
-
-					<!-- Forbedrings-fordeling -->
-					<section class="card">
-						<div class="kort-titel">Fordeling ({mrsData.antalMedUdvikling} kunder)</div>
-						<p class="figur-note">
-							Hvor mange kunder der er blevet meget bedre, lidt bedre, uændret eller værre fra start
-							til seneste MRS-måling.
-						</p>
-						<div class="fordeling-bar">
-							<div
-								class="fb-del meget"
-								style="width:{fbProcent(mrsData.forbedringsFordeling, 'megetBedre')}%"
-							></div>
-							<div
-								class="fb-del lidt"
-								style="width:{fbProcent(mrsData.forbedringsFordeling, 'lidtBedre')}%"
-							></div>
-							<div
-								class="fb-del uaendret"
-								style="width:{fbProcent(mrsData.forbedringsFordeling, 'uaendret')}%"
-							></div>
-							<div
-								class="fb-del vaerre"
-								style="width:{fbProcent(mrsData.forbedringsFordeling, 'vaerre')}%"
-							></div>
+						<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
+							{#each rs.prDag as d, i (d.dagNummer)}
+								{@const bw = (G.w - G.padL - G.padR) / rs.prDag.length}
+								{@const h = (d.antal / maxAntal) * (G.h - G.padT - G.padB)}
+								<rect
+									x={G.padL + i * bw + 1}
+									y={G.h - G.padB - h}
+									width={Math.max(1, bw - 2)}
+									height={h}
+									class="refl-bar"
+								/>
+							{/each}
+							<line
+								x1={G.padL}
+								y1={G.h - G.padB}
+								x2={G.w - G.padR}
+								y2={G.h - G.padB}
+								class="gitter"
+							/>
+						</svg>
+						<div class="refl-akse">
+							<span>Dag {rs.prDag[0].dagNummer}</span>
+							<span>Dag {rs.prDag[rs.prDag.length - 1].dagNummer}</span>
 						</div>
-						<div class="fordeling-tegnforklaring">
-							<span
-								><span class="fb-prik meget"></span>Meget bedre ({mrsData.forbedringsFordeling
-									.megetBedre} ·
-								{Math.round(fbProcent(mrsData.forbedringsFordeling, 'megetBedre'))}%)</span
-							>
-							<span
-								><span class="fb-prik lidt"></span>Lidt bedre ({mrsData.forbedringsFordeling
-									.lidtBedre} ·
-								{Math.round(fbProcent(mrsData.forbedringsFordeling, 'lidtBedre'))}%)</span
-							>
-							<span
-								><span class="fb-prik uaendret"></span>Uændret ({mrsData.forbedringsFordeling
-									.uaendret} ·
-								{Math.round(fbProcent(mrsData.forbedringsFordeling, 'uaendret'))}%)</span
-							>
-							<span
-								><span class="fb-prik vaerre"></span>Værre ({mrsData.forbedringsFordeling.vaerre} ·
-								{Math.round(fbProcent(mrsData.forbedringsFordeling, 'vaerre'))}%)</span
-							>
-						</div>
-						<p class="skala-note">"Meget bedre" = MRS faldt 5+ point.</p>
+						<p class="skala-note">Højeste søjle = {maxAntal} kunder. Hver søjle = én forløbsdag.</p>
 					</section>
-
-					<!-- Demografi: menopause-status -->
-					<section class="card">
-						<div class="kort-titel">Forbedring efter menopause-status</div>
-						<p class="figur-note">
-							Gns. MRS-ændring fordelt på menopause-status. ↓ = færre symptomer.
-						</p>
-						{#each MENOPAUSE as m (m.key)}
-							{@const g = mrsData.demografi.menopause[m.key]}
-							{#if g && g.antal > 0}
-								<div class="svaer-rad">
-									<div class="svaer-navn">{m.navn}</div>
-									<div class="svaer-antal">{g.antal} kunder</div>
-									<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
-										{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
-										{tal(Math.abs(g.gnsAendring))}
-									</div>
-								</div>
-							{/if}
-						{/each}
-					</section>
-
-					<!-- Demografi: alder -->
-					<section class="card">
-						<div class="kort-titel">Forbedring efter aldersgruppe</div>
-						<p class="figur-note">Gns. MRS-ændring fordelt på aldersgruppe. ↓ = færre symptomer.</p>
-						{#each ALDER_ORDEN as key (key)}
-							{@const g = mrsData.demografi.alder[key]}
-							{#if g && g.antal > 0}
-								<div class="svaer-rad">
-									<div class="svaer-navn">{key === 'ukendt' ? 'Ukendt' : `${key} år`}</div>
-									<div class="svaer-antal">{g.antal} kunder</div>
-									<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
-										{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
-										{tal(Math.abs(g.gnsAendring))}
-									</div>
-								</div>
-							{/if}
-						{/each}
-						<p class="skala-note">
-							"Ukendt" = kunder uden udfyldt profil. Tallet er gns. MRS-ændring.
-						</p>
-					</section>
-
-					<!-- Subskalaer -->
-					<section class="card">
-						<div class="kort-titel">Hvor sker forbedringen?</div>
-						<p class="figur-note">
-							MRS opdelt i tre symptom-grupper — gennemsnit ved start → seneste. ↓ = færre
-							symptomer.
-						</p>
-						{#each subskalaListe as key (key)}
-							{@const sub = mrsData.subskalaer[key]}
-							<div class="sub-rad">
-								<div class="sub-navn">{SUBSKALA_NAVN[key]}</div>
-								<div class="sub-tal">
-									<span>{tal(sub.gnsBaseline)}</span>
-									<Icon name="chevron-r" size={12} color="var(--text3)" />
-									<span>{tal(sub.gnsSeneste)}</span>
-									<span class="sub-aendring" class:bedre={sub.gnsAendring < 0}>
-										{sub.gnsAendring < 0 ? '↓' : sub.gnsAendring > 0 ? '↑' : ''}
-										{tal(Math.abs(sub.gnsAendring))}
-									</span>
-								</div>
-							</div>
-						{/each}
-					</section>
-				{:else}
-					<div class="hint-kort">
-						Dette hold har ikke nok fulde MRS-skemaer endnu — skift til "Velvære-udvikling" ovenfor
-						for at se deres ugentlige velvære-check.
-					</div>
 				{/if}
+			{/if}
+		{:else}
+			<!-- Scope-faner: gælder inden i begge måletyper -->
+			<div class="faner">
+				<button
+					class="fane"
+					class:aktiv={aktivFane === 'alle'}
+					onclick={() => (aktivFane = 'alle')}
+				>
+					Alle resultater
+				</button>
+				<button
+					class="fane"
+					class:aktiv={aktivFane === 'forlob'}
+					onclick={() => (aktivFane = 'forlob')}
+				>
+					Vælg forløb
+				</button>
+			</div>
+
+			{#if aktivFane === 'forlob'}
+				<select class="forlob-vaelg" bind:value={valgtForlobId}>
+					{#each snapshot.prForlob as f (f.forlobId)}
+						<option value={f.forlobId}>{f.navn} ({f.antalMedUdvikling})</option>
+					{/each}
+				</select>
+			{/if}
+
+			{#if aktivFane === 'forlob' && !valgtForlob}
+				<div class="status-besked">Ingen hold med nok data endnu.</div>
 			{:else}
-				<!-- Velvære-udvikling: vores egen måling (højere = bedre) -->
-				{#if s.antalVelvaere > 0}
-					{@const velvData =
-						velvaerePop === 'gennemfoerte' && s.velvaereCompletere
-							? {
-									antal: s.velvaereCompletere.antalGennemfoerte,
-									velvaere: s.velvaereCompletere.velvaere,
-									checkIns: s.velvaereCompletere.velvaereCheckIns
-								}
-							: {
-									antal: s.antalVelvaere,
-									velvaere: s.velvaere,
-									checkIns: s.velvaereCheckIns ?? []
-								}}
-					<!-- Alle / Gennemførte (måling ved hvert check-in) -->
+				{@const s = scope}
+				{#if aktivMaaling === 'mrs'}
+					{@const mrsData = mrsPop === 'gennemfoerte' && s.mrsCompletere ? s.mrsCompletere : s}
+					{@const harNokMrs = mrsData.antalMedUdvikling >= 5}
+					<!-- Alle / Gennemførte (fuldt MRS-skema ved hvert målepunkt) -->
 					<div class="velv-toggle">
-						<button class:aktiv={velvaerePop === 'alle'} onclick={() => (velvaerePop = 'alle')}>
-							Alle ({s.antalVelvaere})
+						<button class:aktiv={mrsPop === 'alle'} onclick={() => (mrsPop = 'alle')}>
+							Alle ({s.antalMedUdvikling})
 						</button>
 						<button
-							class:aktiv={velvaerePop === 'gennemfoerte'}
-							onclick={() => (velvaerePop = 'gennemfoerte')}
-							disabled={!s.velvaereCompletere || s.velvaereCompletere.antalGennemfoerte === 0}
+							class:aktiv={mrsPop === 'gennemfoerte'}
+							onclick={() => (mrsPop = 'gennemfoerte')}
+							disabled={!s.mrsCompletere || s.mrsCompletere.antalGennemfoerte === 0}
 						>
-							Gennemførte ({s.velvaereCompletere?.antalGennemfoerte ?? 0})
+							Gennemførte ({s.mrsCompletere?.antalGennemfoerte ?? 0})
 						</button>
 					</div>
-					{#if velvData.antal > 0}
-						<section class="card">
-							<div class="graf-top">
-								<div class="kort-titel" style="margin:0">Velvære ({velvData.antal} kunder)</div>
-								{#if aktivFane === 'alle'}
-									<div class="linje-vaelger">
-										<button
-											class="linje-vaelger-knap"
-											onclick={() => (velvaereVaelgerAaben = !velvaereVaelgerAaben)}
-										>
-											Vælg linjer ({valgteVelvaereLinjer.size})
-											<Icon name="chevron-d" size={12} color="var(--text2)" />
-										</button>
-										{#if velvaereVaelgerAaben}
-											<div class="linje-menu">
-												{#each tilgaengeligeLinjer as l, i (l.id)}
-													{#if i === 3}<div class="linje-divider">Enkelte hold</div>{/if}
-													<label class="linje-option">
-														<input
-															type="checkbox"
-															checked={valgteVelvaereLinjer.has(l.id)}
-															onchange={() => toggleVelvaereLinje(l.id)}
-														/>
-														<span class="linje-prik" style="background:{l.farve}"></span>
-														{l.navn}
-													</label>
-												{/each}
-											</div>
-										{/if}
-									</div>
-								{/if}
+					<!-- Nøgletal -->
+					<div class="kpi-grid">
+						<div class="kpi-kort">
+							<div class="kpi-tal">{s.antalMedData}</div>
+							<div class="kpi-label">kunder målt</div>
+						</div>
+						<div class="kpi-kort">
+							<div class="kpi-tal">{mrsData.antalMedUdvikling}</div>
+							<div class="kpi-label">
+								{mrsPop === 'gennemfoerte' ? 'gennemførte alle' : 'har flere målinger'}
 							</div>
-							<p class="figur-note">
-								Samlet velvære (gns. af de 5 mål) ved hver måling — <strong
-									>højere = bedre trivsel</strong
-								>.
-								{velvaerePop === 'gennemfoerte' ? 'Kun gennemførte kunder.' : ''}
-							</p>
-							{#if velvaereGraf}
+						</div>
+						<div class="kpi-kort fremhaev">
+							<div class="kpi-tal">↓ {tal(Math.abs(mrsData.gnsAendring))}</div>
+							<div class="kpi-label">gns. forbedring</div>
+							<div class="kpi-sub">
+								{tal(mrsData.gnsBaseline)} → {tal(mrsData.gnsSeneste)} point
+							</div>
+						</div>
+						<div class="kpi-kort fremhaev">
+							<div class="kpi-tal">{mrsData.andelForbedret}%</div>
+							<div class="kpi-label">er blevet bedre</div>
+						</div>
+					</div>
+
+					<p class="figur-note">
+						MRS-score 0–44, hvor <strong>lavere = færre symptomer</strong>. Regnet over {mrsData.antalMedUdvikling}
+						{mrsPop === 'gennemfoerte'
+							? 'kunder der lavede et fuldt MRS-skema ved hvert målepunkt'
+							: 'kunder med mindst 2 MRS-skemaer'} ({scopeNavn}). Gns. forbedring = hvor mange point
+						scoren i snit er faldet; er blevet bedre = andelen der er gået ned.
+					</p>
+					{#if harNokMrs}
+						<!-- Rejse-graf -->
+						{#if graf}
+							<section class="card">
+								<div class="graf-top">
+									<div class="kort-titel" style="margin:0">Udvikling over målinger</div>
+									{#if aktivFane === 'alle'}
+										<div class="linje-vaelger">
+											<button
+												class="linje-vaelger-knap"
+												onclick={() => (linjeVaelgerAaben = !linjeVaelgerAaben)}
+											>
+												Vælg linjer ({valgteLinjer.size})
+												<Icon name="chevron-d" size={12} color="var(--text2)" />
+											</button>
+											{#if linjeVaelgerAaben}
+												<div class="linje-menu">
+													{#each tilgaengeligeLinjer as l, i (l.id)}
+														{#if i === 3}<div class="linje-divider">Enkelte hold</div>{/if}
+														<label class="linje-option">
+															<input
+																type="checkbox"
+																checked={valgteLinjer.has(l.id)}
+																onchange={() => toggleLinje(l.id)}
+															/>
+															<span class="linje-prik" style="background:{l.farve}"></span>
+															{l.navn}
+														</label>
+													{/each}
+												</div>
+											{/if}
+										</div>
+									{/if}
+								</div>
+								<p class="figur-note">
+									Gennemsnitlig MRS-score ved kundernes 1., 2. og 3. måling — <strong
+										>lavere kurve = færre symptomer</strong
+									>.
+									{mrsPop === 'gennemfoerte' ? 'Kun gennemførte kunder. ' : ''}{aktivFane === 'alle'
+										? 'Vælg hvilke hold der vises i menuen.'
+										: 'Den sorte linje er alle hold til sammenligning.'}
+								</p>
 								<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
-									{#each velvaereGraf.yTicks as t (t.v)}
+									<!-- y-gitter -->
+									{#each graf.yTicks as t (t.v)}
 										<line x1={G.padL} y1={t.y} x2={G.w - G.padR} y2={t.y} class="gitter" />
 										<text x={G.padL - 5} y={t.y + 3} class="akse-tekst" text-anchor="end"
 											>{t.v}</text
 										>
 									{/each}
-									{#each velvaereGraf.xLabels as x (x.label)}
+									<!-- x-labels -->
+									{#each graf.xLabels as x (x.label)}
 										<text x={x.x} y={G.h - 8} class="akse-tekst" text-anchor="middle"
 											>{x.label}</text
 										>
 									{/each}
-									{#each velvaereGraf.linjer as l (l.navn)}
+									<!-- linjer -->
+									{#each graf.linjer as l (l.navn)}
 										<path
 											d={l.path}
 											fill="none"
@@ -774,113 +637,380 @@
 										{/each}
 									{/each}
 								</svg>
-								{#if velvaereGraf.linjer.length === 0}
+								{#if graf.linjer.length === 0}
 									<p class="skala-note">
 										Vælg en eller flere linjer i menuen for at se udviklingen.
 									</p>
 								{/if}
 								<div class="legende">
-									{#each velvaereGraf.linjer as l (l.navn)}
-										<span class="legende-item"
-											><span class="legende-prik" style="background:{l.farve}"></span>{l.navn}</span
-										>
+									{#each graf.linjer as l (l.navn)}
+										<span class="legende-item">
+											<span class="legende-prik" style="background:{l.farve}"></span>
+											{l.navn}
+										</span>
 									{/each}
 								</div>
 								<p class="skala-note">
-									Samlet velvære (gns. af de 5 mål) · skala 1–10 · højere = bedre
+									Hvert punkt = kundens 1., 2., 3. måling · tal ved punkterne = antal kunder bag
 								</p>
-							{/if}
-							<div class="rubrik-titel">Samlet: baseline → seneste måling</div>
+								<div class="punkt-antal">
+									{#each graf.linjer.find((l) => l.fremhaev)?.pkt ?? [] as p, i (i)}
+										<span>{i + 1}. måling: {p.antal} kunder</span>
+									{/each}
+								</div>
+							</section>
+						{/if}
+
+						<!-- Baseline-sværhedsgrad -->
+						<section class="card">
+							<div class="kort-titel">Hvem forbedres mest? (efter start-sværhedsgrad)</div>
 							<p class="figur-note">
-								Hver kundes FØRSTE velvære-måling vs. hendes SENESTE (blander tidlige og sene
-								målinger). Skala 1–10, højere = bedre.
+								Kunderne delt efter hvor høj MRS de havde ved start. Tallet til højre = gns.
+								ændring; ↓ = forbedring (færre symptomer).
 							</p>
-							{#each VELVAERE as v (v.key)}
-								{@const vv = velvData.velvaere[v.key]}
+							{#each SVAERGRAD as grad (grad.key)}
+								{@const g = mrsData.baselineSvaergrad[grad.key]}
+								<div class="svaer-rad">
+									<div class="svaer-navn">
+										{grad.navn} <span class="svaer-interval">{grad.interval}</span>
+									</div>
+									<div class="svaer-antal">{g.antal} kunder</div>
+									<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
+										{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
+										{tal(Math.abs(g.gnsAendring))}
+									</div>
+								</div>
+							{/each}
+							<p class="skala-note">Tallet til højre er gns. ændring i MRS-point.</p>
+						</section>
+
+						<!-- Forbedrings-fordeling -->
+						<section class="card">
+							<div class="kort-titel">Fordeling ({mrsData.antalMedUdvikling} kunder)</div>
+							<p class="figur-note">
+								Hvor mange kunder der er blevet meget bedre, lidt bedre, uændret eller værre fra
+								start til seneste MRS-måling.
+							</p>
+							<div class="fordeling-bar">
+								<div
+									class="fb-del meget"
+									style="width:{fbProcent(mrsData.forbedringsFordeling, 'megetBedre')}%"
+								></div>
+								<div
+									class="fb-del lidt"
+									style="width:{fbProcent(mrsData.forbedringsFordeling, 'lidtBedre')}%"
+								></div>
+								<div
+									class="fb-del uaendret"
+									style="width:{fbProcent(mrsData.forbedringsFordeling, 'uaendret')}%"
+								></div>
+								<div
+									class="fb-del vaerre"
+									style="width:{fbProcent(mrsData.forbedringsFordeling, 'vaerre')}%"
+								></div>
+							</div>
+							<div class="fordeling-tegnforklaring">
+								<span
+									><span class="fb-prik meget"></span>Meget bedre ({mrsData.forbedringsFordeling
+										.megetBedre} ·
+									{Math.round(fbProcent(mrsData.forbedringsFordeling, 'megetBedre'))}%)</span
+								>
+								<span
+									><span class="fb-prik lidt"></span>Lidt bedre ({mrsData.forbedringsFordeling
+										.lidtBedre} ·
+									{Math.round(fbProcent(mrsData.forbedringsFordeling, 'lidtBedre'))}%)</span
+								>
+								<span
+									><span class="fb-prik uaendret"></span>Uændret ({mrsData.forbedringsFordeling
+										.uaendret} ·
+									{Math.round(fbProcent(mrsData.forbedringsFordeling, 'uaendret'))}%)</span
+								>
+								<span
+									><span class="fb-prik vaerre"></span>Værre ({mrsData.forbedringsFordeling.vaerre} ·
+									{Math.round(fbProcent(mrsData.forbedringsFordeling, 'vaerre'))}%)</span
+								>
+							</div>
+							<p class="skala-note">"Meget bedre" = MRS faldt 5+ point.</p>
+						</section>
+
+						<!-- Demografi: menopause-status -->
+						<section class="card">
+							<div class="kort-titel">Forbedring efter menopause-status</div>
+							<p class="figur-note">
+								Gns. MRS-ændring fordelt på menopause-status. ↓ = færre symptomer.
+							</p>
+							{#each MENOPAUSE as m (m.key)}
+								{@const g = mrsData.demografi.menopause[m.key]}
+								{#if g && g.antal > 0}
+									<div class="svaer-rad">
+										<div class="svaer-navn">{m.navn}</div>
+										<div class="svaer-antal">{g.antal} kunder</div>
+										<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
+											{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
+											{tal(Math.abs(g.gnsAendring))}
+										</div>
+									</div>
+								{/if}
+							{/each}
+						</section>
+
+						<!-- Demografi: alder -->
+						<section class="card">
+							<div class="kort-titel">Forbedring efter aldersgruppe</div>
+							<p class="figur-note">
+								Gns. MRS-ændring fordelt på aldersgruppe. ↓ = færre symptomer.
+							</p>
+							{#each ALDER_ORDEN as key (key)}
+								{@const g = mrsData.demografi.alder[key]}
+								{#if g && g.antal > 0}
+									<div class="svaer-rad">
+										<div class="svaer-navn">{key === 'ukendt' ? 'Ukendt' : `${key} år`}</div>
+										<div class="svaer-antal">{g.antal} kunder</div>
+										<div class="svaer-aendring" class:bedre={g.gnsAendring < 0}>
+											{g.gnsAendring < 0 ? '↓' : g.gnsAendring > 0 ? '↑' : '–'}
+											{tal(Math.abs(g.gnsAendring))}
+										</div>
+									</div>
+								{/if}
+							{/each}
+							<p class="skala-note">
+								"Ukendt" = kunder uden udfyldt profil. Tallet er gns. MRS-ændring.
+							</p>
+						</section>
+
+						<!-- Subskalaer -->
+						<section class="card">
+							<div class="kort-titel">Hvor sker forbedringen?</div>
+							<p class="figur-note">
+								MRS opdelt i tre symptom-grupper — gennemsnit ved start → seneste. ↓ = færre
+								symptomer.
+							</p>
+							{#each subskalaListe as key (key)}
+								{@const sub = mrsData.subskalaer[key]}
 								<div class="sub-rad">
-									<div class="sub-navn">{v.navn}</div>
+									<div class="sub-navn">{SUBSKALA_NAVN[key]}</div>
 									<div class="sub-tal">
-										<span>{tal(vv.gnsBaseline)}</span>
+										<span>{tal(sub.gnsBaseline)}</span>
 										<Icon name="chevron-r" size={12} color="var(--text3)" />
-										<span>{tal(vv.gnsSeneste)}</span>
-										<span class="sub-aendring" class:bedre={vv.gnsAendring > 0}>
-											{vv.gnsAendring > 0 ? '↑' : vv.gnsAendring < 0 ? '↓' : ''}
-											{tal(Math.abs(vv.gnsAendring))}
+										<span>{tal(sub.gnsSeneste)}</span>
+										<span class="sub-aendring" class:bedre={sub.gnsAendring < 0}>
+											{sub.gnsAendring < 0 ? '↓' : sub.gnsAendring > 0 ? '↑' : ''}
+											{tal(Math.abs(sub.gnsAendring))}
 										</span>
 									</div>
 								</div>
 							{/each}
-							<p class="skala-note">
-								Skala 1–10 · højere = bedre. Egen måling, så flere kunder end MRS-totalen.
-							</p>
 						</section>
-
-						<!-- Check-in for check-in: matchet/parret pr slutpunkt mod egen baseline
-					     (som den eksterne statistik-rapports "udvikling uge for uge"). Hvert
-					     slutpunkt bruger kun de kunder der nåede dertil — derfor stiger
-					     forbedringen jo længere ud man kommer, modsat samlet-tabellen. -->
-						{@const checkIns = velvData.checkIns}
-						{#if checkIns.length > 0}
+					{:else}
+						<div class="hint-kort">
+							Dette hold har ikke nok fulde MRS-skemaer endnu — skift til "Velvære-udvikling"
+							ovenfor for at se deres ugentlige velvære-check.
+						</div>
+					{/if}
+				{:else}
+					<!-- Velvære-udvikling: vores egen måling (højere = bedre) -->
+					{#if s.antalVelvaere > 0}
+						{@const velvData =
+							velvaerePop === 'gennemfoerte' && s.velvaereCompletere
+								? {
+										antal: s.velvaereCompletere.antalGennemfoerte,
+										velvaere: s.velvaereCompletere.velvaere,
+										checkIns: s.velvaereCompletere.velvaereCheckIns
+									}
+								: {
+										antal: s.antalVelvaere,
+										velvaere: s.velvaere,
+										checkIns: s.velvaereCheckIns ?? []
+									}}
+						<!-- Alle / Gennemførte (måling ved hvert check-in) -->
+						<div class="velv-toggle">
+							<button class:aktiv={velvaerePop === 'alle'} onclick={() => (velvaerePop = 'alle')}>
+								Alle ({s.antalVelvaere})
+							</button>
+							<button
+								class:aktiv={velvaerePop === 'gennemfoerte'}
+								onclick={() => (velvaerePop = 'gennemfoerte')}
+								disabled={!s.velvaereCompletere || s.velvaereCompletere.antalGennemfoerte === 0}
+							>
+								Gennemførte ({s.velvaereCompletere?.antalGennemfoerte ?? 0})
+							</button>
+						</div>
+						{#if velvData.antal > 0}
 							<section class="card">
-								<div class="kort-titel">Check-in for check-in</div>
-								<p class="skala-note" style="margin-top:0">
-									Hvert slutpunkt sammenligner kun de kunder der nåede dertil, mod deres egen
-									baseline — samme metode som statistik-rapporten. Derfor vokser forbedringen udad.
-								</p>
-								{#each checkIns as ci (ci.checkin)}
-									{@const c = ci.composite}
-									<div class="ci-blok">
-										<div class="rubrik-titel">
-											Baseline → check-in {ci.checkin}
-											<span class="ci-antal">{ci.antalMatchede} matchede</span>
+								<div class="graf-top">
+									<div class="kort-titel" style="margin:0">Velvære ({velvData.antal} kunder)</div>
+									{#if aktivFane === 'alle'}
+										<div class="linje-vaelger">
+											<button
+												class="linje-vaelger-knap"
+												onclick={() => (velvaereVaelgerAaben = !velvaereVaelgerAaben)}
+											>
+												Vælg linjer ({valgteVelvaereLinjer.size})
+												<Icon name="chevron-d" size={12} color="var(--text2)" />
+											</button>
+											{#if velvaereVaelgerAaben}
+												<div class="linje-menu">
+													{#each tilgaengeligeLinjer as l, i (l.id)}
+														{#if i === 3}<div class="linje-divider">Enkelte hold</div>{/if}
+														<label class="linje-option">
+															<input
+																type="checkbox"
+																checked={valgteVelvaereLinjer.has(l.id)}
+																onchange={() => toggleVelvaereLinje(l.id)}
+															/>
+															<span class="linje-prik" style="background:{l.farve}"></span>
+															{l.navn}
+														</label>
+													{/each}
+												</div>
+											{/if}
 										</div>
-										<table class="ci-tabel">
-											<thead>
-												<tr>
-													<th>Mål</th>
-													<th>Baseline</th>
-													<th>Check-in {ci.checkin}</th>
-													<th>Δ</th>
-													<th>Forbedret</th>
-												</tr>
-											</thead>
-											<tbody>
-												{#each VELVAERE as v (v.key)}
-													{@const m = ci.perMaal[v.key]}
-													<tr>
-														<td class="ci-navn">{v.navn}</td>
-														<td>{tal(m.gnsBaseline)}</td>
-														<td>{tal(m.gnsCheckin)}</td>
-														<td class="ci-delta" class:bedre={m.delta > 0}>
-															{m.delta > 0 ? '+' : ''}{tal(m.delta)}
-														</td>
-														<td>{m.forbedretPct}%</td>
-													</tr>
-												{/each}
-												<tr class="ci-samlet">
-													<td class="ci-navn">Samlet</td>
-													<td>{tal(c.gnsBaseline)}</td>
-													<td>{tal(c.gnsCheckin)}</td>
-													<td class="ci-delta" class:bedre={c.delta > 0}>
-														{c.delta > 0 ? '+' : ''}{tal(c.delta)}
-													</td>
-													<td>{c.forbedretPct}%</td>
-												</tr>
-											</tbody>
-										</table>
+									{/if}
+								</div>
+								<p class="figur-note">
+									Samlet velvære (gns. af de 5 mål) ved hver måling — <strong
+										>højere = bedre trivsel</strong
+									>.
+									{velvaerePop === 'gennemfoerte' ? 'Kun gennemførte kunder.' : ''}
+								</p>
+								{#if velvaereGraf}
+									<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
+										{#each velvaereGraf.yTicks as t (t.v)}
+											<line x1={G.padL} y1={t.y} x2={G.w - G.padR} y2={t.y} class="gitter" />
+											<text x={G.padL - 5} y={t.y + 3} class="akse-tekst" text-anchor="end"
+												>{t.v}</text
+											>
+										{/each}
+										{#each velvaereGraf.xLabels as x (x.label)}
+											<text x={x.x} y={G.h - 8} class="akse-tekst" text-anchor="middle"
+												>{x.label}</text
+											>
+										{/each}
+										{#each velvaereGraf.linjer as l (l.navn)}
+											<path
+												d={l.path}
+												fill="none"
+												stroke={l.farve}
+												stroke-width={l.fremhaev ? 2.5 : 1.5}
+												stroke-opacity={l.fremhaev ? 1 : 0.5}
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											/>
+											{#each l.pkt as p (p.x)}
+												<circle cx={p.x} cy={p.y} r={l.fremhaev ? 4 : 3} fill={l.farve} />
+											{/each}
+										{/each}
+									</svg>
+									{#if velvaereGraf.linjer.length === 0}
+										<p class="skala-note">
+											Vælg en eller flere linjer i menuen for at se udviklingen.
+										</p>
+									{/if}
+									<div class="legende">
+										{#each velvaereGraf.linjer as l (l.navn)}
+											<span class="legende-item"
+												><span class="legende-prik" style="background:{l.farve}"
+												></span>{l.navn}</span
+											>
+										{/each}
+									</div>
+									<p class="skala-note">
+										Samlet velvære (gns. af de 5 mål) · skala 1–10 · højere = bedre
+									</p>
+								{/if}
+								<div class="rubrik-titel">Samlet: baseline → seneste måling</div>
+								<p class="figur-note">
+									Hver kundes FØRSTE velvære-måling vs. hendes SENESTE (blander tidlige og sene
+									målinger). Skala 1–10, højere = bedre.
+								</p>
+								{#each VELVAERE as v (v.key)}
+									{@const vv = velvData.velvaere[v.key]}
+									<div class="sub-rad">
+										<div class="sub-navn">{v.navn}</div>
+										<div class="sub-tal">
+											<span>{tal(vv.gnsBaseline)}</span>
+											<Icon name="chevron-r" size={12} color="var(--text3)" />
+											<span>{tal(vv.gnsSeneste)}</span>
+											<span class="sub-aendring" class:bedre={vv.gnsAendring > 0}>
+												{vv.gnsAendring > 0 ? '↑' : vv.gnsAendring < 0 ? '↓' : ''}
+												{tal(Math.abs(vv.gnsAendring))}
+											</span>
+										</div>
 									</div>
 								{/each}
 								<p class="skala-note">
-									Skala 1–10 · højere = bedre. "Forbedret" = andel hvis værdi er steget fra
-									baseline.
+									Skala 1–10 · højere = bedre. Egen måling, så flere kunder end MRS-totalen.
 								</p>
 							</section>
+
+							<!-- Check-in for check-in: matchet/parret pr slutpunkt mod egen baseline
+					     (som den eksterne statistik-rapports "udvikling uge for uge"). Hvert
+					     slutpunkt bruger kun de kunder der nåede dertil — derfor stiger
+					     forbedringen jo længere ud man kommer, modsat samlet-tabellen. -->
+							{@const checkIns = velvData.checkIns}
+							{#if checkIns.length > 0}
+								<section class="card">
+									<div class="kort-titel">Check-in for check-in</div>
+									<p class="skala-note" style="margin-top:0">
+										Hvert slutpunkt sammenligner kun de kunder der nåede dertil, mod deres egen
+										baseline — samme metode som statistik-rapporten. Derfor vokser forbedringen
+										udad.
+									</p>
+									{#each checkIns as ci (ci.checkin)}
+										{@const c = ci.composite}
+										<div class="ci-blok">
+											<div class="rubrik-titel">
+												Baseline → check-in {ci.checkin}
+												<span class="ci-antal">{ci.antalMatchede} matchede</span>
+											</div>
+											<table class="ci-tabel">
+												<thead>
+													<tr>
+														<th>Mål</th>
+														<th>Baseline</th>
+														<th>Check-in {ci.checkin}</th>
+														<th>Δ</th>
+														<th>Forbedret</th>
+													</tr>
+												</thead>
+												<tbody>
+													{#each VELVAERE as v (v.key)}
+														{@const m = ci.perMaal[v.key]}
+														<tr>
+															<td class="ci-navn">{v.navn}</td>
+															<td>{tal(m.gnsBaseline)}</td>
+															<td>{tal(m.gnsCheckin)}</td>
+															<td class="ci-delta" class:bedre={m.delta > 0}>
+																{m.delta > 0 ? '+' : ''}{tal(m.delta)}
+															</td>
+															<td>{m.forbedretPct}%</td>
+														</tr>
+													{/each}
+													<tr class="ci-samlet">
+														<td class="ci-navn">Samlet</td>
+														<td>{tal(c.gnsBaseline)}</td>
+														<td>{tal(c.gnsCheckin)}</td>
+														<td class="ci-delta" class:bedre={c.delta > 0}>
+															{c.delta > 0 ? '+' : ''}{tal(c.delta)}
+														</td>
+														<td>{c.forbedretPct}%</td>
+													</tr>
+												</tbody>
+											</table>
+										</div>
+									{/each}
+									<p class="skala-note">
+										Skala 1–10 · højere = bedre. "Forbedret" = andel hvis værdi er steget fra
+										baseline.
+									</p>
+								</section>
+							{/if}
+						{:else}
+							<div class="hint-kort">Ingen gennemførte kunder i dette valg endnu.</div>
 						{/if}
 					{:else}
-						<div class="hint-kort">Ingen gennemførte kunder i dette valg endnu.</div>
+						<div class="hint-kort">Ingen velvære-data for dette valg endnu.</div>
 					{/if}
-				{:else}
-					<div class="hint-kort">Ingen velvære-data for dette valg endnu.</div>
 				{/if}
 			{/if}
 		{/if}
@@ -1283,6 +1413,17 @@
 		color: var(--text2);
 		line-height: 1.5;
 		margin: -6px 0 12px;
+	}
+	/* Refleksions-engagement: søjlediagram pr forløbsdag */
+	.refl-bar {
+		fill: var(--accent, #b87b6e);
+	}
+	.refl-akse {
+		display: flex;
+		justify-content: space-between;
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
 	}
 
 	/* Sværhedsgrad */
