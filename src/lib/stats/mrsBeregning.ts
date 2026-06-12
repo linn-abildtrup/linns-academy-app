@@ -86,49 +86,10 @@ function menopauseGruppe(m?: string): (typeof MENOPAUSE)[number] {
 		: 'ukendt';
 }
 
-// Beregner ÉN scope (samlet eller ét forloeb) ud fra kundernes raa-data.
-export function beregnScope(kunder: KundeMrs[]) {
-	const udv = kunder.filter((k) => k.harUdvikling);
-	const baselineT = udv.map((k) => k.baseline);
-	const senesteT = udv.map((k) => k.seneste);
-
-	// Rejse: gns MRS ved 1., 2., 3., 4. maaling (faldende n — vis antal bag).
-	const rejse: { gns: number; antal: number }[] = [];
-	for (let i = 0; i < MAX_REJSE_PUNKTER; i++) {
-		const vaerdier = kunder.filter((k) => k.totaler.length > i).map((k) => k.totaler[i]);
-		if (vaerdier.length < 5) break; // stop ved for lille n — punktet er upaalideligt
-		rejse.push({ gns: r1(gns(vaerdier)), antal: vaerdier.length });
-	}
-
-	// Segmenter (antal + gns forbedring pr gruppe, over udviklings-kunder).
-	const baselineSvaergrad = segmentGruppe(udv, ['mild', 'moderat', 'svaer'] as const, (k) =>
-		svaergrad(k.baseline)
-	);
-	const demografi = {
-		menopause: segmentGruppe(udv, MENOPAUSE, (k) => menopauseGruppe(k.menopaus)),
-		alder: segmentGruppe(udv, ALDERSGRUPPER, (k) => aldersgruppe(k.alder))
-	};
-
-	// Forbedrings-fordeling (over udviklings-kunder).
-	const fordeling = { megetBedre: 0, lidtBedre: 0, uaendret: 0, vaerre: 0 };
-	for (const k of udv) {
-		const a = k.seneste - k.baseline;
-		if (a <= -5) fordeling.megetBedre++;
-		else if (a < 0) fordeling.lidtBedre++;
-		else if (a === 0) fordeling.uaendret++;
-		else fordeling.vaerre++;
-	}
-
-	const subGns = (vaelg: (k: KundeMrs) => Sub | undefined, key: keyof Sub) => {
-		const b = udv.map((k) => vaelg(k)).filter(Boolean) as Sub[];
-		return b.length ? gns(b.map((s) => s[key])) : 0;
-	};
-	const subResultat = (key: keyof Sub) => ({
-		gnsBaseline: r1(subGns((k) => k.subBaseline, key)),
-		gnsSeneste: r1(subGns((k) => k.subSeneste, key)),
-		gnsAendring: r1(subGns((k) => k.subSeneste, key) - subGns((k) => k.subBaseline, key))
-	});
-
+// Alle velvaere-tal for en given kunde-delmaengde. Kaldes to gange pr scope:
+// for ALLE slider-kunder, og for "gennemfoerte" (har en maaling ved hvert
+// check-in). Samme logik begge gange → tallene er konsistente.
+function velvaereStats(kunder: KundeMrs[]) {
 	// Velvaere-sliders (egen population: kunder med >=2 slider-maalinger).
 	const sliderUdv = kunder.filter((k) => k.harSliderUdvikling);
 	const sliderGns = (vaelg: (k: KundeMrs) => Sliders | undefined, key: keyof Sliders) => {
@@ -242,6 +203,66 @@ export function beregnScope(kunder: KundeMrs[]) {
 	}
 
 	return {
+		velvaere,
+		velvaereRejse,
+		velvaereSamletRejse,
+		velvaereCheckIns,
+		antalVelvaere: sliderUdv.length
+	};
+}
+
+// Beregner ÉN scope (samlet eller ét forloeb) ud fra kundernes raa-data.
+export function beregnScope(kunder: KundeMrs[]) {
+	const udv = kunder.filter((k) => k.harUdvikling);
+	const baselineT = udv.map((k) => k.baseline);
+	const senesteT = udv.map((k) => k.seneste);
+
+	// Rejse: gns MRS ved 1., 2., 3., 4. maaling (faldende n — vis antal bag).
+	const rejse: { gns: number; antal: number }[] = [];
+	for (let i = 0; i < MAX_REJSE_PUNKTER; i++) {
+		const vaerdier = kunder.filter((k) => k.totaler.length > i).map((k) => k.totaler[i]);
+		if (vaerdier.length < 5) break; // stop ved for lille n — punktet er upaalideligt
+		rejse.push({ gns: r1(gns(vaerdier)), antal: vaerdier.length });
+	}
+
+	// Segmenter (antal + gns forbedring pr gruppe, over udviklings-kunder).
+	const baselineSvaergrad = segmentGruppe(udv, ['mild', 'moderat', 'svaer'] as const, (k) =>
+		svaergrad(k.baseline)
+	);
+	const demografi = {
+		menopause: segmentGruppe(udv, MENOPAUSE, (k) => menopauseGruppe(k.menopaus)),
+		alder: segmentGruppe(udv, ALDERSGRUPPER, (k) => aldersgruppe(k.alder))
+	};
+
+	// Forbedrings-fordeling (over udviklings-kunder).
+	const fordeling = { megetBedre: 0, lidtBedre: 0, uaendret: 0, vaerre: 0 };
+	for (const k of udv) {
+		const a = k.seneste - k.baseline;
+		if (a <= -5) fordeling.megetBedre++;
+		else if (a < 0) fordeling.lidtBedre++;
+		else if (a === 0) fordeling.uaendret++;
+		else fordeling.vaerre++;
+	}
+
+	const subGns = (vaelg: (k: KundeMrs) => Sub | undefined, key: keyof Sub) => {
+		const b = udv.map((k) => vaelg(k)).filter(Boolean) as Sub[];
+		return b.length ? gns(b.map((s) => s[key])) : 0;
+	};
+	const subResultat = (key: keyof Sub) => ({
+		gnsBaseline: r1(subGns((k) => k.subBaseline, key)),
+		gnsSeneste: r1(subGns((k) => k.subSeneste, key)),
+		gnsAendring: r1(subGns((k) => k.subSeneste, key) - subGns((k) => k.subBaseline, key))
+	});
+
+	// Velvaere — for ALLE slider-kunder, og separat for "gennemfoerte" (har en
+	// slider-maaling ved hvert check-in: baseline + alle check-ins der findes).
+	const v = velvaereStats(kunder);
+	const antalCheckIns = v.velvaereCheckIns.length;
+	const gennemfoerte =
+		antalCheckIns > 0 ? kunder.filter((k) => k.sliderMaalinger.length >= antalCheckIns + 1) : [];
+	const vGennemfoerte = velvaereStats(gennemfoerte);
+
+	return {
 		antalMedData: kunder.filter((k) => k.harMrs).length,
 		antalMedUdvikling: udv.length,
 		gnsBaseline: r1(gns(baselineT)),
@@ -258,11 +279,22 @@ export function beregnScope(kunder: KundeMrs[]) {
 		rejse,
 		baselineSvaergrad,
 		demografi,
-		velvaere,
-		velvaereRejse,
-		velvaereSamletRejse,
-		velvaereCheckIns,
-		antalVelvaere: sliderUdv.length,
+		velvaere: v.velvaere,
+		velvaereRejse: v.velvaereRejse,
+		velvaereSamletRejse: v.velvaereSamletRejse,
+		velvaereCheckIns: v.velvaereCheckIns,
+		antalVelvaere: v.antalVelvaere,
+		// "Gennemfoerte" = kunder med en slider-maaling ved hvert check-in.
+		// Samme tal-typer som ovenfor, blot over den delmaengde — dashboardets
+		// Alle/Gennemfoerte-toggle vaelger hvilket saet der vises.
+		velvaereCompletere: {
+			velvaere: vGennemfoerte.velvaere,
+			velvaereSamletRejse: vGennemfoerte.velvaereSamletRejse,
+			velvaereCheckIns: vGennemfoerte.velvaereCheckIns,
+			antalVelvaere: vGennemfoerte.antalVelvaere,
+			antalGennemfoerte: gennemfoerte.length,
+			checkInsKraevet: antalCheckIns
+		},
 		forbedringsFordeling: fordeling
 	};
 }
