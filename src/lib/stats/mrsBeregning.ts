@@ -267,6 +267,11 @@ export function beregnScope(kunder: KundeMrs[]) {
 	};
 }
 
+// Ét forløbs-bidrag fra én kunde — også formatet vi cacher pr kunde i
+// mrsCache/{uid}.entries, så "Opdater tal"-knappen kan genberegne uden at
+// hente uændrede kunder igen.
+export type KundeForlobBidrag = { forlobId: string; kunde: KundeMrs };
+
 export type Scope = ReturnType<typeof beregnScope>;
 export type Forlob = { forlobId: string; navn: string } & Scope;
 export interface MrsSnapshot {
@@ -311,7 +316,7 @@ export function distillerKunde(
 	forlobIds: string[],
 	forlobStart: Map<string, number>,
 	profil: { alder?: number; menopaus?: string }
-): Array<{ forlobId: string; kunde: KundeMrs }> {
+): KundeForlobBidrag[] {
 	const alle = [...mrsDocs].sort((x, y) => (x.timestamp ?? 0) - (y.timestamp ?? 0));
 
 	const kundeForlob = (forlobIds ?? [])

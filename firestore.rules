@@ -375,6 +375,13 @@ service cloud.firestore {
 			allow write: if false;
 		}
 
+		// Per-kunde cache til hurtig genberegning af dashboard-snapshottet
+		// ("Opdater tal"-knappen). Laeses + skrives KUN server-side via service-
+		// account (uden om rules). Ingen klient-adgang overhovedet.
+		match /mrsCache/{uid} {
+			allow read, write: if false;
+		}
+
 		// Klientspørgsmål til Linn:
 		//   - Klienter kan oprette deres egne spørgsmål (uid skal matche)
 		//   - Klienter kan læse SINE egne spørgsmål (for at se Linns svar)
