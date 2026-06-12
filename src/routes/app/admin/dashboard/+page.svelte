@@ -106,18 +106,25 @@
 		}
 	});
 
-	// "Opdater tal"-knappen: kalder serverens incremental genberegning (henter kun
-	// kunder med nye målinger), og genindlæser så snapshottet med de friske tal.
-	let opdaterer = $state(false);
+	// Genberegnings-knapperne: 'incremental' (Opdater tal — kun nye målinger) eller
+	// 'fuld' (læs alle kunder, fx efter profil-rettelser). Begge genindlæser
+	// snapshottet med de friske tal bagefter.
+	let opdaterer = $state<'incremental' | 'fuld' | null>(null);
 	let opdaterBesked = $state<string | null>(null);
-	async function genberegn() {
+	async function genberegn(mode: 'incremental' | 'fuld') {
 		if (opdaterer) return;
-		opdaterer = true;
+		if (
+			mode === 'fuld' &&
+			!confirm('Kør fuld genberegning? Den læser alle kunder og kan tage lidt længere.')
+		)
+			return;
+		opdaterer = mode;
 		opdaterBesked = null;
 		try {
 			const token = await auth.currentUser?.getIdToken();
 			if (!token) throw new Error('Du er ikke logget ind som admin.');
-			const res = await fetch('/api/admin/genberegn-mrs', {
+			const url = '/api/admin/genberegn-mrs' + (mode === 'fuld' ? '?mode=fuld' : '');
+			const res = await fetch(url, {
 				method: 'POST',
 				headers: { Authorization: `Bearer ${token}` }
 			});
@@ -125,14 +132,17 @@
 				const fejltekst = await res.text();
 				throw new Error(`Genberegning fejlede (${res.status}): ${fejltekst}`);
 			}
-			const data = (await res.json()) as { opdateredeKunder: number };
+			const data = (await res.json()) as { opdateredeKunder: number; kunderICache: number };
 			await indlaesSnapshot();
-			opdaterBesked = `Opdateret · ${data.opdateredeKunder} kunde(r) med nye målinger`;
+			opdaterBesked =
+				mode === 'fuld'
+					? `Fuld genberegning færdig · ${data.kunderICache} kunder`
+					: `Opdateret · ${data.opdateredeKunder} kunde(r) med nye målinger`;
 		} catch (e) {
 			console.error(e);
 			opdaterBesked = e instanceof Error ? e.message : 'Kunne ikke opdatere tallene.';
 		} finally {
-			opdaterer = false;
+			opdaterer = null;
 		}
 	}
 
@@ -793,16 +803,30 @@
 		<div class="opdateret">
 			<div class="opdateret-rad">
 				<span>Sidst opdateret: {datoTekst(snapshot.genereretAt)}</span>
-				<button class="opdater-knap" onclick={genberegn} disabled={opdaterer}>
-					{opdaterer ? 'Opdaterer…' : 'Opdater tal'}
-				</button>
+				<div class="opdater-knapper">
+					<button
+						class="opdater-knap"
+						onclick={() => genberegn('incremental')}
+						disabled={!!opdaterer}
+					>
+						{opdaterer === 'incremental' ? 'Opdaterer…' : 'Opdater tal'}
+					</button>
+					<button
+						class="opdater-knap sekundaer"
+						onclick={() => genberegn('fuld')}
+						disabled={!!opdaterer}
+					>
+						{opdaterer === 'fuld' ? 'Genberegner alt…' : 'Fuld genberegning'}
+					</button>
+				</div>
 			</div>
 			{#if opdaterBesked}
 				<span class="opdater-besked">{opdaterBesked}</span>
 			{/if}
 			<span class="opdateret-note">
-				Henter kun kunder med nye målinger. Fuld genberegning (fx efter profil-rettelser):
-				<code>npx tsx scripts/generer-mrs-stats.ts</code>
+				<strong>Opdater tal</strong> henter kun kunder med nye målinger (dagligt).
+				<strong>Fuld genberegning</strong> læser alle kunder — brug den efter profil-rettelser eller slettede
+				målinger.
 			</span>
 		</div>
 	{/if}
@@ -1301,6 +1325,12 @@
 		justify-content: space-between;
 		gap: 10px;
 	}
+	.opdater-knapper {
+		display: flex;
+		gap: 6px;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+	}
 	.opdater-knap {
 		display: inline-flex;
 		align-items: center;
@@ -1314,6 +1344,12 @@
 		font-weight: 600;
 		cursor: pointer;
 		white-space: nowrap;
+	}
+	/* Fuld genberegning = sekundær (sjælden, tungere handling) */
+	.opdater-knap.sekundaer {
+		background: transparent;
+		color: var(--text2);
+		border: 1px solid var(--border, #e7e2d9);
 	}
 	.opdater-knap:disabled {
 		opacity: 0.6;
