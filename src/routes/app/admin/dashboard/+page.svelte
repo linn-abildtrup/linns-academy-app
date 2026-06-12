@@ -94,10 +94,12 @@
 		gnsLaengde: number;
 		prDag: { dagNummer: number; antal: number }[];
 	};
+	type ReflForlob = { forlobId: string; navn: string; type: 'kickstart' | 'kropsro' } & ReflScope;
 	type ReflSnapshot = {
 		genereretAt: number;
 		samlet: ReflScope;
-		prProdukt: { kickstart: ReflScope; kropsro: ReflScope };
+		prType: { kickstart: ReflScope; kropsro: ReflScope };
+		prForlob: ReflForlob[];
 	};
 
 	let snapshot = $state<MrsSnapshot | null>(null);
@@ -106,8 +108,9 @@
 	let fejl = $state<string | null>(null);
 	// Måletype: MRS / velvære / refleksioner — hver sin fane allerøverst.
 	let aktivMaaling = $state<'mrs' | 'velvaere' | 'refleksioner'>('mrs');
-	// Refleksions-fanens udsnit: samlet eller pr produkt.
-	let reflPop = $state<'samlet' | 'kickstart' | 'kropsro'>('samlet');
+	// Refleksions-fanens udsnit: 'samlet', 'kickstart'/'kropsro' (alle af typen),
+	// eller et specifikt forlobId.
+	let reflValg = $state<string>('samlet');
 	let aktivFane = $state<'alle' | 'forlob'>('alle');
 	let valgtForlobId = $state<string | null>(null);
 	let valgteLinjer = $state<Set<string>>(new Set(['alle', 'kickstart', 'kropsro']));
@@ -199,18 +202,17 @@
 	} | null>(null);
 	let aiFejl = $state<string | null>(null);
 	async function genererTemaer() {
-		if (aiKoerer || valgtDag === null || reflPop === 'samlet') return;
+		if (aiKoerer || valgtDag === null || reflValg === 'samlet') return;
 		aiKoerer = true;
 		aiFejl = null;
 		aiResultat = null;
 		try {
 			const token = await auth.currentUser?.getIdToken();
 			if (!token) throw new Error('Du er ikke logget ind som admin.');
-			const produkt = reflPop === 'kropsro' ? 'premiumforløb' : 'kickstart';
 			const res = await fetch('/api/admin/refleksion-temaer', {
 				method: 'POST',
 				headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-				body: JSON.stringify({ produkt, dag: valgtDag })
+				body: JSON.stringify({ valg: reflValg, dag: valgtDag })
 			});
 			if (!res.ok) throw new Error(`Kunne ikke opsummere (${res.status}): ${await res.text()}`);
 			const data = (await res.json()) as {
@@ -226,6 +228,14 @@
 			aiKoerer = false;
 		}
 	}
+	// Skifter man forløb/type, nulstilles valgt dag + AI-resultat (de hører til
+	// det forrige udsnit).
+	$effect(() => {
+		void reflValg;
+		valgtDag = null;
+		aiResultat = null;
+		aiFejl = null;
+	});
 
 	const tal = (n: number) => n.toLocaleString('da-DK', { maximumFractionDigits: 1 });
 	const datoTekst = (ms: number) =>
@@ -448,22 +458,24 @@
 				</div>
 			{:else}
 				{@const rs =
-					reflPop === 'kickstart'
-						? reflSnapshot.prProdukt.kickstart
-						: reflPop === 'kropsro'
-							? reflSnapshot.prProdukt.kropsro
-							: reflSnapshot.samlet}
-				<div class="velv-toggle">
-					<button class:aktiv={reflPop === 'samlet'} onclick={() => (reflPop = 'samlet')}>
-						Samlet ({reflSnapshot.samlet.antalKunder})
-					</button>
-					<button class:aktiv={reflPop === 'kickstart'} onclick={() => (reflPop = 'kickstart')}>
-						Kickstart ({reflSnapshot.prProdukt.kickstart.antalKunder})
-					</button>
-					<button class:aktiv={reflPop === 'kropsro'} onclick={() => (reflPop = 'kropsro')}>
-						Kropsro ({reflSnapshot.prProdukt.kropsro.antalKunder})
-					</button>
-				</div>
+					reflValg === 'kickstart'
+						? reflSnapshot.prType.kickstart
+						: reflValg === 'kropsro'
+							? reflSnapshot.prType.kropsro
+							: reflValg === 'samlet'
+								? reflSnapshot.samlet
+								: (reflSnapshot.prForlob.find((f) => f.forlobId === reflValg) ??
+									reflSnapshot.samlet)}
+				<select class="forlob-vaelg" bind:value={reflValg}>
+					<option value="samlet">Samlet ({reflSnapshot.samlet.antalKunder} kunder)</option>
+					<option value="kickstart">
+						Alle Kickstart ({reflSnapshot.prType.kickstart.antalKunder})
+					</option>
+					<option value="kropsro">Alle Kropsro ({reflSnapshot.prType.kropsro.antalKunder})</option>
+					{#each reflSnapshot.prForlob as f (f.forlobId)}
+						<option value={f.forlobId}>{f.navn} ({f.antalKunder})</option>
+					{/each}
+				</select>
 				<div class="kpi-grid">
 					<div class="kpi-kort">
 						<div class="kpi-tal">{rs.antalRefleksioner}</div>
@@ -483,11 +495,13 @@
 					</div>
 				</div>
 				<p class="figur-note">
-					En refleksion = en forløbsdag hvor kunden skrev et svar. Vist for {reflPop === 'samlet'
+					En refleksion = en forløbsdag hvor kunden skrev et svar. Vist for {reflValg === 'samlet'
 						? 'alle forløb'
-						: reflPop === 'kickstart'
-							? 'Kickstart'
-							: 'Kropsro'}.
+						: reflValg === 'kickstart'
+							? 'alle Kickstart-hold'
+							: reflValg === 'kropsro'
+								? 'alle Kropsro-hold'
+								: (reflSnapshot.prForlob.find((f) => f.forlobId === reflValg)?.navn ?? 'forløbet')}.
 				</p>
 				{#if rs.prDag.length > 0}
 					{@const maxAntal = Math.max(...rs.prDag.map((d) => d.antal))}
@@ -526,10 +540,10 @@
 				{/if}
 				<section class="card">
 					<div class="kort-titel">AI-temaer for en dag</div>
-					{#if reflPop === 'samlet'}
+					{#if reflValg === 'samlet'}
 						<p class="figur-note">
-							Vælg <strong>Kickstart</strong> eller <strong>Kropsro</strong> ovenfor for at opsummere
-							en bestemt dags refleksioner.
+							Vælg et <strong>forløb</strong> eller <strong>alle Kickstart/Kropsro</strong> ovenfor for
+							at opsummere en bestemt dags refleksioner.
 						</p>
 					{:else}
 						<p class="figur-note">
