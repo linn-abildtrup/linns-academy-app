@@ -1,11 +1,11 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 
-	const omraader = [
+	// Daglige genveje — vises som store kort øverst.
+	const primaere = [
 		{
 			id: 'dashboard',
 			navn: 'Dashboard',
-			beskrivelse: 'KPI-overblik — udvikling i MRS-score samlet og pr hold',
 			rute: '/app/admin/dashboard',
 			accent: '#6F9E7E',
 			icon: 'grid' as const
@@ -13,122 +13,145 @@
 		{
 			id: 'forlob',
 			navn: 'Forløb',
-			beskrivelse: 'Opret runder, upload whitelist og rediger forløbets vaneprogram',
 			rute: '/app/admin/forlob',
 			accent: '#B87B6E',
 			icon: 'cal' as const
 		},
 		{
-			id: 'opskrifter',
-			navn: 'Opskrifter',
-			beskrivelse: 'Opret og rediger opskrifter til 30-30-3-modulet',
-			rute: '/app/admin/opskrifter',
-			accent: '#6F9E7E',
-			icon: 'book' as const
-		},
-		{
-			id: 'opskrift-ratings',
-			navn: 'Opskrift-ratings',
-			beskrivelse: 'Se hvilke opskrifter klienterne giver lavest og hoejest gennemsnit',
-			rute: '/app/admin/opskrifter/ratings',
-			accent: '#B8956A',
-			icon: 'star' as const
-		},
-		{
-			id: 'traening',
-			navn: 'Træningsmodul',
-			beskrivelse: 'Øvelsesbank — opret og rediger øvelser til mikrotræningsprogrammer',
-			rute: '/app/admin/traening',
-			accent: '#C9A07A',
-			icon: 'flame' as const
-		},
-		{
-			id: 'feature-adgang',
-			navn: 'Funktioner og adgang',
-			beskrivelse: 'Styr hvilke funktioner hver kundetype (Kickstart/Kropsro/App) har adgang til',
-			rute: '/app/admin/feature-adgang',
-			accent: '#7A8CA0',
-			icon: 'unlock' as const
-		},
-		{
 			id: 'spoergsmaal',
-			navn: 'Spørgsmål fra klienter',
-			beskrivelse: 'Læs, sortér og eksportér klienternes spørgsmål',
+			navn: 'Spørgsmål',
 			rute: '/app/admin/spoergsmaal',
 			accent: '#5C7A8C',
 			icon: 'mail' as const
+		}
+	];
+
+	// Resten grupperet efter opgave. Sektions-overskrifterne fungerer som vejvisere.
+	const sektioner = [
+		{
+			titel: 'Delt indhold',
+			omraader: [
+				{
+					id: 'opskrifter',
+					navn: 'Opskrifter',
+					beskrivelse: 'Opret og rediger opskrifter til 30-30-3-modulet',
+					rute: '/app/admin/opskrifter',
+					accent: '#6F9E7E',
+					icon: 'book' as const
+				},
+				{
+					id: 'traening',
+					navn: 'Træningsmodul',
+					beskrivelse: 'Øvelsesbank — opret og rediger øvelser til mikrotræningsprogrammer',
+					rute: '/app/admin/traening',
+					accent: '#C9A07A',
+					icon: 'flame' as const
+				},
+				{
+					id: 'fodevarer',
+					navn: 'Fællesskabs-fødevarer',
+					beskrivelse: 'Se fødevarer scannet af brugere — verificér eller slet',
+					rute: '/app/admin/fodevarer',
+					accent: '#B8956A',
+					icon: 'community' as const
+				}
+			]
 		},
 		{
-			id: 'fodevarer',
-			navn: 'Fællesskabs-fødevarer',
-			beskrivelse: 'Se fødevarer scannet af brugere — verificér eller slet',
-			rute: '/app/admin/fodevarer',
-			accent: '#B8956A',
-			icon: 'community' as const
+			titel: 'Adgang & system',
+			omraader: [
+				{
+					id: 'feature-adgang',
+					navn: 'Funktioner og adgang',
+					beskrivelse:
+						'Styr hvilke funktioner hver kundetype (Kickstart/Kropsro/App) har adgang til',
+					rute: '/app/admin/feature-adgang',
+					accent: '#7A8CA0',
+					icon: 'unlock' as const
+				},
+				{
+					id: 'nulstil-adgang',
+					navn: 'Nulstil adgangskode',
+					beskrivelse: 'Sæt midlertidig adgangskode for en kunde (virker for alle typer)',
+					rute: '/app/admin/nulstil-adgang',
+					accent: '#9D6358',
+					icon: 'lock' as const
+				},
+				{
+					id: 'testere',
+					navn: 'Testere',
+					beskrivelse: 'Giv specifikke kunder adgang til funktioner under udvikling',
+					rute: '/app/admin/testere',
+					accent: '#8C5C7A',
+					icon: 'sparkle' as const
+				}
+			]
 		},
 		{
-			id: 'abo-vaner',
-			navn: 'Abo-vaner',
-			beskrivelse: 'Vaneliste og bonus-pulje for basis/premium-abonnenter',
-			rute: '/app/admin/abo-vaner',
-			accent: '#7E9BB3',
-			icon: 'flower' as const
+			titel: 'App-abonnenter',
+			omraader: [
+				{
+					id: 'modulbruger-lektioner',
+					navn: 'Modulbruger-lektioner',
+					beskrivelse: 'Daglige lektioner der vises på basis/premium-app-brugernes forside',
+					rute: '/app/admin/modulbruger-lektioner',
+					accent: '#9D6358',
+					icon: 'book' as const
+				},
+				{
+					id: 'abo-vaner',
+					navn: 'Abo-vaner',
+					beskrivelse: 'Vaneliste og bonus-pulje for basis/premium-abonnenter',
+					rute: '/app/admin/abo-vaner',
+					accent: '#7E9BB3',
+					icon: 'flower' as const
+				},
+				{
+					id: 'abo-traening',
+					navn: 'Abo-træning',
+					beskrivelse: 'Auto-genereret mikrotræning for abonnenter',
+					rute: '/app/admin/abo-traening',
+					accent: '#A37F66',
+					icon: 'flame' as const
+				},
+				{
+					id: 'linn-ai',
+					navn: 'Linn AI — videnbase',
+					beskrivelse: "Upload PDFs og slides som AI'en bruger til at svare premium-klienter",
+					rute: '/app/admin/linn-ai',
+					accent: '#5C7A8C',
+					icon: 'sparkle' as const
+				},
+				{
+					id: 'abonnenter',
+					navn: 'Abonnenter',
+					beskrivelse: 'Se alle basis- og premium-abonnenter (allowedEmails fra Simplero)',
+					rute: '/app/admin/abonnenter',
+					accent: '#7E9BB3',
+					icon: 'user' as const
+				}
+			]
 		},
 		{
-			id: 'abo-traening',
-			navn: 'Abo-træning',
-			beskrivelse: 'Auto-genereret mikrotræning for abonnenter',
-			rute: '/app/admin/abo-traening',
-			accent: '#A37F66',
-			icon: 'flame' as const
-		},
-		{
-			id: 'linn-ai',
-			navn: 'Linn AI — videnbase',
-			beskrivelse: "Upload PDFs og slides som AI'en bruger til at svare premium-klienter",
-			rute: '/app/admin/linn-ai',
-			accent: '#5C7A8C',
-			icon: 'sparkle' as const
-		},
-		{
-			id: 'modulbruger-lektioner',
-			navn: 'Modulbruger-lektioner',
-			beskrivelse: 'Daglige lektioner der vises på basis/premium-app-brugernes forside',
-			rute: '/app/admin/modulbruger-lektioner',
-			accent: '#9D6358',
-			icon: 'book' as const
-		},
-		{
-			id: 'ai-ratings',
-			navn: 'AI-ratings',
-			beskrivelse: 'Se klienternes ratings af Linn AI- og App-hjælp-svar',
-			rute: '/app/admin/ai-ratings',
-			accent: '#C9A07A',
-			icon: 'star' as const
-		},
-		{
-			id: 'abonnenter',
-			navn: 'Abonnenter',
-			beskrivelse: 'Se alle basis- og premium-abonnenter (allowedEmails fra Simplero)',
-			rute: '/app/admin/abonnenter',
-			accent: '#7E9BB3',
-			icon: 'user' as const
-		},
-		{
-			id: 'nulstil-adgang',
-			navn: 'Nulstil adgangskode',
-			beskrivelse: 'Sæt midlertidig adgangskode for en kunde (virker for alle typer)',
-			rute: '/app/admin/nulstil-adgang',
-			accent: '#9D6358',
-			icon: 'lock' as const
-		},
-		{
-			id: 'testere',
-			navn: 'Testere',
-			beskrivelse: 'Giv specifikke kunder adgang til funktioner under udvikling',
-			rute: '/app/admin/testere',
-			accent: '#8C5C7A',
-			icon: 'sparkle' as const
+			titel: 'Ratings & feedback',
+			omraader: [
+				{
+					id: 'opskrift-ratings',
+					navn: 'Opskrift-ratings',
+					beskrivelse: 'Se hvilke opskrifter klienterne giver lavest og hoejest gennemsnit',
+					rute: '/app/admin/opskrifter/ratings',
+					accent: '#B8956A',
+					icon: 'star' as const
+				},
+				{
+					id: 'ai-ratings',
+					navn: 'AI-ratings',
+					beskrivelse: 'Se klienternes ratings af Linn AI- og App-hjælp-svar',
+					rute: '/app/admin/ai-ratings',
+					accent: '#C9A07A',
+					icon: 'star' as const
+				}
+			]
 		}
 	];
 </script>
@@ -136,24 +159,40 @@
 <div class="page">
 	<header class="page-header">
 		<div class="eyebrow">Admin</div>
-		<h1>Indstillinger</h1>
+		<h1>Adminpanel</h1>
 		<p class="page-sub">Rediger indhold der vises til kunderne.</p>
 	</header>
 
-	<div class="omraade-liste">
-		{#each omraader as omraade (omraade.id)}
-			<a class="omraade-row" href={omraade.rute}>
-				<div class="omraade-icon" style="background: {omraade.accent};">
-					<Icon name={omraade.icon} size={18} color="#fff" />
+	<div class="primaer-grid">
+		{#each primaere as p (p.id)}
+			<a class="primaer-kort" href={p.rute}>
+				<div class="primaer-ikon" style="background: {p.accent};">
+					<Icon name={p.icon} size={20} color="#fff" />
 				</div>
-				<div class="omraade-tekst">
-					<div class="omraade-navn">{omraade.navn}</div>
-					<div class="omraade-sub">{omraade.beskrivelse}</div>
-				</div>
-				<Icon name="chevron-r" size={14} color="var(--text3)" />
+				<div class="primaer-navn">{p.navn}</div>
 			</a>
 		{/each}
 	</div>
+
+	{#each sektioner as sektion (sektion.titel)}
+		<section class="sektion">
+			<h2 class="sektion-titel">{sektion.titel}</h2>
+			<div class="omraade-liste">
+				{#each sektion.omraader as omraade (omraade.id)}
+					<a class="omraade-row" href={omraade.rute}>
+						<div class="omraade-icon" style="background: {omraade.accent};">
+							<Icon name={omraade.icon} size={18} color="#fff" />
+						</div>
+						<div class="omraade-tekst">
+							<div class="omraade-navn">{omraade.navn}</div>
+							<div class="omraade-sub">{omraade.beskrivelse}</div>
+						</div>
+						<Icon name="chevron-r" size={14} color="var(--text3)" />
+					</a>
+				{/each}
+			</div>
+		</section>
+	{/each}
 </div>
 
 <style>
@@ -190,6 +229,63 @@
 		color: var(--text2);
 		margin: 6px 0 0;
 		line-height: 1.4;
+	}
+
+	/* Primære genveje — store kort øverst */
+	.primaer-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 10px;
+		margin-bottom: 24px;
+	}
+
+	.primaer-kort {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 12px;
+		padding: 14px;
+		min-height: 92px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.primaer-kort:hover {
+		background: var(--bg2);
+	}
+
+	.primaer-ikon {
+		width: 38px;
+		height: 38px;
+		border-radius: 11px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.primaer-navn {
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		line-height: 1.2;
+	}
+
+	/* Grupperede sektioner */
+	.sektion {
+		margin-bottom: 22px;
+	}
+
+	.sektion-titel {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin: 0 0 8px 2px;
 	}
 
 	.omraade-liste {
