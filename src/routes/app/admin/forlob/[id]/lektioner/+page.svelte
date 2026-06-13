@@ -13,6 +13,7 @@
 	let dage = $state<ForlobDag[]>([]);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
+	let kunTomme = $state(false);
 
 	const dagsmap = $derived.by<Map<number, ForlobDag>>(() => {
 		const m = new Map<number, ForlobDag>();
@@ -29,27 +30,96 @@
 		return ud;
 	});
 
-	// Beregn kalenderdato for et dag-nummer ud fra forl0bets startDato.
-	// Konvention: startDato = baseline (Dag 0). Dag 1 = startDato + 1,
-	// Dag 2 = startDato + 2 osv.
+	const baselineDag = $derived<ForlobDag | null>(programDage[0] ?? null);
+
+	// Grupper dag 1..antalDage i uger af 7 til kalender-gridet.
+	const uger = $derived.by<{ uge: number; dage: ForlobDag[] }[]>(() => {
+		if (!forlob) return [];
+		const grupper: { uge: number; dage: ForlobDag[] }[] = [];
+		for (let start = 1; start <= forlob.antalDage; start += 7) {
+			const dageIUge: ForlobDag[] = [];
+			for (let nr = start; nr < start + 7 && nr <= forlob.antalDage; nr++) {
+				dageIUge.push(dagsmap.get(nr) ?? tomForlobDag(nr));
+			}
+			grupper.push({ uge: Math.floor((start - 1) / 7) + 1, dage: dageIUge });
+		}
+		return grupper;
+	});
+
+	// Ugedags-navne til kolonne-overskrifterne. Da hver uge er præcis 7 dage,
+	// falder Dag 1, 8, 15 ... altid på samme ugedag, så kolonnerne passer til
+	// faste ugedage gennem hele forløbet.
+	const ugedage = $derived.by<string[]>(() => {
+		if (!forlob) return [];
+		const start = forlob.startDato.toDate();
+		const navne: string[] = [];
+		for (let i = 1; i <= 7; i++) {
+			const d = new Date(start);
+			d.setDate(d.getDate() + i);
+			const n = d.toLocaleDateString('da-DK', { weekday: 'short' }).replace('.', '');
+			navne.push(n.charAt(0).toUpperCase() + n.slice(1));
+		}
+		return navne;
+	});
+
+	function harIndhold(d: ForlobDag): boolean {
+		return d.lektioner.length > 0 || !!d.noteFraLinn;
+	}
+
+	function dagState(d: ForlobDag): 'lektion' | 'note' | 'tom' {
+		if (d.lektioner.length > 0) return 'lektion';
+		if (d.noteFraLinn) return 'note';
+		return 'tom';
+	}
+
+	const antalMedIndhold = $derived(
+		programDage.filter((d) => d.dagNummer >= 1 && harIndhold(d)).length
+	);
+
+	const tommeDage = $derived(programDage.filter((d) => !harIndhold(d)));
+
+	// Hvilken dag er forløbet nået til lige nu? null hvis vi er uden for forløbet.
+	const idagDag = $derived.by<number | null>(() => {
+		if (!forlob) return null;
+		const start = forlob.startDato.toDate();
+		start.setHours(0, 0, 0, 0);
+		const nu = new Date();
+		nu.setHours(0, 0, 0, 0);
+		const diff = Math.round((nu.getTime() - start.getTime()) / 86400000);
+		return diff >= 0 && diff <= forlob.antalDage ? diff : null;
+	});
+
+	// Beregn kalenderdato for et dag-nummer ud fra forløbets startDato.
+	// Konvention: startDato = baseline (Dag 0). Dag 1 = startDato + 1 osv.
 	function datoForDag(dagNummer: number): string {
 		if (!forlob) return '';
 		const start = forlob.startDato.toDate();
 		const d = new Date(start);
 		d.setDate(d.getDate() + dagNummer);
-		return d.toLocaleDateString('da-DK', {
-			weekday: 'short',
-			day: 'numeric',
-			month: 'short'
-		});
+		return d.toLocaleDateString('da-DK', { weekday: 'short', day: 'numeric', month: 'short' });
 	}
 
-	// Farve-gruppe: dag 0-7 = gruppe A, 8-14 = B, 15-21 = A, osv.
-	// Skifter pr 7. dag, gentager A/B/A/B. Baseline (dag 0) hænger sammen
-	// med dag 1-7 visuelt da den udfyldes f0r forl0bet starter.
-	function ugeGruppe(dagNummer: number): 'a' | 'b' {
-		const offset = Math.max(0, dagNummer - 1);
-		return Math.floor(offset / 7) % 2 === 0 ? 'a' : 'b';
+	function celleTitel(d: ForlobDag): string {
+		const dato = datoForDag(d.dagNummer);
+		const navn = d.dagNummer === 0 ? 'Baseline' : `Dag ${d.dagNummer}`;
+		const tael = d.lektioner.length;
+		const status =
+			tael > 0
+				? `${tael} lektion${tael === 1 ? '' : 'er'}`
+				: d.noteFraLinn
+					? 'kun note fra Linn'
+					: 'intet indhold endnu';
+		return `${navn} · ${dato} · ${status}`;
+	}
+
+	function scrollTilIdag() {
+		if (idagDag === null) return;
+		kunTomme = false;
+		requestAnimationFrame(() => {
+			document
+				.getElementById(`dag-${idagDag}`)
+				?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		});
 	}
 
 	onMount(async () => {
@@ -80,7 +150,8 @@
 		<div class="eyebrow">Admin · {forlob?.navn ?? forlobId} · Lektioner</div>
 		<h1>Lektioner</h1>
 		<p class="page-sub">
-			Læg dagens lektion ind for hver dag i forløbet. Hver dag kan have flere lektioner og en valgfri note.
+			Klik på en dag for at lægge dagens lektion ind. Grøn = har lektion, sandfarvet = kun note, grå
+			= tom.
 		</p>
 	</header>
 
@@ -89,40 +160,93 @@
 	{:else if fejl}
 		<div class="status-besked fejl">{fejl}</div>
 	{:else if forlob}
-		<div class="dag-liste">
-			{#each programDage as dag (dag.dagNummer)}
-				{@const tael = dag.lektioner.length}
-				{@const gruppe = ugeGruppe(dag.dagNummer)}
-				<a class="dag-row" href="/app/admin/forlob/{forlobId}/lektioner/{dag.dagNummer}">
-					<div class="dag-num gruppe-{gruppe}">{dag.dagNummer}</div>
-					<div class="dag-tekst">
-						<div class="dag-titel">
-							{dag.dagNummer === 0 ? 'Baseline' : `Dag ${dag.dagNummer}`}
-							{#if dag.dagNummer > 0}
-								<span class="dag-uge">· uge {dag.uge}</span>
-							{/if}
-							<span class="dag-dato">· {datoForDag(dag.dagNummer)}</span>
+		<div class="vaerktoej">
+			<div class="tael">
+				<strong>{antalMedIndhold}</strong> af {forlob.antalDage} dage har indhold
+			</div>
+			<div class="vk-knapper">
+				{#if idagDag !== null}
+					<button class="vk-knap" onclick={scrollTilIdag}>I dag</button>
+				{/if}
+				<button class="vk-knap" class:aktiv={kunTomme} onclick={() => (kunTomme = !kunTomme)}>
+					{kunTomme ? 'Vis alle' : 'Vis kun tomme'}
+				</button>
+			</div>
+		</div>
+
+		{#if kunTomme}
+			{#if tommeDage.length === 0}
+				<div class="status-besked">Alle dage har indhold 🎉</div>
+			{:else}
+				<div class="tomme-liste">
+					{#each tommeDage as d (d.dagNummer)}
+						<a class="tom-chip" href="/app/admin/forlob/{forlobId}/lektioner/{d.dagNummer}">
+							{d.dagNummer === 0 ? 'Baseline' : `Dag ${d.dagNummer}`}
+						</a>
+					{/each}
+				</div>
+			{/if}
+		{:else}
+			{#if baselineDag}
+				<a
+					id="dag-0"
+					class="baseline-row"
+					class:idag={idagDag === 0}
+					href="/app/admin/forlob/{forlobId}/lektioner/0"
+				>
+					<div class="celle stat-{dagState(baselineDag)} baseline-celle">0</div>
+					<div class="baseline-tekst">
+						<div class="baseline-titel">
+							Baseline <span class="baseline-dato">· {datoForDag(0)}</span>
 						</div>
-						{#if tael > 0}
-							<div class="dag-sub">
-								{tael} lektion{tael === 1 ? '' : 'er'}{dag.noteFraLinn ? ' · note fra Linn' : ''}
-							</div>
-							<div class="dag-preview">
-								{dag.lektioner[0].titel}
-								{#if tael > 1}
-									<span class="dag-mere">+ {tael - 1} mere</span>
-								{/if}
-							</div>
-						{:else if dag.noteFraLinn}
-							<div class="dag-sub">Kun note fra Linn</div>
-						{:else}
-							<div class="dag-sub dag-tom">Intet indhold endnu</div>
-						{/if}
+						<div class="baseline-sub">
+							{#if baselineDag.lektioner.length > 0}
+								{baselineDag.lektioner.length} lektion{baselineDag.lektioner.length === 1
+									? ''
+									: 'er'}
+							{:else if baselineDag.noteFraLinn}
+								Kun note fra Linn
+							{:else}
+								Intet indhold endnu
+							{/if}
+						</div>
 					</div>
 					<Icon name="chevron-r" size={14} color="var(--text3)" />
 				</a>
-			{/each}
-		</div>
+			{/if}
+
+			<div class="grid-wrap">
+				<div class="grid-row grid-head">
+					<div class="uge-label"></div>
+					{#each ugedage as navn, i (i)}
+						<div class="ugedag-label">{navn}</div>
+					{/each}
+				</div>
+				{#each uger as u (u.uge)}
+					<div class="grid-row">
+						<div class="uge-label">Uge {u.uge}</div>
+						{#each u.dage as d (d.dagNummer)}
+							<a
+								id="dag-{d.dagNummer}"
+								class="celle stat-{dagState(d)}"
+								class:idag={d.dagNummer === idagDag}
+								href="/app/admin/forlob/{forlobId}/lektioner/{d.dagNummer}"
+								title={celleTitel(d)}
+							>
+								{d.dagNummer}
+							</a>
+						{/each}
+					</div>
+				{/each}
+			</div>
+
+			<div class="legend">
+				<span class="legend-item"><span class="legend-swatch stat-lektion"></span> Har lektion</span
+				>
+				<span class="legend-item"><span class="legend-swatch stat-note"></span> Kun note</span>
+				<span class="legend-item"><span class="legend-swatch stat-tom"></span> Tom</span>
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -188,103 +312,221 @@
 		border-color: #f0d6cf;
 	}
 
-	.dag-liste {
+	/* Værktøjslinje: tæller + knapper */
+	.vaerktoej {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		flex-wrap: wrap;
+		margin-bottom: 12px;
+	}
+
+	.tael {
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text2);
+	}
+
+	.tael strong {
+		color: var(--text);
+		font-weight: 700;
+	}
+
+	.vk-knapper {
+		display: flex;
+		gap: 8px;
+	}
+
+	.vk-knap {
+		font-family: inherit;
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text2);
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 9px;
+		padding: 7px 12px;
+		cursor: pointer;
+	}
+
+	.vk-knap:hover {
+		background: var(--bg2);
+	}
+
+	.vk-knap.aktiv {
+		background: var(--text);
+		color: var(--white);
+		border-color: var(--text);
+	}
+
+	/* Kalender-grid */
+	.grid-wrap {
 		background: var(--white);
 		border: 1px solid var(--border);
 		border-radius: 14px;
-		overflow: hidden;
-		margin-bottom: 14px;
+		padding: 12px;
+		margin-bottom: 12px;
 	}
 
-	.dag-row {
-		display: flex;
+	.grid-row {
+		display: grid;
+		grid-template-columns: 46px repeat(7, 1fr);
+		gap: 6px;
 		align-items: center;
-		gap: 12px;
-		padding: 12px 14px;
-		border-top: 1px solid var(--border);
-		text-decoration: none;
-		color: inherit;
+		margin-bottom: 6px;
 	}
 
-	.dag-row:first-child {
-		border-top: none;
+	.grid-row:last-child {
+		margin-bottom: 0;
 	}
 
-	.dag-row:hover {
-		background: var(--bg2);
+	.uge-label {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text3);
 	}
 
-	.dag-num {
-		width: 36px;
-		height: 36px;
-		border-radius: 10px;
-		background: var(--bg2);
+	.grid-head {
+		margin-bottom: 8px;
+	}
+
+	.ugedag-label {
+		text-align: center;
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.celle {
+		aspect-ratio: 1 / 1;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		border-radius: 9px;
 		font-family: var(--ff-d);
 		font-weight: 700;
-		font-size: calc(14px * var(--fs-scale, 1));
-		color: var(--text);
-		flex-shrink: 0;
+		font-size: calc(13px * var(--fs-scale, 1));
+		text-decoration: none;
+		min-width: 0;
 	}
 
-	/* Farve-grupper: dag 1-7 = terra, 8-14 = sage, 15-21 = terra osv.
-	   Bruger den daempede pendant som baggrund + den faste farve som tekst,
-	   saa det er tydeligt men ikke aggressivt. */
-	.dag-num.gruppe-a {
+	.celle:hover {
+		filter: brightness(0.96);
+	}
+
+	.celle.idag {
+		box-shadow: 0 0 0 2px var(--text);
+	}
+
+	.stat-lektion {
+		background: var(--sage);
+		color: #fff;
+	}
+
+	.stat-note {
 		background: var(--tdim);
 		color: var(--terra);
 	}
-	.dag-num.gruppe-b {
-		background: var(--sdim);
-		color: var(--sage);
+
+	.stat-tom {
+		background: var(--bg2);
+		color: var(--text3);
 	}
 
-	.dag-tekst {
+	/* Baseline-række (dag 0) over gridet */
+	.baseline-row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 12px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		text-decoration: none;
+		color: inherit;
+		margin-bottom: 12px;
+	}
+
+	.baseline-row:hover {
+		background: var(--bg2);
+	}
+
+	.baseline-row.idag {
+		box-shadow: 0 0 0 2px var(--text);
+	}
+
+	.baseline-celle {
+		width: 36px;
+		height: 36px;
+		aspect-ratio: auto;
+		flex-shrink: 0;
+	}
+
+	.baseline-tekst {
 		flex: 1;
 		min-width: 0;
 	}
 
-	.dag-titel {
+	.baseline-titel {
 		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
 
-	.dag-uge {
+	.baseline-dato {
 		color: var(--text3);
 		font-weight: 400;
 	}
 
-	.dag-dato {
-		color: var(--text3);
-		font-weight: 400;
-	}
-
-	.dag-sub {
+	.baseline-sub {
 		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
 
-	.dag-sub.dag-tom {
-		font-style: italic;
+	/* Legende */
+	.legend {
+		display: flex;
+		gap: 16px;
+		flex-wrap: wrap;
+		padding: 0 2px;
 	}
 
-	.dag-preview {
-		font-size: calc(12px * var(--fs-scale, 1));
+	.legend-item {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.legend-swatch {
+		width: 14px;
+		height: 14px;
+		border-radius: 5px;
+	}
+
+	/* "Vis kun tomme"-liste */
+	.tomme-liste {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.tom-chip {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-weight: 600;
 		color: var(--text2);
-		margin-top: 2px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 9px;
+		padding: 8px 12px;
+		text-decoration: none;
 	}
 
-	.dag-mere {
-		color: var(--text3);
-		margin-left: 4px;
-		font-size: calc(11px * var(--fs-scale, 1));
+	.tom-chip:hover {
+		background: var(--bg2);
 	}
-
 </style>
