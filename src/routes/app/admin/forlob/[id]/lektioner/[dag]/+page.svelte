@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
@@ -40,6 +39,11 @@
 	let dragOver = $state<string | null>(null);
 	let uploadFejl = $state<string | null>(null);
 
+	// Pile-navigation mellem dage
+	const maxDag = $derived(forlob?.antalDage ?? dagNummer);
+	const kanForrige = $derived(dagNummer > 0);
+	const kanNaeste = $derived(dagNummer < maxDag);
+
 	// 'Vis ogsaa paa dage'-dialog. maal er enten 'lektion:<id>' eller 'note'.
 	let dialogMaal = $state<string | null>(null);
 	let dialogStartDage = $state<number[]>([]);
@@ -72,32 +76,34 @@
 
 		const nRes = new Map<string, number[]>();
 		if (dag.noteGrupperingId) {
-			nRes.set(
-				dag.noteGrupperingId,
-				await findDageMedNoteGruppe(forlobId, dag.noteGrupperingId)
-			);
+			nRes.set(dag.noteGrupperingId, await findDageMedNoteGruppe(forlobId, dag.noteGrupperingId));
 		}
 		noteGruppeDage = nRes;
 	}
 
+	// Indlæs dagen når dagNummer ændrer sig — også ved klik på forrige/næste-pilene,
+	// hvor SvelteKit genbruger komponenten i stedet for at remounte (så onMount ikke
+	// ville køre igen). Nulstiller samtidig forbigående UI-tilstand fra forrige dag.
 	$effect(() => {
-		// Re-init når dagNummer ændrer sig (deep-link / navigation)
-		dag = tomForlobDag(dagNummer);
+		const nr = dagNummer;
+		dag = tomForlobDag(nr);
+		bekraefter = false;
+		gemKvit = false;
+		gruppeBekraeft = null;
+		dialogMaal = null;
+		uploadFejl = null;
+		indlaes(nr);
 	});
 
-	onMount(async () => {
-		await indlaes();
-	});
-
-	async function indlaes() {
+	async function indlaes(nr: number = dagNummer) {
 		loading = true;
 		fejl = null;
 		try {
 			const [fundet, f] = await Promise.all([
-				hentForlobsdag(forlobId, dagNummer),
+				hentForlobsdag(forlobId, nr),
 				forlob ? Promise.resolve(forlob) : hentForlob(forlobId)
 			]);
-			dag = fundet ?? tomForlobDag(dagNummer);
+			dag = fundet ?? tomForlobDag(nr);
 			forlob = f;
 			await refreshGruppeDage();
 		} catch (e) {
@@ -115,7 +121,7 @@
 	function fjernLektion(id: string) {
 		const l = dag.lektioner.find((x) => x.id === id);
 		if (!l) return;
-		const dageMedGruppe = l.grupperingId ? lektionGruppeDage.get(l.grupperingId) ?? [] : [];
+		const dageMedGruppe = l.grupperingId ? (lektionGruppeDage.get(l.grupperingId) ?? []) : [];
 		if (l.grupperingId && dageMedGruppe.length > 1) {
 			const gid = l.grupperingId;
 			gruppeBekraeft = {
@@ -221,8 +227,7 @@
 			}
 		} catch (err) {
 			console.error(err);
-			uploadFejl =
-				err instanceof Error ? `Upload fejlede: ${err.message}` : 'Upload fejlede.';
+			uploadFejl = err instanceof Error ? `Upload fejlede: ${err.message}` : 'Upload fejlede.';
 		} finally {
 			uploaderLyd = null;
 			input.value = '';
@@ -242,8 +247,7 @@
 			opdaterLektion(lektionId, 'thumbnailUrl', url);
 		} catch (err) {
 			console.error(err);
-			uploadFejl =
-				err instanceof Error ? `Upload fejlede: ${err.message}` : 'Upload fejlede.';
+			uploadFejl = err instanceof Error ? `Upload fejlede: ${err.message}` : 'Upload fejlede.';
 		} finally {
 			uploaderThumb = null;
 		}
@@ -343,7 +347,7 @@
 					...aendredeGrupperede.map(
 						(l) => lektionGruppeDage.get(l.grupperingId ?? '')?.length ?? 0
 					),
-					noteAendretGrupperet ? noteGruppeDage.get(dag.noteGrupperingId ?? '')?.length ?? 0 : 0
+					noteAendretGrupperet ? (noteGruppeDage.get(dag.noteGrupperingId ?? '')?.length ?? 0) : 0
 				);
 				gruppeBekraeft = {
 					titel: 'Ændringer på flere dage',
@@ -469,7 +473,7 @@
 		dialogMaal = maal;
 		if (maal === 'note') {
 			const ds = dag.noteGrupperingId
-				? noteGruppeDage.get(dag.noteGrupperingId) ?? [dagNummer]
+				? (noteGruppeDage.get(dag.noteGrupperingId) ?? [dagNummer])
 				: [dagNummer];
 			dialogStartDage = ds.length > 0 ? ds : [dagNummer];
 		} else if (maal.startsWith('lektion:')) {
@@ -633,7 +637,37 @@
 			<span>Lektioner</span>
 		</a>
 		<div class="eyebrow">Admin · Lektioner</div>
-		<h1>{dagNummer === 0 ? 'Baseline (dag 0)' : `Dag ${dagNummer}`}</h1>
+		<div class="dag-nav">
+			{#if kanForrige}
+				<a
+					class="dag-pil flip"
+					href="/app/admin/forlob/{forlobId}/lektioner/{dagNummer - 1}"
+					aria-label="Forrige dag"
+					title="Forrige dag"
+				>
+					<Icon name="chevron-r" size={16} color="var(--text2)" />
+				</a>
+			{:else}
+				<span class="dag-pil flip deaktiv" aria-hidden="true">
+					<Icon name="chevron-r" size={16} color="var(--text3)" />
+				</span>
+			{/if}
+			<h1>{dagNummer === 0 ? 'Baseline (dag 0)' : `Dag ${dagNummer}`}</h1>
+			{#if kanNaeste}
+				<a
+					class="dag-pil"
+					href="/app/admin/forlob/{forlobId}/lektioner/{dagNummer + 1}"
+					aria-label="Næste dag"
+					title="Næste dag"
+				>
+					<Icon name="chevron-r" size={16} color="var(--text2)" />
+				</a>
+			{:else}
+				<span class="dag-pil deaktiv" aria-hidden="true">
+					<Icon name="chevron-r" size={16} color="var(--text3)" />
+				</span>
+			{/if}
+		</div>
 		{#if dagNummer > 0}
 			<p class="page-sub">Uge {dag.uge}</p>
 		{/if}
@@ -698,7 +732,7 @@
 			{/if}
 
 			{#each dag.lektioner as l (l.id)}
-				{@const dageMed = l.grupperingId ? lektionGruppeDage.get(l.grupperingId) ?? [] : []}
+				{@const dageMed = l.grupperingId ? (lektionGruppeDage.get(l.grupperingId) ?? []) : []}
 				{@const erGrupperet = dageMed.length > 1}
 				<article class="lektion-edit" class:grupperet={erGrupperet}>
 					<header class="lektion-edit-head">
@@ -780,7 +814,10 @@
 							disabled={gemmer}
 						/>
 						<div class="html-upload-rad">
-							<label class="html-upload-knap" class:disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}>
+							<label
+								class="html-upload-knap"
+								class:disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
+							>
 								{uploaderHtml === l.id ? 'Uploader...' : '📎 HTML-fil'}
 								<input
 									type="file"
@@ -789,7 +826,10 @@
 									disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
 								/>
 							</label>
-							<label class="html-upload-knap" class:disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}>
+							<label
+								class="html-upload-knap"
+								class:disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
+							>
 								{uploaderLyd === l.id ? 'Uploader...' : '🎵 Lydfil'}
 								<input
 									type="file"
@@ -995,6 +1035,45 @@
 		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
+	}
+
+	.dag-nav {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-top: 4px;
+	}
+
+	.dag-nav h1 {
+		flex: 1;
+		margin: 0;
+		text-align: center;
+	}
+
+	.dag-pil {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		border-radius: 10px;
+		border: 1px solid var(--border);
+		background: var(--white);
+		text-decoration: none;
+		flex-shrink: 0;
+	}
+
+	.dag-pil:hover {
+		background: var(--bg2);
+	}
+
+	.dag-pil.flip {
+		transform: scaleX(-1);
+	}
+
+	.dag-pil.deaktiv {
+		opacity: 0.35;
+		pointer-events: none;
 	}
 
 	.status-besked {
@@ -1356,7 +1435,9 @@
 		border-radius: 10px;
 		background: var(--white);
 		overflow: hidden;
-		transition: border-color 0.15s, background 0.15s;
+		transition:
+			border-color 0.15s,
+			background 0.15s;
 	}
 
 	.thumb-dropzone.drag-over {
