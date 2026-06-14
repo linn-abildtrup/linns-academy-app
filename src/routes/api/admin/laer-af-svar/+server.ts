@@ -98,11 +98,12 @@ export const POST: RequestHandler = async ({ request }) => {
 			'en AI kan bruge som reference, så fremtidige svar matcher Linns standpunkter og tone.';
 		const userMessage =
 			`Her er ${alle.length} af Linns svar til klient-spørgsmål:\n\n${qaTekst}\n\n` +
-			'Destillér dem til 5-8 kompakte videns-dokumenter, hvert med et tydeligt tema ' +
+			'Destillér dem til 4-6 kompakte videns-dokumenter, hvert med et tydeligt tema ' +
 			'(fx kost & protein, træning, overgangsalder-symptomer, motivation/mindset, praktisk/teknisk). ' +
 			'Hvert dokument: Linns konkrete standpunkter, standard-råd og typiske formuleringer for det tema — ' +
-			'i hendes varme, konkrete tone. Find IKKE på noget; brug kun hvad der fremgår af svarene.\n\n' +
-			'Svar UDELUKKENDE med et gyldigt JSON-array, intet andet:\n' +
+			'i hendes varme, konkrete tone. Hold hvert dokument KORT (max ~250 ord). ' +
+			'Find IKKE på noget; brug kun hvad der fremgår af svarene.\n\n' +
+			'Svar UDELUKKENDE med et gyldigt JSON-array — ingen forklarende tekst, ingen markdown:\n' +
 			'[{"navn": "Kort tema-titel", "tekst": "Destilleret viden for temaet..."}, ...]';
 
 		const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -114,7 +115,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			},
 			body: JSON.stringify({
 				model: ANTHROPIC_MODEL,
-				max_tokens: 4096,
+				max_tokens: 8192,
 				system,
 				messages: [{ role: 'user', content: userMessage }]
 			})
@@ -124,20 +125,25 @@ export const POST: RequestHandler = async ({ request }) => {
 			console.error('Anthropic fejl:', res.status, t.slice(0, 300));
 			throw error(502, `Anthropic ${res.status}`);
 		}
-		const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
-		let raw = (data.content ?? [])
+		const data = (await res.json()) as {
+			content?: Array<{ type: string; text?: string }>;
+			stop_reason?: string;
+		};
+		if (data.stop_reason === 'max_tokens') {
+			throw error(502, 'AI-svaret blev for langt. Prøv igen.');
+		}
+		const raw = (data.content ?? [])
 			.filter((c) => c.type === 'text')
 			.map((c) => c.text ?? '')
 			.join('')
 			.trim();
-		// Strip evt markdown-fences.
-		raw = raw
-			.replace(/^```(?:json)?/i, '')
-			.replace(/```$/, '')
-			.trim();
+		// Robust: træk JSON-arrayet ud uanset evt tekst/markdown rundt om det.
+		const start = raw.indexOf('[');
+		const end = raw.lastIndexOf(']');
+		const jsonTekst = start >= 0 && end > start ? raw.slice(start, end + 1) : raw;
 		let docs: Array<{ navn: string; tekst: string }>;
 		try {
-			const parsed = JSON.parse(raw);
+			const parsed = JSON.parse(jsonTekst);
 			if (!Array.isArray(parsed)) throw new Error('ikke et array');
 			docs = parsed
 				.filter((d) => d && typeof d.navn === 'string' && typeof d.tekst === 'string')
