@@ -5,6 +5,10 @@
 	import type { ForlobDag } from '$lib/content/forlob';
 	import { tomForlobDag } from '$lib/content/forlob';
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
+	import { hentVaneprogramForForlob } from '$lib/firestore/vaner';
+	import type { VaneProgramDag } from '$lib/content/vaner';
+	import { hentSmaaSkridt } from '$lib/firestore/smaaSkridt';
+	import { dageForPlan, type SmaaSkridt } from '$lib/content/smaaSkridt';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const forlobId = $derived(page.params.id ?? '');
@@ -14,6 +18,8 @@
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let kunTomme = $state(false);
+	let vpDage = $state<VaneProgramDag[]>([]);
+	let smaaListe = $state<SmaaSkridt[]>([]);
 
 	const dagsmap = $derived.by<Map<number, ForlobDag>>(() => {
 		const m = new Map<number, ForlobDag>();
@@ -62,8 +68,38 @@
 		return navne;
 	});
 
+	// Dage med refleksionstekst.
+	const refleksionDage = $derived.by<Set<number>>(() => {
+		const s = new Set<number>();
+		for (const d of vpDage) if ((d.reflection ?? '').trim()) s.add(d.dagNummer);
+		return s;
+	});
+
+	// Dage dækket af mindst ét lille skridt.
+	const smaaSkridtDage = $derived.by<Set<number>>(() => {
+		const s = new Set<number>();
+		if (!forlob) return s;
+		const start = forlob.startDato.toDate();
+		for (const sk of smaaListe)
+			for (const dnr of dageForPlan(sk.plan, forlob.antalDage, start)) s.add(dnr);
+		return s;
+	});
+
+	function dagPrikker(d: ForlobDag) {
+		return {
+			lektion: d.lektioner.length > 0,
+			refleksion: refleksionDage.has(d.dagNummer),
+			smaaskridt: smaaSkridtDage.has(d.dagNummer)
+		};
+	}
+
 	function harIndhold(d: ForlobDag): boolean {
-		return d.lektioner.length > 0 || !!d.noteFraLinn;
+		return (
+			d.lektioner.length > 0 ||
+			!!d.noteFraLinn ||
+			refleksionDage.has(d.dagNummer) ||
+			smaaSkridtDage.has(d.dagNummer)
+		);
 	}
 
 	function dagState(d: ForlobDag): 'lektion' | 'note' | 'tom' {
@@ -131,7 +167,14 @@
 				return;
 			}
 			forlob = f;
-			dage = await hentForlobsdage(forlobId);
+			const [fd, vp, ss] = await Promise.all([
+				hentForlobsdage(forlobId),
+				hentVaneprogramForForlob(forlobId),
+				hentSmaaSkridt(forlobId)
+			]);
+			dage = fd;
+			vpDage = vp;
+			smaaListe = ss;
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente data.';
@@ -150,8 +193,8 @@
 		<div class="eyebrow">Admin · {forlob?.navn ?? forlobId} · Lektioner</div>
 		<h1>Lektioner</h1>
 		<p class="page-sub">
-			Klik på en dag for at lægge dagens lektion ind. Grøn = har lektion, sandfarvet = kun note, grå
-			= tom.
+			Klik på en dag for at redigere. Prikkerne viser hvad dagen indeholder: lektion, refleksion og
+			små skridt.
 		</p>
 	</header>
 
@@ -226,14 +269,21 @@
 					<div class="grid-row">
 						<div class="uge-label">Uge {u.uge}</div>
 						{#each u.dage as d (d.dagNummer)}
+							{@const t = dagPrikker(d)}
 							<a
 								id="dag-{d.dagNummer}"
-								class="celle stat-{dagState(d)}"
+								class="celle"
+								class:tom={!t.lektion && !t.refleksion && !t.smaaskridt}
 								class:idag={d.dagNummer === idagDag}
 								href="/app/admin/forlob/{forlobId}/lektioner/{d.dagNummer}"
 								title={celleTitel(d)}
 							>
-								{d.dagNummer}
+								<span class="nr">{d.dagNummer}</span>
+								<span class="prikker">
+									{#if t.lektion}<span class="prik lektion"></span>{/if}
+									{#if t.refleksion}<span class="prik refleksion"></span>{/if}
+									{#if t.smaaskridt}<span class="prik smaaskridt"></span>{/if}
+								</span>
 							</a>
 						{/each}
 					</div>
@@ -241,10 +291,9 @@
 			</div>
 
 			<div class="legend">
-				<span class="legend-item"><span class="legend-swatch stat-lektion"></span> Har lektion</span
-				>
-				<span class="legend-item"><span class="legend-swatch stat-note"></span> Kun note</span>
-				<span class="legend-item"><span class="legend-swatch stat-tom"></span> Tom</span>
+				<span class="legend-item"><span class="prik lektion"></span> Lektion</span>
+				<span class="legend-item"><span class="prik refleksion"></span> Refleksion</span>
+				<span class="legend-item"><span class="prik smaaskridt"></span> Små skridt</span>
 			</div>
 		{/if}
 	{/if}
@@ -402,14 +451,58 @@
 	.celle {
 		aspect-ratio: 1 / 1;
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
+		gap: 3px;
 		border-radius: 9px;
+		background: var(--bg2);
+		color: var(--text);
 		font-family: var(--ff-d);
 		font-weight: 700;
 		font-size: calc(13px * var(--fs-scale, 1));
 		text-decoration: none;
 		min-width: 0;
+	}
+
+	.celle.tom {
+		color: var(--text3);
+	}
+
+	.celle .nr {
+		line-height: 1;
+	}
+
+	.prikker {
+		display: flex;
+		gap: 3px;
+		min-height: 5px;
+		align-items: center;
+	}
+
+	.prik {
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+		display: inline-block;
+		flex-shrink: 0;
+	}
+
+	.prik.lektion {
+		background: var(--sage);
+	}
+
+	.prik.refleksion {
+		background: var(--gold);
+	}
+
+	.prik.smaaskridt {
+		background: var(--terra);
+	}
+
+	.legend-item .prik {
+		width: 9px;
+		height: 9px;
 	}
 
 	.celle:hover {
@@ -500,12 +593,6 @@
 		gap: 6px;
 		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
-	}
-
-	.legend-swatch {
-		width: 14px;
-		height: 14px;
-		border-radius: 5px;
 	}
 
 	/* "Vis kun tomme"-liste */
