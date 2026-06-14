@@ -59,6 +59,10 @@
 	let gemmer = $state(false);
 	let fejl = $state<string | null>(null);
 
+	// Udregn kalorier fra makroerne (Atwater) hvis brugeren ikke selv taster
+	// dem — så fødevaren ikke ender med 0 kalorier i måltids-beregningen.
+	const udregnetKcal = $derived(Math.round((protein || 0) * 4 + (kh || 0) * 4 + (fedt || 0) * 9));
+
 	const KATEGORIER: Kategori[] = [
 		'mejeri',
 		'koed',
@@ -133,9 +137,11 @@
 				liquid: false,
 				kilde: 'custom'
 			};
+			// Brug indtastet kcal hvis sat, ellers det udregnede fra makroerne.
+			const gemKcal = kcal > 0 ? kcal : udregnetKcal;
 			if (kh > 0) customData.kh = kh;
 			if (fedt > 0) customData.fedt = fedt;
-			if (kcal > 0) customData.kcal = kcal;
+			if (gemKcal > 0) customData.kcal = gemKcal;
 			const id = await gemMinCustomFodevare(
 				uid,
 				eksisterendeId ? { id: eksisterendeId, ...customData } : customData
@@ -150,7 +156,7 @@
 			};
 			if (kh > 0) ny.kh = kh;
 			if (fedt > 0) ny.fedt = fedt;
-			if (kcal > 0) ny.kcal = kcal;
+			if (gemKcal > 0) ny.kcal = gemKcal;
 			onTilfoejet(ny);
 		} catch (e) {
 			console.error(e);
@@ -192,23 +198,11 @@
 			<div class="rad">
 				<label class="felt">
 					<span class="lbl">Protein pr 100g</span>
-					<input
-						type="number"
-						bind:value={protein}
-						min="0"
-						step="0.1"
-						disabled={gemmer}
-					/>
+					<input type="number" bind:value={protein} min="0" step="0.1" disabled={gemmer} />
 				</label>
 				<label class="felt">
 					<span class="lbl">Fiber pr 100g</span>
-					<input
-						type="number"
-						bind:value={fiber}
-						min="0"
-						step="0.1"
-						disabled={gemmer}
-					/>
+					<input type="number" bind:value={fiber} min="0" step="0.1" disabled={gemmer} />
 				</label>
 			</div>
 
@@ -226,11 +220,12 @@
 			<label class="felt">
 				<span class="lbl">Kalorier pr 100g (kcal)</span>
 				<input type="number" bind:value={kcal} min="0" step="1" disabled={gemmer} />
+				{#if !(kcal > 0) && udregnetKcal > 0}
+					<span class="udregn-hint">≈ {udregnetKcal} kcal udregnes automatisk fra makroerne</span>
+				{/if}
 			</label>
 
-			<p class="hint">
-				Fødevaren gemmes kun for dig — andre brugere ser den ikke.
-			</p>
+			<p class="hint">Fødevaren gemmes kun for dig — andre brugere ser den ikke.</p>
 
 			{#if fejl}
 				<div class="fejl">{fejl}</div>
@@ -349,6 +344,12 @@
 		color: var(--text3);
 		line-height: 1.45;
 		margin: 4px 0 0;
+	}
+	.udregn-hint {
+		display: block;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--sage, #6f9e7e);
+		margin-top: 4px;
 	}
 
 	.fejl {
