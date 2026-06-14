@@ -22,13 +22,52 @@ export interface OffResultat {
 	billedeUrl?: string;
 }
 
+/**
+ * Plausibilitets-/fuldstændigheds-tjek af næringstal fra en database (OFF).
+ * Returnerer advarsler hvis tallene ser forkerte/ufuldstændige ud, så kunden
+ * kan bede om at få dem bekræftet/rettet før de gemmes — i stedet for at
+ * misvisende data (fx smør med 0 kcal) ryger lige ind i et måltid.
+ */
+export interface NaeringTjek {
+	ok: boolean;
+	advarsler: string[];
+}
+export function tjekNaering(n: {
+	kcal?: number;
+	protein?: number;
+	kh?: number;
+	fedt?: number;
+}): NaeringTjek {
+	const kcal = n.kcal ?? 0;
+	const p = n.protein ?? 0;
+	const kh = n.kh ?? 0;
+	const fedt = n.fedt ?? 0;
+	const harMakro = p + kh + fedt > 0;
+	const advarsler: string[] = [];
+
+	if (kcal <= 0 && !harMakro) advarsler.push('Produktet har ingen næringstal');
+	else if (kcal <= 0) advarsler.push('Kalorier mangler');
+
+	// Krydstjek kcal mod makroerne (Atwater: 4·protein + 4·kulhydrat + 9·fedt).
+	const atwater = p * 4 + kh * 4 + fedt * 9;
+	if (kcal > 0 && atwater > 0 && Math.abs(kcal - atwater) > Math.max(50, atwater * 0.35)) {
+		advarsler.push('Kalorier passer ikke til makroerne');
+	}
+	// Et produkt med fedt/kulhydrat men 0 protein OG 0 kcal er mistænkeligt
+	// håndteres af "kalorier mangler". Plausibilitets-grænser:
+	if (kcal > 900) advarsler.push('Kalorier er urealistisk høje (over 900 pr 100 g)');
+	if (p > 100 || kh > 100 || fedt > 100) advarsler.push('En værdi er over 100 g pr 100 g');
+
+	return { ok: advarsler.length === 0, advarsler };
+}
+
 interface OffNutriments {
 	proteins_100g?: number;
 	fiber_100g?: number;
 	carbohydrates_100g?: number;
 	fat_100g?: number;
 	'energy-kcal_100g'?: number;
-	'energy_100g'?: number;
+	energy_100g?: number;
 	proteins?: number;
 	fiber?: number;
 	carbohydrates?: number;
@@ -110,10 +149,9 @@ export async function lookupBarcode(barcode: string): Promise<OffResultat | null
 	const ren = barcode.replace(/\D/g, '');
 	if (ren.length < 6) return null;
 	try {
-		const res = await fetch(
-			`https://world.openfoodfacts.org/api/v2/product/${ren}.json`,
-			{ headers: { Accept: 'application/json' } }
-		);
+		const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${ren}.json`, {
+			headers: { Accept: 'application/json' }
+		});
 		if (!res.ok) return null;
 		const data = (await res.json()) as OffResponse;
 		if (data.status !== 1 || !data.product) return null;
@@ -184,27 +222,13 @@ export async function searchProducts(query: string): Promise<OffResultat[]> {
 function foreslaaKategori(tags: string[]): Kategori {
 	const t = tags.map((s) => s.toLowerCase());
 
-	const matcher = (...keywords: string[]) =>
-		t.some((tag) => keywords.some((k) => tag.includes(k)));
+	const matcher = (...keywords: string[]) => t.some((tag) => keywords.some((k) => tag.includes(k)));
 
-	if (matcher('dairy', 'dairies', 'cheese', 'milk', 'yogurt', 'mejeri'))
-		return 'mejeri';
+	if (matcher('dairy', 'dairies', 'cheese', 'milk', 'yogurt', 'mejeri')) return 'mejeri';
 	if (matcher('fish', 'seafood', 'fisk')) return 'fisk';
-	if (
-		matcher(
-			'meat',
-			'beef',
-			'pork',
-			'chicken',
-			'poultry',
-			'lamb',
-			'koed',
-			'sausage'
-		)
-	)
+	if (matcher('meat', 'beef', 'pork', 'chicken', 'poultry', 'lamb', 'koed', 'sausage'))
 		return 'koed';
-	if (matcher('legume', 'beans', 'lentils', 'pulse', 'baelg', 'chickpea'))
-		return 'baelg';
+	if (matcher('legume', 'beans', 'lentils', 'pulse', 'baelg', 'chickpea')) return 'baelg';
 	if (
 		matcher(
 			'cereal',
@@ -223,8 +247,7 @@ function foreslaaKategori(tags: string[]): Kategori {
 	if (matcher('vegetable', 'gront', 'gemyse', 'salads')) return 'gront';
 	if (matcher('fruit', 'berry', 'baer', 'frugt')) return 'baer';
 	if (matcher('nuts', 'seed', 'noedder', 'almond', 'peanut')) return 'noedder';
-	if (matcher('protein-supplement', 'whey', 'protein-bar', 'shake'))
-		return 'prot';
+	if (matcher('protein-supplement', 'whey', 'protein-bar', 'shake')) return 'prot';
 	if (
 		matcher(
 			'beverage',

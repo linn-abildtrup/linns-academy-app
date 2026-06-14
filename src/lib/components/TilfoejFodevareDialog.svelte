@@ -23,6 +23,9 @@
 		startKat?: Kategori;
 		/** Hvis sat, redigerer vi en eksisterende fødevare i stedet for at oprette ny. */
 		eksisterendeId?: string;
+		/** Advarsler fra plausibilitets-tjek af database-data (OFF) — vises som
+		 *  et "tjek lige tallene"-banner så kunden bekræfter/retter før gemning. */
+		advarsler?: string[];
 		uid: string;
 		onTilfoejet: (fodevare: Fodevare) => void;
 		onClose: () => void;
@@ -38,6 +41,7 @@
 		startKcal = 0,
 		startKat = 'andet',
 		eksisterendeId,
+		advarsler = [],
 		uid,
 		onTilfoejet,
 		onClose
@@ -175,6 +179,18 @@
 		</header>
 
 		<div class="body">
+			{#if advarsler.length > 0}
+				<div class="tjek-banner">
+					<strong>Tjek lige tallene</strong>
+					Databasen gav data der kan være forkerte eller mangelfulde:
+					<ul>
+						{#each advarsler as a (a)}
+							<li>{a}</li>
+						{/each}
+					</ul>
+					Ret dem gerne, før du gemmer.
+				</div>
+			{/if}
 			<label class="felt">
 				<span class="lbl">Navn</span>
 				<input
@@ -350,6 +366,24 @@
 		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--sage, #6f9e7e);
 		margin-top: 4px;
+	}
+	.tjek-banner {
+		background: #fdf3e3;
+		border: 1px solid #e9cfa0;
+		color: #8a5a1e;
+		border-radius: 12px;
+		padding: 12px 14px;
+		margin-bottom: 14px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		line-height: 1.5;
+	}
+	.tjek-banner strong {
+		display: block;
+		margin-bottom: 2px;
+	}
+	.tjek-banner ul {
+		margin: 6px 0;
+		padding-left: 18px;
 	}
 
 	.fejl {

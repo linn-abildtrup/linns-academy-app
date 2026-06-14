@@ -37,7 +37,12 @@
 		sletMaaltid,
 		toggleFavoritFodevare
 	} from '$lib/firestore/kost';
-	import { lookupBarcode, searchProducts, type OffResultat } from '$lib/content/openFoodFacts';
+	import {
+		lookupBarcode,
+		searchProducts,
+		tjekNaering,
+		type OffResultat
+	} from '$lib/content/openFoodFacts';
 	import BarcodeScanner from '$lib/components/BarcodeScanner.svelte';
 	import TilfoejFodevareDialog from '$lib/components/TilfoejFodevareDialog.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
@@ -200,6 +205,7 @@
 		startKcal?: number;
 		startKat?: Kategori;
 		eksisterendeId?: string;
+		advarsler?: string[];
 	} | null>(null);
 
 	// Opskrifter-state
@@ -448,16 +454,47 @@
 			offFejlBesked = rest;
 		}
 		try {
+			// #1: Søge-indekset har ofte tynde tal — hent det FULDE produkt på
+			// stregkode (product-API), som har komplette næringstal. Falder tilbage
+			// til søge-resultatet hvis opslaget fejler.
+			const fuld = off.barcode ? await lookupBarcode(off.barcode) : null;
+			const data = fuld ?? off;
+
+			// #2: Plausibilitets-tjek. Ser tallene forkerte/ufuldstændige ud, så
+			// åbn review-dialogen så kunden kan bekræfte/rette FØR det gemmes —
+			// i stedet for at misvisende data ryger direkte i måltidet.
+			const tjek = tjekNaering({
+				kcal: data.kcal,
+				protein: data.protein,
+				kh: data.kh,
+				fedt: data.fedt
+			});
+			if (!tjek.ok) {
+				nyDialog = {
+					barcode: data.barcode,
+					startNavn: data.navn,
+					startProtein: data.protein,
+					startFiber: data.fiber,
+					startKh: data.kh,
+					startFedt: data.fedt,
+					startKcal: data.kcal,
+					startKat: data.katForslag,
+					advarsler: tjek.advarsler
+				};
+				offResultater = offResultater.filter((r) => r.barcode !== off.barcode);
+				return;
+			}
+
 			const ny: Omit<Fodevare, 'id'> = {
-				name: off.navn,
-				cat: off.katForslag,
-				p: off.protein,
-				f: off.fiber,
-				kh: off.kh,
-				fedt: off.fedt,
-				kcal: off.kcal,
+				name: data.navn,
+				cat: data.katForslag,
+				p: data.protein,
+				f: data.fiber,
+				kh: data.kh,
+				fedt: data.fedt,
+				kcal: data.kcal,
 				kilde: 'custom',
-				barcode: off.barcode
+				barcode: data.barcode
 			};
 			const id = await gemMinCustomFodevare(u.uid, ny);
 			const food: Fodevare = { id, ...ny };
@@ -868,6 +905,11 @@
 				return;
 			}
 			const off = await lookupBarcode(barcode);
+			// Plausibilitets-tjek af de scannede tal — vis advarsler i dialogen
+			// hvis de ser forkerte/ufuldstændige ud (scan går altid gennem review).
+			const tjek = off
+				? tjekNaering({ kcal: off.kcal, protein: off.protein, kh: off.kh, fedt: off.fedt })
+				: null;
 			nyDialog = {
 				barcode,
 				startNavn: off?.navn ?? '',
@@ -876,7 +918,8 @@
 				startKh: off?.kh ?? 0,
 				startFedt: off?.fedt ?? 0,
 				startKcal: off?.kcal ?? 0,
-				startKat: off?.katForslag ?? 'andet'
+				startKat: off?.katForslag ?? 'andet',
+				advarsler: tjek && !tjek.ok ? tjek.advarsler : undefined
 			};
 		} finally {
 			scannerArbejder = false;
@@ -2594,6 +2637,7 @@
 		startKcal={nyDialog.startKcal}
 		startKat={nyDialog.startKat}
 		eksisterendeId={nyDialog.eksisterendeId}
+		advarsler={nyDialog.advarsler}
 		uid={user.uid}
 		onTilfoejet={efterTilfoejet}
 		onClose={() => (nyDialog = null)}
