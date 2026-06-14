@@ -1,8 +1,8 @@
 <script lang="ts">
-	// Refleksioner-fane på en forløbsdag. Indholdet er det tidligere "vaneprogram"
-	// pr dag (refleksionstekst + daglige checks + bonus), bare omdøbt til Refleksioner.
-	// Genindlæser når dagNummer skifter (komponenten genbruges ved dag-navigation).
-	import type { Bonus, Vane, VaneProgramDag } from '$lib/content/vaner';
+	// Refleksioner-fane på en forløbsdag: refleksionstekst + flag + bonus.
+	// De daglige vaner (checks) styres nu af Små skridt-systemet og redigeres IKKE
+	// her — gem bevarer dem uændret. Genindlæser når dagNummer skifter.
+	import type { Bonus, VaneProgramDag } from '$lib/content/vaner';
 	import { gemVaneprogramDag, hentVaneprogramDag } from '$lib/firestore/vaner';
 
 	let { forlobId, dagNummer }: { forlobId: string; dagNummer: number } = $props();
@@ -13,7 +13,6 @@
 	let formIsCheckin = $state(false);
 	let formIsBaseline = $state(false);
 	let formIsWin = $state(false);
-	let formChecks = $state<Vane[]>([]);
 	let formBonus = $state<Bonus | null>(null);
 
 	let loading = $state(true);
@@ -45,7 +44,6 @@
 			formIsCheckin = fundet.isCheckin;
 			formIsBaseline = fundet.isBaseline;
 			formIsWin = fundet.isWin;
-			formChecks = fundet.checks.map((c) => ({ ...c }));
 			formBonus = fundet.bonus ? { ...fundet.bonus } : null;
 		} catch (e) {
 			console.error(e);
@@ -53,15 +51,6 @@
 		} finally {
 			loading = false;
 		}
-	}
-
-	function tilfoejVane() {
-		const nyId = `vane${formChecks.length + 1}_${Date.now().toString(36).slice(-4)}`;
-		formChecks = [...formChecks, { id: nyId, label: '' }];
-	}
-
-	function fjernVane(index: number) {
-		formChecks = formChecks.filter((_, i) => i !== index);
 	}
 
 	function aktiverBonus() {
@@ -77,9 +66,9 @@
 		gemKvit = false;
 		gemmer = true;
 		try {
-			const renseChecks = formChecks
-				.map((c) => ({ id: c.id.trim(), label: c.label.trim() }))
-				.filter((c) => c.id && c.label);
+			// Bevar checks fra dag-systemet (styres nu af Små skridt) — hent friske,
+			// så et samtidigt "Publicér" i Små skridt ikke bliver overskrevet.
+			const nuvaerende = await hentVaneprogramDag(forlobId, dagNummer);
 			const renseBonus =
 				formBonus && formBonus.id.trim() && formBonus.label.trim()
 					? { id: formBonus.id.trim(), label: formBonus.label.trim() }
@@ -89,7 +78,7 @@
 				dagNummer,
 				uge: formUge,
 				reflection: formReflection.trim(),
-				checks: renseChecks,
+				checks: nuvaerende?.checks ?? dag?.checks ?? [],
 				bonus: renseBonus,
 				isCheckin: formIsCheckin,
 				isBaseline: formIsBaseline,
@@ -155,46 +144,6 @@
 				<span>#win-dag</span>
 			</label>
 		</div>
-	</section>
-
-	<section class="card">
-		<div class="form-titel">Faste vaner</div>
-		<p class="hint">
-			Brugeren svarer Ja / Delvist / Nej for hver vane. Brug korte ID'er (fx 'pm', 'fi') så de kan
-			genanvendes på tværs af dage.
-		</p>
-		{#each formChecks as v, i (v.id)}
-			<div class="check-form">
-				<div class="check-form-rad">
-					<input
-						class="check-id"
-						type="text"
-						placeholder="id"
-						bind:value={formChecks[i].id}
-						disabled={gemmer}
-					/>
-					<input
-						class="check-label-input"
-						type="text"
-						placeholder="Synlig label, fx 'Protein til morgenmad'"
-						bind:value={formChecks[i].label}
-						disabled={gemmer}
-					/>
-					<button
-						class="ikon-knap"
-						type="button"
-						onclick={() => fjernVane(i)}
-						disabled={gemmer}
-						aria-label="Fjern vane"
-					>
-						×
-					</button>
-				</div>
-			</div>
-		{/each}
-		<button class="ghost-knap" type="button" onclick={tilfoejVane} disabled={gemmer}
-			>+ Tilføj vane</button
-		>
 	</section>
 
 	<section class="card">
@@ -282,13 +231,6 @@
 		font-size: calc(16px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--text);
-	}
-
-	.hint {
-		font-size: calc(11.5px * var(--fs-scale, 1));
-		color: var(--text3);
-		margin: 0 0 6px;
-		line-height: 1.45;
 	}
 
 	.felt {
