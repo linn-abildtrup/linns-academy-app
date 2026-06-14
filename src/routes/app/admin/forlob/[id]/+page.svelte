@@ -3,12 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { Timestamp } from 'firebase/firestore';
-	import type {
-		AllowedEmail,
-		CsvParseResult,
-		Forlob,
-		ForlobType
-	} from '$lib/content/forlobAdgang';
+	import type { AllowedEmail, CsvParseResult, Forlob, ForlobType } from '$lib/content/forlobAdgang';
 	import { parseSimpleroCsv } from '$lib/content/forlobAdgang';
 	import {
 		gemAllowedEmailsBatch,
@@ -73,19 +68,17 @@
 		tilfoejResultat = null;
 		try {
 			const r = await tilfoejEnKunde(forlobId, email, nyFornavn.trim(), nyEfternavn.trim());
-			tilfoejResultat = r.status === 'tilfoejet'
-				? `${r.email} tilføjet til forløbet.`
-				: `${r.email} fandtes allerede — er nu opdateret til dette forløb.`;
+			tilfoejResultat =
+				r.status === 'tilfoejet'
+					? `${r.email} tilføjet til forløbet.`
+					: `${r.email} fandtes allerede — er nu opdateret til dette forløb.`;
 			nyEmail = '';
 			nyFornavn = '';
 			nyEfternavn = '';
 			emails = await hentAllowedEmailsForForlob(forlobId);
 		} catch (e) {
 			console.error(e);
-			tilfoejFejl =
-				e instanceof Error && e.message
-					? e.message
-					: 'Kunne ikke tilføje kunden.';
+			tilfoejFejl = e instanceof Error && e.message ? e.message : 'Kunne ikke tilføje kunden.';
 		} finally {
 			tilfoejer = false;
 		}
@@ -238,10 +231,7 @@
 			console.error(e);
 			// Vis specifik fejlbesked fra adgangsFelterForForlob (fx "Forløbet
 			// ... findes ikke") saa Linn kan identificere CSV-typo direkte.
-			importFejl =
-				e instanceof Error && e.message
-					? e.message
-					: 'Kunne ikke importere. Prøv igen.';
+			importFejl = e instanceof Error && e.message ? e.message : 'Kunne ikke importere. Prøv igen.';
 		} finally {
 			importerer = false;
 		}
@@ -276,13 +266,7 @@
 				</label>
 				<label class="felt">
 					<span class="felt-label">Antal dage</span>
-					<input
-						type="number"
-						min="1"
-						max="365"
-						bind:value={formAntalDage}
-						disabled={gemmer}
-					/>
+					<input type="number" min="1" max="365" bind:value={formAntalDage} disabled={gemmer} />
 				</label>
 			</div>
 			<label class="checkbox-rad">
@@ -333,30 +317,8 @@
 				<Icon name="path" size={16} color="#fff" />
 			</div>
 			<div class="indhold-tekst">
-				<div class="indhold-navn">Lektioner</div>
-				<div class="indhold-sub">Læg dagens lektion ind for hver dag i forløbet</div>
-			</div>
-			<Icon name="chevron-r" size={14} color="var(--text3)" />
-		</a>
-
-		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/vaner">
-			<div class="indhold-icon">
-				<Icon name="leaf" size={16} color="#fff" />
-			</div>
-			<div class="indhold-tekst">
-				<div class="indhold-navn">Vaneprogram</div>
-				<div class="indhold-sub">Rediger refleksioner, vaner og bonus pr dag</div>
-			</div>
-			<Icon name="chevron-r" size={14} color="var(--text3)" />
-		</a>
-
-		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/tildelte-vaner">
-			<div class="indhold-icon" style="background: #7E9BB3;">
-				<Icon name="flower" size={16} color="#fff" />
-			</div>
-			<div class="indhold-tekst">
-				<div class="indhold-navn">Tildelte vaner</div>
-				<div class="indhold-sub">Vaner alle deltagere får oveni deres egne 3 selvvalgte</div>
+				<div class="indhold-navn">Dagligt indhold</div>
+				<div class="indhold-sub">Lektioner, refleksioner og små skridt — dag for dag</div>
 			</div>
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
@@ -402,7 +364,9 @@
 			</div>
 			<div class="indhold-tekst">
 				<div class="indhold-navn">Træning</div>
-				<div class="indhold-sub">Programmer, tildelinger og custom-builder for forløbets deltagere</div>
+				<div class="indhold-sub">
+					Programmer, tildelinger og custom-builder for forløbets deltagere
+				</div>
 			</div>
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
@@ -432,8 +396,8 @@
 		<div class="form-card">
 			<div class="form-titel">Tilføj én kunde manuelt</div>
 			<p class="csv-hint">
-				Indsæt klientens email, fornavn og efternavn. Hun bliver automatisk tilknyttet
-				dette forløb med korrekt adgang.
+				Indsæt klientens email, fornavn og efternavn. Hun bliver automatisk tilknyttet dette forløb
+				med korrekt adgang.
 			</p>
 			<form
 				class="manuel-form"
@@ -487,8 +451,8 @@
 		<div class="form-card">
 			<div class="form-titel">Importér emails fra Simplero</div>
 			<p class="csv-hint">
-				Upload din Simplero-eksport som CSV-fil eller paste indholdet ind. Klienter med
-				"Canceled at" udfyldt springes automatisk over.
+				Upload din Simplero-eksport som CSV-fil eller paste indholdet ind. Klienter med "Canceled
+				at" udfyldt springes automatisk over.
 			</p>
 
 			<label class="csv-fil-knap" class:disabled={importerer}>
@@ -554,8 +518,8 @@
 
 			{#if importResultat}
 				<div class="kvit-besked">
-					Import færdig — {importResultat.tilfoejet} tilføjet · {importResultat.opdateret} opdateret
-					· {importResultat.uaendret} uændret
+					Import færdig — {importResultat.tilfoejet} tilføjet · {importResultat.opdateret} opdateret ·
+					{importResultat.uaendret} uændret
 					{#if importResultat.fejl > 0}
 						· {importResultat.fejl} fejl
 					{/if}
