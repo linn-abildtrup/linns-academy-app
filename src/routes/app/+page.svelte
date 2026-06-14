@@ -2594,10 +2594,30 @@
 		align-items: center;
 		gap: 12px;
 		padding: 14px 16px;
-		background: var(--terra);
+		/* Varm terracotta→guld-gradient + blød skygge, så kortet popper og løfter
+		   sig fra den lyse baggrund (så klienten lægger mærke til symptomchecket). */
+		background: linear-gradient(135deg, var(--terra2) 0%, var(--gold) 100%);
 		color: #fff;
 		border-radius: 14px;
 		text-decoration: none;
+		box-shadow: 0 6px 18px rgba(184, 123, 110, 0.35);
+		/* Blød, rolig puls der trækker øjet — slås fra hvis brugeren har valgt
+		   reduceret bevægelse. */
+		animation: mrs-cta-puls 2.6s ease-in-out infinite;
+	}
+	@keyframes mrs-cta-puls {
+		0%,
+		100% {
+			box-shadow: 0 6px 16px rgba(184, 123, 110, 0.28);
+		}
+		50% {
+			box-shadow: 0 8px 24px rgba(184, 123, 110, 0.55);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.mrs-cta-kort {
+			animation: none;
+		}
 	}
 
 	.mrs-cta-kort:hover {
