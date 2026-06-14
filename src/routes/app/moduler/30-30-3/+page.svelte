@@ -617,9 +617,19 @@
 			// Merge egne fødevarer ind i den globale liste så de kan søges
 			// + bruges som almindelige fødevarer i picker.
 			mineCustomFodevarer = mineCustom;
-			const samlet = [...allFoods, ...mineCustom];
-			foods = samlet;
-			foodMap = new Map(samlet.map((f) => [f.id, f]));
+			// Gamle DELTE "manual_"-community-fødevarer (fra det udfasede system)
+			// var personlige oprettelser der ved en fejl blev synlige for alle.
+			// Vis dem i SØGNINGEN kun for den der oprettede dem — så andres
+			// søgning ikke forurenes. Intet slettes; opretteren beholder sin.
+			const samletAlle = [...allFoods, ...mineCustom];
+			foods = samletAlle.filter(
+				(f) =>
+					!(f.kilde === 'community' && (f.barcode ?? '').startsWith('manual_')) ||
+					f.addedBy === u?.uid
+			);
+			// foodMap indeholder ALLE (også de skjulte) så gamle måltider der
+			// refererer en skjult fødevare stadig kan slå den op og beregne korrekt.
+			foodMap = new Map(samletAlle.map((f) => [f.id, f]));
 			opskrifter = allOpskrifter;
 			mineOpskrifter = mine;
 		} catch (e) {
