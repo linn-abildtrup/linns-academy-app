@@ -16,8 +16,10 @@ import { ADMIN_EMAILS } from '$lib/admin';
 import { hentAlleDocs, hentHeleCollection, batchWrite } from '$lib/server/firestoreRest';
 
 const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
-const MAX_SVAR = 300; // loft på antal Q&A der sendes til destillering
-const MAX_SVAR_LAENGDE = 800; // trim lange svar
+// Loft holdes så det samlede input bliver under Anthropics tokens-pr-minut-
+// grænse (ellers 429). 150 nyeste svar × ~400 tegn dækker fint Linns mønstre.
+const MAX_SVAR = 150; // antal Q&A (nyeste) der sendes til destillering
+const MAX_SVAR_LAENGDE = 400; // trim lange svar
 const ID_PRAEFIKS = 'destil_';
 
 async function verificerAdmin(idToken: string): Promise<boolean> {
@@ -106,23 +108,35 @@ export const POST: RequestHandler = async ({ request }) => {
 			'Svar UDELUKKENDE med et gyldigt JSON-array — ingen forklarende tekst, ingen markdown:\n' +
 			'[{"navn": "Kort tema-titel", "tekst": "Destilleret viden for temaet..."}, ...]';
 
-		const res = await fetch('https://api.anthropic.com/v1/messages', {
-			method: 'POST',
-			headers: {
-				'x-api-key': apiKey,
-				'anthropic-version': '2023-06-01',
-				'content-type': 'application/json'
-			},
-			body: JSON.stringify({
-				model: ANTHROPIC_MODEL,
-				max_tokens: 8192,
-				system,
-				messages: [{ role: 'user', content: userMessage }]
-			})
+		const body = JSON.stringify({
+			model: ANTHROPIC_MODEL,
+			max_tokens: 8192,
+			system,
+			messages: [{ role: 'user', content: userMessage }]
 		});
+		const kald = () =>
+			fetch('https://api.anthropic.com/v1/messages', {
+				method: 'POST',
+				headers: {
+					'x-api-key': apiKey,
+					'anthropic-version': '2023-06-01',
+					'content-type': 'application/json'
+				},
+				body
+			});
+		let res = await kald();
+		// 429 = rate-limit. Vent kort (retry-after, max 8 sek) og prøv én gang til.
+		if (res.status === 429) {
+			const efter = Number(res.headers.get('retry-after')) || 5;
+			await new Promise((r) => setTimeout(r, Math.min(efter, 8) * 1000));
+			res = await kald();
+		}
 		if (!res.ok) {
 			const t = await res.text();
 			console.error('Anthropic fejl:', res.status, t.slice(0, 300));
+			if (res.status === 429) {
+				throw error(429, 'Anthropic er ramt af rate-limit lige nu — vent et minut og prøv igen.');
+			}
 			throw error(502, `Anthropic ${res.status}`);
 		}
 		const data = (await res.json()) as {
