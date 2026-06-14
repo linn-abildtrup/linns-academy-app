@@ -16,11 +16,60 @@ import { ADMIN_EMAILS } from '$lib/admin';
 import { hentAlleDocs, hentHeleCollection, batchWrite } from '$lib/server/firestoreRest';
 
 const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
-// Loft holdes så det samlede input bliver under Anthropics tokens-pr-minut-
-// grænse (ellers 429). 150 nyeste svar × ~400 tegn dækker fint Linns mønstre.
-const MAX_SVAR = 150; // antal Q&A (nyeste) der sendes til destillering
-const MAX_SVAR_LAENGDE = 400; // trim lange svar
+// Vi bruger ALLE svar, men i BIDDER så hvert Claude-kald er lille nok til at
+// holde sig under Anthropics tokens-pr-minut-grænse (ellers 429). Hver bid
+// → kompakte noter; et sidste kald konsoliderer noterne til de endelige docs.
+const MAX_SVAR = 800; // øvre sikkerhedsgrænse (bound på køretid)
+const MAX_SVAR_LAENGDE = 350; // trim lange svar
+const CHUNK = 100; // antal Q&A pr bid
 const ID_PRAEFIKS = 'destil_';
+
+async function kaldClaude(
+	apiKey: string,
+	system: string,
+	user: string,
+	maxTokens: number
+): Promise<string> {
+	const body = JSON.stringify({
+		model: ANTHROPIC_MODEL,
+		max_tokens: maxTokens,
+		system,
+		messages: [{ role: 'user', content: user }]
+	});
+	const kald = () =>
+		fetch('https://api.anthropic.com/v1/messages', {
+			method: 'POST',
+			headers: {
+				'x-api-key': apiKey,
+				'anthropic-version': '2023-06-01',
+				'content-type': 'application/json'
+			},
+			body
+		});
+	let res = await kald();
+	// 429 = rate-limit. Vent (retry-after, max 12 sek) og prøv én gang til.
+	if (res.status === 429) {
+		const efter = Number(res.headers.get('retry-after')) || 8;
+		await new Promise((r) => setTimeout(r, Math.min(efter, 12) * 1000));
+		res = await kald();
+	}
+	if (!res.ok) {
+		const t = await res.text();
+		console.error('Anthropic fejl:', res.status, t.slice(0, 300));
+		if (res.status === 429) {
+			throw error(429, 'Anthropic er ramt af rate-limit — vent et minut og prøv igen.');
+		}
+		throw error(502, `Anthropic ${res.status}`);
+	}
+	const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
+	return (data.content ?? [])
+		.filter((c) => c.type === 'text')
+		.map((c) => c.text ?? '')
+		.join('')
+		.trim();
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function verificerAdmin(idToken: string): Promise<boolean> {
 	if (!PUBLIC_FIREBASE_API_KEY) return false;
@@ -83,74 +132,52 @@ export const POST: RequestHandler = async ({ request }) => {
 			throw error(409, `For få besvarede spørgsmål at lære af (${alle.length}).`);
 		}
 
-		const qaTekst = alle
-			.map(
-				(q, i) =>
-					`${i + 1}. SPØRGSMÅL: ${q.spoergsmaal}\n   LINNS SVAR: ${q.svar.slice(0, MAX_SVAR_LAENGDE)}`
-			)
-			.join('\n\n');
-
-		// 2. Destillér med Claude.
 		const apiKey = env.ANTHROPIC_API_KEY;
 		if (!apiKey) throw error(500, 'ANTHROPIC_API_KEY mangler i Cloudflare Pages env-vars');
 
-		const system =
-			'Du er en omhyggelig analytiker for Linns Academy (dansk menopause-coaching). ' +
-			'Du får Linns FAKTISKE svar til klienter. Destillér dem til en genbrugelig videnbase ' +
-			'en AI kan bruge som reference, så fremtidige svar matcher Linns standpunkter og tone.';
-		const userMessage =
-			`Her er ${alle.length} af Linns svar til klient-spørgsmål:\n\n${qaTekst}\n\n` +
-			'Destillér dem til 4-6 kompakte videns-dokumenter, hvert med et tydeligt tema ' +
-			'(fx kost & protein, træning, overgangsalder-symptomer, motivation/mindset, praktisk/teknisk). ' +
-			'Hvert dokument: Linns konkrete standpunkter, standard-råd og typiske formuleringer for det tema — ' +
-			'i hendes varme, konkrete tone. Hold hvert dokument KORT (max ~250 ord). ' +
-			'Find IKKE på noget; brug kun hvad der fremgår af svarene.\n\n' +
-			'Svar UDELUKKENDE med et gyldigt JSON-array — ingen forklarende tekst, ingen markdown:\n' +
-			'[{"navn": "Kort tema-titel", "tekst": "Destilleret viden for temaet..."}, ...]';
+		// 2a. MAP: del alle svar i bidder; hver bid → kompakte noter (lille input
+		//     pr kald, så vi undgår 429). Sekventielt + lille pause mellem bidder.
+		const mapSystem =
+			'Du er analytiker for Linns Academy (dansk menopause-coaching). Du får et udsnit ' +
+			'af Linns FAKTISKE svar til klienter. Lav KOMPAKTE noter om gennemgående temaer, ' +
+			'hendes standpunkter, standard-råd og typiske formuleringer. Kun noter — ikke JSON. ' +
+			'Find IKKE på noget; brug kun hvad der står i svarene.';
+		const noter: string[] = [];
+		for (let i = 0; i < alle.length; i += CHUNK) {
+			const del = alle.slice(i, i + CHUNK);
+			const qaTekst = del
+				.map(
+					(q, j) => `${j + 1}. SPM: ${q.spoergsmaal}\n   SVAR: ${q.svar.slice(0, MAX_SVAR_LAENGDE)}`
+				)
+				.join('\n\n');
+			const note = await kaldClaude(
+				apiKey,
+				mapSystem,
+				`Udsnit af Linns svar:\n\n${qaTekst}\n\nLav kompakte tema-noter.`,
+				2048
+			);
+			if (note) noter.push(note);
+			if (i + CHUNK < alle.length) await sleep(3500); // spred tokens-pr-minut
+		}
+		if (noter.length === 0) throw error(502, 'AI returnerede ingen noter. Prøv igen.');
 
-		const body = JSON.stringify({
-			model: ANTHROPIC_MODEL,
-			max_tokens: 8192,
-			system,
-			messages: [{ role: 'user', content: userMessage }]
-		});
-		const kald = () =>
-			fetch('https://api.anthropic.com/v1/messages', {
-				method: 'POST',
-				headers: {
-					'x-api-key': apiKey,
-					'anthropic-version': '2023-06-01',
-					'content-type': 'application/json'
-				},
-				body
-			});
-		let res = await kald();
-		// 429 = rate-limit. Vent kort (retry-after, max 8 sek) og prøv én gang til.
-		if (res.status === 429) {
-			const efter = Number(res.headers.get('retry-after')) || 5;
-			await new Promise((r) => setTimeout(r, Math.min(efter, 8) * 1000));
-			res = await kald();
-		}
-		if (!res.ok) {
-			const t = await res.text();
-			console.error('Anthropic fejl:', res.status, t.slice(0, 300));
-			if (res.status === 429) {
-				throw error(429, 'Anthropic er ramt af rate-limit lige nu — vent et minut og prøv igen.');
-			}
-			throw error(502, `Anthropic ${res.status}`);
-		}
-		const data = (await res.json()) as {
-			content?: Array<{ type: string; text?: string }>;
-			stop_reason?: string;
-		};
-		if (data.stop_reason === 'max_tokens') {
-			throw error(502, 'AI-svaret blev for langt. Prøv igen.');
-		}
-		const raw = (data.content ?? [])
-			.filter((c) => c.type === 'text')
-			.map((c) => c.text ?? '')
-			.join('')
-			.trim();
+		// 2b. REDUCE: konsolider alle bid-noterne til de endelige videns-docs.
+		const reduceSystem =
+			'Du er analytiker for Linns Academy. Du får noter destilleret fra ALLE Linns svar ' +
+			'(i bidder). Konsolider til en genbrugelig videnbase en AI kan bruge som reference, ' +
+			'så fremtidige svar matcher Linns standpunkter og tone.';
+		const reduceUser =
+			`Her er noter fra ${alle.length} af Linns svar, i ${noter.length} bidder:\n\n` +
+			noter.map((n, i) => `=== Bid ${i + 1} ===\n${n}`).join('\n\n') +
+			'\n\nKonsolider til 4-6 kompakte videns-dokumenter, hvert med et tydeligt tema ' +
+			'(fx kost & protein, træning, overgangsalder-symptomer, motivation/mindset, praktisk). ' +
+			'Hvert dokument: Linns konkrete standpunkter, standard-råd og typiske formuleringer — ' +
+			'i hendes varme, konkrete tone. Hold hvert dokument KORT (max ~250 ord).\n\n' +
+			'Svar UDELUKKENDE med et gyldigt JSON-array — ingen forklarende tekst, ingen markdown:\n' +
+			'[{"navn": "Kort tema-titel", "tekst": "Destilleret viden..."}, ...]';
+		await sleep(2000);
+		const raw = await kaldClaude(apiKey, reduceSystem, reduceUser, 8192);
+
 		// Robust: træk JSON-arrayet ud uanset evt tekst/markdown rundt om det.
 		const start = raw.indexOf('[');
 		const end = raw.lastIndexOf(']');
@@ -193,7 +220,12 @@ export const POST: RequestHandler = async ({ request }) => {
 		});
 		await batchWrite(writes);
 
-		return json({ ok: true, antalDocs: docs.length, antalSvarBrugt: alle.length });
+		return json({
+			ok: true,
+			antalDocs: docs.length,
+			antalSvarBrugt: alle.length,
+			antalBidder: noter.length
+		});
 	} catch (e) {
 		if (isHttpError(e)) throw e;
 		console.error('laer-af-svar fejlede:', e);
