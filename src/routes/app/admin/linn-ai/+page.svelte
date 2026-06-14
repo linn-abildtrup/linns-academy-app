@@ -1,3 +1,19 @@
+<script module lang="ts">
+	import type { VidenbaseKilde as VK } from '$lib/content/linnAi';
+	function kildeLabel(k: VK): string {
+		switch (k) {
+			case 'pdf':
+				return 'PDF';
+			case 'slide':
+				return 'Præsentation';
+			case 'klient_spoergsmaal':
+				return 'Klient-svar';
+			case 'manual':
+				return 'Notat';
+		}
+	}
+</script>
+
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import {
@@ -9,6 +25,7 @@
 	} from '$lib/firestore/linnAi';
 	import type { VidenbaseDokument, VidenbaseKilde } from '$lib/content/linnAi';
 	import { chunkTekst, DEFAULT_SYSTEM_PROMPT } from '$lib/content/linnAi';
+	import { auth } from '$lib/firebase';
 	import Icon from '$lib/components/Icon.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import Loading from '$lib/components/Loading.svelte';
@@ -41,6 +58,39 @@
 			loading = false;
 		}
 	});
+
+	// "Lær af alle svar": destillér alle besvarede klient-spørgsmål til videns-
+	// dokumenter (kører på serveren via Claude). Bagefter kan de redigeres/slettes
+	// i listen nedenfor som alle andre videns-docs.
+	let laerer = $state(false);
+	let laerBesked = $state<string | null>(null);
+	async function laerAfAlleSvar() {
+		if (laerer) return;
+		if (
+			!confirm(
+				'Lær af alle dine besvarede spørgsmål? AI destillerer dem til videns-dokumenter (tager ~10-30 sek). De tidligere destillerede docs erstattes; dine manuelt uploadede røres ikke.'
+			)
+		)
+			return;
+		laerer = true;
+		laerBesked = null;
+		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error('Du er ikke logget ind som admin.');
+			const res = await fetch('/api/admin/laer-af-svar', {
+				method: 'POST',
+				headers: { Authorization: `Bearer ${token}` }
+			});
+			if (!res.ok) throw new Error(`Kunne ikke lære (${res.status}): ${await res.text()}`);
+			const data = (await res.json()) as { antalDocs: number; antalSvarBrugt: number };
+			dokumenter = await hentAlleVidenbaseDokumenter();
+			laerBesked = `Destilleret ${data.antalDocs} videns-dokumenter fra ${data.antalSvarBrugt} svar. Tjek og ret dem gerne nedenfor.`;
+		} catch (e) {
+			laerBesked = e instanceof Error ? e.message : 'Kunne ikke lære af svarene.';
+		} finally {
+			laerer = false;
+		}
+	}
 
 	async function gemPrompt() {
 		promptGemmer = true;
@@ -122,7 +172,10 @@
 		// Dynamisk import så pdfjs kun loades når admin uploader PDF
 		const pdfjs = await import('pdfjs-dist');
 		// pdfjs kræver workerSrc — peg på CDN-version
-		const pdfjsLib = pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string }; getDocument: typeof pdfjs.getDocument };
+		const pdfjsLib = pdfjs as unknown as {
+			GlobalWorkerOptions: { workerSrc: string };
+			getDocument: typeof pdfjs.getDocument;
+		};
 		pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
 
 		const buffer = await fil.arrayBuffer();
@@ -131,9 +184,7 @@
 		for (let i = 1; i <= pdf.numPages; i++) {
 			const side = await pdf.getPage(i);
 			const tekst = await side.getTextContent();
-			const sideTekst = tekst.items
-				.map((item) => ('str' in item ? item.str : ''))
-				.join(' ');
+			const sideTekst = tekst.items.map((item) => ('str' in item ? item.str : '')).join(' ');
 			dele.push(sideTekst);
 		}
 		return dele.join('\n\n');
@@ -171,6 +222,36 @@
 			sletFejl = 'Kunne ikke slette.';
 		} finally {
 			sletter = false;
+		}
+	}
+
+	// Inline-redigering af et videns-dokument (navn + tekst).
+	let redigerId = $state<string | null>(null);
+	let redNavn = $state('');
+	let redTekst = $state('');
+	let redKilde = $state<VidenbaseKilde>('manual');
+	let redGemmer = $state(false);
+	function aabnRediger(d: VidenbaseDokument) {
+		redigerId = d.id;
+		redNavn = d.navn;
+		redTekst = d.tekst;
+		redKilde = d.kilde;
+	}
+	async function gemRediger() {
+		if (!redigerId) return;
+		redGemmer = true;
+		try {
+			await gemVidenbaseDokument(redigerId, {
+				navn: redNavn.trim() || 'Uden titel',
+				kilde: redKilde,
+				tekst: redTekst
+			});
+			dokumenter = await hentAlleVidenbaseDokumenter();
+			redigerId = null;
+		} catch (e) {
+			console.error(e);
+		} finally {
+			redGemmer = false;
 		}
 	}
 
@@ -225,8 +306,27 @@
 			/>
 		</div>
 
+		<section class="card laer-kort">
+			<div>
+				<div class="section-label">Lær af alle dine svar</div>
+				<p class="laer-sub">
+					AI destillerer ALLE dine besvarede klient-spørgsmål til en håndfuld videns-dokumenter, så
+					både dine svar-udkast og kunde-chatten husker dine standpunkter på tværs af forløb. Kør
+					den engang imellem. Du kan redigere resultatet nedenfor.
+				</p>
+				{#if laerBesked}<p class="laer-besked">{laerBesked}</p>{/if}
+			</div>
+			<button class="laer-knap" onclick={laerAfAlleSvar} disabled={laerer}>
+				{laerer ? 'Lærer…' : 'Lær af alle svar'}
+			</button>
+		</section>
+
 		{#if uploadStatus !== 'klar'}
-			<div class="status-besked" class:fejl={uploadStatus === 'fejl'} class:ok={uploadStatus === 'ok'}>
+			<div
+				class="status-besked"
+				class:fejl={uploadStatus === 'fejl'}
+				class:ok={uploadStatus === 'ok'}
+			>
 				{#if uploadStatus === 'parser'}
 					Læser fil...
 				{:else if uploadStatus === 'gemmer'}
@@ -245,8 +345,8 @@
 				</button>
 			</div>
 			<p class="hint persona-hint">
-				Dette er instruktionen Linn AI får før hver samtale. Beskriv din tone,
-				dine principper og hvad AI'en må/ikke må. Videnbasen tilføjes automatisk.
+				Dette er instruktionen Linn AI får før hver samtale. Beskriv din tone, dine principper og
+				hvad AI'en må/ikke må. Videnbasen tilføjes automatisk.
 			</p>
 			<textarea class="prompt-felt" bind:value={systemPrompt} rows="14"></textarea>
 			{#if promptBesked}
@@ -261,7 +361,8 @@
 			<div class="card-head">
 				<div class="section-label">Indekseret</div>
 				<div class="card-tael">
-					{dokumenter.length} {dokumenter.length === 1 ? 'dokument' : 'dokumenter'} · {tegnFormat(totalTegn)}
+					{dokumenter.length}
+					{dokumenter.length === 1 ? 'dokument' : 'dokumenter'} · {tegnFormat(totalTegn)}
 				</div>
 			</div>
 			{#if dokumenter.length === 0}
@@ -270,20 +371,38 @@
 				<ul class="doc-liste">
 					{#each dokumenter as d (d.id)}
 						<li class="doc-item">
-							<div class="doc-tekst">
-								<div class="doc-navn">{d.navn}</div>
-								<div class="doc-meta">
-									{kildeLabel(d.kilde)} · {tegnFormat(d.tekst.length)}
+							{#if redigerId === d.id}
+								<div class="doc-rediger">
+									<input class="rediger-navn" bind:value={redNavn} placeholder="Titel" />
+									<textarea class="rediger-tekst" bind:value={redTekst} rows="8"></textarea>
+									<div class="rediger-knapper">
+										<button class="rediger-gem" onclick={gemRediger} disabled={redGemmer}>
+											{redGemmer ? 'Gemmer…' : 'Gem'}
+										</button>
+										<button class="rediger-annuller" onclick={() => (redigerId = null)}>
+											Annullér
+										</button>
+									</div>
 								</div>
-							</div>
-							<button
-								class="slet-btn"
-								type="button"
-								onclick={() => aabnSletBekraeft(d.id, d.navn)}
-								aria-label="Slet"
-							>
-								×
-							</button>
+							{:else}
+								<div class="doc-tekst">
+									<div class="doc-navn">{d.navn}</div>
+									<div class="doc-meta">
+										{kildeLabel(d.kilde)} · {tegnFormat(d.tekst.length)}
+									</div>
+								</div>
+								<button class="rediger-btn" type="button" onclick={() => aabnRediger(d)}>
+									Rediger
+								</button>
+								<button
+									class="slet-btn"
+									type="button"
+									onclick={() => aabnSletBekraeft(d.id, d.navn)}
+									aria-label="Slet"
+								>
+									×
+								</button>
+							{/if}
 						</li>
 					{/each}
 				</ul>
@@ -314,22 +433,6 @@
 		onAnnuller={() => (sletDok = null)}
 	/>
 {/if}
-
-<script module lang="ts">
-	import type { VidenbaseKilde as VK } from '$lib/content/linnAi';
-	function kildeLabel(k: VK): string {
-		switch (k) {
-			case 'pdf':
-				return 'PDF';
-			case 'slide':
-				return 'Præsentation';
-			case 'klient_spoergsmaal':
-				return 'Klient-svar';
-			case 'manual':
-				return 'Notat';
-		}
-	}
-</script>
 
 <style>
 	.page {
@@ -446,6 +549,44 @@
 		padding: 16px;
 	}
 
+	.laer-kort {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 14px;
+		margin-top: 14px;
+		flex-wrap: wrap;
+	}
+	.laer-sub {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.5;
+		margin: 6px 0 0;
+		max-width: 460px;
+	}
+	.laer-besked {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--sage, #6f9e7e);
+		font-weight: 600;
+		margin: 8px 0 0;
+	}
+	.laer-knap {
+		flex-shrink: 0;
+		padding: 10px 16px;
+		border: none;
+		border-radius: 10px;
+		background: var(--terra, #b87b6e);
+		color: #fff;
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.laer-knap:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+
 	.card-head {
 		display: flex;
 		align-items: baseline;
@@ -526,6 +667,66 @@
 		background: #fbeeea;
 		border-color: #f0d6cf;
 		color: #8a4a3e;
+	}
+
+	.rediger-btn {
+		flex-shrink: 0;
+		padding: 5px 12px;
+		border: 1px solid var(--border);
+		background: var(--white);
+		color: var(--text2);
+		border-radius: 8px;
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.doc-rediger {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.rediger-navn,
+	.rediger-tekst {
+		width: 100%;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 8px 10px;
+		font: inherit;
+		font-size: calc(13px * var(--fs-scale, 1));
+		box-sizing: border-box;
+	}
+	.rediger-tekst {
+		resize: vertical;
+		line-height: 1.5;
+	}
+	.rediger-knapper {
+		display: flex;
+		gap: 8px;
+	}
+	.rediger-gem {
+		padding: 7px 16px;
+		border: none;
+		border-radius: 8px;
+		background: var(--sage, #6f9e7e);
+		color: #fff;
+		font-weight: 600;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		cursor: pointer;
+	}
+	.rediger-gem:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+	.rediger-annuller {
+		padding: 7px 14px;
+		border: 1px solid var(--border);
+		background: var(--white);
+		color: var(--text2);
+		border-radius: 8px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		cursor: pointer;
 	}
 
 	.persona-hint {
