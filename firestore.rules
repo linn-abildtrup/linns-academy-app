@@ -273,6 +273,13 @@ service cloud.firestore {
 				allow write: if isAdmin();
 			}
 
+			// Samlede små skridt pr forløb (nyt samlet system): alle autentificerede
+			// kan læse (kundens side skal vise dem), kun admin kan skrive.
+			match /smaaSkridt/{skridtId} {
+				allow read: if request.auth != null;
+				allow write: if isAdmin();
+			}
+
 			// Bibliotek pr forløb — FAQ-kategorier: alle autentificerede kan læse,
 			// kun admin kan skrive. Klient-koden filtrerer på udgivet-flag.
 			match /faqKategorier/{kategoriId} {

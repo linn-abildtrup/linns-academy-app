@@ -323,6 +323,17 @@
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
 
+		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/smaa-skridt">
+			<div class="indhold-icon" style="background: #7E9BB3;">
+				<Icon name="flower" size={16} color="#fff" />
+			</div>
+			<div class="indhold-tekst">
+				<div class="indhold-navn">Små skridt</div>
+				<div class="indhold-sub">Vaner og daglige skridt — vælg hvilke dage de gælder</div>
+			</div>
+			<Icon name="chevron-r" size={14} color="var(--text3)" />
+		</a>
+
 		<a class="indhold-row" href="/app/admin/forlob/{forlobId}/challenges">
 			<div class="indhold-icon" style="background: #6F9E7E;">
 				<Icon name="leaf" size={16} color="#fff" />

@@ -48,8 +48,6 @@
 
 	// Faner: Lektioner / Refleksioner / Små skridt
 	let aktivFane = $state<'lektioner' | 'refleksioner' | 'smaaskridt'>('lektioner');
-	// Ugen som denne dag tilhører (små skridt ligger pr uge). Dag 0 = baseline (ingen uge).
-	const ugeForDag = $derived(dagNummer === 0 ? 0 : Math.ceil(dagNummer / 7));
 
 	// To-panel på Lektioner-fanen: hvilken lektion er åben til redigering i højre panel.
 	let valgtLektionId = $state<string | null>(null);
@@ -1081,7 +1079,7 @@
 		</div>
 	{:else}
 		<div class="enkelt-fane">
-			<ForlobSmaaSkridtFane {forlobId} uge={ugeForDag} />
+			<ForlobSmaaSkridtFane {forlobId} {dagNummer} />
 		</div>
 	{/if}
 </div>
