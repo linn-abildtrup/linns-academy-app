@@ -152,9 +152,7 @@ export function brugerStemme(f: Fodevare, uid: string): 'ok' | 'ej' | null {
  * 'ny' = community uden flueben endnu
  * null = ikke en community-fødevare (Frida)
  */
-export function communityStatus(
-	f: Fodevare
-): 'verificeret' | 'mistaenkelig' | 'ny' | null {
+export function communityStatus(f: Fodevare): 'verificeret' | 'mistaenkelig' | 'ny' | null {
 	if (f.kilde !== 'community') return null;
 	if (f.verificeret) return 'verificeret';
 	const ok = f.okBy?.length ?? 0;
@@ -331,10 +329,19 @@ export interface MaaltidBeregning {
 	kcal: number;
 }
 
-export function beregnItem(
-	item: MaaltidsItem,
-	food: Fodevare | undefined
-): ItemBeregning {
+/**
+ * Kalorier pr 100g for en fødevare. Mange fødevarer (især brugernes egne og
+ * gamle community-fødevarer) mangler det valgfrie kcal-felt — så ville de
+ * tælle som 0 kalorier. Når kcal mangler, udregner vi det fra makroerne med
+ * Atwater-faktorerne (protein 4, kulhydrat 4, fedt 9 kcal/g). Det er kun et
+ * sikkerhedsnet: har fødevaren et rigtigt kcal-tal, bruges altid det.
+ */
+export function effektivKcal(food: Fodevare): number {
+	if (typeof food.kcal === 'number' && food.kcal > 0) return food.kcal;
+	return food.p * 4 + (food.kh ?? 0) * 4 + (food.fedt ?? 0) * 9;
+}
+
+export function beregnItem(item: MaaltidsItem, food: Fodevare | undefined): ItemBeregning {
 	if (erManueltItem(item) || !food) {
 		return { protein: 0, fiber: 0, kh: 0, fedt: 0, kcal: 0, gram: 0 };
 	}
@@ -346,7 +353,7 @@ export function beregnItem(
 		fiber: food.f * f,
 		kh: (food.kh ?? 0) * f,
 		fedt: (food.fedt ?? 0) * f,
-		kcal: (food.kcal ?? 0) * f,
+		kcal: effektivKcal(food) * f,
 		gram: totalGram
 	};
 }
@@ -459,14 +466,23 @@ export function renseIngrediensNavn(navn: string): string {
 	if (kommaIdx > 0) n = n.slice(0, kommaIdx).trim();
 	// Fjern indledende mængde- og portioneringsord ("2 spsk", "1 stor", "ca. 100g")
 	n = n
-		.replace(/^(ca\.?\s+)?\d+([.,/]\d+)?\s*(g|kg|ml|dl|l|stk|spsk|tsk|knsp|knivspids|håndfuld|skive|skiver|kop|kopper|glas|dåse|dåser|pose|poser|fed|fede|klove|stang|stænger|bundt|bundter|stilk|stilke)\s+/i, '')
+		.replace(
+			/^(ca\.?\s+)?\d+([.,/]\d+)?\s*(g|kg|ml|dl|l|stk|spsk|tsk|knsp|knivspids|håndfuld|skive|skiver|kop|kopper|glas|dåse|dåser|pose|poser|fed|fede|klove|stang|stænger|bundt|bundter|stilk|stilke)\s+/i,
+			''
+		)
 		.replace(/^(ca\.?\s+)?\d+([.,/]\d+)?\s+/i, '')
 		.replace(/^(en|et|to|tre|fire|fem|seks|syv|otte|ni|ti|halv|halvt|en halv|et halvt)\s+/i, '')
-		.replace(/^(stor|stort|store|lille|lillebitte|små|mellem|mellemstor|halv|halvt|kvart|håndfuld|en\s+håndfuld|et\s+nip)\s+/i, '')
+		.replace(
+			/^(stor|stort|store|lille|lillebitte|små|mellem|mellemstor|halv|halvt|kvart|håndfuld|en\s+håndfuld|et\s+nip)\s+/i,
+			''
+		)
 		.replace(/^(fed|fede|klove)\s+/i, '')
 		.replace(/^(stang|stænger|bundt|bundter|stilk|stilke|dåse|dåser|pose|poser)\s+/i, '');
 	// Fjern indledende tilberedningsord
-	n = n.replace(/^(frisk|friske|tørret|tørrede|kogt|kogte|stegt|stegte|bagt|bagte|røget|rå|rene|skåret|hakket|finthakket|revet|passeret|passerede|stødt|hel|hele)\s+/i, '');
+	n = n.replace(
+		/^(frisk|friske|tørret|tørrede|kogt|kogte|stegt|stegte|bagt|bagte|røget|rå|rene|skåret|hakket|finthakket|revet|passeret|passerede|stødt|hel|hele)\s+/i,
+		''
+	);
 	// Fjern beskrivende suffix uden komma
 	n = n
 		.replace(/\s+i\s+(tern|skiver|strimler|staver|halve|kvarte|stykker|små stykker)$/i, '')
@@ -596,15 +612,7 @@ const COMPOUND_SUFFIKSER = [
 	'ost'
 ];
 
-const COMPOUND_PREFIKSER = [
-	'fuldkorns',
-	'fuldkorn',
-	'snack',
-	'øko',
-	'bio',
-	'økologisk',
-	'dijon'
-];
+const COMPOUND_PREFIKSER = ['fuldkorns', 'fuldkorn', 'snack', 'øko', 'bio', 'økologisk', 'dijon'];
 
 /**
  * Returnerer kandidat-stems for et ord — bruges som sidste fallback i
@@ -694,11 +702,7 @@ export function splitListeIngrediens(navn: string): string[] | null {
 		const afMatch = navn.match(/\baf\s+(.+)$/i);
 		if (afMatch) {
 			const afterAf = afMatch[1];
-			if (
-				afterAf.includes(',') ||
-				/\s+og\s+/i.test(afterAf) ||
-				/\s+eller\s+/i.test(afterAf)
-			) {
+			if (afterAf.includes(',') || /\s+og\s+/i.test(afterAf) || /\s+eller\s+/i.test(afterAf)) {
 				kandidat = afterAf;
 			}
 		}
