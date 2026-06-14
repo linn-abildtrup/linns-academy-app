@@ -2594,13 +2594,13 @@
 		align-items: center;
 		gap: 12px;
 		padding: 14px 16px;
-		/* Varm terracotta→guld-gradient + blød skygge, så kortet popper og løfter
-		   sig fra den lyse baggrund (så klienten lægger mærke til symptomchecket). */
-		background: linear-gradient(135deg, var(--terra2) 0%, var(--gold) 100%);
+		/* Frisk sage-gradient + grøn skygge — grøn er den eneste kontrastfarve i det
+		   varme design, så kortet popper tydeligt og klienten ser symptomchecket. */
+		background: linear-gradient(135deg, #7fb491 0%, #5c8a6c 100%);
 		color: #fff;
 		border-radius: 14px;
 		text-decoration: none;
-		box-shadow: 0 6px 18px rgba(184, 123, 110, 0.35);
+		box-shadow: 0 6px 18px rgba(111, 158, 126, 0.4);
 		/* Blød, rolig puls der trækker øjet — slås fra hvis brugeren har valgt
 		   reduceret bevægelse. */
 		animation: mrs-cta-puls 2.6s ease-in-out infinite;
@@ -2608,10 +2608,10 @@
 	@keyframes mrs-cta-puls {
 		0%,
 		100% {
-			box-shadow: 0 6px 16px rgba(184, 123, 110, 0.28);
+			box-shadow: 0 6px 16px rgba(111, 158, 126, 0.3);
 		}
 		50% {
-			box-shadow: 0 8px 24px rgba(184, 123, 110, 0.55);
+			box-shadow: 0 8px 26px rgba(111, 158, 126, 0.6);
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
