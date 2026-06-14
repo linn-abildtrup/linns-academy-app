@@ -22,6 +22,8 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import VaelgDageDialog from '$lib/components/VaelgDageDialog.svelte';
 	import RedigerGruppeDialog from '$lib/components/RedigerGruppeDialog.svelte';
+	import ForlobRefleksionerFane from '$lib/components/ForlobRefleksionerFane.svelte';
+	import ForlobSmaaSkridtFane from '$lib/components/ForlobSmaaSkridtFane.svelte';
 
 	const forlobId = $derived(page.params.id ?? '');
 	const dagNummer = $derived(parseInt(page.params.dag ?? '0', 10));
@@ -43,6 +45,24 @@
 	const maxDag = $derived(forlob?.antalDage ?? dagNummer);
 	const kanForrige = $derived(dagNummer > 0);
 	const kanNaeste = $derived(dagNummer < maxDag);
+
+	// Faner: Lektioner / Refleksioner / Små skridt
+	let aktivFane = $state<'lektioner' | 'refleksioner' | 'smaaskridt'>('lektioner');
+	// Ugen som denne dag tilhører (små skridt ligger pr uge). Dag 0 = baseline (ingen uge).
+	const ugeForDag = $derived(dagNummer === 0 ? 0 : Math.ceil(dagNummer / 7));
+
+	// To-panel på Lektioner-fanen: hvilken lektion er åben til redigering i højre panel.
+	let valgtLektionId = $state<string | null>(null);
+
+	// Hold valget gyldigt: vælg den første lektion hvis intet (eller et slettet) er valgt.
+	$effect(() => {
+		const ids = dag.lektioner.map((l) => l.id);
+		if (valgtLektionId && !ids.includes(valgtLektionId)) {
+			valgtLektionId = ids[0] ?? null;
+		} else if (!valgtLektionId && ids.length > 0) {
+			valgtLektionId = ids[0];
+		}
+	});
 
 	// 'Vis ogsaa paa dage'-dialog. maal er enten 'lektion:<id>' eller 'note'.
 	let dialogMaal = $state<string | null>(null);
@@ -115,7 +135,19 @@
 	}
 
 	function tilfoejLektion() {
-		dag = { ...dag, lektioner: [...dag.lektioner, nyLektion()] };
+		const ny = nyLektion();
+		dag = { ...dag, lektioner: [...dag.lektioner, ny] };
+		valgtLektionId = ny.id;
+	}
+
+	// Flyt en lektion op (-1) eller ned (+1) i dagens rækkefølge. Rækkefølgen i
+	// arrayet er den rækkefølge kunden ser i appen — gemmes når man trykker Gem.
+	function flytLektion(index: number, retning: -1 | 1) {
+		const maal = index + retning;
+		if (maal < 0 || maal >= dag.lektioner.length) return;
+		const ny = [...dag.lektioner];
+		[ny[index], ny[maal]] = [ny[maal], ny[index]];
+		dag = { ...dag, lektioner: ny };
 	}
 
 	function fjernLektion(id: string) {
@@ -673,295 +705,383 @@
 		{/if}
 	</header>
 
-	{#if loading}
-		<div class="status-besked">Henter...</div>
-	{:else if fejl}
-		<div class="status-besked fejl">{fejl}</div>
-	{:else}
-		<div class="form-card">
-			<div class="form-head">
-				<div class="form-titel">Note fra Linn (valgfri)</div>
-				{#if dag.noteGrupperingId && (noteGruppeDage.get(dag.noteGrupperingId) ?? []).length > 1}
-					<span
-						class="gruppe-chip"
-						title={`Noten ligger på dage: ${(noteGruppeDage.get(dag.noteGrupperingId) ?? []).join(', ')}`}
-					>
-						🔗 ligger på {noteGruppeDage.get(dag.noteGrupperingId)?.length} dage
-					</span>
-				{/if}
-			</div>
-			<textarea
-				bind:value={dag.noteFraLinn}
-				placeholder="Personlig note til klienterne for denne dag..."
-				rows="4"
-				disabled={gemmer}
-			></textarea>
-			<div class="vis-paa-rad">
-				<button
-					class="vis-paa-knap"
-					type="button"
-					onclick={() => aabnVaelgDageDialog('note')}
-					disabled={gemmer || !dag.noteFraLinn.trim()}
-					title={!dag.noteFraLinn.trim() ? 'Skriv noten først' : ''}
-				>
-					Vis også på dage...
-				</button>
-				{#if dag.noteGrupperingId}
-					<button
-						class="vis-paa-knap ghost"
-						type="button"
-						onclick={fjernNoteFraGruppe}
-						disabled={gemmer}
-					>
-						Fjern note
-					</button>
-				{/if}
-			</div>
-		</div>
+	<div class="faner">
+		<button
+			class="fane"
+			class:aktiv={aktivFane === 'lektioner'}
+			type="button"
+			onclick={() => (aktivFane = 'lektioner')}
+		>
+			Lektioner
+		</button>
+		<button
+			class="fane"
+			class:aktiv={aktivFane === 'refleksioner'}
+			type="button"
+			onclick={() => (aktivFane = 'refleksioner')}
+		>
+			Refleksioner
+		</button>
+		<button
+			class="fane"
+			class:aktiv={aktivFane === 'smaaskridt'}
+			type="button"
+			onclick={() => (aktivFane = 'smaaskridt')}
+		>
+			Små skridt
+		</button>
+	</div>
 
-		<div class="form-card">
-			<div class="form-head">
-				<div class="form-titel">Lektioner</div>
-				<div class="form-tael">
-					{dag.lektioner.length} lektion{dag.lektioner.length === 1 ? '' : 'er'}
+	{#if aktivFane === 'lektioner'}
+		{#if loading}
+			<div class="status-besked">Henter...</div>
+		{:else if fejl}
+			<div class="status-besked fejl">{fejl}</div>
+		{:else}
+			{@const valgt = dag.lektioner.find((l) => l.id === valgtLektionId)}
+			<div class="form-card">
+				<div class="form-head">
+					<div class="form-titel">Note fra Linn (valgfri)</div>
+					{#if dag.noteGrupperingId && (noteGruppeDage.get(dag.noteGrupperingId) ?? []).length > 1}
+						<span
+							class="gruppe-chip"
+							title={`Noten ligger på dage: ${(noteGruppeDage.get(dag.noteGrupperingId) ?? []).join(', ')}`}
+						>
+							🔗 ligger på {noteGruppeDage.get(dag.noteGrupperingId)?.length} dage
+						</span>
+					{/if}
+				</div>
+				<textarea
+					bind:value={dag.noteFraLinn}
+					placeholder="Personlig note til klienterne for denne dag..."
+					rows="4"
+					disabled={gemmer}
+				></textarea>
+				<div class="vis-paa-rad">
+					<button
+						class="vis-paa-knap"
+						type="button"
+						onclick={() => aabnVaelgDageDialog('note')}
+						disabled={gemmer || !dag.noteFraLinn.trim()}
+						title={!dag.noteFraLinn.trim() ? 'Skriv noten først' : ''}
+					>
+						Vis også på dage...
+					</button>
+					{#if dag.noteGrupperingId}
+						<button
+							class="vis-paa-knap ghost"
+							type="button"
+							onclick={fjernNoteFraGruppe}
+							disabled={gemmer}
+						>
+							Fjern note
+						</button>
+					{/if}
 				</div>
 			</div>
 
-			{#if dag.lektioner.length === 0}
-				<p class="muted">Ingen lektioner endnu. Tilføj den første nedenfor.</p>
-			{/if}
-
-			{#each dag.lektioner as l (l.id)}
-				{@const dageMed = l.grupperingId ? (lektionGruppeDage.get(l.grupperingId) ?? []) : []}
-				{@const erGrupperet = dageMed.length > 1}
-				<article class="lektion-edit" class:grupperet={erGrupperet}>
-					<header class="lektion-edit-head">
-						<div class="lektion-edit-num">
-							Lektion
-							{#if erGrupperet}
-								<span class="gruppe-chip" title={`Ligger på dage: ${dageMed.join(', ')}`}>
-									🔗 {dageMed.length} dage
-								</span>
-							{/if}
+			<div class="lektion-layout">
+				<aside class="lektion-liste-panel">
+					<div class="form-head">
+						<div class="form-titel">Lektioner</div>
+						<div class="form-tael">
+							{dag.lektioner.length} lektion{dag.lektioner.length === 1 ? '' : 'er'}
 						</div>
-						<button
-							class="ikon-knap fare"
-							type="button"
-							onclick={() => fjernLektion(l.id)}
-							disabled={gemmer}
-							aria-label="Fjern"
-							title="Fjern lektion"
-						>
-							×
-						</button>
-					</header>
-
-					<label class="felt">
-						<span class="felt-label">Titel</span>
-						<input
-							type="text"
-							value={l.titel}
-							oninput={(e) => opdaterLektion(l.id, 'titel', e.currentTarget.value)}
-							maxlength="140"
-							disabled={gemmer}
-						/>
-					</label>
-
-					<label class="felt">
-						<span class="felt-label">Beskrivelse</span>
-						<textarea
-							value={l.beskrivelse}
-							oninput={(e) => opdaterLektion(l.id, 'beskrivelse', e.currentTarget.value)}
-							rows="3"
-							maxlength="500"
-							disabled={gemmer}
-						></textarea>
-					</label>
-
-					<div class="felt-rad">
-						<label class="felt">
-							<span class="felt-label">Varighed (min)</span>
-							<input
-								type="number"
-								min="0"
-								max="600"
-								value={l.varighedMin}
-								oninput={(e) =>
-									opdaterLektion(l.id, 'varighedMin', parseInt(e.currentTarget.value, 10) || 0)}
-								disabled={gemmer}
-							/>
-						</label>
-						<label class="felt">
-							<span class="felt-label">Format</span>
-							<input
-								type="text"
-								value={l.format}
-								oninput={(e) => opdaterLektion(l.id, 'format', e.currentTarget.value)}
-								placeholder="Video, lyd, tekst..."
-								maxlength="40"
-								disabled={gemmer}
-							/>
-						</label>
 					</div>
 
-					<label class="felt">
-						<span class="felt-label">URL (valgfri)</span>
-						<input
-							type="url"
-							value={l.url}
-							oninput={(e) => opdaterLektion(l.id, 'url', e.currentTarget.value)}
-							placeholder="https://..."
-							disabled={gemmer}
-						/>
-						<div class="html-upload-rad">
-							<label
-								class="html-upload-knap"
-								class:disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
-							>
-								{uploaderHtml === l.id ? 'Uploader...' : '📎 HTML-fil'}
-								<input
-									type="file"
-									accept=".html,.htm,text/html"
-									onchange={(e) => haandterHtmlUpload(l.id, e)}
-									disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
-								/>
-							</label>
-							<label
-								class="html-upload-knap"
-								class:disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
-							>
-								{uploaderLyd === l.id ? 'Uploader...' : '🎵 Lydfil'}
-								<input
-									type="file"
-									accept=".mp3,.m4a,.wav,.aac,.ogg,audio/*"
-									onchange={(e) => haandterLydUpload(l.id, e)}
-									disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
-								/>
-							</label>
-							<span class="html-upload-hint">eller indsæt URL ovenfor</span>
-						</div>
-					</label>
-
-					<div class="felt">
-						<span class="felt-label">Thumbnail (valgfri)</span>
-						<div
-							class="thumb-dropzone"
-							class:har-thumb={!!l.thumbnailUrl}
-							class:drag-over={dragOver === l.id}
-							class:uploader={uploaderThumb === l.id}
-							ondrop={(e) => haandterDrop(l.id, e)}
-							ondragover={(e) => haandterDragOver(l.id, e)}
-							ondragleave={haandterDragLeave}
-							onpaste={(e) => haandterPaste(l.id, e)}
-							role="region"
-							aria-label="Slip eller indsæt et billede her"
-						>
-							{#if l.thumbnailUrl}
-								<img src={l.thumbnailUrl} alt="Thumbnail" class="thumb-preview" />
-								<div class="thumb-overlay">
-									<label class="thumb-knap">
-										Skift
-										<input
-											type="file"
-											accept="image/*"
-											onchange={(e) => haandterThumbnailInput(l.id, e)}
-											disabled={gemmer || uploaderThumb === l.id}
-										/>
-									</label>
-									<button
-										class="thumb-knap fare"
-										type="button"
-										onclick={() => fjernThumbnail(l.id)}
-										disabled={gemmer || uploaderThumb === l.id}
-									>
-										Fjern
+					{#if dag.lektioner.length === 0}
+						<p class="muted">Ingen lektioner endnu. Tilføj den første.</p>
+					{:else}
+						<p class="liste-hint">Rækkefølgen her er den, kunden ser i appen.</p>
+						<div class="lektion-liste">
+							{#each dag.lektioner as l, i (l.id)}
+								{@const dageMed = l.grupperingId
+									? (lektionGruppeDage.get(l.grupperingId) ?? [])
+									: []}
+								<div class="lli" class:aktiv={l.id === valgtLektionId}>
+									<span class="lli-nr">{i + 1}</span>
+									<button class="lli-vaelg" type="button" onclick={() => (valgtLektionId = l.id)}>
+										<span class="lli-titel">{l.titel.trim() || 'Uden titel'}</span>
+										<span class="lli-meta">
+											{l.format.trim() || 'lektion'}{l.varighedMin
+												? ` · ${l.varighedMin} min`
+												: ''}{#if dageMed.length > 1}
+												· 🔗 {dageMed.length}{/if}
+										</span>
 									</button>
-								</div>
-							{:else if uploaderThumb === l.id}
-								<div class="thumb-tom">Uploader...</div>
-							{:else}
-								<label class="thumb-tom">
-									<div class="thumb-tom-titel">Slip billede her</div>
-									<div class="thumb-tom-hint">
-										eller klik for at vælge · træk fra Finder · indsæt med ⌘V
+									<div class="lli-flyt">
+										<button
+											class="flyt-knap"
+											type="button"
+											onclick={() => flytLektion(i, -1)}
+											disabled={i === 0 || gemmer}
+											aria-label="Flyt op"
+											title="Flyt op"
+										>
+											↑
+										</button>
+										<button
+											class="flyt-knap"
+											type="button"
+											onclick={() => flytLektion(i, 1)}
+											disabled={i === dag.lektioner.length - 1 || gemmer}
+											aria-label="Flyt ned"
+											title="Flyt ned"
+										>
+											↓
+										</button>
 									</div>
+								</div>
+							{/each}
+						</div>
+					{/if}
+
+					<button
+						class="form-knap ghost full"
+						type="button"
+						onclick={tilfoejLektion}
+						style="border-style: dashed;"
+						disabled={gemmer}
+					>
+						+ Tilføj lektion
+					</button>
+
+					{#if uploadFejl}
+						<div class="status-besked fejl">{uploadFejl}</div>
+					{/if}
+				</aside>
+
+				<div class="lektion-editor-panel">
+					{#if valgt}
+						{@const l = valgt}
+						{@const dageMed = l.grupperingId ? (lektionGruppeDage.get(l.grupperingId) ?? []) : []}
+						{@const erGrupperet = dageMed.length > 1}
+						<article class="lektion-edit" class:grupperet={erGrupperet}>
+							<header class="lektion-edit-head">
+								<div class="lektion-edit-num">
+									Lektion
+									{#if erGrupperet}
+										<span class="gruppe-chip" title={`Ligger på dage: ${dageMed.join(', ')}`}>
+											🔗 {dageMed.length} dage
+										</span>
+									{/if}
+								</div>
+								<button
+									class="ikon-knap fare"
+									type="button"
+									onclick={() => fjernLektion(l.id)}
+									disabled={gemmer}
+									aria-label="Fjern"
+									title="Fjern lektion"
+								>
+									×
+								</button>
+							</header>
+
+							<label class="felt">
+								<span class="felt-label">Titel</span>
+								<input
+									type="text"
+									value={l.titel}
+									oninput={(e) => opdaterLektion(l.id, 'titel', e.currentTarget.value)}
+									maxlength="140"
+									disabled={gemmer}
+								/>
+							</label>
+
+							<label class="felt">
+								<span class="felt-label">Beskrivelse</span>
+								<textarea
+									value={l.beskrivelse}
+									oninput={(e) => opdaterLektion(l.id, 'beskrivelse', e.currentTarget.value)}
+									rows="3"
+									maxlength="500"
+									disabled={gemmer}
+								></textarea>
+							</label>
+
+							<div class="felt-rad">
+								<label class="felt">
+									<span class="felt-label">Varighed (min)</span>
 									<input
-										type="file"
-										accept="image/*"
-										onchange={(e) => haandterThumbnailInput(l.id, e)}
+										type="number"
+										min="0"
+										max="600"
+										value={l.varighedMin}
+										oninput={(e) =>
+											opdaterLektion(l.id, 'varighedMin', parseInt(e.currentTarget.value, 10) || 0)}
 										disabled={gemmer}
 									/>
 								</label>
-							{/if}
-						</div>
-						<div class="thumb-hint">
-							Vises i stedet for video-tjenestens auto-thumbnail. Maks 3 MB.
-						</div>
-					</div>
+								<label class="felt">
+									<span class="felt-label">Format</span>
+									<input
+										type="text"
+										value={l.format}
+										oninput={(e) => opdaterLektion(l.id, 'format', e.currentTarget.value)}
+										placeholder="Video, lyd, tekst..."
+										maxlength="40"
+										disabled={gemmer}
+									/>
+								</label>
+							</div>
 
-					<div class="vis-paa-rad">
-						<button
-							class="vis-paa-knap"
-							type="button"
-							onclick={() => aabnVaelgDageDialog(`lektion:${l.id}`)}
-							disabled={gemmer || !l.titel.trim()}
-							title={!l.titel.trim() ? 'Skriv titel først' : ''}
-						>
-							Vis også på dage...
-						</button>
-					</div>
-				</article>
-			{/each}
+							<label class="felt">
+								<span class="felt-label">URL (valgfri)</span>
+								<input
+									type="url"
+									value={l.url}
+									oninput={(e) => opdaterLektion(l.id, 'url', e.currentTarget.value)}
+									placeholder="https://..."
+									disabled={gemmer}
+								/>
+								<div class="html-upload-rad">
+									<label
+										class="html-upload-knap"
+										class:disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
+									>
+										{uploaderHtml === l.id ? 'Uploader...' : '📎 HTML-fil'}
+										<input
+											type="file"
+											accept=".html,.htm,text/html"
+											onchange={(e) => haandterHtmlUpload(l.id, e)}
+											disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
+										/>
+									</label>
+									<label
+										class="html-upload-knap"
+										class:disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
+									>
+										{uploaderLyd === l.id ? 'Uploader...' : '🎵 Lydfil'}
+										<input
+											type="file"
+											accept=".mp3,.m4a,.wav,.aac,.ogg,audio/*"
+											onchange={(e) => haandterLydUpload(l.id, e)}
+											disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
+										/>
+									</label>
+									<span class="html-upload-hint">eller indsæt URL ovenfor</span>
+								</div>
+							</label>
 
-			<button
-				class="form-knap ghost"
-				type="button"
-				onclick={tilfoejLektion}
-				style="border-style: dashed;"
-				disabled={gemmer}
-			>
-				+ Tilføj lektion
-			</button>
+							<div class="felt">
+								<span class="felt-label">Thumbnail (valgfri)</span>
+								<div
+									class="thumb-dropzone"
+									class:har-thumb={!!l.thumbnailUrl}
+									class:drag-over={dragOver === l.id}
+									class:uploader={uploaderThumb === l.id}
+									ondrop={(e) => haandterDrop(l.id, e)}
+									ondragover={(e) => haandterDragOver(l.id, e)}
+									ondragleave={haandterDragLeave}
+									onpaste={(e) => haandterPaste(l.id, e)}
+									role="region"
+									aria-label="Slip eller indsæt et billede her"
+								>
+									{#if l.thumbnailUrl}
+										<img src={l.thumbnailUrl} alt="Thumbnail" class="thumb-preview" />
+										<div class="thumb-overlay">
+											<label class="thumb-knap">
+												Skift
+												<input
+													type="file"
+													accept="image/*"
+													onchange={(e) => haandterThumbnailInput(l.id, e)}
+													disabled={gemmer || uploaderThumb === l.id}
+												/>
+											</label>
+											<button
+												class="thumb-knap fare"
+												type="button"
+												onclick={() => fjernThumbnail(l.id)}
+												disabled={gemmer || uploaderThumb === l.id}
+											>
+												Fjern
+											</button>
+										</div>
+									{:else if uploaderThumb === l.id}
+										<div class="thumb-tom">Uploader...</div>
+									{:else}
+										<label class="thumb-tom">
+											<div class="thumb-tom-titel">Slip billede her</div>
+											<div class="thumb-tom-hint">
+												eller klik for at vælge · træk fra Finder · indsæt med ⌘V
+											</div>
+											<input
+												type="file"
+												accept="image/*"
+												onchange={(e) => haandterThumbnailInput(l.id, e)}
+												disabled={gemmer}
+											/>
+										</label>
+									{/if}
+								</div>
+								<div class="thumb-hint">
+									Vises i stedet for video-tjenestens auto-thumbnail. Maks 3 MB.
+								</div>
+							</div>
 
-			{#if uploadFejl}
-				<div class="status-besked fejl">{uploadFejl}</div>
-			{/if}
-		</div>
-
-		<div class="actions">
-			{#if gemKvit}
-				<div class="kvit-besked">Gemt ✓</div>
-			{/if}
-			<button class="form-knap primary full" type="button" onclick={gem} disabled={gemmer}>
-				{gemmer ? 'Gemmer...' : 'Gem'}
-			</button>
-
-			<div class="slet-omraade">
-				{#if !bekraefter}
-					<button class="slet-knap" type="button" onclick={sletDag} disabled={gemmer}>
-						Slet alt indhold for denne dag
-					</button>
-				{:else}
-					<div class="slet-bekraeft">
-						<div class="slet-tekst">
-							Slet alle lektioner og note for dag {dagNummer}?
-						</div>
-						<div class="slet-knapper">
-							<button
-								class="form-knap ghost"
-								type="button"
-								onclick={() => (bekraefter = false)}
-								disabled={gemmer}
-							>
-								Annuller
-							</button>
-							<button class="form-knap danger" type="button" onclick={sletDag} disabled={gemmer}>
-								{gemmer ? 'Sletter...' : 'Ja, slet'}
-							</button>
-						</div>
-					</div>
-				{/if}
+							<div class="vis-paa-rad">
+								<button
+									class="vis-paa-knap"
+									type="button"
+									onclick={() => aabnVaelgDageDialog(`lektion:${l.id}`)}
+									disabled={gemmer || !l.titel.trim()}
+									title={!l.titel.trim() ? 'Skriv titel først' : ''}
+								>
+									Vis også på dage...
+								</button>
+							</div>
+						</article>
+					{:else}
+						<div class="editor-tom">Vælg en lektion til venstre, eller tilføj en ny.</div>
+					{/if}
+				</div>
 			</div>
+
+			<div class="actions">
+				{#if gemKvit}
+					<div class="kvit-besked">Gemt ✓</div>
+				{/if}
+				<button class="form-knap primary full" type="button" onclick={gem} disabled={gemmer}>
+					{gemmer ? 'Gemmer...' : 'Gem'}
+				</button>
+
+				<div class="slet-omraade">
+					{#if !bekraefter}
+						<button class="slet-knap" type="button" onclick={sletDag} disabled={gemmer}>
+							Slet alt indhold for denne dag
+						</button>
+					{:else}
+						<div class="slet-bekraeft">
+							<div class="slet-tekst">
+								Slet alle lektioner og note for dag {dagNummer}?
+							</div>
+							<div class="slet-knapper">
+								<button
+									class="form-knap ghost"
+									type="button"
+									onclick={() => (bekraefter = false)}
+									disabled={gemmer}
+								>
+									Annuller
+								</button>
+								<button class="form-knap danger" type="button" onclick={sletDag} disabled={gemmer}>
+									{gemmer ? 'Sletter...' : 'Ja, slet'}
+								</button>
+							</div>
+						</div>
+					{/if}
+				</div>
+			</div>
+		{/if}
+	{:else if aktivFane === 'refleksioner'}
+		<div class="enkelt-fane">
+			<ForlobRefleksionerFane {forlobId} {dagNummer} />
+		</div>
+	{:else}
+		<div class="enkelt-fane">
+			<ForlobSmaaSkridtFane {forlobId} uge={ugeForDag} />
 		</div>
 	{/if}
 </div>
@@ -995,8 +1115,210 @@
 <style>
 	.page {
 		padding: 18px 18px 100px;
-		max-width: 520px;
+		max-width: 960px;
 		margin: 0 auto;
+	}
+
+	/* Enkelt-kolonne-indhold (note, refleksioner, små skridt, handlinger) holdes
+	   i læsbar bredde selvom siden er bred til to-panel-lektionerne. */
+	.form-card,
+	.actions,
+	.enkelt-fane {
+		max-width: 600px;
+	}
+
+	/* To-panel på Lektioner: liste til venstre, redigering til højre */
+	.lektion-layout {
+		display: grid;
+		grid-template-columns: 250px 1fr;
+		gap: 16px;
+		align-items: start;
+		margin-bottom: 14px;
+	}
+
+	.lektion-liste-panel {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 16px;
+		padding: 14px 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		position: sticky;
+		top: 12px;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+	}
+
+	.lektion-liste-panel .form-head {
+		padding: 2px 4px 6px;
+	}
+
+	.lektion-liste-panel .form-titel {
+		font-family: var(--ff-b);
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.lektion-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.liste-hint {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin: 0;
+		padding: 0 4px 4px;
+		line-height: 1.4;
+	}
+
+	.lli {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: 100%;
+		padding: 8px 8px 8px 10px;
+		border-radius: 10px;
+		background: transparent;
+		font-family: var(--ff-b);
+		transition:
+			background 0.12s ease,
+			box-shadow 0.12s ease;
+	}
+
+	.lli:hover {
+		background: var(--bg2);
+	}
+
+	.lli.aktiv {
+		background: var(--tdim);
+		box-shadow: inset 2px 0 0 var(--terra);
+	}
+
+	.lli.aktiv .lli-titel {
+		color: var(--terra);
+	}
+
+	.lli-nr {
+		flex-shrink: 0;
+		width: 20px;
+		height: 20px;
+		border-radius: 6px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 700;
+		color: var(--text3);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.lli.aktiv .lli-nr {
+		background: var(--terra);
+		border-color: var(--terra);
+		color: #fff;
+	}
+
+	.lli-vaelg {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		align-items: flex-start;
+		text-align: left;
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		font-family: inherit;
+	}
+
+	.lli-titel {
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		line-height: 1.3;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.lli-meta {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.lli-flyt {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		flex-shrink: 0;
+	}
+
+	.flyt-knap {
+		width: 22px;
+		height: 18px;
+		border: 1px solid var(--border);
+		background: var(--white);
+		border-radius: 6px;
+		color: var(--text3);
+		font-size: calc(11px * var(--fs-scale, 1));
+		line-height: 1;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+	}
+
+	.flyt-knap:hover:not(:disabled) {
+		border-color: var(--terra);
+		color: var(--terra);
+	}
+
+	.flyt-knap:disabled {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
+
+	.lektion-editor-panel {
+		min-width: 0;
+	}
+
+	.lektion-editor-panel .lektion-edit {
+		margin-bottom: 0;
+	}
+
+	.editor-tom {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 220px;
+		background: var(--bg2);
+		border: 1px dashed var(--border);
+		border-radius: 16px;
+		padding: 40px 24px;
+		text-align: center;
+		color: var(--text3);
+		font-size: calc(13px * var(--fs-scale, 1));
+	}
+
+	@media (max-width: 720px) {
+		.lektion-layout {
+			grid-template-columns: 1fr;
+		}
+
+		.lektion-liste-panel {
+			position: static;
+		}
 	}
 
 	.page-header {
@@ -1076,6 +1398,40 @@
 		pointer-events: none;
 	}
 
+	.faner {
+		display: flex;
+		gap: 2px;
+		margin-bottom: 18px;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.fane {
+		padding: 10px 16px;
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		font-family: var(--ff-b);
+		color: var(--text3);
+		background: none;
+		border: none;
+		border-bottom: 2px solid transparent;
+		border-radius: 8px 8px 0 0;
+		margin-bottom: -1px;
+		cursor: pointer;
+		transition:
+			color 0.12s ease,
+			background 0.12s ease;
+	}
+
+	.fane:hover {
+		color: var(--text);
+		background: var(--bg2);
+	}
+
+	.fane.aktiv {
+		color: var(--terra);
+		border-bottom-color: var(--terra);
+	}
+
 	.status-besked {
 		padding: 14px 16px;
 		background: var(--white);
@@ -1132,11 +1488,12 @@
 	.lektion-edit {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
-		padding: 12px;
-		background: var(--bg2);
+		gap: 16px;
+		padding: 20px;
+		background: var(--white);
 		border: 1px solid var(--border);
-		border-radius: 12px;
+		border-radius: 16px;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 	}
 
 	.lektion-edit.grupperet {
@@ -1257,10 +1614,14 @@
 		font-size: calc(14px * var(--fs-scale, 1));
 		border-radius: 10px;
 		border: 1px solid var(--border);
-		background: var(--white);
+		background: var(--bg2);
 		color: var(--text);
 		outline: none;
 		font-family: var(--ff-b);
+		transition:
+			border-color 0.12s ease,
+			box-shadow 0.12s ease,
+			background 0.12s ease;
 	}
 
 	.felt textarea,
@@ -1274,6 +1635,8 @@
 	.felt textarea:focus,
 	.form-card > textarea:focus {
 		border-color: var(--terra);
+		background: var(--white);
+		box-shadow: 0 0 0 3px var(--tdim);
 	}
 
 	.felt-rad {
