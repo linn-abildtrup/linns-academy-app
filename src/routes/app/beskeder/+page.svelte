@@ -326,6 +326,28 @@
 			</div>
 		</div>
 
+		<label class="felt">
+			<textarea
+				class="felt-input"
+				placeholder="Skriv dit spørgsmål til Linn AI..."
+				rows="3"
+				bind:value={aiInput}
+				disabled={aiLoader}
+			></textarea>
+		</label>
+		<button
+			type="button"
+			class="primary-knap"
+			onclick={spoergLinnAi}
+			disabled={aiLoader || !aiInput.trim()}
+		>
+			{aiLoader ? 'Linn AI tænker...' : 'Spørg Linn AI'}
+		</button>
+
+		{#if aiFejl}
+			<div class="status fejl">{aiFejl}</div>
+		{/if}
+
 		{#if aiSamtale && aiSamtale.beskeder.length > 0}
 			<div class="ai-traad">
 				{#each aiSamtale.beskeder as b, i (i)}
@@ -363,28 +385,6 @@
 					{/if}
 				{/each}
 			</div>
-		{/if}
-
-		<label class="felt">
-			<textarea
-				class="felt-input"
-				placeholder="Skriv dit spørgsmål til Linn AI..."
-				rows="3"
-				bind:value={aiInput}
-				disabled={aiLoader}
-			></textarea>
-		</label>
-		<button
-			type="button"
-			class="primary-knap"
-			onclick={spoergLinnAi}
-			disabled={aiLoader || !aiInput.trim()}
-		>
-			{aiLoader ? 'Linn AI tænker...' : 'Spørg Linn AI'}
-		</button>
-
-		{#if aiFejl}
-			<div class="status fejl">{aiFejl}</div>
 		{/if}
 	</section>
 {/snippet}
@@ -590,6 +590,9 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
+		margin-top: 16px;
+		padding-top: 16px;
+		border-top: 1px solid var(--border);
 	}
 
 	.ai-besked {
