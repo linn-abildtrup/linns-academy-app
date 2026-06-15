@@ -46,6 +46,19 @@
 	const kanForrige = $derived(dagNummer > 0);
 	const kanNaeste = $derived(dagNummer < maxDag);
 
+	// Ugedag + dato for denne lektionsdag. Dag N = forløbets startDato + N dage.
+	const dagDato = $derived.by(() => {
+		if (!forlob) return null;
+		const d = forlob.startDato.toDate();
+		d.setDate(d.getDate() + dagNummer);
+		const tekst = new Intl.DateTimeFormat('da-DK', {
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long'
+		}).format(d);
+		return tekst.charAt(0).toUpperCase() + tekst.slice(1);
+	});
+
 	// Faner: Lektioner / Refleksioner / Små skridt
 	let aktivFane = $state<'lektioner' | 'refleksioner' | 'smaaskridt'>('lektioner');
 
@@ -698,9 +711,9 @@
 				</span>
 			{/if}
 		</div>
-		{#if dagNummer > 0}
-			<p class="page-sub">Uge {dag.uge}</p>
-		{/if}
+		<p class="page-sub">
+			{#if dagNummer > 0}Uge {dag.uge}{#if dagDato} · {/if}{/if}{#if dagDato}{dagDato}{/if}
+		</p>
 	</header>
 
 	<div class="faner">
