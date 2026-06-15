@@ -1368,6 +1368,7 @@
 		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
+		text-align: center;
 	}
 
 	.dag-nav {
