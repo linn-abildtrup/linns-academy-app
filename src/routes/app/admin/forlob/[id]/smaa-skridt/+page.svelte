@@ -766,6 +766,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
+		margin-bottom: 24px;
 		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 	}
 
