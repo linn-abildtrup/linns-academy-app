@@ -352,6 +352,22 @@
 			</div>
 		</section>
 
+		<section class="publish-card">
+			<div class="publish-tekst">
+				<div class="publish-titel">Publicér til appen</div>
+				<p class="publish-sub">
+					Dine ændringer her er kun gemt som kladde. Først når du publicerer, skrives de små skridt
+					ind på de rigtige dage og bliver synlige for kunderne (besvares Ja/Delvist/Nej).
+				</p>
+			</div>
+			<button class="form-knap primary" type="button" onclick={publicer} disabled={publicerer}>
+				{publicerer ? 'Publicerer…' : 'Publicér til appen'}
+			</button>
+			{#if publResultat}
+				<div class="kvit-besked">{publResultat}</div>
+			{/if}
+		</section>
+
 		<!-- Liste -->
 		<section class="liste-card">
 			<div class="form-head">
@@ -382,22 +398,6 @@
 						</div>
 					{/each}
 				</div>
-			{/if}
-		</section>
-
-		<section class="publish-card">
-			<div class="publish-tekst">
-				<div class="publish-titel">Publicér til appen</div>
-				<p class="publish-sub">
-					Dine ændringer her er kun gemt som kladde. Først når du publicerer, skrives de små skridt
-					ind på de rigtige dage og bliver synlige for kunderne (besvares Ja/Delvist/Nej).
-				</p>
-			</div>
-			<button class="form-knap primary" type="button" onclick={publicer} disabled={publicerer}>
-				{publicerer ? 'Publicerer…' : 'Publicér til appen'}
-			</button>
-			{#if publResultat}
-				<div class="kvit-besked">{publResultat}</div>
 			{/if}
 		</section>
 	{/if}
