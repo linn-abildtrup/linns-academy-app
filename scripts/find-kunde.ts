@@ -66,7 +66,13 @@ if (matchUsers.length === 0) {
 	for (const r of matchUsers) {
 		console.log(`  uid=${r.uid}`);
 		console.log(
-			`    email=${r.data.email} firstName=${r.data.firstName} accessLevel=${r.data.accessLevel} accessSource=${r.data.accessSource} activeProduct=${r.data.activeProduct} activeSubscription=${r.data.activeSubscription} state=${r.data.state}\n`
+			`    email=${r.data.email} firstName=${r.data.firstName} accessLevel=${r.data.accessLevel} accessSource=${r.data.accessSource} activeProduct=${r.data.activeProduct} activeSubscription=${r.data.activeSubscription} state=${r.data.state}`
+		);
+		const versionSat = r.data.appVersionSetAt
+			? new Date(Number(r.data.appVersionSetAt)).toISOString().replace('T', ' ').slice(0, 19)
+			: '?';
+		console.log(
+			`    appVersion=${r.data.appVersion ?? '— (har ikke åbnet app siden version-sporing blev deployet)'} (sat ${versionSat})\n`
 		);
 	}
 }
