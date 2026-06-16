@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
 	import type { Forlob } from '$lib/content/forlobAdgang';
-	import { nyLektion, tomForlobDag } from '$lib/content/forlob';
+	import { lektionTidsstatus, nyLektion, tomForlobDag } from '$lib/content/forlob';
 	import {
 		findDageMedLektionGruppe,
 		findDageMedNoteGruppe,
@@ -224,6 +224,89 @@
 			...dag,
 			lektioner: dag.lektioner.map((l) => (l.id === id ? { ...l, [felt]: vaerdi } : l))
 		};
+	}
+
+	// ── Tidsbegraensning (synlighedsvindue pr lektion) ──────────────────────
+	// Lektioner, hvor admin har foldet tidsbegraensnings-panelet ud manuelt.
+	// En lektion med gemt visFra/skjulEfter regnes altid som aaben.
+	let tidsPanelManuel = $state<Set<string>>(new Set());
+
+	function tidsAaben(l: LektionItem): boolean {
+		return tidsPanelManuel.has(l.id) || !!(l.visFra || l.skjulEfter);
+	}
+
+	function toggleTidsbegraens(l: LektionItem) {
+		if (tidsAaben(l)) {
+			// Sluk: ryd vaerdierne, saa lektionen igen er altid synlig.
+			opdaterLektion(l.id, 'visFra', '');
+			opdaterLektion(l.id, 'skjulEfter', '');
+			const ny = new Set(tidsPanelManuel);
+			ny.delete(l.id);
+			tidsPanelManuel = ny;
+		} else {
+			tidsPanelManuel = new Set(tidsPanelManuel).add(l.id);
+		}
+	}
+
+	function formaterDatoTid(iso: string | undefined): string {
+		if (!iso) return '';
+		const d = new Date(iso);
+		if (isNaN(d.getTime())) return '';
+		const tekst = new Intl.DateTimeFormat('da-DK', {
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long',
+			hour: '2-digit',
+			minute: '2-digit'
+		}).format(d);
+		return tekst.charAt(0).toUpperCase() + tekst.slice(1);
+	}
+
+	// Menneske-laeselig opsummering af synlighedsvinduet (live under felterne).
+	function tidsResume(l: LektionItem): string {
+		const fra = formaterDatoTid(l.visFra);
+		const til = formaterDatoTid(l.skjulEfter);
+		if (!fra && !til) return '';
+		if (fra && til) return `Synlig ${fra} → forsvinder efter ${til}.`;
+		if (til) return `Synlig indtil ${til} — forsvinder automatisk derefter.`;
+		return `Synlig fra ${fra} og frem.`;
+	}
+
+	// Kort dato til liste-maerket, fx '17/6 22:00'.
+	function formaterDatoKort(iso: string | undefined): string {
+		if (!iso) return '';
+		const d = new Date(iso);
+		if (isNaN(d.getTime())) return '';
+		return new Intl.DateTimeFormat('da-DK', {
+			day: 'numeric',
+			month: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		}).format(d);
+	}
+
+	// Maerke til venstre liste: null hvis ingen tidsbegraensning.
+	function tidsBadge(l: LektionItem): { tekst: string; status: string } | null {
+		const status = lektionTidsstatus(l);
+		if (status === 'altid') return null;
+		if (status === 'udloebet') return { tekst: 'Udløbet · skjult', status };
+		const naar = formaterDatoKort(l.skjulEfter);
+		if (status === 'foer') {
+			return { tekst: naar ? `Planlagt · skjules ${naar}` : 'Planlagt', status };
+		}
+		return { tekst: naar ? `Forsvinder ${naar}` : 'Tidsbegrænset', status };
+	}
+
+	// Valideringsfejl: skjulEfter skal ligge efter visFra.
+	function tidsFejl(l: LektionItem): string {
+		if (l.visFra && l.skjulEfter) {
+			const f = new Date(l.visFra).getTime();
+			const t = new Date(l.skjulEfter).getTime();
+			if (!isNaN(f) && !isNaN(t) && t <= f) {
+				return 'Sluttidspunkt skal ligge efter starttidspunkt.';
+			}
+		}
+		return '';
 	}
 
 	async function haandterHtmlUpload(lektionId: string, e: Event) {
@@ -712,7 +795,9 @@
 			{/if}
 		</div>
 		<p class="page-sub">
-			{#if dagNummer > 0}Uge {dag.uge}{#if dagDato} · {/if}{/if}{#if dagDato}{dagDato}{/if}
+			{#if dagNummer > 0}Uge {dag.uge}{#if dagDato}
+					·
+				{/if}{/if}{#if dagDato}{dagDato}{/if}
 		</p>
 	</header>
 
@@ -819,6 +904,10 @@
 												: ''}{#if dageMed.length > 1}
 												· 🔗 {dageMed.length}{/if}
 										</span>
+										{#if tidsBadge(l)}
+											{@const b = tidsBadge(l)}
+											<span class="lli-tidsbadge" data-status={b?.status}>⏱ {b?.tekst}</span>
+										{/if}
 									</button>
 									<div class="lli-flyt">
 										<button
@@ -1030,6 +1119,66 @@
 								<div class="thumb-hint">
 									Vises i stedet for video-tjenestens auto-thumbnail. Maks 3 MB.
 								</div>
+							</div>
+
+							<div class="tids-felt">
+								<button
+									class="tids-toggle"
+									type="button"
+									role="switch"
+									aria-checked={tidsAaben(l)}
+									onclick={() => toggleTidsbegraens(l)}
+									disabled={gemmer}
+								>
+									<span class="tids-toggle-spor" class:til={tidsAaben(l)}>
+										<span class="tids-toggle-kugle"></span>
+									</span>
+									<span class="tids-toggle-tekst">
+										<span class="felt-label">⏱ Tidsbegræns synlighed</span>
+										<span class="tids-toggle-hint">
+											{tidsAaben(l)
+												? 'Lektionen skjules automatisk uden for vinduet.'
+												: 'Lektionen er altid synlig, når dagen er åben.'}
+										</span>
+									</span>
+								</button>
+
+								{#if tidsAaben(l)}
+									<div class="tids-indhold">
+										<div class="felt-rad">
+											<label class="felt">
+												<span class="felt-label">Vis fra (valgfri)</span>
+												<input
+													type="datetime-local"
+													value={l.visFra ?? ''}
+													oninput={(e) => opdaterLektion(l.id, 'visFra', e.currentTarget.value)}
+													disabled={gemmer}
+												/>
+											</label>
+											<label class="felt">
+												<span class="felt-label">Skjul efter</span>
+												<input
+													type="datetime-local"
+													value={l.skjulEfter ?? ''}
+													oninput={(e) => opdaterLektion(l.id, 'skjulEfter', e.currentTarget.value)}
+													disabled={gemmer}
+												/>
+											</label>
+										</div>
+
+										{#if tidsFejl(l)}
+											<div class="tids-fejl">⚠ {tidsFejl(l)}</div>
+										{:else if tidsResume(l)}
+											<div class="tids-resume">ⓘ {tidsResume(l)}</div>
+										{/if}
+
+										<div class="tids-advarsel">
+											Kunder, der er bagud (på pause), når måske ikke at se den inden tidsfristen.
+											Til live-møder er det som regel det rigtige. Datoen er bundet til dette hold —
+											genbruger du lektionen, skal den sættes på ny.
+										</div>
+									</div>
+								{/if}
 							</div>
 
 							<div class="vis-paa-rad">
@@ -1565,6 +1714,120 @@
 		color: var(--terra);
 		cursor: pointer;
 		touch-action: manipulation;
+	}
+
+	/* ── Tidsbegraensning ── */
+	.tids-felt {
+		margin-top: 4px;
+		padding-top: 14px;
+		border-top: 1px solid var(--border);
+	}
+
+	.tids-toggle {
+		display: flex;
+		align-items: flex-start;
+		gap: 10px;
+		width: 100%;
+		padding: 0;
+		background: none;
+		border: none;
+		text-align: left;
+		cursor: pointer;
+		touch-action: manipulation;
+	}
+
+	.tids-toggle-spor {
+		flex: none;
+		position: relative;
+		width: 38px;
+		height: 22px;
+		margin-top: 1px;
+		border-radius: 99px;
+		background: var(--border);
+		transition: background 0.15s ease;
+	}
+
+	.tids-toggle-spor.til {
+		background: var(--sage);
+	}
+
+	.tids-toggle-kugle {
+		position: absolute;
+		top: 2px;
+		left: 2px;
+		width: 18px;
+		height: 18px;
+		border-radius: 50%;
+		background: var(--white);
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+		transition: transform 0.15s ease;
+	}
+
+	.tids-toggle-spor.til .tids-toggle-kugle {
+		transform: translateX(16px);
+	}
+
+	.tids-toggle-tekst {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.tids-toggle-hint {
+		font-family: var(--ff-b);
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.tids-indhold {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		margin-top: 12px;
+		padding-left: 48px;
+	}
+
+	.tids-resume {
+		padding: 8px 10px;
+		background: var(--sdim);
+		border-radius: 8px;
+		font-family: var(--ff-b);
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text);
+	}
+
+	.tids-fejl {
+		padding: 8px 10px;
+		background: var(--tdim);
+		border-radius: 8px;
+		font-family: var(--ff-b);
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: #b8503f;
+	}
+
+	.tids-advarsel {
+		font-family: var(--ff-b);
+		font-size: calc(11px * var(--fs-scale, 1));
+		line-height: 1.4;
+		color: var(--text3);
+	}
+
+	.lli-tidsbadge {
+		display: inline-block;
+		margin-top: 4px;
+		padding: 2px 7px;
+		border-radius: 99px;
+		font-family: var(--ff-b);
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 600;
+		background: var(--sdim);
+		color: var(--sage);
+	}
+
+	.lli-tidsbadge[data-status='udloebet'] {
+		background: var(--bg2);
+		color: var(--text3);
 	}
 
 	.vis-paa-knap:hover:not(:disabled) {

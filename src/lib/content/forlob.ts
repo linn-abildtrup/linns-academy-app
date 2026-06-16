@@ -33,6 +33,14 @@ export interface LektionItem {
 	// grupperingId. Aendringer kan saa propageres til alle dage i gruppen
 	// via opdaterLektionGruppe(). Tom = standalone lektion (uafhaengig).
 	grupperingId?: string;
+	// Valgfri tidsbegraensning af synlighed. Absolutte ISO-datetime-strenge i
+	// lokal tid (fx '2026-06-17T22:00') — IKKE relativt til forloebsdagen.
+	// visFra tom = synlig saa snart dagen er aaben. skjulEfter tom = forsvinder
+	// aldrig. Bruges fx til et live Zoom-link der kun gaelder indtil kl. 22.
+	// Datoerne er hold-specifikke; genbruges lektionen til naeste hold skal de
+	// saettes paa ny.
+	visFra?: string;
+	skjulEfter?: string;
 }
 
 /**
@@ -107,9 +115,7 @@ function toIsoLokal(d: Date): string {
  * Inputtet kan have overlap eller dubletter — outputtet er en Set-baseret
  * sorteret liste.
  */
-export function nulDageDatoer(
-	intervaller: { fra: string; til: string }[]
-): string[] {
+export function nulDageDatoer(intervaller: { fra: string; til: string }[]): string[] {
 	const sat = new Set<string>();
 	for (const iv of intervaller) {
 		const f = new Date(iv.fra);
@@ -145,11 +151,7 @@ export function getCurrentDayMedNulDage(
  * Slut-millisecond for et forloeb der er forlaenget med nulDageBrugt dage.
  * Bruges til at afgoere om et forloeb stadig er aktivt.
  */
-export function forlobSlutMs(
-	startMs: number,
-	antalDage: number,
-	nulDageBrugt: number
-): number {
+export function forlobSlutMs(startMs: number, antalDage: number, nulDageBrugt: number): number {
 	const msPerDag = 1000 * 60 * 60 * 24;
 	return startMs + (antalDage + nulDageBrugt) * msPerDag;
 }
@@ -243,15 +245,64 @@ export const UGEDAG_LABELS = ugedage;
  */
 export function nyLektion(): LektionItem {
 	return {
-		id: typeof crypto !== 'undefined' && crypto.randomUUID
-			? crypto.randomUUID()
-			: 'lektion-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+		id:
+			typeof crypto !== 'undefined' && crypto.randomUUID
+				? crypto.randomUUID()
+				: 'lektion-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
 		titel: '',
 		beskrivelse: '',
 		varighedMin: 0,
 		format: '',
 		url: ''
 	};
+}
+
+/**
+ * Er en lektion synlig for kunden lige nu ud fra dens valgfri
+ * tidsbegraensning? Lektioner uden visFra/skjulEfter er altid synlige (naar
+ * dagen foerst er aaben). visFra/skjulEfter er absolutte ISO-datetime-strenge
+ * i lokal tid. skjulEfter er sidste synlige oejeblik — saetter du 22:00, er
+ * den synlig kl. 22:00 og forsvinder kl. 22:01.
+ */
+export function lektionSynligNu(
+	l: { visFra?: string; skjulEfter?: string },
+	now: Date = new Date()
+): boolean {
+	const t = now.getTime();
+	if (l.visFra) {
+		const fra = new Date(l.visFra).getTime();
+		if (!isNaN(fra) && t < fra) return false;
+	}
+	if (l.skjulEfter) {
+		const til = new Date(l.skjulEfter).getTime();
+		// +59s saa et valgt klokkeslaet (uden sekunder) er synligt hele minuttet.
+		if (!isNaN(til) && t > til + 59_000) return false;
+	}
+	return true;
+}
+
+export type LektionTidsstatus = 'altid' | 'foer' | 'aktiv' | 'udloebet';
+
+/**
+ * Status for en lektions tidsbegraensning — bruges til admin-maerker.
+ * 'altid' = ingen begraensning. 'foer' = endnu ikke synlig (foer visFra).
+ * 'aktiv' = i sit synlighedsvindue. 'udloebet' = skjult efter skjulEfter.
+ */
+export function lektionTidsstatus(
+	l: { visFra?: string; skjulEfter?: string },
+	now: Date = new Date()
+): LektionTidsstatus {
+	if (!l.visFra && !l.skjulEfter) return 'altid';
+	const t = now.getTime();
+	if (l.skjulEfter) {
+		const til = new Date(l.skjulEfter).getTime();
+		if (!isNaN(til) && t > til + 59_000) return 'udloebet';
+	}
+	if (l.visFra) {
+		const fra = new Date(l.visFra).getTime();
+		if (!isNaN(fra) && t < fra) return 'foer';
+	}
+	return 'aktiv';
 }
 
 /**

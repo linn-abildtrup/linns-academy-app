@@ -11,7 +11,7 @@
 		GuideType
 	} from '$lib/content/bibliotek';
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
-	import { getCurrentDay } from '$lib/content/forlob';
+	import { getCurrentDay, lektionSynligNu } from '$lib/content/forlob';
 	import {
 		formatDanskDato,
 		GUIDE_TYPE_LABELS,
@@ -35,11 +35,7 @@
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
 	import type { UserDoc } from '$lib/types';
 	import { erForlobsklient, harGennemfoertForlob } from '$lib/utils/userAdgang';
-	import {
-		gemLektionNote,
-		hentLektionNote,
-		hentNoterForForlob
-	} from '$lib/firestore/lektionNoter';
+	import { gemLektionNote, hentLektionNote, hentNoterForForlob } from '$lib/firestore/lektionNoter';
 	import { validerNote, type LektionNote } from '$lib/content/lektionNoter';
 	import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
@@ -164,9 +160,7 @@
 	let forlobsdageEfterForlob = $state<Record<string, ForlobDag[]>>({});
 	let forlobNavne = $state<Record<string, string>>({});
 	const lektionTabIds = $derived(
-		Object.keys(forlobsdageEfterForlob).filter(
-			(fId) => forlobsdageEfterForlob[fId].length > 0
-		)
+		Object.keys(forlobsdageEfterForlob).filter((fId) => forlobsdageEfterForlob[fId].length > 0)
 	);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
@@ -248,6 +242,9 @@
 		for (const dag of dage) {
 			for (const l of dag.lektioner) {
 				if (!l.titel?.trim()) continue;
+				// Tidsbegraensede lektioner (fx udloebne Zoom-links) skal heller
+				// ikke ligge i biblioteket efter deres vindue er forbi.
+				if (!lektionSynligNu(l)) continue;
 				ud.push({ ...l, dagNummer: dag.dagNummer, uge: dag.uge });
 			}
 		}
@@ -441,9 +438,10 @@
 				// Ingen forløb endnu — vis kun opskrifter (globale)
 				opskrifter = await opskrifterPromise;
 				if (opskrifter.length === 0) {
-					fejl = userDoc && erForlobsklient(userDoc)
-						? 'Du er ikke tilknyttet et forløb endnu. Kontakt Linn.'
-						: 'Du har ikke gennemført et forløb endnu — biblioteket er tomt indtil du har været på et forløb.';
+					fejl =
+						userDoc && erForlobsklient(userDoc)
+							? 'Du er ikke tilknyttet et forløb endnu. Kontakt Linn.'
+							: 'Du har ikke gennemført et forløb endnu — biblioteket er tomt indtil du har været på et forløb.';
 				}
 				loading = false;
 				return;
@@ -489,9 +487,7 @@
 			for (const ex of resultater.flat()) {
 				oevelseMap.set(ex.id, ex);
 			}
-			oevelser = Array.from(oevelseMap.values()).sort((a, b) =>
-				a.name.localeCompare(b.name, 'da')
-			);
+			oevelser = Array.from(oevelseMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'da'));
 
 			// Lektioner per produkt-type — load forløbsdage særskilt fra det
 			// per-product mapping og aggregér til flat liste pr type.
@@ -690,15 +686,11 @@
 		{:else if fejl}
 			<div class="status-besked fejl">{fejl}</div>
 		{:else if sorterede.length === 0}
-			<div class="status-besked">
-				Der er ikke lagt FAQ ind for dit forløb endnu.
-			</div>
+			<div class="status-besked">Der er ikke lagt FAQ ind for dit forløb endnu.</div>
 		{:else}
 			{@const synligeKategorier = sorterede.filter((k) => harFaqIKategori(k.id))}
 			{#if synligeKategorier.length === 0}
-				<div class="status-besked">
-					Der er ingen udgivne spørgsmål endnu.
-				</div>
+				<div class="status-besked">Der er ingen udgivne spørgsmål endnu.</div>
 			{:else}
 				<div class="kat-liste">
 					{#each synligeKategorier as kat (kat.id)}
@@ -737,15 +729,11 @@
 		{:else if fejl}
 			<div class="status-besked fejl">{fejl}</div>
 		{:else if sorteredeGuideKats.length === 0}
-			<div class="status-besked">
-				Der er ikke lagt links op for dit forløb endnu.
-			</div>
+			<div class="status-besked">Der er ikke lagt links op for dit forløb endnu.</div>
 		{:else}
 			{@const synligeKategorier = sorteredeGuideKats.filter((k) => harGuidesIKategori(k.id))}
 			{#if synligeKategorier.length === 0}
-				<div class="status-besked">
-					Der er ingen udgivne links endnu.
-				</div>
+				<div class="status-besked">Der er ingen udgivne links endnu.</div>
 			{:else}
 				<div class="kat-liste">
 					{#each synligeKategorier as kat (kat.id)}
@@ -758,30 +746,74 @@
 											<span class="guide-type-pill">{typeLabel(it.type)}</span>
 											<div class="guide-thumb-icon">
 												{#if it.type === 'video'}
-													<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+													<svg
+														width="28"
+														height="28"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="rgba(255,255,255,.95)"
+														stroke-width="1.6"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													>
 														<circle cx="12" cy="12" r="10" />
 														<path d="M10 8l6 4-6 4V8z" fill="rgba(255,255,255,.95)" stroke="none" />
 													</svg>
 												{:else if it.type === 'pdf'}
-													<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+													<svg
+														width="28"
+														height="28"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="rgba(255,255,255,.95)"
+														stroke-width="1.5"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													>
 														<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
 														<path d="M14 2v6h6" />
 														<path d="M9 13h6M9 17h4" />
 													</svg>
 												{:else if it.type === 'audio'}
-													<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="1.8" stroke-linecap="round">
+													<svg
+														width="28"
+														height="28"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="rgba(255,255,255,.95)"
+														stroke-width="1.8"
+														stroke-linecap="round"
+													>
 														<path d="M3 10v4M7 7v10M11 4v16M15 8v8M19 11v2" />
 													</svg>
 												{:else if it.type === 'html'}
-													<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+													<svg
+														width="28"
+														height="28"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="rgba(255,255,255,.95)"
+														stroke-width="1.6"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													>
 														<path d="M4 5h16v14H4z" />
 														<path d="M4 9h16" />
 														<path d="M8 13l-2 2 2 2M16 13l2 2-2 2" />
 													</svg>
 												{:else}
-													<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="1.5">
+													<svg
+														width="28"
+														height="28"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="rgba(255,255,255,.95)"
+														stroke-width="1.5"
+													>
 														<circle cx="12" cy="12" r="9" />
-														<path d="M12 3c-2 2-3 5-3 9s1 7 3 9M12 3c2 2 3 5 3 9s-1 7-3 9M3 12h18" />
+														<path
+															d="M12 3c-2 2-3 5-3 9s1 7 3 9M12 3c2 2 3 5 3 9s-1 7-3 9M3 12h18"
+														/>
 													</svg>
 												{/if}
 											</div>
@@ -809,9 +841,7 @@
 		{:else if fejl}
 			<div class="status-besked fejl">{fejl}</div>
 		{:else if aktiveLektioner.length === 0}
-			<div class="status-besked">
-				Der er ikke lagt lektioner op for dette forløb endnu.
-			</div>
+			<div class="status-besked">Der er ikke lagt lektioner op for dette forløb endnu.</div>
 		{:else}
 			<div class="lektion-liste-bib">
 				{#each aktiveLektioner as l (l.dagNummer + '-' + l.id)}
@@ -859,9 +889,7 @@
 		{#if loading}
 			<Loading tekst="Henter træningsøvelser..." kompakt />
 		{:else if oevelser.length === 0}
-			<div class="status-besked">
-				Der er ingen træningsøvelser fra dine forløb endnu.
-			</div>
+			<div class="status-besked">Der er ingen træningsøvelser fra dine forløb endnu.</div>
 		{:else}
 			<div class="oevelser-liste">
 				{#each oevelser as ex (ex.id)}
@@ -881,9 +909,7 @@
 		{#if loading}
 			<Loading tekst="Henter opskrifter..." kompakt />
 		{:else if opskrifter.length === 0}
-			<div class="status-besked">
-				Der er ingen opskrifter endnu.
-			</div>
+			<div class="status-besked">Der er ingen opskrifter endnu.</div>
 		{:else}
 			<div class="opskrift-soegning-wrap">
 				<Icon name="search" size={14} color="var(--text3)" />
@@ -895,9 +921,7 @@
 				/>
 			</div>
 			{#if filtreredeOpskrifter.length === 0}
-				<div class="status-besked">
-					Ingen opskrifter matcher søgningen.
-				</div>
+				<div class="status-besked">Ingen opskrifter matcher søgningen.</div>
 			{:else}
 				<div class="opskrifter-liste">
 					{#each filtreredeOpskrifter as o (o.id)}
@@ -931,15 +955,8 @@
 </div>
 
 {#if aabenOevelse}
-	<div
-		class="oevelse-overlay"
-		role="dialog"
-		aria-modal="true"
-		aria-label={aabenOevelse.name}
-	>
-		<button class="oevelse-luk" type="button" onclick={lukOevelse} aria-label="Luk">
-			×
-		</button>
+	<div class="oevelse-overlay" role="dialog" aria-modal="true" aria-label={aabenOevelse.name}>
+		<button class="oevelse-luk" type="button" onclick={lukOevelse} aria-label="Luk"> × </button>
 		<div class="oevelse-indhold">
 			<h2 class="oevelse-titel">{aabenOevelse.name}</h2>
 			<p class="oevelse-cat">{aabenOevelse.catLabel}</p>
@@ -948,13 +965,7 @@
 					<Loading tekst="Henter video..." kompakt />
 				{:else if oevelseVideoUrl}
 					<!-- svelte-ignore a11y_media_has_caption -->
-					<video
-						class="oevelse-video"
-						src={oevelseVideoUrl}
-						controls
-						autoplay
-						playsinline
-					></video>
+					<video class="oevelse-video" src={oevelseVideoUrl} controls autoplay playsinline></video>
 				{:else}
 					<div class="status-besked">Ingen video tilgængelig.</div>
 				{/if}
@@ -1065,7 +1076,11 @@
 			sandbox="allow-same-origin allow-scripts allow-popups allow-modals"
 		></iframe>
 		<div class="html-overlay-foot">
-			<button class="html-overlay-pdf" type="button" onclick={() => gemHtmlSomPdf(aabenLektion?.url)}>
+			<button
+				class="html-overlay-pdf"
+				type="button"
+				onclick={() => gemHtmlSomPdf(aabenLektion?.url)}
+			>
 				📄 Gem som PDF
 			</button>
 		</div>
@@ -1109,7 +1124,11 @@
 
 		{#if aabenLektion.varighedMin > 0 || aabenLektion.format}
 			<div class="overlay-dato">
-				{aabenLektion.varighedMin > 0 ? aabenLektion.varighedMin + ' min' : ''}{aabenLektion.varighedMin > 0 && aabenLektion.format ? ' · ' : ''}{aabenLektion.format}
+				{aabenLektion.varighedMin > 0
+					? aabenLektion.varighedMin + ' min'
+					: ''}{aabenLektion.varighedMin > 0 && aabenLektion.format
+					? ' · '
+					: ''}{aabenLektion.format}
 			</div>
 		{/if}
 
@@ -1332,7 +1351,9 @@
 		text-align: left;
 		font-family: inherit;
 		padding: 0;
-		transition: border-color 0.18s, transform 0.1s;
+		transition:
+			border-color 0.18s,
+			transform 0.1s;
 	}
 
 	.guide-card:active {
@@ -1376,11 +1397,11 @@
 	}
 
 	.thumb-video {
-		background: linear-gradient(135deg, #B87B6E 0%, #9D6358 100%);
+		background: linear-gradient(135deg, #b87b6e 0%, #9d6358 100%);
 	}
 
 	.thumb-pdf {
-		background: linear-gradient(135deg, #F5E4DC 0%, #E8C9BC 55%, #D9A895 100%);
+		background: linear-gradient(135deg, #f5e4dc 0%, #e8c9bc 55%, #d9a895 100%);
 	}
 
 	.thumb-pdf .guide-thumb-icon svg {
@@ -1393,7 +1414,7 @@
 	}
 
 	.thumb-link {
-		background: linear-gradient(135deg, #C8DDD1 0%, #A9CBBA 100%);
+		background: linear-gradient(135deg, #c8ddd1 0%, #a9cbba 100%);
 	}
 
 	.thumb-link .guide-thumb-icon svg {
@@ -1406,11 +1427,11 @@
 	}
 
 	.thumb-audio {
-		background: linear-gradient(135deg, #B87B6E 0%, #CC9080 100%);
+		background: linear-gradient(135deg, #b87b6e 0%, #cc9080 100%);
 	}
 
 	.thumb-html {
-		background: linear-gradient(135deg, #B89BCB 0%, #8E6FA8 100%);
+		background: linear-gradient(135deg, #b89bcb 0%, #8e6fa8 100%);
 	}
 
 	.guide-body {

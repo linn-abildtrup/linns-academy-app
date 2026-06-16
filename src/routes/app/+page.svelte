@@ -15,6 +15,7 @@
 		forlobSlutMs,
 		getCurrentDay,
 		getCurrentDayMedNulDage,
+		lektionSynligNu,
 		nulDageDatoer,
 		tomForlobDag
 	} from '$lib/content/forlob';
@@ -210,6 +211,12 @@
 
 	// Bagudkompatibel alias
 	const dagensDag = $derived(valgtDag);
+
+	// Dagens lektioner kunden faktisk maa se nu — tidsbegraensede lektioner
+	// (fx Zoom-links der udloeber kl. 22) filtreres fra naar vinduet er forbi.
+	const synligeDagensLektioner = $derived(
+		(dagensDag?.lektioner ?? []).filter((l) => lektionSynligNu(l))
+	);
 
 	function vaelgDag(n: number) {
 		if (aktivDagNummer === null) return;
@@ -1541,8 +1548,8 @@
 						<div class="eyebrow eyebrow-muted">Dagens lektioner</div>
 					</div>
 					<div class="actions-list">
-						{#if dagensDag.lektioner.length > 0}
-							{#each dagensDag.lektioner as lektion, i (lektion.id)}
+						{#if synligeDagensLektioner.length > 0}
+							{#each synligeDagensLektioner as lektion, i (lektion.id)}
 								{@const thumbUrl = lektion.thumbnailUrl || videoThumbnail(lektion.url)}
 								{@const erLyd = erLydLektion(lektion.url)}
 								{@const erInspiration = erInspirationLektion(lektion.url)}

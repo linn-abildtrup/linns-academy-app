@@ -12,6 +12,7 @@
 		forlobSlutMs,
 		getCurrentDay,
 		getCurrentDayMedNulDage,
+		lektionSynligNu,
 		nulDageDatoer,
 		tomForlobDag
 	} from '$lib/content/forlob';
@@ -51,10 +52,7 @@
 	const aktivDagNr = $derived.by<number | null>(() => {
 		if (!forlob) return null;
 		const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
-		return getCurrentDayMedNulDage(
-			{ startDato, antalDage: forlob.antalDage },
-			nulDatoer
-		);
+		return getCurrentDayMedNulDage({ startDato, antalDage: forlob.antalDage }, nulDatoer);
 	});
 
 	const dagsmap = $derived.by<Map<number, ForlobDag>>(() => {
@@ -81,6 +79,10 @@
 		if (aktivDagNr === null) return null;
 		return dagsmap.get(aktivDagNr) ?? tomForlobDag(aktivDagNr);
 	});
+
+	// Lektioner kunden faktisk maa se nu — tidsbegraensede (fx Zoom-links der
+	// udloeber kl. 22) filtreres fra naar deres vindue er passeret.
+	const synligeLektioner = $derived((aktivDag?.lektioner ?? []).filter((l) => lektionSynligNu(l)));
 
 	function aabnLektionItem(it: LektionItem) {
 		if (!it.url) {
@@ -218,7 +220,7 @@
 			if (ønsketId) {
 				for (const dag of dage) {
 					const fundet = dag.lektioner.find((l) => l.id === ønsketId);
-					if (fundet) {
+					if (fundet && lektionSynligNu(fundet)) {
 						lektionFraQueryParam = true;
 						aabenLektionDagNummer = dag.dagNummer;
 						aabnLektionItem(fundet);
@@ -258,11 +260,11 @@
 		{#if aktivDag}
 			<section class="aktiv-section">
 				<div class="eyebrow eyebrow-terra">Dagens lektion</div>
-				{#if aktivDag.lektioner.length === 0}
+				{#if synligeLektioner.length === 0}
 					<div class="status-besked">Der er ingen lektion lagt op til i dag.</div>
 				{:else}
 					<div class="lektion-liste">
-						{#each aktivDag.lektioner as l (l.id)}
+						{#each synligeLektioner as l (l.id)}
 							{@const thumbUrl = l.thumbnailUrl || videoThumbnail(l.url)}
 							{@const erLyd = erLydLektion(l.url)}
 							{@const erInspiration = erInspirationLektion(l.url)}
@@ -307,7 +309,10 @@
 										</span>
 										{#if l.varighedMin > 0 || visFormat}
 											<span class="lektion-duration">
-												{l.varighedMin > 0 ? l.varighedMin + ' min' : ''}{l.varighedMin > 0 && visFormat ? ' · ' : ''}{visFormat}
+												{l.varighedMin > 0 ? l.varighedMin + ' min' : ''}{l.varighedMin > 0 &&
+												visFormat
+													? ' · '
+													: ''}{visFormat}
 											</span>
 										{/if}
 									</div>
@@ -329,7 +334,9 @@
 			</section>
 		{:else}
 			<div class="status-besked">
-				Forløbet er endnu ikke startet. Tjek tilbage på {forlob.startDato.toDate().toLocaleDateString('da-DK')}.
+				Forløbet er endnu ikke startet. Tjek tilbage på {forlob.startDato
+					.toDate()
+					.toLocaleDateString('da-DK')}.
 			</div>
 		{/if}
 
@@ -457,7 +464,11 @@
 
 		{#if aabenLektion.varighedMin > 0 || aabenLektion.format}
 			<div class="overlay-meta">
-				{aabenLektion.varighedMin > 0 ? aabenLektion.varighedMin + ' min' : ''}{aabenLektion.varighedMin > 0 && aabenLektion.format ? ' · ' : ''}{aabenLektion.format}
+				{aabenLektion.varighedMin > 0
+					? aabenLektion.varighedMin + ' min'
+					: ''}{aabenLektion.varighedMin > 0 && aabenLektion.format
+					? ' · '
+					: ''}{aabenLektion.format}
 			</div>
 		{/if}
 	</div>

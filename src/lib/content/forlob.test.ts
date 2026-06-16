@@ -3,6 +3,8 @@ import {
 	dagStatus,
 	formatDato,
 	getCurrentDay,
+	lektionSynligNu,
+	lektionTidsstatus,
 	nyLektion,
 	tomForlobDag,
 	ugeForDag
@@ -135,5 +137,56 @@ describe('tomForlobDag', () => {
 		const d = tomForlobDag(0);
 		expect(d.dagNummer).toBe(0);
 		expect(d.uge).toBe(0);
+	});
+});
+
+describe('lektionSynligNu', () => {
+	it('uden tidsbegrænsning er altid synlig', () => {
+		expect(lektionSynligNu({}, new Date(2026, 5, 17, 23, 0))).toBe(true);
+	});
+
+	it('er synlig på selve sluttidspunktet (kl. 22:00)', () => {
+		const l = { skjulEfter: '2026-06-17T22:00' };
+		expect(lektionSynligNu(l, new Date(2026, 5, 17, 22, 0, 30))).toBe(true);
+	});
+
+	it('er skjult kl. 22:01', () => {
+		const l = { skjulEfter: '2026-06-17T22:00' };
+		expect(lektionSynligNu(l, new Date(2026, 5, 17, 22, 1, 0))).toBe(false);
+	});
+
+	it('er skjult før visFra', () => {
+		const l = { visFra: '2026-06-17T08:00' };
+		expect(lektionSynligNu(l, new Date(2026, 5, 17, 7, 59))).toBe(false);
+	});
+
+	it('er synlig i vinduet mellem visFra og skjulEfter', () => {
+		const l = { visFra: '2026-06-17T08:00', skjulEfter: '2026-06-17T22:00' };
+		expect(lektionSynligNu(l, new Date(2026, 5, 17, 12, 0))).toBe(true);
+	});
+
+	it('ignorerer ugyldige datoer', () => {
+		expect(lektionSynligNu({ skjulEfter: 'volapyk' }, new Date(2026, 5, 17))).toBe(true);
+	});
+});
+
+describe('lektionTidsstatus', () => {
+	it('altid uden begrænsning', () => {
+		expect(lektionTidsstatus({})).toBe('altid');
+	});
+
+	it('foer når vi er før visFra', () => {
+		const l = { visFra: '2026-06-17T08:00' };
+		expect(lektionTidsstatus(l, new Date(2026, 5, 17, 7, 0))).toBe('foer');
+	});
+
+	it('aktiv i vinduet', () => {
+		const l = { visFra: '2026-06-17T08:00', skjulEfter: '2026-06-17T22:00' };
+		expect(lektionTidsstatus(l, new Date(2026, 5, 17, 12, 0))).toBe('aktiv');
+	});
+
+	it('udloebet efter skjulEfter', () => {
+		const l = { skjulEfter: '2026-06-17T22:00' };
+		expect(lektionTidsstatus(l, new Date(2026, 5, 18, 0, 0))).toBe('udloebet');
 	});
 });
