@@ -92,14 +92,15 @@
 	let soegning = $state('');
 
 	const filtreredeEmails = $derived.by<AllowedEmail[]>(() => {
-		const q = soegning.trim().toLowerCase();
-		if (!q) return emails;
+		const ord = soegning.trim().toLowerCase().split(/\s+/).filter(Boolean);
+		if (ord.length === 0) return emails;
+		// Søg på tværs af fornavn+efternavn+email som én tekst, og kræv at
+		// HVERT søgeord findes et eller andet sted i den. Så "Sara Jep"
+		// (fornavn + start af efternavn) matcher, ligesom omvendt rækkefølge
+		// og delvise ord gør.
 		return emails.filter((e) => {
-			return (
-				e.email.toLowerCase().includes(q) ||
-				(e.firstName ?? '').toLowerCase().includes(q) ||
-				(e.lastName ?? '').toLowerCase().includes(q)
-			);
+			const tekst = `${e.firstName ?? ''} ${e.lastName ?? ''} ${e.email}`.toLowerCase();
+			return ord.every((o) => tekst.includes(o));
 		});
 	});
 
