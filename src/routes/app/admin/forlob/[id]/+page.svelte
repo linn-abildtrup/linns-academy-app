@@ -9,6 +9,7 @@
 		gemAllowedEmailsBatch,
 		gemForlob,
 		hentAllowedEmailsForForlob,
+		hentAppVersionerForForlob,
 		hentForlob,
 		sletForlob,
 		tilfoejEnKunde,
@@ -20,6 +21,10 @@
 
 	let forlob = $state<Forlob | null>(null);
 	let emails = $state<AllowedEmail[]>([]);
+	// email (lowercased) → hvilken app-build kunden sidst bootede med.
+	let appVersioner = $state<Map<string, { appVersion?: string; appVersionSetAt?: number }>>(
+		new Map()
+	);
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 
@@ -136,6 +141,9 @@
 			formType = f.type ?? 'kickstart';
 
 			emails = await hentAllowedEmailsForForlob(forlobId);
+			// App-versioner er best-effort: fejler opslaget, viser vi bare
+			// ingen version frem for at blokere hele siden.
+			appVersioner = await hentAppVersionerForForlob(forlobId).catch(() => new Map());
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente forløbet.';
@@ -208,6 +216,20 @@
 
 	function statusLabel(status: AllowedEmail['status']): string {
 		return status === 'registered' ? 'Tilmeldt' : 'Inviteret';
+	}
+
+	// Tekst til app-versions-linjen pr. kunde under Tilmeldte emails.
+	function appVersionTekst(email: string): string {
+		const v = appVersioner.get(email.toLowerCase());
+		if (!v) return 'App: ikke åbnet endnu';
+		if (!v.appVersion) return 'App: ukendt version (åbnet før sporing)';
+		const dato = v.appVersionSetAt
+			? new Date(v.appVersionSetAt).toLocaleDateString('da-DK', {
+					day: 'numeric',
+					month: 'short'
+				})
+			: null;
+		return dato ? `App ${v.appVersion} · siden ${dato}` : `App ${v.appVersion}`;
 	}
 
 	function previewCsv() {
@@ -592,6 +614,7 @@
 								{#if e.firstName || e.lastName}
 									<div class="email-navn">{e.firstName} {e.lastName}</div>
 								{/if}
+								<div class="email-version">{appVersionTekst(e.email)}</div>
 							</div>
 							<span class="badge {e.status === 'registered' ? 'aktiv' : 'inaktiv'}">
 								{statusLabel(e.status)}
@@ -755,6 +778,12 @@
 		font-size: calc(11px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 1px;
+	}
+
+	.email-version {
+		font-size: calc(10px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
 	}
 
 	.felt {

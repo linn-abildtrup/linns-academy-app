@@ -18,19 +18,11 @@ import {
 	type Timestamp
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
-import type {
-	AllowedEmail,
-	CsvRow,
-	Forlob
-} from '$lib/content/forlobAdgang';
+import type { AllowedEmail, CsvRow, Forlob } from '$lib/content/forlobAdgang';
 import { produktTypeForForlob } from '$lib/content/forlobAdgang';
 import type { ForlobDag, LektionItem } from '$lib/content/forlob';
 import { tomForlobDag } from '$lib/content/forlob';
-import {
-	KICKSTART_PRODUCT_ID,
-	KROPSRO_PRODUCT_ID,
-	type ForlobProduct
-} from '$lib/types';
+import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type ForlobProduct } from '$lib/types';
 
 // ==============================================
 // Forlob-helpers
@@ -101,9 +93,7 @@ export function ryForlobCache(): void {
  * Bruges af mikrotraenings-siderne som ellers hardcodede Kickstart og
  * derfor ikke kunne haandtere Kropsro-kunders programValg + fremgang.
  */
-export async function hentAktivProduktType(
-	forlobIds: string[]
-): Promise<ForlobProduct> {
+export async function hentAktivProduktType(forlobIds: string[]): Promise<ForlobProduct> {
 	if (forlobIds.length === 0) return KICKSTART_PRODUCT_ID;
 	const forløbsData = await Promise.all(forlobIds.map((id) => hentForlob(id)));
 	const idagMs = Date.now();
@@ -187,38 +177,22 @@ export async function kopierForlobIndhold(
 	mikrotraeningProgrammer: number;
 	mikrotraeningDage: number;
 }> {
-	const [
-		fraVane,
-		fraDage,
-		fraFaqKats,
-		fraFaqItems,
-		fraGuideKats,
-		fraGuideItems,
-		fraMikroProgs
-	] = await Promise.all([
-		getDocs(collection(db, 'forlob', fraForlobId, 'vaneprogram')),
-		getDocs(collection(db, 'forlob', fraForlobId, 'forlobsdage')),
-		getDocs(collection(db, 'forlob', fraForlobId, 'faqKategorier')),
-		getDocs(collection(db, 'forlob', fraForlobId, 'faqItems')),
-		getDocs(collection(db, 'forlob', fraForlobId, 'guideKategorier')),
-		getDocs(collection(db, 'forlob', fraForlobId, 'guideItems')),
-		getDocs(collection(db, 'forlob', fraForlobId, 'mikrotraeningProgrammer'))
-	]);
+	const [fraVane, fraDage, fraFaqKats, fraFaqItems, fraGuideKats, fraGuideItems, fraMikroProgs] =
+		await Promise.all([
+			getDocs(collection(db, 'forlob', fraForlobId, 'vaneprogram')),
+			getDocs(collection(db, 'forlob', fraForlobId, 'forlobsdage')),
+			getDocs(collection(db, 'forlob', fraForlobId, 'faqKategorier')),
+			getDocs(collection(db, 'forlob', fraForlobId, 'faqItems')),
+			getDocs(collection(db, 'forlob', fraForlobId, 'guideKategorier')),
+			getDocs(collection(db, 'forlob', fraForlobId, 'guideItems')),
+			getDocs(collection(db, 'forlob', fraForlobId, 'mikrotraeningProgrammer'))
+		]);
 
 	// Hent dage for hvert mikrotræningsprogram parallelt så vi kan kopiere
 	// både program-dokument og subcollection days/{dagId} i samme batch.
 	const mikroDageSnaps = await Promise.all(
 		fraMikroProgs.docs.map((p) =>
-			getDocs(
-				collection(
-					db,
-					'forlob',
-					fraForlobId,
-					'mikrotraeningProgrammer',
-					p.id,
-					'days'
-				)
-			)
+			getDocs(collection(db, 'forlob', fraForlobId, 'mikrotraeningProgrammer', p.id, 'days'))
 		)
 	);
 	let mikroDageTotal = 0;
@@ -244,23 +218,12 @@ export async function kopierForlobIndhold(
 	}
 	for (let i = 0; i < fraMikroProgs.docs.length; i++) {
 		const p = fraMikroProgs.docs[i];
-		batch.set(
-			doc(db, 'forlob', tilForlobId, 'mikrotraeningProgrammer', p.id),
-			p.data()
-		);
+		batch.set(doc(db, 'forlob', tilForlobId, 'mikrotraeningProgrammer', p.id), p.data());
 		const dageSnap = mikroDageSnaps[i];
 		mikroDageTotal += dageSnap.size;
 		for (const d of dageSnap.docs) {
 			batch.set(
-				doc(
-					db,
-					'forlob',
-					tilForlobId,
-					'mikrotraeningProgrammer',
-					p.id,
-					'days',
-					d.id
-				),
+				doc(db, 'forlob', tilForlobId, 'mikrotraeningProgrammer', p.id, 'days', d.id),
 				d.data()
 			);
 		}
@@ -337,6 +300,30 @@ export async function hentAllowedEmailsForForlob(forlobId: string): Promise<Allo
 	return snap.docs
 		.map((d) => d.data() as AllowedEmail)
 		.sort((a, b) => a.email.localeCompare(b.email));
+}
+
+/**
+ * Henter hvilken app-build hver registreret kunde på et forløb sidst bootede
+ * med. Slår userDoc op via forlobIds (array-contains) — kunder der endnu ikke
+ * har oprettet konto/logget ind er ikke med. Nøglen er lowercased email så
+ * den kan slås op mod allowedEmails-listen. Bruges af admin-forløbssiden til
+ * at se om en kunde sidder fast på et gammelt cachet build.
+ */
+export async function hentAppVersionerForForlob(
+	forlobId: string
+): Promise<Map<string, { appVersion?: string; appVersionSetAt?: number }>> {
+	const q = query(collection(db, 'users'), where('forlobIds', 'array-contains', forlobId));
+	const snap = await getDocs(q);
+	const map = new Map<string, { appVersion?: string; appVersionSetAt?: number }>();
+	for (const d of snap.docs) {
+		const data = d.data() as { email?: string; appVersion?: string; appVersionSetAt?: number };
+		if (!data.email) continue;
+		map.set(data.email.toLowerCase(), {
+			appVersion: data.appVersion,
+			appVersionSetAt: data.appVersionSetAt
+		});
+	}
+	return map;
 }
 
 /**
@@ -645,9 +632,7 @@ export async function gemLektionPaaDage(
 	const dage = await hentEksisterendeOgTomDage(forlobId, dageNumre);
 
 	for (const [_, dag] of dage) {
-		const eksisterendeIdx = dag.lektioner.findIndex(
-			(l) => l.grupperingId === grupperingId
-		);
+		const eksisterendeIdx = dag.lektioner.findIndex((l) => l.grupperingId === grupperingId);
 		const data = { ...lektionFelter, grupperingId };
 		if (eksisterendeIdx >= 0) {
 			dag.lektioner[eksisterendeIdx] = {
@@ -699,10 +684,7 @@ export async function opdaterLektionGruppe(
  * Sletter alle lektioner med en given grupperingId fra alle dage. Bruges
  * naar Linn vaelger 'Slet alle' i slet-dialog.
  */
-export async function sletLektionGruppe(
-	forlobId: string,
-	grupperingId: string
-): Promise<void> {
+export async function sletLektionGruppe(forlobId: string, grupperingId: string): Promise<void> {
 	const alleDage = await hentForlobsdage(forlobId);
 	for (const dag of alleDage) {
 		const harDen = dag.lektioner.some((l) => l.grupperingId === grupperingId);
@@ -769,10 +751,7 @@ export async function opdaterNoteGruppe(
 /**
  * Sletter (saetter til tom) noter med en given noteGrupperingId paa alle dage.
  */
-export async function sletNoteGruppe(
-	forlobId: string,
-	noteGrupperingId: string
-): Promise<void> {
+export async function sletNoteGruppe(forlobId: string, noteGrupperingId: string): Promise<void> {
 	const alleDage = await hentForlobsdage(forlobId);
 	for (const dag of alleDage) {
 		if (dag.noteGrupperingId !== noteGrupperingId) continue;
