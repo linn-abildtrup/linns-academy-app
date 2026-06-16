@@ -5,10 +5,12 @@
 	import { auth } from '$lib/firebase';
 	import {
 		createUserDoc,
+		gemAppVersion,
 		getUserDoc,
 		lytTilUserDoc,
 		synkroniserForlobskundeStatus
 	} from '$lib/userDoc';
+	import { version } from '$app/environment';
 	import { lytTilAllowedEmail } from '$lib/firestore/forlob';
 	import type { UserDoc } from '$lib/types';
 	import TabBar from '$lib/components/TabBar.svelte';
@@ -218,6 +220,11 @@
 
 			userDoc = doc;
 			loading = false;
+
+			// Registrer hvilket app-build klienten netop bootede med. Ikke-
+			// blokerende og kun et write ved versions-skift — så vi kan se om
+			// en kunde sidder fast på et gammelt cachet build.
+			void gemAppVersion(u.uid, version, doc);
 
 			// Hent feature-adgangs-matrixen (best-effort). Fejler den, beholder
 			// vi STANDARD_MATRIX saa adgangen aldrig falder bort.

@@ -132,6 +132,17 @@ export interface UserDoc {
 	updatedAt?: number;
 
 	/**
+	 * Hvilken app-build klientens browser sidst bootede med (build-version fra
+	 * $app/environment, format "YYYY-MM-DD HH:MM"). Skrives ved login når den
+	 * adskiller sig fra den lagrede værdi — så vi kan se om en kunde sidder
+	 * fast på et gammelt cachet build trods auto-opdatering.
+	 */
+	appVersion?: string;
+
+	/** Hvornår appVersion sidst skiftede (ms) — dvs. hvornår klienten først bootede dén build. */
+	appVersionSetAt?: number;
+
+	/**
 	 * Sat af betaling-fejlede-webhook hvis et fornyelses-forsøg fejler.
 	 * Nulstilles til null af køb/fornyelse-webhook når betaling går igennem.
 	 */

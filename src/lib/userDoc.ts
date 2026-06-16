@@ -177,6 +177,28 @@ export async function createUserDoc(
 }
 
 /**
+ * Gemmer hvilken app-build klienten netop bootede med på userDoc. Skriver
+ * KUN hvis versionen adskiller sig fra den lagrede — så vi ikke laver et
+ * write ved hvert load for 600-700 kunder. Best-effort: fejl logges men
+ * kastes ikke, så det aldrig kan blokere login.
+ */
+export async function gemAppVersion(
+	uid: string,
+	version: string,
+	current: UserDoc | null
+): Promise<void> {
+	if (!version || current?.appVersion === version) return;
+	try {
+		await updateDoc(doc(db, 'users', uid), {
+			appVersion: version,
+			appVersionSetAt: Date.now()
+		});
+	} catch (e) {
+		console.warn('Kunne ikke gemme appVersion:', e);
+	}
+}
+
+/**
  * Synkroniserer brugerens adgang mod allowedEmails-whitelisten. Kaldes hver
  * gang brugeren logger ind (eller første gang efter signup).
  *
