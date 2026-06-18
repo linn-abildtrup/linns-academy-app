@@ -6,6 +6,7 @@
 	import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type UserDoc } from '$lib/types';
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import type { Forlob } from '$lib/content/forlobAdgang';
+	import { produktTypeForForlob } from '$lib/content/forlobAdgang';
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
 	import {
 		dagStatus,
@@ -194,7 +195,16 @@
 			let aktivtUp: UserProduct | null = null;
 			for (const f of forløbsData) {
 				if (!f) continue;
-				const up = f.type === 'kropsro' ? kropsroUp : kickstartUp;
+				// Byggede forløb har eget data-spor → hent userProduct derfra, så
+				// pause-dage faktisk tæller med i dag-beregningen. Kickstart/Kropsro
+				// bruger de forud-hentede produkter (uændret).
+				const produktType = produktTypeForForlob(f);
+				const up =
+					produktType === KROPSRO_PRODUCT_ID
+						? kropsroUp
+						: produktType === KICKSTART_PRODUCT_ID
+							? kickstartUp
+							: await hentUserProduct(u.uid, produktType);
 				const nulBrugt = nulDageDatoer(up?.nulDage?.intervaller ?? []).length;
 				const startMs = f.startDato.toMillis();
 				const slutMs = forlobSlutMs(startMs, f.antalDage, nulBrugt);

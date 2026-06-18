@@ -36,6 +36,7 @@
 	let formBuddy = $state(false);
 	let formFacebook = $state(false);
 	let formTraening = $state(false);
+	let formNulPulje = $state(14);
 	let formKopierFra = $state<string>('');
 	let opretterFejl = $state<string | null>(null);
 	let opretter = $state(false);
@@ -77,6 +78,7 @@
 		formBuddy = false;
 		formFacebook = false;
 		formTraening = false;
+		formNulPulje = 14;
 		formKopierFra = '';
 		opretterFejl = null;
 	}
@@ -129,7 +131,8 @@
 					features: { ...formFeatures },
 					harBuddy: formBuddy,
 					harFacebookGruppe: formFacebook,
-					harTraening: formTraening
+					harTraening: formTraening,
+					nulDagePulje: Math.max(0, Math.min(365, formNulPulje))
 				});
 			} else {
 				await opretForlob(id, {
@@ -332,6 +335,22 @@
 						Kun de afkrydsede funktioner er tændt for kunderne på dette forløb. Kan ændres senere på
 						forløb-siden.
 					</span>
+
+					{#if formFeatures['nul-dage']}
+						<label class="felt" style="margin-top: 12px;">
+							<span class="felt-label">Pause-dage-pulje (max antal)</span>
+							<input
+								type="number"
+								min="0"
+								max="365"
+								bind:value={formNulPulje}
+								disabled={opretter}
+							/>
+							<span class="felt-hint">
+								Hvor mange dage kunden i alt må sætte på pause i forløbet.
+							</span>
+						</label>
+					{/if}
 				</div>
 
 				<div class="felt">

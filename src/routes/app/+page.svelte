@@ -1045,8 +1045,15 @@
 			let aktivtUp: typeof kickstartUp = null;
 			for (const f of forløbsData) {
 				if (!f) continue;
+				// Byggede forløb har eget data-spor → hent pause-dage derfra, så de
+				// tæller med i dag-beregningen. Kickstart/Kropsro uændret.
 				const produktType = produktTypeForForlob(f);
-				const up = produktType === KROPSRO_PRODUCT_ID ? kropsroUp : kickstartUp;
+				const up =
+					produktType === KROPSRO_PRODUCT_ID
+						? kropsroUp
+						: produktType === KICKSTART_PRODUCT_ID
+							? kickstartUp
+							: await hentUserProduct(uid, produktType);
 				const nulBrugt = nulDageDatoer(up?.nulDage?.intervaller ?? []).length;
 				const startMs = f.startDato.toMillis();
 				const slutMs = forlobSlutMs(startMs, f.antalDage, nulBrugt);

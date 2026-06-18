@@ -28,7 +28,7 @@
 		fjernNulDageInterval
 	} from '$lib/firestore/mikrotraening';
 	import { type Variant } from '$lib/utils/traeningsvariant';
-	import { hentAktivProduktType } from '$lib/firestore/forlob';
+	import { hentAktivProduktType, hentForlob } from '$lib/firestore/forlob';
 	import { gemAktivtTraeningsprogram } from '$lib/firestore/mineProgrammer';
 	import { maxNulDageForForlob } from '$lib/content/mikrotraening';
 	import { nulDageDatoer } from '$lib/content/forlob';
@@ -143,6 +143,9 @@
 	// Nul-dage (test-feature)
 	let nulIntervaller = $state<{ fra: string; til: string; satMs: number }[]>([]);
 	let nulBonus = $state<number>(0);
+	// Forløbets pause-dage-pulje (byggede forløb sætter et tal). null = brug
+	// den prefix-baserede default (Kropsro 21 / Kickstart 14).
+	let nulPulje = $state<number | null>(null);
 	let nulFra = $state('');
 	let nulTil = $state('');
 	let nulGemmer = $state(false);
@@ -158,7 +161,7 @@
 	// længere kun Kropsro. Puljen er forløbs-afhængig (Kropsro 21, Kickstart 14).
 	const visNulDage = $derived(harNulDageTest && userDoc?.accessSource === 'forløb' && !!mtForlobId);
 	const nulBrugt = $derived(nulDageDatoer(nulIntervaller).length);
-	const nulMax = $derived(maxNulDageForForlob(mtForlobId) + Math.max(0, nulBonus));
+	const nulMax = $derived(maxNulDageForForlob(mtForlobId, nulPulje) + Math.max(0, nulBonus));
 	const nulTilbage = $derived(nulMax - nulBrugt);
 	const idagIso = idag();
 	function idag(): string {
@@ -187,6 +190,9 @@
 				(up as (UserProduct & { forlobId?: string }) | null)?.forlobId ?? adminForlobId;
 			if (!forlobId) return;
 			mtForlobId = forlobId;
+			// Hent forløbets pause-dage-pulje (byggede forløb sætter et tal).
+			const forlobDoc = await hentForlob(forlobId);
+			nulPulje = typeof forlobDoc?.nulDagePulje === 'number' ? forlobDoc.nulDagePulje : null;
 			const alle = await hentForlobsProgrammer(forlobId);
 			mtProgrammer = alle.filter((p) => p.aktiv);
 			valgtMtProgramId = up?.programValg?.mikrotraening ?? null;

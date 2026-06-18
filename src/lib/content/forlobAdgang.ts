@@ -78,6 +78,10 @@ export interface Forlob {
 	// Et bygget forløb med harTraening=true skal have to programmer (med/uden
 	// kettlebell) bygget under admin/forlob/[id]/traening.
 	harTraening?: boolean;
+	// Pause-dage-pulje (max antal nul-dage) for et bygget forløb. Sat af admin
+	// ved oprettelse. Når undefined falder puljen tilbage på den prefix-baserede
+	// default (Kropsro 21 / Kickstart 14), så de er uændrede.
+	nulDagePulje?: number;
 }
 
 /**

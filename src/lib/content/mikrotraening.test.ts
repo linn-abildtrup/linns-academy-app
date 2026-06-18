@@ -10,10 +10,32 @@ import {
 	markerDagSomGennemfort,
 	registrerFeedback,
 	tommeDageSkelet,
+	maxNulDageForForlob,
 	type Exercise,
 	type TrainingDay,
 	type MikrotraeningFremgang
 } from './mikrotraening';
+
+describe('maxNulDageForForlob', () => {
+	it('Kropsro-prefix giver 21', () => {
+		expect(maxNulDageForForlob('kropsro_maj_2026')).toBe(21);
+	});
+
+	it('andet (Kickstart) giver 14', () => {
+		expect(maxNulDageForForlob('kickstart_juni_2026')).toBe(14);
+		expect(maxNulDageForForlob(null)).toBe(14);
+	});
+
+	it('eksplicit pulje vinder over prefix-default', () => {
+		expect(maxNulDageForForlob('sommer_reset_2026', 7)).toBe(7);
+		expect(maxNulDageForForlob('kropsro_maj_2026', 0)).toBe(0);
+	});
+
+	it('ignorerer ugyldig pulje (negativ) og bruger default', () => {
+		expect(maxNulDageForForlob('kickstart_juni_2026', -3)).toBe(14);
+		expect(maxNulDageForForlob('sommer_reset_2026', null)).toBe(14);
+	});
+});
 
 const eksempelExercises: Exercise[] = [
 	{

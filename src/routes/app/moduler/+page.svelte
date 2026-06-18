@@ -5,6 +5,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { effektivState, harGennemfoertForlob } from '$lib/utils/userAdgang';
 	import { hentForlob } from '$lib/firestore/forlob';
+	import { produktTypeForForlob } from '$lib/content/forlobAdgang';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import { forlobSlutMs, nulDageDatoer } from '$lib/content/forlob';
 	import type { User } from 'firebase/auth';
@@ -36,7 +37,14 @@
 			const idagMs = Date.now();
 			for (const f of forløbsData) {
 				if (!f) continue;
-				const up = f.type === 'kropsro' ? kropsroUp : kickstartUp;
+				// Byggede forløb har eget data-spor → hent pause-dage derfra.
+				const produktType = produktTypeForForlob(f);
+				const up =
+					produktType === KROPSRO_PRODUCT_ID
+						? kropsroUp
+						: produktType === KICKSTART_PRODUCT_ID
+							? kickstartUp
+							: await hentUserProduct(u.uid, produktType);
 				const nulBrugt = nulDageDatoer(up?.nulDage?.intervaller ?? []).length;
 				const startMs = f.startDato.toMillis();
 				const slutMs = forlobSlutMs(startMs, f.antalDage, nulBrugt);
@@ -44,9 +52,10 @@
 					// Faktisk dag-nummer: kalenderdage siden start minus nul-dage
 					// hvis dato <= idag.
 					const idagIso = new Date().toISOString().slice(0, 10);
-					const nulDatoerFør = (up?.nulDage?.intervaller ?? [])
-						? nulDageDatoer(up?.nulDage?.intervaller ?? []).filter((d) => d <= idagIso).length
-						: 0;
+					const nulDatoerFør =
+						(up?.nulDage?.intervaller ?? [])
+							? nulDageDatoer(up?.nulDage?.intervaller ?? []).filter((d) => d <= idagIso).length
+							: 0;
 					const kalenderDage = Math.floor((idagMs - startMs) / (24 * 60 * 60 * 1000));
 					const dagNummer = Math.max(1, kalenderDage - nulDatoerFør + 1);
 					aktivtForlob = { navn: f.navn, dagNummer, antalDage: f.antalDage };

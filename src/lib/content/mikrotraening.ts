@@ -135,10 +135,16 @@ export const MAX_NUL_DAGE_PR_FORLOB = MAX_NUL_DAGE_KROPSRO;
 export const MAX_EGNE_VANER = 3;
 
 /**
- * Standard nul-dage-pulje for et forloeb, afgjort af forloebs-id-prefixet:
- * 'kropsro_' -> 21, alt andet (Kickstart) -> 14. Bonus laegges ovenpaa.
+ * Standard nul-dage-pulje for et forloeb. Byggede forloeb saetter et eksplicit
+ * tal (pulje) ved oprettelse — bruges hvis angivet. Ellers afgoeres puljen af
+ * forloebs-id-prefixet: 'kropsro_' -> 21, alt andet (Kickstart) -> 14. Bonus
+ * laegges ovenpaa. (Kickstart/Kropsro saetter ikke pulje og er dermed uaendret.)
  */
-export function maxNulDageForForlob(forlobId: string | null | undefined): number {
+export function maxNulDageForForlob(
+	forlobId: string | null | undefined,
+	pulje?: number | null
+): number {
+	if (typeof pulje === 'number' && pulje >= 0) return pulje;
 	return forlobId?.startsWith('kropsro_') ? MAX_NUL_DAGE_KROPSRO : MAX_NUL_DAGE_KICKSTART;
 }
 
@@ -149,10 +155,11 @@ export function maxNulDageForForlob(forlobId: string | null | undefined): number
  */
 export function effektivMaxNulDage(
 	userProduct: UserProduct | null | undefined,
-	forlobId: string | null | undefined
+	forlobId: string | null | undefined,
+	pulje?: number | null
 ): number {
 	const bonus = Math.max(0, userProduct?.bonusNulDage ?? 0);
-	return maxNulDageForForlob(forlobId) + bonus;
+	return maxNulDageForForlob(forlobId, pulje) + bonus;
 }
 
 export interface MikrotraeningFremgang {
