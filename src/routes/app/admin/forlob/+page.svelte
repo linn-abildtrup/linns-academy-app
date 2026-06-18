@@ -117,7 +117,9 @@
 					aktiv: formAktiv,
 					byggetForlob: true,
 					produktNoegle: id,
-					adgangsNiveau: formPremium ? 'premium' : 'basis',
+					// Fleksible forløb har ingen premium/basis-forskel — altid basis
+					// internt. Alt synligt styres af funktions-afkrydsningen.
+					adgangsNiveau: 'basis',
 					features: { ...formFeatures }
 				});
 			} else {
@@ -250,14 +252,14 @@
 				<span>Aktivt forløb (nye køb tilknyttes automatisk)</span>
 			</label>
 
-			<label class="checkbox-rad">
-				<input type="checkbox" bind:checked={formPremium} disabled={opretter} />
-				<span>
-					{formBygget
-						? 'Premium-niveau (ellers basis)'
-						: 'Premium-adgang (kunder får samme niveau som Kropsro)'}
-				</span>
-			</label>
+			<!-- Premium/basis er kun relevant for Kickstart/Kropsro. Fleksible
+			     forløb har ingen niveau-forskel — alt styres af funktionerne. -->
+			{#if !formBygget}
+				<label class="checkbox-rad">
+					<input type="checkbox" bind:checked={formPremium} disabled={opretter} />
+					<span>Premium-adgang (kunder får samme niveau som Kropsro)</span>
+				</label>
+			{/if}
 
 			<div class="felt">
 				<span class="felt-label">Forløbs-type</span>
