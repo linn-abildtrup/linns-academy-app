@@ -42,7 +42,7 @@
 
 	const dagNummer = $derived(parseInt(page.params.dag ?? '', 10));
 
-	let produktType = $state<ForlobProduct>(KICKSTART_PRODUCT_ID);
+	let produktType = $state<ForlobProduct | string>(KICKSTART_PRODUCT_ID);
 	let userProduct = $state<UserProduct | null>(null);
 	let programData = $state<ProgramMedDage | null>(null);
 	let exerciseMap = $state<Map<string, Exercise>>(new Map());
@@ -137,9 +137,7 @@
 	);
 	const ringRadius = 52;
 	const ringOmkreds = 2 * Math.PI * ringRadius;
-	const ringOffset = $derived(
-		phaseTotal > 0 ? ringOmkreds * (1 - rem / phaseTotal) : 0
-	);
+	const ringOffset = $derived(phaseTotal > 0 ? ringOmkreds * (1 - rem / phaseTotal) : 0);
 
 	onMount(async () => {
 		const u = user;
@@ -172,7 +170,7 @@
 
 			let valgtProgramId = up?.programValg?.mikrotraening;
 			const forlobId =
-				(up as UserProduct & { forlobId?: string } | null)?.forlobId ?? adminForlobId;
+				(up as (UserProduct & { forlobId?: string }) | null)?.forlobId ?? adminForlobId;
 			if (!forlobId) {
 				fejl = 'Du er ikke tilknyttet et forløb endnu.';
 				loading = false;
@@ -672,7 +670,7 @@
 			}
 			// Log til den samlede træning-historik så forsiden kan vise det
 			// rigtige program når kunden går tilbage til en historisk dato
-			const forlobId = (userProduct as UserProduct & { forlobId?: string } | null)?.forlobId;
+			const forlobId = (userProduct as (UserProduct & { forlobId?: string }) | null)?.forlobId;
 			void logTraening(u.uid, {
 				dato: formaterHistorikDato(new Date()),
 				kilde: 'mikrotraening',
@@ -688,7 +686,6 @@
 			gemmer = false;
 		}
 	}
-
 </script>
 
 <div class="player">
@@ -782,14 +779,34 @@
 				aria-pressed={fuldskaerm}
 			>
 				{#if fuldskaerm}
-					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<svg
+						viewBox="0 0 24 24"
+						width="18"
+						height="18"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
 						<path d="M9 4H4v5"></path>
 						<path d="M15 4h5v5"></path>
 						<path d="M4 15v5h5"></path>
 						<path d="M20 15v5h-5"></path>
 					</svg>
 				{:else}
-					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<svg
+						viewBox="0 0 24 24"
+						width="18"
+						height="18"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
 						<path d="M3 9V3h6"></path>
 						<path d="M21 9V3h-6"></path>
 						<path d="M3 15v6h6"></path>
@@ -951,7 +968,17 @@
 			</button>
 
 			<button class="fs-bund-knap" type="button" onclick={toggleFuldskaerm}>
-				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<svg
+					viewBox="0 0 24 24"
+					width="16"
+					height="16"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
 					<path d="M3 9V3h6"></path>
 					<path d="M21 9V3h-6"></path>
 					<path d="M3 15v6h6"></path>
@@ -1061,8 +1088,10 @@
 	}
 
 	.hovedvideo {
-		transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-			border-radius 0.5s ease, box-shadow 0.5s ease;
+		transition:
+			transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+			border-radius 0.5s ease,
+			box-shadow 0.5s ease;
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
@@ -1437,7 +1466,6 @@
 		width: 100%;
 	}
 
-
 	.finish-card {
 		background: var(--white);
 		border: 1px solid var(--border);
@@ -1474,5 +1502,4 @@
 		max-width: 320px;
 		line-height: 1.5;
 	}
-
 </style>

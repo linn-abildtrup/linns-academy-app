@@ -327,3 +327,30 @@ describe('bibliotekBonusSlutMs', () => {
 		expect(bibliotekBonusSlutMs(start, 21)).toBe(start + 112 * MS_PER_DAG);
 	});
 });
+
+describe('produktTypeForForlob', () => {
+	it('Kropsro-type -> premiumforløb-spor', () => {
+		expect(produktTypeForForlob({ type: 'kropsro' })).toBe(KROPSRO_PRODUCT_ID);
+	});
+
+	it('Kickstart-type (eller udeladt) -> kickstart-spor', () => {
+		expect(produktTypeForForlob({ type: 'kickstart' })).toBe(KICKSTART_PRODUCT_ID);
+		expect(produktTypeForForlob({})).toBe(KICKSTART_PRODUCT_ID);
+	});
+
+	it('adgangsNiveau=premium override -> premiumforløb-spor', () => {
+		expect(produktTypeForForlob({ type: 'kickstart', adgangsNiveau: 'premium' })).toBe(
+			KROPSRO_PRODUCT_ID
+		);
+	});
+
+	it('bygget forløb -> eget data-spor (produktNoegle)', () => {
+		expect(produktTypeForForlob({ byggetForlob: true, produktNoegle: 'sommer_reset_2026' })).toBe(
+			'sommer_reset_2026'
+		);
+	});
+
+	it('bygget forløb falder tilbage til type-regel hvis produktNoegle mangler', () => {
+		expect(produktTypeForForlob({ byggetForlob: true })).toBe(KICKSTART_PRODUCT_ID);
+	});
+});

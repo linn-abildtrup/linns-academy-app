@@ -116,7 +116,7 @@
 	let minChallengeIndtastning = $state<string[]>([]);
 	let gemmerChallenge = $state(false);
 	let userProduct = $state<UserProduct | null>(null);
-	let aktivProduktType = $state<ForlobProduct>(KICKSTART_PRODUCT_ID);
+	let aktivProduktType = $state<ForlobProduct | string>(KICKSTART_PRODUCT_ID);
 	let adminVaner = $state<AdminTildeltVane[]>([]);
 	let vaneprogramDage = $state<VaneProgramDag[]>([]);
 	let forlobVanedag = $state<VanedagEntry | null>(null);

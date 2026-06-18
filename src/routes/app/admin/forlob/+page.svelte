@@ -9,6 +9,7 @@
 		kopierForlobIndhold,
 		opretForlob
 	} from '$lib/firestore/forlob';
+	import { FEATURES } from '$lib/content/features';
 	import Icon from '$lib/components/Icon.svelte';
 
 	let forlob = $state<Forlob[]>([]);
@@ -17,9 +18,7 @@
 
 	// Laas-confirm-dialog: hvilket forl0b er ved at blive toggled, og hvad er
 	// next state.
-	let laasBekraeft = $state<{ forlobId: string; navn: string; nyTilstand: boolean } | null>(
-		null
-	);
+	let laasBekraeft = $state<{ forlobId: string; navn: string; nyTilstand: boolean } | null>(null);
 	let toggler = $state(false);
 
 	let viserForm = $state(false);
@@ -30,6 +29,10 @@
 	let formAktiv = $state(true);
 	let formType = $state<ForlobType>('kickstart');
 	let formPremium = $state(false);
+	// Byggede forløb: admin vælger "Fleksibelt" som type. Da styres niveau af
+	// formPremium og funktionerne af formFeatures (frit pr forløb).
+	let formBygget = $state(false);
+	let formFeatures = $state<Record<string, boolean>>({});
 	let formKopierFra = $state<string>('');
 	let opretterFejl = $state<string | null>(null);
 	let opretter = $state(false);
@@ -57,7 +60,6 @@
 			.replace(/^_|_$/g, '');
 	}
 
-
 	function visForm() {
 		viserForm = true;
 		formNavn = '';
@@ -67,6 +69,8 @@
 		formAktiv = true;
 		formType = 'kickstart';
 		formPremium = false;
+		formBygget = false;
+		formFeatures = {};
 		formKopierFra = '';
 		opretterFejl = null;
 	}
@@ -101,15 +105,32 @@
 		opretter = true;
 		try {
 			const startDate = new Date(formStartDato + 'T06:00:00');
-			await opretForlob(id, {
-				navn: trimmedNavn,
-				startDato: Timestamp.fromDate(startDate),
-				antalDage: formAntalDage,
-				vaneProgramId: null,
-				aktiv: formAktiv,
-				type: formType,
-				...(formPremium ? { adgangsNiveau: 'premium' as const } : {})
-			});
+			if (formBygget) {
+				// Bygget (fleksibelt) forløb: eget data-spor (= id), niveau valgt
+				// eksplicit, funktioner frit pr forløb. Sætter IKKE type — det
+				// er ikke Kickstart/Kropsro.
+				await opretForlob(id, {
+					navn: trimmedNavn,
+					startDato: Timestamp.fromDate(startDate),
+					antalDage: formAntalDage,
+					vaneProgramId: null,
+					aktiv: formAktiv,
+					byggetForlob: true,
+					produktNoegle: id,
+					adgangsNiveau: formPremium ? 'premium' : 'basis',
+					features: { ...formFeatures }
+				});
+			} else {
+				await opretForlob(id, {
+					navn: trimmedNavn,
+					startDato: Timestamp.fromDate(startDate),
+					antalDage: formAntalDage,
+					vaneProgramId: null,
+					aktiv: formAktiv,
+					type: formType,
+					...(formPremium ? { adgangsNiveau: 'premium' as const } : {})
+				});
+			}
 
 			if (formKopierFra) {
 				try {
@@ -221,13 +242,7 @@
 				</label>
 				<label class="felt">
 					<span class="felt-label">Antal dage</span>
-					<input
-						type="number"
-						min="1"
-						max="365"
-						bind:value={formAntalDage}
-						disabled={opretter}
-					/>
+					<input type="number" min="1" max="365" bind:value={formAntalDage} disabled={opretter} />
 				</label>
 			</div>
 			<label class="checkbox-rad">
@@ -237,7 +252,11 @@
 
 			<label class="checkbox-rad">
 				<input type="checkbox" bind:checked={formPremium} disabled={opretter} />
-				<span>Premium-adgang (kunder får samme niveau som Kropsro)</span>
+				<span>
+					{formBygget
+						? 'Premium-niveau (ellers basis)'
+						: 'Premium-adgang (kunder får samme niveau som Kropsro)'}
+				</span>
 			</label>
 
 			<div class="felt">
@@ -246,8 +265,11 @@
 					<button
 						type="button"
 						class="type-knap"
-						class:aktiv={formType === 'kickstart'}
-						onclick={() => (formType = 'kickstart')}
+						class:aktiv={!formBygget && formType === 'kickstart'}
+						onclick={() => {
+							formBygget = false;
+							formType = 'kickstart';
+						}}
 						disabled={opretter}
 					>
 						<div class="type-titel">Kickstart</div>
@@ -256,15 +278,51 @@
 					<button
 						type="button"
 						class="type-knap"
-						class:aktiv={formType === 'kropsro'}
-						onclick={() => (formType = 'kropsro')}
+						class:aktiv={!formBygget && formType === 'kropsro'}
+						onclick={() => {
+							formBygget = false;
+							formType = 'kropsro';
+						}}
 						disabled={opretter}
 					>
 						<div class="type-titel">Kropsro</div>
 						<div class="type-sub">12 uger · med buddy-gruppe</div>
 					</button>
+					<button
+						type="button"
+						class="type-knap"
+						class:aktiv={formBygget}
+						onclick={() => (formBygget = true)}
+						disabled={opretter}
+					>
+						<div class="type-titel">Fleksibelt</div>
+						<div class="type-sub">frit indhold + funktioner</div>
+					</button>
 				</div>
 			</div>
+
+			{#if formBygget}
+				<div class="felt">
+					<span class="felt-label">Funktioner (frit pr forløb)</span>
+					<div class="feature-liste">
+						{#each FEATURES as f (f.key)}
+							<label class="checkbox-rad">
+								<input
+									type="checkbox"
+									checked={formFeatures[f.key] ?? false}
+									onchange={(e) => (formFeatures[f.key] = e.currentTarget.checked)}
+									disabled={opretter}
+								/>
+								<span>{f.navn}</span>
+							</label>
+						{/each}
+					</div>
+					<span class="felt-hint">
+						Kun de afkrydsede funktioner er tændt for kunderne på dette forløb. Kan ændres senere på
+						forløb-siden.
+					</span>
+				</div>
+			{/if}
 
 			<label class="felt">
 				<span class="felt-label">Indhold</span>
@@ -338,7 +396,9 @@
 							class="laas-knap"
 							class:er-laast={f.laast}
 							onclick={(e) => aabnLaasDialog(f, e)}
-							aria-label={f.laast ? 'Forløb er låst — tryk for at åbne' : 'Forløb er åbent — tryk for at låse'}
+							aria-label={f.laast
+								? 'Forløb er låst — tryk for at åbne'
+								: 'Forløb er åbent — tryk for at låse'}
 							title={f.laast ? 'Låst' : 'Åben'}
 						>
 							<Icon name={f.laast ? 'lock' : 'unlock'} size={16} color="#fff" />
@@ -359,7 +419,8 @@
 			</h2>
 			<p class="dialog-tekst">
 				{#if laasBekraeft.nyTilstand}
-					Når <strong>{laasBekraeft.navn}</strong> er låst, kan du ikke klikke ind på det fra admin-listen. Klienterne mærker ingen forskel.
+					Når <strong>{laasBekraeft.navn}</strong> er låst, kan du ikke klikke ind på det fra admin-listen.
+					Klienterne mærker ingen forskel.
 				{:else}
 					Du åbner <strong>{laasBekraeft.navn}</strong> så du igen kan redigere det.
 				{/if}
@@ -545,9 +606,16 @@
 		accent-color: var(--terra);
 	}
 
+	.feature-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 7px;
+		margin-top: 4px;
+	}
+
 	.type-toggle {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 		gap: 8px;
 		margin-top: 6px;
 	}

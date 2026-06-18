@@ -39,7 +39,7 @@
 	let userProduct = $state<UserProduct | null>(null);
 	let forlob = $state<Forlob | null>(null);
 	let prog = $state<VaneProgramDag | null>(null);
-	let produktType = $state<ForlobProduct>('kickstart');
+	let produktType = $state<ForlobProduct | string>('kickstart');
 	let adminVanerForUge = $state<AdminTildeltVane[]>([]);
 	let egneVaner = $state<{ id: string; label: string }[]>([]);
 
@@ -103,16 +103,13 @@
 
 	const aktuelStatus = $derived(
 		prog
-			? beregnDagsStatus(
-					{ ...prog, checks: visteVaner } as VaneProgramDag,
-					{
-						dagNummer,
-						checks,
-						bonus,
-						checkin,
-						note
-					}
-				)
+			? beregnDagsStatus({ ...prog, checks: visteVaner } as VaneProgramDag, {
+					dagNummer,
+					checks,
+					bonus,
+					checkin,
+					note
+				})
 			: 'empty'
 	);
 
@@ -166,7 +163,7 @@
 			}
 
 			const forlobId =
-				(up as UserProduct & { forlobId?: string } | null)?.forlobId ?? adminForlobId;
+				(up as (UserProduct & { forlobId?: string }) | null)?.forlobId ?? adminForlobId;
 			if (!forlobId) {
 				fejl = 'Du er ikke tilknyttet et forløb endnu.';
 				loading = false;
@@ -276,7 +273,7 @@
 
 {#if iPreviewMode && forlob}
 	<PreviewBanner
-		dagNummer={dagNummer}
+		{dagNummer}
 		antalDage={forlob.antalDage}
 		buildPath={(d) => `/app/moduler/vaner/${d}`}
 	/>
@@ -323,11 +320,7 @@
 			<section class="card">
 				<div class="section-label">Refleksion</div>
 				<p class="reflection">{prog.reflection}</p>
-				<textarea
-					class="textarea"
-					placeholder="Skriv dit svar her..."
-					bind:value={note}
-					rows="4"
+				<textarea class="textarea" placeholder="Skriv dit svar her..." bind:value={note} rows="4"
 				></textarea>
 			</section>
 
@@ -431,7 +424,8 @@
 					{:else if prog.dagNummer === 21}
 						<div class="baseline-compare baseline-compare-tom">
 							<div class="baseline-compare-tekst">
-								Du har ikke noteret et baseline-svar på dag 0, så der er ikke noget at sammenligne med.
+								Du har ikke noteret et baseline-svar på dag 0, så der er ikke noget at sammenligne
+								med.
 							</div>
 						</div>
 					{/if}
@@ -445,7 +439,11 @@
 
 		<div class="bund-knapper">
 			<button class="primary-knap" type="button" onclick={gem} disabled={gemmer}>
-				{gemmer ? 'Gemmer...' : harGemt ? `Opdater ${dagTitelLabel()} ✓` : `Gem ${dagTitelLabel()} ✓`}
+				{gemmer
+					? 'Gemmer...'
+					: harGemt
+						? `Opdater ${dagTitelLabel()} ✓`
+						: `Gem ${dagTitelLabel()} ✓`}
 			</button>
 		</div>
 	{/if}
@@ -509,7 +507,6 @@
 		background: var(--sdim);
 		color: var(--sage);
 	}
-
 
 	.status-besked {
 		padding: 14px 16px;

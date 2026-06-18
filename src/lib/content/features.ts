@@ -162,6 +162,12 @@ export function harFeatureAdgang(
 	feature: FeatureKey
 ): boolean {
 	if (userDoc?.testerFeatures?.includes(feature)) return true;
+	// Byggede forløb: features styres frit pr forløb (login-sync har lagt
+	// forløbets feature-flag på userDoc.forlobFeatures). Det har forrang over
+	// den type-baserede matrix, men kun for aktive forløbskunder — er kunden
+	// udløbet, falder forlobFeatures bort sammen med resten af adgangen.
+	const ff = userDoc?.forlobFeatures;
+	if (ff && erForlobsklient(userDoc)) return ff[feature] ?? false;
 	const kt = kundetypeFor(userDoc);
 	if (!kt) return false;
 	const m = matrix ?? STANDARD_MATRIX;

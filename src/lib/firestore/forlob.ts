@@ -93,7 +93,7 @@ export function ryForlobCache(): void {
  * Bruges af mikrotraenings-siderne som ellers hardcodede Kickstart og
  * derfor ikke kunne haandtere Kropsro-kunders programValg + fremgang.
  */
-export async function hentAktivProduktType(forlobIds: string[]): Promise<ForlobProduct> {
+export async function hentAktivProduktType(forlobIds: string[]): Promise<ForlobProduct | string> {
 	if (forlobIds.length === 0) return KICKSTART_PRODUCT_ID;
 	const forløbsData = await Promise.all(forlobIds.map((id) => hentForlob(id)));
 	const idagMs = Date.now();
@@ -369,7 +369,7 @@ export interface ImportResultat {
  * - Kickstart (default)       → basis-niveau
  */
 async function adgangsFelterForForlob(forlobId: string): Promise<{
-	activeProduct: 'premiumforløb' | 'kickstart';
+	activeProduct: string;
 	accessLevel: 'premium' | 'basis';
 	accessSource: 'forløb';
 	activeSubscription: false;
@@ -387,13 +387,20 @@ async function adgangsFelterForForlob(forlobId: string): Promise<{
 	const data = fSnap.data() as {
 		type?: 'kickstart' | 'kropsro';
 		adgangsNiveau?: 'basis' | 'premium';
+		byggetForlob?: boolean;
+		produktNoegle?: string;
 	};
 	// Genbrug pure-helperen saa adgangsNiveau-/type-reglerne holdes samlet
-	// ét sted. Forsiden + spil-page bruger samme funktion.
+	// ét sted. Forsiden + spil-page bruger samme funktion. For byggede forløb
+	// returnerer den forløbets egen produktNoegle (eget data-spor).
 	const produktType = produktTypeForForlob(data);
-	const erPremium = produktType === KROPSRO_PRODUCT_ID;
+	// Byggede forløb: niveauet er admins eksplicitte valg (adgangsNiveau).
+	// Kickstart/Kropsro: niveau følger af produkt-typen som hidtil.
+	const erPremium = data.byggetForlob
+		? data.adgangsNiveau === 'premium'
+		: produktType === KROPSRO_PRODUCT_ID;
 	return {
-		activeProduct: erPremium ? 'premiumforløb' : 'kickstart',
+		activeProduct: produktType,
 		accessLevel: erPremium ? 'premium' : 'basis',
 		accessSource: 'forløb',
 		activeSubscription: false

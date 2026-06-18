@@ -70,7 +70,7 @@
 	let nyEgenVaneLabel = $state('');
 	let gemmerEgenVane = $state(false);
 	let egenVaneFejl = $state<string | null>(null);
-	let aktivProduktType = $state<'kickstart' | 'premiumforløb'>('kickstart');
+	let aktivProduktType = $state<'kickstart' | 'premiumforløb' | string>('kickstart');
 
 	// === Abo-state ===
 	let aboOpsaetning = $state<AboVaneOpsaetning | null>(null);

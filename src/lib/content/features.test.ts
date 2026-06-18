@@ -127,3 +127,46 @@ describe('harFeatureAdgang', () => {
 		expect(harFeatureAdgang(kickstartKunde, delvis, 'linn-ai')).toBe(false);
 	});
 });
+
+describe('harFeatureAdgang — byggede forløb (forlobFeatures)', () => {
+	const byggetKunde = ud({
+		accessSource: 'forløb',
+		accessLevel: 'basis',
+		forlobIds: ['sommer_reset_2026'],
+		forlobFeatures: { 'linn-ai': true, 'udvidet-naering': false }
+	});
+
+	it('forlobFeatures har forrang over den type-baserede matrix', () => {
+		// linn-ai er slukket i STANDARD_MATRIX for alle, men tændt på forløbet
+		expect(harFeatureAdgang(byggetKunde, null, 'linn-ai')).toBe(true);
+	});
+
+	it('eksplicit slukket funktion på forløbet giver ingen adgang', () => {
+		expect(harFeatureAdgang(byggetKunde, null, 'udvidet-naering')).toBe(false);
+	});
+
+	it('funktion der ikke står i forlobFeatures er slukket', () => {
+		expect(harFeatureAdgang(byggetKunde, null, 'ai-opskrift')).toBe(false);
+	});
+
+	it('tester-undtagelse vinder stadig over forlobFeatures', () => {
+		const tester = ud({
+			accessSource: 'forløb',
+			accessLevel: 'basis',
+			forlobIds: ['sommer_reset_2026'],
+			forlobFeatures: { 'ai-madplan': false },
+			testerFeatures: ['ai-madplan']
+		});
+		expect(harFeatureAdgang(tester, null, 'ai-madplan')).toBe(true);
+	});
+
+	it('udløbet bygget kunde får ingen funktioner trods forlobFeatures', () => {
+		const udloebet = ud({
+			accessSource: 'forløb',
+			expiresAt: 1,
+			forlobIds: ['sommer_reset_2026'],
+			forlobFeatures: { 'linn-ai': true }
+		});
+		expect(harFeatureAdgang(udloebet, null, 'linn-ai')).toBe(false);
+	});
+});

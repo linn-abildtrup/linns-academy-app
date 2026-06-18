@@ -15,11 +15,7 @@
 
 import type { Timestamp } from 'firebase/firestore';
 
-import {
-	KICKSTART_PRODUCT_ID,
-	KROPSRO_PRODUCT_ID,
-	type ForlobProduct
-} from '../types';
+import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type ForlobProduct } from '../types';
 import { BONUS_PERIODE_DAGE } from '../utils/userAdgang';
 
 const MS_PER_DAG = 24 * 60 * 60 * 1000;
@@ -56,6 +52,20 @@ export interface Forlob {
 	// default (kropsro=premium, kickstart=basis). Bruges fx til Kickstart
 	// juni 2026 hvor alle kunder skal have premium-adgang.
 	adgangsNiveau?: 'basis' | 'premium';
+	// ── Byggede forløb (Fase 1, fleksible forløb admin selv opretter) ──
+	// Markerer et forløb der IKKE er Kickstart/Kropsro, men frit konfigureret
+	// af admin (navn, længde, indhold, niveau, features). Kickstart/Kropsro har
+	// byggetForlob=undefined og er fuldstændig uændrede.
+	byggetForlob?: boolean;
+	// Eget data-spor for et bygget forløb: kundens svar/fremgang gemmes under
+	// users/{uid}/products/{produktNoegle}/... i stedet for at låne Kickstart-
+	// eller Kropsro-skuffen. Sættes = forløbets id ved oprettelse, så data
+	// aldrig blandes med andre forløb. Undefined for Kickstart/Kropsro.
+	produktNoegle?: string;
+	// Hvilke funktioner er tændt for dette forløb (frit pr forløb). Nøgler er
+	// FeatureKey-strenge (se features.ts). Kun relevant for byggede forløb —
+	// Kickstart/Kropsro styres fortsat af den type-baserede feature-matrix.
+	features?: Record<string, boolean>;
 }
 
 /**
@@ -72,9 +82,16 @@ export interface Forlob {
  * andet, og kundens flueben "forsvinder". Hvis logikken skal aendres,
  * skal alle kald-steder opdateres samtidigt.
  */
-export function produktTypeForForlob(
-	forlob: { type?: ForlobType; adgangsNiveau?: 'basis' | 'premium' }
-): ForlobProduct {
+export function produktTypeForForlob(forlob: {
+	type?: ForlobType;
+	adgangsNiveau?: 'basis' | 'premium';
+	byggetForlob?: boolean;
+	produktNoegle?: string;
+}): ForlobProduct | string {
+	// Byggede forløb har deres EGET data-spor (= produktNoegle), så en kundes
+	// svar aldrig blandes med Kickstart/Kropsro-skufferne. Falder tilbage til
+	// den gamle type-regel hvis produktNoegle mangler (defensivt).
+	if (forlob.byggetForlob && forlob.produktNoegle) return forlob.produktNoegle;
 	const erPremium =
 		forlob.adgangsNiveau === 'premium' ||
 		(forlob.adgangsNiveau !== 'basis' && forlob.type === 'kropsro');
@@ -97,7 +114,9 @@ export interface AllowedEmail {
 	// første gang brugeren logger ind.
 	accessLevel?: 'none' | 'basis' | 'premium';
 	accessSource?: 'abonnement' | 'forløb';
-	activeProduct?: 'kickstart' | 'premiumforløb' | 'basisabo' | 'premiumabo';
+	// For byggede forløb er activeProduct forløbets egen produktNoegle (en fri
+	// streng), derfor (string & {}) ud over de faste produkt-id'er.
+	activeProduct?: 'kickstart' | 'premiumforløb' | 'basisabo' | 'premiumabo' | (string & {});
 	activeSubscription?: boolean;
 	simpleroCustomerId?: string;
 	expiresAt?: number | null;

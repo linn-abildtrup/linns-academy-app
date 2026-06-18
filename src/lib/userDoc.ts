@@ -265,15 +265,21 @@ export async function synkroniserForlobskundeStatus(
 		// Hent forløbet en gang — bruges baade til udloebs-tjek og expiresAt.
 		let forlobStartMs = 0;
 		let forlobAntalDage = 0;
+		let forlobBygget = false;
+		let forlobFeatures: Record<string, boolean> | null = null;
 		try {
 			const forlobSnap = await getDoc(doc(db, 'forlob', allowed.forlobId));
 			if (forlobSnap.exists()) {
 				const data = forlobSnap.data() as {
 					startDato?: { toMillis?: () => number; seconds?: number };
 					antalDage?: number;
+					byggetForlob?: boolean;
+					features?: Record<string, boolean>;
 				};
 				forlobStartMs = data.startDato?.toMillis?.() ?? (data.startDato?.seconds ?? 0) * 1000;
 				forlobAntalDage = data.antalDage ?? 0;
+				forlobBygget = data.byggetForlob === true;
+				forlobFeatures = data.features ?? {};
 			}
 		} catch (e) {
 			console.warn('Kunne ikke hente forloeb:', e);
@@ -282,6 +288,16 @@ export async function synkroniserForlobskundeStatus(
 		// login-sync og webhooks aldrig regner forskelligt. Se A4-oprydning.
 		const slutMs = forlobSlutMs(forlobStartMs, forlobAntalDage);
 		const forlobUdloebet = slutMs > 0 && Date.now() > slutMs;
+
+		// Features frit pr forløb: er kunden på et AKTIVT bygget forløb, lægger
+		// vi forløbets feature-flag på userDoc (harFeatureAdgang læser dem).
+		// Ellers ryddes feltet, så Kickstart/Kropsro-kunder altid falder tilbage
+		// på den type-baserede matrix.
+		if (forlobBygget && !forlobUdloebet) {
+			opdateringer.forlobFeatures = forlobFeatures ?? {};
+		} else if (current.forlobFeatures) {
+			opdateringer.forlobFeatures = deleteField();
+		}
 
 		if (!forlobUdloebet) {
 			// Aktivt forl0b. state-feltet opdateres ikke laengere (A2 etape B) -

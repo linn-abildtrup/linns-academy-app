@@ -136,7 +136,7 @@
 	let mtIndlaeser = $state(false);
 	let mtFejl = $state<string | null>(null);
 	let mtGemmer = $state<string | null>(null);
-	let mtProduktType = $state<ForlobProduct>(KICKSTART_PRODUCT_ID);
+	let mtProduktType = $state<ForlobProduct | string>(KICKSTART_PRODUCT_ID);
 	let mtForlobId = $state<string | null>(null);
 
 	// Nul-dage (test-feature)

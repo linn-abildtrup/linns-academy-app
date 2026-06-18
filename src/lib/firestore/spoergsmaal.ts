@@ -90,8 +90,9 @@ export async function gemSpoergsmaal(kontekst: NytSpoergsmaalKontekst): Promise<
 			const ud = uDoc.exists() ? uDoc.data() : null;
 			const forlobIds = (ud?.forlobIds as string[] | undefined) ?? [];
 			if (forlobIds.length > 0) {
-				// Forsoeg userProducts.premiumforløb, derefter kickstart
-				for (const productId of ['premiumforløb', 'kickstart']) {
+				// Forsoeg byggede forløbs egne data-spor (= forlobId) foerst,
+				// derefter de faste Kropsro/Kickstart-skuffer.
+				for (const productId of [...forlobIds, 'premiumforløb', 'kickstart']) {
 					const p = await getDoc(doc(db, `users/${kontekst.uid}/products/${productId}`));
 					const fId = p.exists() ? (p.data().forlobId as string | undefined) : undefined;
 					if (fId) {

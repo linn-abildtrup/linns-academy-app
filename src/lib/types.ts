@@ -34,7 +34,14 @@ export type AccessSource = 'abonnement' | 'forløb';
  * Brug konstanten KROPSRO_PRODUCT_ID nedenfor i stedet for at hardcode
  * strengen, så koden er læsbar uden at man skal kende historien.
  */
-export type ActiveProduct = 'kickstart' | 'premiumforløb' | 'basisabo' | 'premiumabo';
+// (string & {}) tillader byggede forløbs egne produktNoegle-strenge uden at
+// miste autocomplete på de faste produkt-id'er.
+export type ActiveProduct =
+	| 'kickstart'
+	| 'premiumforløb'
+	| 'basisabo'
+	| 'premiumabo'
+	| (string & {});
 
 /**
  * Læsbart alias for det interne 'premiumforløb'-id. Kropsro-forløbet
@@ -182,6 +189,13 @@ export interface UserDoc {
 	 * Firestore bevares til næste test-runde.
 	 */
 	testerFeatures?: string[];
+
+	// Hvilke funktioner er tændt for kundens AKTIVE byggede forløb. Sættes af
+	// login-sync ud fra forløbets features-felt (kun for byggede forløb), og
+	// ryddes når kunden ikke er på et bygget forløb. Når feltet er sat, har det
+	// forrang over den type-baserede feature-matrix i harFeatureAdgang — så
+	// "features frit pr forløb" virker uden at røre Kickstart/Kropsro.
+	forlobFeatures?: Record<string, boolean>;
 
 	// Hvilken mikrotræning-variant brugeren har valgt (kettlebell eller
 	// uden udstyr). Bruges af aboMikrotraening-systemet til at hente det

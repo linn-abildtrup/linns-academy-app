@@ -23,7 +23,7 @@
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let gemmer = $state<string | null>(null);
-	let produktType = $state<ForlobProduct>(KICKSTART_PRODUCT_ID);
+	let produktType = $state<ForlobProduct | string>(KICKSTART_PRODUCT_ID);
 	let aktivtForlobId = $state<string | null>(null);
 
 	function ikonForUdstyr(udstyr: string[]): IconName {

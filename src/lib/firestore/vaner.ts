@@ -11,6 +11,7 @@ import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'fireb
 import { db } from '$lib/firebase';
 import type { VaneProgramDag, VanedagEntry } from '$lib/content/vaner';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
+import { produktTypeForForlob } from '$lib/content/forlobAdgang';
 
 function vanedageCollection(uid: string, productId: string) {
 	return collection(db, `${aktivBrugerBasisPath(uid)}/products/${productId}/vanedage`);
@@ -108,10 +109,15 @@ export async function hentCheckinHistorikForBruger(
 			const f = fSnap.data() as {
 				navn?: string;
 				startDato?: { toDate: () => Date };
-				type?: string;
+				type?: 'kickstart' | 'kropsro';
+				adgangsNiveau?: 'basis' | 'premium';
+				byggetForlob?: boolean;
+				produktNoegle?: string;
 			};
 			const forlobType: 'kickstart' | 'kropsro' = f.type === 'kropsro' ? 'kropsro' : 'kickstart';
-			const productId = forlobType === 'kropsro' ? 'premiumforløb' : 'kickstart';
+			// Eget data-spor for byggede forløb (produktTypeForForlob), så vi
+			// læser kundens svar fra den rigtige skuffe.
+			const productId = produktTypeForForlob(f);
 			const vanedage = await hentAlleVanedage(uid, productId);
 			const startDato = f.startDato?.toDate?.() ?? new Date();
 			return {
