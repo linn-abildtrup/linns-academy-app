@@ -15,6 +15,7 @@
 		tilfoejEnKunde,
 		type ImportResultat
 	} from '$lib/firestore/forlob';
+	import { FEATURES } from '$lib/content/features';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const forlobId = $derived(page.params.id ?? '');
@@ -36,6 +37,12 @@
 	// Byggede (fleksible) forløb har ingen Kickstart/Kropsro-type — vis dem som
 	// "Fleksibelt" og rør ikke type-feltet ved gem.
 	const erBygget = $derived(forlob?.byggetForlob === true);
+	// Fleksible tilvalg — redigerbare på detalje-siden for byggede forløb.
+	let formFeatures = $state<Record<string, boolean>>({});
+	let formBuddy = $state(false);
+	let formFacebook = $state(false);
+	let formTraening = $state(false);
+	let formNulPulje = $state(14);
 	let gemmer = $state(false);
 	let gemFejl = $state<string | null>(null);
 	let gemKvit = $state(false);
@@ -143,6 +150,11 @@
 			formAntalDage = f.antalDage;
 			formAktiv = f.aktiv;
 			formType = f.type ?? 'kickstart';
+			formFeatures = { ...(f.features ?? {}) };
+			formBuddy = f.harBuddy ?? false;
+			formFacebook = f.harFacebookGruppe ?? false;
+			formTraening = f.harTraening ?? false;
+			formNulPulje = typeof f.nulDagePulje === 'number' ? f.nulDagePulje : 14;
 
 			emails = await hentAllowedEmailsForForlob(forlobId);
 			// App-versioner er best-effort: fejler opslaget, viser vi bare
@@ -176,14 +188,23 @@
 		try {
 			const startDate = new Date(formStartDato + 'T06:00:00');
 			// Byggede forløb har ingen type — undlad at skrive den (ellers
-			// stemples forløbet fejlagtigt som Kickstart).
-			const typeFelt = erBygget ? {} : { type: formType };
+			// stemples forløbet fejlagtigt som Kickstart). De fleksible tilvalg
+			// (funktioner, fællesskab, træning, pause-dage-pulje) gemmes derimod.
+			const ekstraFelter = erBygget
+				? {
+						features: { ...formFeatures },
+						harBuddy: formBuddy,
+						harFacebookGruppe: formFacebook,
+						harTraening: formTraening,
+						nulDagePulje: Math.max(0, Math.min(365, formNulPulje))
+					}
+				: { type: formType };
 			await gemForlob(forlobId, {
 				navn: trimmedNavn,
 				startDato: Timestamp.fromDate(startDate),
 				antalDage: formAntalDage,
 				aktiv: formAktiv,
-				...typeFelt
+				...ekstraFelter
 			});
 			if (forlob) {
 				forlob = {
@@ -192,7 +213,7 @@
 					startDato: Timestamp.fromDate(startDate),
 					antalDage: formAntalDage,
 					aktiv: formAktiv,
-					...typeFelt
+					...ekstraFelter
 				};
 			}
 			gemKvit = true;
@@ -332,6 +353,60 @@
 					</div>
 				{/if}
 			</div>
+
+			{#if erBygget}
+				<div class="felt">
+					<span class="felt-label">Funktioner (frit pr forløb)</span>
+					<div class="feature-liste">
+						{#each FEATURES as f (f.key)}
+							<label class="checkbox-rad">
+								<input
+									type="checkbox"
+									checked={formFeatures[f.key] ?? false}
+									onchange={(e) => (formFeatures[f.key] = e.currentTarget.checked)}
+									disabled={gemmer}
+								/>
+								<span>{f.navn}</span>
+							</label>
+						{/each}
+					</div>
+
+					{#if formFeatures['nul-dage']}
+						<label class="felt" style="margin-top: 12px;">
+							<span class="felt-label">Pause-dage-pulje (max antal)</span>
+							<input type="number" min="0" max="365" bind:value={formNulPulje} disabled={gemmer} />
+							<span class="felt-hint">
+								Hvor mange dage kunden i alt må sætte på pause i forløbet.
+							</span>
+						</label>
+					{/if}
+				</div>
+
+				<div class="felt">
+					<span class="felt-label">Fællesskab</span>
+					<label class="checkbox-rad">
+						<input type="checkbox" bind:checked={formBuddy} disabled={gemmer} />
+						<span>Buddy-makker (kunden spørges ved første login)</span>
+					</label>
+					<label class="checkbox-rad">
+						<input type="checkbox" bind:checked={formFacebook} disabled={gemmer} />
+						<span>Facebook-gruppe (kunden spørges om hun er kommet ind)</span>
+					</label>
+				</div>
+
+				<div class="felt">
+					<span class="felt-label">Træning</span>
+					<label class="checkbox-rad">
+						<input type="checkbox" bind:checked={formTraening} disabled={gemmer} />
+						<span>Mikrotræning (kunden vælger kettlebell/uden)</span>
+					</label>
+					<span class="felt-hint">
+						{formTraening
+							? 'Husk at bygge to programmer (med/uden kettlebell) under Træning-siden nedenfor.'
+							: 'Uden mikrotræning leveres træning bare som lektioner/videoer.'}
+					</span>
+				</div>
+			{/if}
 
 			{#if gemFejl}
 				<div class="fejl-besked">{gemFejl}</div>
@@ -866,6 +941,20 @@
 		font-family: var(--ff-b);
 		font-size: calc(13px * var(--fs-scale, 1));
 		font-weight: 600;
+	}
+
+	.feature-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 7px;
+		margin-top: 4px;
+	}
+
+	.felt-hint {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 4px;
+		line-height: 1.4;
 	}
 
 	.type-knap {
