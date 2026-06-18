@@ -10,7 +10,13 @@ import {
 import { db } from '$lib/firebase';
 import type { BrugerProfil, DagligeMaal, UserDoc } from '$lib/types';
 import { hentAllowedEmail, markerAllowedEmailRegistreret } from '$lib/firestore/forlob';
-import { forlobTypeForId, programIdForVariant, type Variant } from '$lib/utils/traeningsvariant';
+import {
+	forlobTypeForId,
+	programIdForVariant,
+	vaelgProgramForVariant,
+	type Variant
+} from '$lib/utils/traeningsvariant';
+import { hentForlobsProgrammer } from '$lib/firestore/mikrotraening';
 import { forlobSlutMs, bibliotekBonusSlutMs } from '$lib/content/forlobAdgang';
 
 /**
@@ -317,9 +323,17 @@ export async function synkroniserForlobskundeStatus(
 				current.mikrotraeningVariant === 'no_kettlebell'
 					? current.mikrotraeningVariant
 					: null;
-			const forventetProgramId = variant
-				? programIdForVariant(variant, forlobTypeForId(allowed.forlobId))
-				: null;
+			// Byggede forloeb: kundens program er forloebets EGET program for
+			// varianten (udstyr). Kickstart/Kropsro: de hardcodede id'er (uaendret).
+			let forventetProgramId: string | null = null;
+			if (variant) {
+				if (forlobBygget) {
+					const programmer = await hentForlobsProgrammer(allowed.forlobId);
+					forventetProgramId = vaelgProgramForVariant(programmer, variant)?.id ?? null;
+				} else {
+					forventetProgramId = programIdForVariant(variant, forlobTypeForId(allowed.forlobId));
+				}
+			}
 			const skalResynce =
 				forventetProgramId &&
 				(!current.aktivtTraeningsprogram ||

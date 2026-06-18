@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aktivtForlobId } from './traeningsvariant';
+import { aktivtForlobId, vaelgProgramForVariant } from './traeningsvariant';
 import type { UserDoc } from '$lib/types';
 
 function lavUserDoc(overrides: Partial<UserDoc>): UserDoc {
@@ -41,5 +41,27 @@ describe('aktivtForlobId', () => {
 	it('håndterer null/undefined userDoc', () => {
 		expect(aktivtForlobId(null)).toBeNull();
 		expect(aktivtForlobId(undefined)).toBeNull();
+	});
+});
+
+describe('vaelgProgramForVariant', () => {
+	const medKb = { id: 'p_kb', udstyr: ['kettlebell', 'elastik'] };
+	const udenKb = { id: 'p_ingen', udstyr: ['ingen'] };
+
+	it('kettlebell-variant vælger program med kettlebell', () => {
+		expect(vaelgProgramForVariant([udenKb, medKb], 'kettlebell')?.id).toBe('p_kb');
+	});
+
+	it('no_kettlebell-variant vælger program uden kettlebell', () => {
+		expect(vaelgProgramForVariant([medKb, udenKb], 'no_kettlebell')?.id).toBe('p_ingen');
+	});
+
+	it('returnerer null når der ingen programmer er (ingen træning)', () => {
+		expect(vaelgProgramForVariant([], 'kettlebell')).toBeNull();
+	});
+
+	it('falder tilbage til første program hvis ingen matcher præcist', () => {
+		// kun kettlebell-program findes, men kunden valgte uden kettlebell
+		expect(vaelgProgramForVariant([medKb], 'no_kettlebell')?.id).toBe('p_kb');
 	});
 });

@@ -72,6 +72,12 @@ export interface Forlob {
 	// uændret uden data-migrering.
 	harBuddy?: boolean;
 	harFacebookGruppe?: boolean;
+	// Træning pr forløb (Fase 2B). Når false vises ingen mikrotræning for
+	// forløbet (træning leveres da bare som lektioner/videoer). Når undefined
+	// falder klienten tilbage på "har træning" (Kickstart/Kropsro uændret).
+	// Et bygget forløb med harTraening=true skal have to programmer (med/uden
+	// kettlebell) bygget under admin/forlob/[id]/traening.
+	harTraening?: boolean;
 }
 
 /**

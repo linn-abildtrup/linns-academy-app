@@ -36,7 +36,10 @@ const KROPSRO_PGM = {
  * forlobType skal angives - ellers antages 'kickstart' (default for
  * bagudkompatibilitet, men det giver forkert program-id paa Kropsro).
  */
-export function programIdForVariant(variant: Variant, forlobType: ForlobType = 'kickstart'): string {
+export function programIdForVariant(
+	variant: Variant,
+	forlobType: ForlobType = 'kickstart'
+): string {
 	const map = forlobType === 'kropsro' ? KROPSRO_PGM : KICKSTART_PGM;
 	return map[variant];
 }
@@ -46,10 +49,31 @@ export function forlobTypeForId(forlobId: string | null | undefined): ForlobType
 	return forlobId?.startsWith('kropsro_') ? 'kropsro' : 'kickstart';
 }
 
+/**
+ * Vaelger det af et byggets forloebs EGNE programmer der matcher kundens
+ * variant ud fra udstyr: kettlebell-varianten = et program med kettlebell i
+ * udstyr, uden-kettlebell = et program uden. Bruges KUN for byggede forloeb —
+ * Kickstart/Kropsro bruger fortsat de hardcodede program-id'er via
+ * programIdForVariant (uaendret). Returnerer null hvis der ingen programmer er
+ * (= forloebet har ingen traening). Falder tilbage til foerste program hvis
+ * ingen matcher praecist, saa kunden altid faar noget hvis der findes mindst ét.
+ */
+export function vaelgProgramForVariant<T extends { id: string; udstyr: string[] }>(
+	programmer: T[],
+	variant: Variant
+): T | null {
+	if (programmer.length === 0) return null;
+	const harKb = (p: T) => p.udstyr.includes('kettlebell');
+	if (variant === 'kettlebell') return programmer.find(harKb) ?? programmer[0];
+	return programmer.find((p) => !harKb(p)) ?? programmer[0];
+}
+
 /** Modsat: hvilken variant svarer et programId til. Returnerer null for ukendte. */
 export function variantForProgramId(programId: string | undefined | null): Variant | null {
-	if (programId === KICKSTART_PGM.kettlebell || programId === KROPSRO_PGM.kettlebell) return 'kettlebell';
-	if (programId === KICKSTART_PGM.no_kettlebell || programId === KROPSRO_PGM.no_kettlebell) return 'no_kettlebell';
+	if (programId === KICKSTART_PGM.kettlebell || programId === KROPSRO_PGM.kettlebell)
+		return 'kettlebell';
+	if (programId === KICKSTART_PGM.no_kettlebell || programId === KROPSRO_PGM.no_kettlebell)
+		return 'no_kettlebell';
 	return null;
 }
 

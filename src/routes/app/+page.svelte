@@ -390,6 +390,10 @@
 	let modulbrugerTraeningsVideo = $state<string | null>(null);
 	let forlobTraeningsVideo = $state<string | null>(null);
 
+	// Har det aktive forløb mikrotræning? Byggede forløb kan have harTraening=
+	// false (ingen træning). Kickstart/Kropsro (undefined) → true (uændret).
+	const harForlobTraening = $derived(forlob?.harTraening ?? true);
+
 	// Variant-modal: vises første gang en abo-bruger klikker dagens
 	// mikrotræning og endnu ikke har valgt mellem kettlebell og no-kettlebell.
 	let visVariantModal = $state(false);
@@ -505,6 +509,10 @@
 		// For forløbskunder venter vi til userProduct er hentet saa vi ikke
 		// fejlagtigt viser pop-up'en for nogen der har valgt via onboarding.
 		if (ud.accessSource === 'forløb' && userProduct === null) return;
+		// Forløbskunder hvis forløb ikke har træning skal ikke spørges om
+		// kettlebell-variant (intet program at vælge til). Venter til forlob er
+		// hentet, så vi ikke kortvarigt viser modalen.
+		if (ud.accessSource === 'forløb' && (!forlob || !harForlobTraening)) return;
 		// Auto-sync: variant mangler paa userDoc men programValg er sat.
 		if (!ud.mikrotraeningVariant) {
 			const fraProgram = variantForProgramId(userProduct?.programValg?.mikrotraening);
@@ -1620,7 +1628,7 @@
 								</a>
 							{/each}
 						{/if}
-						{#if dagensDag.dagNummer >= 0}
+						{#if dagensDag.dagNummer >= 0 && harForlobTraening}
 							{@const forlobGennemfoertCheck = forlobTraeningGennemfoertVist}
 							<a class="action-card" href={traeningHref}>
 								{#if forlobTraeningsVideo}

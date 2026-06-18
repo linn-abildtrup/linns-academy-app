@@ -23,7 +23,12 @@ import type {
 } from '$lib/content/mikrotraening';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
 import { nulDageDatoer } from '$lib/content/forlob';
-import { forlobTypeForId, programIdForVariant, type Variant } from '$lib/utils/traeningsvariant';
+import {
+	forlobTypeForId,
+	programIdForVariant,
+	vaelgProgramForVariant,
+	type Variant
+} from '$lib/utils/traeningsvariant';
 
 function userProductDoc(uid: string, productId: string) {
 	return doc(db, `${aktivBrugerBasisPath(uid)}/products/${productId}`);
@@ -55,9 +60,7 @@ export async function hentAlleProgrammer(): Promise<TrainingProgram[]> {
  * skal vælge variant (fx 'med kettlebell' eller 'uden udstyr').
  */
 export async function hentForlobsProgrammer(forlobId: string): Promise<TrainingProgram[]> {
-	const snap = await getDocs(
-		collection(db, 'forlob', forlobId, 'mikrotraeningProgrammer')
-	);
+	const snap = await getDocs(collection(db, 'forlob', forlobId, 'mikrotraeningProgrammer'));
 	return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TrainingProgram);
 }
 
@@ -134,10 +137,7 @@ export async function gemForlobsDage(
  * Sletter et helt mikrotræningsprogram inkl. alle dets dage. Bruges når
  * Linn beslutter at en variant ikke længere er relevant for forløbet.
  */
-export async function sletForlobsProgram(
-	forlobId: string,
-	programId: string
-): Promise<void> {
+export async function sletForlobsProgram(forlobId: string, programId: string): Promise<void> {
 	const dageSnap = await getDocs(
 		collection(db, 'forlob', forlobId, 'mikrotraeningProgrammer', programId, 'days')
 	);
@@ -239,6 +239,27 @@ export async function gemProgramValg(
 }
 
 /**
+ * Resolver kundens program-id for et forloeb + variant.
+ *  - Byggede forloeb (byggetForlob=true): vaelger forloebets EGET program der
+ *    matcher varianten (udstyr). Returnerer null hvis forloebet ingen
+ *    programmer har (= ingen traening).
+ *  - Kickstart/Kropsro: de hardcodede id'er via programIdForVariant (uaendret).
+ */
+export async function programIdForForlobVariant(
+	forlobId: string,
+	variant: Variant
+): Promise<string | null> {
+	const fSnap = await getDoc(doc(db, 'forlob', forlobId));
+	const bygget =
+		fSnap.exists() && (fSnap.data() as { byggetForlob?: boolean }).byggetForlob === true;
+	if (bygget) {
+		const programmer = await hentForlobsProgrammer(forlobId);
+		return vaelgProgramForVariant(programmer, variant)?.id ?? null;
+	}
+	return programIdForVariant(variant, forlobTypeForId(forlobId));
+}
+
+/**
  * Synkroniserer kettlebell-variant til BAADE userDoc.mikrotraeningVariant
  * OG products/{productId}.programValg.mikrotraening saa valget ses ens
  * uanset om kunden er paa abonnement, kickstart-forloeb eller Kropsro.
@@ -255,12 +276,12 @@ export async function synkroniserTraeningsvariant(
 	productId: string | null,
 	forlobId: string | null = null
 ): Promise<void> {
-	// programId udledes fra forloebets type - Kickstart-forloeb bruger
-	// 'mikrotraening_*'-navne, Kropsro bruger 'kropsro_84_*'. Hvis vi
-	// overskriver med forkert id-format, kan klienten ikke finde sit
-	// program.
-	const forlobType = forlobTypeForId(forlobId);
-	const programId = programIdForVariant(variant, forlobType);
+	// programId udledes fra forloebet. Kickstart/Kropsro bruger de hardcodede
+	// id'er (uaendret). Byggede forloeb bruger deres EGNE programmer valgt ud
+	// fra variant (udstyr) — se programIdForForlobVariant.
+	const programId = forlobId
+		? await programIdForForlobVariant(forlobId, variant)
+		: programIdForVariant(variant, forlobTypeForId(forlobId));
 	// userDoc opdateres altid paa selve users/{uid}-doc'en (IKKE
 	// adminKlient-sub-path) - mikrotraeningVariant er et felt paa
 	// brugerens identitets-doc og skal vaere ens i alle modes.
@@ -269,7 +290,10 @@ export async function synkroniserTraeningsvariant(
 	const userPatch: Record<string, unknown> = {
 		mikrotraeningVariant: variant
 	};
-	if (forlobId) {
+	// Kun saet program-felterne hvis vi faktisk fandt et program. Et bygget
+	// forloeb uden traening giver programId=null — da gemmer vi kun variant-
+	// valget (paavirker abo-traening), ikke et tomt forloebs-program.
+	if (forlobId && programId) {
 		userPatch.aktivtTraeningsprogram = {
 			kilde: 'tildelt',
 			programId,
@@ -277,7 +301,7 @@ export async function synkroniserTraeningsvariant(
 		};
 	}
 	const opgaver: Promise<unknown>[] = [updateDoc(doc(db, 'users', uid), userPatch)];
-	if (productId) {
+	if (productId && programId) {
 		// products-doc'en bruger aktivBrugerBasisPath saa admin-klient-mode
 		// faar data isoleret i sandkassen, som de andre programValg.
 		opgaver.push(
@@ -334,7 +358,10 @@ export async function tilfoejEgenVane(
 	productId: string,
 	label: string,
 	maxVaner: number
-): Promise<{ ok: true; vane: { id: string; label: string; oprettetAt: number } } | { ok: false; fejl: string }> {
+): Promise<
+	| { ok: true; vane: { id: string; label: string; oprettetAt: number } }
+	| { ok: false; fejl: string }
+> {
 	const ref = userProductDoc(uid, productId);
 	const snap = await getDoc(ref);
 	if (!snap.exists()) return { ok: false, fejl: 'Produkt ikke fundet.' };
@@ -352,11 +379,7 @@ export async function tilfoejEgenVane(
 /**
  * Fjerner en egen vane baseret paa id.
  */
-export async function fjernEgenVane(
-	uid: string,
-	productId: string,
-	vaneId: string
-): Promise<void> {
+export async function fjernEgenVane(uid: string, productId: string, vaneId: string): Promise<void> {
 	const ref = userProductDoc(uid, productId);
 	const snap = await getDoc(ref);
 	if (!snap.exists()) return;
@@ -409,10 +432,7 @@ export async function hentPause(
  * Gemmer en pause-state så brugeren kan fortsætte træningen senere.
  * savedAt sættes med serverTimestamp på Firestore-siden.
  */
-export async function gemPause(
-	uid: string,
-	pause: Omit<PauseDoc, 'savedAt'>
-): Promise<void> {
+export async function gemPause(uid: string, pause: Omit<PauseDoc, 'savedAt'>): Promise<void> {
 	const ref = pauseDocRef(uid, pauseId(pause.programId, pause.dag));
 	await setDoc(ref, { ...pause, savedAt: serverTimestamp() });
 }
@@ -421,11 +441,7 @@ export async function gemPause(
  * Sletter en gemt pause. Bruges når dagen er gennemført eller
  * brugeren vil starte forfra.
  */
-export async function sletPause(
-	uid: string,
-	programId: string,
-	dag: number
-): Promise<void> {
+export async function sletPause(uid: string, programId: string, dag: number): Promise<void> {
 	await deleteDoc(pauseDocRef(uid, pauseId(programId, dag)));
 }
 

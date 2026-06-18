@@ -23,10 +23,11 @@
 		hentForlobsProgrammer,
 		hentUserProduct,
 		synkroniserTraeningsvariant,
+		programIdForForlobVariant,
 		tilfoejNulDageInterval,
 		fjernNulDageInterval
 	} from '$lib/firestore/mikrotraening';
-	import { forlobTypeForId, programIdForVariant, type Variant } from '$lib/utils/traeningsvariant';
+	import { type Variant } from '$lib/utils/traeningsvariant';
 	import { hentAktivProduktType } from '$lib/firestore/forlob';
 	import { gemAktivtTraeningsprogram } from '$lib/firestore/mineProgrammer';
 	import { maxNulDageForForlob } from '$lib/content/mikrotraening';
@@ -314,8 +315,8 @@
 			await synkroniserTraeningsvariant(u.uid, variant, productId, forlobId);
 			// Hold ogsaa valgtMtProgramId i sync saa program-listen ikke
 			// viser foraeldet 'aktiv'-markering.
-			if (erForlobskunde) {
-				valgtMtProgramId = programIdForVariant(variant, forlobTypeForId(forlobId));
+			if (erForlobskunde && forlobId) {
+				valgtMtProgramId = await programIdForForlobVariant(forlobId, variant);
 			}
 		} catch (e) {
 			console.error(e);

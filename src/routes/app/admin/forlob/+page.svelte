@@ -35,6 +35,7 @@
 	let formFeatures = $state<Record<string, boolean>>({});
 	let formBuddy = $state(false);
 	let formFacebook = $state(false);
+	let formTraening = $state(false);
 	let formKopierFra = $state<string>('');
 	let opretterFejl = $state<string | null>(null);
 	let opretter = $state(false);
@@ -75,6 +76,7 @@
 		formFeatures = {};
 		formBuddy = false;
 		formFacebook = false;
+		formTraening = false;
 		formKopierFra = '';
 		opretterFejl = null;
 	}
@@ -126,7 +128,8 @@
 					adgangsNiveau: 'basis',
 					features: { ...formFeatures },
 					harBuddy: formBuddy,
-					harFacebookGruppe: formFacebook
+					harFacebookGruppe: formFacebook,
+					harTraening: formTraening
 				});
 			} else {
 				await opretForlob(id, {
@@ -341,6 +344,19 @@
 						<input type="checkbox" bind:checked={formFacebook} disabled={opretter} />
 						<span>Facebook-gruppe (kunden spørges om hun er kommet ind)</span>
 					</label>
+				</div>
+
+				<div class="felt">
+					<span class="felt-label">Træning</span>
+					<label class="checkbox-rad">
+						<input type="checkbox" bind:checked={formTraening} disabled={opretter} />
+						<span>Mikrotræning (kunden vælger kettlebell/uden)</span>
+					</label>
+					<span class="felt-hint">
+						{formTraening
+							? 'Husk at bygge to programmer (med/uden kettlebell) under forløbets Træning-side bagefter.'
+							: 'Uden mikrotræning leveres træning bare som lektioner/videoer.'}
+					</span>
 				</div>
 			{/if}
 
