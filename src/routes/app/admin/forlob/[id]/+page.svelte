@@ -33,6 +33,9 @@
 	let formAntalDage = $state(21);
 	let formAktiv = $state(true);
 	let formType = $state<ForlobType>('kickstart');
+	// Byggede (fleksible) forløb har ingen Kickstart/Kropsro-type — vis dem som
+	// "Fleksibelt" og rør ikke type-feltet ved gem.
+	const erBygget = $derived(forlob?.byggetForlob === true);
 	let gemmer = $state(false);
 	let gemFejl = $state<string | null>(null);
 	let gemKvit = $state(false);
@@ -172,12 +175,15 @@
 		gemmer = true;
 		try {
 			const startDate = new Date(formStartDato + 'T06:00:00');
+			// Byggede forløb har ingen type — undlad at skrive den (ellers
+			// stemples forløbet fejlagtigt som Kickstart).
+			const typeFelt = erBygget ? {} : { type: formType };
 			await gemForlob(forlobId, {
 				navn: trimmedNavn,
 				startDato: Timestamp.fromDate(startDate),
 				antalDage: formAntalDage,
 				aktiv: formAktiv,
-				type: formType
+				...typeFelt
 			});
 			if (forlob) {
 				forlob = {
@@ -186,7 +192,7 @@
 					startDato: Timestamp.fromDate(startDate),
 					antalDage: formAntalDage,
 					aktiv: formAktiv,
-					type: formType
+					...typeFelt
 				};
 			}
 			gemKvit = true;
@@ -299,28 +305,32 @@
 
 			<div class="felt">
 				<span class="felt-label">Forløbs-type</span>
-				<div class="type-toggle">
-					<button
-						type="button"
-						class="type-knap"
-						class:aktiv={formType === 'kickstart'}
-						onclick={() => (formType = 'kickstart')}
-						disabled={gemmer}
-					>
-						<div class="type-titel">Kickstart</div>
-						<div class="type-sub">21 dage · basis-niveau</div>
-					</button>
-					<button
-						type="button"
-						class="type-knap"
-						class:aktiv={formType === 'kropsro'}
-						onclick={() => (formType = 'kropsro')}
-						disabled={gemmer}
-					>
-						<div class="type-titel">Kropsro</div>
-						<div class="type-sub">12 uger · med buddy-gruppe</div>
-					</button>
-				</div>
+				{#if erBygget}
+					<div class="bygget-tag">Fleksibelt forløb</div>
+				{:else}
+					<div class="type-toggle">
+						<button
+							type="button"
+							class="type-knap"
+							class:aktiv={formType === 'kickstart'}
+							onclick={() => (formType = 'kickstart')}
+							disabled={gemmer}
+						>
+							<div class="type-titel">Kickstart</div>
+							<div class="type-sub">21 dage · basis-niveau</div>
+						</button>
+						<button
+							type="button"
+							class="type-knap"
+							class:aktiv={formType === 'kropsro'}
+							onclick={() => (formType = 'kropsro')}
+							disabled={gemmer}
+						>
+							<div class="type-titel">Kropsro</div>
+							<div class="type-sub">12 uger · med buddy-gruppe</div>
+						</button>
+					</div>
+				{/if}
 			</div>
 
 			{#if gemFejl}
@@ -844,6 +854,18 @@
 		grid-template-columns: 1fr 1fr;
 		gap: 8px;
 		margin-top: 6px;
+	}
+
+	.bygget-tag {
+		display: inline-block;
+		margin-top: 6px;
+		padding: 8px 14px;
+		border-radius: 99px;
+		background: var(--sdim);
+		color: var(--sage);
+		font-family: var(--ff-b);
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
 	}
 
 	.type-knap {
