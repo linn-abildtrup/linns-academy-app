@@ -46,9 +46,7 @@
 						kropsroFacebookGruppe: data.kropsroFacebookGruppe
 					};
 				})
-				.sort((a, b) =>
-					(a.firstName || a.email).localeCompare(b.firstName || b.email, 'da')
-				);
+				.sort((a, b) => (a.firstName || a.email).localeCompare(b.firstName || b.email, 'da'));
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente data.';
@@ -57,15 +55,9 @@
 		}
 	});
 
-	const erInde = $derived(
-		deltagere.filter((d) => d.kropsroFacebookGruppe === true)
-	);
-	const ikkeInde = $derived(
-		deltagere.filter((d) => d.kropsroFacebookGruppe === false)
-	);
-	const ikkeSpurgt = $derived(
-		deltagere.filter((d) => d.kropsroFacebookGruppe === undefined)
-	);
+	const erInde = $derived(deltagere.filter((d) => d.kropsroFacebookGruppe === true));
+	const ikkeInde = $derived(deltagere.filter((d) => d.kropsroFacebookGruppe === false));
+	const ikkeSpurgt = $derived(deltagere.filter((d) => d.kropsroFacebookGruppe === undefined));
 </script>
 
 <div class="page">
@@ -77,9 +69,8 @@
 		<div class="eyebrow">Admin · Facebook-gruppe</div>
 		<h1>Facebook-gruppe-status</h1>
 		<p class="page-sub">
-			Overblik over deltagere på {forlob?.navn ?? 'forløbet'} der er kommet ind i
-			Kropsros Facebook-gruppe. Spørgsmålet stilles første gang kunden logger ind
-			på dag 0 eller senere.
+			Overblik over deltagere på {forlob?.navn ?? 'forløbet'} der er kommet ind i forløbets Facebook-gruppe.
+			Spørgsmålet stilles første gang kunden logger ind på dag 0 eller senere.
 		</p>
 	</header>
 
@@ -94,8 +85,8 @@
 				<p class="hint">Ingen har sagt "ikke endnu" — alt godt herfra.</p>
 			{:else}
 				<p class="card-sub">
-					Disse deltagere har sagt "ikke endnu". Du kan sende dem linket til
-					Facebook-gruppen manuelt.
+					Disse deltagere har sagt "ikke endnu". Du kan sende dem linket til Facebook-gruppen
+					manuelt.
 				</p>
 				<div class="liste">
 					{#each ikkeInde as d (d.uid)}

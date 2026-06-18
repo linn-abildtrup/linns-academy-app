@@ -66,6 +66,12 @@ export interface Forlob {
 	// FeatureKey-strenge (se features.ts). Kun relevant for byggede forløb —
 	// Kickstart/Kropsro styres fortsat af den type-baserede feature-matrix.
 	features?: Record<string, boolean>;
+	// Fællesskabs-tilvalg pr forløb (Fase 2). Styrer om buddy-makker- og
+	// Facebook-gruppe-spørgsmålene vises for kunderne. Når undefined falder
+	// klienten tilbage på den gamle regel (kun Kropsro-forløb), så Kropsro er
+	// uændret uden data-migrering.
+	harBuddy?: boolean;
+	harFacebookGruppe?: boolean;
 }
 
 /**

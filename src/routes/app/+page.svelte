@@ -408,21 +408,23 @@
 
 	$effect(() => {
 		const ud = userDoc;
-		if (!ud) return;
-		// Buddy + Facebook-modals er kun for Kropsro-FORLØB (type='kropsro'),
-		// ikke for premium-Kickstart-kunder selvom de har activeProduct=
-		// 'premiumforløb'. Vi tjekker derfor forløbets type, ikke
+		if (!ud || !forlob) return;
+		// Buddy- og Facebook-modalerne styres pr forløb (Fase 2). Falder tilbage
+		// på den gamle regel (kun Kropsro-forløb) når flagene ikke er sat, så
+		// Kropsro er uændret uden data-migrering. Kickstart med activeProduct=
+		// 'premiumforløb' rammes IKKE — vi ser på forløbets flag/type, ikke
 		// activeProduct.
-		if (!forlob || forlob.type !== 'kropsro') return;
+		const harBuddyFeature = forlob.harBuddy ?? forlob.type === 'kropsro';
+		const harFacebookFeature = forlob.harFacebookGruppe ?? forlob.type === 'kropsro';
 
 		// Buddy-modalen har precedens — vises før Facebook-spørgsmålet
-		if (ud.kropsroBuddyOensker === undefined) {
+		if (harBuddyFeature && ud.kropsroBuddyOensker === undefined) {
 			visBuddyModal = true;
 			return;
 		}
 
 		// Facebook-modalen kræver desuden at vi er på dag 0 eller senere.
-		if (ud.kropsroFacebookGruppe === undefined) {
+		if (harFacebookFeature && ud.kropsroFacebookGruppe === undefined) {
 			const startMs = forlob.startDato.toMillis?.() ?? 0;
 			if (startMs && Date.now() >= startMs) {
 				visFacebookModal = true;
@@ -2328,12 +2330,12 @@
 {#if visBuddyModal}
 	<div class="variant-modal-bag" role="dialog" aria-modal="true" tabindex="-1">
 		<div class="variant-modal">
-			<div class="variant-modal-titel">Buddy-gruppe på Kropsro</div>
+			<div class="variant-modal-titel">Buddy-gruppe på {forlob?.navn ?? 'forløbet'}</div>
 			<p class="variant-modal-sub">
-				På Kropsro bliver der mulighed for at vælge at være med i en buddy-gruppe på fire til fem
-				personer fra forløbet, der holder hinanden oppe i hverdagen. En slags minifællesskab
-				indenfor det store fællesskab. I skriver sammen, deler hvad der er svært, fejrer jeres små
-				wins og holder hinanden ansvarlig. Det er frivilligt at deltage.
+				Du kan vælge at være med i en buddy-gruppe på fire til fem personer fra forløbet, der holder
+				hinanden oppe i hverdagen. En slags minifællesskab indenfor det store fællesskab. I skriver
+				sammen, deler hvad der er svært, fejrer jeres små wins og holder hinanden ansvarlig. Det er
+				frivilligt at deltage.
 			</p>
 			<button
 				class="variant-knap"
@@ -2362,8 +2364,8 @@
 		<div class="variant-modal">
 			<div class="variant-modal-titel">Er du kommet ind i Facebook-gruppen?</div>
 			<p class="variant-modal-sub">
-				Facebook-gruppen er hvor Kropsro-deltagerne mødes, deler oplevelser og stiller spørgsmål til
-				Linn. Det er en vigtig del af forløbet.
+				Facebook-gruppen er hvor deltagerne mødes, deler oplevelser og stiller spørgsmål til Linn.
+				Det er en vigtig del af forløbet.
 			</p>
 			<button
 				class="variant-knap"

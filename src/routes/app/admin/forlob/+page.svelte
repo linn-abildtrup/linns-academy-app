@@ -33,6 +33,8 @@
 	// formPremium og funktionerne af formFeatures (frit pr forløb).
 	let formBygget = $state(false);
 	let formFeatures = $state<Record<string, boolean>>({});
+	let formBuddy = $state(false);
+	let formFacebook = $state(false);
 	let formKopierFra = $state<string>('');
 	let opretterFejl = $state<string | null>(null);
 	let opretter = $state(false);
@@ -71,6 +73,8 @@
 		formPremium = false;
 		formBygget = false;
 		formFeatures = {};
+		formBuddy = false;
+		formFacebook = false;
 		formKopierFra = '';
 		opretterFejl = null;
 	}
@@ -120,7 +124,9 @@
 					// Fleksible forløb har ingen premium/basis-forskel — altid basis
 					// internt. Alt synligt styres af funktions-afkrydsningen.
 					adgangsNiveau: 'basis',
-					features: { ...formFeatures }
+					features: { ...formFeatures },
+					harBuddy: formBuddy,
+					harFacebookGruppe: formFacebook
 				});
 			} else {
 				await opretForlob(id, {
@@ -323,6 +329,18 @@
 						Kun de afkrydsede funktioner er tændt for kunderne på dette forløb. Kan ændres senere på
 						forløb-siden.
 					</span>
+				</div>
+
+				<div class="felt">
+					<span class="felt-label">Fællesskab</span>
+					<label class="checkbox-rad">
+						<input type="checkbox" bind:checked={formBuddy} disabled={opretter} />
+						<span>Buddy-makker (kunden spørges ved første login)</span>
+					</label>
+					<label class="checkbox-rad">
+						<input type="checkbox" bind:checked={formFacebook} disabled={opretter} />
+						<span>Facebook-gruppe (kunden spørges om hun er kommet ind)</span>
+					</label>
 				</div>
 			{/if}
 

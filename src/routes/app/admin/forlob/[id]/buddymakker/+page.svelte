@@ -46,9 +46,7 @@
 						kropsroBuddyOensker: data.kropsroBuddyOensker
 					};
 				})
-				.sort((a, b) =>
-					(a.firstName || a.email).localeCompare(b.firstName || b.email, 'da')
-				);
+				.sort((a, b) => (a.firstName || a.email).localeCompare(b.firstName || b.email, 'da'));
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente data.';
@@ -57,15 +55,9 @@
 		}
 	});
 
-	const onskerBuddy = $derived(
-		deltagere.filter((d) => d.kropsroBuddyOensker === true)
-	);
-	const onskerIkke = $derived(
-		deltagere.filter((d) => d.kropsroBuddyOensker === false)
-	);
-	const ikkeSpurgt = $derived(
-		deltagere.filter((d) => d.kropsroBuddyOensker === undefined)
-	);
+	const onskerBuddy = $derived(deltagere.filter((d) => d.kropsroBuddyOensker === true));
+	const onskerIkke = $derived(deltagere.filter((d) => d.kropsroBuddyOensker === false));
+	const ikkeSpurgt = $derived(deltagere.filter((d) => d.kropsroBuddyOensker === undefined));
 </script>
 
 <div class="page">
@@ -77,10 +69,9 @@
 		<div class="eyebrow">Admin · Buddy-gruppe</div>
 		<h1>Buddy-gruppe-matches</h1>
 		<p class="page-sub">
-			Liste over deltagere på {forlob?.navn ?? 'forløbet'} der vil være med i en
-			buddy-gruppe på 4-5 personer. Ved første login bliver Kropsro-kunder spurgt,
-			og svaret gemmes på deres userDoc. Du sætter grupperne sammen manuelt og
-			kontakter dem på mail.
+			Liste over deltagere på {forlob?.navn ?? 'forløbet'} der vil være med i en buddy-gruppe på 4-5 personer.
+			Ved første login bliver kunderne spurgt, og svaret gemmes på deres userDoc. Du sætter grupperne
+			sammen manuelt og kontakter dem på mail.
 		</p>
 	</header>
 
@@ -93,8 +84,8 @@
 			<div class="card-titel">Vil være med i buddy-gruppe ({onskerBuddy.length})</div>
 			{#if onskerBuddy.length === 0}
 				<p class="hint">
-					Ingen deltagere har sagt ja til en buddy-gruppe endnu. De skal være
-					logget ind mindst én gang for at have svaret.
+					Ingen deltagere har sagt ja til en buddy-gruppe endnu. De skal være logget ind mindst én
+					gang for at have svaret.
 				</p>
 			{:else}
 				<div class="liste">

@@ -368,7 +368,7 @@
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
 
-		{#if forlob?.type === 'kropsro'}
+		{#if forlob?.harBuddy ?? forlob?.type === 'kropsro'}
 			<a class="indhold-row" href="/app/admin/forlob/{forlobId}/buddymakker">
 				<div class="indhold-icon" style="background: #9D6358;">
 					<Icon name="user" size={16} color="#fff" />
@@ -379,7 +379,9 @@
 				</div>
 				<Icon name="chevron-r" size={14} color="var(--text3)" />
 			</a>
+		{/if}
 
+		{#if forlob?.harFacebookGruppe ?? forlob?.type === 'kropsro'}
 			<a class="indhold-row" href="/app/admin/forlob/{forlobId}/facebook-gruppe">
 				<div class="indhold-icon" style="background: #4267B2;">
 					<Icon name="community" size={16} color="#fff" />
