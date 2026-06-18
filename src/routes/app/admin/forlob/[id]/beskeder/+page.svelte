@@ -13,7 +13,7 @@
 		type KlientSpoergsmaal,
 		type SpoergsmaalStatus
 	} from '$lib/firestore/spoergsmaal';
-	import { hentForlob } from '$lib/firestore/forlob';
+	import { hentForlob, hentAllowedEmailsForForlob } from '$lib/firestore/forlob';
 	import { gemSvarHistorik } from '$lib/firestore/svarHistorik';
 
 	interface AiUdkast {
@@ -45,6 +45,7 @@
 	let forlobNavn = $state<string>('');
 	let aktivtFilter = $state<Filter>('alle');
 	let klientSoeg = $state('');
+	let navnePerEmail = $state<Map<string, string>>(new Map());
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let toast = $state<string | null>(null);
@@ -91,16 +92,29 @@
 				if (aktivtFilter === 'ubesvarede') return ubesvaredeSpmIds.has(q.id);
 				return q.status === aktivtFilter;
 			})
-			.filter((q) => klientSoegeMatch(q.email ?? '', klientSoeg))
+			.filter((q) => {
+				const navn = navnePerEmail.get((q.email ?? '').toLowerCase()) ?? '';
+				return klientSoegeMatch(`${navn} ${q.email ?? ''}`, klientSoeg);
+			})
 	);
 
 	async function genindlaes() {
 		loading = true;
 		fejl = null;
 		try {
-			const [liste, f] = await Promise.all([hentAlleSpoergsmaal(), hentForlob(forlobId)]);
+			const [liste, f, allowed] = await Promise.all([
+				hentAlleSpoergsmaal(),
+				hentForlob(forlobId),
+				hentAllowedEmailsForForlob(forlobId).catch(() => [])
+			]);
 			alle = liste;
 			forlobNavn = f?.navn ?? forlobId;
+			const m = new Map<string, string>();
+			for (const a of allowed) {
+				const navn = `${a.firstName ?? ''} ${a.lastName ?? ''}`.trim();
+				if (a.email && navn) m.set(a.email.toLowerCase(), navn);
+			}
+			navnePerEmail = m;
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente spørgsmål.';
@@ -301,7 +315,7 @@
 		<input
 			class="klient-soeg"
 			type="search"
-			placeholder="Søg en klient frem (email)..."
+			placeholder="Søg en klient frem (navn eller email)..."
 			bind:value={klientSoeg}
 		/>
 	</section>

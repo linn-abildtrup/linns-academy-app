@@ -11,7 +11,7 @@
 		type KlientSpoergsmaal,
 		type SpoergsmaalStatus
 	} from '$lib/firestore/spoergsmaal';
-	import { hentAlleForlob } from '$lib/firestore/forlob';
+	import { hentAlleForlob, hentNavnePerEmail } from '$lib/firestore/forlob';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import { gemSvarHistorik } from '$lib/firestore/svarHistorik';
 	import { klientSoegeMatch } from '$lib/utils/klientSoegning';
@@ -45,6 +45,7 @@
 	let alleForlob = $state<Forlob[]>([]);
 	let aktivtFilter = $state<Filter>('alle');
 	let klientSoeg = $state('');
+	let navnePerEmail = $state<Map<string, string>>(new Map());
 	// Forløbs-filter: 'alle' (alt), 'modulbrugere', 'uden-forlob' eller et forlobId
 	let aktivtForlobFilter = $state<string>('alle');
 	let loading = $state(true);
@@ -122,7 +123,10 @@
 				if (aktivtFilter === 'ubesvarede') return ubesvaredeSpmIds.has(q.id);
 				return q.status === aktivtFilter;
 			})
-			.filter((q) => klientSoegeMatch(q.email ?? '', klientSoeg))
+			.filter((q) => {
+				const navn = navnePerEmail.get((q.email ?? '').toLowerCase()) ?? '';
+				return klientSoegeMatch(`${navn} ${q.email ?? ''}`, klientSoeg);
+			})
 	);
 
 	// Forløbs-grupper til dropdown-filter med antal og ubesvarede.
@@ -245,9 +249,10 @@
 		loading = true;
 		fejl = null;
 		try {
-			[alle, alleForlob] = await Promise.all([
+			[alle, alleForlob, navnePerEmail] = await Promise.all([
 				hentAlleSpoergsmaal(),
-				hentAlleForlob().then((fs) => fs.filter((f) => f.aktiv !== false))
+				hentAlleForlob().then((fs) => fs.filter((f) => f.aktiv !== false)),
+				hentNavnePerEmail().catch(() => new Map<string, string>())
 			]);
 		} catch (e) {
 			console.error(e);
@@ -494,7 +499,7 @@
 		<input
 			class="klient-soeg"
 			type="search"
-			placeholder="Søg en klient frem (email)..."
+			placeholder="Søg en klient frem (navn eller email)..."
 			bind:value={klientSoeg}
 		/>
 		<button

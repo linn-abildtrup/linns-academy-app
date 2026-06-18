@@ -330,6 +330,23 @@ export async function hentAppVersionerForForlob(
  * Lister alle abonnement-allowedEmails (basis-/premium-abo).
  * Sorteret efter senest opdaterede, så nye køb står øverst.
  */
+/**
+ * Bygger et opslag fra email (lowercase) til "Fornavn Efternavn" ud fra hele
+ * allowedEmails-collectionen. Bruges af admin-sider der kun har klientens email
+ * (fx Spørgsmål) men gerne vil kunne søge på navn. Emails uden navn udelades.
+ */
+export async function hentNavnePerEmail(): Promise<Map<string, string>> {
+	const snap = await getDocs(collection(db, 'allowedEmails'));
+	const map = new Map<string, string>();
+	for (const d of snap.docs) {
+		const data = d.data() as AllowedEmail;
+		const email = (data.email ?? d.id).toLowerCase();
+		const navn = `${data.firstName ?? ''} ${data.lastName ?? ''}`.trim();
+		if (email && navn) map.set(email, navn);
+	}
+	return map;
+}
+
 export async function hentAbonnentAllowedEmails(): Promise<AllowedEmail[]> {
 	const q = query(collection(db, 'allowedEmails'), where('accessSource', '==', 'abonnement'));
 	const snap = await getDocs(q);
