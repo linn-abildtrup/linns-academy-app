@@ -14,6 +14,7 @@
 	import { hentAlleForlob } from '$lib/firestore/forlob';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import { gemSvarHistorik } from '$lib/firestore/svarHistorik';
+	import { klientSoegeMatch } from '$lib/utils/klientSoegning';
 
 	interface AiUdkast {
 		udkast: string;
@@ -43,6 +44,7 @@
 	let alle = $state<KlientSpoergsmaal[]>([]);
 	let alleForlob = $state<Forlob[]>([]);
 	let aktivtFilter = $state<Filter>('alle');
+	let klientSoeg = $state('');
 	// Forløbs-filter: 'alle' (alt), 'modulbrugere', 'uden-forlob' eller et forlobId
 	let aktivtForlobFilter = $state<string>('alle');
 	let loading = $state(true);
@@ -113,11 +115,14 @@
 	});
 
 	const filtreret = $derived(
-		alle.filter(passerForlobFilter).filter((q) => {
-			if (aktivtFilter === 'alle') return true;
-			if (aktivtFilter === 'ubesvarede') return ubesvaredeSpmIds.has(q.id);
-			return q.status === aktivtFilter;
-		})
+		alle
+			.filter(passerForlobFilter)
+			.filter((q) => {
+				if (aktivtFilter === 'alle') return true;
+				if (aktivtFilter === 'ubesvarede') return ubesvaredeSpmIds.has(q.id);
+				return q.status === aktivtFilter;
+			})
+			.filter((q) => klientSoegeMatch(q.email ?? '', klientSoeg))
 	);
 
 	// Forløbs-grupper til dropdown-filter med antal og ubesvarede.
@@ -486,6 +491,12 @@
 				</button>
 			{/each}
 		</div>
+		<input
+			class="klient-soeg"
+			type="search"
+			placeholder="Søg en klient frem (email)..."
+			bind:value={klientSoeg}
+		/>
 		<button
 			type="button"
 			class="primary-knap"
@@ -1002,6 +1013,17 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
+	}
+
+	.klient-soeg {
+		width: 100%;
+		padding: 9px 12px;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		font-family: var(--ff-b);
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		background: var(--bg2);
 	}
 
 	.forlob-filter {

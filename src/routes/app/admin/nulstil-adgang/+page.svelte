@@ -3,6 +3,7 @@
 	import type { User } from 'firebase/auth';
 	import { collection, getDocs } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
+	import { klientSoegeMatch } from '$lib/utils/klientSoegning';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const getUser = getContext<() => User | null>('user');
@@ -22,18 +23,9 @@
 	let kopieret = $state(false);
 
 	const matches = $derived.by<Kunde[]>(() => {
-		const q = soeg.trim().toLowerCase();
-		if (q.length < 2) return [];
+		if (soeg.trim().length < 2) return [];
 		return alleKunder
-			.filter((k) => {
-				const fuldt = `${k.firstName} ${k.lastName}`.trim().toLowerCase();
-				return (
-					k.email.toLowerCase().includes(q) ||
-					k.firstName.toLowerCase().includes(q) ||
-					k.lastName.toLowerCase().includes(q) ||
-					fuldt.includes(q)
-				);
-			})
+			.filter((k) => klientSoegeMatch(`${k.firstName} ${k.lastName} ${k.email}`, soeg))
 			.slice(0, 30);
 	});
 
@@ -182,10 +174,9 @@
 		<div class="eyebrow">Admin</div>
 		<h1>Nulstil adgangskode</h1>
 		<p class="page-sub">
-			Sæt en midlertidig adgangskode for en hvilken som helst kunde — virker for
-			abonnenter, forløbskunder og kunder i bibliotek-bonus. Brug det når en kunde ikke
-			modtager 'Glemt adgangskode'-mailen, eller når du har brug for at hjælpe hende
-			hurtigt videre.
+			Sæt en midlertidig adgangskode for en hvilken som helst kunde — virker for abonnenter,
+			forløbskunder og kunder i bibliotek-bonus. Brug det når en kunde ikke modtager 'Glemt
+			adgangskode'-mailen, eller når du har brug for at hjælpe hende hurtigt videre.
 		</p>
 	</header>
 
@@ -230,7 +221,14 @@
 		{#if email}
 			<div class="valgt-kunde">
 				Valgt: <strong>{email}</strong>
-				<button type="button" class="ryd-knap" onclick={() => { email = ''; soeg = ''; }}>
+				<button
+					type="button"
+					class="ryd-knap"
+					onclick={() => {
+						email = '';
+						soeg = '';
+					}}
+				>
 					ryd
 				</button>
 			</div>
@@ -240,14 +238,19 @@
 			<div class="fejl">{fejl}</div>
 		{/if}
 
-		<button class="primary-knap" type="button" onclick={nulstil} disabled={opretter || !email.trim()}>
+		<button
+			class="primary-knap"
+			type="button"
+			onclick={nulstil}
+			disabled={opretter || !email.trim()}
+		>
 			{opretter ? 'Opretter…' : '🔑 Generér midlertidig adgangskode'}
 		</button>
 
 		<p class="hint">
-			Hendes nuværende kode bliver overskrevet. Send den nye kode til hende manuelt
-			(fx Messenger eller SMS), og bed hende skifte den under <em>Profil → Skift
-			adgangskode</em> så snart hun er logget ind.
+			Hendes nuværende kode bliver overskrevet. Send den nye kode til hende manuelt (fx Messenger
+			eller SMS), og bed hende skifte den under <em>Profil → Skift adgangskode</em> så snart hun er logget
+			ind.
 		</p>
 	</section>
 </div>
@@ -264,7 +267,9 @@
 			onclick={(e) => e.stopPropagation()}
 		>
 			<h2 id="kode-titel" class="modal-titel">Midlertidig adgangskode oprettet 🔑</h2>
-			<p class="modal-tekst">Send denne kode til <strong>{tempEmail}</strong> via Messenger eller SMS:</p>
+			<p class="modal-tekst">
+				Send denne kode til <strong>{tempEmail}</strong> via Messenger eller SMS:
+			</p>
 
 			<div class="kode-kort">
 				<div class="kode-label">Midlertidig kode</div>

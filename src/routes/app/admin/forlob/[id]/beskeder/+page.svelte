@@ -4,6 +4,7 @@
 	import { getAuth } from 'firebase/auth';
 	import Icon from '$lib/components/Icon.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
+	import { klientSoegeMatch } from '$lib/utils/klientSoegning';
 	import {
 		hentAlleSpoergsmaal,
 		opdaterSpoergsmaalStatus,
@@ -43,6 +44,7 @@
 	let alle = $state<KlientSpoergsmaal[]>([]);
 	let forlobNavn = $state<string>('');
 	let aktivtFilter = $state<Filter>('alle');
+	let klientSoeg = $state('');
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let toast = $state<string | null>(null);
@@ -83,21 +85,20 @@
 	});
 
 	const filtreret = $derived(
-		forlobSpoergsmaal.filter((q) => {
-			if (aktivtFilter === 'alle') return true;
-			if (aktivtFilter === 'ubesvarede') return ubesvaredeSpmIds.has(q.id);
-			return q.status === aktivtFilter;
-		})
+		forlobSpoergsmaal
+			.filter((q) => {
+				if (aktivtFilter === 'alle') return true;
+				if (aktivtFilter === 'ubesvarede') return ubesvaredeSpmIds.has(q.id);
+				return q.status === aktivtFilter;
+			})
+			.filter((q) => klientSoegeMatch(q.email ?? '', klientSoeg))
 	);
 
 	async function genindlaes() {
 		loading = true;
 		fejl = null;
 		try {
-			const [liste, f] = await Promise.all([
-				hentAlleSpoergsmaal(),
-				hentForlob(forlobId)
-			]);
+			const [liste, f] = await Promise.all([hentAlleSpoergsmaal(), hentForlob(forlobId)]);
 			alle = liste;
 			forlobNavn = f?.navn ?? forlobId;
 		} catch (e) {
@@ -297,6 +298,12 @@
 				</button>
 			{/each}
 		</div>
+		<input
+			class="klient-soeg"
+			type="search"
+			placeholder="Søg en klient frem (email)..."
+			bind:value={klientSoeg}
+		/>
 	</section>
 
 	{#if loading}
@@ -346,7 +353,8 @@
 											</button>
 										</div>
 										<div class="ai-skip-tekst">
-											{aiUdkast[q.id].skipBegrundelse ?? 'Beskeden kræver ikke nødvendigvis et substantielt svar.'}
+											{aiUdkast[q.id].skipBegrundelse ??
+												'Beskeden kræver ikke nødvendigvis et substantielt svar.'}
 										</div>
 										<div class="ai-knapper">
 											<button
@@ -429,9 +437,7 @@
 										<span class="ai-trigger-sparkle">✦</span> Generér AI-udkast
 									</button>
 								{:else if aiUdkastLoader[q.id]}
-									<button type="button" class="ghost-knap sm" disabled>
-										AI tænker...
-									</button>
+									<button type="button" class="ghost-knap sm" disabled> AI tænker... </button>
 								{:else if aiUdkastSkjult[q.id]}
 									<button
 										type="button"
@@ -469,21 +475,37 @@
 							{/if}
 						{/if}
 						{#if q.status !== 'laest'}
-							<button type="button" class="ghost-knap sm" onclick={() => aendreStatus(q.id, 'laest')}>
+							<button
+								type="button"
+								class="ghost-knap sm"
+								onclick={() => aendreStatus(q.id, 'laest')}
+							>
 								Markér som læst
 							</button>
 						{/if}
 						{#if q.status !== 'besvaret'}
-							<button type="button" class="ghost-knap sm" onclick={() => aendreStatus(q.id, 'besvaret')}>
+							<button
+								type="button"
+								class="ghost-knap sm"
+								onclick={() => aendreStatus(q.id, 'besvaret')}
+							>
 								Markér som besvaret
 							</button>
 						{/if}
 						{#if q.status !== 'brugt'}
-							<button type="button" class="ghost-knap sm" onclick={() => aendreStatus(q.id, 'brugt')}>
+							<button
+								type="button"
+								class="ghost-knap sm"
+								onclick={() => aendreStatus(q.id, 'brugt')}
+							>
 								Markér som brugt
 							</button>
 						{/if}
-						<button type="button" class="ghost-knap sm danger" onclick={() => aabnSletBekraeft(q.id)}>
+						<button
+							type="button"
+							class="ghost-knap sm danger"
+							onclick={() => aabnSletBekraeft(q.id)}
+						>
 							Slet
 						</button>
 					</div>
@@ -579,6 +601,18 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
+	}
+
+	.klient-soeg {
+		width: 100%;
+		margin-top: 10px;
+		padding: 9px 12px;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		font-family: var(--ff-b);
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		background: var(--bg2);
 	}
 
 	.filter-chip {

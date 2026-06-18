@@ -8,6 +8,7 @@
 	import type { UserDoc } from '$lib/types';
 	import { collection, getDocs } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
+	import { klientSoegeMatch } from '$lib/utils/klientSoegning';
 
 	type RowData = {
 		allowed: AllowedEmail;
@@ -157,16 +158,15 @@
 	});
 
 	const filtreret = $derived.by(() => {
-		const q = soegeord.trim().toLowerCase();
 		return rows.filter((r) => {
 			const a = r.allowed;
 			if (filter === 'basis' && a.accessLevel !== 'basis') return false;
 			if (filter === 'premium' && a.accessLevel !== 'premium') return false;
 			if (filter === 'kun-aktive' && !a.activeSubscription) return false;
-			if (!q) return true;
-			const fornavn = (r.userDoc?.firstName ?? a.firstName ?? '').toLowerCase();
-			const efternavn = (a.lastName ?? '').toLowerCase();
-			return a.email.toLowerCase().includes(q) || fornavn.includes(q) || efternavn.includes(q);
+			if (!soegeord.trim()) return true;
+			const fornavn = r.userDoc?.firstName ?? a.firstName ?? '';
+			const efternavn = a.lastName ?? '';
+			return klientSoegeMatch(`${fornavn} ${efternavn} ${a.email}`, soegeord);
 		});
 	});
 
@@ -214,8 +214,8 @@
 		<div class="eyebrow">Admin</div>
 		<h1>Abonnenter</h1>
 		<p class="page-sub">
-			Brugere med basis- eller premium-abonnement fra Simplero. Klik et kort for at
-			se hele kunde-profilen.
+			Brugere med basis- eller premium-abonnement fra Simplero. Klik et kort for at se hele
+			kunde-profilen.
 		</p>
 	</header>
 
@@ -395,21 +395,30 @@
 				<strong>{bekraeftEmail}</strong>.
 			</p>
 			<p class="modal-tekst">
-				Hendes nuværende kode bliver overskrevet. Du får den nye kode vist på skærmen
-				og skal sende den til hende manuelt (fx Messenger eller SMS).
+				Hendes nuværende kode bliver overskrevet. Du får den nye kode vist på skærmen og skal sende
+				den til hende manuelt (fx Messenger eller SMS).
 			</p>
 			<p class="modal-tekst muted">
-				Hun bør skifte koden under <em>Profil → Skift adgangskode</em> så snart hun er
-				logget ind.
+				Hun bør skifte koden under <em>Profil → Skift adgangskode</em> så snart hun er logget ind.
 			</p>
 			{#if opretFejl}
 				<div class="modal-fejl">{opretFejl}</div>
 			{/if}
 			<div class="modal-knapper">
-				<button class="modal-knap ghost" type="button" onclick={annullerBekraeft} disabled={opretter}>
+				<button
+					class="modal-knap ghost"
+					type="button"
+					onclick={annullerBekraeft}
+					disabled={opretter}
+				>
 					Annullér
 				</button>
-				<button class="modal-knap primary" type="button" onclick={bekraeftNyKode} disabled={opretter}>
+				<button
+					class="modal-knap primary"
+					type="button"
+					onclick={bekraeftNyKode}
+					disabled={opretter}
+				>
 					{opretter ? 'Opretter…' : 'Generér ny kode'}
 				</button>
 			</div>
@@ -429,7 +438,9 @@
 			onclick={(e) => e.stopPropagation()}
 		>
 			<h2 id="kode-titel" class="modal-titel">Midlertidig adgangskode oprettet 🔑</h2>
-			<p class="modal-tekst">Send denne kode til <strong>{tempNavn}</strong> via Messenger eller SMS:</p>
+			<p class="modal-tekst">
+				Send denne kode til <strong>{tempNavn}</strong> via Messenger eller SMS:
+			</p>
 
 			<div class="kode-kort">
 				<div class="kode-label">Midlertidig kode</div>
@@ -841,5 +852,4 @@
 		border: none;
 		cursor: pointer;
 	}
-
 </style>

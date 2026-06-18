@@ -16,6 +16,7 @@
 		type ImportResultat
 	} from '$lib/firestore/forlob';
 	import { FEATURES } from '$lib/content/features';
+	import { klientSoegeMatch } from '$lib/utils/klientSoegning';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const forlobId = $derived(page.params.id ?? '');
@@ -102,16 +103,10 @@
 	let soegning = $state('');
 
 	const filtreredeEmails = $derived.by<AllowedEmail[]>(() => {
-		const ord = soegning.trim().toLowerCase().split(/\s+/).filter(Boolean);
-		if (ord.length === 0) return emails;
-		// Søg på tværs af fornavn+efternavn+email som én tekst, og kræv at
-		// HVERT søgeord findes et eller andet sted i den. Så "Sara Jep"
-		// (fornavn + start af efternavn) matcher, ligesom omvendt rækkefølge
-		// og delvise ord gør.
-		return emails.filter((e) => {
-			const tekst = `${e.firstName ?? ''} ${e.lastName ?? ''} ${e.email}`.toLowerCase();
-			return ord.every((o) => tekst.includes(o));
-		});
+		if (!soegning.trim()) return emails;
+		return emails.filter((e) =>
+			klientSoegeMatch(`${e.firstName ?? ''} ${e.lastName ?? ''} ${e.email}`, soegning)
+		);
 	});
 
 	function laesCsvFil(e: Event) {

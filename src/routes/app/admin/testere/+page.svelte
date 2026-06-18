@@ -1,14 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import {
-		arrayRemove,
-		arrayUnion,
-		collection,
-		doc,
-		getDocs,
-		updateDoc
-	} from 'firebase/firestore';
+	import { arrayRemove, arrayUnion, collection, doc, getDocs, updateDoc } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
+	import { klientSoegeMatch } from '$lib/utils/klientSoegning';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
@@ -49,9 +43,7 @@
 						testerFeatures: data.testerFeatures ?? []
 					};
 				})
-				.sort((a, b) =>
-					(a.firstName || a.email).localeCompare(b.firstName || b.email, 'da')
-				);
+				.sort((a, b) => (a.firstName || a.email).localeCompare(b.firstName || b.email, 'da'));
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente brugere.';
@@ -78,9 +70,7 @@
 				testerFeatures: arrayUnion(feature)
 			});
 			brugere = brugere.map((b) =>
-				b.uid === uid
-					? { ...b, testerFeatures: [...b.testerFeatures, feature] }
-					: b
+				b.uid === uid ? { ...b, testerFeatures: [...b.testerFeatures, feature] } : b
 			);
 		} catch (e) {
 			console.error(e);
@@ -118,17 +108,11 @@
 	}
 
 	const matchendeBrugere = $derived.by(() => {
-		const q = tilfoejSoeg.trim().toLowerCase();
 		const feat = valgtFeature;
-		if (!q || !feat) return [];
+		if (!tilfoejSoeg.trim() || !feat) return [];
 		return brugere
 			.filter((b) => !b.testerFeatures.includes(feat))
-			.filter(
-				(b) =>
-					b.email.toLowerCase().includes(q) ||
-					b.firstName.toLowerCase().includes(q) ||
-					b.lastName.toLowerCase().includes(q)
-			)
+			.filter((b) => klientSoegeMatch(`${b.firstName} ${b.lastName} ${b.email}`, tilfoejSoeg))
 			.slice(0, 20);
 	});
 </script>
@@ -142,8 +126,8 @@
 		<div class="eyebrow">Admin · Testere</div>
 		<h1>Tester-adgang</h1>
 		<p class="page-sub">
-			Giv specifikke kunder adgang til funktioner under udvikling. Når funktionen er klar
-			til alle, fjernes adgangs-tjekken fra koden — listen her bevares til næste test-runde.
+			Giv specifikke kunder adgang til funktioner under udvikling. Når funktionen er klar til alle,
+			fjernes adgangs-tjekken fra koden — listen her bevares til næste test-runde.
 		</p>
 	</header>
 
@@ -223,7 +207,6 @@
 			</ol>
 		</section>
 	{/if}
-
 </div>
 
 {#if valgtFeature}
