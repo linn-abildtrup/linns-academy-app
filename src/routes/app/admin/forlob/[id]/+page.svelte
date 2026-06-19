@@ -181,7 +181,9 @@
 		}
 		gemmer = true;
 		try {
-			const startDate = new Date(formStartDato + 'T06:00:00');
+			// Forløb starter kl. 00:01 (konvention) — se opret-siden. Redigeres et
+			// eksisterende forløbs dato, flyttes starttiden også til 00:01.
+			const startDate = new Date(formStartDato + 'T00:01:00');
 			// Byggede forløb har ingen type — undlad at skrive den (ellers
 			// stemples forløbet fejlagtigt som Kickstart). De fleksible tilvalg
 			// (funktioner, fællesskab, træning, pause-dage-pulje) gemmes derimod.

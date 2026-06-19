@@ -112,7 +112,10 @@
 
 		opretter = true;
 		try {
-			const startDate = new Date(formStartDato + 'T06:00:00');
+			// Forløb starter kl. 00:01 (konvention): så dækker forløbet kalender-
+			// dagene rent, og udløbet lander ~midnat dagen efter sidste dag
+			// (≈ sidste dag kørt til 23:59) i stedet for at arve et skævt klokkeslæt.
+			const startDate = new Date(formStartDato + 'T00:01:00');
 			if (formBygget) {
 				// Bygget (fleksibelt) forløb: eget data-spor (= id), niveau valgt
 				// eksplicit, funktioner frit pr forløb. Sætter IKKE type — det
