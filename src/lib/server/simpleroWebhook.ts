@@ -203,11 +203,30 @@ function tilMs(v: unknown): number {
 }
 
 /**
+ * Gulver et tidspunkt til DK-midnat (00:00 Europe/Copenhagen) samme dag.
+ * Bruges saa app-overtagelsen lander praecist ved doegnskift (kl. 00:00) og
+ * ikke arver forloeb-startens klokkeslaet. DST-sikkert: vi traekker den
+ * faktiske DK-tid-paa-doegnet fra instantet.
+ */
+function dkMidnatGulv(ms: number): number {
+	const t = new Intl.DateTimeFormat('en-GB', {
+		timeZone: 'Europe/Copenhagen',
+		hourCycle: 'h23',
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit'
+	}).format(ms);
+	const [hh, mm, ss] = t.split(':').map(Number);
+	return ms - ((hh * 60 + mm) * 60 + ss) * 1000;
+}
+
+/**
  * Hvis kunden er paa et AKTIVT forloeb, returneres tidspunktet hvor appen skal
- * tage over: forloebets EFFEKTIVE slut (hold-slut = start + (antalDage+1) dage,
- * PLUS kundens brugte pause-dage). Er kunden paa flere aktive forloeb, bruges
- * det seneste. Returnerer 0 hvis kunden ikke er paa et aktivt forloeb (saa skal
- * abo'en aktiveres med det samme).
+ * tage over: DK-midnat DAGEN EFTER forloebets sidste (effektive) dag. Dvs.
+ * forloebet koerer dagen helt ud (til kl. 23:59), og appen tager over kl. 00:00
+ * dagen efter. Effektiv sidste dag = hold-slut + kundens brugte pause-dage.
+ * Er kunden paa flere aktive forloeb, bruges det seneste. Returnerer 0 hvis
+ * kunden ikke er paa et aktivt forloeb (saa skal abo'en aktiveres med det samme).
  */
 export async function hentAktivtForlobSlut(email: string): Promise<number> {
 	const brugere = await hentDocsHvorFeltLig('users', 'email', email);
@@ -234,7 +253,10 @@ export async function hentAktivtForlobSlut(email: string): Promise<number> {
 			const antalDage = (f.antalDage as number) ?? 0;
 			if (!startMs || !antalDage) continue;
 			const nulBrugt = nulPerForlob.get(fId) ?? 0;
-			const slut = forlobSlutMs(startMs, antalDage) + nulBrugt * DAG_MS;
+			// forlobSlutMs = start + (antalDage+1) dage (= dagen efter sidste dag,
+			// men med startens klokkeslæt). Gulv til DK-midnat så app'en tager
+			// over præcis kl. 00:00 dagen efter forløbets sidste dag.
+			const slut = dkMidnatGulv(forlobSlutMs(startMs, antalDage) + nulBrugt * DAG_MS);
 			if (slut > now && slut > maxSlut) maxSlut = slut;
 		}
 	}
