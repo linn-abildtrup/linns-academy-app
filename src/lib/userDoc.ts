@@ -293,7 +293,13 @@ export async function synkroniserForlobskundeStatus(
 		// Fælles slut-beregning (forlobSlutMs i $lib/content/forlobAdgang) så
 		// login-sync og webhooks aldrig regner forskelligt. Se A4-oprydning.
 		const slutMs = forlobSlutMs(forlobStartMs, forlobAntalDage);
-		const forlobUdloebet = slutMs > 0 && Date.now() > slutMs;
+		// Har kunden købt appen mens forløbet kører, er abo'en parkeret med
+		// adgangFra (= dagen efter forløbets effektive slut). Så holdes forløbet
+		// "aktivt" indtil det tidspunkt — ellers ville et pause-forskudt forløb
+		// blive regnet som udløbet, før appen tager over. (Webhook A + B.)
+		const parkeretTil = allowed.adgangFra && allowed.adgangFra > Date.now() ? allowed.adgangFra : 0;
+		const effektivSlutMs = Math.max(slutMs, parkeretTil);
+		const forlobUdloebet = effektivSlutMs > 0 && Date.now() > effektivSlutMs;
 
 		// Features frit pr forløb: er kunden på et AKTIVT bygget forløb, lægger
 		// vi forløbets feature-flag på userDoc (harFeatureAdgang læser dem).

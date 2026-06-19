@@ -12,7 +12,9 @@ import {
 	uddragKundeId,
 	uddragNavn,
 	gemILog,
-	opdaterBrugerEllerWhitelist
+	opdaterBrugerEllerWhitelist,
+	hentAktivtForlobSlut,
+	parkerAboTilEfterForlob
 } from '$lib/server/simpleroWebhook';
 import { findProduktAdgang } from '$lib/simplero/produktMapping';
 
@@ -63,6 +65,32 @@ export const POST: RequestHandler = async ({ request }) => {
 	// forskellige datoer. Nu er login-sync (synkroniserForlobskundeStatus i
 	// $lib/userDoc) den ENESTE kilde - den saetter expiresAt + bonus fra
 	// forloebet foerste gang kunden logger ind (selv-helbredende).
+
+	// Køber kunden et app-ABONNEMENT mens hun stadig er på et aktivt forløb,
+	// skal appen først tage over DAGEN EFTER forløbet er afsluttet (hold-slut +
+	// kundens pause-dage). Vi parkerer derfor abo'en på whitelisten med adgangFra
+	// og holder forløbet åbent — login-synk aktiverer abo'en på det rigtige
+	// tidspunkt. Gælder kun abonnementer (basis + premium), ikke forløbs-køb.
+	if (adgang.accessSource === 'abonnement') {
+		const forlobSlut = await hentAktivtForlobSlut(email);
+		if (forlobSlut > Date.now()) {
+			await parkerAboTilEfterForlob(email, opdatering, forlobSlut);
+			await gemILog(
+				EVENT,
+				payload,
+				'granted',
+				`${adgang.navn} til ${email} — parkeret til ${new Date(forlobSlut).toISOString().slice(0, 10)} (aktivt forløb)`
+			);
+			return json({
+				ok: true,
+				status: 'granted',
+				email,
+				produkt: adgang.navn,
+				accessLevel: adgang.accessLevel,
+				parkeretTil: forlobSlut
+			});
+		}
+	}
 
 	await opdaterBrugerEllerWhitelist(email, opdatering, adgang.forlobId);
 	await gemILog(EVENT, payload, 'granted', `${adgang.navn} til ${email}`);

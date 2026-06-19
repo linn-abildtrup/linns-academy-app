@@ -5,7 +5,16 @@
 
 import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { gemDocMerge, hentDocsHvorFeltLig } from '$lib/server/firestoreRest';
+import {
+	gemDocMerge,
+	hentDoc,
+	hentDocsHvorFeltLig,
+	hentHeleCollection
+} from '$lib/server/firestoreRest';
+import { forlobSlutMs } from '$lib/content/forlobAdgang';
+import { nulDageDatoer } from '$lib/content/forlob';
+
+const DAG_MS = 24 * 60 * 60 * 1000;
 
 // Simperos faktiske format er fladt — alle felter ligger på top-level.
 // "Test-format"-felterne (event/type/data/customer/product/purchase) bevares
@@ -181,6 +190,81 @@ export async function opdaterBrugerEllerWhitelist(
 			}
 			await gemDocMerge(`users/${b.id}`, opd);
 		}
+	}
+}
+
+function tilMs(v: unknown): number {
+	if (typeof v === 'number') return v;
+	if (typeof v === 'string') {
+		const t = new Date(v).getTime();
+		return isNaN(t) ? 0 : t;
+	}
+	return 0;
+}
+
+/**
+ * Hvis kunden er paa et AKTIVT forloeb, returneres tidspunktet hvor appen skal
+ * tage over: forloebets EFFEKTIVE slut (hold-slut = start + (antalDage+1) dage,
+ * PLUS kundens brugte pause-dage). Er kunden paa flere aktive forloeb, bruges
+ * det seneste. Returnerer 0 hvis kunden ikke er paa et aktivt forloeb (saa skal
+ * abo'en aktiveres med det samme).
+ */
+export async function hentAktivtForlobSlut(email: string): Promise<number> {
+	const brugere = await hentDocsHvorFeltLig('users', 'email', email);
+	if (brugere.length === 0) return 0;
+	const now = Date.now();
+	let maxSlut = 0;
+	for (const b of brugere) {
+		const forlobIds = (b.data.forlobIds as string[] | undefined) ?? [];
+		if (forlobIds.length === 0) continue;
+		// Pause-dage pr forlobId fra kundens products-skuffer.
+		const prods = await hentHeleCollection(`users/${b.id}/products`);
+		const nulPerForlob = new Map<string, number>();
+		for (const p of prods) {
+			const fId = p.data.forlobId as string | undefined;
+			const iv =
+				(p.data.nulDage as { intervaller?: { fra: string; til: string }[] } | undefined)
+					?.intervaller ?? [];
+			if (fId) nulPerForlob.set(fId, nulDageDatoer(iv).length);
+		}
+		for (const fId of forlobIds) {
+			const f = await hentDoc(`forlob/${fId}`);
+			if (!f) continue;
+			const startMs = tilMs(f.startDato);
+			const antalDage = (f.antalDage as number) ?? 0;
+			if (!startMs || !antalDage) continue;
+			const nulBrugt = nulPerForlob.get(fId) ?? 0;
+			const slut = forlobSlutMs(startMs, antalDage) + nulBrugt * DAG_MS;
+			if (slut > now && slut > maxSlut) maxSlut = slut;
+		}
+	}
+	return maxSlut;
+}
+
+/**
+ * Parkerer et abo-koeb til EFTER kundens forloeb: abo-felterne (+ adgangFra)
+ * skrives KUN paa whitelisten, saa login-synk foerst aktiverer dem naar
+ * adgangFra er passeret. Samtidig holdes forloebet aabent ved at saette
+ * userDoc.expiresAt = adgangFra. Abo-felterne (accessSource/accessLevel/
+ * activeProduct) skrives IKKE paa userDoc endnu — saa kunden bliver paa
+ * forloebet indtil appen tager over.
+ */
+export async function parkerAboTilEfterForlob(
+	email: string,
+	opdatering: Record<string, unknown>,
+	adgangFra: number
+): Promise<void> {
+	await gemDocMerge(`allowedEmails/${loggerSafePath(email)}`, {
+		email,
+		...opdatering,
+		adgangFra
+	});
+	const brugere = await hentDocsHvorFeltLig('users', 'email', email);
+	for (const b of brugere) {
+		// Hold forloebet aabent indtil appen tager over. Skriv IKKE abo-felterne.
+		const userOpd: Record<string, unknown> = { expiresAt: adgangFra };
+		if (opdatering.simpleroCustomerId) userOpd.simpleroCustomerId = opdatering.simpleroCustomerId;
+		await gemDocMerge(`users/${b.id}`, userOpd);
 	}
 }
 
