@@ -1219,6 +1219,33 @@
 			gemBesked = { tekst: 'Måltidet er tomt — tilføj noget først.', type: 'fejl' };
 			return;
 		}
+
+		// Hvis vi redigerer et eksisterende måltid OG datoen er ændret, så
+		// bekræft flytningen først. Et gemt måltid opdateres in-place (samme
+		// dokument), så en datoændring er ikke en kopi men en flytning: det
+		// forsvinder fra den dag det stod på. Uden denne bekræftelse kunne
+		// det ske ved et uheld — netop den fejl en kunde har oplevet.
+		if (redigererMaaltid && gemDato !== redigererMaaltid.dato) {
+			const fra = visningsDato(redigererMaaltid.dato);
+			const til = visningsDato(gemDato);
+			bekraeft = {
+				titel: 'Flyt måltidet til en anden dag?',
+				beskrivelse: `Måltidet flyttes fra ${fra} til ${til} og står derefter ikke længere på ${fra}.`,
+				bekraeftTekst: 'Flyt',
+				onBekraeft: () => udforGem()
+			};
+			return;
+		}
+
+		await udforGem();
+	}
+
+	// Selve skrivningen til Firestore + oprydning af UI. Skilt ud fra
+	// gemMaaltidet så en dato-flytning kan bekræftes først (se ovenfor).
+	async function udforGem() {
+		const u = user;
+		if (!u) return;
+		const navn = gemNavn.trim();
 		gemmer = true;
 		gemBesked = null;
 
