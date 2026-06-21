@@ -19,10 +19,10 @@ import {
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { AllowedEmail, CsvRow, Forlob } from '$lib/content/forlobAdgang';
-import { produktTypeForForlob } from '$lib/content/forlobAdgang';
+import { forlobAdgangFelter, produktTypeForForlob } from '$lib/content/forlobAdgang';
 import type { ForlobDag, LektionItem } from '$lib/content/forlob';
 import { tomForlobDag } from '$lib/content/forlob';
-import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type ForlobProduct } from '$lib/types';
+import { KICKSTART_PRODUCT_ID, type ForlobProduct } from '$lib/types';
 
 // ==============================================
 // Forlob-helpers
@@ -407,21 +407,8 @@ async function adgangsFelterForForlob(forlobId: string): Promise<{
 		byggetForlob?: boolean;
 		produktNoegle?: string;
 	};
-	// Genbrug pure-helperen saa adgangsNiveau-/type-reglerne holdes samlet
-	// ét sted. Forsiden + spil-page bruger samme funktion. For byggede forløb
-	// returnerer den forløbets egen produktNoegle (eget data-spor).
-	const produktType = produktTypeForForlob(data);
-	// Byggede forløb: niveauet er admins eksplicitte valg (adgangsNiveau).
-	// Kickstart/Kropsro: niveau følger af produkt-typen som hidtil.
-	const erPremium = data.byggetForlob
-		? data.adgangsNiveau === 'premium'
-		: produktType === KROPSRO_PRODUCT_ID;
-	return {
-		activeProduct: produktType,
-		accessLevel: erPremium ? 'premium' : 'basis',
-		accessSource: 'forløb',
-		activeSubscription: false
-	};
+	// Eneste sandhedskilde for niveau + data-skuffe (deles med /koeb-webhooken).
+	return forlobAdgangFelter(data);
 }
 
 /**

@@ -9,6 +9,7 @@ import {
 	unlockedDays,
 	dagDato,
 	produktTypeForForlob,
+	forlobAdgangFelter,
 	forlobSlutMs,
 	bibliotekBonusSlutMs
 } from './forlobAdgang';
@@ -282,6 +283,44 @@ describe('produktTypeForForlob', () => {
 		expect(produktTypeForForlob({ type: 'kropsro', adgangsNiveau: undefined })).toBe(
 			KROPSRO_PRODUCT_ID
 		);
+	});
+});
+
+describe('forlobAdgangFelter', () => {
+	it('bygget premium-forløb → premium + egen produktNoegle (data-skuffe)', () => {
+		const f = forlobAdgangFelter({
+			byggetForlob: true,
+			adgangsNiveau: 'premium',
+			produktNoegle: 'sommerro_ny'
+		});
+		expect(f).toEqual({
+			activeProduct: 'sommerro_ny',
+			accessLevel: 'premium',
+			accessSource: 'forløb',
+			activeSubscription: false
+		});
+	});
+
+	it('bygget basis-forløb → basis', () => {
+		const f = forlobAdgangFelter({
+			byggetForlob: true,
+			adgangsNiveau: 'basis',
+			produktNoegle: 'sommerro_ny'
+		});
+		expect(f.accessLevel).toBe('basis');
+		expect(f.activeProduct).toBe('sommerro_ny');
+	});
+
+	it('Kropsro-type → premium + KROPSRO-skuffe', () => {
+		const f = forlobAdgangFelter({ type: 'kropsro' });
+		expect(f.accessLevel).toBe('premium');
+		expect(f.activeProduct).toBe(KROPSRO_PRODUCT_ID);
+	});
+
+	it('Kickstart-type → basis + KICKSTART-skuffe', () => {
+		const f = forlobAdgangFelter({ type: 'kickstart' });
+		expect(f.accessLevel).toBe('basis');
+		expect(f.activeProduct).toBe(KICKSTART_PRODUCT_ID);
 	});
 });
 

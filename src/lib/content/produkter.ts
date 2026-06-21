@@ -77,6 +77,20 @@ export const PRODUKTER: Record<ActiveProduct, Produkt> = {
 };
 
 // ============================================================
+// Hold-specifikke forløbskøb (Simplero-produkt → konkret forløb)
+// ============================================================
+//
+// PRODUKTER ovenfor er produkt-TYPER. Et konkret salg som "Fra Kickstart til
+// Kropsro" er et SPECIFIKT Simplero-produkt der giver adgang til ét bestemt
+// (typisk bygget) forløb. Her kobles kun Simplero-produkt-id → forlobId —
+// niveau (basis/premium) og data-skuffe UDLEDES af forløbet selv via
+// forlobAdgangFelter, så det altid matcher forløbets opsætning og den manuelle
+// CSV-import. Tilføj en linje her når et nyt hold-produkt oprettes i Simplero.
+export const FORLOB_KOEB_PRODUKTER: Record<string, string> = {
+	'255593': 'sommerro_ny' // "Fra Kickstart til Kropsro" → SommerRo-forløbet
+};
+
+// ============================================================
 // Adgangs-matrix — hvad hver klient-type har adgang til
 // ============================================================
 //

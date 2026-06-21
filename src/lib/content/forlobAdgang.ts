@@ -114,6 +114,36 @@ export function produktTypeForForlob(forlob: {
 	return erPremium ? KROPSRO_PRODUCT_ID : KICKSTART_PRODUCT_ID;
 }
 
+/**
+ * Udleder de adgangs-felter en forløbskunde skal have ud fra forløbets EGNE
+ * felter. Ren funktion — ingen Firestore. Eneste sandhedskilde for niveau +
+ * data-skuffe, så CSV-import (adgangsFelterForForlob i firestore/forlob.ts) og
+ * /koeb-webhooken aldrig divergerer. Byggede forløb: niveau = admins eksplicitte
+ * adgangsNiveau-valg. Kickstart/Kropsro: niveau følger produkt-typen.
+ */
+export function forlobAdgangFelter(forlob: {
+	type?: ForlobType;
+	adgangsNiveau?: 'basis' | 'premium';
+	byggetForlob?: boolean;
+	produktNoegle?: string;
+}): {
+	activeProduct: ForlobProduct | string;
+	accessLevel: 'basis' | 'premium';
+	accessSource: 'forløb';
+	activeSubscription: false;
+} {
+	const activeProduct = produktTypeForForlob(forlob);
+	const erPremium = forlob.byggetForlob
+		? forlob.adgangsNiveau === 'premium'
+		: activeProduct === KROPSRO_PRODUCT_ID;
+	return {
+		activeProduct,
+		accessLevel: erPremium ? 'premium' : 'basis',
+		accessSource: 'forløb',
+		activeSubscription: false
+	};
+}
+
 export type AllowedEmailStatus = 'invited' | 'registered';
 
 export interface AllowedEmail {

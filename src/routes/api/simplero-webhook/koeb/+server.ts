@@ -17,8 +17,23 @@ import {
 	parkerAboTilEfterForlob
 } from '$lib/server/simpleroWebhook';
 import { findProduktAdgang } from '$lib/simplero/produktMapping';
+import { FORLOB_KOEB_PRODUKTER } from '$lib/content/produkter';
+import { forlobAdgangFelter } from '$lib/content/forlobAdgang';
+import { hentDoc } from '$lib/server/firestoreRest';
+import type { AccessLevel, AccessSource } from '$lib/types';
 
 const EVENT = 'purchase.made';
+
+// Adgangs-felter webhooken skriver — enten fra et fast type-produkt
+// (findProduktAdgang) eller udledt fra et hold-forløb (forlobAdgangFelter).
+interface KoebFelter {
+	accessLevel: AccessLevel;
+	accessSource: AccessSource;
+	activeProduct: string;
+	activeSubscription: boolean;
+	forlobId?: string;
+	navn: string;
+}
 
 export const POST: RequestHandler = async ({ request }) => {
 	const res = await parseOgVerificer(request, EVENT);
@@ -38,17 +53,36 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ ok: true, status: 'skipped', reason: 'no productId' });
 	}
 
-	const adgang = findProduktAdgang(produktId);
-	if (!adgang) {
+	// 1) Faste type-produkter (basis/premium-abo, generisk Kickstart/Kropsro).
+	let felter: KoebFelter | null = findProduktAdgang(produktId);
+
+	// 2) Ellers: et hold-specifikt forløbskøb (fx "Fra Kickstart til Kropsro").
+	//    Slå forlobId op og UDLED adgangen fra forløbet selv, så niveau +
+	//    data-skuffe altid matcher forløbets opsætning og den manuelle import.
+	if (!felter) {
+		const forlobId = FORLOB_KOEB_PRODUKTER[String(produktId)];
+		const f = forlobId ? await hentDoc(`forlob/${forlobId}`) : null;
+		if (forlobId && f) {
+			const udledt = forlobAdgangFelter({
+				type: f.type as 'kickstart' | 'kropsro' | undefined,
+				adgangsNiveau: f.adgangsNiveau as 'basis' | 'premium' | undefined,
+				byggetForlob: f.byggetForlob as boolean | undefined,
+				produktNoegle: f.produktNoegle as string | undefined
+			});
+			felter = { ...udledt, forlobId, navn: (f.navn as string) ?? forlobId };
+		}
+	}
+
+	if (!felter) {
 		await gemILog(EVENT, payload, 'skipped', `ukendt produkt ${produktId}`);
 		return json({ ok: true, status: 'skipped', reason: 'unknown product', produktId });
 	}
 
 	const opdatering: Record<string, unknown> = {
-		accessLevel: adgang.accessLevel,
-		accessSource: adgang.accessSource,
-		activeProduct: adgang.activeProduct,
-		activeSubscription: adgang.activeSubscription,
+		accessLevel: felter.accessLevel,
+		accessSource: felter.accessSource,
+		activeProduct: felter.activeProduct,
+		activeSubscription: felter.activeSubscription,
 		// state-feltet skrives ikke laengere (A2 etape B) - effektivState
 		// udleder tilstanden af accessLevel/accessSource.
 		paymentFailedAt: null,
@@ -71,7 +105,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	// kundens pause-dage). Vi parkerer derfor abo'en på whitelisten med adgangFra
 	// og holder forløbet åbent — login-synk aktiverer abo'en på det rigtige
 	// tidspunkt. Gælder kun abonnementer (basis + premium), ikke forløbs-køb.
-	if (adgang.accessSource === 'abonnement') {
+	if (felter.accessSource === 'abonnement') {
 		const forlobSlut = await hentAktivtForlobSlut(email);
 		if (forlobSlut > Date.now()) {
 			await parkerAboTilEfterForlob(email, opdatering, forlobSlut);
@@ -79,28 +113,28 @@ export const POST: RequestHandler = async ({ request }) => {
 				EVENT,
 				payload,
 				'granted',
-				`${adgang.navn} til ${email} — parkeret til ${new Date(forlobSlut).toISOString().slice(0, 10)} (aktivt forløb)`
+				`${felter.navn} til ${email} — parkeret til ${new Date(forlobSlut).toISOString().slice(0, 10)} (aktivt forløb)`
 			);
 			return json({
 				ok: true,
 				status: 'granted',
 				email,
-				produkt: adgang.navn,
-				accessLevel: adgang.accessLevel,
+				produkt: felter.navn,
+				accessLevel: felter.accessLevel,
 				parkeretTil: forlobSlut
 			});
 		}
 	}
 
-	await opdaterBrugerEllerWhitelist(email, opdatering, adgang.forlobId);
-	await gemILog(EVENT, payload, 'granted', `${adgang.navn} til ${email}`);
+	await opdaterBrugerEllerWhitelist(email, opdatering, felter.forlobId);
+	await gemILog(EVENT, payload, 'granted', `${felter.navn} til ${email}`);
 
 	return json({
 		ok: true,
 		status: 'granted',
 		email,
-		produkt: adgang.navn,
-		accessLevel: adgang.accessLevel
+		produkt: felter.navn,
+		accessLevel: felter.accessLevel
 	});
 };
 
