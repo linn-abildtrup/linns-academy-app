@@ -17,7 +17,7 @@
 		tilfoejGennemfoersel
 	} from '$lib/firestore/mineProgrammer';
 	import { hentForlob, hentAktivProduktType } from '$lib/firestore/forlob';
-	import { getCurrentDayMedNulDage, nulDageDatoer } from '$lib/content/forlob';
+	import { getCurrentDayMedNulDage, nulDageDatoer, toIsoLokal } from '$lib/content/forlob';
 	import { logTraening } from '$lib/firestore/traeningHistorik';
 	import { formaterHistorikDato } from '$lib/content/traeningHistorik';
 	import { getAudioUrl, getVideoUrl } from '$lib/utils/storage';
@@ -154,7 +154,7 @@
 				} catch {
 					// best-effort
 				}
-				const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
+				const startDato = toIsoLokal(forlob.startDato.toDate());
 				const idx = getCurrentDayMedNulDage({ startDato, antalDage: forlob.antalDage }, nulDatoer);
 				if (idx !== null) {
 					// idx er forloebsdagen (aligned med program-dagene + forsiden). Modulo

@@ -15,6 +15,7 @@
 		forlobSlutMs,
 		getCurrentDay,
 		getCurrentDayMedNulDage,
+		toIsoLokal,
 		lektionSynligNu,
 		nulDageDatoer,
 		tomForlobDag
@@ -175,7 +176,7 @@
 
 	const naturligAktivDagNummer = $derived.by<number | null>(() => {
 		if (!forlob) return null;
-		const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
+		const startDato = toIsoLokal(forlob.startDato.toDate());
 		return getCurrentDayMedNulDage({ startDato, antalDage: forlob.antalDage }, nulDatoer);
 	});
 

@@ -12,7 +12,7 @@
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
 	import { hentForlob, hentAktivProduktType } from '$lib/firestore/forlob';
-	import { getCurrentDayMedNulDage, nulDageDatoer } from '$lib/content/forlob';
+	import { getCurrentDayMedNulDage, nulDageDatoer, toIsoLokal } from '$lib/content/forlob';
 	import { getVideoUrl } from '$lib/utils/storage';
 	import { alleProdukter } from '$lib/content/produkter';
 	import type { UserDoc } from '$lib/types';
@@ -109,7 +109,7 @@
 				} catch {
 					// Best-effort — fortsaet uden nul-dage hvis vi ikke kan hente
 				}
-				const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
+				const startDato = toIsoLokal(forlob.startDato.toDate());
 				const idx = getCurrentDayMedNulDage({ startDato, antalDage: forlob.antalDage }, nulDatoer);
 				if (idx !== null) {
 					// idx er forloebsdagen (0=baseline, 1..antalDage=traeningsdage) — SAMME

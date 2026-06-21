@@ -15,6 +15,7 @@
 		getCurrentDayMedNulDage,
 		lektionSynligNu,
 		nulDageDatoer,
+		toIsoLokal,
 		tomForlobDag
 	} from '$lib/content/forlob';
 	import {
@@ -52,7 +53,7 @@
 
 	const aktivDagNr = $derived.by<number | null>(() => {
 		if (!forlob) return null;
-		const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
+		const startDato = toIsoLokal(forlob.startDato.toDate());
 		return getCurrentDayMedNulDage({ startDato, antalDage: forlob.antalDage }, nulDatoer);
 	});
 

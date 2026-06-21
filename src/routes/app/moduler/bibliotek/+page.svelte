@@ -11,7 +11,7 @@
 		GuideType
 	} from '$lib/content/bibliotek';
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
-	import { getCurrentDay, lektionSynligNu } from '$lib/content/forlob';
+	import { getCurrentDay, lektionSynligNu, toIsoLokal } from '$lib/content/forlob';
 	import {
 		formatDanskDato,
 		GUIDE_TYPE_LABELS,
@@ -507,7 +507,7 @@
 				]);
 				if (!erAktivPaaForlob) return dage;
 				if (!forlob) return dage;
-				const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
+				const startDato = toIsoLokal(forlob.startDato.toDate());
 				const dagensDag = getCurrentDay({ startDato, antalDage: forlob.antalDage });
 				if (dagensDag === null) return [];
 				// Hvis forløbet er færdigt — vis alle dage.

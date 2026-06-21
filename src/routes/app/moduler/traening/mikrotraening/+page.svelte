@@ -10,7 +10,7 @@
 		aktuelAboDagForDato,
 		type AboMikrotraeningFremgang
 	} from '$lib/content/aboMikrotraening';
-	import { getCurrentDay } from '$lib/content/forlob';
+	import { getCurrentDay, toIsoLokal } from '$lib/content/forlob';
 	import {
 		hentForlobsProgram,
 		hentForlobsProgrammer,
@@ -68,7 +68,7 @@
 
 	const aktivKalenderDag = $derived.by<number | null>(() => {
 		if (!forlob) return null;
-		const startDato = forlob.startDato.toDate().toISOString().slice(0, 10);
+		const startDato = toIsoLokal(forlob.startDato.toDate());
 		return getCurrentDay({ startDato, antalDage: forlob.antalDage });
 	});
 

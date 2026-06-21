@@ -102,8 +102,13 @@ export function getCurrentDay(
 // Nul-dage (pause-dage der skubber forloebet)
 // ==============================================
 
-/** Lokal ISO yyyy-mm-dd for et Date-objekt. */
-function toIsoLokal(d: Date): string {
+/**
+ * Lokal ISO yyyy-mm-dd for et Date-objekt. Den kanoniske måde at udlede en
+ * forløbs-dato-nøgle på — brug ALDRIG toISOString().slice(0,10) til dag-
+ * beregning: den giver UTC-datoen, så en startdato kl. 00:01 dansk tid
+ * (= 22:01 UTC dagen før) tæller en dag for lidt.
+ */
+export function toIsoLokal(d: Date): string {
 	const y = d.getFullYear();
 	const m = String(d.getMonth() + 1).padStart(2, '0');
 	const dd = String(d.getDate()).padStart(2, '0');
