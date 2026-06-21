@@ -153,7 +153,15 @@ export function getCurrentDayMedNulDage(
  */
 export function forlobSlutMs(startMs: number, antalDage: number, nulDageBrugt: number): number {
 	const msPerDag = 1000 * 60 * 60 * 24;
-	return startMs + (antalDage + nulDageBrugt) * msPerDag;
+	// Gulv starten til lokal midnat og giv kunden HELE den sidste dag (+1), så
+	// materiale-adgangen lukker ved midnat EFTER sidste dag — samme semantik som
+	// konto-adgangens expiresAt (forlobAdgang.forlobSlutMs, der også lægger +1).
+	// Uden dette blev materialet skåret væk allerede om morgenen på sidste dag,
+	// fordi startDato har et klokkeslæt (fx 06:00 / 00:01): start + antalDage
+	// landede midt på den sidste dag i stedet for ved dens slutning.
+	const start = new Date(startMs);
+	const startMidnat = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+	return startMidnat + (antalDage + 1 + nulDageBrugt) * msPerDag;
 }
 
 // ==============================================
