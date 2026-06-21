@@ -17,8 +17,8 @@ import { MAX_QUERIES_PR_DAG, quotaNoegle } from '$lib/content/linnAi';
 import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 import type { UserDoc } from '$lib/types';
 
-const MODEL = 'claude-haiku-4-5-20251001';
-const MAX_TOKENS = 2048;
+const MODEL = 'claude-sonnet-4-6';
+const MAX_TOKENS = 4096;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB pr billede
 const MAX_BILLEDER = 3;
 
@@ -50,8 +50,12 @@ Din opgave:
 1. Læs opskriftens navn (titel) — typisk fra det første billede
 2. Find antallet af portioner. Hvis ikke angivet, antag 4 personer.
 3. List alle ingredienser med mængder og enheder (gram, dl, spsk, stk osv.) — sammensæt fra alle billederne, undgå dubletter
-4. Estimér samlede makro for HELE opskriften (alle portioner), så divider med antal portioner for at få MAKRO PR PORTION.
-5. Brug danske kost-tabeller (Frida) som reference.
+4. Beregn makro ADDITIVT: estimér makro for HVER ingrediens ud fra dens mængde og danske kost-tabeller (Frida), og læg dem sammen til en total for hele opskriften. Divider til sidst med antal portioner for at få MAKRO PR PORTION.
+
+VIGTIGT om præcision:
+- Undervurdér ALDRIG kalorie- og fedt-tætte ingredienser. Nødder, frø (chia, hør), olie, smør, fede mejeriprodukter (fx græsk yoghurt 10%, fløde), ost, avocado og mørk chokolade bidrager med meget fedt (9 kcal/g) og dermed mange kalorier selv i små mængder.
+- Regn IKKE ud fra faste interval-antagelser ("en salat er 150-400 kcal") — regn altid additivt ud fra de faktiske ingredienser og mængder.
+- Sanity-tjek til sidst: kcal pr portion skal cirka svare til protein×4 + kulhydrat×4 + fedt×9. Justér hvis det ikke passer.
 
 Returnér KUN JSON i dette format (intet andet, ingen markdown, ingen forklaring):
 
@@ -60,6 +64,9 @@ Returnér KUN JSON i dette format (intet andet, ingen markdown, ingen forklaring
   "antalPortioner": <tal>,
   "ingredienser": [
     {"navn": "<ingrediens>", "maengde": <tal>, "enhed": "<g|dl|spsk|tsk|stk|...>"}
+  ],
+  "makroPrIngrediens": [
+    {"navn": "<ingrediens>", "kcal": <tal for HELE mængden>, "protein": <g>, "fedt": <g>, "kh": <g>, "fiber": <g>}
   ],
   "makroPrPortion": {
     "protein": <gram>,
@@ -70,10 +77,10 @@ Returnér KUN JSON i dette format (intet andet, ingen markdown, ingen forklaring
   }
 }
 
-Hvis billedet/billederne ikke indeholder en opskrift, returnér:
-{"error": "Billedet indeholder ikke en madopskrift"}
+makroPrIngrediens er dit additive regnestykke for HELE opskriften (alle portioner). makroPrPortion skal være summen af makroPrIngrediens divideret med antalPortioner.
 
-Vær realistisk i dine estimater. En portion kødfrikadeller med kartofler kan typisk være 400-600 kcal. En portion salat 150-400 kcal.`;
+Hvis billedet/billederne ikke indeholder en opskrift, returnér:
+{"error": "Billedet indeholder ikke en madopskrift"}`;
 
 export const POST: RequestHandler = async ({ request }) => {
 	const apiKey = env.ANTHROPIC_API_KEY;
