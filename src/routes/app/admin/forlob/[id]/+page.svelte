@@ -16,7 +16,7 @@
 		type ImportResultat
 	} from '$lib/firestore/forlob';
 	import { FEATURES } from '$lib/content/features';
-	import { forlobSlutMs } from '$lib/content/forlob';
+	import { forlobSlutMs, toIsoLokal } from '$lib/content/forlob';
 	import { klientSoegeMatch } from '$lib/utils/klientSoegning';
 	import Icon from '$lib/components/Icon.svelte';
 
@@ -164,7 +164,7 @@
 			}
 			forlob = f;
 			formNavn = f.navn;
-			formStartDato = f.startDato.toDate().toISOString().slice(0, 10);
+			formStartDato = toIsoLokal(f.startDato.toDate());
 			formAntalDage = f.antalDage;
 			formAktiv = f.aktiv;
 			formType = f.type ?? 'kickstart';
