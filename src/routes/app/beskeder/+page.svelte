@@ -26,6 +26,11 @@
 	const userDoc = $derived(getUserDoc());
 	const userState = $derived(effektivState(userDoc));
 	const harLinnAi = $derived(harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'linn-ai'));
+	// Skriv-direkte-til-Linn styres af egen feature. Fx fleksible forløb (SommerRo)
+	// har kun Linn AI, ikke skriv-til-Linn.
+	const harBeskederTilLinn = $derived(
+		harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'beskeder-til-linn')
+	);
 
 	// Aktiv fane (kun relevant naar harLinnAi). Linn AI er default — saa den er
 	// foerste stop — men kunden kan frit skifte til at skrive direkte til Linn.
@@ -278,7 +283,7 @@
 		<h1>Stil et <em>spørgsmål</em></h1>
 	</header>
 
-	{#if harLinnAi}
+	{#if harLinnAi && harBeskederTilLinn}
 		<div class="faner" role="tablist">
 			<button
 				type="button"
@@ -306,8 +311,14 @@
 		{:else}
 			{@render skrivTilLinnFane()}
 		{/if}
-	{:else}
+	{:else if harLinnAi}
+		{@render linnAiFane()}
+	{:else if harBeskederTilLinn}
 		{@render skrivTilLinnFane()}
+	{:else}
+		<section class="card">
+			<p class="intro">Beskeder er ikke tilgængelig på dit forløb.</p>
+		</section>
 	{/if}
 </div>
 
@@ -370,16 +381,18 @@
 									</span>
 								</div>
 							{/if}
-							{#if aiSendtIndex.has(i)}
-								<div class="ai-sendt-note">Sendt til Linn ✓</div>
-							{:else}
-								<button
-									type="button"
-									class="ghost-knap ai-send-knap"
-									onclick={() => sendAiTilLinn(i)}
-								>
-									Send til Linn i stedet
-								</button>
+							{#if harBeskederTilLinn}
+								{#if aiSendtIndex.has(i)}
+									<div class="ai-sendt-note">Sendt til Linn ✓</div>
+								{:else}
+									<button
+										type="button"
+										class="ghost-knap ai-send-knap"
+										onclick={() => sendAiTilLinn(i)}
+									>
+										Send til Linn i stedet
+									</button>
+								{/if}
 							{/if}
 						</div>
 					{/if}

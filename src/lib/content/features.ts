@@ -13,14 +13,16 @@ import { aktivtForlobId } from '$lib/utils/traeningsvariant';
 /** De funktioner adgangen kan styres for. */
 export type FeatureKey =
 	| 'linn-ai'
+	| 'beskeder-til-linn'
 	| 'udvidet-naering'
 	| 'byg-eget-program'
 	| 'ai-madplan'
 	| 'ai-opskrift'
 	| 'nul-dage';
 
-/** De kundetyper adgangen styres pr. */
-export type Kundetype = 'kickstart' | 'kropsro' | 'app';
+/** De kundetyper adgangen styres pr. 'fleksibelt' = byggede/fleksible forløb
+ *  (fx SommerRo) der ikke er Kickstart eller Kropsro. */
+export type Kundetype = 'kickstart' | 'kropsro' | 'fleksibelt' | 'app';
 
 export interface Feature {
 	key: FeatureKey;
@@ -41,6 +43,13 @@ export const FEATURES: Feature[] = [
 		navn: 'Linn AI',
 		beskrivelse:
 			'Kunden kan chatte med en AI-version af dig og få svar på spørgsmål om træning, kost og vaner, når som helst. Findes som eget punkt i Moduler.'
+	},
+	{
+		key: 'beskeder-til-linn',
+		koblet: true,
+		navn: 'Beskeder til Linn',
+		beskrivelse:
+			'Kunden kan skrive direkte til dig under Beskeder. Slå fra hvis et forløb kun skal have Linn AI. Kan stå alene, sammen med Linn AI, eller Linn AI kan stå alene.'
 	},
 	{
 		key: 'udvidet-naering',
@@ -83,6 +92,7 @@ export const FEATURES: Feature[] = [
 export const KUNDETYPER: { key: Kundetype; navn: string }[] = [
 	{ key: 'kickstart', navn: 'Kickstart' },
 	{ key: 'kropsro', navn: 'Kropsro' },
+	{ key: 'fleksibelt', navn: 'Fleksibelt forløb' },
 	{ key: 'app', navn: 'App-kunde' }
 ];
 
@@ -125,17 +135,33 @@ export const STANDARD_MATRIX: FeatureMatrix = {
 		'byg-eget-program': false,
 		'ai-madplan': false
 	},
+	// Fleksible/byggede forløb (fx SommerRo): som Kropsro-niveau, men Linn AI
+	// til, INGEN nul-dage, og ingen beskeder-til-Linn (kun Linn AI). Admin kan
+	// frit ændre i feature-adgang-skemaet.
+	fleksibelt: {
+		...alleFeatures(false),
+		'linn-ai': true,
+		'udvidet-naering': true,
+		'ai-opskrift': true
+	},
 	app: alleFeatures(false)
 };
 
+/** Standard-produkterne (abo + Kickstart/Kropsro-forløb). Alt andet i
+ *  activeProduct er en byggetForløbs egen produktNøgle = fleksibelt forløb. */
+const STANDARD_PRODUKTER = ['basisabo', 'premiumabo', 'kickstart', 'premiumforløb'];
+
 /**
- * Udleder en kundes type ud fra adgangs-felterne. Aktive forløbskunder
- * typebestemmes af deres AKTIVE forløb (kropsro_ vs andet). Returnerer null
- * hvis kunden ikke har aktiv adgang (udløbet / ingen) — saa faar hun ingen
- * funktioner, praecis som harPremium=false i dag.
+ * Udleder en kundes type ud fra adgangs-felterne. Aktive forløbskunder:
+ * byggede/fleksible forløb (activeProduct = forløbets egen produktNøgle, ikke et
+ * standard-produkt) → 'fleksibelt'; ellers Kropsro vs Kickstart efter det aktive
+ * forløbs id. Returnerer null hvis kunden ikke har aktiv adgang (udløbet / ingen)
+ * — saa faar hun ingen funktioner, praecis som harPremium=false i dag.
  */
 export function kundetypeFor(userDoc: UserDoc | null | undefined): Kundetype | null {
 	if (erForlobsklient(userDoc)) {
+		const ap = userDoc?.activeProduct;
+		if (ap && !STANDARD_PRODUKTER.includes(ap)) return 'fleksibelt';
 		return aktivtForlobId(userDoc)?.startsWith('kropsro_') ? 'kropsro' : 'kickstart';
 	}
 	if (erModulbruger(userDoc)) return 'app';
@@ -162,12 +188,8 @@ export function harFeatureAdgang(
 	feature: FeatureKey
 ): boolean {
 	if (userDoc?.testerFeatures?.includes(feature)) return true;
-	// Byggede forløb: features styres frit pr forløb (login-sync har lagt
-	// forløbets feature-flag på userDoc.forlobFeatures). Det har forrang over
-	// den type-baserede matrix, men kun for aktive forløbskunder — er kunden
-	// udløbet, falder forlobFeatures bort sammen med resten af adgangen.
-	const ff = userDoc?.forlobFeatures;
-	if (ff && erForlobsklient(userDoc)) return ff[feature] ?? false;
+	// Byggede/fleksible forløb styres nu via 'fleksibelt'-kolonnen i matrixen
+	// (se kundetypeFor), ikke længere pr-forløb via userDoc.forlobFeatures.
 	const kt = kundetypeFor(userDoc);
 	if (!kt) return false;
 	const m = matrix ?? STANDARD_MATRIX;

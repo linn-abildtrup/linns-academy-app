@@ -38,8 +38,18 @@
 		hentForlobsProgrammer,
 		synkroniserTraeningsvariant
 	} from '$lib/firestore/mikrotraening';
-	import { harValgtVariant, variantForProgramId, type Variant } from '$lib/utils/traeningsvariant';
-	import { hentMitProgram, hentProgramFremgang } from '$lib/firestore/mineProgrammer';
+	import {
+		harValgtVariant,
+		variantForProgramId,
+		vaelgProgramForVariant,
+		udledVariant,
+		type Variant
+	} from '$lib/utils/traeningsvariant';
+	import {
+		hentMitProgram,
+		hentProgramFremgang,
+		gemAktivtTraeningsprogram
+	} from '$lib/firestore/mineProgrammer';
 	import { hentHistorikForDato } from '$lib/firestore/traeningHistorik';
 	import { senesteEntry, type TraeningHistorikEntry } from '$lib/content/traeningHistorik';
 	import { hentAlleMrsScores } from '$lib/firestore/mrs';
@@ -1087,6 +1097,36 @@
 			vaneprogramDage = vaneDage;
 			adminVaner = admVaner;
 
+			// Træning følger ALTID det aktive forløb: sørg for at
+			// aktivtTraeningsprogram peger på det aktive forløbs program (efter
+			// kundens variant), ikke et gammelt/udløbet forløb. Rører ikke kundens
+			// egne programmer ('eget'). Har forløbet ingen programmer, lades feltet
+			// urørt (kunden falder tilbage på app-mikrotræning).
+			try {
+				const ud2 = userDoc;
+				if (ud2?.aktivtTraeningsprogram?.kilde !== 'eget') {
+					const programmer = await hentForlobsProgrammer(aktivt.id);
+					if (programmer.length > 0) {
+						const variant = udledVariant(ud2, aktivtUp) ?? 'no_kettlebell';
+						const valgt = vaelgProgramForVariant(programmer, variant);
+						const nuv = ud2?.aktivtTraeningsprogram;
+						const peberRigtigt =
+							nuv?.kilde === 'tildelt' &&
+							nuv.forlobId === aktivt.id &&
+							nuv.programId === valgt?.id;
+						if (valgt && !peberRigtigt && uid) {
+							await gemAktivtTraeningsprogram(uid, {
+								kilde: 'tildelt',
+								forlobId: aktivt.id,
+								programId: valgt.id
+							});
+						}
+					}
+				}
+			} catch (e) {
+				console.warn('Kunne ikke synkronisere aktivt træningsprogram til forløb:', e);
+			}
+
 			// Hent alle challenges hvis dette er et Kropsro-forloeb. Den aktive
 			// findes reaktivt via $derived saa preview-mode ogsaa virker for
 			// fremtidige challenges. Vi tjekker forloebets type (ikke userDoc's
@@ -1291,9 +1331,19 @@
 		// til adminKlientForlobId + forste aktive program saa preview-thumbnail
 		// stadig vises.
 		const adminForlobId = ud?.adminKlientForlobId ?? null;
-		let programId = userProduct?.programValg?.mikrotraening;
+		// Træning følger det aktive forløb: program-id tages fra programValg, ellers
+		// fra det (forløbs-synkede) aktivtTraeningsprogram. forlobId er det aktive
+		// forløb (forlob.id) så thumbnailen virker selv uden et userProduct.
+		const aktivtTr = ud?.aktivtTraeningsprogram;
 		const forlobId =
-			(userProduct as (UserProduct & { forlobId?: string }) | null)?.forlobId ?? adminForlobId;
+			forlob?.id ??
+			(userProduct as (UserProduct & { forlobId?: string }) | null)?.forlobId ??
+			adminForlobId;
+		let programId =
+			userProduct?.programValg?.mikrotraening ??
+			(aktivtTr?.kilde === 'tildelt' && aktivtTr.forlobId === forlobId
+				? aktivtTr.programId
+				: undefined);
 		const n = valgtDagNummer ?? aktivDagNummer;
 		if (!forlobId || n === null || n === 0) {
 			forlobTraeningsVideo = null;

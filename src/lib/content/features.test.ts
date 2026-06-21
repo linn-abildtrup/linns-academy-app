@@ -91,6 +91,7 @@ describe('harFeatureAdgang', () => {
 		const custom: FeatureMatrix = {
 			kickstart: { ...STANDARD_MATRIX.kickstart, 'linn-ai': false },
 			kropsro: STANDARD_MATRIX.kropsro,
+			fleksibelt: STANDARD_MATRIX.fleksibelt,
 			app: { ...STANDARD_MATRIX.app, 'ai-madplan': true }
 		};
 		expect(harFeatureAdgang(kickstartKunde, custom, 'linn-ai')).toBe(false);
@@ -128,44 +129,47 @@ describe('harFeatureAdgang', () => {
 	});
 });
 
-describe('harFeatureAdgang — byggede forløb (forlobFeatures)', () => {
-	const byggetKunde = ud({
+describe('harFeatureAdgang — fleksible/byggede forløb (fleksibelt-kolonne)', () => {
+	// Byggede forløb (fx SommerRo) har activeProduct = forløbets egen produktNøgle.
+	const fleksKunde = ud({
 		accessSource: 'forløb',
-		accessLevel: 'basis',
-		forlobIds: ['sommer_reset_2026'],
-		forlobFeatures: { 'linn-ai': true, 'udvidet-naering': false }
+		accessLevel: 'premium',
+		activeProduct: 'sommerro_ny',
+		forlobIds: ['sommerro_ny']
 	});
 
-	it('forlobFeatures har forrang over den type-baserede matrix', () => {
-		// linn-ai er slukket i STANDARD_MATRIX for alle, men tændt på forløbet
-		expect(harFeatureAdgang(byggetKunde, null, 'linn-ai')).toBe(true);
+	it('byggede forløb klassificeres som fleksibelt (via activeProduct)', () => {
+		expect(kundetypeFor(fleksKunde)).toBe('fleksibelt');
 	});
 
-	it('eksplicit slukket funktion på forløbet giver ingen adgang', () => {
-		expect(harFeatureAdgang(byggetKunde, null, 'udvidet-naering')).toBe(false);
+	it('fleksibelt har Linn AI tændt', () => {
+		expect(harFeatureAdgang(fleksKunde, null, 'linn-ai')).toBe(true);
 	});
 
-	it('funktion der ikke står i forlobFeatures er slukket', () => {
-		expect(harFeatureAdgang(byggetKunde, null, 'ai-opskrift')).toBe(false);
+	it('fleksibelt har IKKE beskeder-til-linn (kun Linn AI)', () => {
+		expect(harFeatureAdgang(fleksKunde, null, 'beskeder-til-linn')).toBe(false);
 	});
 
-	it('tester-undtagelse vinder stadig over forlobFeatures', () => {
-		const tester = ud({
-			accessSource: 'forløb',
-			accessLevel: 'basis',
-			forlobIds: ['sommer_reset_2026'],
-			forlobFeatures: { 'ai-madplan': false },
-			testerFeatures: ['ai-madplan']
-		});
-		expect(harFeatureAdgang(tester, null, 'ai-madplan')).toBe(true);
+	it('fleksibelt har IKKE nul-dage', () => {
+		expect(harFeatureAdgang(fleksKunde, null, 'nul-dage')).toBe(false);
 	});
 
-	it('udløbet bygget kunde får ingen funktioner trods forlobFeatures', () => {
+	it('fleksibelt har udvidet-naering og ai-opskrift (som Kropsro-niveau)', () => {
+		expect(harFeatureAdgang(fleksKunde, null, 'udvidet-naering')).toBe(true);
+		expect(harFeatureAdgang(fleksKunde, null, 'ai-opskrift')).toBe(true);
+	});
+
+	it('Kickstart og Kropsro beholder beskeder-til-linn (standard tændt)', () => {
+		expect(harFeatureAdgang(kickstartKunde, null, 'beskeder-til-linn')).toBe(true);
+		expect(harFeatureAdgang(kropsroKunde, null, 'beskeder-til-linn')).toBe(true);
+	});
+
+	it('udløbet fleksibel kunde får ingen funktioner', () => {
 		const udloebet = ud({
 			accessSource: 'forløb',
 			expiresAt: 1,
-			forlobIds: ['sommer_reset_2026'],
-			forlobFeatures: { 'linn-ai': true }
+			activeProduct: 'sommerro_ny',
+			forlobIds: ['sommerro_ny']
 		});
 		expect(harFeatureAdgang(udloebet, null, 'linn-ai')).toBe(false);
 	});
