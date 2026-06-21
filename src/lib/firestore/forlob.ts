@@ -19,7 +19,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { AllowedEmail, CsvRow, Forlob } from '$lib/content/forlobAdgang';
-import { forlobAdgangFelter, produktTypeForForlob } from '$lib/content/forlobAdgang';
+import { forlobAdgangFelter, forlobSlutMs, produktTypeForForlob } from '$lib/content/forlobAdgang';
 import type { ForlobDag, LektionItem } from '$lib/content/forlob';
 import { tomForlobDag } from '$lib/content/forlob';
 import { KICKSTART_PRODUCT_ID, type ForlobProduct } from '$lib/types';
@@ -100,7 +100,9 @@ export async function hentAktivProduktType(forlobIds: string[]): Promise<ForlobP
 	for (const f of forløbsData) {
 		if (!f) continue;
 		const startMs = f.startDato.toMillis();
-		const slutMs = startMs + f.antalDage * 24 * 60 * 60 * 1000;
+		// Fælles slut-beregning (+1 dag) så kunden tæller som aktiv hele sin
+		// sidste dag — ikke off-by-one som den gamle inlinede formel.
+		const slutMs = forlobSlutMs(startMs, f.antalDage);
 		if (idagMs >= startMs && idagMs < slutMs) {
 			return produktTypeForForlob(f);
 		}

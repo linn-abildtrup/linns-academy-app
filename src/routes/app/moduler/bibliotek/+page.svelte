@@ -12,6 +12,7 @@
 	} from '$lib/content/bibliotek';
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
 	import { getCurrentDay, lektionSynligNu, toIsoLokal } from '$lib/content/forlob';
+	import { forlobSlutMs } from '$lib/content/forlobAdgang';
 	import {
 		formatDanskDato,
 		GUIDE_TYPE_LABELS,
@@ -457,7 +458,10 @@
 				const f = forløbsData[i];
 				if (!f) return false;
 				const startMs = f.startDato.toMillis();
-				const slutMs = startMs + f.antalDage * 24 * 60 * 60 * 1000;
+				// Samme slut-beregning (+1 dag) som kundens øvrige adgang
+				// (forlobSlutMs / expiresAt), så FAQ + Links er synlige hele
+				// forløbets sidste dag i stedet for at lukke et døgn for tidligt.
+				const slutMs = forlobSlutMs(startMs, f.antalDage);
 				return idagMs < slutMs;
 			});
 
