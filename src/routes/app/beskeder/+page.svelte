@@ -227,7 +227,9 @@
 			aiSamtale = (await hentSamtale(u.uid, samtale.id)) ?? aiSamtale;
 		} catch (e) {
 			console.error('Linn AI fejlede:', e);
-			aiFejl = 'Linn AI kunne ikke svare lige nu. Du kan sende dit spørgsmål til Linn i stedet.';
+			aiFejl = harBeskederTilLinn
+				? 'Linn AI kunne ikke svare lige nu. Du kan sende dit spørgsmål til Linn i stedet.'
+				: 'Linn AI kunne ikke svare lige nu. Prøv igen om lidt.';
 			// Gen-hent for at fjerne den optimistiske (ugemte) bruger-besked.
 			if (aiSamtale && u) {
 				try {
@@ -331,8 +333,8 @@
 			<div>
 				<div class="ai-titel">Spørg Linn AI</div>
 				<div class="ai-sub">
-					Få svar med det samme — bygget på alle de svar Linn har givet andre. Er svaret ikke godt
-					nok, kan du sende dit spørgsmål videre til Linn.
+					Få svar med det samme — bygget på alle de svar Linn har givet andre.{#if harBeskederTilLinn}
+						Er svaret ikke godt nok, kan du sende dit spørgsmål videre til Linn.{/if}
 				</div>
 			</div>
 		</div>
@@ -375,7 +377,8 @@
 										color="currentColor"
 									/>
 									<span>
-										{b.sikkerhed}% sikker på at dette er som Linn ville svare{b.sikkerhed < 60
+										{b.sikkerhed}% sikker på at dette er som Linn ville svare{b.sikkerhed < 60 &&
+										harBeskederTilLinn
 											? ' — overvej at spørge Linn'
 											: ''}
 									</span>
