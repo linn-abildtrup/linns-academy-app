@@ -16,10 +16,33 @@
 		type ImportResultat
 	} from '$lib/firestore/forlob';
 	import { FEATURES } from '$lib/content/features';
+	import { forlobSlutMs } from '$lib/content/forlob';
 	import { klientSoegeMatch } from '$lib/utils/klientSoegning';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const forlobId = $derived(page.params.id ?? '');
+
+	// Adgangs-vindue beregnet ud fra form-værdierne — samme start-konvention
+	// (kl. 00:01) som gem bruger, og samme forlobSlutMs som appen gater på.
+	// Vises under Startdato/Antal dage så det altid er tydeligt hvornår
+	// kunderne får materialet og hvornår de mister det igen.
+	const datoTidFmt = new Intl.DateTimeFormat('da-DK', {
+		weekday: 'long',
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+		timeZone: 'Europe/Copenhagen'
+	});
+	const adgangsVindue = $derived.by(() => {
+		if (!formStartDato || !formAntalDage) return null;
+		const start = new Date(formStartDato + 'T00:01:00');
+		if (isNaN(start.getTime())) return null;
+		// Sidste tilgængelige øjeblik = ét minut før lukke-grænsen (midnat).
+		const sidste = new Date(forlobSlutMs(start.getTime(), formAntalDage, 0) - 60_000);
+		return { aabner: datoTidFmt.format(start), mister: datoTidFmt.format(sidste) };
+	});
 
 	let forlob = $state<Forlob | null>(null);
 	let emails = $state<AllowedEmail[]>([]);
@@ -316,6 +339,22 @@
 					<input type="number" min="1" max="365" bind:value={formAntalDage} disabled={gemmer} />
 				</label>
 			</div>
+			{#if adgangsVindue}
+				<div class="adgangs-vindue">
+					<div class="adgangs-rad">
+						<span class="adgangs-label">Adgang åbner</span>
+						<span class="adgangs-vaerdi">{adgangsVindue.aabner}</span>
+					</div>
+					<div class="adgangs-rad">
+						<span class="adgangs-label">Mister adgang efter</span>
+						<span class="adgangs-vaerdi">{adgangsVindue.mister}</span>
+					</div>
+					<div class="adgangs-note">
+						Kunderne har materialet til og med sidste forløbsdag kl. 23.59. Pause-dage (nul-dage)
+						kan udskyde lukningen pr. kunde.
+					</div>
+				</div>
+			{/if}
 			<label class="checkbox-rad">
 				<input type="checkbox" bind:checked={formAktiv} disabled={gemmer} />
 				<span>Aktivt forløb (nye køb tilknyttes automatisk)</span>
@@ -904,6 +943,44 @@
 		display: grid;
 		grid-template-columns: 2fr 1fr;
 		gap: 10px;
+	}
+
+	.adgangs-vindue {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 12px;
+		background: var(--bg2);
+		border-radius: 10px;
+	}
+
+	.adgangs-rad {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.adgangs-label {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text3);
+	}
+
+	.adgangs-vaerdi {
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+		text-align: right;
+	}
+
+	.adgangs-note {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		line-height: 1.4;
+		margin-top: 2px;
 	}
 
 	.checkbox-rad {
