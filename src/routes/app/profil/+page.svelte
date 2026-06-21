@@ -41,7 +41,12 @@
 	import type { BrugerProfil, DagligeMaal } from '$lib/types';
 	import BeregnMaalWizard from '$lib/components/BeregnMaalWizard.svelte';
 	import AppVersion from '$lib/components/AppVersion.svelte';
-	import { effektivState, erKropsroForlobskunde } from '$lib/utils/userAdgang';
+	import {
+		effektivState,
+		erKickstartForlobskunde,
+		erKropsroForlobskunde
+	} from '$lib/utils/userAdgang';
+	import { stripDatoSuffix } from '$lib/content/moduler';
 	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 
 	const getUser = getContext<() => User | null>('user');
@@ -139,6 +144,10 @@
 	let mtGemmer = $state<string | null>(null);
 	let mtProduktType = $state<ForlobProduct | string>(KICKSTART_PRODUCT_ID);
 	let mtForlobId = $state<string | null>(null);
+	// Forløbets visningsnavn — bruges i status-beskeden for byggede forløb
+	// (som hverken er Kickstart eller Kropsro), så de ikke fejlagtigt vises
+	// som Kickstart. Hentes i onMount sammen med resten af forløbs-data.
+	let forlobNavn = $state<string | null>(null);
 
 	// Nul-dage (test-feature)
 	let nulIntervaller = $state<{ fra: string; til: string; satMs: number }[]>([]);
@@ -193,6 +202,7 @@
 			// Hent forløbets pause-dage-pulje (byggede forløb sætter et tal).
 			const forlobDoc = await hentForlob(forlobId);
 			nulPulje = typeof forlobDoc?.nulDagePulje === 'number' ? forlobDoc.nulDagePulje : null;
+			forlobNavn = forlobDoc?.navn ?? null;
 			const alle = await hentForlobsProgrammer(forlobId);
 			mtProgrammer = alle.filter((p) => p.aktiv);
 			valgtMtProgramId = up?.programValg?.mikrotraening ?? null;
@@ -339,7 +349,13 @@
 			if (erKropsroForlobskunde(userDoc)) {
 				return 'Du er på Kropsro';
 			}
-			return 'Du er på Kickstart en sund overgangsalder';
+			if (erKickstartForlobskunde(userDoc)) {
+				return 'Du er på Kickstart en sund overgangsalder';
+			}
+			// Bygget/fleksibelt forløb (hverken kickstart_- eller kropsro_-id):
+			// vis forløbets eget navn. forlobNavn hentes async i onMount, så vi
+			// falder tilbage til en generisk besked indtil det er klar.
+			return forlobNavn ? `Du er på ${stripDatoSuffix(forlobNavn)}` : 'Du er på dit forløb';
 		}
 		if (userState === 'modulbruger') {
 			return 'Du har adgang til Linn\u2019s Academy';
