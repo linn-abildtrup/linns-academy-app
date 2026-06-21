@@ -13,6 +13,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import {
 		forlobSlutMs,
+		forlobErKickstart,
 		getCurrentDay,
 		getCurrentDayMedNulDage,
 		toIsoLokal,
@@ -91,7 +92,7 @@
 	import type { GemtMaaltid } from '$lib/content/kost';
 	import { dagligeMalForBruger } from '$lib/content/naering';
 	import Loading from '$lib/components/Loading.svelte';
-	import { effektivState, erKickstartForlobskunde, harPremium } from '$lib/utils/userAdgang';
+	import { effektivState, harPremium } from '$lib/utils/userAdgang';
 	import {
 		detekterGuideType,
 		erInspirationLektion,
@@ -690,13 +691,17 @@
 		})();
 	});
 
+	// Kadencen følger det AKTIVE forløb (forlob = det forløb forsiden har
+	// resolvet som aktivt i dag), ikke om der ligger et udløbet kickstart_-id i
+	// forlobIds. Så en kunde der er gået videre fra Kickstart til fx SommerRo
+	// får SommerRo's 4-ugers-kadence i stedet for Kickstarts ugentlige.
 	const skalUdfyldeMrs = $derived(
 		mrsLoaded &&
 			skalUdfyldeMrsNu(
 				userDoc?.accessSource,
 				userDoc?.activeProduct,
 				mrsSidsteUdfyldelseAt,
-				erKickstartForlobskunde(userDoc)
+				forlobErKickstart(forlob?.id)
 			)
 	);
 

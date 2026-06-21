@@ -31,7 +31,7 @@
 	import { hentAktivProduktType, hentForlob } from '$lib/firestore/forlob';
 	import { gemAktivtTraeningsprogram } from '$lib/firestore/mineProgrammer';
 	import { maxNulDageForForlob } from '$lib/content/mikrotraening';
-	import { nulDageDatoer } from '$lib/content/forlob';
+	import { nulDageDatoer, forlobErKickstart, forlobErKropsro } from '$lib/content/forlob';
 	import TesterBadge from '$lib/components/TesterBadge.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import Icon, { type IconName } from '$lib/components/Icon.svelte';
@@ -41,11 +41,7 @@
 	import type { BrugerProfil, DagligeMaal } from '$lib/types';
 	import BeregnMaalWizard from '$lib/components/BeregnMaalWizard.svelte';
 	import AppVersion from '$lib/components/AppVersion.svelte';
-	import {
-		effektivState,
-		erKickstartForlobskunde,
-		erKropsroForlobskunde
-	} from '$lib/utils/userAdgang';
+	import { effektivState } from '$lib/utils/userAdgang';
 	import { stripDatoSuffix } from '$lib/content/moduler';
 	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 
@@ -346,10 +342,14 @@
 
 	const statusTekst = $derived.by(() => {
 		if (userState === 'forlobskunde') {
-			if (erKropsroForlobskunde(userDoc)) {
+			// Statussen følger det AKTIVE forløb (mtForlobId, resolvet i onMount),
+			// ikke et udløbet kickstart_-id der stadig hænger ved i forlobIds. Så
+			// en kunde der er gået videre fra Kickstart til fx SommerRo ser sit
+			// rigtige forløbsnavn i stedet for "Kickstart".
+			if (forlobErKropsro(mtForlobId)) {
 				return 'Du er på Kropsro';
 			}
-			if (erKickstartForlobskunde(userDoc)) {
+			if (forlobErKickstart(mtForlobId)) {
 				return 'Du er på Kickstart en sund overgangsalder';
 			}
 			// Bygget/fleksibelt forløb (hverken kickstart_- eller kropsro_-id):

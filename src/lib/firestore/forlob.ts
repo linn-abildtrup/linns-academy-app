@@ -111,6 +111,29 @@ export async function hentAktivProduktType(forlobIds: string[]): Promise<ForlobP
 }
 
 /**
+ * Returnerer det forløb der er AKTIVT i dag blandt kundens forlobIds (det første
+ * hvor nu ligger i [start, slut)), ellers null. Samme aktiv-vindue som
+ * hentAktivProduktType og forsidens indlaesForlob, men returnerer hele forløbet
+ * (inkl. id) så kald kan klassificere på id-præfiks. Bruges af symptomcheck-
+ * kadencen og profil-statussen så et udløbet Kickstart-id i forlobIds ikke
+ * længere overruler det aktive forløb.
+ */
+export async function hentAktivtForlob(
+	forlobIds: string[],
+	now: number = Date.now()
+): Promise<Forlob | null> {
+	if (forlobIds.length === 0) return null;
+	const forløbsData = await Promise.all(forlobIds.map((id) => hentForlob(id)));
+	for (const f of forløbsData) {
+		if (!f) continue;
+		const startMs = f.startDato.toMillis();
+		const slutMs = forlobSlutMs(startMs, f.antalDage);
+		if (now >= startMs && now < slutMs) return f;
+	}
+	return null;
+}
+
+/**
  * Opretter eller opdaterer et forløb. Bruger setDoc med merge så eksisterende
  * felter ikke nulstilles ved partielle opdateringer.
  *

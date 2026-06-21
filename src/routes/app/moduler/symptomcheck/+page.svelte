@@ -2,7 +2,9 @@
 	import { getContext, onMount } from 'svelte';
 	import type { User } from 'firebase/auth';
 	import { type UserDoc } from '$lib/types';
-	import { erKickstartForlobskunde, erKropsroForlobskunde } from '$lib/utils/userAdgang';
+	import { hentAktivtForlob } from '$lib/firestore/forlob';
+	import { forlobErKickstart, forlobErKropsro } from '$lib/content/forlob';
+	import type { Forlob } from '$lib/content/forlobAdgang';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import {
@@ -37,6 +39,9 @@
 	let tidligereScores = $state<MrsScore[]>([]);
 	let netop_gemt = $state<MrsScore | null>(null);
 	let loading = $state(true);
+	// Det forløb der er aktivt i dag — afgør kadencen (ikke et udløbet
+	// kickstart_-id der stadig hænger ved i forlobIds).
+	let aktivtForlob = $state<Forlob | null>(null);
 	let gemmer = $state(false);
 	let fejl = $state<string | null>(null);
 
@@ -59,6 +64,11 @@
 			tidligereScores = await hentAlleMrsScores(user.uid);
 		} catch (e) {
 			console.warn('Kunne ikke hente tidligere MRS-scorer:', e);
+		}
+		try {
+			aktivtForlob = await hentAktivtForlob(userDoc?.forlobIds ?? []);
+		} catch (e) {
+			console.warn('Kunne ikke hente aktivt forløb til kadence:', e);
 		} finally {
 			loading = false;
 		}
@@ -188,8 +198,8 @@
 			: null
 	);
 
-	const erKickstart = $derived(erKickstartForlobskunde(userDoc));
-	const erKropsro = $derived(erKropsroForlobskunde(userDoc));
+	const erKickstart = $derived(forlobErKickstart(aktivtForlob?.id));
+	const erKropsro = $derived(forlobErKropsro(aktivtForlob?.id));
 
 	const skalUdfylde = $derived(
 		skalUdfyldeNu(

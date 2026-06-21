@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
 	dagStatus,
 	formatDato,
+	forlobErKickstart,
+	forlobErKropsro,
 	getCurrentDay,
 	lektionSynligNu,
 	lektionTidsstatus,
@@ -9,6 +11,34 @@ import {
 	tomForlobDag,
 	ugeForDag
 } from './forlob';
+
+describe('forlobErKickstart / forlobErKropsro', () => {
+	it('genkender kickstart-forløb på id-præfiks', () => {
+		expect(forlobErKickstart('kickstart_juni_2026')).toBe(true);
+		expect(forlobErKickstart('kickstart_maj_2026')).toBe(true);
+	});
+
+	it('genkender kropsro-forløb på id-præfiks', () => {
+		expect(forlobErKropsro('kropsro_maj_2026')).toBe(true);
+	});
+
+	it('byggede forløb (fx SommerRo) er hverken kickstart eller kropsro', () => {
+		expect(forlobErKickstart('sommerro_ny')).toBe(false);
+		expect(forlobErKropsro('sommerro_ny')).toBe(false);
+	});
+
+	it('null/undefined giver false (intet aktivt forløb)', () => {
+		expect(forlobErKickstart(null)).toBe(false);
+		expect(forlobErKickstart(undefined)).toBe(false);
+		expect(forlobErKropsro(null)).toBe(false);
+	});
+
+	it('premium-kickstart klassificeres stadig som kickstart (id-præfiks, ikke produkttype)', () => {
+		// kickstart_juni_2026 er premium, men skal stadig have ugentlig kadence.
+		expect(forlobErKickstart('kickstart_juni_2026')).toBe(true);
+		expect(forlobErKropsro('kickstart_juni_2026')).toBe(false);
+	});
+});
 
 describe('getCurrentDay', () => {
 	it('returnerer 0 på startdagen (baseline)', () => {

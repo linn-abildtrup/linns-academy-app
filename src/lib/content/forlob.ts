@@ -193,6 +193,32 @@ export function dagStatus(dagNummer: number, aktivDag: number | null): DagStatus
 }
 
 // ==============================================
+// Klassificering af forløbs-TYPE ud fra id
+// ==============================================
+//
+// Symptomcheck-kadencen og profil-statussen skal afgøres af det forløb der er
+// AKTIVT i dag — ikke af om der overhovedet ligger et gammelt forløb i kundens
+// forlobIds. En kunde der har afsluttet Kickstart og er gået videre til fx
+// SommerRo skal følge SommerRo's kadence, selvom kickstart_-id'et stadig hænger
+// ved i forlobIds. Det aktive forløb resolves via hentAktivtForlob (Firestore);
+// disse rene helpers klassificerer dets id.
+//
+// Vi bruger id-PRÆFIKSET (kickstart_/kropsro_), ikke produktTypeForForlob:
+// produktTypeForForlob returnerer KROPSRO for premium-Kickstart (fx
+// kickstart_juni_2026), så den kan ikke skelne Kickstart-programmet — og
+// Kickstart skal have ugentlig kadence uanset basis/premium.
+
+/** True hvis forløbet er et Kickstart-forløb (ugentlig symptomcheck-kadence). */
+export function forlobErKickstart(forlobId: string | null | undefined): boolean {
+	return !!forlobId && forlobId.startsWith('kickstart_');
+}
+
+/** True hvis forløbet er et Kropsro-forløb. */
+export function forlobErKropsro(forlobId: string | null | undefined): boolean {
+	return !!forlobId && forlobId.startsWith('kropsro_');
+}
+
+// ==============================================
 // Datoformatering
 // ==============================================
 
