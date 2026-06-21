@@ -327,17 +327,59 @@ export interface GenererConfig {
  * vælger flere end 3 øvelser pr dag, får hver dag en anden kombination
  * fra sammenflettede kategorier.
  */
+/**
+ * Genkender en side-øvelse ud fra id-suffix (_right/_left). Øvelsesbiblioteket
+ * navngiver de to sider som separate øvelser, fx split_squat_right /
+ * split_squat_left ("Split squat (højre)" / "(venstre)"). Returnerer base-id'et
+ * (uden suffix) + siden, eller null for almindelige to-sidede øvelser.
+ */
+function sideAfId(id: string): { base: string; side: 'right' | 'left' } | null {
+	if (id.endsWith('_right')) return { base: id.slice(0, -'_right'.length), side: 'right' };
+	if (id.endsWith('_left')) return { base: id.slice(0, -'_left'.length), side: 'left' };
+	return null;
+}
+
+/**
+ * Bygger en pulje af "enheder" for en kategori. En almindelig øvelse er én enhed
+ * med ét id; en split venstre/højre-øvelse samles til ÉN enhed med begge id'er
+ * (højre først, venstre sidst) så de altid vælges sammen og kroppen trænes
+ * symmetrisk. Bevarer øvelsernes rækkefølge så den deterministiske cykling er
+ * uændret for ikke-sidede øvelser.
+ */
+function byggPulje(catExercises: Exercise[]): string[][] {
+	const enheder: string[][] = [];
+	const baseTilIndex = new Map<string, number>();
+	for (const e of catExercises) {
+		const info = sideAfId(e.id);
+		if (!info) {
+			enheder.push([e.id]);
+			continue;
+		}
+		const eksisterende = baseTilIndex.get(info.base);
+		if (eksisterende === undefined) {
+			baseTilIndex.set(info.base, enheder.length);
+			enheder.push([e.id]);
+		} else {
+			// Samme base mødt før — tilføj makkeren i fast rækkefølge (højre, venstre)
+			const enhed = enheder[eksisterende];
+			if (info.side === 'right') enhed.unshift(e.id);
+			else enhed.push(e.id);
+		}
+	}
+	return enheder;
+}
+
 export function genererProgramMedConfig(
 	antalDage: number,
 	exercises: Exercise[],
 	config: GenererConfig,
 	opts: { markSidsteSomBonus?: boolean } = {}
 ): TrainingDay[] {
-	const ben = exercises.filter((e) => e.cat === 'ben').map((e) => e.id);
-	const overkrop = exercises.filter((e) => e.cat === 'overkrop').map((e) => e.id);
-	const coreStab = exercises
-		.filter((e) => e.cat === 'core' || e.cat === 'stabilitet')
-		.map((e) => e.id);
+	const ben = byggPulje(exercises.filter((e) => e.cat === 'ben'));
+	const overkrop = byggPulje(exercises.filter((e) => e.cat === 'overkrop'));
+	const coreStab = byggPulje(
+		exercises.filter((e) => e.cat === 'core' || e.cat === 'stabilitet')
+	);
 
 	if (ben.length === 0 || overkrop.length === 0 || coreStab.length === 0) {
 		throw new Error('Mangler øvelser i en eller flere kategorier — kan ikke generere program.');
@@ -346,26 +388,47 @@ export function genererProgramMedConfig(
 		throw new Error('Antal øvelser skal være mindst 1.');
 	}
 
-	// Cykler ben → overkrop → core/stab → ben → ... så fordelingen er jævn
+	// Cykler ben → overkrop → core/stab → ben → ... så fordelingen er jævn.
+	// Hver enhed er ét id (almindelig øvelse) eller to (venstre+højre der hører
+	// sammen) — et venstre/højre-par tæller som én "øvelse"-plads men giver to
+	// poster i dagen, så begge sider altid kommer med. Vælger admin fx 3 øvelser
+	// pr dag, får en dag med et par derfor 4 poster. Der må højst være ÉT par pr
+	// dag: rammer cyklingen et par mere samme dag, byttes det til nærmeste
+	// ikke-side-øvelse i samme kategori.
 	const kategorier = [ben, overkrop, coreStab];
 	const markSidste = opts.markSidsteSomBonus === true;
 	const sidsteIdx = config.antalOvelser - 1;
 
-	return Array.from({ length: antalDage }, (_, i) => ({
-		dagNummer: i + 1,
-		titel: '',
-		indledning: '',
-		exercises: Array.from({ length: config.antalOvelser }, (_, j) => {
+	return Array.from({ length: antalDage }, (_, i) => {
+		const poster: DayExercise[] = [];
+		let parBrugt = false;
+		for (let j = 0; j < config.antalOvelser; j++) {
 			const kat = kategorier[j % kategorier.length];
 			// Forskyd index pr dag så samme dag ikke får samme øvelse hver runde
-			const idx = (i + Math.floor(j / kategorier.length)) % kat.length;
-			return {
-				exerciseId: kat[idx],
-				sets: config.sets,
-				workSec: config.workSec,
-				restSec: config.restSec,
-				bonus: markSidste && j === sidsteIdx
-			};
-		})
-	}));
+			const startIdx = (i + Math.floor(j / kategorier.length)) % kat.length;
+			let enhed = kat[startIdx];
+			if (enhed.length > 1 && parBrugt) {
+				// Allerede ét par i dag — find nærmeste ikke-side-øvelse i kategorien
+				for (let k = 1; k < kat.length; k++) {
+					const kandidat = kat[(startIdx + k) % kat.length];
+					if (kandidat.length === 1) {
+						enhed = kandidat;
+						break;
+					}
+				}
+			}
+			if (enhed.length > 1) parBrugt = true;
+			const erBonus = markSidste && j === sidsteIdx;
+			for (const exerciseId of enhed) {
+				poster.push({
+					exerciseId,
+					sets: config.sets,
+					workSec: config.workSec,
+					restSec: config.restSec,
+					bonus: erBonus
+				});
+			}
+		}
+		return { dagNummer: i + 1, titel: '', indledning: '', exercises: poster };
+	});
 }

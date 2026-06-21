@@ -7,6 +7,7 @@ import {
 	naesteDag,
 	filtrerOvelserTilProgram,
 	genererStandardProgram,
+	genererProgramMedConfig,
 	markerDagSomGennemfort,
 	registrerFeedback,
 	tommeDageSkelet,
@@ -330,6 +331,160 @@ describe('genererStandardProgram', () => {
 		const dage = genererStandardProgram(3, eksempelExercises);
 		expect(dage[0].dagNummer).toBe(1);
 		expect(dage[2].dagNummer).toBe(3);
+	});
+});
+
+describe('genererProgramMedConfig — venstre/højre-par', () => {
+	// Ben-kategori med en split højre/venstre-øvelse (separate poster i biblioteket)
+	const medPar: Exercise[] = [
+		{
+			id: 'split_squat_right',
+			name: 'Split squat (højre)',
+			desc: '',
+			how: [],
+			cat: 'ben',
+			catLabel: 'Ben',
+			tags: [],
+			videoPath: 'r.mp4',
+			treaningsformer: ['mikrotraening'],
+			udstyr: ['ingen'],
+			aktiv: true
+		},
+		{
+			id: 'split_squat_left',
+			name: 'Split squat (venstre)',
+			desc: '',
+			how: [],
+			cat: 'ben',
+			catLabel: 'Ben',
+			tags: [],
+			videoPath: 'l.mp4',
+			treaningsformer: ['mikrotraening'],
+			udstyr: ['ingen'],
+			aktiv: true
+		},
+		{
+			id: 'pushup',
+			name: 'Push-up',
+			desc: '',
+			how: [],
+			cat: 'overkrop',
+			catLabel: 'Overkrop',
+			tags: [],
+			videoPath: 'p.mp4',
+			treaningsformer: ['mikrotraening'],
+			udstyr: ['ingen'],
+			aktiv: true
+		},
+		{
+			id: 'planke',
+			name: 'Planke',
+			desc: '',
+			how: [],
+			cat: 'core',
+			catLabel: 'Core',
+			tags: [],
+			videoPath: 'pl.mp4',
+			treaningsformer: ['mikrotraening'],
+			udstyr: ['ingen'],
+			aktiv: true
+		}
+	];
+	const config = { antalOvelser: 3, sets: 3, workSec: 30, restSec: 10 };
+
+	it('tager altid begge sider med når ben-øvelsen er et par', () => {
+		const dage = genererProgramMedConfig(1, medPar, config);
+		const ids = dage[0].exercises.map((e) => e.exerciseId);
+		expect(ids).toContain('split_squat_right');
+		expect(ids).toContain('split_squat_left');
+	});
+
+	it('et par tæller som én plads men giver to poster (højre før venstre)', () => {
+		const dage = genererProgramMedConfig(1, medPar, config);
+		const ex = dage[0].exercises;
+		// 3 valgte pladser: ben-par (2 poster) + overkrop + core = 4 poster
+		expect(ex.length).toBe(4);
+		const rIdx = ex.findIndex((e) => e.exerciseId === 'split_squat_right');
+		const lIdx = ex.findIndex((e) => e.exerciseId === 'split_squat_left');
+		expect(rIdx).toBeLessThan(lIdx);
+	});
+
+	it('begge sider arver samme sæt/tid/bonus', () => {
+		const dage = genererProgramMedConfig(1, medPar, config, { markSidsteSomBonus: true });
+		const r = dage[0].exercises.find((e) => e.exerciseId === 'split_squat_right')!;
+		const l = dage[0].exercises.find((e) => e.exerciseId === 'split_squat_left')!;
+		expect(r.sets).toBe(l.sets);
+		expect(r.workSec).toBe(l.workSec);
+		expect(r.bonus).toBe(l.bonus);
+	});
+
+	it('højst ét venstre/højre-par pr dag — det andet byttes til en ikke-side-øvelse', () => {
+		// Både ben og core har et par; hver kategori har også en ikke-side-øvelse
+		const toPar: Exercise[] = [
+			...medPar.filter((e) => e.id.startsWith('split_squat')),
+			{ ...medPar[2] }, // pushup (overkrop)
+			{
+				id: 'bodyweight_squat',
+				name: 'Bodyweight squat',
+				desc: '',
+				how: [],
+				cat: 'ben',
+				catLabel: 'Ben',
+				tags: [],
+				videoPath: 'bw.mp4',
+				treaningsformer: ['mikrotraening'],
+				udstyr: ['ingen'],
+				aktiv: true
+			},
+			{
+				id: 'side_plank_right',
+				name: 'Side plank (højre)',
+				desc: '',
+				how: [],
+				cat: 'core',
+				catLabel: 'Core',
+				tags: [],
+				videoPath: 'spr.mp4',
+				treaningsformer: ['mikrotraening'],
+				udstyr: ['ingen'],
+				aktiv: true
+			},
+			{
+				id: 'side_plank_left',
+				name: 'Side plank (venstre)',
+				desc: '',
+				how: [],
+				cat: 'core',
+				catLabel: 'Core',
+				tags: [],
+				videoPath: 'spl.mp4',
+				treaningsformer: ['mikrotraening'],
+				udstyr: ['ingen'],
+				aktiv: true
+			},
+			{
+				id: 'planke',
+				name: 'Planke',
+				desc: '',
+				how: [],
+				cat: 'core',
+				catLabel: 'Core',
+				tags: [],
+				videoPath: 'pl.mp4',
+				treaningsformer: ['mikrotraening'],
+				udstyr: ['ingen'],
+				aktiv: true
+			}
+		];
+		const dage = genererProgramMedConfig(7, toPar, config);
+		dage.forEach((dag) => {
+			const ids = dag.exercises.map((e) => e.exerciseId);
+			const antalParSider = ids.filter((id) => id.endsWith('_right') || id.endsWith('_left')).length;
+			// Højst ét par = højst to side-poster pr dag
+			expect(antalParSider).toBeLessThanOrEqual(2);
+			// 3 valgte pladser → 3 poster (intet par) eller 4 (ét par), aldrig 5
+			expect(dag.exercises.length).toBeLessThanOrEqual(4);
+		});
 	});
 });
 
