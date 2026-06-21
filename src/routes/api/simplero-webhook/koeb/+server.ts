@@ -14,11 +14,12 @@ import {
 	gemILog,
 	opdaterBrugerEllerWhitelist,
 	hentAktivtForlobSlut,
-	parkerAboTilEfterForlob
+	parkerAboTilEfterForlob,
+	tilMs
 } from '$lib/server/simpleroWebhook';
 import { findProduktAdgang } from '$lib/simplero/produktMapping';
 import { FORLOB_KOEB_PRODUKTER } from '$lib/content/produkter';
-import { forlobAdgangFelter } from '$lib/content/forlobAdgang';
+import { forlobAdgangFelter, forlobSlutMs, bibliotekBonusSlutMs } from '$lib/content/forlobAdgang';
 import { hentDoc } from '$lib/server/firestoreRest';
 import type { AccessLevel, AccessSource } from '$lib/types';
 
@@ -59,6 +60,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	// 2) Ellers: et hold-specifikt forløbskøb (fx "Fra Kickstart til Kropsro").
 	//    Slå forlobId op og UDLED adgangen fra forløbet selv, så niveau +
 	//    data-skuffe altid matcher forløbets opsætning og den manuelle import.
+	let forlobUdloeb: { expiresAt: number; bonus: number } | null = null;
 	if (!felter) {
 		const forlobId = FORLOB_KOEB_PRODUKTER[String(produktId)];
 		const f = forlobId ? await hentDoc(`forlob/${forlobId}`) : null;
@@ -70,6 +72,19 @@ export const POST: RequestHandler = async ({ request }) => {
 				produktNoegle: f.produktNoegle as string | undefined
 			});
 			felter = { ...udledt, forlobId, navn: (f.navn as string) ?? forlobId };
+			// Sæt udløb + bonus fra DETTE forløb med det samme (samme formel som
+			// login-sync, så intet divergerer). Afgørende for gnidningsfri
+			// overgang: en kunde der køber mens hun er på fx Kickstart har en
+			// kortere udløbsdato — uden dette ville den lukke adgangen ved midnat,
+			// FØR det nye forløb tager over. Nu skubbes udløbet frem ved købet.
+			const startMs = tilMs(f.startDato);
+			const antalDage = (f.antalDage as number) ?? 0;
+			if (startMs > 0 && antalDage > 0) {
+				forlobUdloeb = {
+					expiresAt: forlobSlutMs(startMs, antalDage),
+					bonus: bibliotekBonusSlutMs(startMs, antalDage)
+				};
+			}
 		}
 	}
 
@@ -89,6 +104,12 @@ export const POST: RequestHandler = async ({ request }) => {
 		updatedAt: Date.now()
 	};
 	if (kundeId) opdatering.simpleroCustomerId = kundeId;
+	// Hold-forløbskøb: skub udløb + bonus frem til DETTE forløb (se ovenfor).
+	// Kun for forløbs-grenen — abo-flowet røres ikke (det bruger adgangFra).
+	if (forlobUdloeb) {
+		opdatering.expiresAt = forlobUdloeb.expiresAt;
+		opdatering.bonusPeriodEndsAt = forlobUdloeb.bonus;
+	}
 	const navn = uddragNavn(payload);
 	if (navn.firstName) opdatering.firstName = navn.firstName;
 	if (navn.lastName) opdatering.lastName = navn.lastName;
