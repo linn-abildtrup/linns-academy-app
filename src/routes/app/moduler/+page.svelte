@@ -7,7 +7,7 @@
 	import { hentForlob } from '$lib/firestore/forlob';
 	import { produktTypeForForlob } from '$lib/content/forlobAdgang';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
-	import { forlobSlutMs, nulDageDatoer } from '$lib/content/forlob';
+	import { forlobSlutMs, getCurrentDayMedNulDage, nulDageDatoer, toIsoLokal } from '$lib/content/forlob';
 	import type { User } from 'firebase/auth';
 
 	const getUser = getContext<() => User | null>('user');
@@ -49,15 +49,14 @@
 				const startMs = f.startDato.toMillis();
 				const slutMs = forlobSlutMs(startMs, f.antalDage, nulBrugt);
 				if (idagMs >= startMs && idagMs < slutMs) {
-					// Faktisk dag-nummer: kalenderdage siden start minus nul-dage
-					// hvis dato <= idag.
-					const idagIso = new Date().toISOString().slice(0, 10);
-					const nulDatoerFør =
-						(up?.nulDage?.intervaller ?? [])
-							? nulDageDatoer(up?.nulDage?.intervaller ?? []).filter((d) => d <= idagIso).length
-							: 0;
-					const kalenderDage = Math.floor((idagMs - startMs) / (24 * 60 * 60 * 1000));
-					const dagNummer = Math.max(1, kalenderDage - nulDatoerFør + 1);
+					// Samme 0-indekserede dag-beregning som forsiden (lokal dato):
+					// søndag = dag 0, sidste dag = antalDage. Tidligere brugte denne
+					// flise en separat 1-indekseret formel + UTC-dato, så den kunne
+					// vise et andet (og for højt) dag-nummer end forsiden.
+					const startDato = toIsoLokal(new Date(startMs));
+					const nulDatoerAlle = nulDageDatoer(up?.nulDage?.intervaller ?? []);
+					const dagNummer =
+						getCurrentDayMedNulDage({ startDato, antalDage: f.antalDage }, nulDatoerAlle) ?? 0;
 					aktivtForlob = { navn: f.navn, dagNummer, antalDage: f.antalDage };
 					break;
 				}
