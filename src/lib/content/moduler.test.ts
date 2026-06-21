@@ -1,5 +1,23 @@
 import { describe, it, expect } from 'vitest';
-import { getModulerForUser } from './moduler';
+import { getModulerForUser, stripDatoSuffix } from './moduler';
+
+describe('stripDatoSuffix', () => {
+	it('fjerner dag-måned-år-suffix', () => {
+		expect(stripDatoSuffix('Kropsro 24. Maj 2026')).toBe('Kropsro');
+		expect(stripDatoSuffix('Kickstart 1. juni 2026')).toBe('Kickstart');
+	});
+	it('fjerner måned-år-suffix uden dag', () => {
+		expect(stripDatoSuffix('Kickstart maj 2026')).toBe('Kickstart');
+	});
+	it('bevarer navne uden dato — også flerordede', () => {
+		expect(stripDatoSuffix('SommerRo')).toBe('SommerRo');
+		expect(stripDatoSuffix('Sund Sommer')).toBe('Sund Sommer');
+		expect(stripDatoSuffix('SommerRo 2026')).toBe('SommerRo 2026');
+	});
+	it('falder tilbage til hele navnet hvis strip ville tømme det', () => {
+		expect(stripDatoSuffix('juni 2026')).toBe('juni 2026');
+	});
+});
 
 describe('getModulerForUser', () => {
 	describe('forløbskunde', () => {

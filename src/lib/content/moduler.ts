@@ -3,6 +3,20 @@ import type { IconName } from '$lib/components/Icon.svelte';
 
 export type ModulStatus = 'aktiv' | 'laast' | 'laeseadgang';
 
+const DATO_SUFFIX =
+	/\s+(\d{1,2}\.?\s+)?(januar|februar|marts|april|maj|juni|juli|august|september|oktober|november|december)(\s+\d{4})?\s*$/i;
+
+/**
+ * Korter et forløbsnavn til flise-visning ved at fjerne et evt. dato-suffix
+ * ("Kropsro 24. Maj 2026" → "Kropsro", "Kickstart maj 2026" → "Kickstart").
+ * Navne UDEN dato bevares fuldt ud — også flerordede ("SommerRo", "Sund
+ * Sommer") — så en admin-omdøbning af forløbets navn slår korrekt igennem.
+ * Falder tilbage til hele navnet hvis strip ville give en tom streng.
+ */
+export function stripDatoSuffix(navn: string): string {
+	return navn.replace(DATO_SUFFIX, '').trim() || navn;
+}
+
 export interface Modul {
 	id: string;
 	navn: string;
@@ -113,9 +127,10 @@ function forlobskundeStatus(
 	let forlobProgress = 0.3;
 	if (aktivtForlob) {
 		const { navn, dagNummer, antalDage } = aktivtForlob;
-		// Strip evt suffix fra navn så det bliver fx 'Kropsro' i stedet for
-		// 'Kropsro 25. Maj 2026'
-		const kortNavn = navn.split(' ')[0];
+		// Strip et evt. dato-suffix så flisen viser fx 'Kropsro' frem for
+		// 'Kropsro 25. Maj 2026'. Flerordede navne uden dato bevares fuldt,
+		// så en admin-omdøbning af navnet slår korrekt igennem her.
+		const kortNavn = stripDatoSuffix(navn);
 		forlobSub = `${kortNavn}, dag ${dagNummer} af ${antalDage}`;
 		forlobProgress = Math.max(0, Math.min(1, dagNummer / antalDage));
 	}
