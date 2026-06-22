@@ -34,6 +34,8 @@ export interface Modul {
 
 const KICKSTART_KOB_URL = 'https://linn.simplero.com/21dage';
 const KROPSRO_KOB_URL = 'https://linn.simplero.com/12uger';
+// Afsluttede kunder ("Få adgang igen") sendes til app-abonnementet.
+const APP_KOB_URL = 'https://linn.simplero.com/cart/255519-Linns-Academy-App';
 
 interface ModulBase {
 	id: string;
@@ -249,6 +251,6 @@ function udlobetStatus(base: ModulBase): Modul {
 		statusTekst: 'Låst',
 		subTekst: subMap[base.id] ?? 'Kræver aktivt abonnement eller forløb',
 		laasTekst: 'Få adgang igen',
-		kobUrl: KICKSTART_KOB_URL
+		kobUrl: APP_KOB_URL
 	};
 }
