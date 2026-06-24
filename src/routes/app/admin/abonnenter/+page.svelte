@@ -123,32 +123,36 @@
 		beskedKopieret = false;
 	}
 
+	async function indlaes() {
+		const allowed = await hentAbonnentAllowedEmails();
+
+		// Forsøg at hente users-collection — vi har brug for matching userDoc
+		// for at vise UID + bonusPeriodEndsAt. Hvis rules forhindrer det (admin
+		// har ikke read på alle users), fortsætter vi med kun allowedEmail-data.
+		const docsByEmail = new Map<string, { uid: string; data: UserDoc }>();
+		try {
+			const usersSnap = await getDocs(collection(db, 'users'));
+			for (const d of usersSnap.docs) {
+				const data = d.data() as UserDoc;
+				if (data.email) docsByEmail.set(data.email.toLowerCase(), { uid: d.id, data });
+			}
+		} catch (userFejl) {
+			console.warn('Kunne ikke hente users-collection (rules?):', userFejl);
+		}
+
+		rows = allowed.map((a) => {
+			const match = docsByEmail.get(a.email.toLowerCase());
+			return {
+				allowed: a,
+				userDoc: match?.data ?? null,
+				uid: match?.uid ?? null
+			};
+		});
+	}
+
 	onMount(async () => {
 		try {
-			const allowed = await hentAbonnentAllowedEmails();
-
-			// Forsøg at hente users-collection — vi har brug for matching userDoc
-			// for at vise UID + bonusPeriodEndsAt. Hvis rules forhindrer det (admin
-			// har ikke read på alle users), fortsætter vi med kun allowedEmail-data.
-			const docsByEmail = new Map<string, { uid: string; data: UserDoc }>();
-			try {
-				const usersSnap = await getDocs(collection(db, 'users'));
-				for (const d of usersSnap.docs) {
-					const data = d.data() as UserDoc;
-					if (data.email) docsByEmail.set(data.email.toLowerCase(), { uid: d.id, data });
-				}
-			} catch (userFejl) {
-				console.warn('Kunne ikke hente users-collection (rules?):', userFejl);
-			}
-
-			rows = allowed.map((a) => {
-				const match = docsByEmail.get(a.email.toLowerCase());
-				return {
-					allowed: a,
-					userDoc: match?.data ?? null,
-					uid: match?.uid ?? null
-				};
-			});
+			await indlaes();
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente abonnenter.';
@@ -156,6 +160,72 @@
 			loading = false;
 		}
 	});
+
+	// ── Opret gratis app-kunde (manuelt, uden Simplero-køb) ──
+	// Til fri-/comp-konti for folk der ikke skal være betalende kunder.
+	let visOpretKunde = $state(false);
+	let nyEmail = $state('');
+	let nyFornavn = $state('');
+	let nyEfternavn = $state('');
+	let opretKundeArbejder = $state(false);
+	let opretKundeFejl = $state<string | null>(null);
+	let opretKundeOk = $state<string | null>(null);
+
+	function aabnOpretKunde() {
+		nyEmail = '';
+		nyFornavn = '';
+		nyEfternavn = '';
+		opretKundeFejl = null;
+		opretKundeOk = null;
+		visOpretKunde = true;
+	}
+
+	function lukOpretKunde() {
+		if (!opretKundeArbejder) visOpretKunde = false;
+	}
+
+	async function opretAppKunde() {
+		const u = user;
+		const email = nyEmail.trim().toLowerCase();
+		if (!u || opretKundeArbejder) return;
+		if (!email || !email.includes('@')) {
+			opretKundeFejl = 'Skriv en gyldig email.';
+			return;
+		}
+		opretKundeArbejder = true;
+		opretKundeFejl = null;
+		opretKundeOk = null;
+		try {
+			const idToken = await u.getIdToken(true);
+			const res = await fetch('/api/admin/opret-app-kunde', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${idToken}`
+				},
+				body: JSON.stringify({
+					email,
+					firstName: nyFornavn.trim(),
+					lastName: nyEfternavn.trim()
+				})
+			});
+			const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string };
+			if (!res.ok || data.ok === false) {
+				opretKundeFejl = data.message ?? 'Kunne ikke oprette kunden.';
+				return;
+			}
+			opretKundeOk = `${email} er oprettet som gratis premium app-kunde. Hun kan nu oprette sig på login-siden med denne email.`;
+			nyEmail = '';
+			nyFornavn = '';
+			nyEfternavn = '';
+			await indlaes().catch(() => {});
+		} catch (e) {
+			console.error(e);
+			opretKundeFejl = 'Kunne ikke kontakte serveren. Prøv igen.';
+		} finally {
+			opretKundeArbejder = false;
+		}
+	}
 
 	const filtreret = $derived.by(() => {
 		return rows.filter((r) => {
@@ -217,6 +287,9 @@
 			Brugere med basis- eller premium-abonnement fra Simplero. Klik et kort for at se hele
 			kunde-profilen.
 		</p>
+		<button type="button" class="opret-kunde-knap" onclick={aabnOpretKunde}>
+			+ Opret gratis app-kunde
+		</button>
 	</header>
 
 	{#if loading}
@@ -460,6 +533,78 @@
 
 			<div class="modal-knapper">
 				<button class="modal-knap primary" type="button" onclick={lukKodeModal}>Luk</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if visOpretKunde}
+	<div class="modal-overlay" role="presentation" onclick={lukOpretKunde}>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div
+			class="modal"
+			role="dialog"
+			tabindex="-1"
+			aria-modal="true"
+			aria-labelledby="opret-titel"
+			onclick={(e) => e.stopPropagation()}
+		>
+			<h2 id="opret-titel" class="modal-titel">Opret gratis app-kunde</h2>
+			<p class="modal-tekst">
+				Giver gratis <strong>premium</strong> app-adgang uden Simplero-køb (fri-/comp-konto). Der
+				oprettes ingen betaling, og kunden får ingen fornyelse eller fakturering.
+			</p>
+
+			{#if opretKundeOk}
+				<div class="modal-ok">{opretKundeOk}</div>
+			{:else}
+				<label class="opret-felt">
+					<span>Email</span>
+					<input
+						type="email"
+						bind:value={nyEmail}
+						placeholder="navn@email.dk"
+						disabled={opretKundeArbejder}
+					/>
+				</label>
+				<div class="opret-navn">
+					<label class="opret-felt">
+						<span>Fornavn (valgfrit)</span>
+						<input type="text" bind:value={nyFornavn} disabled={opretKundeArbejder} />
+					</label>
+					<label class="opret-felt">
+						<span>Efternavn (valgfrit)</span>
+						<input type="text" bind:value={nyEfternavn} disabled={opretKundeArbejder} />
+					</label>
+				</div>
+				<p class="modal-tekst muted">
+					Kunden opretter selv sin adgangskode på login-siden med denne email.
+				</p>
+			{/if}
+
+			{#if opretKundeFejl}
+				<div class="modal-fejl">{opretKundeFejl}</div>
+			{/if}
+
+			<div class="modal-knapper">
+				<button
+					class="modal-knap ghost"
+					type="button"
+					onclick={lukOpretKunde}
+					disabled={opretKundeArbejder}
+				>
+					{opretKundeOk ? 'Luk' : 'Annullér'}
+				</button>
+				{#if !opretKundeOk}
+					<button
+						class="modal-knap primary"
+						type="button"
+						onclick={opretAppKunde}
+						disabled={opretKundeArbejder}
+					>
+						{opretKundeArbejder ? 'Opretter…' : 'Opret kunde'}
+					</button>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -754,6 +899,69 @@
 		border-radius: 8px;
 		font-size: calc(12.5px * var(--fs-scale, 1));
 		margin: 10px 0;
+	}
+
+	.modal-ok {
+		padding: 12px 14px;
+		background: #eef5ee;
+		color: #3a6b46;
+		border-radius: 8px;
+		font-size: calc(13px * var(--fs-scale, 1));
+		line-height: 1.45;
+		margin: 6px 0 4px;
+	}
+
+	.opret-kunde-knap {
+		margin-top: 12px;
+		padding: 9px 14px;
+		border: 1px dashed var(--terra);
+		background: var(--tdim);
+		color: var(--terra);
+		border-radius: 10px;
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		font-family: var(--ff-b);
+		cursor: pointer;
+	}
+
+	.opret-kunde-knap:hover {
+		background: var(--white);
+	}
+
+	.opret-felt {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin: 8px 0;
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text2);
+	}
+
+	.opret-felt input {
+		padding: 10px 12px;
+		font-size: calc(14px * var(--fs-scale, 1));
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: var(--bg2);
+		color: var(--text);
+		font-family: var(--ff-b);
+		font-weight: 400;
+		outline: none;
+	}
+
+	.opret-felt input:focus {
+		border-color: var(--terra);
+	}
+
+	.opret-navn {
+		display: flex;
+		gap: 10px;
+	}
+
+	.opret-navn .opret-felt {
+		flex: 1;
+		min-width: 0;
 	}
 
 	.modal-knapper {
