@@ -10,7 +10,8 @@ import {
 	uddragEmail,
 	uddragProduktId,
 	gemILog,
-	opdaterBrugerEllerWhitelist
+	opdaterBrugerEllerWhitelist,
+	tilMs
 } from '$lib/server/simpleroWebhook';
 import { findProduktAdgang } from '$lib/simplero/produktMapping';
 
@@ -48,6 +49,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		paymentFailedAt: null,
 		updatedAt: Date.now()
 	};
+
+	// Fornyelse skubber periode-slutdatoen frem — opdater den (og købsdatoen
+	// hvis Simplero sender den med), så "Dit abonnement" viser den nye periode.
+	if (adgang.accessSource === 'abonnement') {
+		const koebtAt = tilMs(payload.purchased_at);
+		const slutterAt = tilMs(payload.period_ends_at);
+		if (koebtAt > 0) opdatering.aboKoebtAt = koebtAt;
+		if (slutterAt > 0) opdatering.aboSlutterAt = slutterAt;
+	}
 
 	await opdaterBrugerEllerWhitelist(email, opdatering);
 	await gemILog(EVENT, payload, 'renewed', `${adgang.navn} fornyelse for ${email}`);

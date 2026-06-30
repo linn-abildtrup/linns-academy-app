@@ -28,6 +28,7 @@ export interface SimpleroPayload {
 	canceled_at?: string | null;
 	refunded_at?: string | null;
 	period_ends_at?: string | null;
+	purchased_at?: string | null;
 	event?: string;
 	type?: string;
 	// Simplero sender first_names + last_name på top-niveau

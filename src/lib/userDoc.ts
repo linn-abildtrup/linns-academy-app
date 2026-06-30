@@ -407,6 +407,8 @@ export async function synkroniserForlobskundeStatus(
 			opdateringer.simpleroCustomerId = allowed.simpleroCustomerId;
 		}
 		if (allowed.expiresAt !== undefined) opdateringer.expiresAt = allowed.expiresAt;
+		if (allowed.aboKoebtAt !== undefined) opdateringer.aboKoebtAt = allowed.aboKoebtAt;
+		if (allowed.aboSlutterAt !== undefined) opdateringer.aboSlutterAt = allowed.aboSlutterAt;
 		opdateringer.updatedAt = Date.now();
 		// (state-feltet holdes ikke laengere i sync - A2 etape B.)
 	}

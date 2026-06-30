@@ -114,6 +114,16 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (navn.firstName) opdatering.firstName = navn.firstName;
 	if (navn.lastName) opdatering.lastName = navn.lastName;
 
+	// Abo-køb: gem købsdato + periode-slutdato fra Simplero, så "Dit abonnement"
+	// kan vise dem og vi kender hvornår adgangen bør slutte. Kun for abonnementer
+	// (forløbs-køb styrer udløb via forløbet selv).
+	if (felter.accessSource === 'abonnement') {
+		const koebtAt = tilMs(payload.purchased_at);
+		const slutterAt = tilMs(payload.period_ends_at);
+		if (koebtAt > 0) opdatering.aboKoebtAt = koebtAt;
+		if (slutterAt > 0) opdatering.aboSlutterAt = slutterAt;
+	}
+
 	// A4-oprydning: webhook'en saetter IKKE laengere bonusPeriodEndsAt selv.
 	// Den blev tidligere udledt af Simperos period_ends_at, mens login-sync
 	// udleder den af forloebets startdato + antal dage. To kilder kunne give

@@ -119,6 +119,12 @@ export interface UserDoc {
 	/** Hvornår adgangen udløber — null for løbende abonnement uden slutdato. */
 	expiresAt?: number | null;
 
+	/** Abo-køb: hvornår abonnementet blev købt (Simplero purchased_at, ms). */
+	aboKoebtAt?: number;
+	/** Abo-køb: hvornår perioden slutter (Simplero period_ends_at, ms). Informativt
+	 *  — håndhæves ikke i effektivState endnu, bruges til "Dit abonnement"-visning. */
+	aboSlutterAt?: number;
+
 	/**
 	 * Hvornår bonus-perioden efter et forløb slutter. Sat når et forløbskøb
 	 * registreres. Når denne dato er passeret bør accessLevel sættes til 'none'
