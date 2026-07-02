@@ -294,13 +294,10 @@ export async function synkroniserForlobskundeStatus(
 		// Fælles slut-beregning (forlobSlutMs i $lib/content/forlobAdgang) så
 		// login-sync og webhooks aldrig regner forskelligt. Se A4-oprydning.
 		const slutMs = forlobSlutMs(forlobStartMs, forlobAntalDage);
-		// Har kunden købt appen mens forløbet kører, er abo'en parkeret med
-		// adgangFra (= dagen efter forløbets effektive slut). Så holdes forløbet
-		// "aktivt" indtil det tidspunkt — ellers ville et pause-forskudt forløb
-		// blive regnet som udløbet, før appen tager over. (Webhook A + B.)
-		const parkeretTil = allowed.adgangFra && allowed.adgangFra > Date.now() ? allowed.adgangFra : 0;
-		const effektivSlutMs = Math.max(slutMs, parkeretTil);
-		const forlobUdloebet = effektivSlutMs > 0 && Date.now() > effektivSlutMs;
+		// Forløbets feature-/trænings-vindue følger forløbets egen slutdato. Abo↔
+		// forløb-overgangen (inkl. "abo tager over efter forløb") styres nu af den
+		// dato-baserede resolver nedenfor — ikke længere af adgangFra-parkering.
+		const forlobUdloebet = slutMs > 0 && Date.now() > slutMs;
 
 		// Features frit pr forløb: er kunden på et AKTIVT bygget forløb, lægger
 		// vi forløbets feature-flag på userDoc (harFeatureAdgang læser dem).
@@ -390,23 +387,17 @@ export async function synkroniserForlobskundeStatus(
 		}
 	}
 
-	// Abonnement/Simplero-flow: kopier access-felter over på userDoc.
-	// Disse har forrang over forløbs-state hvis begge er sat — fordi
-	// accessLevel/accessSource er den autoritative kilde i den nye model.
-	// Undtagelse: hvis allowed.adgangFra er sat og endnu ikke passeret, så
-	// ignorerer vi abo-felterne — bruges fx ved migration hvor kunden er
-	// på et forløb i dag men først aktiveres som abonnent ved midnat.
-	// Abo-DATA-felterne kopieres ALTID (også ved parkeret abo, adgangFra i
-	// fremtiden), så den dato-styrede resolver nedenfor altid har abo-perioden
-	// og kan skifte kunden tilbage til app efter et forløb.
+	// Abonnement/Simplero-flow: kopier abo-felter over på userDoc. Den endelige
+	// tilstand (accessSource/activeProduct/accessLevel/expiresAt) afgøres af den
+	// dato-baserede resolver nedenfor, som overstyrer disse — inkl. at abo'en
+	// tager over efter et forløb (afløser den gamle adgangFra-parkering).
 	if (allowed.aboKoebtAt !== undefined) opdateringer.aboKoebtAt = allowed.aboKoebtAt;
 	if (allowed.aboSlutterAt !== undefined) opdateringer.aboSlutterAt = allowed.aboSlutterAt;
 	if (allowed.aboProdukt !== undefined) opdateringer.aboProdukt = allowed.aboProdukt;
 	if (allowed.aboAccessLevel !== undefined) opdateringer.aboAccessLevel = allowed.aboAccessLevel;
 	if (allowed.simpleroCustomerId) opdateringer.simpleroCustomerId = allowed.simpleroCustomerId;
 
-	const aboAktivNu = !allowed.adgangFra || allowed.adgangFra <= Date.now();
-	if (allowed.accessLevel && aboAktivNu) {
+	if (allowed.accessLevel) {
 		opdateringer.accessLevel = allowed.accessLevel;
 		if (allowed.accessSource) opdateringer.accessSource = allowed.accessSource;
 		if (allowed.activeProduct) opdateringer.activeProduct = allowed.activeProduct;

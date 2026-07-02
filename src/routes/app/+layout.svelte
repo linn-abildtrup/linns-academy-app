@@ -152,9 +152,9 @@
 
 		// Sidste gang vi koerte synkronisering. Bruges af visibility-change-
 		// listeneren til at undgaa for hyppige re-syncs (smaa skift mellem
-		// apps maa ikke trigge sync hver gang). Tærskel: 10 minutter.
+		// apps maa ikke trigge sync hver gang). Tærskel: 1 time.
 		let sidsteSync = Date.now();
-		const SYNC_TAERSKEL_MS = 10 * 60 * 1000;
+		const SYNC_TAERSKEL_MS = 60 * 60 * 1000;
 
 		// Hjælper: koer synkroniseringen igen og opdater userDoc lokalt.
 		// Bruges baade af allowedEmail-listeneren og visibility-change.
@@ -174,7 +174,7 @@
 		}
 
 		// B) Visibility-change: naar appen vender tilbage til forgrund efter
-		// at have vaeret skjult > 10 min, koerer vi sync igen. Daekker iPhone-
+		// at have vaeret skjult > 1 time, koerer vi sync igen. Daekker iPhone-
 		// PWA der "vaagner op" efter timer i baggrund uden ny app-start.
 		function onVisibility() {
 			if (document.visibilityState !== 'visible') return;
