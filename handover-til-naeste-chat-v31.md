@@ -5,6 +5,9 @@
 
 Denne handover er selvstændig. Memory-filerne loades også automatisk (se især `project_abo_datoer`, `project_symptomcheck_kadence`, `project_feature_adgang_plan`, `feedback_diagnose_foerst`). Tidligere handovers: v30 (udvikling-dashboard 4 faner), v27 (Linns Academy 2.0-rearkitektur, IKKE implementeret).
 
+> ## ⚠ VIGTIGSTE REGEL: DIAGNOSE FØRST — KOD ALDRIG UDEN GO
+> Lav ALTID en grundig diagnose før du skriver eller ændrer kode: forstå årsagen, læs den relevante kode, og verificér mod live-data (tør audit / dry-run) hvor der er kunde-påvirkning. Præsentér fundene + løsningsforslag, og **vent på et klart "ja/kør/ret det"** fra Bo/Linn før du koder — også på "er det muligt?"-spørgsmål (svar først, kod ikke). Læse-only undersøgelse (læse filer, dumpe Firestore via midlertidige scripts der ryddes op) er en del af diagnosen og er OK. ~760 kunder i drift, så forkerte/forhastede ændringer er dyre. (Se memory `feedback_diagnose_foerst`.)
+
 ---
 
 ## 0. Arbejdsgang — læs FØRST
@@ -16,6 +19,29 @@ Denne handover er selvstændig. Memory-filerne loades også automatisk (se især
 - **~600-760 kunder i drift.** Verificér ALTID risikable ændringer mod live FØR kodning (tør audit/dry-run). Vælg mindst risikable løsning.
 - **Arbejdsstil (Linn/Bo):** DIAGNOSE FØRST, kod ALDRIG før eksplicit "ja/kør". List ændringer + verificér mod live før commit. Én ting ad gangen. Screenshots ligger i `screenshots/` (nyeste fil). Testkonti at ekskludere fra live-tal: alle `@linnsacademy.dk`, `bo_andersen1@…`.
 - **Denne session blev drevet af Bo (udvikler) på Linns vegne.**
+
+---
+
+## 0b. Projektstruktur — hvor tingene ligger
+
+**Kode (`src/`):**
+- `src/lib/content/` — REN logik + typer/modeller + `.test.ts`. Fx `forlobAdgang.ts` (Forlob/AllowedEmail-typer, `forlobAdgangFelter`, `forlobSlutMs`, `produktTypeForForlob`), `forlob.ts` (dag-beregning, `forlobErKickstart/Kropsro`), `adgangResolver.ts` (dato-styret adgang), `abonnement.ts` (abo-visning), `features.ts` (feature-matrix), `moduler.ts`, `mrs.ts`, `mikrotraening.ts`, `vaner.ts`, `smaaSkridt.ts`, `produkter.ts` (de 4 produkter + simplero-mapping).
+- `src/lib/utils/` — helpers: `userAdgang.ts` (**`effektivState`** = kernen i al adgang), `traeningsvariant.ts`, `klientSoegning.ts`, `adminKlient.ts`.
+- `src/lib/firestore/` — klient-side Firestore-læs/skriv: `forlob.ts` (`hentForlob`, `hentAktivtForlob`, `hentAllowedEmail`), `mikrotraening.ts`, `mrs.ts`, `vaner.ts`, `smaaSkridt.ts`, `tildelinger.ts`, `linnAi.ts`, `featureAdgang.ts`.
+- `src/lib/server/` — server-side (kører på Cloudflare): `firestoreRest.ts` (custom Firestore REST-klient — firebase-admin virker IKKE på Workers), `simpleroWebhook.ts` (payload-parsing, `opdaterBrugerEllerWhitelist`), `authRest.ts`.
+- `src/lib/userDoc.ts` — **login-sync** (`synkroniserForlobskundeStatus`), createUserDoc, admin-klient-mode.
+- `src/lib/components/` — delte Svelte-komponenter (TabBar, Header, Icon, Loading, BekraeftModal, IngenAdgangScreen).
+- `src/lib/admin.ts` — `ADMIN_EMAILS` + `isAdmin`.
+- `src/routes/app/` — KUNDE-app: `+layout.svelte` (auth + sync + context), `+page.svelte` (forside, alle userState-varianter), `profil/`, `moduler/*` (traening, 30-30-3, linn-ai, symptomcheck, forlob…), `beskeder/`.
+- `src/routes/app/admin/` — ADMIN: `forlob/[id]/*` (lektioner, smaa-skridt, traening, beskeder…), `abonnenter/`, `feature-adgang/`, `dashboard/`, `testere/`, `spoergsmaal/`, `kunde-tildeling/`, `nulstil-adgang/`.
+- `src/routes/api/` — endpoints: `simplero-webhook/{koeb,fornyelse,afbrudt,betaling-fejlede}/`, `admin/{set-temp-password,opret-app-kunde,genberegn-mrs,…}/`, `linn-ai/`, `analyser-opskrift/`, `foreslaa-madplan/`.
+- `scripts/` — data-scripts (`firebase-admin` + `scripts/service-account-key.json`, lokal, IKKE i git). Diagnose-/migrations-scripts skrives midlertidigt (`_navn.ts`), køres med `npx tsx`, og slettes bagefter.
+
+**Firestore-datamodel (vigtigste):**
+- `users/{uid}` — bruger + adgangs-felter (accessSource/accessLevel/activeProduct/activeSubscription/expiresAt, abo-felter, forlobIds, afsluttedeForlobIds). Undercollections: `userProducts/{produktId}`, `products/{produktId}/vanedage/{dagN}` (vane-svar + gamle sliders), `maaltider`, `mrs_scores`.
+- `allowedEmails/{email}` — whitelist + adgangs-felter (webhook/CSV sætter; login-sync kopierer til userDoc).
+- `forlob/{id}` — forløb (startDato, antalDage, type, adgangsNiveau, byggetForlob, produktNoegle, features). Undercollections: `forlobsdage/{dagN}` (lektioner), `mikrotraeningProgrammer/{id}/days/{dagN}`, `vaneprogram/{dagN}`, `smaaSkridt/{id}` (planer), (Kropsro også: challenges, faqItems, guideItems).
+- `featureAdgang/aktiv` — feature-matrix. `webhookLog` — rå Simplero-payloads. `exercises`, `opskrifter`, `fodevarer`, `adminStats`, m.fl.
 
 ---
 
