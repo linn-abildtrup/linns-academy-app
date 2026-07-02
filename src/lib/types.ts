@@ -121,9 +121,14 @@ export interface UserDoc {
 
 	/** Abo-køb: hvornår abonnementet blev købt (Simplero purchased_at, ms). */
 	aboKoebtAt?: number;
-	/** Abo-køb: hvornår perioden slutter (Simplero period_ends_at, ms). Informativt
-	 *  — håndhæves ikke i effektivState endnu, bruges til "Dit abonnement"-visning. */
+	/** Abo-køb: hvornår perioden slutter (Simplero period_ends_at, ms). Håndhæves
+	 *  i effektivState. Undefined = comp/manuel konto med løbende adgang. */
 	aboSlutterAt?: number;
+	/** Abo-produktet (basisabo/premiumabo). Bevares så vi kan skifte tilbage til
+	 *  app efter et forløb — activeProduct overskrives af forløbet undervejs. */
+	aboProdukt?: ActiveProduct;
+	/** Abo-niveauet (basis/premium). Bevares sammen med aboProdukt. */
+	aboAccessLevel?: AccessLevel;
 
 	/**
 	 * Hvornår bonus-perioden efter et forløb slutter. Sat når et forløbskøb

@@ -166,9 +166,11 @@ export interface AllowedEmail {
 	activeSubscription?: boolean;
 	simpleroCustomerId?: string;
 	expiresAt?: number | null;
-	// Abo-køb: købsdato + periode-slutdato fra Simplero (ms).
+	// Abo-køb: købsdato + periode-slutdato fra Simplero (ms) + bevaret produkt/niveau.
 	aboKoebtAt?: number;
 	aboSlutterAt?: number;
+	aboProdukt?: string;
+	aboAccessLevel?: 'basis' | 'premium';
 	updatedAt?: number;
 	// Betalings-status sat af Simplero-webhooks. Skrives til allowedEmails
 	// sammen med userDoc via opdaterBrugerEllerWhitelist.
