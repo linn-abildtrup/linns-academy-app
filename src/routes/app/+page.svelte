@@ -10,6 +10,7 @@
 	import { produktTypeForForlob } from '$lib/content/forlobAdgang';
 	import type { ForlobDag } from '$lib/content/forlob';
 	import type { UserProduct } from '$lib/content/mikrotraening';
+	import { aboVisning, formaterDatoLang, APP_KOB_URL } from '$lib/content/abonnement';
 	import Icon from '$lib/components/Icon.svelte';
 	import {
 		forlobSlutMs,
@@ -118,6 +119,7 @@
 	const userDoc = $derived(getUserDoc());
 	const user = $derived(getUser());
 	const userState = $derived(effektivState(userDoc));
+	const aboForside = $derived(aboVisning(userDoc));
 
 	let forlob = $state<Forlob | null>(null);
 	let forlobsdage = $state<ForlobDag[]>([]);
@@ -1934,6 +1936,17 @@
 {:else if userState === 'modulbruger'}
 	<div class="forside-b1">
 		<div class="forside-body">
+			{#if aboForside.taetPaaUdloeb && aboForside.slutterAt}
+				<a class="abo-paamind" href={APP_KOB_URL} target="_blank" rel="noopener">
+					<span class="abo-paamind-tekst">
+						Din adgang udløber om {aboForside.dageTilbage}
+						{aboForside.dageTilbage === 1 ? 'dag' : 'dage'} ({formaterDatoLang(
+							aboForside.slutterAt
+						)}). <strong>Forny her</strong>
+					</span>
+					<Icon name="chevron-r" size={14} color="var(--terra)" />
+				</a>
+			{/if}
 			{#if modulbrugerDage.length > 0}
 				<section class="strip-section">
 					<div class="strip-head">
@@ -2798,6 +2811,29 @@
 		padding: 8px 20px 14px;
 		background: var(--header);
 		border-bottom: 1px solid var(--border);
+	}
+
+	.abo-paamind {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin: 4px 0 14px;
+		padding: 12px 14px;
+		background: var(--tdim);
+		border: 1px solid var(--terra);
+		border-radius: 12px;
+		text-decoration: none;
+	}
+
+	.abo-paamind-tekst {
+		flex: 1;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		line-height: 1.45;
+		color: var(--text);
+	}
+
+	.abo-paamind-tekst strong {
+		color: var(--terra);
 	}
 
 	.forlob-badge {

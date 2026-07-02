@@ -48,7 +48,7 @@ export const APP_HJAELP_SEKTIONER: AppHjaelpSektion[] = [
 - Moduler: liste over alle dine moduler
 - Udvikling: din udvikling i kost-tal over tid
 - Beskeder: kun synligt for forløbskunder
-- Profil: kontoindstillinger, tekstskalering, log ud
+- Profil: kontoindstillinger, tekstskalering, log ud. For app-abonnenter vises også 'Dit abonnement' med købsdato og hvornår adgangen slutter (abonnementet er en fast periode der slutter automatisk og ikke kan opsiges undervejs).
 
 Klik på et modul-kort eller en knap for at åbne den. Brug 'Tilbage'-pilen øverst til venstre på undersider for at komme tilbage.`
 	},

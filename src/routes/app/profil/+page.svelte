@@ -32,6 +32,7 @@
 	import { gemAktivtTraeningsprogram } from '$lib/firestore/mineProgrammer';
 	import { maxNulDageForForlob } from '$lib/content/mikrotraening';
 	import { nulDageDatoer, forlobErKickstart, forlobErKropsro } from '$lib/content/forlob';
+	import { aboVisning, formaterDatoLang } from '$lib/content/abonnement';
 	import TesterBadge from '$lib/components/TesterBadge.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import Icon, { type IconName } from '$lib/components/Icon.svelte';
@@ -339,6 +340,7 @@
 	}
 
 	const initial = $derived((userDoc?.firstName ?? '?').charAt(0).toUpperCase());
+	const abo = $derived(aboVisning(userDoc));
 
 	const statusTekst = $derived.by(() => {
 		if (userState === 'forlobskunde') {
@@ -518,6 +520,29 @@
 		<section class="status-card">
 			<p class="card-label">Status</p>
 			<p class="card-text">{statusTekst}</p>
+		</section>
+	{/if}
+
+	{#if userState === 'modulbruger' && abo.harPeriode && abo.slutterAt}
+		<section class="sektion abo-sektion">
+			<h2 class="sektion-titel">Dit abonnement</h2>
+			<div class="abo-datoer">
+				{#if abo.koebtAt}
+					<div class="abo-dato">
+						<span>Købt</span>
+						<strong>{formaterDatoLang(abo.koebtAt)}</strong>
+					</div>
+				{/if}
+				<div class="abo-dato">
+					<span>Adgang til</span>
+					<strong>{formaterDatoLang(abo.slutterAt)}</strong>
+				</div>
+			</div>
+			<p class="abo-tekst">
+				Dit abonnement slutter automatisk den {formaterDatoLang(abo.slutterAt)}, uden at du behøver
+				at gøre noget. Det er ikke muligt at opsige undervejs, da du har købt adgang til hele
+				perioden. Du har adgang til alt indhold i hele perioden.
+			</p>
 		</section>
 	{/if}
 
@@ -942,6 +967,43 @@
 		color: var(--text);
 		margin: 0 4px 8px;
 		letter-spacing: 0.02em;
+	}
+
+	.abo-sektion {
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		padding: 16px;
+	}
+
+	.abo-datoer {
+		display: flex;
+		gap: 24px;
+		margin-bottom: 12px;
+	}
+
+	.abo-dato {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.abo-dato span {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+	}
+
+	.abo-dato strong {
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.abo-tekst {
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		line-height: 1.5;
+		color: var(--text2);
+		margin: 0;
 	}
 
 	.koeb-liste {

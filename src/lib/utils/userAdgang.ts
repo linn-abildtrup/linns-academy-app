@@ -20,17 +20,26 @@ import type { UserDoc, UserState } from '$lib/types';
  * `expiresAt` har FORSKELLIG semantik afhængigt af accessSource:
  * - Forløb: forløbets slutdato — passeret = udlobet (med 90 dages bibliotek-
  *   bonus efter via `bonusPeriodEndsAt`).
- * - Abonnement: næste fornyelse — passeret betyder IKKE udløb. Et abonnement
- *   udløber kun når `activeSubscription` bliver false (cancel-webhook).
+ * - Abonnement: fast periode — udløber når `aboSlutterAt` er passeret. Comp-/
+ *   manuelt oprettede konti uden `aboSlutterAt` har løbende adgang (påvirkes
+ *   ikke). `expiresAt` (næste fornyelse) styrer IKKE abo-udløb.
  *
  * Det er vigtigt fordi migrerede kunder kan have et expiresAt fra deres
  * forløb selv om de senere er overgået til et abonnement.
  */
 export function effektivState(userDoc: UserDoc | null | undefined): UserState | null {
 	if (!userDoc) return null;
+	const nu = Date.now();
+	// Abo med fast periode udløber når aboSlutterAt er passeret. Konti uden
+	// aboSlutterAt (comp/manuel) har løbende adgang og påvirkes ikke.
+	const aboUdloebet =
+		userDoc.accessSource === 'abonnement' &&
+		userDoc.aboSlutterAt != null &&
+		userDoc.aboSlutterAt < nu;
 	const erAktivAbonnent =
-		userDoc.accessSource === 'abonnement' && userDoc.activeSubscription === true;
-	const udloebet = !erAktivAbonnent && !!(userDoc.expiresAt && userDoc.expiresAt < Date.now());
+		userDoc.accessSource === 'abonnement' && userDoc.activeSubscription === true && !aboUdloebet;
+	const udloebet =
+		aboUdloebet || (!erAktivAbonnent && !!(userDoc.expiresAt && userDoc.expiresAt < nu));
 	if (userDoc.accessLevel === undefined || userDoc.accessLevel === 'none' || udloebet) {
 		return 'udlobet';
 	}
