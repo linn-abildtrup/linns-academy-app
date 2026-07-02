@@ -128,7 +128,7 @@ export interface UserDoc {
 	 *  app efter et forløb — activeProduct overskrives af forløbet undervejs. */
 	aboProdukt?: ActiveProduct;
 	/** Abo-niveauet (basis/premium). Bevares sammen med aboProdukt. */
-	aboAccessLevel?: AccessLevel;
+	aboAccessLevel?: 'basis' | 'premium';
 
 	/**
 	 * Hvornår bonus-perioden efter et forløb slutter. Sat når et forløbskøb

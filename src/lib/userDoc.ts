@@ -17,7 +17,8 @@ import {
 	type Variant
 } from '$lib/utils/traeningsvariant';
 import { hentForlobsProgrammer } from '$lib/firestore/mikrotraening';
-import { forlobSlutMs, bibliotekBonusSlutMs } from '$lib/content/forlobAdgang';
+import { forlobSlutMs, bibliotekBonusSlutMs, forlobAdgangFelter } from '$lib/content/forlobAdgang';
+import { resolverAktuelAdgang, type ForlobVindue } from '$lib/content/adgangResolver';
 
 /**
  * Opdaterer brugerens udvidet-næring-toggle og daglige mål. Kaldes fra
@@ -395,6 +396,15 @@ export async function synkroniserForlobskundeStatus(
 	// Undtagelse: hvis allowed.adgangFra er sat og endnu ikke passeret, så
 	// ignorerer vi abo-felterne — bruges fx ved migration hvor kunden er
 	// på et forløb i dag men først aktiveres som abonnent ved midnat.
+	// Abo-DATA-felterne kopieres ALTID (også ved parkeret abo, adgangFra i
+	// fremtiden), så den dato-styrede resolver nedenfor altid har abo-perioden
+	// og kan skifte kunden tilbage til app efter et forløb.
+	if (allowed.aboKoebtAt !== undefined) opdateringer.aboKoebtAt = allowed.aboKoebtAt;
+	if (allowed.aboSlutterAt !== undefined) opdateringer.aboSlutterAt = allowed.aboSlutterAt;
+	if (allowed.aboProdukt !== undefined) opdateringer.aboProdukt = allowed.aboProdukt;
+	if (allowed.aboAccessLevel !== undefined) opdateringer.aboAccessLevel = allowed.aboAccessLevel;
+	if (allowed.simpleroCustomerId) opdateringer.simpleroCustomerId = allowed.simpleroCustomerId;
+
 	const aboAktivNu = !allowed.adgangFra || allowed.adgangFra <= Date.now();
 	if (allowed.accessLevel && aboAktivNu) {
 		opdateringer.accessLevel = allowed.accessLevel;
@@ -403,18 +413,83 @@ export async function synkroniserForlobskundeStatus(
 		if (allowed.activeSubscription !== undefined) {
 			opdateringer.activeSubscription = allowed.activeSubscription;
 		}
-		if (allowed.simpleroCustomerId) {
-			opdateringer.simpleroCustomerId = allowed.simpleroCustomerId;
-		}
 		if (allowed.expiresAt !== undefined) opdateringer.expiresAt = allowed.expiresAt;
-		if (allowed.aboKoebtAt !== undefined) opdateringer.aboKoebtAt = allowed.aboKoebtAt;
-		if (allowed.aboSlutterAt !== undefined) opdateringer.aboSlutterAt = allowed.aboSlutterAt;
 		opdateringer.updatedAt = Date.now();
 		// (state-feltet holdes ikke laengere i sync - A2 etape B.)
 	}
 
 	if (!current.firstName && allowed.firstName) {
 		opdateringer.firstName = allowed.firstName;
+	}
+
+	// ── Samlet dato-styret adgang (autoritativ for tilstands-felterne) ──
+	// Kør resolveren på ALLE kundens forløb + abo, så app↔forløb-skiftet sker
+	// efter dato: app før forløb-start, forløb i vinduet, app igen efter (hvis
+	// abo gyldig), ellers udløbet. Overstyrer accessSource/activeProduct/
+	// accessLevel/expiresAt. Ved 'udlobet' rører vi ikke felterne — så den
+	// eksisterende expiresAt + 90-dages bibliotek-bonus (bonusPeriodEndsAt)
+	// bevares uændret.
+	try {
+		const alleForlobIds = Array.from(
+			new Set([
+				...((current as UserDoc & { forlobIds?: string[] }).forlobIds ?? []),
+				...(allowed.forlobId ? [allowed.forlobId] : [])
+			])
+		);
+		const vinduer: ForlobVindue[] = [];
+		for (const fid of alleForlobIds) {
+			try {
+				const snap = await getDoc(doc(db, 'forlob', fid));
+				if (!snap.exists()) continue;
+				const d = snap.data() as {
+					startDato?: { toMillis?: () => number; seconds?: number };
+					antalDage?: number;
+					type?: 'kickstart' | 'kropsro';
+					adgangsNiveau?: 'basis' | 'premium';
+					byggetForlob?: boolean;
+					produktNoegle?: string;
+				};
+				const startMs = d.startDato?.toMillis?.() ?? (d.startDato?.seconds ?? 0) * 1000;
+				const felter = forlobAdgangFelter({
+					type: d.type,
+					adgangsNiveau: d.adgangsNiveau,
+					byggetForlob: d.byggetForlob,
+					produktNoegle: d.produktNoegle
+				});
+				vinduer.push({
+					id: fid,
+					startMs,
+					slutMs: forlobSlutMs(startMs, d.antalDage ?? 0),
+					accessLevel: felter.accessLevel,
+					activeProduct: felter.activeProduct
+				});
+			} catch (e) {
+				console.warn('Kunne ikke hente forløb til adgangs-resolver:', fid, e);
+			}
+		}
+		const abo = {
+			slutterAt: (opdateringer.aboSlutterAt as number | undefined) ?? current.aboSlutterAt,
+			produkt: (opdateringer.aboProdukt as string | undefined) ?? current.aboProdukt,
+			accessLevel:
+				(opdateringer.aboAccessLevel as 'basis' | 'premium' | undefined) ?? current.aboAccessLevel
+		};
+		const res = resolverAktuelAdgang(Date.now(), vinduer, abo);
+		if (res.state === 'forlobskunde') {
+			opdateringer.accessSource = 'forløb';
+			opdateringer.activeProduct = res.activeProduct;
+			opdateringer.accessLevel = res.accessLevel;
+			opdateringer.activeSubscription = false;
+			if (res.expiresAt !== undefined) opdateringer.expiresAt = res.expiresAt;
+		} else if (res.state === 'modulbruger') {
+			opdateringer.accessSource = 'abonnement';
+			opdateringer.activeProduct = res.activeProduct;
+			opdateringer.accessLevel = res.accessLevel;
+			opdateringer.activeSubscription = true;
+			if (res.expiresAt !== undefined) opdateringer.expiresAt = res.expiresAt;
+		}
+		// res.state === 'udlobet': ingen override — behold eksisterende felter + bonus.
+	} catch (e) {
+		console.warn('Adgangs-resolver fejlede, beholder eksisterende felter:', e);
 	}
 
 	if (Object.keys(opdateringer).length > 0) {

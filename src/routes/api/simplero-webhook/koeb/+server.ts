@@ -122,6 +122,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		const slutterAt = tilMs(payload.period_ends_at);
 		if (koebtAt > 0) opdatering.aboKoebtAt = koebtAt;
 		if (slutterAt > 0) opdatering.aboSlutterAt = slutterAt;
+		// Bevar abo-produkt/niveau så vi kan skifte tilbage til app efter et forløb.
+		opdatering.aboProdukt = felter.activeProduct;
+		opdatering.aboAccessLevel = felter.accessLevel;
 	}
 
 	// A4-oprydning: webhook'en saetter IKKE laengere bonusPeriodEndsAt selv.
