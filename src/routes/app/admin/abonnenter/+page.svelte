@@ -167,6 +167,9 @@
 	let nyEmail = $state('');
 	let nyFornavn = $state('');
 	let nyEfternavn = $state('');
+	// Valgfri udløbsdato (yyyy-mm-dd). Tom = løbende gratis adgang. Sat =
+	// tidsbegrænset (udløber automatisk sidst på den valgte dag).
+	let nyUdloeber = $state('');
 	let opretKundeArbejder = $state(false);
 	let opretKundeFejl = $state<string | null>(null);
 	let opretKundeOk = $state<string | null>(null);
@@ -175,6 +178,7 @@
 		nyEmail = '';
 		nyFornavn = '';
 		nyEfternavn = '';
+		nyUdloeber = '';
 		opretKundeFejl = null;
 		opretKundeOk = null;
 		visOpretKunde = true;
@@ -192,6 +196,16 @@
 			opretKundeFejl = 'Skriv en gyldig email.';
 			return;
 		}
+		// Valgfri udløbsdato → ms sidst på den valgte dag (lokal/dansk tid).
+		let aboSlutterAt: number | undefined;
+		if (nyUdloeber) {
+			const ms = new Date(`${nyUdloeber}T23:59:59`).getTime();
+			if (!Number.isFinite(ms) || ms <= Date.now()) {
+				opretKundeFejl = 'Udløbsdatoen skal være i fremtiden.';
+				return;
+			}
+			aboSlutterAt = ms;
+		}
 		opretKundeArbejder = true;
 		opretKundeFejl = null;
 		opretKundeOk = null;
@@ -206,7 +220,8 @@
 				body: JSON.stringify({
 					email,
 					firstName: nyFornavn.trim(),
-					lastName: nyEfternavn.trim()
+					lastName: nyEfternavn.trim(),
+					...(aboSlutterAt !== undefined ? { aboSlutterAt } : {})
 				})
 			});
 			const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string };
@@ -214,16 +229,106 @@
 				opretKundeFejl = data.message ?? 'Kunne ikke oprette kunden.';
 				return;
 			}
-			opretKundeOk = `${email} er oprettet som gratis premium app-kunde. Hun kan nu oprette sig på login-siden med denne email.`;
+			const udloebTekst = aboSlutterAt
+				? ` Adgangen udløber automatisk ${new Date(aboSlutterAt).toLocaleDateString('da-DK')}.`
+				: ' Adgangen er løbende (udløber ikke).';
+			opretKundeOk = `${email} er oprettet som gratis premium app-kunde.${udloebTekst} Hun kan nu oprette sig på login-siden med denne email.`;
 			nyEmail = '';
 			nyFornavn = '';
 			nyEfternavn = '';
+			nyUdloeber = '';
 			await indlaes().catch(() => {});
 		} catch (e) {
 			console.error(e);
 			opretKundeFejl = 'Kunne ikke kontakte serveren. Prøv igen.';
 		} finally {
 			opretKundeArbejder = false;
+		}
+	}
+
+	// ── Ret udløb (aboSlutterAt) for en enkelt abonnent ──
+	let retUdloebEmail = $state<string | null>(null);
+	let retUdloebDato = $state(''); // yyyy-mm-dd
+	let retUdloebArbejder = $state(false);
+	let retUdloebFejl = $state<string | null>(null);
+
+	// Den udløbsdato den nye model faktisk håndhæver (aboSlutterAt), fra
+	// allowedEmails med userDoc som fallback. null = løbende (udløber ikke).
+	function aktuelUdloeb(r: RowData): number | null {
+		return r.allowed.aboSlutterAt ?? r.userDoc?.aboSlutterAt ?? null;
+	}
+
+	function msTilDatoInput(ms?: number | null): string {
+		if (!ms) return '';
+		const d = new Date(ms);
+		const p = (n: number) => String(n).padStart(2, '0');
+		return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+	}
+
+	function startRetUdloeb(r: RowData) {
+		retUdloebEmail = r.allowed.email;
+		retUdloebDato = msTilDatoInput(aktuelUdloeb(r));
+		retUdloebFejl = null;
+	}
+
+	function annullerRetUdloeb() {
+		if (retUdloebArbejder) return;
+		retUdloebEmail = null;
+		retUdloebDato = '';
+		retUdloebFejl = null;
+	}
+
+	async function gemUdloeb(email: string, fjern: boolean) {
+		const u = user;
+		if (!u || retUdloebArbejder) return;
+		let aboSlutterAt: number | null;
+		if (fjern) {
+			aboSlutterAt = null;
+		} else {
+			if (!retUdloebDato) {
+				retUdloebFejl = 'Vælg en dato (eller tryk "Fjern udløb").';
+				return;
+			}
+			const ms = new Date(`${retUdloebDato}T23:59:59`).getTime();
+			if (!Number.isFinite(ms) || ms <= Date.now()) {
+				retUdloebFejl = 'Datoen skal være i fremtiden.';
+				return;
+			}
+			aboSlutterAt = ms;
+		}
+		retUdloebArbejder = true;
+		retUdloebFejl = null;
+		try {
+			const idToken = await u.getIdToken(true);
+			const res = await fetch('/api/admin/ret-abo-udloeb', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+				body: JSON.stringify({ email, aboSlutterAt })
+			});
+			const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string };
+			if (!res.ok || data.ok === false) {
+				retUdloebFejl = data.message ?? 'Kunne ikke gemme. Prøv igen.';
+				return;
+			}
+			// Opdater lokal række så visningen matcher med det samme.
+			rows = rows.map((r) =>
+				r.allowed.email === email
+					? {
+							...r,
+							allowed: { ...r.allowed, aboSlutterAt: aboSlutterAt ?? undefined },
+							userDoc: r.userDoc
+								? ({ ...r.userDoc, aboSlutterAt: aboSlutterAt ?? undefined } as UserDoc)
+								: r.userDoc
+						}
+					: r
+			);
+			retUdloebEmail = null;
+			retUdloebDato = '';
+		} catch (e) {
+			console.error(e);
+			retUdloebFejl = 'Kunne ikke kontakte serveren. Prøv igen.';
+		} finally {
+			retUdloebArbejder = false;
 		}
 	}
 
@@ -405,7 +510,9 @@
 								</div>
 								<div class="detalje">
 									<div class="detalje-lbl">Udløber</div>
-									<div class="detalje-val">{visDato(a.expiresAt ?? u?.expiresAt)}</div>
+									<div class="detalje-val">
+										{aktuelUdloeb(r) ? visDato(aktuelUdloeb(r)) : 'Løbende (udløber ikke)'}
+									</div>
 								</div>
 								<div class="detalje">
 									<div class="detalje-lbl">Bibliotek-bonus indtil</div>
@@ -424,8 +531,55 @@
 									</div>
 								{/if}
 							</div>
-							{#if r.uid}
-								<div class="detalje-handlinger">
+							<div class="detalje-handlinger">
+								{#if retUdloebEmail === a.email}
+									<div class="ret-udloeb">
+										<label class="opret-felt">
+											<span>Ny udløbsdato</span>
+											<input type="date" bind:value={retUdloebDato} disabled={retUdloebArbejder} />
+										</label>
+										{#if a.activeSubscription && a.simpleroCustomerId}
+											<p class="ret-udloeb-advarsel">
+												⚠️ Betalende Simplero-kunde — en manuel dato kan blive overskrevet
+												igen ved næste fornyelse.
+											</p>
+										{/if}
+										{#if retUdloebFejl}
+											<div class="modal-fejl">{retUdloebFejl}</div>
+										{/if}
+										<div class="ret-udloeb-knapper">
+											<button
+												class="modal-knap primary"
+												type="button"
+												disabled={retUdloebArbejder}
+												onclick={() => gemUdloeb(a.email, false)}
+											>
+												{retUdloebArbejder ? 'Gemmer…' : 'Gem dato'}
+											</button>
+											<button
+												class="modal-knap"
+												type="button"
+												disabled={retUdloebArbejder}
+												onclick={() => gemUdloeb(a.email, true)}
+											>
+												Fjern udløb (løbende)
+											</button>
+											<button
+												class="modal-knap ghost"
+												type="button"
+												disabled={retUdloebArbejder}
+												onclick={annullerRetUdloeb}
+											>
+												Annullér
+											</button>
+										</div>
+									</div>
+								{:else}
+									<button class="ny-kode-knap" type="button" onclick={() => startRetUdloeb(r)}>
+										📅 Ret udløb
+									</button>
+								{/if}
+								{#if r.uid}
 									<button
 										class="ny-kode-knap"
 										type="button"
@@ -433,8 +587,8 @@
 									>
 										🔑 Sæt ny midlertidig adgangskode
 									</button>
-								</div>
-							{/if}
+								{/if}
+							</div>
 						</div>
 					{/if}
 				{/each}
@@ -577,7 +731,13 @@
 						<input type="text" bind:value={nyEfternavn} disabled={opretKundeArbejder} />
 					</label>
 				</div>
+				<label class="opret-felt">
+					<span>Udløber (valgfrit)</span>
+					<input type="date" bind:value={nyUdloeber} disabled={opretKundeArbejder} />
+				</label>
 				<p class="modal-tekst muted">
+					Vælg en dato for tidsbegrænset gratis adgang (fx 3 måneder frem) — adgangen
+					udløber automatisk sidst på dagen. Lad feltet stå tomt for løbende adgang.
 					Kunden opretter selv sin adgangskode på login-siden med denne email.
 				</p>
 			{/if}
@@ -831,7 +991,28 @@
 	.detalje-handlinger {
 		display: flex;
 		justify-content: flex-end;
+		flex-wrap: wrap;
+		gap: 8px;
 		margin-top: 12px;
+	}
+
+	.ret-udloeb {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.ret-udloeb-knapper {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.ret-udloeb-advarsel {
+		margin: 0;
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--terra);
 	}
 
 	.ny-kode-knap {

@@ -51,7 +51,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	const adminEmail = await verificerAdminToken(auth.slice(7));
 	if (!adminEmail) throw error(403, 'Ikke autoriseret som admin');
 
-	let body: { email?: string; firstName?: string; lastName?: string };
+	let body: { email?: string; firstName?: string; lastName?: string; aboSlutterAt?: number };
 	try {
 		body = await request.json();
 	} catch {
@@ -64,6 +64,15 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 	const firstName = body.firstName?.trim();
 	const lastName = body.lastName?.trim();
+
+	// Valgfri udløbsdato (ms). Er den sat, får kunden TIDSBEGRÆNSET gratis adgang
+	// der udløber automatisk; er den udeladt, er kontoen løbende (comp for altid).
+	const aboSlutterAt = body.aboSlutterAt;
+	if (aboSlutterAt !== undefined) {
+		if (typeof aboSlutterAt !== 'number' || !Number.isFinite(aboSlutterAt) || aboSlutterAt <= Date.now()) {
+			throw error(400, 'Ugyldig udløbsdato — skal være et tidspunkt i fremtiden.');
+		}
+	}
 
 	// Findes emailen allerede som whitelist (abo eller forløb)? Så opretter vi
 	// ikke noget — admin skal gøres opmærksom for ikke at overskrive en kunde.
@@ -83,6 +92,9 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	// Premium app-abo-felter — samme som et premiumabo-køb ville sætte, men uden
 	// Simplero-abonnement (ingen activeSubscription-fornyelse/fakturering).
+	// aboProdukt/aboAccessLevel sætter abo-identiteten så den dato-styrede
+	// resolver kan håndhæve en evt. aboSlutterAt (og bevare app-adgang efter et
+	// forløb). Uden aboSlutterAt = løbende adgang; med = automatisk udløb.
 	await opdaterBrugerEllerWhitelist(email, {
 		...(firstName ? { firstName } : {}),
 		...(lastName ? { lastName } : {}),
@@ -90,6 +102,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		accessSource: 'abonnement',
 		activeProduct: 'premiumabo',
 		activeSubscription: true,
+		aboProdukt: 'premiumabo',
+		aboAccessLevel: 'premium',
+		...(aboSlutterAt !== undefined ? { aboSlutterAt } : {}),
 		updatedAt: Date.now(),
 		oprettetManueltAf: adminEmail
 	});
