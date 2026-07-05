@@ -301,21 +301,6 @@
 	{:else if erLaast}
 		<div class="status-besked">🔒 Denne dag er endnu ikke låst op.</div>
 	{:else if prog}
-		{#if prog.isMrsCheckin || prog.isCheckin || prog.isBaseline}
-			<a class="mrs-notice" href="/app/moduler/symptomcheck">
-				<div class="mrs-notice-tekst">
-					<div class="mrs-notice-titel">
-						{prog.isBaseline ? 'Tid til din baseline-symptomtjek' : 'Tid til symptomtjek'}
-					</div>
-					<div class="mrs-notice-sub">
-						{prog.isBaseline
-							? 'Mærk efter hvordan du har det lige nu — det er din baseline. Du sammenligner med tallene gennem hele forløbet.'
-							: 'Mærk efter hvordan du har det. Vi sammenligner med din baseline så du kan se din udvikling.'}
-					</div>
-				</div>
-				<Icon name="chevron-r" size={14} color="var(--terra)" />
-			</a>
-		{/if}
 		{#if !prog.isBaseline}
 			<section class="card">
 				<div class="section-label">Refleksion</div>
@@ -530,35 +515,6 @@
 		border-radius: 14px;
 		padding: 16px;
 		margin-bottom: 14px;
-	}
-
-	.mrs-notice {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		padding: 14px 16px;
-		background: var(--terra2);
-		border: 1px solid var(--terra);
-		border-radius: 14px;
-		text-decoration: none;
-		margin-bottom: 14px;
-	}
-
-	.mrs-notice-tekst {
-		flex: 1;
-	}
-
-	.mrs-notice-titel {
-		font-size: calc(14px * var(--fs-scale, 1));
-		font-weight: 600;
-		color: var(--text);
-		margin-bottom: 2px;
-	}
-
-	.mrs-notice-sub {
-		font-size: calc(12px * var(--fs-scale, 1));
-		color: var(--text2);
-		line-height: 1.4;
 	}
 
 	.section-label {

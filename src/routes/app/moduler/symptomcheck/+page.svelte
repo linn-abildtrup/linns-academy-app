@@ -687,13 +687,6 @@
 		<button type="button" class="primary-knap klar" onclick={tilbageTilForside}>
 			Tilbage til oversigten
 		</button>
-		<button
-			type="button"
-			class="annuller-knap"
-			onclick={() => startNyUdfyldelse()}
-		>
-			Udfyld igen
-		</button>
 	{/if}
 </div>
 
