@@ -17,6 +17,7 @@ import type { Timestamp } from 'firebase/firestore';
 
 import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type ForlobProduct } from '../types';
 import { BONUS_PERIODE_DAGE } from '../utils/userAdgang';
+import type { MaaltidsFokusPeriode } from './maaltidsFokus';
 
 const MS_PER_DAG = 24 * 60 * 60 * 1000;
 
@@ -82,6 +83,11 @@ export interface Forlob {
 	// ved oprettelse. Når undefined falder puljen tilbage på den prefix-baserede
 	// default (Kropsro 21 / Kickstart 14), så de er uændrede.
 	nulDagePulje?: number;
+	// Måltids-fokus pr forløb: perioder (forløbs-dage) hvor kunden KUN må se/logge
+	// bestemte måltidstyper i mad-modulet (fx dag 0-6 = kun morgenmad). Styres i
+	// admin under "Funktioner og adgang". Tom/undefined = ingen begrænsning.
+	// Håndhæves klient-side (bid B). Se maaltidsFokus.ts for logikken.
+	maaltidsFokus?: MaaltidsFokusPeriode[];
 }
 
 /**
