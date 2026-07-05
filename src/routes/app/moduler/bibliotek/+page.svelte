@@ -12,7 +12,7 @@
 	} from '$lib/content/bibliotek';
 	import type { ForlobDag, LektionItem } from '$lib/content/forlob';
 	import { getCurrentDay, lektionSynligNu, toIsoLokal } from '$lib/content/forlob';
-	import { forlobSlutMs } from '$lib/content/forlobAdgang';
+	import { forlobSlutMs, dageSidenStart } from '$lib/content/forlobAdgang';
 	import {
 		formatDanskDato,
 		GUIDE_TYPE_LABELS,
@@ -30,7 +30,7 @@
 		hentGuideKategorier,
 		hentGuideItems
 	} from '$lib/firestore/bibliotek';
-	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
+	import { hentForlob, hentForlobsdage, hentAktivtForlob } from '$lib/firestore/forlob';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
@@ -48,7 +48,9 @@
 	} from '$lib/firestore/mikrotraening';
 	import { getVideoUrl } from '$lib/utils/storage';
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
-	import { KATEGORI_LABELS, type Opskrift } from '$lib/content/opskrifter';
+	import { KATEGORI_LABELS, type Opskrift, type OpskriftKategori } from '$lib/content/opskrifter';
+	import { tilladteMaaltiderForDag } from '$lib/content/maaltidsFokus';
+	import type { Maaltidstype } from '$lib/content/kost';
 	import { goto } from '$app/navigation';
 
 	/**
@@ -198,10 +200,17 @@
 	// detaljesiden så bibliotek-flowet er rent læse-orienteret.
 	let opskrifter = $state<Opskrift[]>([]);
 	let opskriftSoegning = $state('');
+	// Måltids-fokus: hvis kundens aktive forløb har en fokus-periode i dag,
+	// begrænses opskrift-listen til de tilladte kategorier (fx kun morgenmad).
+	// null = ingen begrænsning (normal adfærd). Sat i onMount.
+	let tilladteKategorier = $state<OpskriftKategori[] | null>(null);
 	const filtreredeOpskrifter = $derived.by(() => {
+		let liste = opskrifter;
+		const tk = tilladteKategorier;
+		if (tk) liste = liste.filter((o) => o.kategorier.some((k) => tk.includes(k)));
 		const q = opskriftSoegning.trim().toLowerCase();
-		if (!q) return opskrifter;
-		return opskrifter.filter(
+		if (!q) return liste;
+		return liste.filter(
 			(o) =>
 				o.titel.toLowerCase().includes(q) ||
 				o.beskrivelse.toLowerCase().includes(q) ||
@@ -464,6 +473,24 @@
 				const slutMs = forlobSlutMs(startMs, f.antalDage);
 				return idagMs < slutMs;
 			});
+
+			// Måltids-fokus: er kunden på et AKTIVT forløb (start <= nu < slut) med
+			// en fokus-periode i dag, begrænses opskrift-listen til de tilladte
+			// kategorier. Fejler dette, forbliver tilladteKategorier null (normal).
+			try {
+				const aktivtNu = await hentAktivtForlob(forlobIds);
+				if (aktivtNu?.maaltidsFokus && aktivtNu.maaltidsFokus.length > 0) {
+					const dag = dageSidenStart(aktivtNu.startDato.toDate());
+					const tilladte = tilladteMaaltiderForDag(aktivtNu.maaltidsFokus, dag);
+					if (tilladte) {
+						tilladteKategorier = (
+							['morgenmad', 'frokost', 'aftensmad'] as OpskriftKategori[]
+						).filter((k) => tilladte.includes(k as Maaltidstype));
+					}
+				}
+			} catch (e) {
+				console.warn('Kunne ikke beregne måltids-fokus i bibliotek:', e);
+			}
 
 			// FAQ + Links hentes KUN for aktive forløb
 			const aktiveResultater = await Promise.all(
@@ -915,6 +942,12 @@
 		{:else if opskrifter.length === 0}
 			<div class="status-besked">Der er ingen opskrifter endnu.</div>
 		{:else}
+			{#if tilladteKategorier}
+				<div class="fokus-note">
+					🥣 I denne periode af dit forløb vises kun opskrifter til:
+					<strong>{tilladteKategorier.map((k) => KATEGORI_LABELS[k]).join(', ')}</strong>.
+				</div>
+			{/if}
 			<div class="opskrift-soegning-wrap">
 				<Icon name="search" size={14} color="var(--text3)" />
 				<input
@@ -1985,6 +2018,17 @@
 		color: var(--text2);
 		font-size: calc(13px * var(--fs-scale, 1));
 		line-height: 1.5;
+	}
+
+	.fokus-note {
+		padding: 10px 12px;
+		margin-bottom: 12px;
+		background: var(--sand, #f6efe6);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.4;
 	}
 
 	.opskrift-soegning-wrap {

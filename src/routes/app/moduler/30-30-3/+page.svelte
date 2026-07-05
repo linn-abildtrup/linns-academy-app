@@ -65,6 +65,9 @@
 		gemMinCustomFodevare,
 		sletMinCustomFodevare
 	} from '$lib/firestore/kost';
+	import { hentAktivtForlob } from '$lib/firestore/forlob';
+	import { dageSidenStart } from '$lib/content/forlobAdgang';
+	import { tilladteMaaltiderForDag } from '$lib/content/maaltidsFokus';
 
 	const getUser = getContext<() => User | null>('user');
 	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
@@ -390,9 +393,35 @@
 		return sorterFodevarer(base, 'alpha');
 	});
 
-	const filtreredeOpskrifter = $derived(
-		filtrerOpskrifter(opskrifter, opskriftSoeg, valgteOpskriftKategorier, valgteDietTags)
+	// ── Måltids-fokus ──
+	// Sat i onMount ud fra kundens AKTIVE forløb + dagens fokus-periode.
+	// null = ingen begrænsning (alt opfører sig præcis som normalt). En liste =
+	// KUN disse måltidstyper må ses/logges i hele mad-modulet.
+	let tilladteMaaltider = $state<Maaltidstype[] | null>(null);
+	const fokusAktiv = $derived(tilladteMaaltider !== null);
+	const synligeMaaltidstyper = $derived<Maaltidstype[]>(tilladteMaaltider ?? MAALTIDSTYPER);
+	// De opskrift-kategorier der svarer til de tilladte måltider (snack har ingen
+	// opskrift-kategori). null = ingen kategori-begrænsning.
+	const tilladteKategorier = $derived<OpskriftKategori[] | null>(
+		tilladteMaaltider
+			? (['morgenmad', 'frokost', 'aftensmad'] as OpskriftKategori[]).filter((k) =>
+					tilladteMaaltider!.includes(k as Maaltidstype)
+				)
+			: null
 	);
+
+	const filtreredeOpskrifter = $derived.by(() => {
+		let liste = filtrerOpskrifter(opskrifter, opskriftSoeg, valgteOpskriftKategorier, valgteDietTags);
+		const tk = tilladteKategorier;
+		if (tk) liste = liste.filter((o) => o.kategorier.some((k) => tk.includes(k)));
+		return liste;
+	});
+
+	// Madplan er ikke tilgængelig under en måltids-fokus-periode. Send kunden
+	// tilbage til opskrifter hvis hun lander på madplan-fanen (fx via URL).
+	$effect(() => {
+		if (fokusAktiv && aktivTab === 'madplan') skiftTab('opskrifter');
+	});
 
 	const synligeOpskrifter = $derived(filtreredeOpskrifter.slice(0, synligeOpskriftAntal));
 
@@ -680,7 +709,25 @@
 		void indlaesFavoritter();
 		const u2 = user;
 		if (u2) void indlaesSenesteFodevarer(u2.uid);
+
+		// Måltids-fokus: er kunden på et aktivt forløb med en fokus-periode i dag,
+		// begrænses mad-modulet til de tilladte måltider. Fejler dette, falder vi
+		// tilbage på ingen begrænsning (tilladteMaaltider forbliver null).
+		void beregnMaaltidsFokus();
 	});
+
+	async function beregnMaaltidsFokus() {
+		try {
+			const forlobIds = userDoc?.forlobIds ?? [];
+			if (forlobIds.length === 0) return;
+			const aktivt = await hentAktivtForlob(forlobIds);
+			if (!aktivt?.maaltidsFokus || aktivt.maaltidsFokus.length === 0) return;
+			const dag = dageSidenStart(aktivt.startDato.toDate());
+			tilladteMaaltider = tilladteMaaltiderForDag(aktivt.maaltidsFokus, dag);
+		} catch (e) {
+			console.warn('Kunne ikke beregne måltids-fokus:', e);
+		}
+	}
 
 	async function indlaesFavoritter() {
 		const u = user;
@@ -1070,6 +1117,8 @@
 		kopierFra = m;
 		kopierDato = m.dato;
 		kopierType = m.type;
+		// Under en fokus-periode kan man kun kopiere til et tilladt måltid.
+		if (tilladteMaaltider && !tilladteMaaltider.includes(kopierType)) kopierType = tilladteMaaltider[0];
 		kopierBesked = null;
 	}
 
@@ -1165,6 +1214,9 @@
 			gemSomFavorit = false;
 		} else {
 			gemType = gaetMaaltidstype();
+			// Under en måltids-fokus-periode: fald tilbage til en tilladt type hvis
+			// tidspunkts-gættet peger på et skjult måltid.
+			if (tilladteMaaltider && !tilladteMaaltider.includes(gemType)) gemType = tilladteMaaltider[0];
 			// Pre-fill navn:
 			// 1) Favorit-genbrug: brug favorittens navn (sat via pendingMaaltidsNavn).
 			// 2) 1 ingrediens: brug f0devarens navn, saa kunden ser hvad det er i
@@ -1623,7 +1675,7 @@
 					Mine
 				</button>
 			{/if}
-			{#if kanBrugeMadplan}
+			{#if kanBrugeMadplan && !fokusAktiv}
 				<button
 					class="tab-knap"
 					class:aktiv={aktivTab === 'madplan'}
@@ -1645,6 +1697,14 @@
 				Dagbog
 			</button>
 		</div>
+
+		{#if fokusAktiv && tilladteMaaltider}
+			<div class="fokus-banner">
+				🥣 Denne periode har fokus på
+				<strong>{tilladteMaaltider.map((m) => MAALTIDSTYPE_LABELS[m]).join(', ')}</strong>. De
+				øvrige måltider åbner senere i forløbet.
+			</div>
+		{/if}
 
 		{#if aktivTab === 'maaltid'}
 			{#if kladdeFejlBesked}
@@ -1896,18 +1956,20 @@
 				bind:value={opskriftSoeg}
 			/>
 
-			<div class="chips">
-				{#each OPSKRIFT_KATEGORIER as k (k)}
-					<button
-						type="button"
-						class="chip"
-						class:aktiv={valgteOpskriftKategorier.includes(k)}
-						onclick={() => toggleOpskriftKategori(k)}
-					>
-						{OPSKRIFT_LABELS[k]}
-					</button>
-				{/each}
-			</div>
+			{#if !fokusAktiv}
+				<div class="chips">
+					{#each OPSKRIFT_KATEGORIER as k (k)}
+						<button
+							type="button"
+							class="chip"
+							class:aktiv={valgteOpskriftKategorier.includes(k)}
+							onclick={() => toggleOpskriftKategori(k)}
+						>
+							{OPSKRIFT_LABELS[k]}
+						</button>
+					{/each}
+				</div>
+			{/if}
 
 			<div class="chips diet-chips">
 				{#each ALLE_DIET_TAGS as t (t)}
@@ -2289,7 +2351,7 @@
 				<div class="felt">
 					<div class="felt-label">Måltidstype</div>
 					<select class="felt-input" bind:value={kopierType} disabled={kopierer}>
-						{#each MAALTIDSTYPER as type (type)}
+						{#each synligeMaaltidstyper as type (type)}
 							<option value={type}>{MAALTIDSTYPE_LABELS[type]}</option>
 						{/each}
 					</select>
@@ -2419,7 +2481,7 @@
 					<div class="felt">
 						<span class="felt-label">Måltidstype</span>
 						<div class="type-rad">
-							{#each MAALTIDSTYPER as t (t)}
+							{#each synligeMaaltidstyper as t (t)}
 								<button
 									type="button"
 									class="type-chip"
@@ -4202,6 +4264,22 @@
 		border-radius: 10px;
 		font-size: calc(12.5px * var(--fs-scale, 1));
 		color: #8a4a3e;
+	}
+
+	.fokus-banner {
+		padding: 11px 14px;
+		margin-bottom: 14px;
+		background: var(--sand, #f6efe6);
+		border: 1px solid var(--bg2);
+		border-radius: 12px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		color: var(--text2);
+		line-height: 1.4;
+	}
+
+	.fokus-banner strong {
+		color: var(--text);
 	}
 
 	.kladde-fejl span {
