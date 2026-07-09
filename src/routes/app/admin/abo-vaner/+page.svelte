@@ -110,11 +110,11 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Admin</span>
 		</a>
-		<div class="eyebrow">Admin · Abo-vaner</div>
-		<h1>Vaneliste og bonus</h1>
+		<div class="eyebrow">Admin · Abo små skridt</div>
+		<h1>Små skridt-liste og bonus</h1>
 		<p class="page-sub">
 			Forslag som basis- og premium-abonnenter kan vælge fra. Brugere kan også
-			skrive deres egne vaner. Bonus-puljen roteres deterministisk pr dag.
+			skrive deres egne små skridt. Bonus-puljen roteres deterministisk pr dag.
 		</p>
 	</header>
 
@@ -127,14 +127,14 @@
 				class:aktiv={aktivTab === 'vaner-basis'}
 				onclick={() => (aktivTab = 'vaner-basis')}
 			>
-				Vaner basis
+				Små skridt basis
 			</button>
 			<button
 				class="tab"
 				class:aktiv={aktivTab === 'vaner-premium'}
 				onclick={() => (aktivTab = 'vaner-premium')}
 			>
-				Vaner premium
+				Små skridt premium
 			</button>
 			<button
 				class="tab"
@@ -168,7 +168,7 @@
 						<input
 							type="text"
 							class="input-label"
-							placeholder="Vanens tekst (fx 'Protein til morgenmad')"
+							placeholder="Tekst for det lille skridt (fx 'Protein til morgenmad')"
 							bind:value={vane.label}
 						/>
 						<input

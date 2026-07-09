@@ -233,7 +233,7 @@
 		// stadig virker.
 		const adminForlobId = userDoc?.adminKlientForlobId ?? null;
 		if (!up && !adminForlobId) {
-			fejl = 'Du har ikke adgang til vanetracker endnu.';
+			fejl = 'Du har ikke adgang til Små skridt endnu.';
 			return;
 		}
 		if (up) {
@@ -257,7 +257,7 @@
 
 		const programDage = await hentVaneprogramForForlob(forlobId);
 		if (programDage.length === 0) {
-			fejl = 'Vaneprogrammet er ikke sat op for dette forløb endnu.';
+			fejl = 'Små skridt er ikke sat op for dette forløb endnu.';
 			return;
 		}
 		dage = programDage;
@@ -293,7 +293,7 @@
 		if (!u || gemmerEgenVane) return;
 		const label = nyEgenVaneLabel.trim();
 		if (!label) {
-			egenVaneFejl = 'Skriv en vane f0rst.';
+			egenVaneFejl = 'Skriv et lille skridt først.';
 			return;
 		}
 		if (label.length > 60) {
@@ -312,7 +312,7 @@
 			}
 		} catch (e) {
 			console.error(e);
-			egenVaneFejl = 'Kunne ikke gemme vanen.';
+			egenVaneFejl = 'Kunne ikke gemme dit lille skridt.';
 		} finally {
 			gemmerEgenVane = false;
 		}
@@ -399,7 +399,7 @@
 			<span>Moduler</span>
 		</a>
 		<div class="eyebrow">{gren === 'forlob' ? 'Forløb' : 'Daglig'}</div>
-		<h1>Vaner</h1>
+		<h1>Små skridt</h1>
 		<p class="page-sub">
 			{#if gren === 'forlob' && forlob}
 				Daglige vaner i {forlob.antalDage} dage. Tjek ind når du har lavet dem.
@@ -493,11 +493,11 @@
 
 		<section class="egne-vaner-card">
 			<div class="egne-vaner-header">
-				<div class="section-label">Mine egne vaner</div>
+				<div class="section-label">Mine egne små skridt</div>
 				<div class="egne-vaner-tael">{egneVaner.length} / {MAX_EGNE_VANER}</div>
 			</div>
 			<p class="egne-vaner-hint">
-				Tilføj 1-{MAX_EGNE_VANER} egne vaner du selv vil arbejde med oveni Linns ugentlige vaner. Du kan
+				Tilføj 1-{MAX_EGNE_VANER} egne små skridt du selv vil arbejde med oveni Linns ugentlige små skridt. Du kan
 				fjerne eller tilføje nye når som helst.
 			</p>
 			{#if egneVaner.length > 0}
@@ -509,7 +509,7 @@
 								type="button"
 								class="egne-vaner-slet"
 								onclick={() => sletEgenVane(v.id)}
-								aria-label="Slet vane"
+								aria-label="Slet lille skridt"
 							>
 								Fjern
 							</button>
@@ -549,13 +549,13 @@
 	{:else if gren === 'abo'}
 		{#if !aboOpsaetning}
 			<div class="onboarding-card">
-				<div class="onboarding-titel">Velkommen til vanetrackeren</div>
+				<div class="onboarding-titel">Velkommen til Små skridt</div>
 				<p class="onboarding-tekst">
-					Vælg op til 3 vaner du vil arbejde med dagligt. Dine vaner er låst i 21 dage så du har tid
-					til at danne dem som vaner.
+					Vælg op til 3 små skridt du vil arbejde med dagligt. Dine små skridt er låst i 21 dage så du
+					har tid til at få dem ind i hverdagen.
 				</p>
 				<a class="start-knap" href="/app/moduler/vaner/opsaetning">
-					Vælg dine vaner
+					Vælg dine små skridt
 					<Icon name="arrow" size={14} color="#fff" />
 				</a>
 			</div>
@@ -590,7 +590,7 @@
 					<div class="farvekode-liste">
 						<div class="farvekode-rad">
 							<span class="farvekode-prik flower-excellent"></span>
-							<span class="farvekode-tekst">Alle vaner ramt</span>
+							<span class="farvekode-tekst">Alle små skridt ramt</span>
 						</div>
 						<div class="farvekode-rad">
 							<span class="farvekode-prik flower-good"></span>
@@ -647,7 +647,7 @@
 			{#if samletProcent.antalDage > 0}
 				<section class="card procent-card">
 					<div class="card-head">
-						<div class="section-label">Vaner opnået</div>
+						<div class="section-label">Små skridt opnået</div>
 						<div class="card-tael">
 							{samletProcent.antalDage}
 							{samletProcent.antalDage === 1 ? 'dag' : 'dage'} indtastet
@@ -696,7 +696,7 @@
 			{/if}
 
 			<section class="card">
-				<div class="section-label">Dine vaner</div>
+				<div class="section-label">Dine små skridt</div>
 				<ul class="vane-liste">
 					{#each aboOpsaetning.valgteVaner as v (v.id)}
 						<li class="vane-item">
@@ -716,7 +716,7 @@
 					{/each}
 				</ul>
 				<a class="rediger-link" href="/app/moduler/vaner/opsaetning">
-					Rediger vaner
+					Rediger små skridt
 					<Icon name="chevron-r" size={12} color="var(--text3)" />
 				</a>
 			</section>

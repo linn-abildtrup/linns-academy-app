@@ -40,7 +40,7 @@
 	onMount(async () => {
 		const u = user;
 		if (!u || !erModulbruger(userDoc)) {
-			fejl = 'Du har ikke adgang til abo-vaner.';
+			fejl = 'Du har ikke adgang til Små skridt.';
 			loading = false;
 			return;
 		}
@@ -121,12 +121,12 @@
 	<header class="page-header">
 		<a class="back" href="/app/moduler/vaner">
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>Vaner</span>
+			<span>Små skridt</span>
 		</a>
-		<div class="eyebrow">Vaner · Opsætning</div>
-		<h1>Vælg dine vaner</h1>
+		<div class="eyebrow">Små skridt · Opsætning</div>
+		<h1>Vælg dine små skridt</h1>
 		<p class="page-sub">
-			Vælg op til 3 vaner du vil arbejde med dagligt. Du kan vælge fra forslagene eller skrive dine
+			Vælg op til 3 små skridt du vil arbejde med dagligt. Du kan vælge fra forslagene eller skrive dine
 			egne — eller du kan gemme uden at vælge nogen og komme tilbage senere.
 		</p>
 	</header>
@@ -175,13 +175,13 @@
 		</section>
 
 		<section class="card">
-			<div class="kort-titel">Egne vaner</div>
+			<div class="kort-titel">Egne små skridt</div>
 			{#each egneVaner as e (e.tempId)}
 				<div class="rad">
 					<input
 						type="text"
 						class="input-egen"
-						placeholder="Skriv din egen vane"
+						placeholder="Skriv dit eget lille skridt"
 						bind:value={e.label}
 					/>
 					<button class="slet-btn" aria-label="Fjern" onclick={() => fjernEgenVane(e.tempId)}>
@@ -200,7 +200,7 @@
 		{/if}
 
 		<button class="gem-btn" onclick={gem} disabled={gemmer}>
-			{gemmer ? 'Gemmer...' : opsaetning ? 'Opdater vaner' : 'Gem vaner'}
+			{gemmer ? 'Gemmer...' : opsaetning ? 'Opdater små skridt' : 'Gem små skridt'}
 		</button>
 	{/if}
 </div>

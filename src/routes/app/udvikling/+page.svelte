@@ -683,7 +683,7 @@
 
 		<!-- VANER -->
 		{#if maxVaner > 0}
-			<div class="sektion-titel">Vaner</div>
+			<div class="sektion-titel">Små skridt</div>
 
 			{#if aktivTab === 'syv'}
 				<section class="kort">
@@ -736,7 +736,7 @@
 				</section>
 			{:else}
 				<section class="kort">
-					<div class="kort-titel">Vaner mod målet ({maxVaner} pr dag)</div>
+					<div class="kort-titel">Små skridt mod målet ({maxVaner} pr dag)</div>
 					<div class="mal-grid">
 						<div class="mal-kort">
 							<div class="mal-tal">{vanerRapport.aktuelStreak}</div>
@@ -751,7 +751,7 @@
 								{vanerRapport.dageNåetMaal}
 								<span class="mal-tal-sub">/ {vanerRapport.dageMedData}</span>
 							</div>
-							<div class="mal-lbl">dage med alle vaner ja</div>
+							<div class="mal-lbl">dage med alle små skridt ja</div>
 						</div>
 					</div>
 				</section>

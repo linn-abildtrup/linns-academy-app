@@ -58,7 +58,7 @@ Klik på et modul-kort eller en knap for at åbne den. Brug 'Tilbage'-pilen øve
 		indhold: `Forsiden viser:
 - En dato-strip øverst med dage fra du oprettede kontoen til 3 dage frem. Klik på en dag for at åbne den dags log. Dage du ikke har indtastet noget på er fadet. Fremtidige dage er fadet og kan ikke åbnes.
 - 'Dagens lektion' (hvis Linn har lagt en lektion op for den valgte dato) — klik for at åbne.
-- 'Dagens små skridt' med tre kort: Mad, Mikrotræning og Vaner. Klik på et kort for at logge dagens indhold.
+- 'Dagens små skridt' med tre kort: Mad, Mikrotræning og Små skridt. Klik på et kort for at logge dagens indhold.
 - 'Personlig coaching' med knap til at booke 1:1-samtale med Linn.
 - 'App-hjælp' med spørgsmål til hvordan appen virker.`
 	},
@@ -69,7 +69,7 @@ Klik på et modul-kort eller en knap for at åbne den. Brug 'Tilbage'-pilen øve
 - Forløbs-badge øverst med dit aktuelle forløbs-navn og dagnummer.
 - En strip med alle dage i forløbet (typisk dag 0-21). Du kan klikke tilbage på tidligere dage. Dag 0 er baseline-check-in.
 - 'Dagens lektion' — den lektion der hører til dagen. Klik for at åbne i lektion-overlay.
-- 'Dagens små skridt' med Mad, Mikrotræning og Vaner-genveje.
+- 'Dagens små skridt' med Mad, Mikrotræning og Små skridt-genveje.
 - 'Personlig coaching' med knap til at booke 1:1.
 - 'App-hjælp' med spørgsmål til hvordan appen virker.`
 	},
@@ -218,43 +218,43 @@ Paa selve opskrift-listen vises et lille stjerne-maerke i hjoernet af hver opskr
 Målet med 30-30 er minimum 30g protein pr måltid og 30g fiber i alt over dagen.`
 	},
 	{
-		titel: 'Vaner — basis tracker',
+		titel: 'Små skridt — basis',
 		visFor: MODULBRUGERE,
-		indhold: `Vaner finder du under Moduler → Vaner. Som basis-bruger kan du vælge 3 vaner du vil arbejde med dagligt.
+		indhold: `Små skridt finder du under Moduler → Små skridt. Som basis-bruger kan du vælge 3 små skridt du vil arbejde med dagligt.
 
-Første gang sætter du dine vaner op under 'Vælg dine vaner'. Bagefter kan du tjekke ind hver dag — knap 'Tjek ind for i dag' på forsiden eller modul-siden.
+Første gang sætter du dine små skridt op under 'Vælg dine små skridt'. Bagefter kan du tjekke ind hver dag — knap 'Tjek ind for i dag' på forsiden eller modul-siden.
 
 På modul-siden ser du:
-- Et 'Seneste dage'-grid med farvekoder for hvor mange vaner du ramte (mørkegrøn = alle, grøn = de fleste, brun = halvdelen, lys-brun = få, sand = næsten ingen).
+- Et 'Seneste dage'-grid med farvekoder for hvor mange små skridt du ramte (mørkegrøn = alle, grøn = de fleste, brun = halvdelen, lys-brun = få, sand = næsten ingen).
 - Et 'Måneds-arkiv' du kan folde ud pr måned for at se historik.
 - Din udvikling i velvære-spørgsmål over tid.
 
-Vaner kan redigeres via 'Rediger vaner' nederst på siden.`
+Små skridt kan redigeres via 'Rediger små skridt' nederst på siden.`
 	},
 	{
-		titel: 'Vaner — premium tracker',
+		titel: 'Små skridt — premium',
 		visFor: PREMIUM,
-		indhold: `Som premium-bruger kan du vælge op til 7 vaner i stedet for 3. Du finder Vaner under Moduler → Vaner.
+		indhold: `Som premium-bruger kan du vælge op til 7 små skridt i stedet for 3. Du finder Små skridt under Moduler → Små skridt.
 
-Du har desuden adgang til udvidet næringsdata og kan se hvordan dine vaner og kost spiller sammen i din udvikling.
+Du har desuden adgang til udvidet næringsdata og kan se hvordan dine små skridt og kost spiller sammen i din udvikling.
 
-Resten af vanetrackeren virker som basis: tjek ind dagligt, se farvekoder for hvor mange vaner du ramte, og scroll i månedsarkivet for historik.`
+Resten af Små skridt virker som basis: tjek ind dagligt, se farvekoder for hvor mange små skridt du ramte, og scroll i månedsarkivet for historik.`
 	},
 	{
-		titel: 'Vaner fra dit forløb (Linn-tildelte) — Kickstart',
+		titel: 'Små skridt fra dit forløb (Linn-tildelte) — Kickstart',
 		visFor: [KICKSTART_PRODUCT_ID],
-		indhold: `Ud over dine selvvalgte vaner kan Linn tildele ekstra vaner til alle deltagere paa dit forløb. Du genkender dem på et lille "Fra forløb"-tag ved siden af navnet.
+		indhold: `Ud over dine selvvalgte små skridt kan Linn tildele ekstra små skridt til alle deltagere paa dit forløb. Du genkender dem på et lille "Fra forløb"-tag ved siden af navnet.
 
-Disse vaner kommer oveni dine egne tre — de tæller IKKE med i din tre-grænse, så du kan stadig vælge tre selv. Du kan ikke fjerne dem (de er låste), men du tjekker ja/delvist/nej på dem hver dag på samme måde som dine egne.`
+Disse små skridt kommer oveni dine egne tre — de tæller IKKE med i din tre-grænse, så du kan stadig vælge tre selv. Du kan ikke fjerne dem (de er låste), men du tjekker ja/delvist/nej på dem hver dag på samme måde som dine egne.`
 	},
 	{
-		titel: 'Vaner fra dit forløb (Linn-tildelte) — Kropsro',
+		titel: 'Små skridt fra dit forløb (Linn-tildelte) — Kropsro',
 		visFor: [KROPSRO_PRODUCT_ID],
-		indhold: `På Kropsro arbejder du med ugentlige vaner som Linn lægger ind. Hver uge (mandag til søndag) får du nye vaner — typisk op til fem.
+		indhold: `På Kropsro arbejder du med ugentlige små skridt som Linn lægger ind. Hver uge (mandag til søndag) får du nye små skridt — typisk op til fem.
 
-Du tjekker ja/delvist/nej på dem hver dag på samme måde som dine egne vaner. Du kan ikke fjerne dem (de er låste fra Linn).
+Du tjekker ja/delvist/nej på dem hver dag på samme måde som dine egne små skridt. Du kan ikke fjerne dem (de er låste fra Linn).
 
-Når en ny uge starter, kommer de nye vaner automatisk frem på forsiden under 'Dagens små skridt' og i Vaner-modulet. Tidligere ugers vaner forsvinder fra dagens visning — men dine tidligere svar bevares i historikken.`
+Når en ny uge starter, kommer de nye små skridt automatisk frem på forsiden under 'Dagens små skridt' og i Små skridt-modulet. Tidligere ugers små skridt forsvinder fra dagens visning — men dine tidligere svar bevares i historikken.`
 	},
 	{
 		titel: 'Mit forløb',
@@ -271,15 +271,15 @@ Når forløbet er gennemført, har du 90 dages bonusperiode hvor du stadig kan s
 	{
 		titel: 'Dagens refleksion på forsiden',
 		visFor: FORLOBSKUNDER,
-		indhold: `Lige over 'Dagens små skridt' på forsiden vises et 'Dagens refleksion'-kort med et refleksionsspørgsmål Linn har skrevet til dagen. Klik 'Skriv dit svar' for at åbne dagen i Vaner-modulet hvor du kan skrive dit eget svar i tekstfeltet under refleksionen.
+		indhold: `Lige over 'Dagens små skridt' på forsiden vises et 'Dagens refleksion'-kort med et refleksionsspørgsmål Linn har skrevet til dagen. Klik 'Skriv dit svar' for at åbne dagen i Små skridt-modulet hvor du kan skrive dit eget svar i tekstfeltet under refleksionen.
 
 Refleksionen vises kun hvis Linn har lagt en op for den dag. Baseline-dagen (dag 0) har ingen refleksion — kun selve baseline-check-in.`
 	},
 	{
-		titel: 'Vaner-oversigt — dagsfarver',
+		titel: 'Små skridt-oversigt — dagsfarver',
 		visFor: FORLOBSKUNDER,
-		indhold: `I Vaner-modulet ser du et grid over alle dage i forløbet. Når du har udfyldt en dags vaner, farves cellen efter hvor godt det gik:
-- Grøn: 75% eller flere af dagens vaner blev til 'ja' (eller halv-score for 'delvist')
+		indhold: `I Små skridt-modulet ser du et grid over alle dage i forløbet. Når du har udfyldt en dags små skridt, farves cellen efter hvor godt det gik:
+- Grøn: 75% eller flere af dagens små skridt blev til 'ja' (eller halv-score for 'delvist')
 - Orange: 50-74% blev til 'ja'
 - Rød: under 50% blev til 'ja'
 - Hvid: dagen er endnu ikke udfyldt (eller fremtidig — så er den låst)
@@ -393,7 +393,7 @@ Hvor ofte (altid om søndagen efter første udfyldelse):
 
 Når det er tid til at udfylde, vises et terra "Tag din symptomcheck"-kort på din forside. Klik for at åbne modulet. Når du har udfyldt, viser kortet i stedet datoen for næste udfyldelse — du kan ikke tage en ny check før den dato, så grafen forbliver retvisende.
 
-Når du åbner en dag i Vaner-modulet der er en check-in-dag (Kickstart: dag 0, 7, 14, 21 — Kropsro: dag 0, 28, 56, 84), vises et "Tid til symptomtjek"-kort øverst i refleksionen med direkte link til modulet. Selve check-in udfyldes KUN i symptomtjek-modulet, ikke i refleksionen.
+Når du åbner en dag i Små skridt-modulet der er en check-in-dag (Kickstart: dag 0, 7, 14, 21 — Kropsro: dag 0, 28, 56, 84), vises et "Tid til symptomtjek"-kort øverst i refleksionen med direkte link til modulet. Selve check-in udfyldes KUN i symptomtjek-modulet, ikke i refleksionen.
 
 I selve checken udfylder du først de 5 sliders (træk fra 1-10), så de 11 MRS-spørgsmål (Ingen / Lidt / En del / Meget / Voldsomt). I alt 16 svar. Resultatet viser:
 - Din MRS total-score (0-44) med fortolkning fra internationalt anerkendt MRS-skala.
@@ -403,7 +403,7 @@ I selve checken udfylder du først de 5 sliders (træk fra 1-10), så de 11 MRS-
 
 Når du har udfyldt 2+ gange, vises en udviklings-graf på forsiden af modulet så du kan se hvordan dine symptomer udvikler sig over tid. Du kan altid klikke på en tidligere udfyldelse for at se den.
 
-Bemærk: Den ugentlige slider-check inde i Vaner-modulet (om søndagen) fortsætter uændret. Symptomcheck er en separat dybere vurdering der inkluderer både sliders OG MRS.`
+Bemærk: Den ugentlige slider-check inde i Små skridt-modulet (om søndagen) fortsætter uændret. Symptomcheck er en separat dybere vurdering der inkluderer både sliders OG MRS.`
 	},
 	{
 		titel: 'Planter til tarmmikrobiom (challenge)',
@@ -538,9 +538,9 @@ function fagligRedirect(activeProduct: ActiveProduct | undefined): string {
 function brugerKontekst(activeProduct: ActiveProduct | undefined): string {
 	switch (activeProduct) {
 		case KICKSTART_PRODUCT_ID:
-			return `KUNDE-KONTEKST: Denne bruger er forløbskunde paa Kickstart (21-dages forløb). Svar ALTID ud fra Kickstart-flowet — daglige vaner, 21-dages mikrotraening, symptomtjek paa dag 0/7/14/21 (udfyldes i Symptomtjek-modulet, ikke i refleksionen), baseline-kommentar paa dag 0 og slut-refleksion paa dag 21. Naevn ALDRIG Kropsro-specifikke features (ugentlige vaner, nul-dage, 84 dage).`;
+			return `KUNDE-KONTEKST: Denne bruger er forløbskunde paa Kickstart (21-dages forløb). Svar ALTID ud fra Kickstart-flowet — daglige små skridt, 21-dages mikrotraening, symptomtjek paa dag 0/7/14/21 (udfyldes i Symptomtjek-modulet, ikke i refleksionen), baseline-kommentar paa dag 0 og slut-refleksion paa dag 21. Naevn ALDRIG Kropsro-specifikke features (ugentlige små skridt, nul-dage, 84 dage).`;
 		case KROPSRO_PRODUCT_ID:
-			return `KUNDE-KONTEKST: Denne bruger er forløbskunde paa Kropsro (84-dages forløb). Svar ALTID ud fra Kropsro-flowet — UGENTLIGE vaner mandag-soendag (op til 5 pr uge), refleksioner hver dag paa forsiden, symptomtjek paa dag 0/28/56/84 (udfyldes i Symptomtjek-modulet, ikke i refleksionen), nul-dage til pauser. Naevn ALDRIG Kickstart-specifikke features (daglige admin-vaner, 21 dage).`;
+			return `KUNDE-KONTEKST: Denne bruger er forløbskunde paa Kropsro (84-dages forløb). Svar ALTID ud fra Kropsro-flowet — UGENTLIGE små skridt mandag-soendag (op til 5 pr uge), refleksioner hver dag paa forsiden, symptomtjek paa dag 0/28/56/84 (udfyldes i Symptomtjek-modulet, ikke i refleksionen), nul-dage til pauser. Naevn ALDRIG Kickstart-specifikke features (daglige admin-tildelte små skridt, 21 dage).`;
 		case 'basisabo':
 			return `KUNDE-KONTEKST: Denne bruger har Basis-abonnement (modulbruger uden forløb). Svar ud fra abonnementsbruger-flowet. Naevn ALDRIG forløbs-features eller premium-features.`;
 		case 'premiumabo':

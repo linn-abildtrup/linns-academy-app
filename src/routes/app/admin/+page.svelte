@@ -100,7 +100,7 @@
 				},
 				{
 					id: 'abo-vaner',
-					navn: 'Abo-vaner',
+					navn: 'Abo små skridt',
 					beskrivelse: 'Vaneliste og bonus-pulje for basis/premium-abonnenter',
 					rute: '/app/admin/abo-vaner',
 					accent: '#7E9BB3',

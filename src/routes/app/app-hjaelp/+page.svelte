@@ -28,7 +28,7 @@
 		const liste = [
 			'Hvor finder jeg vanetrackeren?',
 			'Hvordan logger jeg et måltid?',
-			'Kan jeg ændre mine vaner?'
+			'Kan jeg ændre mine små skridt?'
 		];
 		if (erPremium) {
 			liste.push('Hvad kan Linn AI hjælpe mig med?');

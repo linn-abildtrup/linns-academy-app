@@ -69,8 +69,8 @@ const MODULER_BASE: ModulBase[] = [
 	},
 	{
 		id: 'vaner',
-		navn: 'Vaner',
-		beskrivelse: 'Vanetracker og daglige rutiner',
+		navn: 'Små skridt',
+		beskrivelse: 'Daglige små skridt',
 		accent: '#6F9E7E',
 		icon: 'check'
 	},

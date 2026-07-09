@@ -43,7 +43,7 @@ export const PRODUKTER: Record<ActiveProduct, Produkt> = {
 		accessSource: 'abonnement',
 		activeSubscription: true,
 		simpleroProduktId: '255519',
-		beskrivelse: 'Løbende abonnement på basis-app — mikrotræning, kost, vaner og personligt bibliotek.'
+		beskrivelse: 'Løbende abonnement på basis-app — mikrotræning, kost, små skridt og personligt bibliotek.'
 	},
 	premiumabo: {
 		activeProduct: 'premiumabo',

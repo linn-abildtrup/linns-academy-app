@@ -153,7 +153,7 @@
 			// stadig virker.
 			const adminForlobId = userDoc?.adminKlientForlobId ?? null;
 			if (!up && !adminForlobId) {
-				fejl = 'Du har ikke adgang til vanetracker endnu.';
+				fejl = 'Du har ikke adgang til Små skridt endnu.';
 				loading = false;
 				return;
 			}
@@ -287,7 +287,7 @@
 		</a>
 		{#if prog}
 			<div class="eyebrow">{dagTitelLabel()} · {ugeLabel()}</div>
-			<h1>{prog.isBaseline ? 'Baseline' : 'Dagens vaner'}</h1>
+			<h1>{prog.isBaseline ? 'Baseline' : 'Dagens små skridt'}</h1>
 			{#if !prog.isBaseline && harGemt}
 				<span class="status-badge gemt">✓ Gemt</span>
 			{/if}
@@ -311,7 +311,7 @@
 
 			{#if visteVaner.length > 0}
 				<section class="card">
-					<div class="section-label">Dagens vaner</div>
+					<div class="section-label">Dagens små skridt</div>
 					{#each visteVaner as c (c.id)}
 						{@const val = checks[c.id]}
 						<div class="check-row">
@@ -376,7 +376,7 @@
 					<div class="prog-bar" style="margin-top: 14px;">
 						<div class="prog-fill" style="width: {fremgangPct}%"></div>
 					</div>
-					<div class="prog-tael">{fremgangAntal.ja} af {fremgangAntal.total} vaner gennemført</div>
+					<div class="prog-tael">{fremgangAntal.ja} af {fremgangAntal.total} små skridt gennemført</div>
 				</section>
 			{/if}
 		{/if}

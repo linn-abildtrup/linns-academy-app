@@ -103,7 +103,7 @@
 	onMount(async () => {
 		const u = user;
 		if (!u || !erModulbruger(userDoc)) {
-			fejl = 'Du har ikke adgang til vanetracker.';
+			fejl = 'Du har ikke adgang til Små skridt.';
 			loading = false;
 			return;
 		}
@@ -121,7 +121,7 @@
 		try {
 			const o = await hentAboVaneOpsaetning(u.uid);
 			if (!o) {
-				fejl = 'Du har ikke valgt dine vaner endnu.';
+				fejl = 'Du har ikke valgt dine små skridt endnu.';
 				loading = false;
 				return;
 			}
@@ -210,7 +210,7 @@
 			<span>Oversigt</span>
 		</a>
 		<div class="eyebrow">{datoLabel}</div>
-		<h1>Dagens vaner</h1>
+		<h1>Dagens små skridt</h1>
 		{#if harGemt && !editMode}
 			<span class="status-badge gemt">✓ Gemt</span>
 		{:else if editMode && harGemt}
@@ -224,7 +224,7 @@
 		<div class="status-besked fejl">{fejl}</div>
 	{:else if opsaetning}
 		<section class="card">
-			<div class="section-label">Dine vaner</div>
+			<div class="section-label">Dine små skridt</div>
 			{#each opsaetning.valgteVaner as v (v.id)}
 				{@const val = checks[v.id]}
 				<div class="check-row">
@@ -338,7 +338,7 @@
 			<div class="prog-bar" style="margin-top: 14px;">
 				<div class="prog-fill" style="width: {fremgangPct}%"></div>
 			</div>
-			<div class="prog-tael">{fremgangAntal.ja} af {fremgangAntal.total} vaner gennemført</div>
+			<div class="prog-tael">{fremgangAntal.ja} af {fremgangAntal.total} små skridt gennemført</div>
 		</section>
 
 		{#if gemFejl}

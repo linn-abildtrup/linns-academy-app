@@ -42,7 +42,7 @@ export const FEATURES: Feature[] = [
 		koblet: true,
 		navn: 'Linn AI',
 		beskrivelse:
-			'Kunden kan chatte med en AI-version af dig og få svar på spørgsmål om træning, kost og vaner, når som helst. Findes som eget punkt i Moduler.'
+			'Kunden kan chatte med en AI-version af dig og få svar på spørgsmål om træning, kost og små skridt, når som helst. Findes som eget punkt i Moduler.'
 	},
 	{
 		key: 'beskeder-til-linn',

@@ -473,7 +473,7 @@
 			</div>
 			<div class="indhold-tekst">
 				<div class="indhold-navn">Små skridt</div>
-				<div class="indhold-sub">Vaner og daglige skridt — vælg hvilke dage de gælder</div>
+				<div class="indhold-sub">Daglige små skridt — vælg hvilke dage de gælder</div>
 			</div>
 			<Icon name="chevron-r" size={14} color="var(--text3)" />
 		</a>
