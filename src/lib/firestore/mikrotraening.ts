@@ -44,14 +44,80 @@ export interface ProgramMedDage {
 	dage: TrainingDay[];
 }
 
+// ==============================================
+// MASTER-PROGRAMMER (dine egne, forløbs-uafhængige programmer)
+// ==============================================
+// Master-programmer bor i top-collection `trainingPrograms` (program-doc +
+// days-subcollection), modsat forløbs-programmer der ligger under
+// forlob/{id}/mikrotraeningProgrammer. De bygges i admin under "Mine
+// programmer" og kan (fra klods 2) tildeles bredt — alle app-brugere,
+// udvalgte hold eller enkelte personer.
+
 /**
- * Henter alle træningsprogrammer (uden dage).
- * @deprecated Programmer ligger nu under forlob/{forlobId}/mikrotraeningProgrammer.
- * Brug hentForlobsProgrammer i stedet.
+ * Henter alle master-programmer (uden dage). Sorteret efter navn.
+ * Bruges af admin-listen "Mine programmer".
  */
-export async function hentAlleProgrammer(): Promise<TrainingProgram[]> {
+export async function hentAlleMasterProgrammer(): Promise<TrainingProgram[]> {
 	const snap = await getDocs(collection(db, 'trainingPrograms'));
-	return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TrainingProgram);
+	return snap.docs
+		.map((d) => ({ id: d.id, ...d.data() }) as TrainingProgram)
+		.sort((a, b) => a.navn.localeCompare(b.navn, 'da'));
+}
+
+/**
+ * Henter et master-program inkl. alle dets dage.
+ * Returnerer null hvis programmet ikke findes.
+ */
+export async function hentMasterProgram(programId: string): Promise<ProgramMedDage | null> {
+	const programRef = doc(db, 'trainingPrograms', programId);
+	const programSnap = await getDoc(programRef);
+	if (!programSnap.exists()) return null;
+
+	const program = { id: programSnap.id, ...programSnap.data() } as TrainingProgram;
+	const dageSnap = await getDocs(collection(db, 'trainingPrograms', programId, 'days'));
+	const dage = dageSnap.docs
+		.map((d) => d.data() as TrainingDay)
+		.sort((a, b) => a.dagNummer - b.dagNummer);
+
+	return { id: programSnap.id, program, dage };
+}
+
+/**
+ * Gemmer/opdaterer master-program-metadata (navn, antalDage, udstyr osv.).
+ * Days håndteres separat via gemMasterDag/gemMasterDage.
+ */
+export async function gemMasterProgram(
+	programId: string,
+	program: Omit<TrainingProgram, 'id'>
+): Promise<void> {
+	await setDoc(doc(db, 'trainingPrograms', programId), program, { merge: true });
+}
+
+/**
+ * Gemmer en enkelt dag under et master-program. Overskriver hvis den findes.
+ */
+export async function gemMasterDag(
+	programId: string,
+	dagNummer: number,
+	dag: TrainingDay
+): Promise<void> {
+	await setDoc(doc(db, 'trainingPrograms', programId, 'days', `dag${dagNummer}`), dag);
+}
+
+/**
+ * Gemmer flere dage under et master-program på én gang.
+ */
+export async function gemMasterDage(programId: string, dage: TrainingDay[]): Promise<void> {
+	await Promise.all(dage.map((d) => gemMasterDag(programId, d.dagNummer, d)));
+}
+
+/**
+ * Sletter et master-program inkl. alle dets dage.
+ */
+export async function sletMasterProgram(programId: string): Promise<void> {
+	const dageSnap = await getDocs(collection(db, 'trainingPrograms', programId, 'days'));
+	await Promise.all(dageSnap.docs.map((d) => deleteDoc(d.ref)));
+	await deleteDoc(doc(db, 'trainingPrograms', programId));
 }
 
 /**
@@ -154,45 +220,6 @@ export async function hentAlleExercises(): Promise<Exercise[]> {
 	return snap.docs
 		.map((d) => ({ id: d.id, ...d.data() }) as Exercise)
 		.sort((a, b) => a.name.localeCompare(b.name, 'da'));
-}
-
-/**
- * Gemmer en træningsdag til Firestore.
- * Overskriver eksisterende dag hvis den findes.
- */
-export async function gemDag(
-	programId: string,
-	dagNummer: number,
-	dag: TrainingDay
-): Promise<void> {
-	const ref = doc(db, 'trainingPrograms', programId, 'days', `dag${dagNummer}`);
-	await setDoc(ref, dag);
-}
-
-/**
- * Gemmer flere dage på én gang. Bruges af auto-generér-funktionen.
- */
-export async function gemDage(programId: string, dage: TrainingDay[]): Promise<void> {
-	await Promise.all(dage.map((d) => gemDag(programId, d.dagNummer, d)));
-}
-
-/**
- * Henter et træningsprogram med alle dets dage.
- * Returnerer null hvis programmet ikke findes.
- */
-export async function hentProgram(programId: string): Promise<ProgramMedDage | null> {
-	const programRef = doc(db, 'trainingPrograms', programId);
-	const programSnap = await getDoc(programRef);
-	if (!programSnap.exists()) return null;
-
-	const program = { id: programSnap.id, ...programSnap.data() } as TrainingProgram;
-
-	const dageSnap = await getDocs(collection(db, 'trainingPrograms', programId, 'days'));
-	const dage = dageSnap.docs
-		.map((d) => d.data() as TrainingDay)
-		.sort((a, b) => a.dagNummer - b.dagNummer);
-
-	return { id: programSnap.id, program, dage };
 }
 
 /**

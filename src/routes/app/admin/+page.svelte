@@ -48,6 +48,14 @@
 					icon: 'flame' as const
 				},
 				{
+					id: 'programmer',
+					navn: 'Mine programmer',
+					beskrivelse: 'Byg egne træningsprogrammer der kan tildeles forløb, app-brugere eller enkelte',
+					rute: '/app/admin/programmer',
+					accent: '#B87B6E',
+					icon: 'workout' as const
+				},
+				{
 					id: 'fodevarer',
 					navn: 'Fællesskabs-fødevarer',
 					beskrivelse: 'Se fødevarer scannet af brugere — verificér eller slet',
