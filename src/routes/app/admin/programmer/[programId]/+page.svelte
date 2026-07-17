@@ -190,6 +190,14 @@
 			</button>
 		</section>
 
+		<a class="tildel-link" href="/app/admin/programmer/{programId}/tildel">
+			<div>
+				<div class="tildel-titel">Tildel program</div>
+				<div class="tildel-sub">Alle app-brugere, udvalgte hold eller enkelte personer</div>
+			</div>
+			<Icon name="chevron-r" size={16} color="var(--text3)" />
+		</a>
+
 		<section class="actions-card">
 			<div class="section-label">Indstillinger til auto-gen</div>
 			<div class="config-grid">
@@ -369,6 +377,36 @@
 		color: #8a4a3e;
 		background: #fbeeea;
 		border-color: #f0d6cf;
+	}
+
+	.tildel-link {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		padding: 14px 16px;
+		margin-bottom: 14px;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.tildel-link:hover {
+		background: var(--bg2);
+	}
+
+	.tildel-titel {
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.tildel-sub {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
 	}
 
 	.form-card,

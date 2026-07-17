@@ -21,6 +21,17 @@ const tildeltViaForlob: ProgramTildeling = {
 	tildeltAf: 'admin-uid'
 };
 
+const tildeltAlleApp: ProgramTildeling = {
+	id: 't4',
+	programId: 'master-c',
+	forlobId: '',
+	programKilde: 'master',
+	modtagerType: 'alle-app',
+	modtagerId: '',
+	tildeltAt: 1716200000000,
+	tildeltAf: 'admin-uid'
+};
+
 describe('harProgramAdgang', () => {
 	it('giver adgang ved direkte kunde-tildeling', () => {
 		expect(harProgramAdgang('uid-maria', 'prog-a', [], [tildelt])).toBe(true);
@@ -55,6 +66,22 @@ describe('harProgramAdgang', () => {
 	it('tom liste = ingen adgang', () => {
 		expect(harProgramAdgang('uid-maria', 'prog-a', [], [])).toBe(false);
 	});
+
+	it('alle-app rammer app-brugere', () => {
+		expect(
+			harProgramAdgang('uid-maria', 'master-c', [], [tildeltAlleApp], { erAppBruger: true })
+		).toBe(true);
+	});
+
+	it('alle-app rammer IKKE når kunden ikke er app-bruger', () => {
+		expect(
+			harProgramAdgang('uid-maria', 'master-c', [], [tildeltAlleApp], { erAppBruger: false })
+		).toBe(false);
+	});
+
+	it('alle-app rammer IKKE som standard (uden opts)', () => {
+		expect(harProgramAdgang('uid-maria', 'master-c', [], [tildeltAlleApp])).toBe(false);
+	});
 });
 
 describe('tildelingerForKunde', () => {
@@ -76,5 +103,12 @@ describe('tildelingerForKunde', () => {
 		const resultat = tildelingerForKunde('uid-maria', [], [tildelt, andenKunde]);
 		expect(resultat).toHaveLength(1);
 		expect(resultat[0].modtagerId).toBe('uid-maria');
+	});
+
+	it('inkluderer alle-app for app-brugere men ikke ellers', () => {
+		const somApp = tildelingerForKunde('uid-x', [], [tildeltAlleApp], { erAppBruger: true });
+		expect(somApp).toHaveLength(1);
+		const udenApp = tildelingerForKunde('uid-x', [], [tildeltAlleApp]);
+		expect(udenApp).toHaveLength(0);
 	});
 });

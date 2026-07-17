@@ -71,26 +71,49 @@ export async function hentProgramTildelingerForModtager(
 
 /**
  * Opretter en program-tildeling. Forhindrer dubletter: hvis præcis samme
- * modtager allerede har samme program tildelt, returneres den eksisterende.
+ * modtager allerede har samme program (samme kilde + forløb) tildelt,
+ * returneres den eksisterende.
+ *
+ * forlobId og programKilde er valgfri: master-programmer har intet forlobId
+ * og programKilde='master'. Vi undgår at skrive undefined-felter til Firestore
+ * og deduper på kilde+forløb i hukommelsen (så undefined ikke rammer where()).
  */
 export async function tildelProgram(
 	args: Omit<ProgramTildeling, 'id' | 'tildeltAt'>
 ): Promise<ProgramTildeling> {
+	const kilde: 'master' | 'forlob' = args.programKilde ?? 'forlob';
+	const forlob = args.forlobId ?? '';
+
 	const q = query(
 		collection(db, PROGRAM_COL),
 		where('programId', '==', args.programId),
-		where('forlobId', '==', args.forlobId),
 		where('modtagerType', '==', args.modtagerType),
 		where('modtagerId', '==', args.modtagerId)
 	);
 	const eksisterende = await getDocs(q);
-	if (!eksisterende.empty) {
-		const d = eksisterende.docs[0];
-		return { id: d.id, ...(d.data() as Omit<ProgramTildeling, 'id'>) };
+	const match = eksisterende.docs.find((d) => {
+		const data = d.data() as ProgramTildeling;
+		return (data.programKilde ?? 'forlob') === kilde && (data.forlobId ?? '') === forlob;
+	});
+	if (match) {
+		return { id: match.id, ...(match.data() as Omit<ProgramTildeling, 'id'>) };
 	}
+
 	const nu = Date.now();
-	const docRef = await addDoc(collection(db, PROGRAM_COL), { ...args, tildeltAt: nu });
-	return { id: docRef.id, ...args, tildeltAt: nu };
+	// Byg payload eksplicit så vi aldrig sender undefined-felter (Firestore afviser dem).
+	// forlobId er tom streng for master-programmer.
+	const payload = {
+		programId: args.programId,
+		forlobId: forlob,
+		programKilde: kilde,
+		modtagerType: args.modtagerType,
+		modtagerId: args.modtagerId,
+		tildeltAf: args.tildeltAf,
+		tildeltAt: nu
+	};
+
+	const docRef = await addDoc(collection(db, PROGRAM_COL), payload);
+	return { id: docRef.id, ...args, forlobId: forlob, programKilde: kilde, tildeltAt: nu };
 }
 
 export async function fjernProgramTildeling(tildelingId: string): Promise<void> {
