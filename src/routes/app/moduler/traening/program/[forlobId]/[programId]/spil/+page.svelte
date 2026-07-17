@@ -7,11 +7,13 @@
 	import {
 		hentExercises,
 		hentForlobsProgram,
+		hentMasterProgram,
 		hentUserProduct,
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
 	import {
 		gemSpilPause,
+		hentProgramFremgang,
 		hentSpilPause,
 		sletSpilPause,
 		tilfoejGennemfoersel
@@ -131,55 +133,88 @@
 
 		try {
 			const ud = userDoc;
-			const [data, forlob, produktType] = await Promise.all([
-				hentForlobsProgram(forlobId, programId),
-				hentForlob(forlobId),
-				hentAktivProduktType(ud?.forlobIds ?? [forlobId])
-			]);
-			if (!data) {
+
+			if (forlobId === 'master') {
+				// Master-program (Mine programmer): selvbetjent, ingen forloebs-
+				// kalender. Dagen kommer fra ?dag (sat af landingssiden) og klampes
+				// til hvad kunden har laast op = hoejeste gennemfoerte dag + 1.
+				const data = await hentMasterProgram(programId);
+				if (!data) {
+					fejl = 'Programmet kunne ikke findes.';
+					loading = false;
+					return;
+				}
+				programData = data;
+				const fremgang = await hentProgramFremgang(u.uid, 'tildelt', programId, 'master');
+				const gennemforte = fremgang?.gennemforteDage ?? [];
+				const hoejste = gennemforte.length > 0 ? Math.max(...gennemforte) : 0;
+				const maxLaastOp = Math.min(data.program.antalDage, hoejste + 1);
+				const valgtDagParam = Number(page.url.searchParams.get('dag'));
+				aktuelDagNummer =
+					Number.isInteger(valgtDagParam) && valgtDagParam >= 1 && valgtDagParam <= maxLaastOp
+						? valgtDagParam
+						: maxLaastOp;
+			} else {
+				const [data, forlob, produktType] = await Promise.all([
+					hentForlobsProgram(forlobId, programId),
+					hentForlob(forlobId),
+					hentAktivProduktType(ud?.forlobIds ?? [forlobId])
+				]);
+				if (!data) {
+					fejl = 'Programmet kunne ikke findes.';
+					loading = false;
+					return;
+				}
+				programData = data;
+
+				// Bereg dagens dag-nummer ud fra forlob.startDato (samme logik som
+				// forsiden). Klampes til programmets antalDage saa vi ikke gaar
+				// ud over hvad der er lagt ind.
+				if (forlob) {
+					let nulDatoer: string[] = [];
+					try {
+						const up = await hentUserProduct(u.uid, produktType);
+						nulDatoer = nulDageDatoer(up?.nulDage?.intervaller ?? []);
+					} catch {
+						// best-effort
+					}
+					const startDato = toIsoLokal(forlob.startDato.toDate());
+					const idx = getCurrentDayMedNulDage(
+						{ startDato, antalDage: forlob.antalDage },
+						nulDatoer
+					);
+					if (idx !== null) {
+						// idx er forloebsdagen (aligned med program-dagene + forsiden). Modulo
+						// cykler om naar forloebet er slut. FOER 12/6 2026: '(idx % antalDage)
+						// + 1' var off-by-one og gemte gennemfoersler paa dag+1 — se oversigt-
+						// siden.
+						aktuelDagNummer = idx <= 0 ? 1 : ((idx - 1) % forlob.antalDage) + 1;
+					}
+
+					// Dag-vaelger: hvis ?dag=N er sat (fra moduler-oversigten), koerer
+					// vi den valgte dag i stedet for dagens. Kun gyldigt 1..aktuelDag —
+					// fremtidige dage afvises saa man ikke kan laase op via URL'en.
+					// Uden ?dag er adfaerden uaendret (default = dagens dag).
+					const valgtDagParam = Number(page.url.searchParams.get('dag'));
+					if (
+						Number.isInteger(valgtDagParam) &&
+						valgtDagParam >= 1 &&
+						valgtDagParam <= aktuelDagNummer
+					) {
+						aktuelDagNummer = valgtDagParam;
+					}
+				}
+			}
+
+			if (!programData) {
 				fejl = 'Programmet kunne ikke findes.';
 				loading = false;
 				return;
 			}
-			programData = data;
-
-			// Bereg dagens dag-nummer ud fra forlob.startDato (samme logik som
-			// forsiden). Klampes til programmets antalDage saa vi ikke gaar
-			// ud over hvad der er lagt ind.
-			if (forlob) {
-				let nulDatoer: string[] = [];
-				try {
-					const up = await hentUserProduct(u.uid, produktType);
-					nulDatoer = nulDageDatoer(up?.nulDage?.intervaller ?? []);
-				} catch {
-					// best-effort
-				}
-				const startDato = toIsoLokal(forlob.startDato.toDate());
-				const idx = getCurrentDayMedNulDage({ startDato, antalDage: forlob.antalDage }, nulDatoer);
-				if (idx !== null) {
-					// idx er forloebsdagen (aligned med program-dagene + forsiden). Modulo
-					// cykler om naar forloebet er slut. FOER 12/6 2026: '(idx % antalDage)
-					// + 1' var off-by-one og gemte gennemfoersler paa dag+1 — se oversigt-
-					// siden.
-					aktuelDagNummer = idx <= 0 ? 1 : ((idx - 1) % forlob.antalDage) + 1;
-				}
-
-				// Dag-vaelger: hvis ?dag=N er sat (fra moduler-oversigten), koerer
-				// vi den valgte dag i stedet for dagens. Kun gyldigt 1..aktuelDag —
-				// fremtidige dage afvises saa man ikke kan laase op via URL'en.
-				// Uden ?dag er adfaerden uaendret (default = dagens dag).
-				const valgtDagParam = Number(page.url.searchParams.get('dag'));
-				if (
-					Number.isInteger(valgtDagParam) &&
-					valgtDagParam >= 1 &&
-					valgtDagParam <= aktuelDagNummer
-				) {
-					aktuelDagNummer = valgtDagParam;
-				}
-			}
-
 			const dagData =
-				data.dage.find((d) => d.dagNummer === aktuelDagNummer) ?? data.dage[0] ?? null;
+				programData.dage.find((d) => d.dagNummer === aktuelDagNummer) ??
+				programData.dage[0] ??
+				null;
 			const exerciseIds = (dagData?.exercises ?? []).map((e) => e.exerciseId);
 			if (exerciseIds.length === 0) {
 				fejl = 'Der er ikke lagt øvelser ind for dette program endnu.';

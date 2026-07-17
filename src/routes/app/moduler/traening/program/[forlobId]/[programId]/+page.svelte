@@ -8,9 +8,11 @@
 	import {
 		hentAlleExercises,
 		hentForlobsProgram,
+		hentMasterProgram,
 		hentUserProduct,
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
+	import { hentProgramFremgang } from '$lib/firestore/mineProgrammer';
 	import { hentForlob, hentAktivProduktType } from '$lib/firestore/forlob';
 	import { getCurrentDayMedNulDage, nulDageDatoer, toIsoLokal } from '$lib/content/forlob';
 	import { getVideoUrl } from '$lib/utils/storage';
@@ -22,6 +24,11 @@
 
 	const forlobId = $derived(page.params.forlobId ?? '');
 	const programId = $derived(page.params.programId ?? '');
+
+	// Master-programmer (Mine programmer) leveres via forlobId-sentinel 'master'.
+	// De er selvbetjente: dagene laases op efterhaanden som de gennemfoeres,
+	// uafhaengigt af en forloebs-kalender.
+	const erMaster = $derived(forlobId === 'master');
 
 	let programData = $state<ProgramMedDage | null>(null);
 	let exerciseMap = $state<Map<string, Exercise>>(new Map());
@@ -83,6 +90,34 @@
 		}
 		try {
 			const ud = userDoc;
+
+			// Master-program: selvbetjent. Hent programmet fra top-collection og
+			// beregn hvilken dag der er laast op ud fra tidligere gennemfoersler
+			// (hoejeste gennemfoerte dag + 1, klampet til programmets laengde).
+			if (erMaster) {
+				const [data, alleEx, fremgang] = await Promise.all([
+					hentMasterProgram(programId),
+					hentAlleExercises(),
+					hentProgramFremgang(user.uid, 'tildelt', programId, 'master')
+				]);
+				if (!data) {
+					fejl = 'Programmet findes ikke.';
+					loading = false;
+					return;
+				}
+				programData = data;
+				const map = new Map<string, Exercise>();
+				for (const ex of alleEx) map.set(ex.id, ex);
+				exerciseMap = map;
+
+				const gennemforte = fremgang?.gennemforteDage ?? [];
+				const hoejste = gennemforte.length > 0 ? Math.max(...gennemforte) : 0;
+				aktuelDagNummer = Math.min(data.program.antalDage, hoejste + 1);
+				valgtDag = aktuelDagNummer;
+				loading = false;
+				return;
+			}
+
 			const [data, alleEx, forlob, produktType] = await Promise.all([
 				hentForlobsProgram(forlobId, programId),
 				hentAlleExercises(),
@@ -150,7 +185,7 @@
 		<div class="eyebrow">Dagens træning</div>
 		<h1>{programData?.program.navn ?? 'Dagens øvelser'}</h1>
 		<p class="page-sub">Tryk på en øvelse for at se den. Tryk Start træning for at gå i gang.</p>
-		<div class="meta-pille">Tildelt fra {forlobNavn}</div>
+		<div class="meta-pille">{erMaster ? 'Dit tildelte program' : `Tildelt fra ${forlobNavn}`}</div>
 	</header>
 
 	{#if loading}

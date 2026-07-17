@@ -135,10 +135,11 @@ export interface KundeTildelinger {
  */
 export async function hentTildelingerForBruger(
 	uid: string,
-	forlobIds: string[]
+	forlobIds: string[],
+	opts: { erAppBruger?: boolean } = {}
 ): Promise<KundeTildelinger> {
 	const alleProgTilds = await hentAlleProgramTildelinger();
 	return {
-		programmer: tildelingerForKunde(uid, forlobIds, alleProgTilds)
+		programmer: tildelingerForKunde(uid, forlobIds, alleProgTilds, opts)
 	};
 }

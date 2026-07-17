@@ -16,7 +16,7 @@
 	import { hentMineProgrammer, gemAktivtTraeningsprogram } from '$lib/firestore/mineProgrammer';
 	import { anslaaetVarighedMinutter, type CustomProgram } from '$lib/content/mineProgrammer';
 	import { hentAboMikrotraeningProgram } from '$lib/firestore/aboMikrotraening';
-	import { hentForlobsProgrammer } from '$lib/firestore/mikrotraening';
+	import { hentForlobsProgrammer, hentAlleMasterProgrammer } from '$lib/firestore/mikrotraening';
 	import type { TrainingProgram } from '$lib/content/mikrotraening';
 	import { aktivtForlobId } from '$lib/utils/traeningsvariant';
 
@@ -41,6 +41,27 @@
 	let forlobsProgrammer = $state<TrainingProgram[]>([]);
 	const erForlobskunde = $derived(erForlobsklient(userDoc));
 	const aktivtForlob = $derived(aktivtForlobId(userDoc));
+
+	// Master-programmer (Mine programmer) tildelt denne kunde — vises additivt
+	// ved siden af forløbets/abo'ens egne. Selvbetjente, spilles via
+	// program/master/{id}. Deduppes pr program-id (samme program kan rammes af
+	// baade en direkte og en alle-app/hold-tildeling).
+	type MasterRad = { tildeling: ProgramTildeling; program: TrainingProgram };
+	let masterProgrammer = $state<MasterRad[]>([]);
+
+	function byggMasterListe(
+		tilds: ProgramTildeling[],
+		alleMaster: TrainingProgram[]
+	): MasterRad[] {
+		const set = new Map<string, MasterRad>();
+		for (const t of tilds) {
+			if ((t.programKilde ?? 'forlob') !== 'master') continue;
+			const program = alleMaster.find((p) => p.id === t.programId);
+			if (!program || !program.aktiv) continue;
+			if (!set.has(program.id)) set.set(program.id, { tildeling: t, program });
+		}
+		return [...set.values()];
+	}
 
 	// Byg eget program styres nu af feature-skemaet (koblet 11/6) + tester-
 	// override — erstatter det gamle test-flag + (app-kunde / admin-tildeling).
@@ -87,9 +108,22 @@
 			if (!fId) return;
 			indlaeserNyt = true;
 			try {
+				// Forløbets egne programmer er det kritiske — hentes først.
 				forlobsProgrammer = await hentForlobsProgrammer(fId);
 			} catch (e) {
 				console.error('Kunne ikke hente forløbets programmer:', e);
+			}
+			// Master-programmer er additive og best-effort: en fejl her må ALDRIG
+			// skjule forløbets egne programmer. Forløbskunde er ikke app-bruger →
+			// erAppBruger:false, så 'alle-app' rammer hende ikke (kun direkte + hold).
+			try {
+				const [tildelinger, alleMaster] = await Promise.all([
+					hentTildelingerForBruger(user.uid, userDoc.forlobIds ?? [], { erAppBruger: false }),
+					hentAlleMasterProgrammer()
+				]);
+				masterProgrammer = byggMasterListe(tildelinger.programmer, alleMaster);
+			} catch (e) {
+				console.error('Kunne ikke hente tildelte master-programmer:', e);
 			} finally {
 				indlaeserNyt = false;
 			}
@@ -101,12 +135,19 @@
 		if (!erPremium) return;
 		indlaeserNyt = true;
 		try {
-			const [tildelinger, allePaaTvaers, mine] = await Promise.all([
-				hentTildelingerForBruger(user.uid, userDoc.forlobIds ?? []),
+			// App-kunde (modulbruger) ER app-bruger → erAppBruger:true, så
+			// 'alle-app'-tildelinger rammer hende. Master-programmer skilles ud
+			// fra de forløbs-hostede tildelinger og vises i deres egen blok.
+			const [tildelinger, allePaaTvaers, mine, alleMaster] = await Promise.all([
+				hentTildelingerForBruger(user.uid, userDoc.forlobIds ?? [], { erAppBruger: true }),
 				hentAlleProgrammerPaaTvaers(),
-				hentMineProgrammer(user.uid)
+				hentMineProgrammer(user.uid),
+				hentAlleMasterProgrammer()
 			]);
-			tildelteProgrammer = tildelinger.programmer;
+			tildelteProgrammer = tildelinger.programmer.filter(
+				(t) => (t.programKilde ?? 'forlob') !== 'master'
+			);
+			masterProgrammer = byggMasterListe(tildelinger.programmer, alleMaster);
 			alleProgrammerPaaTvaers = allePaaTvaers;
 			mineProgrammer = mine;
 		} catch (e) {
@@ -355,6 +396,26 @@
 				{/if}
 			{/if}
 		{/if}
+
+		{#if masterProgrammer.length > 0}
+			<div class="sektion-label">Tildelte programmer</div>
+			{#each masterProgrammer as m (m.program.id)}
+				<a class="program-row" href={`/app/moduler/traening/program/master/${m.program.id}`}>
+					<div class="program-icon">
+						<Icon name="flame" size={18} color="#fff" />
+					</div>
+					<div class="program-tekst">
+						<div class="program-navn">{m.program.navn}</div>
+						<div class="program-sub">
+							{m.program.antalDage} dage · {m.program.udstyr.join(', ')}
+						</div>
+					</div>
+					<div class="program-pil">
+						<Icon name="chevron-r" size={14} color="var(--text3)" />
+					</div>
+				</a>
+			{/each}
+		{/if}
 	</div>
 
 	{#if visCustomBuilder}
@@ -399,6 +460,15 @@
 
 	.back:hover {
 		color: var(--text);
+	}
+
+	.sektion-label {
+		font-size: calc(10px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin: 8px 2px 2px;
 	}
 
 	.eyebrow {
