@@ -30,7 +30,6 @@ import {
 	distillerKunde,
 	byggSnapshot,
 	type MrsDoc,
-	type KundeMrs,
 	type KundeForlobBidrag
 } from '$lib/stats/mrsBeregning';
 import {
@@ -122,9 +121,17 @@ export const POST: RequestHandler = async ({ request, url }) => {
 				// kun nuværende kunder, præcis som det lokale script.
 				const u = brugere.get(uid);
 				if (!u) continue;
+				// ALLE kundens forloeb (igangvaerende + afsluttede), saa en afsluttet
+				// Kickstart-fase tilskrives korrekt.
+				const alleForlobIds = [
+					...new Set([
+						...((u.forlobIds as string[]) ?? []),
+						...((u.afsluttedeForlobIds as string[]) ?? [])
+					])
+				];
 				const entries = distillerKunde(
 					maalinger,
-					(u.forlobIds as string[]) ?? [],
+					alleForlobIds,
 					forlobStart,
 					(u.brugerProfil as { alder?: number; menopaus?: string }) ?? {}
 				);
@@ -155,7 +162,12 @@ export const POST: RequestHandler = async ({ request, url }) => {
 				const mrsDocs = (await hentAlleDocs(`users/${uid}/mrs_scores`)).map(
 					(d) => d.data as MrsDoc
 				);
-				const forlobIds = (brugerDoc?.forlobIds as string[]) ?? [];
+				const forlobIds = [
+					...new Set([
+						...((brugerDoc?.forlobIds as string[]) ?? []),
+						...((brugerDoc?.afsluttedeForlobIds as string[]) ?? [])
+					])
+				];
 				const profil = (brugerDoc?.brugerProfil as { alder?: number; menopaus?: string }) ?? {};
 				const entries = distillerKunde(mrsDocs, forlobIds, forlobStart, profil);
 				if (entries.length === 0) return;
@@ -169,20 +181,11 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		if (cacheDocs.length === 0) {
 			throw error(409, 'Ingen cache fundet — prøv en fuld genberegning.');
 		}
-		const alleKunder: KundeMrs[] = [];
-		const prForlobKunder = new Map<string, KundeMrs[]>();
-		for (const c of cacheDocs) {
-			const entries = (c.data.entries as KundeForlobBidrag[]) ?? [];
-			for (const { forlobId, kunde } of entries) {
-				alleKunder.push(kunde);
-				if (!prForlobKunder.has(forlobId)) prForlobKunder.set(forlobId, []);
-				prForlobKunder.get(forlobId)!.push(kunde);
-			}
-		}
+		const kundeBidrag = cacheDocs.map((c) => (c.data.entries as KundeForlobBidrag[]) ?? []);
 		const snapshot = byggSnapshot(
-			alleKunder,
-			prForlobKunder,
+			kundeBidrag,
 			forlobNavn,
+			forlobStart,
 			Date.now(),
 			cacheDocs.length
 		);

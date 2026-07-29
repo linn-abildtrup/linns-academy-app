@@ -333,6 +333,9 @@ export interface MrsSnapshot {
 	samlet: Scope;
 	prType: { kickstart: Scope; kropsro: Scope };
 	prForlob: Forlob[];
+	// Samlet 2-fase-rejse (Kickstart -> Kropsro) til bund-graferne. Ét sæt pr
+	// maal, hvert med begge population-varianter. Se byggSamletRejse nederst.
+	samletRejse: { velvaere: SamletRejse; mrs: SamletRejse };
 }
 
 // Bygger én KundeMrs ud fra et sæt maalinger (allerede sorteret aeldst->nyest).
@@ -364,6 +367,12 @@ export const TILSKRIV_BUFFER_MS = 3 * 86400000;
 // SENEST startet paa maaletidspunktet (+ buffer) — saa en kickstart->kropsro-
 // kundes maalinger aldrig blandes. App-kunder uden forloeb faar ét pseudo-
 // forloeb 'app'. Springer forloeb-bidrag over uden hverken MRS eller sliders.
+//
+// VIGTIGT: `forlobIds` skal indeholde ALLE kundens forloeb — baade igangvaerende
+// (users.forlobIds) OG afsluttede (users.afsluttedeForlobIds). Ellers falder en
+// afsluttet fase (typisk Kickstart for en kunde der er gaaet videre til Kropsro)
+// ud af tilskrivningen, og dens maalinger havner faejlagtigt i det forkerte
+// forloeb. Kalderne (scriptet + genberegn-endpointet) skal forene de to lister.
 export function distillerKunde(
 	mrsDocs: MrsDoc[],
 	forlobIds: string[],
@@ -396,16 +405,32 @@ export function distillerKunde(
 	return result;
 }
 
-// Samler hele snapshottet ud fra de akkumulerede kunde-bidrag (samlet + pr type
-// + pr forloeb). Skjuler mini-grupper (<3 med data) og sorterer forloeb efter
-// stoerste population.
+// Samler hele snapshottet ud fra kundernes forloebs-bidrag: ét array pr kunde
+// (samme form som cachen mrsCache/{uid}.entries). Bygger samlet + pr type + pr
+// forloeb, samt den samlede 2-fase-rejse. Skjuler mini-grupper (<3 med data) og
+// sorterer forloeb efter stoerste population. `forlobStart` bruges til fase-
+// inddelingen (vaelg senest startede forloeb pr fase).
 export function byggSnapshot(
-	alleKunder: KundeMrs[],
-	prForlobKunder: Map<string, KundeMrs[]>,
+	kundeBidrag: KundeForlobBidrag[][],
 	forlobNavn: Map<string, string>,
+	forlobStart: Map<string, number>,
 	genereretAt: number,
 	kunderTjekket: number
 ): MrsSnapshot {
+	// Fold bidragene ud til de aggregeringer beregningen bruger, og byg samtidig
+	// én FaseKunde pr kunde (til rejse-graferne).
+	const alleKunder: KundeMrs[] = [];
+	const prForlobKunder = new Map<string, KundeMrs[]>();
+	const faseKunder: FaseKunde[] = [];
+	for (const bidrag of kundeBidrag) {
+		for (const { forlobId, kunde } of bidrag) {
+			alleKunder.push(kunde);
+			if (!prForlobKunder.has(forlobId)) prForlobKunder.set(forlobId, []);
+			prForlobKunder.get(forlobId)!.push(kunde);
+		}
+		faseKunder.push(faseInddel(bidrag, forlobStart));
+	}
+
 	const prForlob = [...prForlobKunder.entries()]
 		.map(([forlobId, kunder]) => ({
 			forlobId,
@@ -435,6 +460,112 @@ export function byggSnapshot(
 			kickstart: beregnScope(kickstartKunder),
 			kropsro: beregnScope(kropsroKunder)
 		},
-		prForlob
+		prForlob,
+		samletRejse: {
+			velvaere: byggSamletRejse(faseKunder, 'velvaere'),
+			mrs: byggSamletRejse(faseKunder, 'mrs')
+		}
+	};
+}
+
+// ==============================================
+// Samlet 2-fase-rejse (Kickstart -> Kropsro) til dashboardets bund-graf.
+// Viser kundernes udvikling som ÉN bue gennem begge faser, med maale-punkterne
+// jaevnt fordelt (positionelt: 1., 2., 3. maaling i hver fase). To populationer
+// og to maal — hvert maal vises i sin egen graf:
+//   - Maal 'velvaere' (gns af de 5 sliders, HOEJERE = bedre)
+//   - Maal 'mrs'      (den fulde MRS-total, LAVERE = bedre)
+// ==============================================
+
+export type Fase = 'kickstart' | 'kropsro';
+export type RejseMaal = 'velvaere' | 'mrs';
+
+// Én kundes to fase-segmenter. null hvis kunden ikke har det segment.
+export type FaseKunde = { kickstart: KundeMrs | null; kropsro: KundeMrs | null };
+
+// Ét punkt paa rejse-grafen. `antal` bruges til at graatone tynde punkter i UI.
+export type RejsePunkt = { fase: Fase; index: number; gns: number; antal: number };
+
+// Rejsen for ét maal, i begge population-varianter.
+export type SamletRejse = { beggeFaser: RejsePunkt[]; alleIHverFase: RejsePunkt[] };
+
+// Den ordnede vaerdi-serie for ét segment og ét maal: velvaere = gns af de 5
+// sliders pr maaling; MRS = de fulde MRS-totaler.
+function serieForMaal(k: KundeMrs, maal: RejseMaal): number[] {
+	if (maal === 'velvaere')
+		return k.sliderMaalinger.map((s) => (s.energi + s.mave + s.cravings + s.humor + s.sovn) / 5);
+	return k.totaler;
+}
+
+// True hvis segmentet har mindst 2 maalinger af den paagaeldende type — nok til
+// at indgaa i "begge faser"-kohorten, som kraever en udvikling i HVER fase.
+function segmentHarUdvikling(k: KundeMrs | null, maal: RejseMaal): boolean {
+	return k !== null && serieForMaal(k, maal).length >= 2;
+}
+
+// Inddeler én kundes forloebs-bidrag (fra distillerKunde) i de to faser. Faar
+// kunden flere forloeb i samme fase (fx to kickstart-hold), vaelges det SENEST
+// startede — den nyeste rejse. Forudsaetter at bidrag stammer fra distillerKunde
+// kaldt med ALLE kundens forloeb (igangvaerende + afsluttede), ellers mangler
+// den afsluttede fase.
+export function faseInddel(
+	bidrag: KundeForlobBidrag[],
+	forlobStart: Map<string, number>
+): FaseKunde {
+	const vaelg = (praefix: string): KundeMrs | null => {
+		const kandidater = bidrag.filter((b) => b.forlobId.startsWith(praefix));
+		if (kandidater.length === 0) return null;
+		const nyeste = [...kandidater].sort(
+			(a, b) => (forlobStart.get(a.forlobId) ?? 0) - (forlobStart.get(b.forlobId) ?? 0)
+		);
+		return nyeste[nyeste.length - 1].kunde;
+	};
+	return { kickstart: vaelg('kickstart_'), kropsro: vaelg('kropsro_') };
+}
+
+// Bygger ét bens punkter (én fase) for de kunder der taeller med. Et punkt
+// medtages saa laenge mindst én kunde har en maaling ved det index (tynde
+// punkter graatones i UI, ikke her). n falder naturligt langs x-aksen.
+function faseBen(
+	pop: FaseKunde[],
+	fase: Fase,
+	hent: (fk: FaseKunde) => KundeMrs | null,
+	maal: RejseMaal
+): RejsePunkt[] {
+	const punkter: RejsePunkt[] = [];
+	for (let i = 0; i < MAX_REJSE_PUNKTER; i++) {
+		const vaerdier = pop
+			.map((fk) => {
+				const seg = hent(fk);
+				return seg ? serieForMaal(seg, maal)[i] : undefined;
+			})
+			.filter((x): x is number => typeof x === 'number');
+		if (vaerdier.length === 0) continue;
+		punkter.push({ fase, index: i, gns: r1(gns(vaerdier)), antal: vaerdier.length });
+	}
+	return punkter;
+}
+
+// Den samlede rejse for ét maal, i begge populationer:
+//  - alleIHverFase: kickstart-benet = ALLE med et kickstart-segment, kropsro-
+//    benet = ALLE med et kropsro-segment. Forskellige kunder i de to ben, saa
+//    linjen kan "hoppe" ved faseskiftet.
+//  - beggeFaser: KUN kunder med en udvikling (>=2 maalinger) i BEGGE faser —
+//    samme mennesker hele vejen, altsaa én aerlig ubrudt rejse.
+export function byggSamletRejse(faseKunder: FaseKunde[], maal: RejseMaal): SamletRejse {
+	const alleKick = faseKunder.filter((fk) => fk.kickstart !== null);
+	const alleKrop = faseKunder.filter((fk) => fk.kropsro !== null);
+	const begge = faseKunder.filter(
+		(fk) => segmentHarUdvikling(fk.kickstart, maal) && segmentHarUdvikling(fk.kropsro, maal)
+	);
+	return {
+		alleIHverFase: [
+			...faseBen(alleKick, 'kickstart', (fk) => fk.kickstart, maal),
+			...faseBen(alleKrop, 'kropsro', (fk) => fk.kropsro, maal)
+		],
+		beggeFaser: [
+			...faseBen(begge, 'kickstart', (fk) => fk.kickstart, maal),
+			...faseBen(begge, 'kropsro', (fk) => fk.kropsro, maal)
+		]
 	};
 }

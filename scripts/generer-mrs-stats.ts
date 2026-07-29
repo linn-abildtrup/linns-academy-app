@@ -21,7 +21,6 @@ import {
 	distillerKunde,
 	byggSnapshot,
 	type MrsDoc,
-	type KundeMrs,
 	type KundeForlobBidrag
 } from '../src/lib/stats/mrsBeregning.ts';
 
@@ -44,9 +43,8 @@ for (const d of forlobSnap.docs) {
 	if (start) forlobStart.set(d.id, start);
 }
 
-const alleKunder: KundeMrs[] = [];
-const prForlobKunder = new Map<string, KundeMrs[]>();
 // Per-kunde bidrag der caches (mrsCache/{uid}.entries) til hurtig genberegning.
+// Bruges ogsaa direkte som input til byggSnapshot (ét array pr kunde).
 const cachePerBruger = new Map<string, KundeForlobBidrag[]>();
 
 const users = await db.collection('users').get();
@@ -60,25 +58,30 @@ for (const d of users.docs) {
 	const maalinger = mrsSnap.docs.map((m) => m.data() as MrsDoc);
 	const u = d.data() as {
 		forlobIds?: string[];
+		afsluttedeForlobIds?: string[];
 		brugerProfil?: { alder?: number; menopaus?: string };
 	};
 
 	// Ét KundeMrs-bidrag pr forloeb kunden har maalinger i (tilskrivning +
-	// destillering ligger i den delte beregnings-modul).
-	const bidrag = distillerKunde(maalinger, u.forlobIds ?? [], forlobStart, {
+	// destillering ligger i den delte beregnings-modul). ALLE kundens forloeb
+	// medregnes — baade igangvaerende OG afsluttede — saa en Kickstart->Kropsro-
+	// kundes afsluttede Kickstart-fase tilskrives korrekt.
+	const alleForlobIds = [...new Set([...(u.forlobIds ?? []), ...(u.afsluttedeForlobIds ?? [])])];
+	const bidrag = distillerKunde(maalinger, alleForlobIds, forlobStart, {
 		alder: u.brugerProfil?.alder,
 		menopaus: u.brugerProfil?.menopaus
 	});
 	if (bidrag.length === 0) continue;
 	cachePerBruger.set(d.id, bidrag);
-	for (const { forlobId, kunde } of bidrag) {
-		alleKunder.push(kunde);
-		if (!prForlobKunder.has(forlobId)) prForlobKunder.set(forlobId, []);
-		prForlobKunder.get(forlobId)!.push(kunde);
-	}
 }
 
-const snapshot = byggSnapshot(alleKunder, prForlobKunder, forlobNavn, Date.now(), kunderTjekket);
+const snapshot = byggSnapshot(
+	[...cachePerBruger.values()],
+	forlobNavn,
+	forlobStart,
+	Date.now(),
+	kunderTjekket
+);
 
 await db.collection('adminStats').doc('mrs').set(snapshot);
 
@@ -134,3 +137,12 @@ console.log(
 	`  Velvaere check-ins: ${snapshot.samlet.velvaereCheckIns.map((c) => `ci${c.checkin} comp ${c.composite.gnsBaseline}->${c.composite.gnsCheckin} (${c.composite.delta}, ${c.composite.forbedretPct}% forbedret, n=${c.antalMatchede})`).join(' | ')}`
 );
 console.log(`  Forloebs-grupper: ${snapshot.prForlob.length}`);
+const rejseLinje = (r: { fase: string; index: number; gns: number; antal: number }[]) =>
+	r
+		.map((p) => `${p.fase === 'kropsro' ? 'Kr' : 'K'}${p.index + 1}:${p.gns}(n=${p.antal})`)
+		.join(' -> ');
+console.log('  --- Samlet 2-fase-rejse ---');
+console.log(`  Velvaere begge faser:   ${rejseLinje(snapshot.samletRejse.velvaere.beggeFaser)}`);
+console.log(`  Velvaere alle i fase:   ${rejseLinje(snapshot.samletRejse.velvaere.alleIHverFase)}`);
+console.log(`  MRS begge faser:        ${rejseLinje(snapshot.samletRejse.mrs.beggeFaser)}`);
+console.log(`  MRS alle i fase:        ${rejseLinje(snapshot.samletRejse.mrs.alleIHverFase)}`);
