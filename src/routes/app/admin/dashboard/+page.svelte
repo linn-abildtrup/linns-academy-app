@@ -79,12 +79,17 @@
 		};
 	};
 	type Forlob = { forlobId: string; navn: string } & Scope;
+	// Samlet 2-fase-rejse (Kickstart -> Kropsro) til bund-graferne.
+	type RejsePunkt2 = { fase: 'kickstart' | 'kropsro'; index: number; gns: number; antal: number };
+	type SamletRejse = { beggeFaser: RejsePunkt2[]; alleIHverFase: RejsePunkt2[] };
 	type MrsSnapshot = {
 		genereretAt: number;
 		kunderTjekket: number;
 		samlet: Scope;
 		prType: { kickstart: Scope; kropsro: Scope };
 		prForlob: Forlob[];
+		// Valgfrit: gamle snapshots (før 2-fase-rejsen) har det ikke.
+		samletRejse?: { velvaere: SamletRejse; mrs: SamletRejse };
 	};
 	// Refleksions-aktivitet (eget snapshot, adminStats/refleksioner).
 	type ReflScope = {
@@ -394,6 +399,64 @@
 				)
 			: null
 	);
+
+	// --- Samlet 2-fase-rejse (bund-graferne) ---
+	// Population-toggle, delt af begge grafer.
+	let rejsePop = $state<'alle' | 'begge'>('alle');
+	// Punkter med faerre svar end dette graatones (usikre).
+	const REJSE_LAV_N = 5;
+
+	// Bygger SVG-koordinater for én 2-fase-rejse. Kickstart-punkter foerst, saa
+	// Kropsro, jaevnt fordelt. Returnerer null hvis der ingen punkter er (fx
+	// MRS "begge faser", som ofte er tom). fastYMax=10 for velvaere-skalaen.
+	function bygRejseGraf(punkter: RejsePunkt2[], fastYMax: number | null) {
+		if (punkter.length === 0) return null;
+		const n = punkter.length;
+		const gx = (i: number) =>
+			G.padL + (n <= 1 ? 0 : (i / (n - 1)) * (G.w - G.padL - G.padR));
+		const gnsVals = punkter.map((p) => p.gns);
+		const yMax = fastYMax ?? (gnsVals.length ? Math.max(...gnsVals) * 1.15 : 20);
+		const gy = (v: number) => G.padT + (1 - v / yMax) * (G.h - G.padT - G.padB);
+		const pkt = punkter.map((p, i) => ({
+			...p,
+			x: gx(i),
+			y: gy(p.gns),
+			lavN: p.antal < REJSE_LAV_N
+		}));
+		const path = pkt.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+		const kickPkt = pkt.filter((p) => p.fase === 'kickstart');
+		const kropPkt = pkt.filter((p) => p.fase === 'kropsro');
+		const sidsteKick = kickPkt.length ? kickPkt[kickPkt.length - 1] : null;
+		const foersteKrop = kropPkt.length ? kropPkt[0] : null;
+		const midt = (arr: { x: number }[]) =>
+			arr.length ? (arr[0].x + arr[arr.length - 1].x) / 2 : null;
+		return {
+			pkt,
+			path,
+			// Faseskift-streg mellem sidste Kickstart- og foerste Kropsro-punkt.
+			delerX: sidsteKick && foersteKrop ? (sidsteKick.x + foersteKrop.x) / 2 : null,
+			kickMidX: midt(kickPkt),
+			kropMidX: midt(kropPkt),
+			xLabels: pkt.map((p) => ({
+				x: p.x,
+				label: `${p.fase === 'kropsro' ? 'Kr' : 'K'}${p.index + 1}`
+			})),
+			yTicks: [0, yMax / 2, yMax].map((v) => ({ v: Math.round(v), y: gy(v) }))
+		};
+	}
+
+	const rejseVelvaereData = $derived(
+		rejsePop === 'begge'
+			? (snapshot?.samletRejse?.velvaere.beggeFaser ?? [])
+			: (snapshot?.samletRejse?.velvaere.alleIHverFase ?? [])
+	);
+	const rejseMrsData = $derived(
+		rejsePop === 'begge'
+			? (snapshot?.samletRejse?.mrs.beggeFaser ?? [])
+			: (snapshot?.samletRejse?.mrs.alleIHverFase ?? [])
+	);
+	const rejseVelvaereGraf = $derived(bygRejseGraf(rejseVelvaereData, 10));
+	const rejseMrsGraf = $derived(bygRejseGraf(rejseMrsData, null));
 
 	function toggle(saet: Set<string>, id: string): Set<string> {
 		const ny = new Set(saet);
@@ -1219,6 +1282,93 @@
 			{/if}
 		{/if}
 
+		{#snippet rejseKort(titel: string, note: string, graf: ReturnType<typeof bygRejseGraf>, farve: string, tomTekst: string)}
+			<div class="rejse-graf-kort">
+				<div class="rubrik-titel">{titel}</div>
+				<p class="skala-note" style="margin-top:2px">{note}</p>
+				{#if graf}
+					<svg class="graf" viewBox="0 0 {G.w} {G.h}" preserveAspectRatio="xMidYMid meet">
+						{#each graf.yTicks as t (t.v)}
+							<line x1={G.padL} y1={t.y} x2={G.w - G.padR} y2={t.y} class="gitter" />
+							<text x={G.padL - 5} y={t.y + 3} class="akse-tekst" text-anchor="end">{t.v}</text>
+						{/each}
+						{#if graf.delerX !== null}
+							<line
+								x1={graf.delerX}
+								y1={G.padT}
+								x2={graf.delerX}
+								y2={G.h - G.padB}
+								class="fase-deler"
+							/>
+						{/if}
+						{#if graf.kickMidX !== null}
+							<text x={graf.kickMidX} y={10} class="fase-label" text-anchor="middle">Kickstart</text>
+						{/if}
+						{#if graf.kropMidX !== null}
+							<text x={graf.kropMidX} y={10} class="fase-label" text-anchor="middle">Kropsro</text>
+						{/if}
+						{#each graf.xLabels as x, i (i)}
+							<text x={x.x} y={G.h - 8} class="akse-tekst" text-anchor="middle">{x.label}</text>
+						{/each}
+						<path
+							d={graf.path}
+							fill="none"
+							stroke={farve}
+							stroke-width="2.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+						{#each graf.pkt as p, i (i)}
+							<circle cx={p.x} cy={p.y} r={p.lavN ? 3 : 4} fill={farve} opacity={p.lavN ? 0.3 : 1}>
+								<title>{tal(p.gns)} (n={p.antal}){p.lavN ? ' — få svar, usikkert' : ''}</title>
+							</circle>
+						{/each}
+					</svg>
+				{:else}
+					<div class="hint-kort">{tomTekst}</div>
+				{/if}
+			</div>
+		{/snippet}
+
+		{#if snapshot?.samletRejse}
+			<section class="card rejse-sektion">
+				<div class="graf-top">
+					<div class="kort-titel" style="margin:0">Samlet rejse: Kickstart → Kropsro</div>
+					<div class="rejse-toggle">
+						<button class:aktiv={rejsePop === 'alle'} onclick={() => (rejsePop = 'alle')}>
+							Alle i hver fase
+						</button>
+						<button class:aktiv={rejsePop === 'begge'} onclick={() => (rejsePop = 'begge')}>
+							Kun begge faser
+						</button>
+					</div>
+				</div>
+				<p class="figur-note">
+					Kundernes udvikling gennem begge faser, målepunkt for målepunkt.
+					{rejsePop === 'begge'
+						? 'Kun kunder der har målt i BEGGE faser — samme mennesker hele vejen.'
+						: 'Alle kunder med data i hver fase (forskellige mennesker i de to faser, så linjen kan hoppe ved faseskiftet).'}
+					Lyse punkter har få svar (n under {REJSE_LAV_N}) og er usikre.
+				</p>
+				{@render rejseKort(
+					'Velvære (højere = bedre)',
+					'Gns. af de 5 mål · skala 1–10',
+					rejseVelvaereGraf,
+					'#6F9E7E',
+					'Ingen velvære-data i dette valg endnu.'
+				)}
+				{@render rejseKort(
+					'MRS-symptomer (lavere = bedre)',
+					'MRS-total ved hvert målepunkt',
+					rejseMrsGraf,
+					'#B87B6E',
+					rejsePop === 'begge'
+						? 'Ikke nok data endnu — ingen kunder har to fulde MRS-skemaer i begge faser. Prøv "Alle i hver fase".'
+						: 'Ingen MRS-data i dette valg endnu.'
+				)}
+			</section>
+		{/if}
+
 		<div class="opdateret">
 			<div class="opdateret-rad">
 				<span>Sidst opdateret: {datoTekst(snapshot.genereretAt)}</span>
@@ -1351,6 +1501,43 @@
 	.faner.maaletype .fane.aktiv {
 		background: var(--accent, #b87b6e);
 		color: var(--white, #fff);
+	}
+	/* Samlet 2-fase-rejse (bund-graferne). */
+	.rejse-sektion {
+		margin-top: 18px;
+	}
+	.rejse-toggle {
+		display: inline-flex;
+		gap: 6px;
+	}
+	.rejse-toggle button {
+		padding: 6px 12px;
+		border: 1px solid var(--border);
+		background: var(--surface2, transparent);
+		color: var(--text2);
+		border-radius: 8px;
+		font-size: calc(12px * var(--fs-scale, 1));
+		cursor: pointer;
+	}
+	.rejse-toggle button.aktiv {
+		background: var(--accent, #b87b6e);
+		color: var(--white, #fff);
+		border-color: transparent;
+	}
+	.rejse-graf-kort {
+		margin-top: 16px;
+	}
+	.fase-deler {
+		stroke: var(--text3);
+		stroke-width: 1;
+		stroke-dasharray: 3 3;
+		opacity: 0.55;
+	}
+	.fase-label {
+		font-size: 9px;
+		fill: var(--text3);
+		font-weight: 600;
+		letter-spacing: 0.06em;
 	}
 	.forlob-vaelg {
 		width: 100%;
