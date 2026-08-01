@@ -41,6 +41,10 @@ export interface LektionItem {
 	// saettes paa ny.
 	visFra?: string;
 	skjulEfter?: string;
+	// Naar true springes lektionen over naar forloebet kopieres til et nyt hold
+	// (kopierForlobIndhold) — til hold-specifikke lektioner som fx et live-moede.
+	// Paavirker KUN kopiering; lektionen vises helt normalt i sit eget forloeb.
+	kopierIkke?: boolean;
 }
 
 /**
@@ -342,6 +346,18 @@ export function lektionTidsstatus(
 		if (!isNaN(fra) && t < fra) return 'foer';
 	}
 	return 'aktiv';
+}
+
+/**
+ * Fjerner lektioner markeret "kun dette hold" (kopierIkke) fra en forloebsdag.
+ * Bruges naar et forloeb kopieres til et nyt hold — hold-specifikke lektioner
+ * (fx et live-moede) skal ikke med over. Muterer ikke input; returnerer en ny
+ * dag med filtreret lektioner-array. Dage uden lektioner-array returneres
+ * uaendret (defensivt mod raa Firestore-data).
+ */
+export function fjernKunDetteHoldLektioner<T extends { lektioner?: LektionItem[] }>(dag: T): T {
+	if (!Array.isArray(dag.lektioner)) return dag;
+	return { ...dag, lektioner: dag.lektioner.filter((l) => !l.kopierIkke) };
 }
 
 /**

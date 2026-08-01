@@ -1181,6 +1181,19 @@
 								{/if}
 							</div>
 
+							<label class="kopier-flag">
+								<input
+									type="checkbox"
+									checked={l.kopierIkke ?? false}
+									onchange={(e) => opdaterLektion(l.id, 'kopierIkke', e.currentTarget.checked)}
+									disabled={gemmer}
+								/>
+								<span class="kopier-flag-tekst">
+									<span class="felt-label">Kun dette hold</span>
+									<span class="tids-toggle-hint">Bliver ikke kopieret med til nye hold.</span>
+								</span>
+							</label>
+
 							<div class="vis-paa-rad">
 								<button
 									class="vis-paa-knap"
@@ -1701,6 +1714,23 @@
 		gap: 8px;
 		flex-wrap: wrap;
 		margin-top: 4px;
+	}
+
+	.kopier-flag {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		margin-top: 10px;
+		cursor: pointer;
+	}
+	.kopier-flag input {
+		margin-top: 2px;
+		flex-shrink: 0;
+	}
+	.kopier-flag-tekst {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
 	}
 
 	.vis-paa-knap {

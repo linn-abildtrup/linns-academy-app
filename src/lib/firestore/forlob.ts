@@ -21,7 +21,7 @@ import { db } from '$lib/firebase';
 import type { AllowedEmail, CsvRow, Forlob } from '$lib/content/forlobAdgang';
 import { forlobAdgangFelter, forlobSlutMs, produktTypeForForlob } from '$lib/content/forlobAdgang';
 import type { ForlobDag, LektionItem } from '$lib/content/forlob';
-import { tomForlobDag } from '$lib/content/forlob';
+import { tomForlobDag, fjernKunDetteHoldLektioner } from '$lib/content/forlob';
 import { KICKSTART_PRODUCT_ID, type ForlobProduct } from '$lib/types';
 
 // ==============================================
@@ -227,7 +227,11 @@ export async function kopierForlobIndhold(
 		batch.set(doc(db, 'forlob', tilForlobId, 'vaneprogram', d.id), d.data());
 	}
 	for (const d of fraDage.docs) {
-		batch.set(doc(db, 'forlob', tilForlobId, 'forlobsdage', d.id), d.data());
+		// Lektioner markeret "kun dette hold" kopieres ikke med til det nye hold.
+		batch.set(
+			doc(db, 'forlob', tilForlobId, 'forlobsdage', d.id),
+			fjernKunDetteHoldLektioner(d.data())
+		);
 	}
 	for (const d of fraFaqKats.docs) {
 		batch.set(doc(db, 'forlob', tilForlobId, 'faqKategorier', d.id), d.data());

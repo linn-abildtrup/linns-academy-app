@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
 	dagStatus,
+	fjernKunDetteHoldLektioner,
 	formatDato,
 	forlobErKickstart,
 	forlobErKropsro,
@@ -218,5 +219,36 @@ describe('lektionTidsstatus', () => {
 	it('udloebet efter skjulEfter', () => {
 		const l = { skjulEfter: '2026-06-17T22:00' };
 		expect(lektionTidsstatus(l, new Date(2026, 5, 18, 0, 0))).toBe('udloebet');
+	});
+});
+
+describe('fjernKunDetteHoldLektioner', () => {
+	const lekt = (titel: string, kopierIkke = false) => ({ ...nyLektion(), titel, kopierIkke });
+
+	it('fjerner lektioner markeret kopierIkke, beholder resten', () => {
+		const dag = { dagNummer: 3, lektioner: [lekt('behold'), lekt('live-møde', true), lekt('behold2')] };
+		const ud = fjernKunDetteHoldLektioner(dag);
+		expect(ud.lektioner.map((l) => l.titel)).toEqual(['behold', 'behold2']);
+	});
+
+	it('beholder alle når ingen er markeret', () => {
+		const dag = { lektioner: [lekt('a'), lekt('b')] };
+		expect(fjernKunDetteHoldLektioner(dag).lektioner).toHaveLength(2);
+	});
+
+	it('giver tomt array når alle er markeret', () => {
+		const dag = { lektioner: [lekt('x', true), lekt('y', true)] };
+		expect(fjernKunDetteHoldLektioner(dag).lektioner).toEqual([]);
+	});
+
+	it('muterer ikke input-dagen', () => {
+		const dag = { lektioner: [lekt('a'), lekt('b', true)] };
+		fjernKunDetteHoldLektioner(dag);
+		expect(dag.lektioner).toHaveLength(2);
+	});
+
+	it('returnerer dagen uændret hvis lektioner mangler (defensivt mod rå data)', () => {
+		const dag = { dagNummer: 1, noteFraLinn: 'hej', lektioner: undefined };
+		expect(fjernKunDetteHoldLektioner(dag)).toEqual(dag);
 	});
 });
