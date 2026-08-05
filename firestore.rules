@@ -141,6 +141,14 @@ service cloud.firestore {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
 			}
 
+			// Klaret i den nye app (3.0) — hvilke lektioner kunden har
+			// markeret som taget. Ét dokument pr lektion, doc-id er
+			// lektionens id. Kun egen bruger, samme regel som alt andet
+			// herinde. Bruges ikke af den nuvaerende app.
+			match /nyKlaret/{lektionId} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
+
 			// MRS-scorer — udfyldte symptomtjeklister (baseline/midtvejs/afslutning).
 			// Update er stadig spærret (data er forskningsdata der ikke må ændres
 			// efter udfyldelse). Delete er åbnet for ejeren så klienten kan
