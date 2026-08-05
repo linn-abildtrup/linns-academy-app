@@ -372,3 +372,139 @@ Uændret fra v33.
 - Før commit: `npx svelte-check --threshold error` og `npm test`
 - Ved kunde-følsomt: også `npm run build` og en integrationstest mod live via engangs-script, der slettes bagefter
 - Commit og push kun når Linn beder om det
+
+---
+
+# Tilføjelse: beslutninger truffet 5. august 2026
+
+Skrevet efter en dags designarbejde med Linn. Alt herunder er besluttet og
+bygget i etape 1 og 2. Afsnittene ovenfor er uændrede, dette er et lag
+oveni, ikke en rettelse.
+
+## 13. Forsiden
+
+Rækkefølgen ovenfra og ned. Er hun ikke på et forløb, er de tre
+forløbs-blokke der bare ikke.
+
+1. Dato, hilsen, Linns billede
+2. Statuslinje: forløbets navn og dagnummer, plus ordet Medlem med den samlede tid
+3. **Dit overskud** med kurve og målingens bånd
+4. Uge-strimmel, som ligger inde i kortet med små skridt
+5. Dagens små skridt
+6. **Forløb:** dagens lektioner
+7. Dagens træning
+8. **Forløb:** dagens refleksion
+9. Dagens tal
+10. **Medlem uden forløb:** næste hold
+11. **Forløb:** Skriv til Linn
+12. AI-hjælp
+
+**Intet logo på forsiden.** Brandet bæres af Linns ansigt, skrifterne og
+farverne. Logoet bruges som ventetegn, se 17.
+
+**Diplomer for gennemførte forløb bor på Profil**, ikke i forsidens hoved.
+De fyldte for meget ved siden af dagens status.
+
+## 14. Dit overskud
+
+Kundens ene tal på forsiden. Gennemsnittet af de fem velvære-skydere
+(energi, mave, cravings, humør, søvn) fra `mrs_scores`, hvor højt er godt.
+Symptom-tallet (MRS) hører hjemme på Udvikling, hvor der er plads til at
+forklare det. Aldrig to tal på forsiden.
+
+**Kurven går altid fra første måling til den nyeste**, uanset om der er
+gået tre uger eller tre år. Kun mængden af prikker og datoer ændrer sig:
+
+- Op til fire målinger: prik, tal og dato ved hvert punkt
+- Fem til tolv: prik og tal ved alle, dato ved første, midterste og sidste
+- Over tolv: linjen gennem alle, prik på nogle få, tal og dato kun i enderne
+
+Perioder med forløb markeres med et lyst felt og en farvet streg med en
+mindstebredde, så et forløb på tre uger ikke forsvinder i et to-års-billede.
+En pause, altså tid uden adgang, tegnes som et stiplet hul uden prikker.
+
+## 15. Din måling
+
+Erstatter ordet symptomcheck ude mod kunden. **Ét samlet skema med alle
+seksten spørgsmål**: de elleve symptomspørgsmål og de fem skydere, altid
+sammen. Bagved gemmes de fortsat i samme `mrs_scores`-dokument som i dag,
+så Linns tal og dashboards er uændrede.
+
+**Kadence:** Kickstart hver uge. Kropsro, øvrige forløb og alle uden forløb
+hver fjerde uge.
+
+Er målingen åben, ligger båndet nederst på score-kortet. **Det står en uge
+og forsvinder derefter**, så hun ikke møder en bebrejdelse hver dag.
+Skemaet kan afbrydes og fortsættes, og der står at det tager cirka to
+minutter.
+
+## 16. Medlemstid og foldning
+
+**Medlemstid** er al den tid hun har haft adgang, abonnement og forløb lagt
+sammen, hvor overlap kun tælles én gang. **Pauser tælles ikke med.** Melder
+hun sig ud og kommer igen, lukkes den gamle række med en til-dato, og der
+lægges en ny til. Hun starter aldrig forfra.
+
+**Foldning:** en sektion hun har klaret, folder sig til én linje med
+flueben og en sætning om hvad der skete. Reglerne:
+
+- Kun opgaver folder. Dit overskud, Skriv til Linn og næste hold folder aldrig
+- **Foldede sektioner bliver liggende på deres plads.** Rækkefølgen ændrer
+  sig aldrig i løbet af dagen. Forudsigelighed er vigtigere end de sparede
+  centimeter, især for målgruppen
+- Et tryk folder ud igen, og så står den åben resten af dagen
+- Dagens tal folder først når begge mål er nået
+- Er alt klaret, kommer et kort grønt panel øverst og overskriften Klaret i dag
+
+## 17. Ventetegnet
+
+Det fulde logo bruges der hvor der er tid til at se på det: login, første
+hentning, og når noget trækker ud. **Evighedstegnet løber rundt i sit eget
+otte-tal** imens. Inde i appen bruges kun tegnet, aldrig ordene.
+
+**Fremdriften tæller rigtige trin, ikke sekunder.** Forsiden henter seks
+ting, og tallet flytter sig når én er hjemme. Den gamle apps timer-baserede
+procent, der bliver stående på 99, gentages ikke. Tegnet vises først efter
+et halvt sekund, og efter fire sekunder kommer en linje om at forbindelsen
+måske er langsom. Ved `prefers-reduced-motion` står tegnet stille.
+
+## 18. Træning og lektioner
+
+**Dagens træning** vises for begge kundetyper. Dagens første øvelse kører
+lydløst i loop som flisens billede, i videoens eget format 16:9, så hele
+øvelsen er synlig i både højde og bredde. Resten af dagens videoer hentes i
+baggrunden. Egress koster cirka tre til ni øre pr kunde pr måned.
+
+**Programmet vælges af kunden selv**, første gang hun trykker træning, og
+kan skiftes løbende efter hvad hun har mulighed for. Bygges i etape 4.
+Forsiden læser allerede `aktivtTraeningsprogram`, så den skal ikke laves
+om. Indtil vælgeren findes, falder appen tilbage på mikrotræningen.
+
+**Der findes ikke premium.** Alle har den samme app og får det samme
+program. Doc-id'erne `premium` og `basis` i de gamle mikrotrænings-data er
+kun nøgler, ikke et kundeskel.
+
+**Lektioner** henter deres billede fra Vimeo eller YouTube. Den første
+ikke-klarede lektion står som stor flise, resten som liste. Bliver den
+klarede, glider den ned i listen med flueben og teksten se igen, og den
+næste rykker op. Ingenting forsvinder.
+
+## 19. Dagens refleksion
+
+Kun for kunder på et forløb, fordi spørgsmålet står på forløbets programdag.
+Hun skriver svaret **direkte på forsiden**. Der skrives kun `note`-feltet,
+aldrig hele dagen, fordi refleksionssiden i den gamle app bruger samme
+dokument.
+
+## 20. AI-hjælp
+
+Kort på forsiden og egen chatside i den nye flade. Samme motor, samme
+endepunkt og samme kvote på 30 spørgsmål om dagen som i dag. Endepunktet er
+uændret. Kunden forlader aldrig det nye design.
+
+## 21. Ét flueben
+
+Fyldt salviegrøn cirkel med hvidt kryds, brugt ens alle steder hvor noget er
+gennemført: små skridt, lektioner, træning, foldede sektioner. Et gennemført
+forløb får i stedet et honningfarvet diplom med stjerne og årstal, fordi det
+er et større øjeblik end et flueben.
