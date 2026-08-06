@@ -127,6 +127,7 @@
 	const faner = [
 		{ href: '/ny', navn: 'Forside' },
 		{ href: '/ny/moduler', navn: 'Moduler' },
+		{ href: '/ny/snak', navn: 'Snak' },
 		{ href: '/ny/udvikling', navn: 'Udvikling' },
 		{ href: '/ny/profil', navn: 'Profil' }
 	];
@@ -198,6 +199,20 @@
 									width="7"
 									height="7"
 									rx="2"
+								/>
+							</svg>
+						{:else if fane.navn === 'Snak'}
+							<svg
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.9"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path
+									d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4 3v-3h-.5A2.5 2.5 0 0 1 4 13.5v-7A2.5 2.5 0 0 1 6.5 4Z"
 								/>
 							</svg>
 						{:else if fane.navn === 'Udvikling'}
