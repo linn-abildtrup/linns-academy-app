@@ -57,13 +57,14 @@
 		return liste;
 	});
 
-	// Ruller den valgte dag frem. Uden det starter striben helt til
-	// venstre, otte uger tilbage, og saa er hun helt forkert et sted.
+	// Ruller den valgte dag ind i MIDTEN. Uden det starter striben helt
+	// til venstre, otte uger tilbage, og saa er hun et forkert sted. I
+	// midten kan hun se baade dagene foer og dagene efter, og paa
+	// forsiden staar i dag altid samme sted.
 	onMount(() => {
 		const valgt = rulle?.querySelector('.dag.idag') as HTMLElement | null;
-		if (valgt && rulle) {
-			rulle.scrollLeft = valgt.offsetLeft - rulle.clientWidth + valgt.offsetWidth + 8;
-		}
+		if (!valgt || !rulle) return;
+		rulle.scrollLeft = valgt.offsetLeft - (rulle.clientWidth - valgt.offsetWidth) / 2;
 	});
 </script>
 
