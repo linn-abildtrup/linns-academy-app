@@ -3,9 +3,9 @@
 	// Dagens lektioner i forloebet.
 	//
 	// Alle er raekker i samme stoerrelse som traeningen, saa siden staar
-	// jaevnt. Hele raekken aabner lektionen. Den foerste der IKKE er set,
-	// er markeret "Naeste". Er en set, faar den flueben i stedet for
-	// billedet. Raekkefoelgen aendrer sig aldrig, og ingenting forsvinder.
+	// jaevnt. Hele raekken aabner lektionen. Er en set, faar den flueben i
+	// stedet for billedet. Raekkefoelgen aendrer sig aldrig, og ingenting
+	// forsvinder.
 	// ============================================================
 
 	import type { LektionItem } from '$lib/content/forlob';
@@ -22,9 +22,7 @@
 
 	let { titel, dagNummer, lektioner, klaret }: Props = $props();
 
-	/** Den foerste uklarede. Den er dagens naeste skridt. */
-	const naeste = $derived(lektioner.find((l) => !klaret.has(l.id)) ?? null);
-	const alleKlaret = $derived(lektioner.length > 0 && !naeste);
+	const alleKlaret = $derived(lektioner.length > 0 && lektioner.every((l) => klaret.has(l.id)));
 
 	/** Hvilken slags indhold lektionen er. Styrer farve og lille ikon. */
 	function art(l: LektionItem): 'lyd' | 'video' | 'tekst' {
@@ -66,7 +64,6 @@
 		<div class="medie-liste">
 			{#each lektioner as l (l.id)}
 				{@const erKlaret = klaret.has(l.id)}
-				{@const erNaeste = naeste?.id === l.id}
 				<!-- Hele raekken aabner lektionen. Ingen knap, for hun trykker
 				     alligevel paa billedet eller titlen. -->
 				<a class="medie-raekke" class:set={erKlaret} href={`/ny/lektion/${dagNummer}/${l.id}`}>
@@ -78,9 +75,6 @@
 							<span class="medie-play" aria-hidden="true">{IKON[art(l)]}</span>
 						{:else}
 							<span class="medie-glyph" aria-hidden="true">{IKON[art(l)]}</span>
-						{/if}
-						{#if erNaeste}
-							<span class="medie-tag">Næste</span>
 						{/if}
 					</span>
 
