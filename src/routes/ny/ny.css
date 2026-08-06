@@ -859,56 +859,76 @@
 }
 
 /* ── Dagens tal ────────────────────────────────────────────── */
+/* Tallet foerst, og hvor meget der mangler. Se DagensTal.svelte. */
 
-.maal-kort {
-	padding: 11px 17px;
+.tal-blok + .tal-blok {
+	margin-top: 15px;
+	padding-top: 15px;
+	border-top: 1px solid var(--line);
 }
 
-.maal {
-	display: grid;
-	grid-template-columns: 58px 1fr auto;
-	align-items: center;
-	gap: 11px;
-	padding: 8px 0;
+.tal-raekke {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 12px;
 }
 
-.maal-k {
-	font-size: calc(12.5px * var(--fs-scale, 1));
+.tal-navn {
+	font-size: calc(12px * var(--fs-scale, 1));
 	font-weight: 600;
 	color: var(--ink-2);
 }
 
-.spor {
-	height: 8px;
+.tal-stort {
+	font-family: var(--serif);
+	font-size: calc(30px * var(--fs-scale, 1));
+	font-weight: 500;
+	line-height: 1;
+	color: var(--espresso);
+	font-variant-numeric: tabular-nums;
+	margin-top: 2px;
+}
+
+.tal-af {
+	font-family: var(--sans);
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-left: 4px;
+}
+
+.tal-mangler {
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	text-align: right;
+	white-space: nowrap;
+}
+
+.tal-mangler.i-hus {
+	color: #4d6b50;
+	font-weight: 700;
+}
+
+.tal-spor {
+	height: 6px;
 	border-radius: 99px;
 	background: var(--paper-2);
 	box-shadow: inset 0 0 0 1px var(--line);
 	overflow: hidden;
+	margin-top: 9px;
 }
 
-.fyld {
+.tal-fyld {
 	height: 100%;
 	border-radius: 99px;
 }
 
-.fyld.p {
+.tal-fyld.p {
 	background: var(--sage);
 }
 
-.fyld.f {
+.tal-fyld.f {
 	background: var(--honey);
-}
-
-.maal-v {
-	font-size: calc(12.5px * var(--fs-scale, 1));
-	font-weight: 700;
-	font-variant-numeric: tabular-nums;
-	color: var(--espresso);
-}
-
-.maal-v small {
-	font-weight: 400;
-	color: var(--ink-3);
 }
 
 /* ── Naeste hold ───────────────────────────────────────────── */

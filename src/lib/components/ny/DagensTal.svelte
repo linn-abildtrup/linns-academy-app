@@ -1,6 +1,14 @@
 <script lang="ts">
-	// Dagens tal: protein og fiber holdt op mod hendes egne maal.
-	// Vises kun naar hun faktisk har maal sat, ellers er der intet at maale mod.
+	// ============================================================
+	// Dagens tal: protein og fiber mod hendes egne maal.
+	//
+	// Tallet staar stort, og til hoejre staar det ene hun faktisk skal
+	// bruge: hvor meget der mangler. Det er forskellen paa et regneark og
+	// en hjaelp. Hun skal kunne se paa to sekunder, om der skal et aeg
+	// eller et helt maaltid til.
+	//
+	// Ingen kalorier. Det er et bevidst valg i designet.
+	// ============================================================
 
 	import type { DagensTal } from '$lib/firestore/forside3';
 
@@ -9,6 +17,11 @@
 	}
 
 	let { tal }: Props = $props();
+
+	const linjer = $derived([
+		{ navn: 'Protein', vaerdi: tal.protein, maal: tal.proteinMaal, farve: 'p' },
+		{ navn: 'Fiber', vaerdi: tal.fiber, maal: tal.fiberMaal, farve: 'f' }
+	]);
 
 	const pct = (v: number, maal: number) =>
 		maal > 0 ? Math.max(0, Math.min(100, Math.round((v / maal) * 100))) : 0;
@@ -19,20 +32,27 @@
 		<h2>Dagens tal</h2>
 		<a href="/ny/moduler">Åbn mad</a>
 	</div>
-	<div class="kort maal-kort">
-		<div class="maal">
-			<span class="maal-k">Protein</span>
-			<div class="spor">
-				<div class="fyld p" style:width="{pct(tal.protein, tal.proteinMaal)}%"></div>
+	<div class="kort">
+		{#each linjer as l (l.navn)}
+			{@const mangler = Math.max(0, Math.round(l.maal - l.vaerdi))}
+			<div class="tal-blok">
+				<div class="tal-raekke">
+					<div>
+						<div class="tal-navn">{l.navn}</div>
+						<div class="tal-stort">
+							{l.vaerdi}<span class="tal-af">af {l.maal} g</span>
+						</div>
+					</div>
+					{#if mangler > 0}
+						<div class="tal-mangler">{mangler} g igen</div>
+					{:else}
+						<div class="tal-mangler i-hus">I hus</div>
+					{/if}
+				</div>
+				<div class="tal-spor">
+					<div class="tal-fyld {l.farve}" style:width="{pct(l.vaerdi, l.maal)}%"></div>
+				</div>
 			</div>
-			<span class="maal-v">{tal.protein}<small> / {tal.proteinMaal} g</small></span>
-		</div>
-		<div class="maal">
-			<span class="maal-k">Fiber</span>
-			<div class="spor">
-				<div class="fyld f" style:width="{pct(tal.fiber, tal.fiberMaal)}%"></div>
-			</div>
-			<span class="maal-v">{tal.fiber}<small> / {tal.fiberMaal} g</small></span>
-		</div>
+		{/each}
 	</div>
 </section>
