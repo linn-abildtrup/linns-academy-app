@@ -12,7 +12,7 @@
 	import type { User } from 'firebase/auth';
 	import type { Adgangsbillede } from '$lib/content/adgang3';
 	import { dagDato } from '$lib/content/forlobAdgang';
-	import { hentKlaret } from '$lib/firestore/forside3';
+	import { hentKlaret, datoNoegle } from '$lib/firestore/forside3';
 	import { hentForlobsdage } from '$lib/firestore/forlob';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
@@ -72,6 +72,7 @@
 			const ids = lektionerPrDag.get(dag) ?? [];
 			return {
 				dag,
+				noegle: datoNoegle(dato),
 				dato: `${dato.getDate()}. ${MAANEDER[dato.getMonth()]}`,
 				laast: dag > f.dagNummer,
 				erIDag: dag === f.dagNummer,
@@ -113,7 +114,7 @@
 						<span class="dag-laas" aria-hidden="true">🔒</span>
 					</div>
 				{:else}
-					<a class="dag-raekke" class:idag={d.erIDag} href={`/ny/forlob/${d.dag}`}>
+					<a class="dag-raekke" class:idag={d.erIDag} href={`/ny/dag/${d.noegle}`}>
 						<span class="dag-nr" class:taget={d.alleTaget}>
 							{#if d.alleTaget}<Fluebe />{:else}{d.dag}{/if}
 						</span>

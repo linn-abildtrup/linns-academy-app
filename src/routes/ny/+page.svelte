@@ -518,11 +518,20 @@
 			{:else}
 				<section class="uge">
 					{#each ugen as dag (dag.noegle)}
-						<div class="dag" class:idag={dag.erIdag} class:senere={dag.erFremtid}>
-							<span class="u">{dag.navn}</span>
-							<span class="d">{dag.dato}</span>
-							{#if dag.harData}<span class="prik"></span>{/if}
-						</div>
+						{#if dag.erFremtid}
+							<div class="dag senere">
+								<span class="u">{dag.navn}</span>
+								<span class="d">{dag.dato}</span>
+							</div>
+						{:else}
+							<!-- Fortiden kan trykkes. Én side pr dato, uanset om hun
+							     er paa forloeb eller ej. -->
+							<a class="dag" class:idag={dag.erIdag} href={`/ny/dag/${dag.noegle}`}>
+								<span class="u">{dag.navn}</span>
+								<span class="d">{dag.dato}</span>
+								{#if dag.harData}<span class="prik"></span>{/if}
+							</a>
+						{/if}
 					{/each}
 				</section>
 				<SmaaSkridt skridt={skridtData.skridt} {gemmer} onskift={skiftSkridt} />
