@@ -306,11 +306,11 @@
 	let henterInspirator = $state(false);
 	let afvistIDag = $state<string | null>(null);
 
+	// Har hun gjort noget I DAG. Ikke "nogensinde". Det skal vaere dagens
+	// lektioner der er klaret, ikke bare at hun engang har markeret én.
 	const gjortNogetIDag = $derived(
-		skridtKlaret ||
-			(skridtData?.skridt ?? []).some((s) => s.svar === 'ja') ||
-			lektionerKlaret ||
-			klaret.size > 0 ||
+		(skridtData?.skridt ?? []).some((s) => s.svar === 'ja') ||
+			lektioner.some((l) => klaret.has(l.id)) ||
 			(traening?.klaretIDag ?? false) ||
 			refleksionSkrevet
 	);
