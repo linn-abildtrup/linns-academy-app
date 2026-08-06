@@ -19,7 +19,7 @@
 	import type { LektionItem } from '$lib/content/forlob';
 	import { artFor, indlejretUrl, sekunderFoerKlaret, formaterVarighed } from '$lib/content/lektion3';
 	import { hentDagensLektioner, hentKlaret, saetKlaret } from '$lib/firestore/forside3';
-	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
+	import Lydafspiller from '$lib/components/ny/Lydafspiller.svelte';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 
@@ -37,7 +37,6 @@
 	let ikkeFundet = $state(false);
 	let erKlaret = $state(false);
 	let gemmer = $state(false);
-	let visLyd = $state(false);
 
 	const art = $derived(lektion ? artFor(lektion.url) : 'link');
 	const embed = $derived(lektion ? indlejretUrl(lektion.url) : null);
@@ -72,12 +71,14 @@
 		};
 	});
 
-	// Tiden hun har haft lektionen aaben. Naar den passerer graensen, og
-	// hun ikke selv har markeret den, saetter vi fluebenet.
+	// Tiden hun har haft lektionen aaben. Kun for video og sider: dér kan
+	// vi ikke se hvornaar hun er faerdig uden at hente Vimeos egen kode
+	// ind. Lyd siger selv til, naar den er spillet til ende.
 	onMount(() => {
 		let sekunder = 0;
 		const id = setInterval(() => {
 			if (document.visibilityState !== 'visible') return;
+			if (art === 'lyd') return;
 			sekunder += 1;
 			const graense = sekunderFoerKlaret(lektion?.varighedMin);
 			if (graense && sekunder >= graense && !erKlaret && !gemmer) {
@@ -149,14 +150,7 @@
 				<iframe src={embed} title={lektion.titel}></iframe>
 			</div>
 		{:else if art === 'lyd'}
-			<button class="lyd-kort" onclick={() => (visLyd = true)}>
-				<span class="lyd-ikon" aria-hidden="true">♪</span>
-				<span class="lyd-tekst">
-					<span class="lyd-t">Lyt til lektionen</span>
-					<span class="lyd-s">Appen husker hvor du slap</span>
-				</span>
-				<span class="lyd-pil" aria-hidden="true">›</span>
-			</button>
+			<Lydafspiller url={lektion.url} titel={lektion.titel} onfaerdig={() => markerKlaret(true)} />
 		{:else}
 			<a class="btn bred" href={lektion.url} target="_blank" rel="noopener noreferrer">
 				Åbn lektionen
@@ -179,18 +173,10 @@
 				<button class="btn" disabled={gemmer} onclick={() => markerKlaret(true)}>
 					Markér som set
 				</button>
-				<span class="fod-tekst">Den sætter sig selv, når du har set den færdig.</span>
+				<span class="fod-tekst">
+					Fluebenet kommer af sig selv, når du har {art === 'lyd' ? 'hørt' : 'set'} den færdig.
+				</span>
 			{/if}
 		</div>
 	{/if}
 </div>
-
-{#if visLyd && lektion}
-	<AudioPlayer
-		url={lektion.url}
-		titel={lektion.titel}
-		sub={formaterVarighed(lektion.varighedMin)}
-		kategori="Lektion"
-		onClose={() => (visLyd = false)}
-	/>
-{/if}
