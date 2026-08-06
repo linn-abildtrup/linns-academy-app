@@ -22,6 +22,7 @@
 
 	let tekst = $state('');
 	let redigerer = $state(false);
+	let foldet = $state(false);
 
 	// Naar noten kommer ind fra Firestore, saettes feltet. Skriver hun
 	// allerede, roerer vi ikke ved det hun har i haanden.
@@ -40,7 +41,16 @@
 </script>
 
 <section class="refleksion">
-	<div class="refleksion-k">Dagens refleksion</div>
+	<button
+		class="refleksion-top"
+		onclick={() => (foldet = !foldet)}
+		aria-expanded={!foldet}
+	>
+		<span class="refleksion-k">Dagens refleksion</span>
+		<span class="refleksion-chev" class:vendt={foldet} aria-hidden="true">⌄</span>
+	</button>
+
+	{#if !foldet}
 	<p class="refleksion-spm">{spoergsmaal}</p>
 
 	{#if visFelt}
@@ -52,7 +62,7 @@
 			rows="3"
 		></textarea>
 		<div class="refleksion-fod">
-			<span class="privat">Kun du kan se det</span>
+			<span class="privat">Kun du og Linn kan se dit svar</span>
 			<button class="btn" disabled={!kanGemme} onclick={gem}>
 				{gemmer ? 'Gemmer …' : 'Gem'}
 			</button>
@@ -66,9 +76,10 @@
 					Gemt
 				</span>
 			{:else}
-				<span class="privat">Kun du kan se det</span>
+				<span class="privat">Kun du og Linn kan se dit svar</span>
 			{/if}
 			<button class="link-knap" onclick={() => (redigerer = true)}>Rediger</button>
 		</div>
+	{/if}
 	{/if}
 </section>

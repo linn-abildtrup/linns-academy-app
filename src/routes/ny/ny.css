@@ -512,13 +512,29 @@
 
 /* ── Uge-strimmel ──────────────────────────────────────────── */
 
-.uge {
-	display: grid;
-	grid-template-columns: repeat(7, 1fr);
+/* Datostrimlen ruller bagud, saa hun kan finde enhver dag hun har
+   vaeret med. Syv er synlige ad gangen, resten ligger til venstre. */
+.uge-rulle {
+	display: flex;
 	gap: 6px;
+	overflow-x: auto;
+	scroll-snap-type: x proximity;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+	margin: 0 -17px;
+	padding: 2px 17px 6px;
 }
 
-.uge .dag {
+.uge-rulle::-webkit-scrollbar {
+	display: none;
+}
+
+.uge-rulle .dag {
+	flex: 0 0 calc((100% - 36px) / 7);
+	scroll-snap-align: end;
+}
+
+.dag {
 	background: var(--paper);
 	border-radius: 14px;
 	box-shadow: var(--shadow-soft);
@@ -526,7 +542,7 @@
 	text-align: center;
 }
 
-.uge .u {
+.dag .u {
 	display: block;
 	font-size: calc(9.5px * var(--fs-scale, 1));
 	font-weight: 600;
@@ -535,7 +551,7 @@
 	color: var(--ink-3);
 }
 
-.uge .d {
+.dag .d {
 	display: block;
 	font-size: calc(14px * var(--fs-scale, 1));
 	font-weight: 700;
@@ -543,7 +559,7 @@
 	color: var(--espresso);
 }
 
-.uge .prik {
+.dag .prik {
 	display: block;
 	width: 4px;
 	height: 4px;
@@ -552,21 +568,21 @@
 	margin: 3px auto 0;
 }
 
-.uge .dag.idag {
+.dag.idag {
 	background: var(--plum);
 	box-shadow: 0 8px 18px rgba(124, 79, 99, 0.3);
 }
-.uge .dag.idag .u {
+.dag.idag .u {
 	color: rgba(255, 255, 255, 0.72);
 }
-.uge .dag.idag .d {
+.dag.idag .d {
 	color: #fff;
 }
-.uge .dag.idag .prik {
+.dag.idag .prik {
 	background: var(--honey);
 }
 
-.uge .dag.senere {
+.dag.senere {
 	background: transparent;
 	box-shadow: none;
 	opacity: 0.45;
@@ -2687,4 +2703,34 @@ a.dag {
 	background: var(--sage);
 	box-shadow: none;
 	color: #fff;
+}
+
+/* Refleksionen kan foldes ind. Spoergsmaalet er personligt, og hun skal
+   kunne laegge det vaek uden at svare. */
+.refleksion-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	background: none;
+	border: 0;
+	padding: 0;
+	min-height: 32px;
+	text-align: left;
+}
+
+.refleksion-chev {
+	color: var(--ink-3);
+	font-size: calc(15px * var(--fs-scale, 1));
+	transition: transform 0.15s ease;
+}
+
+.refleksion-chev.vendt {
+	transform: rotate(-90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.refleksion-chev {
+		transition: none;
+	}
 }

@@ -51,8 +51,6 @@
 					<span class="rund-fluebe" aria-hidden="true"><Fluebe /></span>
 					Klaret
 				</span>
-			{:else}
-				<a class="btn" href="/ny/moduler">Start</a>
 			{/if}
 		</div>
 	</article>
