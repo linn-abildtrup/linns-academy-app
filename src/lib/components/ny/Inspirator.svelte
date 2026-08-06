@@ -15,9 +15,11 @@
 		tekst: string;
 		henter: boolean;
 		onafvis: () => void;
+		/** Hun tog imod og gaar videre til samtalen. Saa er kortet klaret. */
+		ontagimod: () => void;
 	}
 
-	let { tekst, henter, onafvis }: Props = $props();
+	let { tekst, henter, onafvis, ontagimod }: Props = $props();
 </script>
 
 <section class="inspirator">
@@ -34,6 +36,6 @@
 		</div>
 	{:else}
 		<p class="inspirator-tekst">{tekst}</p>
-		<a class="btn" href="/ny/snak">Snak med mig om det</a>
+		<a class="btn" href="/ny/snak" onclick={ontagimod}>Snak med mig om det</a>
 	{/if}
 </section>

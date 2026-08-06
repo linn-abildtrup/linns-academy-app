@@ -329,18 +329,21 @@
 		});
 	});
 
-	// Henter teksten én gang om dagen. Er den hentet i forvejen, bruger vi
-	// den, saa vi ikke spoerger AI'en ved hver eneste indlaesning.
+	// Er dagens tekst allerede skrevet, viser vi den, uanset hvad hun har
+	// naaet siden. Kortet skal blive staaende til hun selv goer noget ved
+	// det. Indhold der forsvinder under haenderne paa hende er forvirrende.
+	$effect(() => {
+		const gemt = nyeFelter.nyInspirator;
+		if (gemt?.dato === iDag && gemt.tekst && !inspiratorTekst) {
+			inspiratorTekst = gemt.tekst;
+		}
+	});
+
+	// Henter teksten én gang om dagen.
 	$effect(() => {
 		const f = fakta;
 		const uid = user?.uid;
 		if (!f || !uid || inspiratorTekst || henterInspirator) return;
-
-		const gemt = nyeFelter.nyInspirator;
-		if (gemt?.dato === iDag && gemt.tekst) {
-			inspiratorTekst = gemt.tekst;
-			return;
-		}
 
 		henterInspirator = true;
 		(async () => {
@@ -364,6 +367,15 @@
 			}
 		})();
 	});
+
+	// Naar teksten foerst er hentet, staar kortet der resten af dagen.
+	// Kun hun kan faa det vaek: ved at sige "ikke nu", eller ved at
+	// tage imod og snakke med AI'en om det.
+	const visInspirator = $derived(
+		(inspiratorTekst.length > 0 || henterInspirator) &&
+			afvistIDag !== iDag &&
+			(nyeFelter.nyInspiratorAfvist ?? '') !== iDag
+	);
 
 	async function afvisInspirator() {
 		const uid = user?.uid;
@@ -493,8 +505,13 @@
 			<Overskud {kurve} {status} nu={nuMs} />
 		{/if}
 
-		{#if fakta && (inspiratorTekst || henterInspirator)}
-			<Inspirator tekst={inspiratorTekst} henter={henterInspirator} onafvis={afvisInspirator} />
+		{#if visInspirator}
+			<Inspirator
+				tekst={inspiratorTekst}
+				henter={henterInspirator}
+				onafvis={afvisInspirator}
+				ontagimod={afvisInspirator}
+			/>
 		{/if}
 
 		{#if altKlaret}

@@ -23,9 +23,21 @@ describe('vurderInspirator', () => {
 		expect(vurderInspirator(grundlag({ dageSidenAktiv: 1 }))).toBeNull();
 	});
 
-	it('siger ingenting naar hun allerede har gjort noget i dag', () => {
-		// Hun er jo i gang. Saa skal vi ikke puffe til hende.
+	it('byder ikke velkommen tilbage til en der allerede er i gang i dag', () => {
 		expect(vurderInspirator(grundlag({ dageSidenAktiv: 30, harGjortNogetIDag: true }))).toBeNull();
+	});
+
+	it('melder faldet ogsaa naar hun har gjort noget i dag', () => {
+		// Beskeden handler om hvordan hun har det, ikke om dagens opgaver
+		// er krydset af. Derfor gaelder den uanset.
+		const f = vurderInspirator(
+			grundlag({
+				dageSidenAktiv: 0,
+				harGjortNogetIDag: true,
+				maalinger: [maaling(60, 7.2), maaling(30, 6.5), maaling(2, 5.8)]
+			})
+		);
+		expect(f?.situation).toBe('overskud-falder');
 	});
 
 	it('tier resten af dagen naar hun har sagt ikke nu', () => {

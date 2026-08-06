@@ -64,12 +64,9 @@ const VAEK_MEGET = 21;
  * normale svar, og det skal det vaere.
  */
 export function vurderInspirator(g: Grundlag): Fakta | null {
-	// Har hun sagt "ikke nu" i dag, er vi stille resten af dagen.
+	// Har hun sagt "ikke nu", eller har hun allerede snakket med AI'en om
+	// det, er vi stille resten af dagen.
 	if (g.afvistDato === g.iDag) return null;
-
-	// Har hun allerede gjort noget i dag, er der ingen grund til at
-	// puffe til hende. Hun er jo i gang.
-	if (g.harGjortNogetIDag) return null;
 
 	const nyeste = g.maalinger.length ? g.maalinger[g.maalinger.length - 1] : null;
 	const foerste = g.maalinger.length ? g.maalinger[0] : null;
@@ -95,6 +92,12 @@ export function vurderInspirator(g: Grundlag): Fakta | null {
 			};
 		}
 	}
+
+	// De tre fravaers-situationer handler om at komme i gang igen. Er hun
+	// allerede i gang i dag, giver det ingen mening at byde hende velkommen
+	// tilbage. Faldet ovenfor gaelder derimod uanset, for det handler om
+	// hvordan hun har det, ikke om dagens opgaver er krydset af.
+	if (g.harGjortNogetIDag) return null;
 
 	if (g.dageSidenAktiv >= VAEK_MEGET) return { ...basis, situation: 'vaek-meget', fald: null };
 	if (g.dageSidenAktiv >= VAEK_LAENGE) return { ...basis, situation: 'vaek-laenge', fald: null };
