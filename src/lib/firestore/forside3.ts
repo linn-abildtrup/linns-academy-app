@@ -91,12 +91,15 @@ export interface SmaaSkridtIDag {
  */
 export async function hentSmaaSkridtIDag(
 	uid: string,
-	forlob: { produkt: string; dagNummer: number } | null,
+	forlob: { forlobId: string; produkt: string; dagNummer: number } | null,
 	dato: string
 ): Promise<SmaaSkridtIDag> {
 	if (forlob) {
+		// To forskellige noegler, og de maa ikke byttes om:
+		//   programmet (spoergsmaal + refleksion) ligger under FORLOEBETS id
+		//   hendes svar ligger under PRODUKT-noeglen i hendes egen skuffe
 		const [program, entry] = await Promise.all([
-			hentVaneprogramDag(forlob.produkt, forlob.dagNummer),
+			hentVaneprogramDag(forlob.forlobId, forlob.dagNummer),
 			hentVanedag(uid, forlob.dagNummer, forlob.produkt)
 		]);
 		const checks = program?.checks ?? [];
@@ -202,6 +205,42 @@ export async function hentAktiveDage(
 		console.warn('[ny] kunne ikke hente aktive dage', e);
 	}
 	return ud;
+}
+
+/**
+ * Hvor mange dage siden hun sidst gjorde noget. Bruges af inspiratoren.
+ *
+ * Vi kigger paa hvad hun FAKTISK har gjort, ikke paa hvornaar hun sidst
+ * loggede ind. Login-tidspunkter lyver, det har vi laert foer.
+ */
+export function dageSidenAktiv(aktiveDage: Set<string>, iDag: Date): number {
+	if (aktiveDage.size === 0) return 999;
+	let bedst = 999;
+	for (const noegle of aktiveDage) {
+		const [aar, maaned, dag] = noegle.split('-').map(Number);
+		if (!aar || !maaned || !dag) continue;
+		const d = new Date(aar, maaned - 1, dag);
+		d.setHours(0, 0, 0, 0);
+		const nu = new Date(iDag);
+		nu.setHours(0, 0, 0, 0);
+		const dage = Math.floor((nu.getTime() - d.getTime()) / 86400000);
+		if (dage >= 0 && dage < bedst) bedst = dage;
+	}
+	return bedst;
+}
+
+/** Gemmer at hun sagde "ikke nu" til inspiratoren i dag. */
+export async function gemInspiratorAfvist(uid: string, dato: string): Promise<void> {
+	await setDoc(doc(db, 'users', uid), { nyInspiratorAfvist: dato }, { merge: true });
+}
+
+/** Gemmer dagens tekst, saa vi ikke spoerger AI'en igen ved hver indlaesning. */
+export async function gemInspiratorTekst(
+	uid: string,
+	dato: string,
+	tekst: string
+): Promise<void> {
+	await setDoc(doc(db, 'users', uid), { nyInspirator: { dato, tekst } }, { merge: true });
 }
 
 /** YYYY-MM-DD i lokal tid. Samme noegle som resten af appen bruger. */
