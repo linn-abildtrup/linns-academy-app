@@ -554,6 +554,7 @@
 			{:else}
 				<Lektioner
 					titel={`Dag ${aktivtForlob.dagNummer} på ${aktivtForlob.navn}`}
+					dagNummer={aktivtForlob.dagNummer}
 					{lektioner}
 					{klaret}
 					{gemmer}
@@ -609,7 +610,7 @@
 		{/if}
 
 		{#if aktivtForlob}
-			<a class="coach" href="/ny/moduler">
+			<a class="coach" href="/ny/beskeder">
 				<span class="coach-ava" aria-hidden="true"></span>
 				<span class="coach-tekst">
 					<span class="k">En hånd i ryggen</span>

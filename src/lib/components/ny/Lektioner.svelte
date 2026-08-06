@@ -15,13 +15,15 @@
 
 	interface Props {
 		titel: string;
+		/** Dagnummeret i forloebet. Bruges til adressen paa lektionen. */
+		dagNummer: number;
 		lektioner: LektionItem[];
 		klaret: Set<string>;
 		gemmer: string | null;
 		onklaret: (id: string, klaret: boolean) => void;
 	}
 
-	let { titel, lektioner, klaret, gemmer, onklaret }: Props = $props();
+	let { titel, dagNummer, lektioner, klaret, gemmer, onklaret }: Props = $props();
 
 	/** Den foerste uklarede. Den er dagens naeste skridt. */
 	const naeste = $derived(lektioner.find((l) => !klaret.has(l.id)) ?? null);
@@ -58,6 +60,7 @@
 <section>
 	<div class="lab">
 		<h2>{titel}</h2>
+		<a href="/ny/forlob">Alle dage</a>
 	</div>
 
 	{#if lektioner.length === 0}
@@ -68,7 +71,7 @@
 				{@const erKlaret = klaret.has(l.id)}
 				{@const erNaeste = naeste?.id === l.id}
 				<article class="medie-raekke" class:set={erKlaret}>
-					<div class="medie-thumb {art(l)}">
+					<a class="medie-thumb {art(l)}" href={`/ny/lektion/${dagNummer}/${l.id}`} aria-label={`Åbn ${l.titel}`}>
 						{#if billede(l)}
 							<img class="medie-foto" src={billede(l)} alt="" loading="lazy" />
 							<span class="medie-play" aria-hidden="true">{IKON[art(l)]}</span>
@@ -78,10 +81,10 @@
 						{#if erNaeste}
 							<span class="medie-tag">Næste</span>
 						{/if}
-					</div>
+					</a>
 
 					<div class="medie-tekst">
-						<div class="medie-t">{l.titel}</div>
+						<a class="medie-t medie-link" href={`/ny/lektion/${dagNummer}/${l.id}`}>{l.titel}</a>
 						<div class="medie-m">
 							{#if erKlaret}<span class="klar-tekst">Klaret</span> · se igen{:else}{meta(l)}{/if}
 						</div>
@@ -97,14 +100,9 @@
 								Klaret
 							</button>
 						{:else}
-							<button
-								class="btn"
-								class:ghost={!erNaeste}
-								disabled={gemmer === l.id}
-								onclick={() => onklaret(l.id, true)}
-							>
-								Markér klaret
-							</button>
+							<a class="btn" class:ghost={!erNaeste} href={`/ny/lektion/${dagNummer}/${l.id}`}>
+								{erNaeste ? 'Begynd' : 'Åbn'}
+							</a>
 						{/if}
 					</div>
 				</article>

@@ -55,6 +55,16 @@
 	--serif: 'Fraunces', Georgia, serif;
 	--sans: 'Plus Jakarta Sans', system-ui, sans-serif;
 
+	/* Bro til den gamle apps token-navne. Genbrugte komponenter som
+	   AudioPlayer bruger dem, og saa faar de automatisk den NYE flades
+	   skrifter og farve i stedet for terrakotta. Den gamle app er uroert,
+	   for tokens ligger her inde under .ny-app og ikke paa :root. */
+	--ff-d: 'Fraunces', Georgia, serif;
+	--ff-b: 'Plus Jakarta Sans', system-ui, sans-serif;
+	--terra: var(--plum);
+	--terra-dark: var(--plum-deep);
+	--text: var(--espresso);
+
 	background: var(--oat);
 	color: var(--espresso);
 	font-family: var(--sans);
@@ -2146,4 +2156,388 @@
 
 .usikker p.dvask {
 	color: var(--ink-3);
+}
+
+/* ── Lektionsvisning ───────────────────────────────────────── */
+
+.lektion-side {
+	padding: 0 17px 30px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.lektion-venter {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	color: var(--ink-3);
+	font-size: calc(13px * var(--fs-scale, 1));
+	padding: 24px 0;
+	justify-content: center;
+}
+
+.lektion-t {
+	font-family: var(--serif);
+	font-size: calc(23px * var(--fs-scale, 1));
+	font-weight: 500;
+	line-height: 1.2;
+	margin: 0;
+	color: var(--espresso);
+}
+
+.lektion-m {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-top: -8px;
+}
+
+.lektion-beskrivelse {
+	font-size: calc(14px * var(--fs-scale, 1));
+	line-height: 1.55;
+	color: var(--ink-2);
+	margin: 0;
+}
+
+.video-ramme {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	border-radius: 18px;
+	overflow: hidden;
+	background: #2c231e;
+	box-shadow: var(--shadow);
+}
+
+.video-ramme iframe {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	border: 0;
+}
+
+/* Linns uploadede sider faar hoejde nok til at kunne laeses uden at
+   kunden skal rulle inde i en lille kasse. */
+.side-ramme {
+	width: 100%;
+	height: 68vh;
+	border-radius: 18px;
+	overflow: hidden;
+	background: var(--paper);
+	box-shadow: var(--shadow);
+}
+
+.side-ramme iframe {
+	width: 100%;
+	height: 100%;
+	border: 0;
+}
+
+.lyd-kort {
+	display: flex;
+	align-items: center;
+	gap: 13px;
+	background: linear-gradient(140deg, #8b7fa3, #6b5f85);
+	color: #fff;
+	border-radius: 20px;
+	padding: 18px 17px;
+	width: 100%;
+	text-align: left;
+	min-height: 44px;
+}
+
+.lyd-ikon {
+	width: 44px;
+	height: 44px;
+	flex-shrink: 0;
+	border-radius: 14px;
+	background: rgba(255, 255, 255, 0.18);
+	display: grid;
+	place-items: center;
+	font-size: calc(19px * var(--fs-scale, 1));
+}
+
+.lyd-tekst {
+	display: flex;
+	flex-direction: column;
+}
+
+.lyd-t {
+	font-family: var(--serif);
+	font-size: calc(16.5px * var(--fs-scale, 1));
+}
+
+.lyd-s {
+	font-size: calc(12px * var(--fs-scale, 1));
+	opacity: 0.75;
+	margin-top: 2px;
+}
+
+.lyd-pil {
+	margin-left: auto;
+	font-size: calc(18px * var(--fs-scale, 1));
+}
+
+.lektion-fod {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+	border-top: 1px solid var(--line);
+	padding-top: 15px;
+	margin-top: 4px;
+}
+
+.fod-tekst {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	flex: 1;
+	min-width: 140px;
+}
+
+.medie-link {
+	text-decoration: none;
+	color: var(--espresso);
+	display: block;
+}
+
+/* ── Forloebets kalender ───────────────────────────────────── */
+
+.forlob-side {
+	padding-bottom: 30px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.dag-liste {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.dag-raekke {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	background: var(--paper);
+	border-radius: 16px;
+	box-shadow: var(--shadow-soft);
+	padding: 12px 14px;
+	text-decoration: none;
+	color: inherit;
+	min-height: 56px;
+}
+
+.dag-raekke.idag {
+	box-shadow: var(--shadow), inset 0 0 0 2px var(--plum);
+}
+
+.dag-raekke.laast {
+	background: transparent;
+	box-shadow: inset 0 0 0 1px var(--line);
+	opacity: 0.55;
+}
+
+.dag-nr {
+	width: 34px;
+	height: 34px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background: var(--paper-2);
+	box-shadow: inset 0 0 0 1px var(--line);
+	display: grid;
+	place-items: center;
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--ink-2);
+}
+
+.dag-nr.taget {
+	background: var(--sage);
+	box-shadow: none;
+	color: #fff;
+}
+
+.dag-tekst {
+	display: flex;
+	flex-direction: column;
+}
+
+.dag-t {
+	font-family: var(--serif);
+	font-size: calc(15.5px * var(--fs-scale, 1));
+	color: var(--espresso);
+}
+
+.dag-s {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-top: 1px;
+}
+
+.dag-idag {
+	margin-left: auto;
+	background: var(--plum-tint);
+	color: var(--plum);
+	border-radius: 99px;
+	padding: 4px 10px;
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	font-weight: 700;
+}
+
+.dag-pil,
+.dag-laas {
+	margin-left: auto;
+	color: var(--ink-3);
+	font-size: calc(15px * var(--fs-scale, 1));
+}
+
+.dag-idag + .dag-pil {
+	margin-left: 8px;
+}
+
+.rund-fluebe.stor {
+	width: 34px;
+	height: 34px;
+}
+
+.note-fra-linn {
+	display: flex;
+	gap: 12px;
+	background: var(--paper);
+	border-radius: 20px;
+	box-shadow: var(--shadow);
+	padding: 15px 16px;
+	border-left: 3px solid var(--honey);
+}
+
+.note-ava {
+	width: 34px;
+	height: 34px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background-color: var(--honey);
+	background-image: url('/linn.jpg');
+	background-size: cover;
+	background-position: center 28%;
+}
+
+.note-k {
+	font-size: calc(10px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--honey-deep);
+}
+
+.note-tekst {
+	font-size: calc(14px * var(--fs-scale, 1));
+	line-height: 1.55;
+	color: var(--espresso);
+	margin: 5px 0 0;
+	white-space: pre-wrap;
+}
+
+/* ── Beskeder ──────────────────────────────────────────────── */
+
+.beskeder-side {
+	padding-bottom: 30px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.skriv-kort {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+.traade {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.traad {
+	background: var(--paper);
+	border-radius: 20px;
+	box-shadow: var(--shadow-soft);
+	padding: 15px 16px;
+}
+
+.traad-top {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 8px;
+}
+
+.traad-dato {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.traad-status {
+	margin-left: auto;
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	border-radius: 99px;
+	padding: 4px 10px;
+}
+
+.traad-status.svaret {
+	background: var(--sage-tint);
+	color: #4d6b50;
+}
+
+.traad-status.venter {
+	background: var(--paper-2);
+	color: var(--ink-3);
+	box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.traad-spm {
+	font-size: calc(14px * var(--fs-scale, 1));
+	line-height: 1.55;
+	color: var(--espresso);
+	margin: 0;
+	white-space: pre-wrap;
+}
+
+.traad-svar {
+	display: flex;
+	gap: 11px;
+	margin-top: 13px;
+	padding-top: 13px;
+	border-top: 1px solid var(--line);
+}
+
+.traad-ava {
+	width: 30px;
+	height: 30px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background-color: var(--honey);
+	background-image: url('/linn.jpg');
+	background-size: cover;
+	background-position: center 28%;
+}
+
+.traad-fra {
+	font-size: calc(10px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--plum);
+}
+
+.traad-svar p {
+	font-size: calc(14px * var(--fs-scale, 1));
+	line-height: 1.55;
+	color: var(--espresso);
+	margin: 4px 0 0;
+	white-space: pre-wrap;
 }
