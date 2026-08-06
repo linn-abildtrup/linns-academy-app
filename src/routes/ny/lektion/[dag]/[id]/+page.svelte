@@ -168,14 +168,10 @@
 					<span class="rund-fluebe" aria-hidden="true"><Fluebe /></span>
 					Set
 				</button>
-				<span class="fod-tekst">Du kan altid åbne den igen.</span>
 			{:else}
 				<button class="btn" disabled={gemmer} onclick={() => markerKlaret(true)}>
 					Markér som set
 				</button>
-				<span class="fod-tekst">
-					Fluebenet kommer af sig selv, når du har {art === 'lyd' ? 'hørt' : 'set'} den færdig.
-				</span>
 			{/if}
 		</div>
 	{/if}

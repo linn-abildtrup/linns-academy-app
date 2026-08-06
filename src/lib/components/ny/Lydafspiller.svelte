@@ -167,9 +167,7 @@
 ></audio>
 
 <section class="lyd-side">
-	<div class="lyd-plade">
-		<span class="lyd-portraet" role="img" aria-label="Linn"></span>
-	</div>
+	<div class="lyd-plade" role="img" aria-label="Linn"></div>
 
 	<div class="lyd-spor">
 		<input

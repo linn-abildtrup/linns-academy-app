@@ -2245,42 +2245,18 @@
 	gap: 16px;
 }
 
-/* Pladen med Linns ansigt centreret. Det er hendes stemme man hoerer,
-   saa det er hendes ansigt man skal se paa imens. */
+/* Pladen ER billedet af Linn. Det er hendes stemme man hoerer, saa det
+   er hendes ansigt der fylder, mens man lytter. Billedet er beskaaret i
+   16:9 paa forhaand, saa ansigtet sidder rigtigt uden at blive klippet. */
 .lyd-plade {
 	width: 100%;
 	aspect-ratio: 16 / 9;
 	border-radius: 22px;
-	background: linear-gradient(150deg, #8b7fa3, #6b5f85);
-	position: relative;
-	overflow: hidden;
-	display: grid;
-	place-items: center;
-}
-
-.lyd-plade::after {
-	content: '';
-	position: absolute;
-	width: 200px;
-	height: 200px;
-	right: -60px;
-	top: -70px;
-	background: radial-gradient(circle, rgba(214, 161, 94, 0.32), transparent 68%);
-	pointer-events: none;
-}
-
-.lyd-portraet {
-	width: 108px;
-	height: 108px;
-	border-radius: 50%;
-	background-color: var(--honey);
-	background-image: url('/linn.jpg');
+	background-color: #6b5f85;
+	background-image: url('/linn-bred.jpg');
 	background-size: cover;
-	background-position: center 26%;
-	box-shadow:
-		0 0 0 4px rgba(251, 248, 242, 0.85),
-		0 10px 26px rgba(40, 26, 18, 0.35);
-	position: relative;
+	background-position: center;
+	box-shadow: var(--shadow);
 }
 
 .lyd-spor input[type='range'] {
