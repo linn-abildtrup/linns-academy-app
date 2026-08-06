@@ -25,7 +25,7 @@
 <section class="inspirator">
 	<div class="inspirator-top">
 		<span class="inspirator-ava" aria-hidden="true"></span>
-		<span class="inspirator-k">En tanke til dig</span>
+		<span class="inspirator-k">En hilsen fra Linn AI</span>
 		<button class="inspirator-luk" onclick={onafvis} aria-label="Skjul for i dag">Ikke nu</button>
 	</div>
 
