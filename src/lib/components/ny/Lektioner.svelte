@@ -3,10 +3,9 @@
 	// Dagens lektioner i forloebet.
 	//
 	// Alle er raekker i samme stoerrelse som traeningen, saa siden staar
-	// jaevnt. Den foerste der IKKE er klaret, er markeret "Naeste" og har
-	// knappen. Bliver den klaret, faar den flueben og teksten se igen, og
-	// den naeste faar markeringen. Raekkefoelgen aendrer sig aldrig, og
-	// ingenting forsvinder.
+	// jaevnt. Hele raekken aabner lektionen. Den foerste der IKKE er set,
+	// er markeret "Naeste". Er en set, faar den flueben i stedet for
+	// billedet. Raekkefoelgen aendrer sig aldrig, og ingenting forsvinder.
 	// ============================================================
 
 	import type { LektionItem } from '$lib/content/forlob';
@@ -19,11 +18,9 @@
 		dagNummer: number;
 		lektioner: LektionItem[];
 		klaret: Set<string>;
-		gemmer: string | null;
-		onklaret: (id: string, klaret: boolean) => void;
 	}
 
-	let { titel, dagNummer, lektioner, klaret, gemmer, onklaret }: Props = $props();
+	let { titel, dagNummer, lektioner, klaret }: Props = $props();
 
 	/** Den foerste uklarede. Den er dagens naeste skridt. */
 	const naeste = $derived(lektioner.find((l) => !klaret.has(l.id)) ?? null);
@@ -70,9 +67,13 @@
 			{#each lektioner as l (l.id)}
 				{@const erKlaret = klaret.has(l.id)}
 				{@const erNaeste = naeste?.id === l.id}
-				<article class="medie-raekke" class:set={erKlaret}>
-					<a class="medie-thumb {art(l)}" href={`/ny/lektion/${dagNummer}/${l.id}`} aria-label={`Åbn ${l.titel}`}>
-						{#if billede(l)}
+				<!-- Hele raekken aabner lektionen. Ingen knap, for hun trykker
+				     alligevel paa billedet eller titlen. -->
+				<a class="medie-raekke" class:set={erKlaret} href={`/ny/lektion/${dagNummer}/${l.id}`}>
+					<span class="medie-thumb {art(l)}">
+						{#if erKlaret}
+							<span class="rund-fluebe stor" aria-hidden="true"><Fluebe /></span>
+						{:else if billede(l)}
 							<img class="medie-foto" src={billede(l)} alt="" loading="lazy" />
 							<span class="medie-play" aria-hidden="true">{IKON[art(l)]}</span>
 						{:else}
@@ -81,31 +82,16 @@
 						{#if erNaeste}
 							<span class="medie-tag">Næste</span>
 						{/if}
-					</a>
+					</span>
 
-					<div class="medie-tekst">
-						<a class="medie-t medie-link" href={`/ny/lektion/${dagNummer}/${l.id}`}>{l.titel}</a>
-						<div class="medie-m">
-							{#if erKlaret}<span class="klar-tekst">Klaret</span> · se igen{:else}{meta(l)}{/if}
-						</div>
-
-						{#if erKlaret}
-							<button
-								class="klar-chip"
-								disabled={gemmer === l.id}
-								aria-label={`Fortryd ${l.titel}`}
-								onclick={() => onklaret(l.id, false)}
-							>
-								<span class="rund-fluebe" aria-hidden="true"><Fluebe /></span>
-								Klaret
-							</button>
-						{:else}
-							<a class="btn" class:ghost={!erNaeste} href={`/ny/lektion/${dagNummer}/${l.id}`}>
-								{erNaeste ? 'Begynd' : 'Åbn'}
-							</a>
-						{/if}
-					</div>
-				</article>
+					<span class="medie-tekst">
+						<span class="medie-t">{l.titel}</span>
+						<span class="medie-m">
+							{#if erKlaret}<span class="klar-tekst">Set</span> · se igen{:else}{meta(l)}{/if}
+						</span>
+					</span>
+					<span class="medie-pil" aria-hidden="true">›</span>
+				</a>
 			{/each}
 		</div>
 

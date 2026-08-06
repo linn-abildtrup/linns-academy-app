@@ -131,7 +131,7 @@
 						<span class="medie-tekst">
 							<span class="medie-t">{l.titel}</span>
 							<span class="medie-m">
-								{#if erKlaret}<span class="klar-tekst">Taget</span> · se igen{:else if l.varighedMin}{l.varighedMin}
+								{#if erKlaret}<span class="klar-tekst">Set</span> · se igen{:else if l.varighedMin}{l.varighedMin}
 									min{:else}Åbn{/if}
 							</span>
 						</span>

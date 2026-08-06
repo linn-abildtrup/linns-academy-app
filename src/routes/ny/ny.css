@@ -1020,8 +1020,10 @@
 	backdrop-filter: blur(16px);
 	-webkit-backdrop-filter: blur(16px);
 	border-top: 1px solid var(--line);
+	/* Fem faner. Tallet skal foelge listen i +layout.svelte, ellers
+	   braekker menuen om paa to raekker. */
 	display: grid;
-	grid-template-columns: repeat(4, 1fr);
+	grid-template-columns: repeat(5, 1fr);
 	padding-bottom: 12px;
 }
 .ny-nav a {
@@ -1032,10 +1034,13 @@
 	gap: 4px;
 	color: var(--ink-3);
 	text-decoration: none;
-	font-size: calc(10.5px * var(--fs-scale, 1));
+	font-size: calc(9.5px * var(--fs-scale, 1));
 	font-weight: 600;
 	position: relative;
 	min-height: 44px;
+	letter-spacing: -0.01em;
+	text-align: center;
+	padding: 0 2px;
 }
 .ny-nav a.active {
 	color: var(--plum);
@@ -2540,4 +2545,28 @@
 	color: var(--espresso);
 	margin: 4px 0 0;
 	white-space: pre-wrap;
+}
+
+/* Pilen yderst i en medie-raekke, saa det er tydeligt at hele raekken
+   kan trykkes. Knapperne er vaek, for hun trykker alligevel paa
+   billedet eller titlen. */
+.medie-pil {
+	margin-left: auto;
+	color: var(--ink-3);
+	font-size: calc(16px * var(--fs-scale, 1));
+	flex-shrink: 0;
+}
+
+.medie-raekke {
+	text-decoration: none;
+	color: inherit;
+}
+
+/* Tilbage-knappen er en knap og ikke et link, fordi den gaar tilbage i
+   historikken. Den skal se ud som resten. */
+button.tilbage {
+	background: none;
+	border: none;
+	padding: 0;
+	cursor: pointer;
 }

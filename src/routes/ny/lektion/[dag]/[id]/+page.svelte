@@ -13,6 +13,7 @@
 
 	import { getContext, onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
 	import type { Adgangsbillede } from '$lib/content/adgang3';
 	import type { LektionItem } from '$lib/content/forlob';
@@ -102,12 +103,20 @@
 		}
 	}
 
-	const tilbage = $derived(`/ny/forlob/${dagNummer}`);
+	// Tilbage foerer derhen hun kom fra. Kom hun udefra (fx et link),
+	// falder vi tilbage til forsiden i stedet for at sende hende ud af appen.
+	function tilbage() {
+		if (typeof history !== 'undefined' && history.length > 1) {
+			history.back();
+			return;
+		}
+		void goto('/ny');
+	}
 </script>
 
 <div class="lektion-side">
 	<header class="side-top">
-		<a class="tilbage" href={tilbage}>‹ Tilbage til dagen</a>
+		<button class="tilbage" onclick={tilbage}>‹ Tilbage</button>
 	</header>
 
 	{#if henter}
@@ -163,12 +172,12 @@
 			{#if erKlaret}
 				<button class="klar-chip" disabled={gemmer} onclick={() => markerKlaret(false)}>
 					<span class="rund-fluebe" aria-hidden="true"><Fluebe /></span>
-					Klaret
+					Set
 				</button>
 				<span class="fod-tekst">Du kan altid åbne den igen.</span>
 			{:else}
 				<button class="btn" disabled={gemmer} onclick={() => markerKlaret(true)}>
-					Markér som taget
+					Markér som set
 				</button>
 				<span class="fod-tekst">Den sætter sig selv, når du har set den færdig.</span>
 			{/if}

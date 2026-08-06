@@ -354,12 +354,32 @@ export interface DagensTraening {
  * Én video pr dag, cirka 1,2 MB. Resten af dagens videoer hentes i
  * baggrunden, saa de ligger klar naar hun trykker start.
  */
+/**
+ * Giver op efter et stykke tid i stedet for at vente i det uendelige.
+ * Bruges om video-hentningen, saa en langsom forbindelse aldrig kan
+ * spaerre hele forsiden.
+ */
+function medFrist<T>(arbejde: Promise<T>, ms: number, opgiv: T): Promise<T> {
+	return Promise.race([
+		arbejde,
+		new Promise<T>((klar) => setTimeout(() => klar(opgiv), ms))
+	]);
+}
+
+/** Fire sekunder. Kommer videoen ikke inden, viser flisen bare farven. */
+const VIDEO_FRIST_MS = 4000;
+
 async function videoForDag(exerciseIds: string[]): Promise<string | null> {
 	if (exerciseIds.length === 0) return null;
-	const exercises = await hentExercises(exerciseIds);
+	const exercises = await medFrist(hentExercises(exerciseIds), VIDEO_FRIST_MS, new Map());
 	const foerste = exercises.get(exerciseIds[0]);
 	if (!foerste?.videoPath) return null;
-	const url = await getVideoUrl(foerste.videoPath);
+	const url = await medFrist<string | null>(
+		getVideoUrl(foerste.videoPath),
+		VIDEO_FRIST_MS,
+		null
+	);
+	if (!url) return null;
 	// Resten hentes i baggrunden. Fejler det, gaar det ud over ingenting.
 	void prefetchVideoer(
 		exerciseIds

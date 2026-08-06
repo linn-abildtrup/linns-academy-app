@@ -146,6 +146,13 @@
 		if (!uid || !n) return;
 		let afbrudt = false;
 
+		// Sikkerhedsline: har vi ikke alt efter tolv sekunder, viser vi
+		// siden med det vi har. Bedre en halv forside end en der staar og
+		// venter i det uendelige paa en daarlig forbindelse.
+		const noedbremse = setTimeout(() => {
+			if (!afbrudt) henter = false;
+		}, 12000);
+
 		(async () => {
 			henter = true;
 			hentet = 0;
@@ -213,6 +220,7 @@
 
 		return () => {
 			afbrudt = true;
+			clearTimeout(noedbremse);
 		};
 	});
 
@@ -425,24 +433,6 @@
 		}
 	}
 
-	async function skiftLektion(id: string, tilKlaret: boolean) {
-		const uid = user?.uid;
-		if (!uid) return;
-		gemmer = id;
-		const foer = new Set(klaret);
-		const ny = new Set(klaret);
-		if (tilKlaret) ny.add(id);
-		else ny.delete(id);
-		klaret = ny;
-		try {
-			await saetKlaret(uid, id, tilKlaret);
-		} catch (e) {
-			console.error('[ny] kunne ikke gemme klaret-status', e);
-			klaret = foer;
-		} finally {
-			gemmer = null;
-		}
-	}
 
 	async function gemNote(tekst: string) {
 		const uid = user?.uid;
@@ -557,8 +547,6 @@
 					dagNummer={aktivtForlob.dagNummer}
 					{lektioner}
 					{klaret}
-					{gemmer}
-					onklaret={skiftLektion}
 				/>
 			{/if}
 		{/if}
