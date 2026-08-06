@@ -14,6 +14,7 @@
 	import {
 		gemSpoergsmaal,
 		hentMineSpoergsmaal,
+		markerSpoergsmaalLaest,
 		type KlientSpoergsmaal
 	} from '$lib/firestore/spoergsmaal';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
@@ -42,6 +43,14 @@
 		henter = true;
 		try {
 			traade = await hentMineSpoergsmaal(uid);
+			// Naar hun har vaeret inde og se svarene, skal linjen "Nyt svar
+			// fra Linn" forsvinde fra forsiden. Det er samme felt som den
+			// gamle app bruger, saa de to flader foelges ad.
+			if (traade.some((t) => t.svar)) {
+				await markerSpoergsmaalLaest(uid).catch((e) =>
+					console.error('[ny] kunne ikke markere svar som laest', e)
+				);
+			}
 		} catch (e) {
 			console.error('[ny] kunne ikke hente beskeder', e);
 			fejl = 'Dine beskeder kunne ikke hentes lige nu.';

@@ -30,6 +30,9 @@
 		type NyeKundeFelter
 	} from '$lib/content/forside3';
 	import { vurderInspirator, type Fakta } from '$lib/content/inspirator3';
+	import { byggBeskeder, type NyestSvar } from '$lib/content/beskeder3';
+	import { aboVisning, APP_KOB_URL } from '$lib/content/abonnement';
+	import { hentMineSpoergsmaal } from '$lib/firestore/spoergsmaal';
 	import { getGreetingWithName } from '$lib/utils/greeting';
 	import {
 		hentOverskud,
@@ -64,6 +67,7 @@
 	import Henter from '$lib/components/ny/Henter.svelte';
 	import Ugestrimmel from '$lib/components/ny/Ugestrimmel.svelte';
 	import Inspirator from '$lib/components/ny/Inspirator.svelte';
+	import TilDig from '$lib/components/ny/TilDig.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -119,6 +123,7 @@
 	let traening = $state<DagensTraening | null>(null);
 	let tal = $state<DagensTal | null>(null);
 	let naesteHold = $state<NaesteHoldType | null>(null);
+	let nyestSvar = $state<NyestSvar | null>(null);
 	let gemmer = $state<string | null>(null);
 	let gemmerNote = $state(false);
 	let noteGemtLige = $state(false);
@@ -223,6 +228,48 @@
 			afbrudt = true;
 			clearTimeout(noedbremse);
 		};
+	});
+
+	// ── Til dig lige nu ─────────────────────────────────────────
+	// Ulaeste svar fra Linn hentes for sig selv, IKKE sammen med resten.
+	// Forsiden skal ikke staa og vente paa dem, og kommer svaret et halvt
+	// sekund senere, glider linjen bare ind oeverst.
+	$effect(() => {
+		const uid = user?.uid;
+		if (!uid) return;
+		const senest = userDoc?.senestSpoergsmaalLaestAt ?? 0;
+		let afbrudt = false;
+
+		hentMineSpoergsmaal(uid)
+			.then((liste) => {
+				if (afbrudt) return;
+				const nyt = liste.find(
+					(q) => q.svar && q.besvaretAt && q.besvaretAt.toDate().getTime() > senest
+				);
+				nyestSvar = nyt
+					? { id: nyt.id, spoergsmaal: nyt.spoergsmaal, svar: nyt.svar ?? '' }
+					: null;
+			})
+			.catch((e) => console.error('[ny] kunne ikke hente svar fra Linn', e));
+
+		return () => {
+			afbrudt = true;
+		};
+	});
+
+	const beskeder = $derived.by(() => {
+		const abo = aboVisning(userDoc, nuMs);
+		// Udloebs-paamindelsen vises kun naar abonnementet er DET der giver
+		// hende adgang. Er hun paa et forloeb, loeber adgangen videre der,
+		// og saa er datoen ikke noget hun skal handle paa nu.
+		const visUdloeb = abo.taetPaaUdloeb && abo.slutterAt !== undefined && !aktivtForlob;
+		return byggBeskeder({
+			nyestSvar,
+			udloeb: visUdloeb
+				? { dageTilbage: abo.dageTilbage ?? 0, slutterAt: abo.slutterAt as number }
+				: null,
+			fornyUrl: APP_KOB_URL
+		});
 	});
 
 	// Adgangs-raekkerne bruges baade til baand og pauser paa kurven.
@@ -460,6 +507,8 @@
 	<Henter ialt={TRIN.length} {hentet} tekst={trinTekst} />
 {:else}
 	<div class="ny-pad" style="margin-top:16px">
+		<TilDig {beskeder} />
+
 		{#if altKlaret}
 			<section class="fejring">
 				<span class="fejring-rund" aria-hidden="true"><Fluebe /></span>
