@@ -62,6 +62,7 @@
 	import Refleksion from '$lib/components/ny/Refleksion.svelte';
 	import FoldetRaekke from '$lib/components/ny/FoldetRaekke.svelte';
 	import Henter from '$lib/components/ny/Henter.svelte';
+	import Ugestrimmel from '$lib/components/ny/Ugestrimmel.svelte';
 	import Inspirator from '$lib/components/ny/Inspirator.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 
@@ -242,28 +243,6 @@
 		);
 	}
 
-	// ── Ugestrimlen ─────────────────────────────────────────────
-	// Mandag til soendag. Soendag hoerer til den uge der lige er gaaet.
-	const ugen = $derived.by(() => {
-		const ugedage = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
-		const mandag = new Date(nu);
-		mandag.setDate(mandag.getDate() - ((mandag.getDay() + 6) % 7));
-		mandag.setHours(0, 0, 0, 0);
-
-		return ugedage.map((navn, i) => {
-			const d = new Date(mandag);
-			d.setDate(mandag.getDate() + i);
-			const n = datoNoegle(d);
-			return {
-				navn,
-				dato: d.getDate(),
-				noegle: n,
-				erIdag: n === iDag,
-				erFremtid: d.getTime() > nu.getTime() && n !== iDag,
-				harData: aktiveDage.has(n)
-			};
-		});
-	});
 
 	// ── Foldning ────────────────────────────────────────────────
 	// En sektion er foldet, naar den er klaret OG hun ikke selv har
@@ -516,24 +495,7 @@
 					onfold={() => foldUd('skridt')}
 				/>
 			{:else}
-				<section class="uge">
-					{#each ugen as dag (dag.noegle)}
-						{#if dag.erFremtid}
-							<div class="dag senere">
-								<span class="u">{dag.navn}</span>
-								<span class="d">{dag.dato}</span>
-							</div>
-						{:else}
-							<!-- Fortiden kan trykkes. Én side pr dato, uanset om hun
-							     er paa forloeb eller ej. -->
-							<a class="dag" class:idag={dag.erIdag} href={`/ny/dag/${dag.noegle}`}>
-								<span class="u">{dag.navn}</span>
-								<span class="d">{dag.dato}</span>
-								{#if dag.harData}<span class="prik"></span>{/if}
-							</a>
-						{/if}
-					{/each}
-				</section>
+				<Ugestrimmel aktivDato={iDag} {aktiveDage} {iDag} />
 				<SmaaSkridt skridt={skridtData.skridt} {gemmer} onskift={skiftSkridt} />
 			{/if}
 		{:else}
