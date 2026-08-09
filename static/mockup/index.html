@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Linns Academy 3.0 · oversigt over det vi har lavet</title>
+<style>
+:root {
+	--ground: #ded2c2; --ground-2: #eae0d3; --tekst: #382c2a;
+	--tekst-2: #6b5b52; --tekst-3: #94867c; --kant: #cbbba7; --brand: #7c4f63;
+	--paper: #fbf8f2; --line: #e8dfd1;
+	--plum: #7c4f63; --plum-deep: #5e3a4b; --plum-tint: #f1e5e8; --plum-kant: #d9bcc7;
+	--honey-deep: #b47f3e; --honey-tint: #f7ecd7;
+	--sage-tint: #e7efe5; --sage-tekst: #46603f; --sage-kant: #bcd0bb;
+	--shadow-soft: 0 1px 2px rgba(80,55,40,.04), 0 6px 16px rgba(90,62,44,.06);
+	--serif: Georgia, 'Times New Roman', serif;
+	--sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root {
+	--ground: #241d1b; --ground-2: #2f2624; --tekst: #f2e9de;
+	--tekst-2: #c3b3a7; --tekst-3: #9a8b80; --kant: #4a3d39;
+	--brand: #c98fa6; --paper: #372d2a; --line: #4a3d39; } }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ground); color: var(--tekst); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+.side { max-width: 560px; margin: 0 auto; padding: 30px 18px 60px; }
+
+.mrk { font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--brand); }
+h1 { font-family: var(--serif); font-size: 30px; font-weight: 600; line-height: 1.15; margin: 8px 0 10px; }
+.manchet { font-size: 15.5px; color: var(--tekst-2); margin: 0 0 6px; }
+.dato { font-size: 13px; color: var(--tekst-3); margin: 0; }
+
+h2 { font-family: var(--serif); font-size: 19px; font-weight: 600; margin: 30px 0 4px; }
+.h-under { font-size: 13.5px; color: var(--tekst-2); margin: 0 0 12px; }
+
+.liste { display: flex; flex-direction: column; gap: 9px; }
+a.kort {
+	display: flex; align-items: center; gap: 12px;
+	background: var(--paper); border: 1px solid var(--line); border-radius: 15px;
+	padding: 14px 15px; text-decoration: none; color: inherit; min-height: 62px;
+}
+a.kort:active { background: var(--ground-2); }
+a.kort:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+.kort .t { flex: 1; min-width: 0; }
+.kort .n { display: block; font-weight: 700; font-size: 15px; line-height: 1.25; }
+.kort .s { display: block; font-size: 12.5px; color: var(--tekst-2); margin-top: 2px; }
+.kort .pil { color: var(--tekst-3); font-size: 19px; flex-shrink: 0; }
+
+.mrkat { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; border: 1px solid; margin-bottom: 4px; }
+.m-bygget { background: var(--sage-tint); color: var(--sage-tekst); border-color: var(--sage-kant); }
+.m-tegnet { background: var(--honey-tint); color: var(--honey-deep); border-color: #e3c894; }
+.m-laast { background: var(--plum-tint); color: var(--plum-deep); border-color: var(--plum-kant); }
+
+.boks { background: var(--ground-2); border: 1px solid var(--kant); border-radius: 16px; padding: 17px 18px; margin-top: 28px; }
+.boks p { margin: 0 0 9px; font-size: 14px; color: var(--tekst-2); }
+.boks p:last-child { margin-bottom: 0; }
+.boks strong { color: var(--tekst); font-weight: 600; }
+hr { border: 0; border-top: 1px solid var(--kant); margin: 26px 0 0; }
+</style>
+</head>
+<body>
+<div class="side">
+	<div class="mrk">Linns Academy 3.0</div>
+	<h1>Alt det vi har lavet</h1>
+	<p class="manchet">
+		Én adresse med det hele. Grønt mærkat betyder at det er bygget og ligger ude. Honning betyder at
+		det kun er tegnet endnu.
+	</p>
+	<p class="dato">Opdateret 9. august 2026</p>
+
+	<h2>Den rigtige app</h2>
+	<p class="h-under">Kræver login. Kun dig og de to testkonti har adgang.</p>
+	<div class="liste">
+		<a class="kort" href="https://linns-academy-app.pages.dev/ny">
+			<span class="t">
+				<span class="mrkat m-bygget">bygget og ude</span>
+				<span class="n">Forsiden i 3.0</span>
+				<span class="s">Med note fra Linn og challenge. Log ind først.</span>
+			</span>
+			<span class="pil">›</span>
+		</a>
+		<a class="kort" href="https://linns-academy-app.pages.dev/ny/admin/challenges">
+			<span class="t">
+				<span class="mrkat m-bygget">bygget og ude</span>
+				<span class="n">Admin: opret challenge</span>
+				<span class="s">Kun for dig. Tildel til hold eller alle med appen.</span>
+			</span>
+			<span class="pil">›</span>
+		</a>
+	</div>
+
+	<h2>30-30 beregneren</h2>
+	<p class="h-under">Kun tegnet. Ingen login nødvendig.</p>
+	<div class="liste">
+		<a class="kort" href="/mockup/30-30/">
+			<span class="t">
+				<span class="mrkat m-tegnet">alt samlet</span>
+				<span class="n">Hele forløbet på én side</span>
+				<span class="s">De fire skærme efter hinanden. Start her.</span>
+			</span>
+			<span class="pil">›</span>
+		</a>
+		<a class="kort" href="/mockup/30-30-oversigt/">
+			<span class="t">
+				<span class="mrkat m-laast">skærm 1 · låst</span>
+				<span class="n">Oversigten</span>
+				<span class="s">Fire måltider og dagens protein og fiber.</span>
+			</span>
+			<span class="pil">›</span>
+		</a>
+		<a class="kort" href="/mockup/30-30-maaltid/">
+			<span class="t">
+				<span class="mrkat m-laast">skærm 2 · låst</span>
+				<span class="n">Inde i måltidet</span>
+				<span class="s">Det du plejer, søgning og de fire veje.</span>
+			</span>
+			<span class="pil">›</span>
+		</a>
+		<a class="kort" href="/mockup/30-30-maengde/">
+			<span class="t">
+				<span class="mrkat m-tegnet">skærm 3 · ikke låst</span>
+				<span class="n">Når hun trykker</span>
+				<span class="s">Kvitteringen, og fire måder at sætte mængden.</span>
+			</span>
+			<span class="pil">›</span>
+		</a>
+	</div>
+
+	<h2>Forsiden</h2>
+	<p class="h-under">Begge dele er bygget og ligger ude. Her kan du se hvorfor de blev som de blev.</p>
+	<div class="liste">
+		<a class="kort" href="/mockup/note/">
+			<span class="t">
+				<span class="mrkat m-bygget">bygget · forslag 3 valgt</span>
+				<span class="n">Note fra Linn</span>
+				<span class="s">De fire forslag. Talebobblen blev valgt.</span>
+			</span>
+			<span class="pil">›</span>
+		</a>
+		<a class="kort" href="/mockup/challenge/">
+			<span class="t">
+				<span class="mrkat m-bygget">bygget</span>
+				<span class="n">Challenge</span>
+				<span class="s">Samlingen, vist i fire situationer.</span>
+			</span>
+			<span class="pil">›</span>
+		</a>
+	</div>
+
+	<hr />
+
+	<div class="boks">
+		<p><strong>Hvorfor siden findes.</strong> Artefakt-linkene i chatten kræver at man er logget ind på claude.ai. Den her ligger på dit eget domæne og kan åbnes af enhver browser.</p>
+		<p><strong>Den er ikke hemmelig, men den er skjult.</strong> Der linkes ikke til den nogen steder, og den er mærket så den ikke dukker op i en søgning. Der er kun mockups på den, ingen kundedata.</p>
+		<p><strong>Den skal slettes</strong> når 30-30 beregneren er bygget færdig.</p>
+	</div>
+</div>
+</body>
+</html>
