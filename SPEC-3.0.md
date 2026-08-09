@@ -522,10 +522,12 @@ beslutte noget der skulle laves om senere.
 Moduler-fanen **udgår**. Den var en menu der førte til en menu, og alt andet
 end Biblioteket kan nås fra forsiden.
 
-Ny bundmenu: **Forside · Mad · Snak · Udvikling · Profil**
+Ny bundmenu: **Forside · 30-30 · Snak · Udvikling · Profil**
 
-- **Mad** tager pladsen. Det er det mest brugte i appen og det eneste modul
-  der ikke kan bo på forsiden.
+- **30-30** tager pladsen. Det er det mest brugte i appen og det eneste modul
+  der ikke kan bo på forsiden. **Modulet hedder "30-30 beregner"**, og i
+  bundmenuen står der kun **"30-30"**. Linns beslutning 9. august. Det gamle
+  navn var "Mad (30-30-3 beregner)".
 - **Træning** nås fra dagens træning på forsiden, hvor kunden også vælger og
   skifter program.
 - **Biblioteket** bliver et kort nederst på forsiden, kun for dem der har
@@ -695,8 +697,15 @@ uden søgefelt er ubrugelig.
 Kunden har trykket på en flise, og alt indholdet hænger på den her skærm.
 Udgave A valgt, med to rettelser.
 
-**Øverst:** måltidets navn, dato, og hvor langt hun er mod de 30 g protein,
-med en stribe under.
+**Øverst:** pil tilbage til oversigten og måltidets navn.
+
+**Så datoen på sin egen linje**, med en pil i hver side. Kunden kan gå frem og
+tilbage uden at forlade måltidet, så hun lander i samme måltid på den nye dag.
+**Datoen skal have sin egen linje**, ikke stå ved siden af pilen tilbage.
+Ellers står der to venstrepile på samme linje som betyder to forskellige ting.
+
+**Så måltidets tal:** protein med mål og stribe, fiber uden mål og uden stribe,
+kun tallet og teksten "i dagens 30".
 
 **Så det hun allerede har lagt i måltidet.** Flyttet op hertil, så hun kan se
 det uden at rulle. **Nyeste øverst**, og den lyser kort op i honning.
@@ -716,14 +725,39 @@ fra. Kunden skal ikke vide om "Grøn grød" er en opskrift eller en fødevare.
 Stregkode-scanneren sidder i samme felt. Det løser samtidig kravet om at
 egne fødevarer skal kunne søges i.
 
-**Nederst fire veje til at bladre:** opskrifter, madplan, favoritter og mine
+**Fire veje til at bladre:** opskrifter, madplan, favoritter og mine
 fødevarer. Det er her madplanen endelig får en synlig plads, i stedet for at
 ligge som fjerde fane ude i højre kant.
 
+De vises som **fire runde ikoner på 44 px med navnet under**, farvet i to
+familier: to grønne er Linns ting, altså opskrifter og madplan, og to blomme
+er kundens eget, altså favoritter og mine fødevarer. **Farven bærer
+parringen**, så vi slipper for at gruppere dem i layoutet og dermed slipper
+for et ekstra klik. Fire direkte veje i stedet for to der hver åbner et valg.
+
+**Navnet står altid med.** Ikoner alene er udelukket: et blyant-ikon betyder
+ikke "mine fødevarer" for nogen der ikke har set det før, og målgruppen er
+kvinder i 40erne og opefter. Af pladshensyn hedder den sidste "Mine".
+
+**Alle fire åbner som et ark der glider op nedefra**, ikke som en ny side.
+Måltidet bliver stående bagved, så kunden ikke mister fornemmelsen af hvad hun
+var i gang med. Lukker hun arket, står hun præcis hvor hun slap.
+
+**Plejer-fliserne holdes hvide.** Der er otte felter over hinanden på skærmen,
+og får både plejer-fliserne og de fire veje farve, bliver det broget. Farven
+bruges ét sted, ikke to.
+
+**Måltidets tal:** protein med mål og stribe, fiber uden mål. Fiber er et
+dagsmål og ikke et måltidsmål, så en stribe ville love noget der ikke findes.
+Der står "i dagens 30" ved siden af fiber-tallet.
+
 ## 27. Åbne punkter på Mad
 
-- Farve på fliserne: fire udgaver er tegnet, valget er udskudt med vilje
-- Hvor madplanen skal ligge, nu hvor den ikke må gentage sin nuværende placering
+- Farve på plejer-fliserne: udskudt med vilje, og de holdes hvide indtil
+  videre, fordi de fire veje allerede bærer farven
+- Skærm 3: hvad der sker når kunden trykker på en madvare. Mængde,
+  kvittering og Fortryd
+- Arkene: opskrifter, madplan, favoritter, mine fødevarer
 
 **Arbejdsform aftalt 9. august:** vi tager Mad ét skærmbillede ad gangen i
 stedet for at tegne hele modulet på én gang. De første fem runder mockups
