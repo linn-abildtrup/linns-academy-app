@@ -690,6 +690,36 @@ altid lander rigtigt, fordi måltidet er valgt først.
 **Egne fødevarer skal kunne søges i.** Én kunde har 143 af dem, så en liste
 uden søgefelt er ubrugelig.
 
+## 26.2 Mad, skærm 2: inde i måltidet. LÅST 9. august
+
+Kunden har trykket på en flise, og alt indholdet hænger på den her skærm.
+Udgave A valgt, med to rettelser.
+
+**Øverst:** måltidets navn, dato, og hvor langt hun er mod de 30 g protein,
+med en stribe under.
+
+**Så det hun allerede har lagt i måltidet.** Flyttet op hertil, så hun kan se
+det uden at rulle. **Nyeste øverst**, og den lyser kort op i honning.
+Tilføjer hun fire ting i træk, kan hun hver gang se at det hun lige trykkede
+faktisk landede, uden at lede efter det i en liste.
+
+**Så "det du plejer".** Fire fliser med hendes egne hyppigste madvarer til
+netop det måltid, med den mængde hun plejer at bruge. Ét tryk, og maden er i
+måltidet. Det dækker over halvdelen af alt hun taster, jf de 68,5 % i afsnit
+24. Tre ting skal følge med, ellers virker det ikke: mængden huskes pr
+madvare, listen er hendes egen og ikke en generel, og den nye kunde får de
+mest brugte madvarer på tværs af alle kunder indtil hun har sine egne.
+
+**Så ét søgefelt der leder i alt på én gang**, altså fødevarer, opskrifter,
+favoritter og hendes egne, med et lille mærke der viser hvor tingen kommer
+fra. Kunden skal ikke vide om "Grøn grød" er en opskrift eller en fødevare.
+Stregkode-scanneren sidder i samme felt. Det løser samtidig kravet om at
+egne fødevarer skal kunne søges i.
+
+**Nederst fire veje til at bladre:** opskrifter, madplan, favoritter og mine
+fødevarer. Det er her madplanen endelig får en synlig plads, i stedet for at
+ligge som fjerde fane ude i højre kant.
+
 ## 27. Åbne punkter på Mad
 
 - Farve på fliserne: fire udgaver er tegnet, valget er udskudt med vilje
