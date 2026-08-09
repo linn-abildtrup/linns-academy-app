@@ -40,7 +40,7 @@
 		saetSkridtSvar,
 		gemRefleksion,
 		hentAktiveDage,
-		hentDagensLektioner,
+		hentDagensProgram,
 		hentKlaret,
 		saetKlaret,
 		hentDagensTal,
@@ -119,6 +119,7 @@
 	let skridtData = $state<SmaaSkridtIDag | null>(null);
 	let aktiveDage = $state<Set<string>>(new Set());
 	let lektioner = $state<LektionItem[]>([]);
+	let noteFraLinn = $state('');
 	let klaret = $state<Set<string>>(new Set());
 	let traening = $state<DagensTraening | null>(null);
 	let tal = $state<DagensTal | null>(null);
@@ -205,13 +206,16 @@
 			tal = t;
 
 			if (aktivtForlob) {
-				lektioner = await hentDagensLektioner(
+				const program = await hentDagensProgram(
 					aktivtForlob.forlobId,
 					aktivtForlob.dagNummer,
 					nuMs
 				);
+				lektioner = program.lektioner;
+				noteFraLinn = program.note;
 			} else {
 				lektioner = [];
+				noteFraLinn = '';
 				naesteHold = await hentNaesteHold(
 					userDoc?.forlobIds ?? [],
 					adgang.gennemfoerte.map((g) => g.forlobId),
@@ -508,6 +512,20 @@
 {:else}
 	<div class="ny-pad" style="margin-top:16px">
 		<TilDig {beskeder} />
+
+		<!-- Noten fra Linn. Den folder sig ikke sammen som de andre
+		     sektioner, for den er ikke noget hun kan goere faerdig. -->
+		{#if noteFraLinn}
+			<section class="note-boble">
+				<div class="note-boble-top">
+					<span class="note-ava" aria-hidden="true"></span>
+					<span class="note-boble-navn">Linn skrev til dig i dag</span>
+				</div>
+				<div class="note-boble-tekst">
+					<p>{noteFraLinn}</p>
+				</div>
+			</section>
+		{/if}
 
 		{#if altKlaret}
 			<section class="fejring">

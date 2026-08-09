@@ -2560,6 +2560,57 @@
 	white-space: pre-wrap;
 }
 
+/* ── Noten fra Linn paa forsiden ───────────────────────────── */
+/*
+   Paa dags-siden staar noten som et almindeligt kort. Paa forsiden
+   staar den som en talebobbel, fordi den skal laese som et menneske
+   der siger noget, ikke som endnu en meddelelse fra app'en. Blomme,
+   samme farve som alt andet der kommer fra Linn.
+*/
+
+.note-boble {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.note-boble-top {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding-left: 3px;
+}
+
+.note-boble-top .note-ava {
+	width: 30px;
+	height: 30px;
+}
+
+.note-boble-navn {
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--ink-2);
+}
+
+.note-boble-tekst {
+	background: var(--plum-tint);
+	border-radius: 20px;
+	/* Det knaekkede hjoerne oeverst til venstre peger tilbage mod
+	   billedet, saa bobblen hoerer synligt sammen med afsenderen. */
+	border-top-left-radius: 6px;
+	padding: 15px 17px 16px;
+	margin-left: 12px;
+	box-shadow: var(--shadow-soft);
+}
+
+.note-boble-tekst p {
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	line-height: 1.55;
+	color: var(--espresso);
+	margin: 0;
+	white-space: pre-wrap;
+}
+
 /* ── Beskeder ──────────────────────────────────────────────── */
 
 .beskeder-side {

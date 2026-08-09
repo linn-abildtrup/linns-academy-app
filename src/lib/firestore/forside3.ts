@@ -266,6 +266,30 @@ export async function hentDagensLektioner(
 	return alle.filter((l) => synligNu(l, nu));
 }
 
+/** Lektionerne OG Linns note, fra ét og samme opslag. */
+export interface DagensProgram {
+	lektioner: LektionItem[];
+	note: string;
+}
+
+/**
+ * Forsiden skal bruge baade lektionerne og noten fra Linn, og de bor i
+ * samme dokument. Vi henter det derfor én gang og deler det ud, i stedet
+ * for at laese den samme dag to gange.
+ */
+export async function hentDagensProgram(
+	forlobId: string,
+	dagNummer: number,
+	nu: number
+): Promise<DagensProgram> {
+	const dag = await hentForlobsdag(forlobId, dagNummer);
+	const alle = dag?.lektioner ?? [];
+	return {
+		lektioner: alle.filter((l) => synligNu(l, nu)),
+		note: dag?.noteFraLinn ?? ''
+	};
+}
+
 /** Respekterer lektionens vis-fra og skjul-efter, som er lokale ISO-strenge. */
 function synligNu(l: LektionItem, nu: number): boolean {
 	if (l.visFra) {
