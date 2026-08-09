@@ -3456,3 +3456,530 @@ a.dag {
 	flex-shrink: 0;
 	margin-top: 3px;
 }
+
+/* ── 30-30 beregneren ──────────────────────────────────────── */
+/*
+   Oversigten: fire maaltidsfliser og dagens to tal, ikke mere. Alt
+   indhold ligger inde i maaltidet. Se SPEC-3.0.md afsnit 26.1 for
+   hvorfor, saa der ikke bliver lagt genveje her senere.
+*/
+
+.tt-side {
+	padding-top: 18px;
+	padding-bottom: 30px;
+	gap: 12px;
+}
+
+.tt-titel {
+	font-family: var(--serif);
+	font-size: calc(22px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 0;
+}
+
+.tt-dato {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	background: var(--paper);
+	border-radius: 12px;
+	box-shadow: var(--shadow-soft);
+	padding: 4px 6px;
+}
+
+.tt-dato span {
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-2);
+	text-align: center;
+}
+
+.tt-dato button {
+	background: none;
+	border: 0;
+	color: var(--ink-3);
+	font-size: calc(19px * var(--fs-scale, 1));
+	line-height: 1;
+	/* Maalgruppen skal kunne ramme pilen med en tommelfinger. */
+	min-width: 44px;
+	min-height: 40px;
+	cursor: pointer;
+}
+
+.tt-dato button:disabled {
+	opacity: 0.3;
+	cursor: default;
+}
+
+.tt-dato button:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: -2px;
+	border-radius: 9px;
+}
+
+.tt-venter {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 26px 0;
+	color: var(--ink-2);
+	font-size: calc(14px * var(--fs-scale, 1));
+}
+
+.tt-maaltid {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	background: var(--paper);
+	border-radius: 18px;
+	box-shadow: var(--shadow-soft);
+	padding: 14px 15px;
+	min-height: 74px;
+	text-decoration: none;
+	color: inherit;
+}
+
+.tt-maaltid:active {
+	background: var(--paper-2);
+}
+
+.tt-t {
+	flex: 1;
+	min-width: 0;
+}
+
+.tt-navn {
+	display: block;
+	font-family: var(--serif);
+	font-size: calc(17px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1.2;
+	color: var(--espresso);
+}
+
+/* Sammenfoldet til én linje, uanset hvor mange madvarer der er i
+   maaltidet. Medianen er 13 paa en dag. */
+.tt-under {
+	display: block;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin-top: 3px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tt-tom {
+	display: block;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	font-style: italic;
+	margin-top: 3px;
+}
+
+.tt-ring {
+	display: block;
+	height: 5px;
+	border-radius: 3px;
+	background: var(--paper-2);
+	margin-top: 9px;
+	overflow: hidden;
+}
+
+.tt-ring i {
+	display: block;
+	height: 100%;
+	background: var(--sage);
+	border-radius: 3px;
+}
+
+.tt-hoejre {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	flex-shrink: 0;
+}
+
+.tt-tal {
+	font-family: var(--serif);
+	font-size: calc(19px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--sage);
+	white-space: nowrap;
+	line-height: 1;
+	text-align: right;
+}
+
+.tt-tal small {
+	display: block;
+	font-family: var(--sans);
+	font-size: calc(9.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-3);
+	margin-top: 3px;
+	letter-spacing: 0.04em;
+}
+
+.tt-tal.mangler {
+	color: var(--ink-3);
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 700;
+}
+
+/* Snack. Roligt tal, ikke groent: der er intet maal at naa. */
+.tt-tal.fri {
+	color: var(--ink-2);
+}
+
+.tt-pil {
+	color: var(--ink-3);
+	font-size: calc(18px * var(--fs-scale, 1));
+}
+
+/* Dagens to tal. Snacken taeller med i begge, og derfor findes de. */
+.tt-dagskort {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 9px;
+	margin-top: 2px;
+}
+
+.tt-dk {
+	border-radius: 18px;
+	padding: 13px 14px;
+}
+
+.tt-dk.protein {
+	background: var(--plum-tint);
+}
+
+.tt-dk.fiber {
+	background: var(--sage-tint);
+}
+
+.tt-dk-navn {
+	font-family: var(--serif);
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
+}
+
+.tt-dk.protein .tt-dk-navn {
+	color: var(--plum-deep);
+}
+
+.tt-dk.fiber .tt-dk-navn {
+	color: #3f5742;
+}
+
+.tt-dk-tal {
+	font-family: var(--serif);
+	font-size: calc(21px * var(--fs-scale, 1));
+	font-weight: 600;
+	margin-top: 2px;
+}
+
+.tt-dk.protein .tt-dk-tal {
+	color: var(--plum-deep);
+}
+
+.tt-dk.fiber .tt-dk-tal {
+	color: #3f5742;
+}
+
+.tt-dk-tal small {
+	font-family: var(--sans);
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	font-weight: 500;
+}
+
+.tt-dk.protein .tt-dk-tal small {
+	color: #7c5a68;
+}
+
+.tt-dk.fiber .tt-dk-tal small {
+	color: #5d7860;
+}
+
+.tt-dk-bar {
+	height: 7px;
+	border-radius: 4px;
+	margin-top: 8px;
+	overflow: hidden;
+}
+
+.tt-dk.protein .tt-dk-bar {
+	background: #e0cad2;
+}
+
+.tt-dk.fiber .tt-dk-bar {
+	background: #d3e0d1;
+}
+
+.tt-dk-bar i {
+	display: block;
+	height: 100%;
+	border-radius: 4px;
+}
+
+.tt-dk.protein .tt-dk-bar i {
+	background: var(--plum);
+}
+
+.tt-dk.fiber .tt-dk-bar i {
+	background: var(--sage);
+}
+
+.tt-snack-note {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin: -4px 0 0;
+	text-align: center;
+}
+
+/* ── 30-30: inde i maaltidet ───────────────────────────────── */
+
+.tm-side {
+	padding-top: 16px;
+	padding-bottom: 30px;
+	gap: 11px;
+}
+
+.tm-hoved {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.tm-tilbage {
+	color: var(--ink-3);
+	font-size: calc(20px * var(--fs-scale, 1));
+	text-decoration: none;
+	/* Skal kunne rammes, ogsaa af en tommelfinger i farten. */
+	min-width: 34px;
+	min-height: 40px;
+	display: grid;
+	place-items: center;
+	margin-left: -8px;
+}
+
+.tm-navn {
+	font-family: var(--serif);
+	font-size: calc(21px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 0;
+}
+
+.tm-tal {
+	background: var(--paper);
+	border-radius: 14px;
+	box-shadow: var(--shadow-soft);
+	padding: 9px 13px 10px;
+	display: flex;
+	gap: 13px;
+	align-items: center;
+}
+
+.tm-t {
+	flex: 1;
+	min-width: 0;
+}
+
+.tm-t-navn {
+	font-size: calc(9.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.tm-t-linje {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+}
+
+.tm-t-tal {
+	font-family: var(--serif);
+	font-size: calc(17px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1.15;
+	color: var(--espresso);
+}
+
+.tm-t-tal small {
+	font-family: var(--sans);
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	font-weight: 500;
+	color: var(--ink-3);
+}
+
+.tm-t-note {
+	font-size: calc(10px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.tm-t-bar {
+	height: 4px;
+	border-radius: 2px;
+	background: var(--paper-2);
+	margin-top: 5px;
+	overflow: hidden;
+}
+
+.tm-t-bar i {
+	display: block;
+	height: 100%;
+	border-radius: 2px;
+	background: var(--sage);
+}
+
+.tm-skel {
+	width: 1px;
+	align-self: stretch;
+	background: var(--line);
+	flex-shrink: 0;
+}
+
+.tm-k {
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	margin-top: 3px;
+}
+
+.tm-plejer {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 6px;
+}
+
+.tm-flise {
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 11px;
+	padding: 7px 10px;
+	min-height: 42px;
+	display: flex;
+	align-items: center;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.tm-soeg {
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	padding: 12px 14px;
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.tm-ikoner {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 6px;
+}
+
+.tm-ikon {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 5px;
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-2);
+	text-align: center;
+}
+
+.tm-ikon i {
+	display: block;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	border: 1px solid;
+}
+
+/* To groenne er Linns ting, to blomme er kundens eget. Farven baerer
+   parringen, saa vi slipper for at gruppere dem og dermed for et klik. */
+.tm-ikon i.i1 {
+	background: var(--sage-tint);
+	border-color: #bcd0bb;
+}
+.tm-ikon i.i2 {
+	background: #dbe7d8;
+	border-color: #bcd0bb;
+}
+.tm-ikon i.i3 {
+	background: var(--plum-tint);
+	border-color: #d9bcc7;
+}
+.tm-ikon i.i4 {
+	background: #ead8de;
+	border-color: #d9bcc7;
+}
+
+.tm-liste {
+	background: var(--paper);
+	border-radius: 14px;
+	box-shadow: var(--shadow-soft);
+	overflow: hidden;
+}
+
+.tm-raekke {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 11px 13px;
+	border-top: 1px solid var(--line);
+}
+
+.tm-raekke:first-child {
+	border-top: 0;
+}
+
+.tm-r-navn {
+	flex: 1;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	color: var(--espresso);
+}
+
+.tm-r-tal {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--espresso);
+	white-space: nowrap;
+}
+
+/* ── Attrap ────────────────────────────────────────────────── */
+/*
+   Indhold der endnu ikke er koblet til rigtige data. Konventionen
+   staar i CLAUDE.md: der maa aldrig vaere tvivl om hvad der virker.
+   Daempet og med skraa streger, saa det ikke ligner en knap der bare
+   er i stykker. Fjern klassen i samme oejeblik tingen virker.
+*/
+
+.skitse {
+	position: relative;
+	opacity: 0.55;
+	pointer-events: none;
+}
+
+.skitse::after {
+	content: 'ikke bygget endnu';
+	position: absolute;
+	top: -7px;
+	right: 6px;
+	font-size: calc(9px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--honey-deep);
+	background: var(--honey-tint);
+	border: 1px solid #e3c894;
+	border-radius: 999px;
+	padding: 1px 7px;
+}
