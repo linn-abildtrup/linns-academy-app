@@ -683,7 +683,7 @@
 					onfold={() => foldUd('skridt')}
 				/>
 			{:else}
-				<Ugestrimmel aktivDato={iDag} {aktiveDage} {iDag} />
+				<Ugestrimmel aktivDato={iDag} {aktiveDage} {iDag} nulDage={adgang.nulDatoer} />
 				<SmaaSkridt skridt={skridtData.skridt} {gemmer} onskift={skiftSkridt} />
 			{/if}
 		{:else}

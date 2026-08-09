@@ -19,6 +19,21 @@
 // ============================================================
 
 import { forlobSlutMs, bibliotekBonusSlutMs, dageSidenStart } from './forlobAdgang';
+import { dagNummerMedNulDage, forlobSlutMedNulDage, produktHarNulDage } from './nulDage3';
+
+/**
+ * Kundens pause-dage, som datoer paa formen YYYY-MM-DD, slaaet op pr
+ * produkt. Tom hvis hun ingen har, og det er langt det almindeligste:
+ * 12 ud af 615 kunder havde brugt nul-dage den 9. august 2026.
+ *
+ * Kun Kropsro kan holde pause. Se nulDage3.ts.
+ */
+export type NulDageKilde = Record<string, string[]>;
+
+function nulDageFor(kilde: NulDageKilde, produkt: string): string[] {
+	if (!produktHarNulDage(produkt)) return [];
+	return kilde[produkt] ?? [];
+}
 
 /** Hvad en adgangs-raekke daekker. */
 export type AdgangArt = 'abo' | 'forlob' | 'bonus';
@@ -113,6 +128,12 @@ export interface Adgangsbillede {
 	medlemstidMs: number;
 	/** Gennemfoerte forloeb, nyeste foerst. */
 	gennemfoerte: GennemfoertForlob[];
+	/**
+	 * Datoer hvor hun har sat forloebet paa pause, YYYY-MM-DD. Bruges af
+	 * datostrimlen til at maerke dagen som Pause. Tom for alle andre end
+	 * Kropsro-kunder, hvilket er langt de fleste.
+	 */
+	nulDatoer: Set<string>;
 }
 
 /** Er raekken aktiv paa tidspunktet `nu`. Halvaabent interval [fra, til). */
@@ -127,7 +148,11 @@ export function erAktiv(a: Adgang, nu: number): boolean {
  * `forlob` er de forloebs-dokumenter der matcher kundens forlobIds. Mangler
  * et forloeb i listen, springes det over i stedet for at gaette paa datoer.
  */
-export function udledAdgange(felter: KundeFelter, forlob: ForlobKilde[]): Adgang[] {
+export function udledAdgange(
+	felter: KundeFelter,
+	forlob: ForlobKilde[],
+	nulDage: NulDageKilde = {}
+): Adgang[] {
 	const raekker: Adgang[] = [];
 	const forlobPrId = new Map(forlob.map((f) => [f.id, f]));
 
@@ -137,7 +162,14 @@ export function udledAdgange(felter: KundeFelter, forlob: ForlobKilde[]): Adgang
 	for (const id of felter.forlobIds ?? []) {
 		const f = forlobPrId.get(id);
 		if (!f || f.startMs <= 0 || f.antalDage <= 0) continue;
-		const slut = forlobSlutMs(f.startMs, f.antalDage);
+		// Har hun holdt pause, slutter forloebet tilsvarende senere.
+		// Uden det ville en Kropsro-kunde med 21 pause-dage miste
+		// adgangen tre uger for tidligt. Se nulDage3.ts.
+		const pause = nulDageFor(nulDage, f.produkt);
+		const slut =
+			pause.length > 0
+				? forlobSlutMedNulDage(f.startMs, f.antalDage, pause)
+				: forlobSlutMs(f.startMs, f.antalDage);
 		if (slut <= 0) continue;
 		raekker.push({
 			art: 'forlob',
@@ -293,7 +325,8 @@ export function gennemfoerteForlob(
 export function resolverAdgangsbillede(
 	nu: number,
 	adgange: Adgang[],
-	forlob: ForlobKilde[] = []
+	forlob: ForlobKilde[] = [],
+	nulDage: NulDageKilde = {}
 ): Adgangsbillede {
 	const forlobPrId = new Map(forlob.map((f) => [f.id, f]));
 
@@ -308,7 +341,16 @@ export function resolverAdgangsbillede(
 			produkt: a.produkt,
 			// Samme 0-baserede konvention og samme kl 06:00-normalisering som
 			// den gamle app, saa dagnummeret aldrig afviger et doegn.
-			dagNummer: Math.min(antalDage, Math.max(0, dageSidenStart(new Date(a.fra), new Date(nu)))),
+			//
+			// Har hun holdt pause, staar dagnummeret stille de dage. Uden
+			// det ville en Kropsro-kunde med 21 pause-dage faa dag 63 hvor
+			// hun skulle have dag 42, altsaa tre ugers forkert indhold.
+			dagNummer: dagNummerMedNulDage(
+				Math.min(antalDage, Math.max(0, dageSidenStart(new Date(a.fra), new Date(nu)))),
+				antalDage,
+				nulDageFor(nulDage, a.produkt),
+				nu
+			),
 			antalDage,
 			startMs: a.fra,
 			slutMs: a.til ?? 0
@@ -332,7 +374,10 @@ export function resolverAdgangsbillede(
 		tidligereForlob,
 		harBibliotek: harApp || harAktivBonus,
 		medlemstidMs: samletAdgangstidMs(adgange, nu),
-		gennemfoerte: gennemfoerteForlob(adgange, forlob, nu)
+		gennemfoerte: gennemfoerteForlob(adgange, forlob, nu),
+		// Samlet paa tvaers af hendes aktive forloeb, saa strimlen kan
+		// slaa en dato op uden at vide hvilket produkt den hoerer til.
+		nulDatoer: new Set(aktiveForlob.flatMap((f) => nulDageFor(nulDage, f.produkt)))
 	};
 }
 
@@ -342,9 +387,10 @@ export function resolverAdgangsbillede(
 export function adgangsbilledeFor(
 	nu: number,
 	felter: KundeFelter,
-	forlob: ForlobKilde[]
+	forlob: ForlobKilde[],
+	nulDage: NulDageKilde = {}
 ): Adgangsbillede {
-	return resolverAdgangsbillede(nu, udledAdgange(felter, forlob), forlob);
+	return resolverAdgangsbillede(nu, udledAdgange(felter, forlob, nulDage), forlob, nulDage);
 }
 
 /** Genbrugt saa kaldere ikke skal importere fra to moduler. */

@@ -588,6 +588,31 @@
 	opacity: 0.45;
 }
 
+/* Pause-dag. Stiplet kant, saa den tydeligt er en anden slags dag end
+   de andre, og ikke bare en der er slukket. Der er intet indhold bag
+   den, saa den kan ikke trykkes. Kun Kropsro kan holde pause. */
+.dag.pause {
+	background: transparent;
+	box-shadow: none;
+	border: 1px dashed var(--line);
+	/* Kanten maa ikke goere flisen bredere end naboerne. */
+	padding: 7px 0 6px;
+}
+
+.dag.pause .d {
+	color: var(--ink-3);
+	font-weight: 600;
+}
+
+.dag.pause .p {
+	display: block;
+	font-size: calc(8.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	color: var(--ink-3);
+	margin-top: 1px;
+}
+
 /* ── Dagens smaa skridt ────────────────────────────────────── */
 
 .skridt-top {

@@ -21,9 +21,15 @@
 		aktiveDage: Set<string>;
 		/** Dagens dato, saa fremtiden kan laases. */
 		iDag: string;
+		/**
+		 * Dage hvor kunden har sat forloebet paa pause. De taeller ikke med
+		 * i forloebet, saa der er intet indhold at gaa ind til. Tom for alle
+		 * andre end Kropsro-kunder. Se nulDage3.ts.
+		 */
+		nulDage?: Set<string>;
 	}
 
-	let { aktivDato, aktiveDage, iDag }: Props = $props();
+	let { aktivDato, aktiveDage, iDag, nulDage = new Set<string>() }: Props = $props();
 
 	const UGEDAGE = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
 
@@ -51,6 +57,7 @@
 				erValgt: noegle === aktivDato,
 				erIDag: noegle === iDag,
 				erFremtid: noegle > iDag,
+				erPause: nulDage.has(noegle),
 				harData: aktiveDage.has(noegle)
 			});
 		}
@@ -70,7 +77,15 @@
 
 <div class="uge-rulle" bind:this={rulle}>
 	{#each dage as dag (dag.noegle)}
-		{#if dag.erFremtid}
+		{#if dag.erPause}
+			<!-- Pause-dag. Der er ikke noget indhold bag den, saa den kan
+			     ikke trykkes. Se nulDage3.ts. -->
+			<div class="dag pause" title="Pause">
+				<span class="u">{dag.navn}</span>
+				<span class="d">{dag.dato}</span>
+				<span class="p">Pause</span>
+			</div>
+		{:else if dag.erFremtid}
 			<div class="dag senere">
 				<span class="u">{dag.navn}</span>
 				<span class="d">{dag.dato}</span>

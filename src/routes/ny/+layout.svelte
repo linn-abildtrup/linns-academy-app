@@ -24,8 +24,10 @@
 	import {
 		adgangsbilledeFor,
 		type Adgangsbillede,
-		type ForlobKilde
+		type ForlobKilde,
+		type NulDageKilde
 	} from '$lib/content/adgang3';
+	import { hentNulDage } from '$lib/firestore/nulDage3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import './ny.css';
 
@@ -37,6 +39,8 @@
 	let user = $state<User | null>(null);
 	let userDoc = $state<UserDoc | null>(null);
 	let forlob = $state<ForlobKilde[]>([]);
+	/** Kundens pause-dage pr produkt. Tom for alle andre end Kropsro. */
+	let nulDage = $state<NulDageKilde>({});
 	let loading = $state(true);
 
 	const maaSeNyApp = $derived(isAdmin(user) || harTestAdgang(userDoc, FLAG));
@@ -57,7 +61,8 @@
 				bonusPeriodEndsAt: userDoc?.bonusPeriodEndsAt,
 				createdAt: userDoc?.createdAt
 			},
-			forlob
+			forlob,
+			nulDage
 		)
 	);
 
@@ -108,6 +113,13 @@
 
 			if (doc?.forlobIds?.length) {
 				forlob = await indlaesForlob(doc.forlobIds);
+				// Pause-dage skal med, ellers staar dagnummeret forkert for
+				// den kunde der har holdt fri. Kun Kropsro kan holde pause,
+				// saa for alle andre koster det her nul opslag.
+				nulDage = await hentNulDage(
+					u.uid,
+					forlob.map((f) => f.produkt)
+				);
 			}
 
 			loading = false;

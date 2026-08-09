@@ -237,7 +237,7 @@
 			<span>Henter dagen</span>
 		</div>
 	{:else}
-		<Ugestrimmel aktivDato={dato} {aktiveDage} {iDag} />
+		<Ugestrimmel aktivDato={dato} {aktiveDage} {iDag} nulDage={adgang.nulDatoer} />
 
 		{#if note}
 			<section class="note-fra-linn">

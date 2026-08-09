@@ -29,6 +29,73 @@ const kickstart: ForlobKilde = {
 // hele sin sidste dag.
 const KICKSTART_SLUT = START + 22 * DAG;
 
+const kropsro: ForlobKilde = {
+	id: 'kropsro_juni_2026',
+	navn: 'Kropsro juni',
+	startMs: START,
+	antalDage: 84,
+	produkt: 'premiumforløb'
+};
+
+// Tre pause-dage, alle passeret naar vi staar paa dag 10.
+const PAUSE = ['2026-06-03', '2026-06-04', '2026-06-05'];
+const nulDage = { premiumforløb: PAUSE };
+
+describe('nul-dage', () => {
+	// Baggrund: 3.0 taalte rene kalenderdage og kendte ikke til pause.
+	// En Kropsro-kunde med 21 pause-dage ville faa tre ugers forkert
+	// indhold og miste adgangen tre uger for tidligt.
+
+	it('skubber dagnummeret tilbage med de passerede pause-dage', () => {
+		const nu = START + 10 * DAG;
+		const uden = adgangsbilledeFor(nu, { forlobIds: [kropsro.id] }, [kropsro]);
+		const med = adgangsbilledeFor(nu, { forlobIds: [kropsro.id] }, [kropsro], nulDage);
+		expect(uden.aktiveForlob[0].dagNummer).toBe(10);
+		expect(med.aktiveForlob[0].dagNummer).toBe(7);
+	});
+
+	it('forlaenger forloebet med én dag pr pause-dag', () => {
+		const uden = udledAdgange({ forlobIds: [kropsro.id] }, [kropsro])[0];
+		const med = udledAdgange({ forlobIds: [kropsro.id] }, [kropsro], nulDage)[0];
+		expect(Math.round(((med.til ?? 0) - (uden.til ?? 0)) / DAG)).toBe(3);
+	});
+
+	// Linns beslutning 9. august 2026: kun Kropsro kan holde pause.
+	it('roerer ikke en Kickstart-kunde, heller ikke hvis der ligger data', () => {
+		const nu = START + 10 * DAG;
+		const b = adgangsbilledeFor(nu, { forlobIds: [kickstart.id] }, [kickstart], {
+			premiumforløb: PAUSE,
+			kickstart: PAUSE
+		});
+		expect(b.aktiveForlob[0].dagNummer).toBe(10);
+		expect(b.nulDatoer.size).toBe(0);
+	});
+
+	it('lader dagnummeret staa naar hun ingen pause har holdt', () => {
+		const nu = START + 10 * DAG;
+		const b = adgangsbilledeFor(nu, { forlobIds: [kropsro.id] }, [kropsro], {});
+		expect(b.aktiveForlob[0].dagNummer).toBe(10);
+		expect(b.nulDatoer.size).toBe(0);
+	});
+
+	it('giver strimlen pause-datoerne', () => {
+		const nu = START + 10 * DAG;
+		const b = adgangsbilledeFor(nu, { forlobIds: [kropsro.id] }, [kropsro], nulDage);
+		expect([...b.nulDatoer].sort()).toEqual(PAUSE);
+	});
+
+	// En ferie der ligger frem i tiden maa ikke flytte dagens dagnummer,
+	// men den skal godt taelle med i hvornaar forloebet slutter.
+	it('taeller ikke fremtidig pause i dagnummeret, men i slutdatoen', () => {
+		const nu = START + 1 * DAG;
+		const b = adgangsbilledeFor(nu, { forlobIds: [kropsro.id] }, [kropsro], nulDage);
+		expect(b.aktiveForlob[0].dagNummer).toBe(1);
+		const uden = udledAdgange({ forlobIds: [kropsro.id] }, [kropsro])[0];
+		const med = udledAdgange({ forlobIds: [kropsro.id] }, [kropsro], nulDage)[0];
+		expect(Math.round(((med.til ?? 0) - (uden.til ?? 0)) / DAG)).toBe(3);
+	});
+});
+
 describe('udledAdgange', () => {
 	it('laver en forloebs-raekke pr forloeb kunden er paa', () => {
 		const r = udledAdgange({ forlobIds: [kickstart.id] }, [kickstart]);
@@ -202,7 +269,8 @@ describe('resolverAdgangsbillede', () => {
 			tidligereForlob: [],
 			harBibliotek: false,
 			medlemstidMs: 0,
-			gennemfoerte: []
+			gennemfoerte: [],
+			nulDatoer: new Set()
 		});
 	});
 });
