@@ -632,15 +632,30 @@ den admin-styrede adgangsmatrix, se `content/features.ts`.
 **Favoritter skal kunne vælges og ses.** De skal have en synlig plads, ikke
 kun dukke op i søgningen.
 
-**Madplanen er ikke blevet brugt en eneste gang** af nogen kunde de sidste 60
-dage. Til sammenligning er 603 måltider logget direkte fra en opskrift, af 75
-kunder. Målingen er troværdig, fordi den samme gennemgang fandt de 603.
-Madplanen bør derfor udgå af 3.0, medmindre Linn har en grund til at beholde
-den. **Afventer beslutning.**
+**Madplanen bliver i 3.0.** Linns beslutning 9. august, truffet med tallene
+på bordet: madplanen er ikke blevet brugt en eneste gang af nogen kunde de
+sidste 60 dage, mens 603 måltider i samme periode blev logget direkte fra en
+opskrift, af 75 kunder.
+
+At den ikke bruges betyder ikke nødvendigvis at den ikke er ønsket. Den ligger
+som fjerde fane ude i højre kant på en telefon, og den skjules helt når
+måltids-fokus er aktivt. Det er værd at give den en bedre plads i 3.0 frem for
+at gentage den placering der gav nul.
+
+**Egne fødevarer skal have en synlig plads**, ikke kun dukke op i søgningen.
+Kunden opretter dem når en vare ikke findes i databasen, typisk mærkevarer fra
+supermarkedet som "Bearnaise (Coop)" eller "Kokosmælk (Asian kitchen)". Målt
+9. august: **335 af 615 kunder** har oprettet egne fødevarer, 5.349 i alt,
+median 9 pr kunde, flest 143. Det er halvdelen af kundegrundlaget, ikke et
+hjørnetilfælde.
+
+**Biblioteket ligger nederst på forsiden**, ikke under Profil.
 
 ## 27. Åbne punkter på Mad
 
-- Skal madplanen udgå?
-- Farve på fliserne: fire udgaver er tegnet, valget er ikke truffet
-- Hvor bor egne fødevarer, og skal de have en synlig plads som favoritter?
-- Skal Biblioteket ligge på forsiden eller under Profil?
+- Farve på fliserne: fire udgaver er tegnet, valget er udskudt med vilje
+- Hvor madplanen skal ligge, nu hvor den ikke må gentage sin nuværende placering
+
+**Arbejdsform aftalt 9. august:** vi tager Mad ét skærmbillede ad gangen i
+stedet for at tegne hele modulet på én gang. De første fem runder mockups
+byggede på gæt om hvad Mad indeholdt, og det skal ikke gentages.
