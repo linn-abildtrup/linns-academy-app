@@ -651,6 +651,33 @@ hjørnetilfælde.
 
 **Biblioteket ligger nederst på forsiden**, ikke under Profil.
 
+## 26.1 Mad, skærm 1: oversigten. LÅST 9. august
+
+Oversigten er **hele indgangen til Mad**. Fire måltidsfliser og ét
+fiber-kort, ikke mere. Dybden ligger et lag nede.
+
+- **Fire fliser:** morgenmad, frokost, aftensmad, snack. Hver viser hvad hun
+  har spist, protein-summen og en stribe mod de 30 g.
+- **Snack-flisen opfører sig anderledes:** ingen stribe, intet mål, roligt
+  tal i stedet for grønt. Der står aldrig "mangler" på en snack.
+- **Fiber står for sig i grønt.** Det er et dagsmål, ikke et måltidsmål, så
+  det hører ikke hjemme på en flise.
+- **Fliserne er foldet sammen.** Én linje uanset om der er 1 eller 13
+  madvarer i måltidet. Medianen er 13 pr dag, så uden det ville siden være
+  flere skærmlængder lang.
+- **Datoen kan skiftes**, så hun kan taste noget hun glemte i går.
+- **Er måltids-fokus aktivt**, vises kun de måltider Linn har åbnet.
+  Fiber-kortet bliver stående.
+
+**Det ligger bevidst IKKE på oversigten**, men inde i måltidet: søgning,
+stregkode-scanner, det hun plejer, opskrifter, madplan, favoritter, egne
+fødevarer og manuel tilføjelse. Prisen er at hun ikke kan hoppe direkte til
+opskrifterne. Gevinsten er at oversigten aldrig bliver rodet, og at maden
+altid lander rigtigt, fordi måltidet er valgt først.
+
+**Egne fødevarer skal kunne søges i.** Én kunde har 143 af dem, så en liste
+uden søgefelt er ubrugelig.
+
 ## 27. Åbne punkter på Mad
 
 - Farve på fliserne: fire udgaver er tegnet, valget er udskudt med vilje
