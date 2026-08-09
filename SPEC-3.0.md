@@ -660,8 +660,20 @@ fiber-kort, ikke mere. Dybden ligger et lag nede.
   har spist, protein-summen og en stribe mod de 30 g.
 - **Snack-flisen opfører sig anderledes:** ingen stribe, intet mål, roligt
   tal i stedet for grønt. Der står aldrig "mangler" på en snack.
-- **Fiber står for sig i grønt.** Det er et dagsmål, ikke et måltidsmål, så
-  det hører ikke hjemme på en flise.
+- **To dagskort nederst: Protein i dag og Fiber i dag.** Protein i blomme,
+  fiber i grønt, med linjen "Snacken tæller med i begge tal" under.
+
+**Der er bevidst to slags tal på skærmen.** De tre striber er måltidsmål, 30 g
+protein hver. De to kort er dagsmål. Snacken har kun det sidste: den har
+hverken stribe eller mål, men alt hvad den bidrager med lander i begge
+dagstal, både protein og fiber. Uden protein-kortet ville snackens bidrag
+forsvinde ud af regnestykket for øjnene af kunden, og det var netop derfor
+kortet kom til.
+
+**Snacken tæller altid med, uanset klokken.** Ideen om at lade en snack lægge
+sig til det nærmeste måltid blev overvejet og forkastet 9. august: så ville
+morgenmaden pludselig vise 38 g når kunden kun havde tastet 32, og det er ikke
+til at forstå.
 - **Fliserne er foldet sammen.** Én linje uanset om der er 1 eller 13
   madvarer i måltidet. Medianen er 13 pr dag, så uden det ville siden være
   flere skærmlængder lang.
