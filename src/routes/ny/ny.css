@@ -2611,6 +2611,504 @@
 	white-space: pre-wrap;
 }
 
+/* ── Challenge paa forsiden ────────────────────────────────── */
+/*
+   Samlingen. Et felt pr plante, ti pr raekke, med tallet for enden.
+   Raekkerne er selve maerkerne, saa hun kan se at hun har passeret
+   tredive uden at taelle felter.
+*/
+
+.ch-kort {
+	background: var(--paper);
+	border-radius: 22px;
+	box-shadow: var(--shadow);
+	padding: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 13px;
+}
+
+.ch-hoved {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.ch-navn {
+	font-family: var(--serif);
+	font-size: calc(17px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1.25;
+	color: var(--espresso);
+}
+
+.ch-score {
+	font-family: var(--serif);
+	font-size: calc(24px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1;
+	color: var(--sage);
+	font-variant-numeric: tabular-nums;
+}
+
+.ch-gitter {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.ch-raekke {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.ch-felt {
+	flex: 1;
+	aspect-ratio: 1;
+	border-radius: 5px;
+	background: var(--paper-2);
+	border: 1px solid var(--line);
+}
+
+.ch-felt.fyldt {
+	background: var(--sage);
+	border-color: var(--sage);
+}
+
+/* Den seneste plante. Honning, saa det sidste hun gjorde er synligt. */
+.ch-felt.nyeste {
+	background: var(--honey);
+	border-color: var(--honey);
+}
+
+.ch-maerke {
+	flex: 0 0 auto;
+	min-width: 22px;
+	text-align: right;
+	font-size: calc(11px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	font-variant-numeric: tabular-nums;
+}
+
+.ch-linjer {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.ch-fremdrift {
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 0;
+	line-height: 1.4;
+}
+
+.ch-under {
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin: 0;
+	line-height: 1.45;
+}
+
+.ch-knapper {
+	display: flex;
+	gap: 9px;
+}
+
+.ch-knap {
+	flex: 1;
+	border: 0;
+	border-radius: 14px;
+	padding: 12px 10px;
+	font-family: var(--sans);
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 600;
+	/* Maalgruppen skal ikke ramme et lille ord. */
+	min-height: 46px;
+	cursor: pointer;
+}
+
+.ch-knap.primaer {
+	background: var(--plum);
+	color: #fff;
+}
+
+.ch-knap.sekundaer {
+	background: var(--paper-2);
+	color: var(--espresso);
+	border: 1px solid var(--line);
+}
+
+.ch-knap:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+/* ── Stillingen ────────────────────────────────────────────── */
+/*
+   De ti oeverste plus hendes egen linje. Se ChallengeStilling.svelte
+   for hvorfor vi ikke viser alle.
+*/
+
+.st-lag {
+	position: fixed;
+	inset: 0;
+	z-index: 90;
+	background: var(--oat);
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.st-top {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 22px 20px 14px;
+	position: sticky;
+	top: 0;
+	background: var(--oat);
+}
+
+.st-k {
+	font-size: calc(11px * var(--fs-scale, 1));
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.st-top h2 {
+	font-family: var(--serif);
+	font-size: calc(22px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 3px 0 0;
+	line-height: 1.2;
+}
+
+.st-luk {
+	flex-shrink: 0;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	border: 1px solid var(--line);
+	background: var(--paper);
+	color: var(--ink-2);
+	font-size: calc(22px * var(--fs-scale, 1));
+	line-height: 1;
+	cursor: pointer;
+}
+
+.st-luk:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.st-krop {
+	padding: 0 20px 40px;
+}
+
+.st-venter {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 30px 0;
+	color: var(--ink-2);
+	font-size: calc(14px * var(--fs-scale, 1));
+}
+
+.st-tom,
+.st-antal {
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin: 0 0 14px;
+}
+
+.st-liste {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+}
+
+.st-linje {
+	display: grid;
+	grid-template-columns: 26px minmax(72px, 1fr) minmax(0, 1.4fr) 32px;
+	align-items: center;
+	gap: 10px;
+	background: var(--paper);
+	border-radius: 14px;
+	padding: 11px 13px;
+	box-shadow: var(--shadow-soft);
+}
+
+.st-linje.mig {
+	background: var(--plum-tint);
+	box-shadow: none;
+}
+
+.st-plads {
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+.st-navn {
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--espresso);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.st-linje.mig .st-navn {
+	font-weight: 700;
+}
+
+.st-bar {
+	height: 8px;
+	border-radius: 4px;
+	background: var(--paper-2);
+	overflow: hidden;
+}
+
+.st-bar-fyld {
+	display: block;
+	height: 100%;
+	border-radius: 4px;
+	background: var(--sage);
+}
+
+.st-linje.mig .st-bar-fyld {
+	background: var(--plum);
+}
+
+.st-score {
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--espresso);
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+/* Skillelinjen ned til hendes egen placering. */
+.st-adskil {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 16px 0 10px;
+	font-size: calc(11px * var(--fs-scale, 1));
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.st-adskil::before,
+.st-adskil::after {
+	content: '';
+	flex: 1;
+	height: 1px;
+	background: var(--line);
+}
+
+/* ── Admin i 3.0 ───────────────────────────────────────────── */
+
+.adm {
+	padding-top: 22px;
+	padding-bottom: 40px;
+}
+
+.adm-top h1 {
+	font-family: var(--serif);
+	font-size: calc(26px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 0;
+}
+
+.adm-top p {
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin: 6px 0 0;
+	line-height: 1.5;
+}
+
+.adm-venter {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 30px 0;
+	color: var(--ink-2);
+	font-size: calc(14px * var(--fs-scale, 1));
+}
+
+.adm-besked {
+	background: var(--sage-tint);
+	border-radius: 12px;
+	padding: 11px 14px;
+	margin: 0;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	color: var(--espresso);
+}
+
+.adm-kort,
+.adm-raekke {
+	background: var(--paper);
+	border-radius: 20px;
+	box-shadow: var(--shadow-soft);
+	padding: 17px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 13px;
+}
+
+.adm-kort h2,
+.adm-liste h2 {
+	font-family: var(--serif);
+	font-size: calc(18px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 0;
+}
+
+.adm-liste {
+	display: flex;
+	flex-direction: column;
+	gap: 11px;
+}
+
+.adm-felt {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	border: 0;
+	padding: 0;
+	margin: 0;
+}
+
+.adm-felt > span,
+.adm-felt legend {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-2);
+	padding: 0;
+}
+
+.adm-felt input[type='text'],
+.adm-felt input[type='date'],
+.adm-felt input[type='number'],
+.adm-felt textarea {
+	font-family: var(--sans);
+	font-size: calc(15px * var(--fs-scale, 1));
+	color: var(--espresso);
+	background: var(--paper-2);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 11px 12px;
+	min-height: 46px;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.adm-felt textarea {
+	resize: vertical;
+	line-height: 1.5;
+}
+
+.adm-felt input:focus-visible,
+.adm-felt textarea:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 1px;
+}
+
+.adm-to {
+	display: flex;
+	gap: 11px;
+}
+
+.adm-to .adm-felt {
+	flex: 1;
+	min-width: 0;
+}
+
+.adm-tjek {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--espresso);
+	/* Maalgruppen skal ikke ramme en lille firkant. */
+	min-height: 42px;
+	cursor: pointer;
+}
+
+.adm-tjek input {
+	width: 22px;
+	height: 22px;
+	flex-shrink: 0;
+	accent-color: var(--plum);
+}
+
+.adm-hjaelp {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	line-height: 1.5;
+	margin: -6px 0 0;
+}
+
+.adm-fejl {
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--plum-deep);
+	margin: 0;
+}
+
+.adm-knapper {
+	display: flex;
+	gap: 9px;
+}
+
+.adm-knapper .ch-knap:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+.adm-raekke-t {
+	display: flex;
+	align-items: baseline;
+	gap: 9px;
+	font-size: calc(15px * var(--fs-scale, 1));
+	color: var(--espresso);
+}
+
+.adm-mrk {
+	font-size: calc(11px * var(--fs-scale, 1));
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--honey-deep);
+	background: var(--honey-tint);
+	border-radius: 999px;
+	padding: 2px 9px;
+}
+
+.adm-raekke-s {
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+}
+
+.adm-tom {
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin: 0;
+}
+
 /* ── Beskeder ──────────────────────────────────────────────── */
 
 .beskeder-side {

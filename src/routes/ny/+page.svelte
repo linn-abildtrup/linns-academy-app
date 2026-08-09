@@ -69,6 +69,26 @@
 	import Inspirator from '$lib/components/ny/Inspirator.svelte';
 	import TilDig from '$lib/components/ny/TilDig.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
+	import Challenge from '$lib/components/ny/Challenge.svelte';
+
+	// Challenge. Selve indtastningen og stillingen genbruger vi som de
+	// er, de virker og kunderne kender dem. Kun blokken paa forsiden er ny.
+	import IndtastFrugtGroentDialog from '$lib/components/IndtastFrugtGroentDialog.svelte';
+	import ChallengeStilling from '$lib/components/ny/ChallengeStilling.svelte';
+	import {
+		hentAktivChallenge3,
+		hentChallengeTilForside,
+		hentStilling,
+		gemPlanter,
+		type AktivChallenge
+	} from '$lib/firestore/challenge3';
+	import {
+		byggStillingVisning,
+		type ChallengeForside,
+		type KundeKontekst,
+		type StillingVisning
+	} from '$lib/content/challenge3';
+	import { hentAllowedEmail } from '$lib/firestore/forlob';
 
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const hentUser = getContext<() => User | null>('user');
@@ -121,6 +141,14 @@
 	let lektioner = $state<LektionItem[]>([]);
 	let noteFraLinn = $state('');
 	let klaret = $state<Set<string>>(new Set());
+	let challenge = $state<ChallengeForside | null>(null);
+	let aktivChallenge = $state<AktivChallenge | null>(null);
+	let minePlanter = $state<string[]>([]);
+	let visChallengeDialog = $state(false);
+	let visChallengeStilling = $state(false);
+	let challengeStilling = $state<StillingVisning | null>(null);
+	let henterStilling = $state(false);
+	let gemmerChallenge = $state(false);
 	let traening = $state<DagensTraening | null>(null);
 	let tal = $state<DagensTal | null>(null);
 	let naesteHold = $state<NaesteHoldType | null>(null);
@@ -222,6 +250,12 @@
 					nuMs
 				);
 			}
+
+			// Challenge'n hentes til sidst og for begge kundetyper. En
+			// challenge kan gaa til et hold, til enkelte kunder eller til
+			// alle der har appen, saa et medlem uden forloeb kan ogsaa
+			// have en. Er der ingen i gang, staar blokken der bare ikke.
+			await hentChallenge(uid);
 			if (!afbrudt) henter = false;
 		})().catch((e) => {
 			console.error('[ny] kunne ikke hente forsiden', e);
@@ -233,6 +267,93 @@
 			clearTimeout(noedbremse);
 		};
 	});
+
+	// ── Challenge ───────────────────────────────────────────────
+	//
+	// Challenge'n kan komme fra et hold eller fra en tildeling til alle
+	// der har appen. Laese-laget finder ud af hvilken, saa forsiden her
+	// behoever ikke vide hvor den bor.
+
+	function kundeKontekst(uid: string): KundeKontekst {
+		return {
+			uid,
+			forlobIds: adgang.aktiveForlob.map((f) => f.forlobId),
+			erAppBruger: adgang.harApp
+		};
+	}
+
+	async function hentChallenge(uid: string) {
+		try {
+			const aktiv = await hentAktivChallenge3(kundeKontekst(uid), nuMs);
+			aktivChallenge = aktiv;
+			challenge = await hentChallengeTilForside(kundeKontekst(uid), nuMs);
+			minePlanter = challenge?.planter ?? [];
+		} catch (e) {
+			console.warn('[ny] kunne ikke hente challenge', e);
+			challenge = null;
+			aktivChallenge = null;
+			minePlanter = [];
+		}
+	}
+
+	async function gemChallengePlanter(diff: {
+		valgte: string[];
+		tilfoej: string[];
+		fjern: string[];
+	}) {
+		const uid = user?.uid;
+		if (!uid || !challenge || !aktivChallenge || !userDoc) return;
+		gemmerChallenge = true;
+		try {
+			// Efternavnet staar ikke paa kunde-dokumentet, kun fornavnet.
+			// Stillingen viser 'Hanne S.', saa vi henter det med.
+			let efternavn = '';
+			try {
+				const ae = userDoc.email ? await hentAllowedEmail(userDoc.email) : null;
+				efternavn = ae?.lastName ?? '';
+			} catch {
+				// Uden efternavn staar der bare fornavnet i stillingen.
+			}
+			await gemPlanter(
+				aktivChallenge,
+				uid,
+				{ tilfoej: diff.tilfoej, fjern: diff.fjern },
+				{ fornavn: userDoc.firstName ?? '', efternavn }
+			);
+			minePlanter = diff.valgte;
+			// Kortet skal vise det nye tal med det samme.
+			challenge = {
+				...challenge,
+				planter: diff.valgte,
+				score: new Set(diff.valgte).size,
+				senesteJournal:
+					diff.tilfoej.length > 0
+						? diff.tilfoej[diff.tilfoej.length - 1]
+						: challenge.senesteJournal
+			};
+			visChallengeDialog = false;
+			await aabnChallengeStilling();
+		} catch (e) {
+			console.error('[ny] kunne ikke gemme challenge-indtastning', e);
+		} finally {
+			gemmerChallenge = false;
+		}
+	}
+
+	async function aabnChallengeStilling() {
+		const uid = user?.uid;
+		if (!uid || !aktivChallenge) return;
+		henterStilling = true;
+		visChallengeStilling = true;
+		try {
+			challengeStilling = byggStillingVisning(await hentStilling(aktivChallenge, uid));
+		} catch (e) {
+			console.warn('[ny] kunne ikke hente stillingen', e);
+			challengeStilling = null;
+		} finally {
+			henterStilling = false;
+		}
+	}
 
 	// ── Til dig lige nu ─────────────────────────────────────────
 	// Ulaeste svar fra Linn hentes for sig selv, IKKE sammen med resten.
@@ -631,6 +752,16 @@
 			{/if}
 		{/if}
 
+		<!-- Challenge'n folder sig ikke sammen. Den er ikke en dagsopgave,
+		     den er en samling der loeber gennem hele perioden. -->
+		{#if challenge}
+			<Challenge
+				{challenge}
+				onindtast={() => (visChallengeDialog = true)}
+				onstilling={aabnChallengeStilling}
+			/>
+		{/if}
+
 		{#if !aktivtForlob && naesteHold}
 			<NaesteHoldKort hold={naesteHold} nu={nuMs} />
 		{/if}
@@ -669,4 +800,25 @@
 			<span class="ai-pil" aria-hidden="true">›</span>
 		</a>
 	</div>
+{/if}
+
+<!-- Indtastning og stilling er de samme som i den gamle app. De
+     virker, kunderne kender dem, og de henter deres farver fra
+     token-broen nederst i ny.css. -->
+{#if visChallengeDialog}
+	<IndtastFrugtGroentDialog
+		startListe={minePlanter}
+		onGem={gemChallengePlanter}
+		onLuk={() => (visChallengeDialog = false)}
+		gemmer={gemmerChallenge}
+	/>
+{/if}
+
+{#if visChallengeStilling && challenge}
+	<ChallengeStilling
+		navn={challenge.navn}
+		visning={challengeStilling}
+		henter={henterStilling}
+		onluk={() => (visChallengeStilling = false)}
+	/>
 {/if}
