@@ -508,3 +508,139 @@ Fyldt salviegrøn cirkel med hvidt kryds, brugt ens alle steder hvor noget er
 gennemført: små skridt, lektioner, træning, foldede sektioner. Et gennemført
 forløb får i stedet et honningfarvet diplom med stjerne og årstal, fordi det
 er et større øjeblik end et flueben.
+
+---
+
+# Tilføjelse: etape 4, Mad. Gennemgang og beslutninger 9. august 2026
+
+Kom ud af en gennemgang af det gamle Mad-modul blok for blok, sammen med
+målinger på rigtige kundedata. Skrevet ned fordi vi ellers risikerede at
+beslutte noget der skulle laves om senere.
+
+## 22. Bundmenuen ændres
+
+Moduler-fanen **udgår**. Den var en menu der førte til en menu, og alt andet
+end Biblioteket kan nås fra forsiden.
+
+Ny bundmenu: **Forside · Mad · Snak · Udvikling · Profil**
+
+- **Mad** tager pladsen. Det er det mest brugte i appen og det eneste modul
+  der ikke kan bo på forsiden.
+- **Træning** nås fra dagens træning på forsiden, hvor kunden også vælger og
+  skifter program.
+- **Biblioteket** bliver et kort nederst på forsiden, kun for dem der har
+  adgang. Ingen grå, låste kasser.
+- Vaner, Forløb og Symptomcheck nås fra forsiden som nu.
+
+## 23. Det Mad indeholder i dag
+
+Fem faner i `routes/app/moduler/30-30-3/`, 5.212 linjer plus tre undersider.
+Alt herunder skal have en plads i 3.0, eller et bevidst nej.
+
+**Byg måltid.** Søgning i fødevare-databasen med fire kilder (Kickstart,
+Frida, egne, community), opslag i Open Food Facts efter mærkevarer,
+stregkode-scanner med kameraet (åben for alle, ikke længere premium), manuel
+tilføjelse, valg af portion og enhed, løbende protein og fiber, udvidet
+næring hvis kunden har adgang, favorit-måltider, stjerne på enkelt-fødevarer,
+egne fødevarer med opret/ret/slet, seneste-liste, valg af måltidstype og dato
+ved gem, redigering af et måltid fra dagbogen, redigering af en favorit, og
+et kladde-gem i browseren så et halvfærdigt måltid ikke går tabt.
+
+**Opskrifter.** 128 opskrifter med søgning, kategori-filter og diet-tags.
+Egen side pr opskrift med ingredienser, fremgangsmåde og makro. Antal
+portioner kan ændres og makroen skalerer. Log som måltid i dagbogen. Vælg
+flere opskrifter og få en samlet indkøbsliste.
+
+**Mine opskrifter.** Feature-styret. Egne opskrifter oprettet ved at
+fotografere eller vælge et billede, hvorefter AI læser ingredienser og
+beregner makro. Ret, slet og log som måltid.
+
+**Madplan.** Foreslår en plan ud fra opskrifterne. Skjules automatisk når
+måltids-fokus er aktivt.
+
+**Dagbog.** Dagens måltider grupperet efter type, dato frem og tilbage,
+totaler, samt redigér, slet og kopiér et måltid til en anden dag eller type.
+
+**På tværs.** Måltids-fokus lader admin begrænse hvilke måltidstyper kunden
+ser i en forløbs-periode. Feature-adgang styrer udvidet næring og AI-opskrift.
+
+## 24. Sådan spiser kunderne faktisk
+
+Målt over 60 dage, 11.201 måltider, 222 aktive kunder. Tallene har ændret
+designet flere gange undervejs, så de står her.
+
+| | |
+|---|---|
+| Registreringer der er én enkelt madvare | 60 % |
+| Madvarer pr dag, median | 13 |
+| De travleste 10 % af dagene | over 23 madvarer |
+| Dage hvor en måltidstype går igen | 38 % |
+| Registreringer der er en gentagelse | **68,5 %** |
+| Hendes 10 hyppigste madvarer dækker | 54 % |
+| Hendes 20 hyppigste dækker | 74 % |
+| Fordeling: morgenmad / frokost / aftensmad / snack | 38 / 30 / 20 / 12 % |
+
+**Det vigtigste tal er de 68,5 %.** Kunderne taster de samme ting igen og
+igen. Den hurtigste vej er derfor ikke en bedre søgning, det er at hun slet
+ikke skal søge.
+
+**Bemærk også at "et måltid" oftest er én ingrediens**, ikke en ret. Navnene
+i data er "Banan", "Gulerod", "Rugbrød med solsikke". Et design der går ud fra
+at en plads indeholder én linje pr måltid, knækker på en almindelig dag.
+
+## 25. Sådan bygges Mad i 3.0
+
+**Kunden starter på en oversigt og vælger måltid.** Morgenmad, frokost,
+aftensmad eller snack. Linns beslutning 9. august. Så ved appen hvor maden
+skal hen, og hele gætteriet om måltidstype forsvinder. Det koster ét tryk og
+fjerner den fejl hvor mad lander forkert.
+
+Inde i et måltid kan hun søge, scanne, vælge en opskrift, tage en favorit
+eller bruge det hun plejer.
+
+**De fire pladser er skærmens ryggrad**, fordi de underviser i metoden, altså
+30 g protein pr måltid og 30 g fiber om dagen. Men de skal kunne rumme mere
+end én ting, og de skal foldes sammen: én linje pr plads uanset om der er 1
+eller 13 ting i den, med detaljerne ét tryk væk.
+
+**Snack har intet mål.** Der står aldrig "mangler 30 g" på en snack. Den
+viser kun hvad den bidrog med og tæller med i dagens total. Der skal ikke
+stå noget der kan læses som en bebrejdelse for at have spist en håndfuld
+mandler.
+
+**Det du plejer.** Hendes egne hyppigste madvarer som store trykflader, så
+over halvdelen af alle registreringer bliver ét tryk. Tre ting skal følge
+med, ellers virker det ikke: mængden huskes pr madvare, listen er hendes
+egen og ikke en generel, og den nye kunde får de mest brugte madvarer på
+tværs af alle kunder indtil hun har sine egne.
+
+**Fortryd, ikke bekræft.** Ét tryk registrerer med det samme, og der glider
+en kvittering op med Fortryd. Et "er du sikker" ville fordoble antallet af
+klik. Godkendt af Linn 9. august.
+
+## 26. Beslutninger truffet 9. august
+
+**Indkøbslisten hører sammen med opskrifterne**, fordi den giver mening når
+man vil have en samlet liste ud af flere opskrifter. Den er ikke sin egen
+plads.
+
+**Udvidet næring**, altså kulhydrater, fedt og kalorier, er som udgangspunkt
+**kun for medlemmer**, ikke for kunder der har købt et forløb. Admin skal
+kunne tildele den til et helt forløb. Det er ikke premium ad bagvejen, det er
+den admin-styrede adgangsmatrix, se `content/features.ts`.
+
+**Favoritter skal kunne vælges og ses.** De skal have en synlig plads, ikke
+kun dukke op i søgningen.
+
+**Madplanen er ikke blevet brugt en eneste gang** af nogen kunde de sidste 60
+dage. Til sammenligning er 603 måltider logget direkte fra en opskrift, af 75
+kunder. Målingen er troværdig, fordi den samme gennemgang fandt de 603.
+Madplanen bør derfor udgå af 3.0, medmindre Linn har en grund til at beholde
+den. **Afventer beslutning.**
+
+## 27. Åbne punkter på Mad
+
+- Skal madplanen udgå?
+- Farve på fliserne: fire udgaver er tegnet, valget er ikke truffet
+- Hvor bor egne fødevarer, og skal de have en synlig plads som favoritter?
+- Skal Biblioteket ligge på forsiden eller under Profil?

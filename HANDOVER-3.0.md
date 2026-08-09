@@ -242,7 +242,9 @@ Verificeret mod virkeligheden samme dag: for alle 12 giver den gamle app og 3.0 
 
 ### Efter den liste
 
-Etape 4, altså modulerne. Foreslået rækkefølge: oversigten, Udvikling, Træning, Mad, Små skridt. Under Træning skal kunden kunne vælge sit træningsprogram første gang der trykkes, og kunne skifte valg løbende.
+Etape 4, altså modulerne. **Retningen blev lagt om 9. august:** Moduler-fanen udgår, og Mad tager dens plads i bundmenuen. Se `SPEC-3.0.md` afsnit 22 til 27, som er en fuld gennemgang af Mad-modulet blok for blok, med målinger på rigtige kundedata og de beslutninger Linn har truffet. **Læs det afsnit før du rører Mad**, ellers bygger du på gæt, og det gjorde vi allerede i fem runder mockups.
+
+Kort: bundmenuen bliver Forside, Mad, Snak, Udvikling, Profil. Træning nås fra dagens træning på forsiden. Biblioteket bliver et kort nederst på forsiden for dem der har adgang.
 
 ### Bevidst udskudt
 
