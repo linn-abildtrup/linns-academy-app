@@ -28,6 +28,8 @@
 		type NulDageKilde
 	} from '$lib/content/adgang3';
 	import { hentNulDage } from '$lib/firestore/nulDage3';
+	import { vurderSpaerring, naadeTekst } from '$lib/content/spaerring3';
+	import { APP_KOB_URL } from '$lib/content/abonnement';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import './ny.css';
 
@@ -65,6 +67,25 @@
 			nulDage
 		)
 	);
+
+	// Spaerring naar abonnementet er udloebet. Den ligger HER og kun her,
+	// saa der er ét sted at kigge, og ingen underside kan komme til at
+	// slippe nogen ind ad en bagdoer. Se spaerring3.ts for reglerne.
+	//
+	// Admin spaerres aldrig. Ellers kunne Linn laase sig selv ude af sit
+	// eget vaerktoej med en forkert dato paa sin egen konto.
+	const spaerring = $derived(
+		vurderSpaerring(
+			{
+				harApp: adgang.harApp,
+				harAktivtForlob: adgang.aktiveForlob.length > 0,
+				aboSlutterAt: userDoc?.aboSlutterAt ?? null
+			},
+			Date.now()
+		)
+	);
+
+	const erSpaerret = $derived(!isAdmin(user) && spaerring.spaerret);
 
 	setContext('userDoc', () => userDoc);
 	setContext('user', () => user);
@@ -164,8 +185,32 @@
 			</p>
 			<a class="btn" href="/app">Gå til appen</a>
 		</div>
+	{:else if erSpaerret}
+		<!-- Roligt, ikke en fejlmeddelelse. Hun har ikke gjort noget
+		     forkert, abonnementet er bare loebet ud. Se spaerring3.ts. -->
+		<div class="ny-besked">
+			<h1>Din adgang er udløbet</h1>
+			<p>
+				Dit abonnement er ikke længere aktivt, så appen er lukket for nu. Alt hvad du har
+				registreret, ligger stadig og venter på dig, og det kommer tilbage i samme øjeblik du
+				fornyer.
+			</p>
+			<a class="btn" href={APP_KOB_URL} target="_blank" rel="noopener">Forny dit abonnement</a>
+			<p class="spaer-hjaelp">
+				Har du lige fornyet, så giv det et øjeblik og hent siden igen. Passer det ikke, så skriv
+				til Linn, så retter hun det.
+			</p>
+		</div>
 	{:else}
 		<div class="ny-shell">
+			{#if spaerring.iNaade}
+				<!-- Hun er inde paa naade. Hun skal vide det, saa hun naar at
+				     forny, men hun skal ikke spaerres midt i det hun laver. -->
+				<div class="naade-baand">
+					<span>{naadeTekst(spaerring.dageTilbageAfNaade)}</span>
+					<a href={APP_KOB_URL} target="_blank" rel="noopener">Forny</a>
+				</div>
+			{/if}
 			<div class="ny-scroll">
 				{@render children()}
 			</div>

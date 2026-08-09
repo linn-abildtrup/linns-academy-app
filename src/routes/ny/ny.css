@@ -2944,6 +2944,46 @@
 	background: var(--line);
 }
 
+/* ── Spaerring og naadeperiode ─────────────────────────────── */
+
+.spaer-hjaelp {
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	line-height: 1.5;
+	margin-top: 14px;
+	max-width: 34ch;
+}
+
+/* Baandet mens hun er inde paa naade. Honning og ikke roedt: hun har
+   ikke gjort noget forkert, og hun er stadig lukket ind. */
+.naade-baand {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	background: var(--honey-tint);
+	color: var(--honey-deep);
+	padding: 10px 17px;
+	font-size: calc(13px * var(--fs-scale, 1));
+	line-height: 1.4;
+	flex-shrink: 0;
+}
+
+.naade-baand a {
+	color: var(--plum);
+	font-weight: 700;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	white-space: nowrap;
+	/* Maalgruppen skal kunne ramme det med en tommelfinger. */
+	padding: 6px 2px;
+}
+
+.naade-baand a:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
 /* ── Admin i 3.0 ───────────────────────────────────────────── */
 
 .adm {
