@@ -84,10 +84,13 @@ Alle ruter ligger under `/ny`.
 | `/ny/udvikling` | Bygget, men ikke gennemgået mod den gamle app endnu |
 | `/ny/moduler` | Skitse. Etape 4 |
 | `/ny/profil`, `/ny/hjaelp`, `/ny/forlob` | Bygget |
+| `/ny/admin/challenges` | Admin: opret og tildel challenges. Kun admin. Intet menupunkt, skriv adressen |
 
-Forsiden består af, i rækkefølge: hilsen med Linns ansigt, Til dig lige nu, Dit overskud med kurven, AI-inspiratoren, datostrimlen, dagens små skridt, dagens lektioner, dagens træning, dagens refleksion, dagens tal og næste hold.
+Forsiden består af, i rækkefølge: hilsen med Linns ansigt, Til dig lige nu, noten fra Linn, Dit overskud med kurven, AI-inspiratoren, datostrimlen, dagens små skridt, dagens lektioner, dagens træning, dagens refleksion, dagens tal, challenge og næste hold.
 
 **Foldning:** en sektion hun har klaret folder sig sammen til én linje med flueben, og den bliver liggende præcis hvor den stod. Et tryk folder den ud igen, og så står den åben resten af dagen. Det huskes i `sessionStorage` pr dato.
+
+**To blokke folder sig bevidst ikke sammen:** noten fra Linn og challengen. Ingen af dem er noget kunden kan gøre færdig på en dag.
 
 ---
 
@@ -126,11 +129,13 @@ Læs den her, inden du fejlsøger noget der ligner.
 
 **Service worker serverer en cachet skal.** En blank side på `localhost:5173` betyder ofte bare at dev-serveren ikke kører, og at service workeren viser den gamle cache. Tjek at serveren kører, før du leder i koden.
 
-**`.env` mangler et linjeskift.** `ANTHROPIC_API_KEY` hænger sammen med `PUBLIC_FIREBASE_APP_ID` på samme linje, og det betyder at nøglen kan lække ud i den HTML klienten får. **Det er ikke rettet endnu.** Det bør rettes, og nøglen bør rulles.
+**`.env` manglede et linjeskift. Rettet 9. august 2026.** `ANTHROPIC_API_KEY` hang sammen med `PUBLIC_FIREBASE_APP_ID` på samme linje, så nøglen blev en del af app-id'ets værdi og røg med i klient-koden. Tidligere udgaver af det her dokument sagde at nøglen kunne lække ud til kunderne. **Det passede ikke.** Det blev tjekket den 9. august ved at hente den kode browseren faktisk får fra den live side og se efter: der stod kun app-id'et. Cloudflare har sine egne variabler sat i deres kontrolpanel, og de har hele tiden været i orden. Nøglen har heller aldrig været i git, hverken i en fil eller i historikken. Problemet fandtes kun i lokale builds. Nøglen er derfor ikke rullet, og det er en bevidst beslutning, ikke en glemt opgave.
+
+Bemærk sidegevinsten: før rettelsen fandtes `ANTHROPIC_API_KEY` slet ikke som selvstændig variabel lokalt, så AI-funktionerne kunne ikke virke i dev.
 
 **`opretDoc` findes ikke i `firestoreRest.ts`.** Brug `gemDocMerge` med et selvlavet dokument-id.
 
-**Firestore-regler driver.** Sammenlign altid de live regler med `firestore.rules` i repoet, inden du beder Linn kopiere noget ind i Console. Driften er den reelle risiko, ikke selve reglen.
+**Firestore-regler driver.** Sammenlign altid de live regler med `firestore.rules` i repoet, inden du udgiver noget. Det er nu ét kald, se afsnit 8.
 
 ---
 
@@ -138,10 +143,18 @@ Læs den her, inden du fejlsøger noget der ligner.
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 765 tests lige nu, alle grønne
+npm test                               # 807 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
+
+**Firestore-regler.** Siden 9. august 2026 ligger `firebase.json` og `.firebaserc` i repoet, så regler ikke længere kopieres ind i Console i hånden:
+
+```
+npx firebase-tools deploy --only firestore:rules
+```
+
+Den oversætter reglerne først og nægter at udgive hvis der er en syntaksfejl. Reglerne styrer adgang for alle kunder i drift, så **vis altid Linn den præcise ændring og få et ja, før du kører den.** Servicekontoen i `scripts/` kan desuden læse de live regler, så du kan sammenligne med repoet uden at udgive noget.
 
 Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx tsx`, og **slettes bagefter**. Kør altid read-only eller dry-run først og vis Linn resultatet. Skal der skrives til kundedata, skal Linn sige ja specifikt til netop den kørsel.
 
@@ -149,20 +162,39 @@ Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx 
 
 ## 9. Hvor vi står, og hvad der er næste skridt
 
-Alt til og med "Til dig lige nu" er kodet. Det sidste er ikke committet endnu.
+Opdateret 9. august 2026. Alt herunder er kodet, committet og pushet, og `main` er i sync.
 
 ### Åben liste, aftalt 6. august
 
 Den kom ud af en gennemgang af den gamle forside blok for blok. Punkterne står i den rækkefølge Linn har prioriteret dem.
 
 1. ~~Dagens lektion for medlemmer~~. **Udgår.** Samlingen `modulbrugerLektioner` er tom, funktionen er aldrig blevet brugt. Almindelige abonnenter skal ikke have lektioner.
-2. **Nyt svar fra Linn.** Kodet 6. august som del af "Til dig lige nu".
-3. **Adgang udløber.** Kodet samme sted. Vises fra 14 dage før, og kun for kunder uden aktivt forløb.
-4. **Note fra Linn på forsiden.** Ikke kodet. Feltet hedder `noteFraLinn` og ligger på forløbsdagen. Vi viser den allerede på dags-siden, men ikke på forsiden. Bruges sjældent, én gang ud af 79 dage i Kropsro, men når den bruges er den vigtig.
+2. ~~**Nyt svar fra Linn**~~. **Klaret 6. august** som del af "Til dig lige nu".
+3. ~~**Adgang udløber**~~. **Klaret 6. august**, samme sted. Vises fra 14 dage før, og kun for kunder uden aktivt forløb.
+4. ~~**Note fra Linn på forsiden**~~. **Klaret 9. august.** Vises som en talebobbel lige under "Til dig lige nu", i blomme, fordi den skal læse som et menneske og ikke som endnu en meddelelse fra appen. Den folder sig ikke sammen, for den er ikke en opgave hun kan gøre færdig. Noten lå allerede i det dokument forsiden hentede i forvejen, så den koster ingen ekstra læsning, se `hentDagensProgram`.
 5. ~~Personlig coaching~~. **Udgår.** Linn har fravalgt linket.
-6. **Challenge.** Ikke kodet. Skal bevares. Der kører én lige nu i Kropsro, "Planter til tarmmikrobiom", og 28 kunder har tastet ind i den. Der skal laves fire mockup-forslag først.
+6. ~~**Challenge**~~. **Klaret 9. august**, og datamodellen blev lagt om undervejs. Se afsnit 9.1.
 7. **Nul-dage i datostrimlen.** Ikke kodet. Skal bevares. Se `nulDageDatoer()`.
 8. **Spærring ved udløb af abonnement.** Ikke kodet. `adgang.harApp` bliver regnet ud i dag, men bruges ikke som gate nogen steder. Adgangen skal lukke af sig selv når abonnementet udløber.
+
+### 9.1 Challenge, som den ser ud nu
+
+**Den lå forkert.** En challenge hørte til ét forløb, så et medlem der bare har købt appen kunne slet ikke få en. Linn bad 9. august om at kunne tildele den til Kickstart, til Kropsro og til medlemmer uden forløb.
+
+**Nu ligger den for sig selv** i top-samlingen `challenges/{id}` og bliver tildelt, med samme sprog som master-programmerne bruger, se `tildelinger.ts`: `kunde`, `forlob` og `alle-app`. En challenge kan have flere modtagere på én gang.
+
+**De gamle bliver liggende** under `forlob/{id}/challenges` og læses stadig af 3.0. Juni-challengens 28 indtastninger er urørte, og den gamle app opdager ingenting. Nye laves kun det nye sted. En ny slår en gammel, ellers ville de gamle blokere i al fremtid.
+
+**Vær opmærksom på to ting:**
+
+- Den gamle `hentChallenges` i `firestore/challenge.ts` læser kun de felter den kender, og `maal` er ikke en af dem. Derfor læser `firestore/challenge3.ts` dokumentet selv. Retter du noget her, så tjek at målet stadig kommer med.
+- **Stillingen koster ét opslag pr deltager.** På et hold med 28 er det ingenting. Går challengen til alle med appen, ville det være 600 til 700 opslag hver gang en kunde åbner forsiden. Derfor hentes stillingen på forsiden kun når challengen går til et hold, ellers først når kunden selv trykker. Se `stillingPaaForsiden`. Lav ikke om på det uden at regne på hvad det koster.
+
+**Målet** sættes pr challenge og er 50 hvis det ikke er sat. Baggrunden for tallet: challengen 1. til 7. juni 2026 havde 28 deltagere, højeste score 49, median 32, laveste 1. Ingen nåede 50 på en uge. Derfor skal målet kunne følge periodens længde, og derfor er det et felt og ikke et tal i koden.
+
+**Stillingen viser de ti øverste plus kundens egen linje**, ikke alle. Og på forsiden nævnes hendes placering kun når hun er i den øverste tredjedel. Nummer 26 ud af 28 skal ikke mindes om det hver gang hun åbner appen. Det er et bevidst valg truffet sammen med Linn, ikke en mangel.
+
+**Admin** ligger på `/ny/admin/challenges`. Der er med vilje intet menupunkt, for det ville kræve en rettelse i den gamle app.
 
 ### Efter den liste
 
