@@ -52,6 +52,31 @@
 	let visStepper = $state(false);
 	let visEnheder = $state(false);
 
+	// Taster hun selv, er plus og minus for langsomt. Fra 5 til 200 g
+	// ville vaere niogtredive tryk.
+	let taster = $state(false);
+	let raatal = $state('');
+
+	function begyndAtTaste() {
+		raatal = formatPortion(portion);
+		taster = true;
+	}
+
+	/** Tager imod baade komma og punktum, for begge dele bliver tastet. */
+	function gemTal() {
+		const n = Number(raatal.replace(',', '.'));
+		if (Number.isFinite(n) && n > 0) portion = Math.round(n * 100) / 100;
+		taster = false;
+	}
+
+	function fokuser(node: HTMLInputElement) {
+		// Lille forsinkelse, ellers naar tastaturet ikke at komme op paa iOS.
+		setTimeout(() => {
+			node.focus();
+			node.select();
+		}, 30);
+	}
+
 	const naering = $derived(naeringFor(food, portion, enhedId));
 	const enhedLabel = $derived(enheder.find((e) => e.u === enhedId)?.label ?? 'gram');
 	const spring = $derived(springFor(enhedId));
@@ -73,6 +98,10 @@
 	<button type="button" class="ark-luk-flade" onclick={onluk} aria-label="Luk"></button>
 	<div class="ma-ark">
 		<div class="ma-greb" aria-hidden="true"></div>
+
+		<!-- En tydelig vej ud. At trykke ved siden af arket lukker det
+		     ogsaa, men det er ikke til at gaette hvis man ikke ved det. -->
+		<button type="button" class="ma-luk" onclick={onluk} aria-label="Luk uden at gemme">×</button>
 
 		<div class="ma-navn" id="ma-navn">{food.name}</div>
 		<div class="ma-under">{food.p} g protein og {food.f} g fiber pr 100 g</div>
@@ -119,8 +148,25 @@
 							aria-label="Mindre">−</button
 						>
 						<span class="ma-st-vaerdi">
-							<span class="ma-st-tal">{formatPortion(portion)}</span>
-							<span class="ma-st-spring">springer {formatPortion(spring)} ad gangen</span>
+							{#if taster}
+								<input
+									class="ma-st-felt"
+									type="text"
+									inputmode="decimal"
+									bind:value={raatal}
+									use:fokuser
+									onblur={gemTal}
+									onkeydown={(e) => e.key === 'Enter' && gemTal()}
+									aria-label="Mængde"
+								/>
+							{:else}
+								<button type="button" class="ma-st-tal" onclick={begyndAtTaste}>
+									{formatPortion(portion)}
+								</button>
+							{/if}
+							<span class="ma-st-spring">
+								{taster ? 'tryk retur når du er færdig' : 'tryk på tallet for at taste'}
+							</span>
 						</span>
 						<button
 							type="button"

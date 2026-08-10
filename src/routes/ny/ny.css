@@ -4044,6 +4044,7 @@ a.dag {
 }
 
 .ma-navn {
+	padding-right: 44px;
 	font-family: var(--serif);
 	font-size: calc(18px * var(--fs-scale, 1));
 	font-weight: 600;
@@ -4168,13 +4169,76 @@ a.dag {
 	text-align: center;
 }
 
+/* Tallet er en knap. Plus og minus er hurtigst paa smaa spring, men
+   fra 5 til 200 g ville vaere niogtredive tryk. Saa taster hun det. */
 .ma-st-tal {
 	display: block;
+	width: 100%;
+	border: 0;
+	background: none;
 	font-family: var(--serif);
 	font-size: calc(23px * var(--fs-scale, 1));
 	font-weight: 600;
 	line-height: 1.1;
 	color: var(--espresso);
+	/* Understregningen er den eneste maade at vise at tallet kan trykkes. */
+	text-decoration: underline;
+	text-decoration-color: var(--line);
+	text-decoration-thickness: 2px;
+	text-underline-offset: 4px;
+	padding: 2px 0;
+	cursor: pointer;
+}
+
+.ma-st-tal:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+	border-radius: 8px;
+}
+
+.ma-st-felt {
+	width: 100%;
+	box-sizing: border-box;
+	border: 0;
+	border-bottom: 2px solid var(--plum);
+	background: none;
+	font-family: var(--serif);
+	font-size: calc(23px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1.1;
+	color: var(--espresso);
+	text-align: center;
+	padding: 2px 0;
+}
+
+.ma-st-felt:focus {
+	outline: none;
+}
+
+/* Krydset i arkets hjoerne. At trykke ved siden af lukker ogsaa, men
+   det er ikke til at gaette hvis man ikke ved det. */
+.ma-luk {
+	position: absolute;
+	top: 8px;
+	right: 10px;
+	width: 42px;
+	height: 42px;
+	border: 0;
+	border-radius: 50%;
+	background: none;
+	color: var(--ink-3);
+	font-size: calc(24px * var(--fs-scale, 1));
+	line-height: 1;
+	cursor: pointer;
+}
+
+.ma-luk:active {
+	background: var(--paper-2);
+}
+
+.ma-luk:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: -2px;
 }
 
 .ma-st-spring {
