@@ -33,7 +33,8 @@
 	}
 </script>
 
-<div class="st-lag" use:portal role="dialog" aria-modal="true" aria-labelledby="st-titel">
+<!-- ny-tokens: se MaengdeArk. Uden den mister overlayet sine farver. -->
+<div class="st-lag ny-tokens" use:portal role="dialog" aria-modal="true" aria-labelledby="st-titel">
 	<header class="st-top">
 		<div>
 			<div class="st-k">Stillingen</div>

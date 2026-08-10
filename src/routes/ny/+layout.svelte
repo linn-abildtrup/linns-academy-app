@@ -235,6 +235,8 @@
 								<path d="M3 10.5L12 4l9 6.5" /><path d="M5 9.5V20h14V9.5" />
 							</svg>
 						{:else if fane.navn === '30-30'}
+							<!-- En skaal med damp. 30-30 handler om mad, ikke om moduler,
+							     saa firkanterne fra Moduler passede ikke laengere. -->
 							<svg
 								viewBox="0 0 24 24"
 								fill="none"
@@ -244,19 +246,9 @@
 								stroke-linejoin="round"
 								aria-hidden="true"
 							>
-								<rect x="3" y="3" width="7" height="7" rx="2" /><rect
-									x="14"
-									y="3"
-									width="7"
-									height="7"
-									rx="2"
-								/><rect x="3" y="14" width="7" height="7" rx="2" /><rect
-									x="14"
-									y="14"
-									width="7"
-									height="7"
-									rx="2"
-								/>
+								<path d="M3.5 11.5h17a8.5 8.5 0 0 1-8.5 8.5 8.5 8.5 0 0 1-8.5-8.5Z" />
+								<path d="M9 7.5c0-1.2 1.2-1.6 1.2-2.8S9 3 9 3" />
+								<path d="M14.2 7.5c0-1.2 1.2-1.6 1.2-2.8s-1.2-1.7-1.2-1.7" />
 							</svg>
 						{:else if fane.navn === 'Snak'}
 							<svg

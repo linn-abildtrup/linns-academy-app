@@ -67,7 +67,9 @@
 	}
 </script>
 
-<div class="ark-lag" use:portal role="dialog" aria-modal="true" aria-labelledby="ma-navn">
+<!-- ny-tokens: arket flyttes ud af .ny-app, saa farverne skal foelge med.
+     Uden den bliver arket gennemsigtigt. Se ny.css i toppen. -->
+<div class="ark-lag ny-tokens" use:portal role="dialog" aria-modal="true" aria-labelledby="ma-navn">
 	<button type="button" class="ark-luk-flade" onclick={onluk} aria-label="Luk"></button>
 	<div class="ma-ark">
 		<div class="ma-greb" aria-hidden="true"></div>
