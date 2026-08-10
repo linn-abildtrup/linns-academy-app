@@ -122,3 +122,31 @@ export async function fortrydMadvare(uid: string, maaltidId: string): Promise<vo
 	await deleteDoc(doc(db, 'users', uid, 'maaltider', maaltidId));
 	glemHistorik();
 }
+
+/**
+ * Fjerner en madvare hun har tastet tidligere, og afleverer den tilbage
+ * saa den kan gendannes.
+ *
+ * Vi spoerger ikke "er du sikker". I stedet kan hun fortryde, praecis
+ * som naar hun tilfoejer noget. Det er den samme aftale hele vejen
+ * igennem modulet: handlingen sker med det samme, og fortrydelsen er
+ * ét tryk vaek.
+ */
+export async function fjernMadvare(uid: string, maaltid: GemtMaaltid): Promise<GemtMaaltid> {
+	await deleteDoc(doc(db, 'users', uid, 'maaltider', maaltid.id));
+	glemHistorik();
+	return maaltid;
+}
+
+/**
+ * Gendanner en fjernet madvare med SAMME dokument-id, saa den lander
+ * praecis hvor den laa. Bruges af Fortryd efter en fjernelse.
+ */
+export async function gendanMadvare(uid: string, maaltid: GemtMaaltid): Promise<void> {
+	const { id, ...felter } = maaltid;
+	await setDoc(doc(db, 'users', uid, 'maaltider', id), {
+		...felter,
+		opdateret: serverTimestamp()
+	});
+	glemHistorik();
+}

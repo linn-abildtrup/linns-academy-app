@@ -4397,3 +4397,33 @@ a.dag {
 	font-size: calc(11px * var(--fs-scale, 1));
 	color: var(--ink-3);
 }
+
+/* Krydset der fjerner en madvare igen. Ingen "er du sikker": hun faar
+   en kvittering med Fortryd, praecis som naar hun tilfoejer noget. */
+.tm-r-fjern {
+	flex-shrink: 0;
+	width: 40px;
+	height: 40px;
+	margin: -6px -6px -6px 2px;
+	border: 0;
+	background: none;
+	color: var(--ink-3);
+	font-size: calc(20px * var(--fs-scale, 1));
+	line-height: 1;
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+.tm-r-fjern:active {
+	background: var(--paper-2);
+}
+
+.tm-r-fjern:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.tm-r-fjern:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: -2px;
+}

@@ -20,7 +20,13 @@
 	import { formatPortion } from '$lib/content/maengde3';
 	import type { PlejerPost } from '$lib/content/plejer3';
 	import { hentMaaltidsPlads } from '$lib/firestore/maaltider3';
-	import { hentPlejer, gemMadvare, fortrydMadvare } from '$lib/firestore/plejer3';
+	import {
+		hentPlejer,
+		gemMadvare,
+		fortrydMadvare,
+		fjernMadvare,
+		gendanMadvare
+	} from '$lib/firestore/plejer3';
 	import { hentAlleFodevarer } from '$lib/firestore/kost';
 	import { datoNoegle } from '$lib/firestore/forside3';
 	import MaengdeArk from '$lib/components/ny/MaengdeArk.svelte';
@@ -47,7 +53,13 @@
 	// Arket og kvitteringen
 	let valgt = $state<{ food: Fodevare; saedvanlig: { portion: number; enhedId?: string } | null } | null>(null);
 	let gemmer = $state(false);
-	let kvittering = $state<{ id: string; navn: string } | null>(null);
+	// Kvitteringen daekker begge veje: tilfoejet og fjernet. Fortryd
+	// betyder derfor enten slet igen eller gendan.
+	let kvittering = $state<
+		| { slags: 'tilfoejet'; id: string; navn: string }
+		| { slags: 'fjernet'; maaltid: GemtMaaltid }
+		| null
+	>(null);
 	let kvitTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const erIDag = $derived(dato === iDag);
@@ -152,7 +164,7 @@
 			valgt = null;
 			soegeord = '';
 			await indlaesDagen();
-			visKvittering(svar);
+			visKvittering({ slags: 'tilfoejet', ...svar });
 		} catch (e) {
 			console.error('[ny] kunne ikke gemme madvaren', e);
 		} finally {
@@ -160,10 +172,29 @@
 		}
 	}
 
-	function visKvittering(svar: { id: string; navn: string }) {
-		kvittering = svar;
+	function visKvittering(k: NonNullable<typeof kvittering>) {
+		kvittering = k;
 		if (kvitTimer) clearTimeout(kvitTimer);
 		kvitTimer = setTimeout(() => (kvittering = null), 6000);
+	}
+
+	/**
+	 * Fjerner en madvare hun allerede har tastet. Ingen "er du sikker",
+	 * men en kvittering med Fortryd, praecis som naar hun tilfoejer.
+	 */
+	async function fjern(m: GemtMaaltid) {
+		const uid = user?.uid;
+		if (!uid || gemmer) return;
+		gemmer = true;
+		try {
+			await fjernMadvare(uid, m);
+			await indlaesDagen();
+			visKvittering({ slags: 'fjernet', maaltid: m });
+		} catch (e) {
+			console.error('[ny] kunne ikke fjerne madvaren', e);
+		} finally {
+			gemmer = false;
+		}
 	}
 
 	async function fortryd() {
@@ -172,7 +203,11 @@
 		if (!uid || !k) return;
 		kvittering = null;
 		try {
-			await fortrydMadvare(uid, k.id);
+			if (k.slags === 'tilfoejet') {
+				await fortrydMadvare(uid, k.id);
+			} else {
+				await gendanMadvare(uid, k.maaltid);
+			}
 			await indlaesDagen();
 		} catch (e) {
 			console.error('[ny] kunne ikke fortryde', e);
@@ -271,6 +306,13 @@
 				<div class="tm-raekke">
 					<span class="tm-r-navn">{p.navn}</span>
 					<span class="tm-r-tal">{Math.round(p.totalP ?? 0)} g</span>
+					<button
+						type="button"
+						class="tm-r-fjern"
+						disabled={gemmer}
+						onclick={() => fjern(p)}
+						aria-label="Fjern {p.navn}">×</button
+					>
 				</div>
 			{/each}
 		</div>
@@ -290,7 +332,13 @@
 
 {#if kvittering}
 	<div class="kvit">
-		<span class="kvit-t">{kvittering.navn} lagt til {LABELS[type].toLowerCase()}</span>
+		<span class="kvit-t">
+			{#if kvittering.slags === 'tilfoejet'}
+				{kvittering.navn} lagt til {LABELS[type].toLowerCase()}
+			{:else}
+				{kvittering.maaltid.navn} er fjernet
+			{/if}
+		</span>
 		<button type="button" class="kvit-f" onclick={fortryd}>Fortryd</button>
 	</div>
 {/if}
