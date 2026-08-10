@@ -1,0 +1,124 @@
+// ============================================================
+// "Det du plejer" og selve gemningen, mod Firestore.
+//
+// Vi skriver ét maaltids-dokument pr madvare, praecis som kunderne i
+// forvejen bruger modulet: 60 % af alle registreringer er én enkelt
+// madvare. Formen er den samme som den gamle app skriver, saa begge
+// apps kan laese hinandens data.
+//
+// Nye dokumenter faar et tidsstempel. De gamle har ingen, og derfor
+// kan "nyeste oeverst" kun virke fremadrettet. Se maaltider3.ts.
+// ============================================================
+
+import {
+	collection,
+	deleteDoc,
+	doc,
+	getDocs,
+	query,
+	serverTimestamp,
+	setDoc,
+	where
+} from 'firebase/firestore';
+import { db } from '$lib/firebase';
+import type { Fodevare, GemtMaaltid, Maaltidstype } from '$lib/content/kost';
+import { plejerFor, type HistorikMaaltid, type PlejerPost } from '$lib/content/plejer3';
+import { naeringFor } from '$lib/content/maengde3';
+import { datoNoegle } from '$lib/firestore/forside3';
+
+/** Hvor langt tilbage vi kigger efter vaner. */
+const HISTORIK_DAGE = 45;
+
+// Historikken hentes én gang pr side-indlaesning. Den aendrer sig
+// langsomt, og et opslag pr maaltidsskaerm ville vaere spild.
+let cache: { uid: string; hentetMs: number; maaltider: HistorikMaaltid[] } | null = null;
+const CACHE_MS = 10 * 60 * 1000;
+
+export async function hentHistorik(uid: string): Promise<HistorikMaaltid[]> {
+	if (cache && cache.uid === uid && Date.now() - cache.hentetMs < CACHE_MS) {
+		return cache.maaltider;
+	}
+	const fra = new Date();
+	fra.setDate(fra.getDate() - HISTORIK_DAGE);
+	const snap = await getDocs(
+		query(collection(db, 'users', uid, 'maaltider'), where('dato', '>=', datoNoegle(fra)))
+	);
+	const maaltider: HistorikMaaltid[] = snap.docs.map((d) => {
+		const m = d.data() as GemtMaaltid;
+		return { type: m.type, items: m.items ?? [] };
+	});
+	cache = { uid, hentetMs: Date.now(), maaltider };
+	return maaltider;
+}
+
+/** Ryd cachen, saa en ny registrering kan naa at taelle med. */
+export function glemHistorik() {
+	cache = null;
+}
+
+/**
+ * Hendes hyppigste madvarer til ét maaltid, klar til fliserne.
+ * `foods` bruges til at slaa navne op og til at regne makro bagefter.
+ */
+export async function hentPlejer(
+	uid: string,
+	type: Maaltidstype,
+	foods: Map<string, Fodevare>
+): Promise<PlejerPost[]> {
+	const historik = await hentHistorik(uid);
+	return plejerFor(historik, type, (id) => foods.get(id)?.name);
+}
+
+export interface GemtSvar {
+	/** Dokumentets id, saa Fortryd kan slette netop det. */
+	id: string;
+	navn: string;
+}
+
+/**
+ * Gemmer én madvare i et maaltid.
+ *
+ * Vi laver et nyt dokument hver gang i stedet for at laegge til i et
+ * eksisterende. Saa kan Fortryd slette praecis det hun lige tilfoejede,
+ * uden at roere resten af maaltidet.
+ */
+export async function gemMadvare(args: {
+	uid: string;
+	dato: string;
+	type: Maaltidstype;
+	food: Fodevare;
+	portion: number;
+	enhedId?: string;
+}): Promise<GemtSvar> {
+	const { uid, dato, type, food, portion, enhedId } = args;
+	const n = naeringFor(food, portion, enhedId);
+	const ref = doc(collection(db, 'users', uid, 'maaltider'));
+
+	await setDoc(ref, {
+		navn: food.name,
+		type,
+		dato,
+		items: [{ foodId: food.id, portion, ...(enhedId ? { enhedId } : {}) }],
+		totalP: n.protein,
+		totalF: n.fiber,
+		// Nye dokumenter faar et tidsstempel, saa nyeste kan staa oeverst.
+		// De gamle har ingen, og det kan vi ikke lave om paa.
+		oprettet: serverTimestamp(),
+		opdateret: serverTimestamp()
+	});
+
+	glemHistorik();
+	return { id: ref.id, navn: food.name };
+}
+
+/**
+ * Fortryd. Sletter det dokument hun lige oprettede.
+ *
+ * Det er Fortryd der goer ét tryk forsvarligt. Uden den ville vi vaere
+ * noedt til at spoerge "er du sikker" hver gang, og saa er vi tilbage
+ * ved to tryk paa den vej der bruges mest.
+ */
+export async function fortrydMadvare(uid: string, maaltidId: string): Promise<void> {
+	await deleteDoc(doc(db, 'users', uid, 'maaltider', maaltidId));
+	glemHistorik();
+}
