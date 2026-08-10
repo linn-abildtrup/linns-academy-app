@@ -17,7 +17,7 @@
 	import type { Fodevare, GemtMaaltid, Maaltidstype } from '$lib/content/kost';
 	import { MAALTIDSTYPER, PROTEIN_MAALTIDS_MAAL, filtrerFodevarer } from '$lib/content/kost';
 	import { LABELS, harProteinMaal } from '$lib/content/maaltider3';
-	import { formatPortion } from '$lib/content/maengde3';
+	import { formatPortion, naeringFor } from '$lib/content/maengde3';
 	import type { PlejerPost } from '$lib/content/plejer3';
 	import { hentMaaltidsPlads } from '$lib/firestore/maaltider3';
 	import {
@@ -30,6 +30,13 @@
 	import { hentAlleFodevarer } from '$lib/firestore/kost';
 	import { datoNoegle } from '$lib/firestore/forside3';
 	import MaengdeArk from '$lib/components/ny/MaengdeArk.svelte';
+	import VaelgArk, { type Valg } from '$lib/components/ny/VaelgArk.svelte';
+	import { hentMineCustomFodevarer, hentFavoritter } from '$lib/firestore/kost';
+	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
+	import { parseOpskriftMakro } from '$lib/content/opskrifter';
+	import type { Opskrift } from '$lib/content/opskrifter';
+	import type { FavoritMaaltid } from '$lib/content/kost';
+	import { gemSammensat } from '$lib/firestore/plejer3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
@@ -61,6 +68,14 @@
 		| null
 	>(null);
 	let kvitTimer: ReturnType<typeof setTimeout> | null = null;
+
+	// De tre ark bag ikonerne. Madplanen er stadig attrap.
+	type Kilde = 'opskrifter' | 'favoritter' | 'mine';
+	let aabentArk = $state<Kilde | null>(null);
+	let arkHenter = $state(false);
+	let opskrifter = $state<Opskrift[]>([]);
+	let favoritter = $state<FavoritMaaltid[]>([]);
+	let egne = $state<Fodevare[]>([]);
 
 	const erIDag = $derived(dato === iDag);
 	const kanFrem = $derived(dato < iDag);
@@ -138,6 +153,122 @@
 			afbrudt = true;
 		};
 	});
+
+	/** Henter foerst naar hun aabner arket. Ellers ville vi hente tre
+	    lister hver gang hun bare vil taste en banan. */
+	async function aabnKilde(kilde: Kilde) {
+		const uid = user?.uid;
+		if (!uid) return;
+		aabentArk = kilde;
+		arkHenter = true;
+		try {
+			if (kilde === 'opskrifter' && opskrifter.length === 0) {
+				opskrifter = (await hentAlleOpskrifter()).filter((o) => o.aktiv);
+			} else if (kilde === 'favoritter' && favoritter.length === 0) {
+				favoritter = await hentFavoritter(uid);
+			} else if (kilde === 'mine' && egne.length === 0) {
+				egne = await hentMineCustomFodevarer(uid);
+			}
+		} catch (e) {
+			console.error('[ny] kunne ikke hente', kilde, e);
+		} finally {
+			arkHenter = false;
+		}
+	}
+
+	const arkTitel: Record<Kilde, string> = {
+		opskrifter: 'Opskrifter',
+		favoritter: 'Favoritter',
+		mine: 'Mine fødevarer'
+	};
+
+	const arkTom: Record<Kilde, string> = {
+		opskrifter: 'Der er ingen opskrifter endnu.',
+		favoritter: 'Du har ingen favoritter endnu. Du kan gemme et måltid som favorit, når du har sat det sammen.',
+		mine: 'Du har ikke lavet nogen egne fødevarer endnu. Dem laver du, når en vare ikke findes i forvejen.'
+	};
+
+	const arkPoster = $derived.by<Valg[]>(() => {
+		if (aabentArk === 'opskrifter') {
+			return opskrifter.map((o) => {
+				const mk = parseOpskriftMakro(o.instruktioner);
+				return {
+					id: o.id,
+					navn: o.titel,
+					under: mk.protein ? `${Math.round(mk.protein)} g protein pr portion` : ''
+				};
+			});
+		}
+		if (aabentArk === 'favoritter') {
+			return favoritter.map((f) => ({
+				id: f.id,
+				navn: f.navn,
+				under: `${f.items?.length ?? 0} madvarer`
+			}));
+		}
+		if (aabentArk === 'mine') {
+			return egne.map((f) => ({
+				id: f.id,
+				navn: f.name,
+				under: `${f.p} g protein pr 100 g`
+			}));
+		}
+		return [];
+	});
+
+	/** Hvad der sker naar hun vaelger noget i arket. */
+	async function vaelgFraArk(id: string) {
+		const kilde = aabentArk;
+		if (!kilde) return;
+
+		// Egne foedevarer er almindelige madvarer, saa de gaar gennem
+		// maengde-arket praecis som et soegeresultat.
+		if (kilde === 'mine') {
+			const f = egne.find((x) => x.id === id);
+			if (!f) return;
+			aabentArk = null;
+			valgt = { food: f, saedvanlig: null };
+			return;
+		}
+
+		// Opskrifter og favoritter er faerdige maaltider med kendt makro,
+		// saa de laegges direkte i. Hun har allerede valgt dem.
+		const uid = user?.uid;
+		if (!uid) return;
+		aabentArk = null;
+		gemmer = true;
+		try {
+			let navn = '';
+			let protein = 0;
+			let fiber = 0;
+			if (kilde === 'opskrifter') {
+				const o = opskrifter.find((x) => x.id === id);
+				if (!o) return;
+				const mk = parseOpskriftMakro(o.instruktioner);
+				navn = o.titel;
+				protein = mk.protein ?? 0;
+				fiber = mk.fiber ?? 0;
+			} else {
+				const f = favoritter.find((x) => x.id === id);
+				if (!f) return;
+				navn = f.navn;
+				for (const it of f.items ?? []) {
+					const food = foods.get(it.foodId);
+					if (!food) continue;
+					const n = naeringFor(food, it.portion ?? 0, it.enhedId);
+					protein += n.protein;
+					fiber += n.fiber;
+				}
+			}
+			const svar = await gemSammensat({ uid, dato, type, navn, protein, fiber });
+			await indlaesDagen();
+			visKvittering({ slags: 'tilfoejet', ...svar });
+		} catch (e) {
+			console.error('[ny] kunne ikke laegge i maaltidet', e);
+		} finally {
+			gemmer = false;
+		}
+	}
 
 	function aabnArk(food: Fodevare, saedvanlig: { portion: number; enhedId?: string } | null) {
 		valgt = { food, saedvanlig };
@@ -288,11 +419,18 @@
 		</div>
 	{/if}
 
-	<div class="tm-ikoner skitse">
-		<span class="tm-ikon"><i class="i1"></i>Opskrifter</span>
-		<span class="tm-ikon"><i class="i2"></i>Madplan</span>
-		<span class="tm-ikon"><i class="i3"></i>Favoritter</span>
-		<span class="tm-ikon"><i class="i4"></i>Mine</span>
+	<div class="tm-ikoner">
+		<button type="button" class="tm-ikon" onclick={() => aabnKilde('opskrifter')}>
+			<i class="i1"></i>Opskrifter
+		</button>
+		<!-- Madplanen er en generator med sin egen logik og bygges for sig. -->
+		<span class="tm-ikon skitse"><i class="i2"></i>Madplan</span>
+		<button type="button" class="tm-ikon" onclick={() => aabnKilde('favoritter')}>
+			<i class="i3"></i>Favoritter
+		</button>
+		<button type="button" class="tm-ikon" onclick={() => aabnKilde('mine')}>
+			<i class="i4"></i>Mine
+		</button>
 	</div>
 
 	<div class="tm-k">I dette måltid</div>
@@ -327,6 +465,17 @@
 		{gemmer}
 		ongem={(portion, enhedId) => gem(valgt!.food, portion, enhedId)}
 		onluk={() => (valgt = null)}
+	/>
+{/if}
+
+{#if aabentArk}
+	<VaelgArk
+		titel={arkTitel[aabentArk]}
+		poster={arkPoster}
+		henter={arkHenter}
+		tomTekst={arkTom[aabentArk]}
+		onvaelg={vaelgFraArk}
+		onluk={() => (aabentArk = null)}
 	/>
 {/if}
 

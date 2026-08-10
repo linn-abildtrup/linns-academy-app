@@ -112,6 +112,39 @@ export async function gemMadvare(args: {
 }
 
 /**
+ * Gemmer noget der allerede er et faerdigt maaltid: en opskrift eller
+ * en favorit. Makroen er kendt paa forhaand, saa der er ingen maengde
+ * at saette, og hun har allerede valgt den.
+ *
+ * Vi gemmer den som ét manuelt item med navnet paa. Det er samme form
+ * som den gamle app bruger naar den logger en opskrift, saa dagbogen
+ * ser ens ud i begge apps.
+ */
+export async function gemSammensat(args: {
+	uid: string;
+	dato: string;
+	type: Maaltidstype;
+	navn: string;
+	protein: number;
+	fiber: number;
+}): Promise<GemtSvar> {
+	const { uid, dato, type, navn, protein, fiber } = args;
+	const ref = doc(collection(db, 'users', uid, 'maaltider'));
+	await setDoc(ref, {
+		navn,
+		type,
+		dato,
+		items: [{ foodId: '', portion: 1, manuel: { navn, enhed: 'portion' } }],
+		totalP: Math.round(protein * 10) / 10,
+		totalF: Math.round(fiber * 10) / 10,
+		oprettet: serverTimestamp(),
+		opdateret: serverTimestamp()
+	});
+	glemHistorik();
+	return { id: ref.id, navn };
+}
+
+/**
  * Fortryd. Sletter det dokument hun lige oprettede.
  *
  * Det er Fortryd der goer ét tryk forsvarligt. Uden den ville vi vaere
