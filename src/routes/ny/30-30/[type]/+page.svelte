@@ -31,6 +31,7 @@
 	import { datoNoegle } from '$lib/firestore/forside3';
 	import MaengdeArk from '$lib/components/ny/MaengdeArk.svelte';
 	import VaelgArk, { type Valg } from '$lib/components/ny/VaelgArk.svelte';
+	import OpskriftArk from '$lib/components/ny/OpskriftArk.svelte';
 	import { hentMineCustomFodevarer, hentFavoritter } from '$lib/firestore/kost';
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
 	import { parseOpskriftMakro } from '$lib/content/opskrifter';
@@ -76,6 +77,8 @@
 	let opskrifter = $state<Opskrift[]>([]);
 	let favoritter = $state<FavoritMaaltid[]>([]);
 	let egne = $state<Fodevare[]>([]);
+	/** Den opskrift hun kigger paa. Vises oven paa listen. */
+	let aabenOpskrift = $state<Opskrift | null>(null);
 
 	const erIDag = $derived(dato === iDag);
 	const kanFrem = $derived(dato < iDag);
@@ -231,40 +234,66 @@
 			return;
 		}
 
-		// Opskrifter og favoritter er faerdige maaltider med kendt makro,
-		// saa de laegges direkte i. Hun har allerede valgt dem.
+		// Opskriften SKAL kunne ses foer den laegges i. Hun kan ikke
+		// vurdere en ret ud fra titlen alene.
+		if (kilde === 'opskrifter') {
+			const o = opskrifter.find((x) => x.id === id);
+			if (!o) return;
+			aabenOpskrift = o;
+			return;
+		}
+
+		// Favoritter er hendes egne, faerdige maaltider. Dem har hun sat
+		// sammen selv, saa de laegges direkte i.
 		const uid = user?.uid;
 		if (!uid) return;
+		const f = favoritter.find((x) => x.id === id);
+		if (!f) return;
 		aabentArk = null;
 		gemmer = true;
 		try {
-			let navn = '';
 			let protein = 0;
 			let fiber = 0;
-			if (kilde === 'opskrifter') {
-				const o = opskrifter.find((x) => x.id === id);
-				if (!o) return;
-				const mk = parseOpskriftMakro(o.instruktioner);
-				navn = o.titel;
-				protein = mk.protein ?? 0;
-				fiber = mk.fiber ?? 0;
-			} else {
-				const f = favoritter.find((x) => x.id === id);
-				if (!f) return;
-				navn = f.navn;
-				for (const it of f.items ?? []) {
-					const food = foods.get(it.foodId);
-					if (!food) continue;
-					const n = naeringFor(food, it.portion ?? 0, it.enhedId);
-					protein += n.protein;
-					fiber += n.fiber;
-				}
+			for (const it of f.items ?? []) {
+				const food = foods.get(it.foodId);
+				if (!food) continue;
+				const n = naeringFor(food, it.portion ?? 0, it.enhedId);
+				protein += n.protein;
+				fiber += n.fiber;
 			}
-			const svar = await gemSammensat({ uid, dato, type, navn, protein, fiber });
+			const svar = await gemSammensat({ uid, dato, type, navn: f.navn, protein, fiber });
 			await indlaesDagen();
 			visKvittering({ slags: 'tilfoejet', ...svar });
 		} catch (e) {
-			console.error('[ny] kunne ikke laegge i maaltidet', e);
+			console.error('[ny] kunne ikke laegge favoritten i', e);
+		} finally {
+			gemmer = false;
+		}
+	}
+
+	/** Laegger opskriften i, med det antal portioner hun har valgt. */
+	async function gemOpskrift(portioner: number) {
+		const uid = user?.uid;
+		const o = aabenOpskrift;
+		if (!uid || !o) return;
+		gemmer = true;
+		try {
+			const mk = parseOpskriftMakro(o.instruktioner);
+			const navn = portioner === 1 ? o.titel : `${o.titel} (${formatPortion(portioner)} port.)`;
+			const svar = await gemSammensat({
+				uid,
+				dato,
+				type,
+				navn,
+				protein: (mk.protein ?? 0) * portioner,
+				fiber: (mk.fiber ?? 0) * portioner
+			});
+			aabenOpskrift = null;
+			aabentArk = null;
+			await indlaesDagen();
+			visKvittering({ slags: 'tilfoejet', ...svar });
+		} catch (e) {
+			console.error('[ny] kunne ikke laegge opskriften i', e);
 		} finally {
 			gemmer = false;
 		}
@@ -476,6 +505,16 @@
 		tomTekst={arkTom[aabentArk]}
 		onvaelg={vaelgFraArk}
 		onluk={() => (aabentArk = null)}
+	/>
+{/if}
+
+{#if aabenOpskrift}
+	<OpskriftArk
+		opskrift={aabenOpskrift}
+		maaltidLabel={LABELS[type]}
+		{gemmer}
+		ongem={gemOpskrift}
+		ontilbage={() => (aabenOpskrift = null)}
 	/>
 {/if}
 

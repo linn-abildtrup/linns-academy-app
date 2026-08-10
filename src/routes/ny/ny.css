@@ -4608,3 +4608,136 @@ button.tm-ikon:active i {
 	margin: 0;
 	line-height: 1.5;
 }
+
+/* ── Opskrift-arket ────────────────────────────────────────── */
+/*
+   Hun skal kunne SE opskriften foer hun laegger den i. Ingredienser og
+   fremgangsmaade ruller, mens knappen bliver staaende nederst, saa hun
+   kan laegge den i uden at rulle helt ned igen.
+*/
+
+.op-ark {
+	height: 88vh;
+}
+
+.op-rul {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	padding-right: 2px;
+}
+
+.op-billede {
+	width: 100%;
+	height: 150px;
+	object-fit: cover;
+	border-radius: 14px;
+	display: block;
+	margin-bottom: 12px;
+}
+
+.op-titel {
+	font-family: var(--serif);
+	font-size: calc(20px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 0 44px 0 0;
+	line-height: 1.25;
+}
+
+.op-beskrivelse {
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	line-height: 1.5;
+	margin: 5px 0 0;
+}
+
+.op-makro {
+	display: flex;
+	gap: 20px;
+	margin: 13px 0 4px;
+}
+
+.op-m-navn {
+	font-size: calc(9.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.op-m-tal {
+	font-family: var(--serif);
+	font-size: calc(20px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: #46603f;
+}
+
+.op-k {
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	margin: 15px 0 8px;
+}
+
+.op-stepper {
+	margin-bottom: 4px;
+}
+
+.op-st-tal {
+	display: block;
+	font-family: var(--serif);
+	font-size: calc(22px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1.1;
+	color: var(--espresso);
+}
+
+.op-ingredienser {
+	background: var(--paper);
+	border-radius: 13px;
+	box-shadow: var(--shadow-soft);
+	overflow: hidden;
+}
+
+.op-ingredienser div {
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+	padding: 10px 13px;
+	border-top: 1px solid var(--line);
+	font-size: calc(13.5px * var(--fs-scale, 1));
+}
+
+.op-ingredienser div:first-child {
+	border-top: 0;
+}
+
+.op-i-navn {
+	flex: 1;
+	color: var(--espresso);
+}
+
+.op-i-m {
+	color: var(--ink-2);
+	white-space: nowrap;
+	font-weight: 600;
+}
+
+.op-instruktioner {
+	background: var(--paper);
+	border-radius: 13px;
+	box-shadow: var(--shadow-soft);
+	padding: 13px 14px;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	line-height: 1.6;
+	color: var(--espresso);
+	/* Fremgangsmaaden er skrevet med linjeskift, og de skal bevares. */
+	white-space: pre-wrap;
+}
+
+.op-gem {
+	flex-shrink: 0;
+}
