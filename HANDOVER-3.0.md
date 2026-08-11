@@ -11,7 +11,7 @@ Denne fil er til den næste der skal arbejde videre, uanset om det er et nyt Cla
 Læs den sammen med disse tre:
 
 - `CLAUDE.md` i repo-roden er arbejdsreglerne. De er ikke til forhandling.
-- `SPEC-3.0.md` er hvad der bygges og hvorfor. 21 afsnit, hvor 13 til 21 er designbeslutningerne fra 5. august.
+- `SPEC-3.0.md` er hvad der bygges og hvorfor. 27 afsnit. 13 til 21 er designbeslutningerne fra 5. august, og 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning.
 - `v3 app/linns-academy-design/DESIGN-SPEC.md` og `mockups.html` er hvordan det ser ud.
 
 ---
@@ -51,8 +51,6 @@ To ting der har kostet tid før, og som skal huskes:
 
 ### 3.2 Filerne
 
-| Sted | Hvad |
-|---|---|
 **Alt der hører til 3.0 ender på `3`.** `adgang3.ts`, `forside3.ts`,
 `maaltider3.ts` og så videre. Ser du en fil uden 3-tallet, hører den til den
 gamle app og må kun læses.
@@ -61,7 +59,7 @@ gamle app og må kun læses.
 |---|---|
 | `src/routes/ny/+layout.svelte` | Skallen. Adgangs-gate, spærring, bundmenu, contexts for `user`, `userDoc`, `adgang` og `forlob`. **Læg ikke nyt her uden en god grund**, se SPEC 26.5 |
 | `src/routes/ny/ny.css` | Alt design. Scoped under `.ny-app`. Cirka 2.000 linjer |
-| `src/lib/components/ny/` | 20 komponenter, alle kun brugt i 3.0 |
+| `src/lib/components/ny/` | 22 komponenter, alle kun brugt i 3.0 |
 
 **Ren logik, ingen database, alt sammen testet:**
 
@@ -69,11 +67,13 @@ gamle app og må kun læses.
 |---|---|---|
 | `content/adgang3.ts` | Adgangsmodellen, dagnummer, medlemstid | 44 |
 | `content/challenge3.ts` | Challenge: mål, gitter, stilling | 42 |
+| `content/opskriftSoeg3.ts` | Søgning i opskrifter. Se 9.5 | 49 |
 | `content/maengde3.ts` | Mængde, spring pr enhed, næring | 28 |
 | `content/forside3.ts` | Kurve, målinger, kadence | 27 |
 | `content/maaltider3.ts` | Dagens fire måltider og deres tal | 27 |
 | `content/nulDage3.ts` | Pause-dage. Se 9.2 | 24 |
 | `content/spaerring3.ts` | Spærring ved abo-udløb. Se 9.3 | 12 |
+| `content/opskriftKategori3.ts` | Opskrift-kategorier, hvor snack er sin egen | 23 |
 | `content/inspirator3.ts` | Hvornår AI-inspiratoren dukker op | 12 |
 | `content/plejer3.ts` | "Det du plejer". Modulets vigtigste fil, læs toppen | 12 |
 | `content/beskeder3.ts` | "Til dig lige nu" | 8 |
@@ -88,6 +88,7 @@ gamle app og må kun læses.
 | `firestore/challenge3.ts` | Challenge, både nye og gamle |
 | `firestore/nulDage3.ts` | Pause-dage |
 | `firestore/featureAdgang3.ts` | Feature-adgang. Hentes her, ikke i skallen |
+| `firestore/opskrifter3.ts` | Opskrifter. Egen indlæser, fordi den gamle taber snack |
 | `firestore/challengeAdmin3.ts` | Admin: opret og tildel challenges |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
@@ -175,6 +176,20 @@ Bemærk sidegevinsten: før rettelsen fandtes `ANTHROPIC_API_KEY` slet ikke som 
 
 **Læg ikke noget nyt i skallen uden en god grund.** Et forsøg på at hente feature-adgangen i `routes/ny/+layout.svelte` gav en helt blank app 11. august, og årsagen kunne aldrig findes. Vi rullede tilbage og byggede det i mindre bidder, hvor hentningen ligger dér hvor den bruges. Skallen omgiver hver eneste side, så en fejl der rammer den, rammer alt.
 
+**`vh` gør ark højere end den synlige skærm på mobil.** Mobilbrowsere regner `vh` ud som om adresselinjen var væk. Et ark på 86vh blev derfor højere end det Linn kunne se, og toppen med søgefelt og luk-kryds havnede uden for skærmen. Hun kunne hverken søge eller lukke arket. Brug `dvh`, som er den synlige højde, med `vh` som reserve:
+
+```css
+height: 84vh;
+height: 86dvh;
+max-height: calc(100dvh - 10px);
+```
+
+Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `vh` med vilje, for de er ikke ark.
+
+**Et VALGFRIT felt i en type kan skjule en filtrerings-fejl.** `Opskrift3` har feltet `kategorier3`, men filter-funktionen læste `kategorier`. Feltet var valgfrit, så TypeScript sagde ikke fra: tallet ud for Morgenmad stod rigtigt på 24, men et tryk på knappen tømte skærmen. **Gør felter som en filtrering afhænger af påkrævede**, se `FiltrerbarOpskrift` i `opskriftSoeg3.ts`.
+
+**Læg aldrig et billede ind i et Firestore-dokument.** Opskrift-billeder lå som base64-tekst inde i dokumentet. To billeder vejede 189 KB, altså halvdelen af hele opskrift-samlingens 379 KB, og de blev hentet hver gang listen blev åbnet, uanset om nogen rullede ned til dem. Flyttet til Storage 11. august, se 9.5. **Læg billedet i Storage og gem adressen.**
+
 **`opretDoc` findes ikke i `firestoreRest.ts`.** Brug `gemDocMerge` med et selvlavet dokument-id.
 
 **Firestore-regler driver.** Sammenlign altid de live regler med `firestore.rules` i repoet, inden du udgiver noget. Det er nu ét kald, se afsnit 8.
@@ -185,7 +200,7 @@ Bemærk sidegevinsten: før rettelsen fandtes `ANTHROPIC_API_KEY` slet ikke som 
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 916 tests lige nu, alle grønne
+npm test                               # 988 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -194,11 +209,14 @@ git status --porcelain                 # kun nye eller 3.0-filer må stå der
 
 ```
 npx firebase-tools deploy --only firestore:rules
+npx firebase-tools deploy --only storage
 ```
 
 Den oversætter reglerne først og nægter at udgive hvis der er en syntaksfejl. Reglerne styrer adgang for alle kunder i drift, så **vis altid Linn den præcise ændring og få et ja, før du kører den.** Servicekontoen i `scripts/` kan desuden læse de live regler, så du kan sammenligne med repoet uden at udgive noget.
 
-Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx tsx`, og **slettes bagefter**. Kør altid read-only eller dry-run først og vis Linn resultatet. Skal der skrives til kundedata, skal Linn sige ja specifikt til netop den kørsel.
+**Regelfilen udgives som helhed.** En fejl i én blok kan lukke kunder ude af noget helt andet, fx træningsvideoer. Læs de live regler bagefter og tjek at de eksisterende blokke stadig står der, ikke kun at den nye er kommet ind.
+
+Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx tsx`, og **slettes bagefter**. Kør altid read-only eller dry-run først og vis Linn resultatet. Skal der skrives til kundedata, skal Linn sige ja specifikt til netop den kørsel. Skriver scriptet oven i noget der ikke kan regnes ud igen, så tag en sikkerhedskopi til `backup/` først. Den mappe er uden for git, for kundedata skal ikke på GitHub.
 
 ---
 
@@ -306,6 +324,64 @@ fem runder mockups før gennemgangen.
 - **38 %** af dagene har en måltidstype der går igen. Derfor kan en plads
   rumme mere end én ting
 
+### 9.5 Opskrift-listen, bygget 11. august
+
+**Læs SPEC 26.6 før du rører den.** Her står kun det en ny person skal vide
+med det samme.
+
+**Gitteret er to i bredden** med farvet flise efter måltid og tre linjers
+titel. Det **skifter ikke facon når hun søger**, der bliver bare færre fliser.
+Linn afviste bevidst et forslag om at skifte til én i bredden ved søgning: et
+layout der skifter under fingrene er forvirrende.
+
+**Søgningen havde to fejl som begge er målt, ikke gættet:**
+
+- **Flere ord gav nul.** Den gamle deler kun ved komma, så et mellemrum blev
+  en del af ordet. Otte almindelige to-ords-søgninger gav ALLE nul træffere,
+  fx "kylling broccoli" som der findes fire af. Nu deles der ved mellemrum og
+  alle ord skal findes, uanset rækkefølge. Enkelt-ord giver præcis samme
+  resultat som før, så intet forsvandt
+- **56 % af alle træffere har ikke ordet i titlen.** "tomat" giver 35
+  træffere hvoraf 31 kun har ordet i ingredienslisten. Derfor skriver hver
+  flise hvorfor den kom med, fx "broccoli i ingredienser". Uden den linje
+  ville over halvdelen af fliserne ligne en fejl
+
+**Danske bogstaver foldes til ae, oe og aa. IKKE til a, o, a** som
+`klientSoegeMatch` i admin gør. Med a/o/a ville "æg" blive til "ag" og ramme
+bagt, mager og lagkage. Stavefejls-tolerance er bevidst fravalgt: høstakken er
+hele ingredienslisten på flere hundrede tegn.
+
+**Snack er sin egen kategori i 3.0.** Den gamle indlæser folder snack, salat
+og dessert sammen til "andet", så 15 snack-opskrifter ikke kunne findes som
+snack. Den gamle må ikke rettes, så `firestore/opskrifter3.ts` læser de samme
+dokumenter på ny. Fordelingen er morgenmad 24, frokost 51, aftensmad 46,
+snack 15, andet 8.
+
+**Filtrene ligger i eget ark**, `OpskriftFiltre.svelte`. De lå først som tre
+rækker knapper over listen og åd 215 px, altså over en fjerdedel af arket, før
+den første opskrift kom til syne. Hovedet er nu 92 px.
+
+**Måltidet er forvalgt ud fra skærmen hun kom fra.** Åbner hun listen inde fra
+Frokost, står den på frokost. Fordi filtrene er skjulte, **skal**
+begrænsningen kunne ses, og den vises tre steder: overskriften siger
+"Opskrifter til frokost", filter-knappen bærer et tal, og "Vis alle 130" står
+ved overskriften. **Fjern ikke ét af de tre uden at tænke over de andre.**
+
+**Billederne blev flyttet ud af Firestore samme dag.** Samlingen gik fra 379
+til 195 KB. Den gamle app henter de samme opskrifter i Biblioteket og 30-30-3,
+så alle kunder fik den samme forbedring. Billeder ligger nu i Storage under
+`opskrifter/`, dokumentet har `billedeUrl` og `billedeSti`, og reglen står i
+`storage.rules`. Sikkerhedskopi af de gamle værdier ligger i `backup/`.
+
+**Etape-hentning blev vurderet og fravalgt.** Efter flytningen var listen
+hurtig nok. Firestore-klienten kan i øvrigt ikke hente et dokument uden ét
+felt: man får hele dokumentet eller ingenting. Bygger du det alligevel senere,
+så læs først hvorfor vi lod være, i SPEC 26.6.
+
+**Kun 2 af 130 opskrifter har et billede**, og begge er frokost. Admin-siden
+siger stadig at upload tilføjes senere. Regel og mappe findes nu, så det er
+det der mangler.
+
 ### Efter 30-30
 
 Resten af etape 4:
@@ -314,6 +390,8 @@ Resten af etape 4:
   skifte valg løbende. Nås fra dagens træning på forsiden
 - **Biblioteket** som et kort nederst på forsiden, kun for dem der har adgang
 - **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app
+- **Billede-upload i admin**, så Linn selv kan lægge billeder på opskrifter
+- **`static/mockup/` slettes.** Var stillads til 30-30 og er ikke i brug
 
 ### Bevidst udskudt
 
