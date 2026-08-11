@@ -277,19 +277,19 @@ describe('filtrerOpskrifter3', () => {
 	const LISTE = [
 		{
 			titel: 'Grøn grød',
-			kategorier: ['morgenmad'],
+			kategorier3: ['morgenmad'],
 			dietTags: ['vegetar', 'glutenfri'],
 			ingredienser: [{ navn: 'havregryn' }, { navn: 'spinat' }]
 		},
 		{
 			titel: 'Proteinpasta med kylling og broccoli',
-			kategorier: ['aftensmad'],
+			kategorier3: ['aftensmad'],
 			dietTags: [],
 			ingredienser: [{ navn: 'pasta' }, { navn: 'kylling' }]
 		},
 		{
 			titel: 'Skyrbowl med mandler',
-			kategorier: ['morgenmad', 'snack'],
+			kategorier3: ['morgenmad', 'snack'],
 			dietTags: ['vegetar'],
 			ingredienser: [{ navn: 'skyr' }, { navn: 'havregryn' }]
 		}
@@ -334,6 +334,21 @@ describe('filtrerOpskrifter3', () => {
 		const ud = filtrerOpskrifter3(LISTE, { soegeord: 'a' });
 		const titler = ud.map((r) => r.opskrift.titel);
 		expect(titler).toEqual(LISTE.filter((o) => titler.includes(o.titel)).map((o) => o.titel));
+	});
+
+	// Fejlen der ramte Linn 11/8 2026: feltet hed kategorier3, filteret laeste
+	// kategorier, og saa gav ET TRYK paa Morgenmad nul selv om tallet sagde 24.
+	it('filtrerer paa den RIGTIGE kategori-liste, ikke en tom', () => {
+		const ud = filtrerOpskrifter3(LISTE, { kategorier: ['morgenmad'] });
+		expect(ud.length).toBeGreaterThan(0);
+	});
+
+	it('kombinerer kategori og diaet uden at tomme skaermen', () => {
+		const ud = filtrerOpskrifter3(LISTE, {
+			kategorier: ['morgenmad'],
+			dietTags: ['vegetar']
+		});
+		expect(ud.map((r) => r.opskrift.titel)).toEqual(['Grøn grød', 'Skyrbowl med mandler']);
 	});
 
 	it('giver tom liste naar intet passer', () => {

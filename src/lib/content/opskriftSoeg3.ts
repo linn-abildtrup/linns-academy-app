@@ -232,6 +232,18 @@ export interface SoegeFiltre {
 	dietTags?: string[];
 }
 
+/**
+ * Det filtreringen skal kunne se paa en opskrift. Felterne er PAAKRAEVEDE med
+ * vilje: var de valgfrie, ville en opskrift uden dem tavst falde ud af alle
+ * kategori-filtre i stedet for at give en type-fejl. Praecis den fejl slap
+ * igennem én gang, hvor feltet hed kategorier3 og filteret laeste kategorier,
+ * saa tallet stod rigtigt men et tryk paa knappen tomte skaermen.
+ */
+export interface FiltrerbarOpskrift extends SoegbarOpskrift {
+	kategorier3: string[];
+	dietTags: string[];
+}
+
 export interface FiltreretOpskrift<T> {
 	opskrift: T;
 	grunde: Grund[];
@@ -241,9 +253,10 @@ export interface FiltreretOpskrift<T> {
  * Filtrerer en liste efter soegeord, kategorier og diaet-tags og giver
  * grunden med tilbage pr opskrift. Raekkefoelgen fra input bevares.
  */
-export function filtrerOpskrifter3<
-	T extends SoegbarOpskrift & { kategorier?: string[]; dietTags?: string[] }
->(opskrifter: T[], filtre: SoegeFiltre): FiltreretOpskrift<T>[] {
+export function filtrerOpskrifter3<T extends FiltrerbarOpskrift>(
+	opskrifter: T[],
+	filtre: SoegeFiltre
+): FiltreretOpskrift<T>[] {
 	const termer = soegetermer(filtre.soegeord ?? '');
 	const kategorier = filtre.kategorier ?? [];
 	const dietTags = filtre.dietTags ?? [];
@@ -251,12 +264,10 @@ export function filtrerOpskrifter3<
 	const ud: FiltreretOpskrift<T>[] = [];
 	for (const o of opskrifter) {
 		if (kategorier.length > 0) {
-			const egne = o.kategorier ?? [];
-			if (!egne.some((k) => kategorier.includes(k))) continue;
+			if (!o.kategorier3.some((k) => kategorier.includes(k))) continue;
 		}
 		if (dietTags.length > 0) {
-			const egne = o.dietTags ?? [];
-			if (!dietTags.every((t) => egne.includes(t))) continue;
+			if (!dietTags.every((t) => o.dietTags.includes(t))) continue;
 		}
 		const traef = traefFor(o, termer);
 		if (!traef.traf) continue;

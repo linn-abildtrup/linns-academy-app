@@ -4861,7 +4861,13 @@ button.tm-ikon:active > span {
 	border-radius: 22px 22px 0 0;
 	padding: 9px 13px calc(16px + env(safe-area-inset-bottom, 0px));
 	box-shadow: 0 -10px 30px rgba(50, 34, 24, 0.2);
-	height: 86vh;
+	/* dvh er den SYNLIGE hoejde. Med vh regner mobilbrowsere med skaermen
+	   som om adresselinjen var vaek, saa et 86vh-ark blev hoejere end det
+	   hun kunne se, og toppen med soegefelt og luk-kryds havnede udenfor.
+	   vh staar foerst som reserve til browsere uden dvh. */
+	height: 84vh;
+	height: 86dvh;
+	max-height: calc(100dvh - 10px);
 	display: flex;
 	flex-direction: column;
 }
@@ -4912,19 +4918,14 @@ button.tm-ikon:active > span {
 	pointer-events: none;
 }
 
+/* Ombrydes i stedet for at ligge i en vandret scroll. Snack laa som femte
+   knap uden for skaermen, og en vandret scroll er ikke til at se at der er. */
 .ol-filtre {
 	display: flex;
+	flex-wrap: wrap;
 	gap: 6px;
-	overflow-x: auto;
-	-webkit-overflow-scrolling: touch;
-	scrollbar-width: none;
 	margin-top: 9px;
-	padding-bottom: 2px;
 	flex-shrink: 0;
-}
-
-.ol-filtre::-webkit-scrollbar {
-	display: none;
 }
 
 .ol-chip {
@@ -4935,7 +4936,7 @@ button.tm-ikon:active > span {
 	background: var(--paper);
 	border: 1px solid var(--line);
 	border-radius: 999px;
-	padding: 7px 13px;
+	padding: 7px 11px;
 	font-family: var(--sans);
 	font-size: calc(12.5px * var(--fs-scale, 1));
 	font-weight: 600;
