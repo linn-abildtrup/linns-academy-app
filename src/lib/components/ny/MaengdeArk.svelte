@@ -26,9 +26,6 @@
 		springFor
 	} from '$lib/content/maengde3';
 	import { portal } from '$lib/actions/portal';
-	import { getContext } from 'svelte';
-	import type { UserDoc } from '$lib/types';
-	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 
 	interface Props {
 		food: Fodevare;
@@ -41,15 +38,6 @@
 	}
 
 	let { food, maaltidLabel, saedvanlig = null, gemmer = false, ongem, onluk }: Props = $props();
-
-	// Kulhydrat, fedt og kalorier er en adgangsstyret funktion. Linns
-	// beslutning 9. august: som udgangspunkt kun til medlemmer, ikke til
-	// forloebskunder, men admin kan tildele den til et forloeb.
-	const hentUserDoc = getContext<(() => UserDoc | null) | undefined>('userDoc');
-	const hentMatrix = getContext<(() => FeatureMatrix | null) | undefined>('featureMatrix');
-	const visUdvidet = $derived(
-		harFeatureAdgang(hentUserDoc?.() ?? null, hentMatrix?.() ?? null, 'udvidet-naering')
-	);
 
 	const genveje = $derived(genvejeFor(food, saedvanlig));
 	const enheder = $derived(enhederFor(food));
@@ -127,20 +115,7 @@
 				<div class="ma-m-navn">Fiber</div>
 				<div class="ma-m-tal">{formatPortion(naering.fiber)} g</div>
 			</div>
-			{#if visUdvidet}
-				<div>
-					<div class="ma-m-navn">Kulhydrat</div>
-					<div class="ma-m-tal blaeg">{formatPortion(naering.kh)} g</div>
-				</div>
-				<div>
-					<div class="ma-m-navn">Fedt</div>
-					<div class="ma-m-tal blaeg">{formatPortion(naering.fedt)} g</div>
-				</div>
-			{/if}
 		</div>
-		{#if visUdvidet}
-			<div class="ma-kcal">{naering.kcal} kcal · {naering.gram} g</div>
-		{/if}
 
 		{#if visEnheder}
 			<div class="ma-k">Vælg enhed</div>

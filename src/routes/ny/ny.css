@@ -4776,22 +4776,3 @@ button.tm-ikon:active > span {
 .op-gem {
 	flex-shrink: 0;
 }
-
-/* Udvidet naering. Protein og fiber er metodens tal og staar groent.
-   Kulhydrat og fedt er til orientering og staar daempet, saa skaermen
-   ikke ser ud som om alle fire er lige vigtige. */
-.ma-makro {
-	flex-wrap: wrap;
-	row-gap: 10px;
-}
-
-.ma-m-tal.blaeg {
-	color: var(--ink-2);
-	font-size: calc(17px * var(--fs-scale, 1));
-}
-
-.ma-kcal {
-	font-size: calc(11.5px * var(--fs-scale, 1));
-	color: var(--ink-3);
-	margin: -6px 0 13px;
-}
