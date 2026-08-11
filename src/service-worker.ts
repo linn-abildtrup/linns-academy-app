@@ -33,12 +33,46 @@ const NAV_TIMEOUT_MS = 3000;
 // cache for evigt (gamle versioner ryddes når en ny SW aktiveres).
 const ALLE_ASSETS = [...build, ...files];
 
+// Hvor mange filer vi henter ad gangen naar en ny version gemmes paa forhaand.
+// Foer blev alle knap 300 fyret af paa én gang, og saa kaemper de om den samme
+// mobilforbindelse som appens egne kald. Med et hold ad gangen tager hentningen
+// lidt laengere i alt, men den fylder mindre undervejs, og det er det rigtige
+// bytte for noget der koerer i baggrunden.
+const HOLD_STOERRELSE = 12;
+
 sw.addEventListener('install', (event) => {
-	// Pre-cache alle assets — det tager 1-2 sek ved første besøg, men
-	// efter det er appen instant.
-	event.waitUntil(caches.open(ASSET_CACHE).then((cache) => cache.addAll(ALLE_ASSETS)));
+	event.waitUntil(gemPaaForhaand());
 	sw.skipWaiting();
 });
+
+/**
+ * Gemmer app'ens filer paa forhaand, saa den ogsaa virker uden net.
+ *
+ * Foer stod her cache.addAll(), og den er alt-eller-intet: fejler ét eneste
+ * kald, fx fordi en fil naaede at forsvinde midt i en udrulning eller fordi
+ * forbindelsen knak paa den 200. fil, saa kastes HELE hentningen vaek. Der
+ * bliver ikke gemt noget som helst, og saa proever den forfra ved hver eneste
+ * app-start indtil den lykkes. Paa en daarlig forbindelse kan den tilstand
+ * blive ved i lang tid.
+ *
+ * Nu hentes filerne i hold, og de faar lov at staa ved hver for sig. Én fil
+ * der ikke kan hentes koster nu netop den ene fil, og den bliver gemt af sig
+ * selv naeste gang nogen bruger den, se fetch-haandteringen laengere nede.
+ */
+async function gemPaaForhaand(): Promise<void> {
+	const cache = await caches.open(ASSET_CACHE);
+	let fejlede = 0;
+
+	for (let i = 0; i < ALLE_ASSETS.length; i += HOLD_STOERRELSE) {
+		const hold = ALLE_ASSETS.slice(i, i + HOLD_STOERRELSE);
+		const udfald = await Promise.allSettled(hold.map((sti) => cache.add(sti)));
+		fejlede += udfald.filter((u) => u.status === 'rejected').length;
+	}
+
+	if (fejlede > 0) {
+		console.warn(`[sw] ${fejlede} af ${ALLE_ASSETS.length} filer kunne ikke gemmes paa forhaand`);
+	}
+}
 
 sw.addEventListener('activate', (event) => {
 	// Slet gamle cache-versioner når en ny SW aktiveres
