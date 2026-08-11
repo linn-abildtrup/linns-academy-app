@@ -4075,7 +4075,12 @@ button.tm-ikon:active > span {
 	border-radius: 22px 22px 0 0;
 	padding: 9px 17px calc(20px + env(safe-area-inset-bottom, 0px));
 	box-shadow: 0 -10px 30px rgba(50, 34, 24, 0.2);
-	max-height: 88vh;
+	/* dvh er den SYNLIGE hoejde. Med vh regner mobilbrowsere med skaermen
+	   som om adresselinjen var vaek, saa arket bliver hoejere end det hun
+	   kan se og toppen havner uden for skaermen. vh staar som reserve til
+	   browsere uden dvh. Se .ol-ark, hvor netop det gik galt. */
+	max-height: 84vh;
+	max-height: 88dvh;
 	overflow-y: auto;
 }
 
@@ -4551,8 +4556,11 @@ button.tm-ikon:active > span {
 	border-radius: 22px 22px 0 0;
 	padding: 9px 17px calc(16px + env(safe-area-inset-bottom, 0px));
 	box-shadow: 0 -10px 30px rgba(50, 34, 24, 0.2);
-	/* Hoejt ark, for det er en liste man bladrer i. */
-	height: 82vh;
+	/* Hoejt ark, for det er en liste man bladrer i. dvh er den SYNLIGE
+	   hoejde, se .ma-ark. */
+	height: 80vh;
+	height: 82dvh;
+	max-height: calc(100dvh - 10px);
 	display: flex;
 	flex-direction: column;
 }
@@ -4652,7 +4660,10 @@ button.tm-ikon:active > span {
 */
 
 .op-ark {
-	height: 88vh;
+	/* Var 88vh og dermed hoejere end den synlige skaerm paa mobil. */
+	height: 84vh;
+	height: 88dvh;
+	max-height: calc(100dvh - 10px);
 }
 
 .op-rul {
