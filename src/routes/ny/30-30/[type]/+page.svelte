@@ -136,6 +136,14 @@
 			.slice(0, 8);
 	});
 
+	/** Maengden som den blev tastet, fx "1 dl" eller "100 g". Tom hvis
+	    posten er et faerdigt maaltid som en opskrift. */
+	function maengdeTekst(p: GemtMaaltid): string {
+		const it = p.items?.[0];
+		if (!it || !it.foodId || !it.portion) return '';
+		return `${formatPortion(it.portion)} ${it.enhedId ?? 'g'}`;
+	}
+
 	async function indlaesDagen() {
 		const uid = user?.uid;
 		if (!uid) return;
@@ -504,8 +512,23 @@
 		<div class="tm-liste">
 			{#each poster as p (p.id)}
 				<div class="tm-raekke">
-					<span class="tm-r-navn">{p.navn}</span>
-					<span class="tm-r-tal">{Math.round(p.totalP ?? 0)} g</span>
+					<span class="tm-r-t">
+						<span class="tm-r-navn">{p.navn}</span>
+						<!-- Foer stod der bare "5 g", og man kunne ikke vide hvad
+						     de fem gram var. Nu staar maengden og hvad hver ting
+						     bidrog med, med ord paa. -->
+						<span class="tm-r-under">
+							{#if maengdeTekst(p)}<span class="tm-r-maengde">{maengdeTekst(p)}</span>{/if}
+							<span>{Math.round(p.totalP ?? 0)} g protein</span>
+							<span>{Math.round(p.totalF ?? 0)} g fiber</span>
+							{#if visUdvidet && p.totalKh !== undefined}
+								<span class="daempet">{Math.round(p.totalKh)} g kulhydrat</span>
+							{/if}
+							{#if visUdvidet && p.totalFedt !== undefined}
+								<span class="daempet">{Math.round(p.totalFedt)} g fedt</span>
+							{/if}
+						</span>
+					</span>
 					<button
 						type="button"
 						class="tm-r-fjern"

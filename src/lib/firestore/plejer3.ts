@@ -101,6 +101,12 @@ export async function gemMadvare(args: {
 		items: [{ foodId: food.id, portion, ...(enhedId ? { enhedId } : {}) }],
 		totalP: n.protein,
 		totalF: n.fiber,
+		// Kulhydrat, fedt og kalorier gemmes ALTID, ogsaa for kunder der
+		// ikke maa se dem. Ellers ville tallene mangle bagudrettet den dag
+		// Linn giver et hold adgang. Visningen afgoer hvad der vises.
+		totalKh: n.kh,
+		totalFedt: n.fedt,
+		totalKcal: n.kcal,
 		// Nye dokumenter faar et tidsstempel, saa nyeste kan staa oeverst.
 		// De gamle har ingen, og det kan vi ikke lave om paa.
 		oprettet: serverTimestamp(),

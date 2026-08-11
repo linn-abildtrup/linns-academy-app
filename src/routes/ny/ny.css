@@ -3988,7 +3988,7 @@ button.tm-ikon:active > span {
 
 .tm-raekke {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 10px;
 	padding: 11px 13px;
 	border-top: 1px solid var(--line);
@@ -3999,16 +3999,11 @@ button.tm-ikon:active > span {
 }
 
 .tm-r-navn {
-	flex: 1;
+	display: block;
 	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
 	color: var(--espresso);
-}
-
-.tm-r-tal {
-	font-size: calc(12.5px * var(--fs-scale, 1));
-	font-weight: 700;
-	color: var(--espresso);
-	white-space: nowrap;
+	line-height: 1.3;
 }
 
 /* ── Attrap ────────────────────────────────────────────────── */
@@ -4794,4 +4789,30 @@ button.tm-ikon:active > span {
 	font-size: calc(11.5px * var(--fs-scale, 1));
 	color: var(--ink-3);
 	margin: -6px 0 13px;
+}
+
+/* Raekken i "I dette maaltid". Foer stod der bare et tal uden ord, og
+   man kunne ikke vide om de fem gram var protein, fiber eller vaegt. */
+.tm-r-t {
+	flex: 1;
+	min-width: 0;
+}
+
+.tm-r-under {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 3px 10px;
+	margin-top: 2px;
+	font-size: calc(11px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	line-height: 1.35;
+}
+
+.tm-r-maengde {
+	font-weight: 700;
+	color: var(--ink-3);
+}
+
+.tm-r-under .daempet {
+	color: var(--ink-3);
 }
