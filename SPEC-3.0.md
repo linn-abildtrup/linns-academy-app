@@ -751,13 +751,134 @@ bruges ét sted, ikke to.
 dagsmål og ikke et måltidsmål, så en stribe ville love noget der ikke findes.
 Der står "i dagens 30" ved siden af fiber-tallet.
 
+## 26.3 Mad, skærm 3: at registrere noget. LÅST 10. august
+
+Alt hvad der sker inde i et måltid, når kunden vil have noget tilføjet.
+
+### Fortryd, ikke bekræft
+
+**Gennemgående regel i hele modulet:** handlingen sker med det samme, og
+fortrydelsen er ét tryk væk. Der er ingen "er du sikker" nogen steder.
+
+Grunden er målt: kunden registrerer 13 madvarer på en almindelig dag. Et
+bekræftelses-trin ville fordoble antallet af klik på den vej der bruges mest.
+Kvitteringen glider op nederst med navnet på det der skete, og forsvinder af
+sig selv efter seks sekunder.
+
+**Kvitteringen dækker begge veje.** Fortryd sletter enten det hun lige
+tilføjede, eller gendanner det hun lige fjernede. Gendannelsen skriver
+dokumentet tilbage med **samme id**, så madvaren lander præcis hvor den lå i
+stedet for at hoppe øverst som noget nyt. Ellers ville en fortrudt fejl se ud
+som en ny fejl.
+
+**Kvitteringen nævner navnet.** Fordi "I dette måltid" ligger nederst på
+skærmen, kan kunden ellers se *at* der skete noget, men ikke *hvad*.
+
+### Tre veje ind
+
+**1. Det du plejer.** Fire fliser med hendes egne hyppigste madvarer til netop
+det måltid, med den mængde hun plejer. Ét tryk, og maden er registreret. Se
+`content/plejer3.ts` for hvorfor det er modulets vigtigste del.
+
+**2. Søgefeltet.** Fritekst i fødevare-databasen. Korteste navn først, så
+"Skyr" kommer før "Skyr med vanilje". Valg åbner mængde-arket.
+
+**3. De fire ikoner.** Opskrifter, madplan, favoritter og mine fødevarer.
+
+### Mængde-arket
+
+Glider op nedefra, så måltidet bliver stående bagved. En ny side ville koste
+kunden fornemmelsen af hvad hun var i gang med.
+
+- **Genveje først.** Madvarens egne portioner som knapper, med hendes
+  sædvanlige mængde valgt på forhånd. Ni ud af ti gange er hun færdig her.
+- **"Anden mængde" åbner plus og minus** med en enhed hun kan skifte. Linns
+  valg 10. august, som en kombination af stepper og enhedsvalg.
+- **Springet følger enheden**, godkendt 10. august: gram 5, styk og skive 1,
+  spiseske og teske 1, deciliter og portion 0,5. Med 1 g pr tryk ville 40 til
+  65 g være femogtyve tryk, og med 10 g kunne hun slet ikke ramme 65.
+- **Tallet kan trykkes og tastes.** Plus og minus er hurtigst på små spring,
+  men fra 5 til 200 g ville være niogtredive tryk. Feltet tager imod både
+  komma og punktum, for begge dele bliver tastet.
+- **Minus slukker ved det mindste** i stedet for at vise nul eller et negativt
+  tal.
+- **Tallene opdaterer sig levende** mens hun trykker. Det er halvdelen af
+  pointen: hun lærer hvad 65 g havregryn giver, uden at nogen fortæller det.
+- **Et kryds i hjørnet.** At trykke ved siden af arket lukker det også, men det
+  er ikke til at gætte hvis man ikke ved det.
+
+### De tre ark bag ikonerne
+
+**Ét fælles ark** til opskrifter, favoritter og mine fødevarer, fordi de gør
+det samme: viser en liste man kan søge i og vælge fra. Tre næsten ens ark ville
+være tre steder at rette den samme fejl.
+
+**Søgefeltet er altid der.** Én kunde har 143 egne fødevarer, og en liste uden
+søgning er ubrugelig ved den størrelse. **Tastaturet springer ikke op af sig
+selv**, for kunden vil oftest bladre først, og et tastatur ville dække
+halvdelen af listen.
+
+**De tre opfører sig forskelligt med vilje:**
+
+- **Egne fødevarer** er almindelige madvarer og går gennem mængde-arket,
+  præcis som et søgeresultat. Der skal stadig sættes en portion.
+- **Favoritter** lægges direkte i. Kunden har selv sat dem sammen, så der er
+  ikke noget nyt at se, og makroen er kendt.
+- **Opskrifter SKAL kunne ses først.** En ret kan ikke vurderes ud fra titlen
+  alene. Opskriften åbner i sit eget ark med billede, makro, ingredienser og
+  fremgangsmåde. Antal portioner kan ændres i halve, og både makro og
+  ingredienser skalerer med, fordi en halv portion er en almindelig mængde.
+  Er der valgt andet end én portion, står det i navnet i dagbogen.
+
+**Listerne hentes først når arket åbnes.** Ellers ville vi hente tre lister
+hver gang kunden bare vil taste en banan.
+
+### Sådan gemmes det
+
+**Ét dokument pr madvare**, i samme form som den gamle app skriver, så begge
+apps kan læse hinandens data. Det er også det der gør Fortryd præcis: den kan
+slette netop det hun lige tilføjede uden at røre resten af måltidet.
+
+Nye dokumenter får et tidsstempel. **De gamle har ingen**, og derfor kan
+"nyeste øverst" kun virke fremadrettet. Poster uden tidsstempel falder bagerst
+i stedet for at hoppe tilfældigt rundt.
+
+**Historikken til "det du plejer" hentes én gang og huskes i ti minutter.** Et
+opslag over 45 dage hver gang kunden åbner et måltid ville være spild, og
+vaner ændrer sig ikke på et kvarter.
+
+## 26.4 To fælder i den nye flade, som kostede tid
+
+Læs de her to inden du fejlsøger noget der ligner.
+
+**Farverne forsvinder når noget flyttes ud af `.ny-app`.** Modaler og ark
+flyttes til `document.body` for at bryde ud af en scrollende forælder på iOS.
+Men tokens er defineret på `.ny-app`, så `var(--oat)` resolver til ingenting,
+og arket bliver gennemsigtigt. Det skete for mængde-arket 10. august, og
+challenge-stillingen havde samme fejl uden at nogen havde opdaget den.
+
+**Løsningen:** tokens ligger nu på både `.ny-app` og `.ny-tokens`. Den sidste
+bærer kun variablerne, ikke baggrund, farve og skrift. **Sæt `ny-tokens` på
+rod-elementet i alt der portalles.**
+
+**Knap-nulstillingen slog komponenternes egen stil ihjel.** `.ny-app button`
+satte `font: inherit` og `background: none`, og reglen var stærkere end en
+komponents egen klasse. Derfor mistede fliser deres baggrund og fik den
+nedarvede skriftstørrelse i stedet for deres egen. Det så ud som tre
+forskellige fejl.
+
+**Løsningen:** reglen er pakket i `:where()`, så den er vægtløs. Skriver du en
+ny global nulstilling, så gør det samme.
+
 ## 27. Åbne punkter på Mad
 
 - Farve på plejer-fliserne: udskudt med vilje, og de holdes hvide indtil
   videre, fordi de fire veje allerede bærer farven
-- Skærm 3: hvad der sker når kunden trykker på en madvare. Mængde,
-  kvittering og Fortryd
-- Arkene: opskrifter, madplan, favoritter, mine fødevarer
+- **Madplanen.** Det sidste stykke af 30-30 beregneren. Den er en generator og
+  ikke en liste, så den har sin egen runde til gode
+- Gamle registreringer med enheder der ikke giver mening for varen, fx "1 spsk
+  æg", dukker op som forslag under "det du plejer". Set hos test-profilen 11.
+  august. Afklares om det også sker hos rigtige kunder
 
 **Arbejdsform aftalt 9. august:** vi tager Mad ét skærmbillede ad gangen i
 stedet for at tegne hele modulet på én gang. De første fem runder mockups

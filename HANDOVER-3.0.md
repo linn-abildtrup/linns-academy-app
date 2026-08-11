@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 9. august 2026.
+Sidst opdateret 11. august 2026.
 
 Denne fil er til den næste der skal arbejde videre, uanset om det er et nyt Claude-vindue, Bo eller en udvikler udefra. Den fortæller hvor vi er, hvordan tingene hænger sammen, og hvor fælderne ligger.
 
@@ -88,6 +88,8 @@ Alle ruter ligger under `/ny`.
 | `/ny/moduler` | Skitse. Etape 4 |
 | `/ny/profil`, `/ny/hjaelp`, `/ny/forlob` | Bygget |
 | `/ny/admin/challenges` | Admin: opret og tildel challenges. Kun admin. Intet menupunkt, skriv adressen |
+| `/ny/30-30` | 30-30 beregneren, oversigten. Fire måltider og dagens tal |
+| `/ny/30-30/[type]` | Inde i et måltid. Alt indhold hænger her |
 
 Forsiden består af, i rækkefølge: hilsen med Linns ansigt, Til dig lige nu, noten fra Linn, Dit overskud med kurven, AI-inspiratoren, datostrimlen, dagens små skridt, dagens lektioner, dagens træning, dagens refleksion, dagens tal, challenge og næste hold.
 
@@ -146,7 +148,7 @@ Bemærk sidegevinsten: før rettelsen fandtes `ANTHROPIC_API_KEY` slet ikke som 
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 849 tests lige nu, alle grønne
+npm test                               # 914 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -244,7 +246,11 @@ Verificeret mod virkeligheden samme dag: for alle 12 giver den gamle app og 3.0 
 
 Etape 4, altså modulerne. **Retningen blev lagt om 9. august:** Moduler-fanen udgår, og Mad tager dens plads i bundmenuen. Se `SPEC-3.0.md` afsnit 22 til 27, som er en fuld gennemgang af Mad-modulet blok for blok, med målinger på rigtige kundedata og de beslutninger Linn har truffet. **Læs det afsnit før du rører Mad**, ellers bygger du på gæt, og det gjorde vi allerede i fem runder mockups.
 
-Kort: bundmenuen bliver Forside, Mad, Snak, Udvikling, Profil. Træning nås fra dagens træning på forsiden. Biblioteket bliver et kort nederst på forsiden for dem der har adgang.
+Kort: bundmenuen er nu Forside, **30-30**, Snak, Udvikling, Profil. Træning nås fra dagens træning på forsiden. Biblioteket bliver et kort nederst på forsiden for dem der har adgang.
+
+**30-30 beregneren er bygget og ude** pr 11. august, på nær madplanen. Ruterne er `/ny/30-30` og `/ny/30-30/[type]`. Kunden vælger måltid, ser sine hyppigste madvarer som fliser, kan søge, sætte mængde med genveje eller plus og minus, fortryde, fjerne igen, og hente fra opskrifter, favoritter og egne fødevarer.
+
+**Læs SPEC afsnit 26.4 før du fejlsøger noget visuelt i den nye flade.** De to fælder der står der kostede en aften: tokens forsvinder når noget portalles ud af `.ny-app`, og en for stærk knap-nulstilling slog komponenternes egen stil ihjel.
 
 ### Bevidst udskudt
 
