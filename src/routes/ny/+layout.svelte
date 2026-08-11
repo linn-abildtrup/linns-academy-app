@@ -29,6 +29,8 @@
 	} from '$lib/content/adgang3';
 	import { hentNulDage } from '$lib/firestore/nulDage3';
 	import { vurderSpaerring, naadeTekst } from '$lib/content/spaerring3';
+	import { hentFeatureMatrix } from '$lib/firestore/featureAdgang';
+	import { STANDARD_MATRIX, type FeatureMatrix } from '$lib/content/features';
 	import { APP_KOB_URL } from '$lib/content/abonnement';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import './ny.css';
@@ -43,6 +45,10 @@
 	let forlob = $state<ForlobKilde[]>([]);
 	/** Kundens pause-dage pr produkt. Tom for alle andre end Kropsro. */
 	let nulDage = $state<NulDageKilde>({});
+	// Feature-adgangen hentes én gang og deles, saa alle sider afgoer det
+	// samme sted. Falder tilbage til standarden indtil den er hentet, saa
+	// adgangen aldrig falder bort ved en fejl.
+	let featureMatrix = $state<FeatureMatrix>(STANDARD_MATRIX);
 	let loading = $state(true);
 
 	const maaSeNyApp = $derived(isAdmin(user) || harTestAdgang(userDoc, FLAG));
@@ -87,6 +93,7 @@
 
 	const erSpaerret = $derived(!isAdmin(user) && spaerring.spaerret);
 
+	setContext('featureMatrix', () => featureMatrix);
 	setContext('userDoc', () => userDoc);
 	setContext('user', () => user);
 	setContext('adgang', () => adgang);
@@ -142,6 +149,11 @@
 					forlob.map((f) => f.produkt)
 				);
 			}
+
+			// Best-effort. Fejler den, beholder vi standarden.
+			hentFeatureMatrix()
+				.then((m) => (featureMatrix = m))
+				.catch((e) => console.warn('[ny] kunne ikke hente feature-adgang', e));
 
 			loading = false;
 

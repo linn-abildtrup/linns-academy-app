@@ -125,7 +125,33 @@ describe('naeringFor', () => {
 	});
 
 	it('giver nul uden madvare', () => {
-		expect(naeringFor(undefined, 40, 'g')).toEqual({ protein: 0, fiber: 0, gram: 0 });
+		expect(naeringFor(undefined, 40, 'g')).toEqual({
+			protein: 0,
+			fiber: 0,
+			gram: 0,
+			kh: 0,
+			fedt: 0,
+			kcal: 0
+		});
+	});
+
+	// Udvidet naering vises kun for kunder der har adgang, men tallene
+	// regnes altid ud. Adgangen afgoeres i visningen, ikke her.
+	it('regner ogsaa kulhydrat, fedt og kalorier ud', () => {
+		const rug: Fodevare = {
+			id: 'rug',
+			name: 'Rugbrød',
+			cat: 'korn',
+			p: 6,
+			f: 8,
+			kh: 40,
+			fedt: 2,
+			kcal: 220
+		};
+		const n = naeringFor(rug, 50, 'g');
+		expect(n.kh).toBe(20);
+		expect(n.fedt).toBe(1);
+		expect(n.kcal).toBe(110);
 	});
 });
 
