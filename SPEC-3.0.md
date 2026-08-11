@@ -1198,8 +1198,203 @@ med 17. Det retter sig når billedet lægges på igen.
   august. Afklares om det også sker hos rigtige kunder
 - **128 af 130 opskrifter mangler et billede.** Værktøjet er bygget, se 26.7.
   De to der har et, har kun den store udgave
-- **`static/mockup/` skal slettes.** Var stillads til 30-30 og er ikke i brug
+- ~~**`static/mockup/` skal slettes.**~~ **Klaret 11. august.** Syv filer og
+  808 KB stillads til 30-30. Static gik fra 1,1 MB til 280 KB, og alt i static
+  hentes ned til hver kunde ved hver udrulning. Se 28.5
 
 **Arbejdsform aftalt 9. august:** vi tager Mad ét skærmbillede ad gangen i
 stedet for at tegne hele modulet på én gang. De første fem runder mockups
 byggede på gæt om hvad Mad indeholdt, og det skal ikke gentages.
+
+---
+
+# Tilføjelse: opstart og indlæsning. Beslutninger truffet 11. august 2026
+
+Det her afsnit handler ikke om en skærm, men om det der sker før den første
+skærm overhovedet kommer frem. Det kom af en konkret oplevelse: Linns telefon
+stod i **over ét minut** på logoet og "Et øjeblik" den 11. august om aftenen.
+
+En gennemgang af hele opstarts-kæden fandt fem flaskehalse. Fire af dem ligger
+i den app der er i drift, ikke i 3.0, og de er derfor rettet gennem ventilen i
+`CLAUDE.md` regel 2, som selvstændige opgaver med eget go og egne commits.
+
+**Det vigtigste at forstå på forhånd:** appen tegnes helt i browseren,
+`ssr = false`, og næsten alt i opstarten var lagt i kø uden nogen tidsgrænse.
+Firestore gemmer i forvejen hvert dokument i telefonens egen hukommelse, se
+`localCache` i `lib/firebase.ts`, men det almindelige `getDoc` spørger
+serveren alligevel. Det var det gennemgående mønster: **appen ventede på
+netværket, selv om svaret lå lokalt.**
+
+## 28. Opstart. LÅST 11. august
+
+### 28.1 App-skallen får en tidsgrænse
+
+**Problemet.** Service workeren spurgte altid nettet først om selve HTML-skallen
+og faldt kun tilbage til den gemte kopi hvis nettet sagde klart nej. Der var
+ingen tidsgrænse. Er forbindelsen der, men død, hvilket er normalt når en
+telefon lige er vågnet eller skifter mellem wifi og mobilnet, kan browseren
+bruge et minut før den giver op. Kopien lå klar hele tiden og blev ikke brugt.
+
+**Løsningen.** Nettet får `NAV_TIMEOUT_MS`, altså 3 sekunder. Derefter serveres
+kopien, og hentningen løber færdig i baggrunden så cachen er frisk til næste
+opstart. Uden kopi, fx allerførste besøg, ventes der på nettet som før. Se
+`navigationSvar` i `src/service-worker.ts`.
+
+**Hvorfor 3 sekunder.** En almindelig hentning af skallen tager 0,2 til 0,5
+sekunder. 3 sekunder er rigelig plads til en langsom forbindelse uden at nogen
+når at opfatte det som ventetid.
+
+**Den bevidste byttehandel.** På en langsom forbindelse lige efter en udrulning
+kan kunden få den forrige version én gang. Baggrunds-hentningen opdaterer
+kopien, og de mekanismer der allerede findes, altså SW-update ved focus,
+`controllerchange` og `vite:preloadError`-selvhelbredelsen i
+`routes/+layout.svelte`, bringer hende videre. Ét ekstra gensyn med den gamle
+version vejer mindre end et minuts sort skærm.
+
+**En fælde der opstod undervejs.** Første udgave lagde cache-opslaget på den
+kritiske vej for hver eneste navigation, uden at tage højde for at det opslag
+kan fejle. Kaster `caches`, fx i et privat vindue, ved fuld kvota eller på en
+iPhone der har ryddet op, ville hele svaret afvise, og kunden ville få en
+fejlside i stedet for appen. **Alt cache-arbejde i en navigation skal være
+pakket ind**, og selve gemningen skal ligge uden for det svar kunden får.
+
+### 28.2 Skrifterne må ikke blokere den første optegning
+
+**Problemet.** `src/app.html` hentede Playfair Display og DM Sans fra Googles
+server som et almindeligt stylesheet. Browseren nægter at tegne noget som helst
+før sådan et svar er hjemme. Det var **den eneste ting i hele appen der stadig
+blev hentet udefra**, og service workeren må ikke gemme den, fordi den ligger
+på et fremmed domæne.
+
+Skrifterne bruges **kun af den gamle app**. 3.0 har Fraunces og Plus Jakarta
+Sans indlejret som data-URI i `ny.css`, se regel om skrifter i `CLAUDE.md`. På
+`/ny` var ventetiden altså ren spildtid.
+
+**Løsningen.** Linket hentes med `media="print"` plus `onload="this.media='all'"`,
+med et `<noscript>` som reserve. Browseren henter filen uden at vente på den og
+sætter den i brug når den er hjemme. Teksten tegnes imens med reserve-skriften,
+præcis som `display=swap` allerede gjorde.
+
+**Sikkerhedstjek før det blev valgt:** der er ingen CSP sat op i projektet,
+hverken i `svelte.config.js` eller som `_headers`, så en inline `onload` er
+sikker. Ændrer det sig, skal den her løsning skrives om.
+
+**Fravalgt:** at hoste skrifterne selv. Det ville kræve en ændring i
+`src/app.css`, som er et delt modul, og gevinsten var lille sammenlignet med
+risikoen.
+
+### 28.3 Hurtig opstart: læs kundens egen kopi først
+
+**Problemet.** Efter Auth havde svaret, hentede skallen bruger-dokumentet fra
+serveren og kørte derefter forløbs-synkroniseringen, som selv er 2 til 4 ture
+mere frem og tilbage plus skrivninger. Alt i kø, alt uden tidsgrænse. Først
+derefter forsvandt "Et øjeblik". Dokumentet lå hele tiden i telefonens kopi.
+
+**Løsningen.** Kopien læses lokalt med `getDocFromCache`, hvilket aldrig rører
+netværket, og den rigtige kæde kapløber mod et ur på `HURTIG_START_MS`, altså
+2,5 sekunder. Vinder kæden, er forløbet uændret. Trækker den ud, lukkes kunden
+ind på kopien mens kæden løber færdig i baggrunden. **Serveren har altid det
+sidste ord.**
+
+**Hvorfor 2,5 sekunder.** Bruger-dokumentet tager typisk 0,15 til 0,4 sekunder,
+og synkroniseringen lægger 2 til 4 ture oveni, altså 0,5 til 1,5 sekunder i
+alt. 2,5 sekunder giver rigelig luft, så opstarten ser fuldstændig ud som før
+for alle andre end dem der faktisk sidder og venter. **Det er hele pointen: vi
+ændrer kun noget for den kunde der ellers ville stirre på en spinner.**
+
+**SIKKERHEDSREGLEN, og den er vigtigere end hastigheden.** En **lukket dør**
+åbnes aldrig på en kopi. Ville kopien føre til skærmen "du har ingen adgang",
+venter vi på serveren. En betalende kunde må ALDRIG risikere at få den skærm
+at se, bare fordi telefonen lå med en gammel kopi. Den anden vej er ufarlig:
+åbner vi på en kopi der viser lidt for lidt, retter serveren det et øjeblik
+efter. Se `maaAabnePaaKopi` i `content/hurtigStart.ts`, og der er test på.
+
+**Sidegevinst.** Kan serveren slet ikke nås, kommer kunden nu ind på kopien i
+stedet for at stå med spinneren for evigt.
+
+**Udrulning bag flag.** Det her ligger i den gamle apps login-flow, altså noget
+alle cirka 760 kunder i drift går igennem hver gang. Derfor får kun admin og
+kunder med `ny-app`-flaget den hurtige opstart indtil videre. Alle andre kører
+videre på præcis den kæde de kørte på før. Kontakten er én linje:
+
+```ts
+export const HURTIG_START_FOR_ALLE = false;  // content/hurtigStart.ts
+```
+
+Sættes den til `true`, gælder den alle. Der er en test der fælder hvis nogen
+kommer til at vippe den uden at ville det.
+
+**Filer:** `content/hurtigStart.ts` er reglen og tidsgrænsen, ren logik uden
+database. `userDocCache.ts` læser kopien. `userDoc.ts` er bevidst **urørt**,
+fordi det er et delt modul.
+
+### 28.4 Fælden i /ny, som den gamle app ikke havde
+
+**Kuren kunne ikke kopieres direkte.** Spærringen i 3.0 hviler på regel 1 i
+`spaerring3.ts`: **et aktivt forløb vinder over alt.** Havde vi kun hentet
+bruger-dokumentet fra kopien og ladet forløbene vente, ville en Kropsro-kunde
+med udløbet abonnement se ud som om hun slet ikke havde noget forløb, og så
+ville hun få **"Din adgang er udløbet" at se midt i sit forløb.**
+
+**Løsningen.** `firestore/hurtigStart3.ts` henter **hele** billedet fra kopien,
+altså bruger-dokument, forløb og pause-dage, og ikke kun det første led. Der er
+fire tests der holder det på plads, og de tjekker begge veje: er forløbene med,
+spærres hun ikke, og mangler de, nægter reglen at åbne på kopien i stedet for
+at vise den forkerte skærm.
+
+**Én udregning, ikke to.** Udregningen af adgang og spærring er flyttet ud af
+skallen og ind i `content/hurtigStart3.ts` som `opstartsBillede()`. Reglerne er
+uændrede, linje for linje. Grunden er at den hurtige opstart skal stille
+**nøjagtig samme spørgsmål** om kopien som skallen stiller om serverens svar.
+To udgaver af den regel ville kunne drive fra hinanden, og så ville kopien og
+serveren vise hver sin skærm. Sidegevinsten er at der er mindre i skallen,
+hvilket HANDOVER afsnit 7 udtrykkeligt beder om.
+
+**En antagelse der blev fanget af en test.** En forløbs-række kræver **begge
+ben**: `forlobIds` på kunden OG selve forløbs-dokumentet, se `udledAdgange` i
+`adgang3.ts`. Har man kun det ene, findes rækken ikke. Det er præcis derfor
+kopien skal hente det hele. Der ligger nu en test der holder den antagelse
+fast.
+
+**Ingen udrulning bag flag her.** `/ny` er allerede kun åben for admin og konti
+med `ny-app`-flaget, så publikum ER testerne.
+
+### 28.5 Gemning på forhånd må ikke være alt-eller-intet
+
+**Problemet.** Service workeren brugte `cache.addAll()`, som er alt-eller-intet.
+Knækkede forbindelsen på fil nummer 200, eller nåede en fil at forsvinde midt i
+en udrulning, blev HELE hentningen kastet væk. Der blev ikke gemt noget som
+helst, og så prøvede den forfra ved hver eneste app-start indtil den lykkedes.
+På en dårlig forbindelse kan den tilstand blive ved længe.
+
+**Løsningen.** Filerne hentes i hold af `HOLD_STOERRELSE`, altså 12 ad gangen,
+og de får lov at stå ved hver for sig via `Promise.allSettled`. Én fil der ikke
+kan hentes koster nu netop den ene fil, og den gemmes af sig selv næste gang
+nogen bruger den, se den cache-first fetch-håndtering der allerede var der.
+
+**Hold i stedet for alle på én gang** betyder at hentningen tager lidt længere i
+alt, men fylder mindre undervejs, så appens egne kald får en fair andel af
+forbindelsen. Det er det rigtige bytte for noget der kører i baggrunden.
+
+**En præcisering der er værd at have med.** Den her hentning går først i gang
+**efter** siden er indlæst. Den konkurrerer altså med appens data-kald og ikke
+med selve opstarten. Det her punkt er robusthed og oprydning, ikke en kur mod
+ventetiden. Under diagnosen blev det først beskrevet som en medvirkende årsag
+til ventetiden, og det var forkert.
+
+**Samtidig blev `static/mockup/` slettet**, se 27. Alt i `static/` bliver hentet
+ned til hver kunde ved hver udrulning, så 808 KB stillads kostede alle.
+
+### 28.6 Åbne punkter på opstarten
+
+- **Åbne den hurtige opstart for alle 760.** Én linje, se 28.3. Bør vente til
+  den har kørt et par dage hos testerne
+- **Det er ikke bekræftet på en rigtig telefon endnu** at ventetiden faktisk er
+  væk. Fem flaskehalse er fundet i koden og fjernet, men problemet er aldrig
+  set ske under måling. Hænger den stadig, er næste skridt at måle i stedet for
+  at gætte videre, og det første spørgsmål er om skærmen er **helt blank**,
+  altså skallen eller skrifterne, eller viser **logoet og "Et øjeblik"**, altså
+  Firebase-kæden
+- **`/ny` har fået samme kur**, se 28.4, men er heller ikke bekræftet på telefon
+- **Firebase Auth selv er ikke undersøgt.** Hænger noget dér, altså før kæden
+  overhovedet går i gang, er intet af det her dækket
