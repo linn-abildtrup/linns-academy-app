@@ -4023,19 +4023,23 @@ button.tm-ikon:active > span {
 }
 
 .skitse::after {
-	content: 'ikke bygget endnu';
-	position: absolute;
-	top: -7px;
-	right: 6px;
-	font-size: calc(9px * var(--fs-scale, 1));
+	content: 'ikke bygget';
+	display: block;
+	font-size: calc(8px * var(--fs-scale, 1));
 	font-weight: 700;
-	letter-spacing: 0.06em;
+	letter-spacing: 0.05em;
 	text-transform: uppercase;
 	color: var(--honey-deep);
-	background: var(--honey-tint);
-	border: 1px solid #e3c894;
-	border-radius: 999px;
-	padding: 1px 7px;
+	line-height: 1.3;
+}
+
+/*
+   Maerkatet flyder ikke laengere oven paa noget. Foerst laa det som en
+   pille hen over elementet, og paa et lille ikon var pillen bredere end
+   ikonet selv. Nu staar det som en linje under navnet.
+*/
+.tm-ikon.skitse::after {
+	margin-top: -1px;
 }
 
 /* ── Maengde-arket ─────────────────────────────────────────── */
