@@ -18,25 +18,22 @@
 	import { getUserDoc, lytTilUserDoc } from '$lib/userDoc';
 	import { hentForlob } from '$lib/firestore/forlob';
 	import { produktTypeForForlob } from '$lib/content/forlobAdgang';
-	import { harTestAdgang } from '$lib/utils/userAdgang';
 	import { isAdmin } from '$lib/admin';
 	import type { UserDoc } from '$lib/types';
-	import {
-		adgangsbilledeFor,
-		type Adgangsbillede,
-		type ForlobKilde,
-		type NulDageKilde
-	} from '$lib/content/adgang3';
+	import type { ForlobKilde, NulDageKilde } from '$lib/content/adgang3';
 	import { hentNulDage } from '$lib/firestore/nulDage3';
-	import { vurderSpaerring, naadeTekst } from '$lib/content/spaerring3';
+	import { naadeTekst } from '$lib/content/spaerring3';
+	import { opstartsBillede, maaAabnePaaKopi3 } from '$lib/content/hurtigStart3';
+	import { hentOpstartFraCache } from '$lib/firestore/hurtigStart3';
+	import { tidsgraense, HURTIG_START_MS } from '$lib/content/hurtigStart';
 	import { APP_KOB_URL } from '$lib/content/abonnement';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import './ny.css';
 
 	let { children } = $props();
 
-	/** Flag-noeglen der giver adgang til 3.0. Saettes pr kunde. */
-	const FLAG = 'ny-app';
+	// Flag-noeglen der giver adgang til 3.0 bor nu i content/hurtigStart3.ts
+	// som NY_APP_FLAG, saa den hurtige opstart og skallen bruger den samme.
 
 	let user = $state<User | null>(null);
 	let userDoc = $state<UserDoc | null>(null);
@@ -45,47 +42,23 @@
 	let nulDage = $state<NulDageKilde>({});
 	let loading = $state(true);
 
-	const maaSeNyApp = $derived(isAdmin(user) || harTestAdgang(userDoc, FLAG));
-
-	// Adgangsbilledet udledes af de felter der allerede staar paa kunden.
-	// Ingen skrivninger, ingen migrering. Se SPEC-3.0.md afsnit 2.2.1.
-	const adgang = $derived<Adgangsbillede>(
-		adgangsbilledeFor(
-			Date.now(),
-			{
-				forlobIds: userDoc?.forlobIds,
-				aboKoebtAt: userDoc?.aboKoebtAt,
-				aboSlutterAt: userDoc?.aboSlutterAt,
-				aboProdukt: userDoc?.aboProdukt,
-				activeProduct: userDoc?.activeProduct,
-				activeSubscription: userDoc?.activeSubscription,
-				accessSource: userDoc?.accessSource,
-				bonusPeriodEndsAt: userDoc?.bonusPeriodEndsAt,
-				createdAt: userDoc?.createdAt
-			},
-			forlob,
-			nulDage
-		)
-	);
-
-	// Spaerring naar abonnementet er udloebet. Den ligger HER og kun her,
-	// saa der er ét sted at kigge, og ingen underside kan komme til at
-	// slippe nogen ind ad en bagdoer. Se spaerring3.ts for reglerne.
+	// Adgangsbilledet og spaerringen opgoeres ét sted, i content/hurtigStart3.ts.
+	// Udregningerne er praecis de samme som foer, de er bare flyttet ud af
+	// skallen saa den hurtige opstart kan stille NOEJAGTIG samme spoergsmaal om
+	// den lokale kopi som skallen stiller om serverens svar. To udgaver af den
+	// regel ville kunne drive fra hinanden, og saa ville kopien og serveren vise
+	// hver sin skaerm.
 	//
-	// Admin spaerres aldrig. Ellers kunne Linn laase sig selv ude af sit
-	// eget vaerktoej med en forkert dato paa sin egen konto.
-	const spaerring = $derived(
-		vurderSpaerring(
-			{
-				harApp: adgang.harApp,
-				harAktivtForlob: adgang.aktiveForlob.length > 0,
-				aboSlutterAt: userDoc?.aboSlutterAt ?? null
-			},
-			Date.now()
-		)
+	// Spaerringen ligger stadig HER og kun her, saa der er ét sted at kigge og
+	// ingen underside kan slippe nogen ind ad en bagdoer. Se spaerring3.ts.
+	const billede = $derived(
+		opstartsBillede({ userDoc, forlob, nulDage, erAdmin: isAdmin(user) }, Date.now())
 	);
 
-	const erSpaerret = $derived(!isAdmin(user) && spaerring.spaerret);
+	const adgang = $derived(billede.adgang);
+	const spaerring = $derived(billede.spaerring);
+	const maaSeNyApp = $derived(billede.maaSeNyApp);
+	const erSpaerret = $derived(billede.erSpaerret);
 
 	setContext('userDoc', () => userDoc);
 	setContext('user', () => user);
@@ -129,18 +102,70 @@
 			}
 
 			user = u;
-			const doc = await getUserDoc(u.uid);
-			userDoc = doc;
 
-			if (doc?.forlobIds?.length) {
-				forlob = await indlaesForlob(doc.forlobIds);
-				// Pause-dage skal med, ellers staar dagnummeret forkert for
-				// den kunde der har holdt fri. Kun Kropsro kan holde pause,
-				// saa for alle andre koster det her nul opslag.
-				nulDage = await hentNulDage(
-					u.uid,
-					forlob.map((f) => f.produkt)
-				);
+			// Hele opstarts-billedet fra kundens egen kopi. Laeses lokalt og
+			// koster intet netvaerk. Tom er helt normalt foerste gang hun logger
+			// ind paa en enhed. Se firestore/hurtigStart3.ts.
+			const kopi = await hentOpstartFraCache(u.uid);
+			const kopiDuer = maaAabnePaaKopi3({ ...kopi, erAdmin: isAdmin(u) }, Date.now());
+
+			// Den rigtige kaede. Indholdet er uaendret, den er bare pakket saa vi
+			// kan holde den op mod et ur nedenfor.
+			const kaeden = (async () => {
+				const doc = await getUserDoc(u.uid);
+				let hentedeForlob: ForlobKilde[] = [];
+				let hentedeNulDage: NulDageKilde = {};
+
+				if (doc?.forlobIds?.length) {
+					hentedeForlob = await indlaesForlob(doc.forlobIds);
+					// Pause-dage skal med, ellers staar dagnummeret forkert for
+					// den kunde der har holdt fri. Kun Kropsro kan holde pause,
+					// saa for alle andre koster det her nul opslag.
+					hentedeNulDage = await hentNulDage(
+						u.uid,
+						hentedeForlob.map((f) => f.produkt)
+					);
+				}
+
+				return { userDoc: doc, forlob: hentedeForlob, nulDage: hentedeNulDage };
+			})();
+
+			// Hurtig opstart. Kaeden er tre ture til serveren efter hinanden,
+			// bruger-dokument, saa forloeb, saa pause-dage, og foer laa der ingen
+			// tidsgraense paa dem. Var forbindelsen der, men doed, stod kunden med
+			// "Et oejeblik, jeg lukker dig ind" i lang tid, selv om kopien laa
+			// klar hele tiden.
+			//
+			// Paa en normal forbindelse er kaeden hjemme foerst og vinder
+			// kapløbet, og saa sker der intet nyt overhovedet. Se
+			// content/hurtigStart3.ts for reglen og begrundelsen bag tallet.
+			if (kopiDuer) {
+				const udfald = await Promise.race([
+					kaeden.then(() => 'kaeden' as const).catch(() => 'kaeden' as const),
+					tidsgraense(HURTIG_START_MS)
+				]);
+				if (udfald === 'tid') {
+					userDoc = kopi.userDoc;
+					forlob = kopi.forlob;
+					nulDage = kopi.nulDage;
+					loading = false;
+				}
+			}
+
+			// Serveren har altid det sidste ord. Naar kaeden lander, overskriver
+			// den kopien, og de $derived der laeser userDoc, forlob og nulDage
+			// regner sig selv om.
+			try {
+				const svar = await kaeden;
+				userDoc = svar.userDoc;
+				forlob = svar.forlob;
+				nulDage = svar.nulDage;
+			} catch (e) {
+				// Kunne slet ikke naa serveren. Har vi en brugbar kopi, er kunden
+				// allerede lukket ind ovenfor og arbejder videre paa den. Har vi
+				// ingen, er der intet at vise, og vi lader fejlen gaa videre.
+				console.warn('[ny] kunne ikke hente opstarten fra serveren:', e);
+				if (!kopiDuer) throw e;
 			}
 
 			loading = false;
