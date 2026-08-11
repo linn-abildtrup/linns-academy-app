@@ -60,6 +60,7 @@ gamle app og må kun læses.
 | `src/routes/ny/+layout.svelte` | Skallen. Adgangs-gate, spærring, bundmenu, contexts for `user`, `userDoc`, `adgang` og `forlob`. **Læg ikke nyt her uden en god grund**, se SPEC 26.5 |
 | `src/routes/ny/ny.css` | Alt design. Scoped under `.ny-app`. Cirka 2.000 linjer |
 | `src/lib/components/ny/` | 22 komponenter, alle kun brugt i 3.0 |
+| `src/lib/utils/billede3.ts` | Skalering og webp i browseren. `billede.ts` er den gamle og må ikke røres |
 
 **Ren logik, ingen database, alt sammen testet:**
 
@@ -68,6 +69,7 @@ gamle app og må kun læses.
 | `content/adgang3.ts` | Adgangsmodellen, dagnummer, medlemstid | 44 |
 | `content/challenge3.ts` | Challenge: mål, gitter, stilling | 42 |
 | `content/opskriftSoeg3.ts` | Søgning i opskrifter. Se 9.5 | 49 |
+| `content/opskriftBillede3.ts` | Billed-størrelser, filnavne, sortering. Se 9.6 | 33 |
 | `content/maengde3.ts` | Mængde, spring pr enhed, næring | 28 |
 | `content/forside3.ts` | Kurve, målinger, kadence | 27 |
 | `content/maaltider3.ts` | Dagens fire måltider og deres tal | 27 |
@@ -89,6 +91,7 @@ gamle app og må kun læses.
 | `firestore/nulDage3.ts` | Pause-dage |
 | `firestore/featureAdgang3.ts` | Feature-adgang. Hentes her, ikke i skallen |
 | `firestore/opskrifter3.ts` | Opskrifter. Egen indlæser, fordi den gamle taber snack |
+| `firestore/opskriftBillede3.ts` | Upload og sletning af opskrift-billeder. Kun admin |
 | `firestore/challengeAdmin3.ts` | Admin: opret og tildel challenges |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
@@ -118,6 +121,7 @@ Alle ruter ligger under `/ny`.
 | `/ny/moduler` | Gammel skitse. **Ikke længere i bundmenuen**, erstattet af 30-30 |
 | `/ny/profil`, `/ny/hjaelp`, `/ny/forlob` | Bygget |
 | `/ny/admin/challenges` | Admin: opret og tildel challenges. Kun admin. Intet menupunkt, skriv adressen |
+| `/ny/admin/opskrift-billeder` | Admin: læg billeder på opskrifter. Kun admin. Intet menupunkt. Se 9.6 |
 | `/ny/30-30` | 30-30 beregneren, oversigten. Fire måltider og dagens tal. Færdig |
 | `/ny/30-30/[type]` | Inde i et måltid. Alt indhold hænger her. Færdig |
 
@@ -188,6 +192,8 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 **Et VALGFRIT felt i en type kan skjule en filtrerings-fejl.** `Opskrift3` har feltet `kategorier3`, men filter-funktionen læste `kategorier`. Feltet var valgfrit, så TypeScript sagde ikke fra: tallet ud for Morgenmad stod rigtigt på 24, men et tryk på knappen tømte skærmen. **Gør felter som en filtrering afhænger af påkrævede**, se `FiltrerbarOpskrift` i `opskriftSoeg3.ts`.
 
+**WebP fejler ikke, den lyver.** Beder man en browser der ikke kan webp om webp, får man ikke en fejl. Man får en **PNG**, som er større end den JPEG man ville have haft. Man tror man har sparet og har gjort det værre. **Spørg altid hvad der faktisk kom ud**, se `formatDuger` i `opskriftBillede3.ts`, og lav en JPEG hvis svaret ikke duer.
+
 **Læg aldrig et billede ind i et Firestore-dokument.** Opskrift-billeder lå som base64-tekst inde i dokumentet. To billeder vejede 189 KB, altså halvdelen af hele opskrift-samlingens 379 KB, og de blev hentet hver gang listen blev åbnet, uanset om nogen rullede ned til dem. Flyttet til Storage 11. august, se 9.5. **Læg billedet i Storage og gem adressen.**
 
 **`opretDoc` findes ikke i `firestoreRest.ts`.** Brug `gemDocMerge` med et selvlavet dokument-id.
@@ -200,7 +206,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 988 tests lige nu, alle grønne
+npm test                               # 1021 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -378,9 +384,60 @@ hurtig nok. Firestore-klienten kan i øvrigt ikke hente et dokument uden ét
 felt: man får hele dokumentet eller ingenting. Bygger du det alligevel senere,
 så læs først hvorfor vi lod være, i SPEC 26.6.
 
-**Kun 2 af 130 opskrifter har et billede**, og begge er frokost. Admin-siden
-siger stadig at upload tilføjes senere. Regel og mappe findes nu, så det er
-det der mangler.
+**Kun 2 af 130 opskrifter har et billede**, og begge er frokost. Resten
+lægges på fra admin-siden, se 9.6.
+
+### 9.6 Billede-upload i admin, bygget 11. august
+
+**Ny side på `/ny/admin/opskrift-billeder`.** Den gamle admin-side under
+`app/admin/opskrifter` må ikke røres, og der står stadig at upload tilføjes
+senere. Intet menupunkt, skriv adressen, samme løsning som challenges.
+
+**To størrelser pr billede.** Flisen i gitteret er 62 px høj og 170 bred. At
+sende et 1200 px billede til den er som at sende en plakat for at vise et
+frimærke.
+
+| | Bredde | Vejer | Felt | Bruges af |
+|---|---|---|---|---|
+| Lille | 480 px | ~17 KB | `billedeUrlLille` (nyt) | 3.0 fliserne i gitteret |
+| Stor | 1000 px | ~38 KB | `billedeUrl` | 3.0 opskrift-arket og hele den gamle app |
+
+Ved 130 billeder koster første skærm i listen 150 KB i stedet for 420, og hele
+listen 2,2 MB i stedet for 9,1.
+
+**Den store bliver liggende i `billedeUrl`, og det er ikke tilfældigt.** Den
+gamle opskrift-side beder specifikt om 800 px, og dens liste viser billedet i
+fuld bredde. Gjorde du det felt lille, ville **760 kunder i drift få slørede
+billeder**. Det nye felt er additivt, og den gamle app opdager ingenting.
+
+**Rækkefølgen er: se først, gem bagefter.** Billedet vises i flisens naturlige
+størrelse, 170 × 62, så det kan opdages hvis hovedet på retten er skåret af.
+Et stort billede ville skjule netop det. Fjern ikke den forhåndsvisning.
+
+**Filerne uploades FØR dokumentet opdateres**, så en halv fejl efterlader det
+gamle billede intakt og opskriften virker som før. Gamle filer slettes
+bagefter, men kun hvis det nye filnavn er et andet.
+
+**Én ret ad gangen.** Linns beslutning. Et forslag om at slippe mange filer og
+gætte hvilken opskrift de hører til blev droppet, fordi gættet bygger på
+filnavnet og en fotograferet ret hedder `IMG_4821.jpg`. **Genopfind det ikke
+uden at spørge.**
+
+**Bygget smalt først**, fordi billedet ligger i telefonen lige efter maden er
+lavet. Bliver bredere på en laptop, se `@media (min-width: 720px)` i `ny.css`.
+
+**To kendte kanter:**
+
+- **HEIC fra iPhone kan ikke åbnes i Chrome på Mac.** Vælges billedet på selve
+  telefonen, laver iOS det om til jpeg undervejs. Sker det alligevel, får man
+  en besked der siger netop det, ikke en teknisk fejl
+- **Ryddes URL-feltet i den GAMLE admin**, forsvinder den store men ikke den
+  lille, og så viser 3.0 et billede hvor den gamle app ikke gør. Brug Fjern på
+  den nye side i stedet, den rydder begge dele plus filerne
+
+**De to billeder fra flytningen har kun den store udgave.** De markeres "kun
+stor udgave" i listen. De virker, men fliserne henter 38 KB hvor de kunne nøjes
+med 17. Det retter sig når billedet lægges på igen.
 
 ### Efter 30-30
 
@@ -390,8 +447,9 @@ Resten af etape 4:
   skifte valg løbende. Nås fra dagens træning på forsiden
 - **Biblioteket** som et kort nederst på forsiden, kun for dem der har adgang
 - **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app
-- **Billede-upload i admin**, så Linn selv kan lægge billeder på opskrifter
 - **`static/mockup/` slettes.** Var stillads til 30-30 og er ikke i brug
+- **SPEC mangler et afsnit 26.7** om billede-uploaden. Beslutningerne står i
+  9.6 her og i commit-beskeden, men ikke i spec'en endnu
 
 ### Bevidst udskudt
 
