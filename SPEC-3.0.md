@@ -1075,6 +1075,119 @@ i øvrigt ikke hente et dokument uden ét felt: man får hele dokumentet eller
 ingenting. Kun `src/lib/server/firestoreRest.ts` kan bede om bestemte felter,
 og det ville kræve et endpoint plus tabt offline-cache.
 
+## 26.7 Billede-upload i admin. LÅST 11. august
+
+Siden ligger på `/ny/admin/opskrift-billeder`. Den gamle admin-side under
+`app/admin/opskrifter` må ikke røres, og der står stadig at upload tilføjes
+senere. Intet menupunkt, samme løsning som challenges.
+
+### To størrelser, og hvorfor
+
+Beslutningen kom af et spørgsmål fra Linn: "vi kan lige så godt sørge for at
+forberede appen til 130+ billeder". Det første forslag var én størrelse, og
+det var forkert. Målt på hvad der FAKTISK vises:
+
+| Hvor | Vist størrelse | På en 3x-skærm |
+|---|---|---|
+| 3.0 flise i gitteret | 170 × 62 | 510 px |
+| 3.0 opskrift-arket | fuld bredde × 150 | 1170 px |
+| Gammel bibliotek | 56 × 56 | 168 px |
+| Gammel 30-30-3 liste | fuld bredde, 4:3 | ~1080 px |
+| Gammel opskrift-side | beder om 800 | ~1170 px |
+
+Flisen er 62 px høj. At sende et 1200 px billede til den er som at sende en
+plakat for at vise et frimærke.
+
+| | Bredde | Vejer | Felt | Bruges af |
+|---|---|---|---|---|
+| Lille | 480 px | ~17 KB | `billedeUrlLille` (nyt) | 3.0 fliserne i gitteret |
+| Stor | 1000 px | ~38 KB | `billedeUrl` | 3.0 opskrift-arket og hele den gamle app |
+
+**Ved 130 billeder:** første skærm i listen koster 150 KB i stedet for 420, og
+hele listen 2,2 MB i stedet for 9,1.
+
+**Den store bliver liggende i `billedeUrl`, og det er ikke tilfældigt.** Den
+gamle opskrift-side beder specifikt om 800 px, og dens liste viser billedet i
+fuld bredde. Gjorde man det felt lille, ville **760 kunder i drift få slørede
+billeder**. Det nye felt er additivt, og den gamle app opdager ingenting.
+
+**Den store er 1000 px og ikke 1200** af hensyn til den gamle app. Dens
+opskriftliste viser billeder i fuld bredde, og når der kommer 130, bliver den
+liste tung for kunderne. Filen må ikke ændres, så det eneste vi kan gøre er at
+holde filen så let som muligt. **Det er en kendt omkostning ved at tilføje
+billeder overhovedet, ikke en fejl.**
+
+### WebP med sikkerhedsnet
+
+WebP fylder cirka 30 % mindre end JPEG ved samme kvalitet.
+
+**Fælden:** beder man en browser der ikke kan WebP om WebP, får man ikke en
+fejl. Man får en **PNG**, som er større end den JPEG man ville have haft. Man
+tror man har sparet og har gjort det værre.
+
+`formatDuger()` spørger hvad der faktisk kom ud, og koden laver en JPEG hvis
+svaret ikke er WebP. Der er tests på begge veje.
+
+### Én ret ad gangen
+
+Det første forslag havde bulk-upload: slip 20 filer, og appen gætter hvilken
+opskrift hver fil hører til ud fra filnavnet.
+
+**Linn droppede det**, og med rette. Gættet bygger på at filerne hedder noget i
+retning af `gron-grod.jpg`. Men fotograferer man en ret, hedder filen
+`IMG_4821.jpg`, og så kan gættet ikke bruges til noget. **Genopfind det ikke
+uden at spørge.**
+
+### Se først, gem bagefter
+
+Når filen er valgt, vises billedet i **flisens naturlige størrelse**, 170 × 62,
+og i opskrift-arkets 150 px høje bånd. Ikke som ét stort billede.
+
+**Det er hele pointen.** Flisen er kun 62 px høj, så hovedet på en rejecocktail
+kan sagtens blive skåret af uden at man opdager det på et stort billede.
+**Fjern ikke den forhåndsvisning.**
+
+Under står hvad der skete med filen: `2,4 MB · 4032 × 3024 → 480 px 17 KB webp
++ 1000 px 38 KB webp · sparet 98 %`.
+
+### Rækkefølge og oprydning
+
+**Filerne uploades FØR dokumentet opdateres.** Går noget galt midtvejs, står
+det gamle billede stadig i Firestore og opskriften virker som før.
+
+**Gamle filer slettes til sidst**, men kun hvis det nye filnavn er et andet.
+Skifter man et jpeg ud med et webp, får den nye fil et andet navn, og det
+gamle skal væk. Ellers samler der sig filer ingen bruger, og om et år tør
+ingen rydde op fordi ingen ved hvad der er i brug.
+
+**Fjern spørger først**, fordi den også sletter i Storage.
+
+**Begge apper får ryddet deres cache** efter en ændring. Uden det ville
+billedet først dukke op ved en genindlæsning, og så tror man at uploaden
+mislykkedes.
+
+### Smal først
+
+Siden er bygget til en telefon og bliver bredere på en laptop. Grunden er at
+billedet ligger i telefonen lige efter maden er lavet. Se
+`@media (min-width: 720px)` i `ny.css`.
+
+### To kendte kanter
+
+**HEIC fra iPhone kan ikke åbnes i Chrome på Mac.** Vælges billedet på selve
+telefonen, laver iOS det om til jpeg undervejs. Sker det alligevel, får man en
+besked der siger netop det, ikke en teknisk fejl.
+
+**Ryddes URL-feltet i den GAMLE admin**, forsvinder den store men ikke den
+lille, og så viser 3.0 et billede hvor den gamle app ikke gør. Brug Fjern på
+den nye side i stedet, den rydder begge dele plus filerne.
+
+### Status
+
+**De to billeder fra flytningen har kun den store udgave.** De markeres "kun
+stor udgave" i listen. De virker, men fliserne henter 38 KB hvor de kunne nøjes
+med 17. Det retter sig når billedet lægges på igen.
+
 ## 27. Åbne punkter på Mad
 
 - Farve på plejer-fliserne: udskudt med vilje, og de holdes hvide indtil
@@ -1083,9 +1196,8 @@ og det ville kræve et endpoint plus tabt offline-cache.
 - Gamle registreringer med enheder der ikke giver mening for varen, fx "1 spsk
   æg", dukker op som forslag under "det du plejer". Set hos test-profilen 11.
   august. Afklares om det også sker hos rigtige kunder
-- **Billede-upload i admin.** Regel og mappe findes nu, men admin-siden siger
-  stadig at upload tilføjes senere. Indtil da har kun 2 af 130 opskrifter et
-  billede
+- **128 af 130 opskrifter mangler et billede.** Værktøjet er bygget, se 26.7.
+  De to der har et, har kun den store udgave
 - **`static/mockup/` skal slettes.** Var stillads til 30-30 og er ikke i brug
 
 **Arbejdsform aftalt 9. august:** vi tager Mad ét skærmbillede ad gangen i
