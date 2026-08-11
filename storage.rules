@@ -52,6 +52,20 @@ service firebase.storage {
 			allow write: if isAdmin();
 		}
 
+		// Fælles opskrift-billeder — Linns egne opskrifter, som alle kunder ser.
+		// Adskilt fra /users/{uid}/opskrift-billeder nedenfor, som er kundens
+		// EGNE private billeder. Disse er fælles og må læses af alle kunder.
+		//
+		// Ligger her fordi billederne før lå inde i selve opskrift-dokumentet
+		// som tekst. To billeder vejede 189 KB, altså halvdelen af hele
+		// opskrift-samlingen, og de blev hentet hver gang listen blev åbnet.
+		match /opskrifter/{filename=**} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin()
+				&& request.resource.size < 3 * 1024 * 1024
+				&& request.resource.contentType.matches('image/.*');
+		}
+
 		// Private opskrift-billeder — klientens egne billeder fra "Min opskrift".
 		// Hver bruger kan kun læse + skrive til sin egen mappe. Max 5 MB pr fil.
 		match /users/{uid}/opskrift-billeder/{filename=**} {
