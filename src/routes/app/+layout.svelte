@@ -25,6 +25,8 @@
 	import { isAdmin } from '$lib/admin';
 	import { hentFeatureMatrix } from '$lib/firestore/featureAdgang';
 	import { STANDARD_MATRIX, type FeatureMatrix } from '$lib/content/features';
+	import { hentUserDocFraCache } from '$lib/userDocCache';
+	import { maaAabnePaaKopi, tidsgraense, HURTIG_START_MS } from '$lib/content/hurtigStart';
 
 	let { children } = $props();
 
@@ -196,26 +198,79 @@
 
 			user = u;
 
-			// Hent bruger-dokument fra Firestore
-			let doc = await getUserDoc(u.uid);
+			// Kundens egen kopi af bruger-dokumentet. Laeses lokalt og koster
+			// intet netvaerk. Null er helt normalt foerste gang hun logger ind
+			// paa en enhed. Se lib/userDocCache.ts.
+			//
+			// maaAabnePaaKopi holder den hurtige opstart bag 'ny-app'-flaget
+			// under udrulningen, saa de kunder der er i drift koerer videre paa
+			// den kaede de altid har koert paa. Se content/hurtigStart.ts.
+			const kopi = await hentUserDocFraCache(u.uid);
+			const kopiDuer = maaAabnePaaKopi(kopi, isAdmin(u));
 
-			// Hvis dokumentet ikke findes (fx hvis brugeren blev oprettet før
-			// vi havde Firestore-integration), opret det nu med default state
-			if (!doc) {
-				await createUserDoc(u.uid, u.email ?? '');
-				doc = await getUserDoc(u.uid);
+			// Den rigtige kaede. Indholdet er uaendret, den er bare pakket saa
+			// vi kan holde den op mod et ur nedenfor.
+			const kaeden = (async () => {
+				// Hent bruger-dokument fra Firestore
+				let doc = await getUserDoc(u.uid);
+
+				// Hvis dokumentet ikke findes (fx hvis brugeren blev oprettet før
+				// vi havde Firestore-integration), opret det nu med default state
+				if (!doc) {
+					await createUserDoc(u.uid, u.email ?? '');
+					doc = await getUserDoc(u.uid);
+				}
+
+				// Tjek om brugeren er på et forløbs-whitelist og opdater state +
+				// userProduct hvis det er tilfældet. Best-effort — fejl logges men
+				// blokerer ikke login.
+				if (doc && u.email) {
+					try {
+						doc = await synkroniserForlobskundeStatus(u.uid, u.email, doc);
+						sidsteSync = Date.now();
+					} catch (e) {
+						console.warn('Forløbssync fejlede:', e);
+					}
+				}
+
+				return doc;
+			})();
+
+			// Hurtig opstart. Kaeden er 3 til 6 ture frem og tilbage til serveren
+			// i koe, og foer laa der ingen tidsgraense paa dem. Var forbindelsen
+			// der, men doed, stod kunden med "Et oejeblik" i over et minut, selv
+			// om kopien laa klar hele tiden.
+			//
+			// Paa en normal forbindelse er kaeden hjemme paa under et sekund og
+			// vinder kapløbet, og saa sker der intet nyt overhovedet. Trækker den
+			// ud, lukker vi kunden ind paa kopien og lader kaeden loebe faerdig i
+			// baggrunden. Se content/hurtigStart.ts for begrundelsen bag tallet.
+			if (kopiDuer) {
+				const udfald = await Promise.race([
+					kaeden.then(() => 'kaeden' as const).catch(() => 'kaeden' as const),
+					tidsgraense(HURTIG_START_MS)
+				]);
+				if (udfald === 'tid') {
+					userDoc = kopi;
+					loading = false;
+				}
 			}
 
-			// Tjek om brugeren er på et forløbs-whitelist og opdater state +
-			// userProduct hvis det er tilfældet. Best-effort — fejl logges men
-			// blokerer ikke login.
-			if (doc && u.email) {
-				try {
-					doc = await synkroniserForlobskundeStatus(u.uid, u.email, doc);
-					sidsteSync = Date.now();
-				} catch (e) {
-					console.warn('Forløbssync fejlede:', e);
-				}
+			// Serveren har altid det sidste ord. Naar kaeden lander, overskriver
+			// den kopien, og de $effects der laeser userDoc koerer igen. Det er
+			// samme moenster som lytTilUserDoc og lytTilAllowedEmail allerede
+			// bruger, saa siderne er bygget til at taale det.
+			let doc: UserDoc | null;
+			try {
+				doc = await kaeden;
+			} catch (e) {
+				// Kunne slet ikke naa serveren. Har vi en brugbar kopi, er kunden
+				// allerede lukket ind ovenfor, og saa arbejder hun bare videre paa
+				// den. Har vi ingen, er der intet at vise, og vi lader fejlen gaa
+				// videre praecis som foer.
+				console.warn('Kunne ikke hente bruger-dokument fra serveren:', e);
+				if (!kopiDuer) throw e;
+				doc = kopi;
 			}
 
 			userDoc = doc;
