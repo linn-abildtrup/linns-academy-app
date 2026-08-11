@@ -121,6 +121,11 @@
 
 	const protein = $derived(Math.round(poster.reduce((s, m) => s + (m.totalP ?? 0), 0)));
 	const fiber = $derived(Math.round(poster.reduce((s, m) => s + (m.totalF ?? 0), 0)));
+	// Udvidet naering. Raekker gemt foer 11. august har dem ikke, og saa
+	// taeller de bare nul med i stedet for at vaelte summen.
+	const kh = $derived(Math.round(poster.reduce((s, m) => s + (m.totalKh ?? 0), 0)));
+	const fedt = $derived(Math.round(poster.reduce((s, m) => s + (m.totalFedt ?? 0), 0)));
+	const kcal = $derived(Math.round(poster.reduce((s, m) => s + (m.totalKcal ?? 0), 0)));
 	const harMaal = $derived(harProteinMaal(type));
 	const procent = $derived(Math.min(100, Math.round((protein / PROTEIN_MAALTIDS_MAAL) * 100)));
 
@@ -440,7 +445,18 @@
 	</div>
 
 	{#if plejer.length > 0}
-		<div class="tm-k">Det du plejer</div>
+		<!-- Udgave C: kortet er uroert, og de tre andre staar som en fri linje
+	     lige under. Saa beholder metodens tal deres vaegt, og resten
+	     foeles som noget ekstra i stedet for som en del af maalet. -->
+	{#if visUdvidet}
+		<div class="tm-ekstra">
+			<span>Kulhydrat <b>{kh} g</b></span>
+			<span>Fedt <b>{fedt} g</b></span>
+			<span>Kalorier <b>{kcal}</b></span>
+		</div>
+	{/if}
+
+	<div class="tm-k">Det du plejer</div>
 		<div class="tm-plejer">
 			{#each plejer as p (p.foodId)}
 				<button type="button" class="tm-flise" disabled={gemmer} onclick={() => gemDirekte(p)}>
@@ -526,6 +542,9 @@
 							{/if}
 							{#if visUdvidet && p.totalFedt !== undefined}
 								<span class="daempet">{Math.round(p.totalFedt)} g fedt</span>
+							{/if}
+							{#if visUdvidet && p.totalKcal !== undefined}
+								<span class="daempet">{Math.round(p.totalKcal)} kcal</span>
 							{/if}
 						</span>
 					</span>

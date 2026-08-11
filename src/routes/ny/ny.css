@@ -4816,3 +4816,23 @@ button.tm-ikon:active > span {
 .tm-r-under .daempet {
 	color: var(--ink-3);
 }
+
+/* Udgave C: kulhydrat, fedt og kalorier staar som en fri linje UNDER
+   kortet, uden baggrund. Kortet med protein og fiber beholder dermed
+   sin vaegt, og de tre andre foeles som noget ekstra i stedet for som
+   en del af maalet. Linns valg 11. august. */
+.tm-ekstra {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 14px;
+	padding: 0 4px;
+	margin-top: -4px;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	line-height: 1.4;
+}
+
+.tm-ekstra b {
+	font-weight: 700;
+	color: var(--ink-2);
+}
