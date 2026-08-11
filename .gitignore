@@ -45,3 +45,4 @@ scripts/*.csv
 
 # Lokale binaries (hentet fra nettet, ikke commit-vaerdige)
 scripts/bin
+backup/
