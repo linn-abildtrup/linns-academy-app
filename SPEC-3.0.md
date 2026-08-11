@@ -936,6 +936,145 @@ forskellige fejl.
 **Løsningen:** reglen er pakket i `:where()`, så den er vægtløs. Skriver du en
 ny global nulstilling, så gør det samme.
 
+**`vh` gør ark højere end skærmen på mobil.** Mobilbrowsere regner `vh` ud som
+om adresselinjen var væk. Et ark på 86vh blev derfor højere end det Linn kunne
+se, og toppen med søgefelt og luk-kryds havnede uden for skærmen. Hun kunne
+hverken søge eller lukke. `.op-ark` stod på 88vh og havde fejlen uden at nogen
+havde ramt den endnu.
+
+**Løsningen:** brug `dvh`, som er den SYNLIGE højde, med `vh` som reserve for
+browsere uden `dvh`:
+
+```css
+height: 84vh;
+height: 86dvh;
+max-height: calc(100dvh - 10px);
+```
+
+Rettet 11. august på `.ol-ark`, `.ma-ark`, `.va-ark` og `.op-ark`. `.henter` og
+`.side-ramme` bruger stadig `vh` med vilje, for de er ikke ark.
+
+**Et valgfrit felt i en type kan skjule en filtrerings-fejl.** `Opskrift3` har
+feltet `kategorier3`, men `filtrerOpskrifter3` læste `kategorier`. Feltet var
+valgfrit, så TypeScript sagde ikke fra: tallet ud for Morgenmad stod rigtigt
+på 24, men et tryk på knappen tømte skærmen. **Gør felter som en filtrering
+afhænger af PÅKRÆVEDE**, se `FiltrerbarOpskrift`.
+
+## 26.6 Opskrifter. LÅST 11. august
+
+Skærmen bag Opskrifter-ikonet i måltidet, se 26.2. Alle tal herunder er målt
+på de 130 aktive opskrifter 11. august.
+
+### Gitteret
+
+**To i bredden med farvet flise efter måltid.** Grøn er morgenmad, honning er
+frokost, blomme er aftensmad, ler er snack, og andet er gråt.
+
+**Titlen fylder tre linjer.** Medianen er 36 tegn og den længste 83, så én
+linje ville klippe halvdelen midt i navnet. Prisen er fire opskrifter på
+skærmen i stedet for seks. Det er den rigtige handel, for navnene er Linns
+stemme.
+
+**Billede og farve har samme plads og facon.** Flisens top er 62 px høj og
+tager enten et foto eller en farvet bogstav-flise. Den dag der kommer flere
+fotos, glider de ind uden at layoutet flytter sig. Dækker fotoet farven, står
+måltidet som et lille mærkat i hjørnet.
+
+**Gitteret skifter ikke facon når hun søger.** Fliserne bliver, der bliver
+bare færre. Et layout der skifter under fingrene er forvirrende, især når man
+leder efter noget bestemt. Linn afviste bevidst et forslag om at skifte til
+én i bredden ved søgning.
+
+### Søgningen, se `src/lib/content/opskriftSoeg3.ts`
+
+**Der deles ved mellemrum, og alle ord skal findes, uanset rækkefølge.** Den
+gamle app deler kun ved komma, så et mellemrum blev en del af ordet og der
+blev ledt efter den præcise sætning. Otte almindelige to-ords-søgninger gav
+ALLE nul træffere, fx "kylling broccoli" som der findes fire af. Enkelt-ord
+giver præcis samme resultat som før, så intet forsvinder.
+
+**Hver flise siger hvorfor den kom med.** 56% af alle træffere har ikke ordet
+i titlen (149 i titel mod 188 kun i ingredienser eller beskrivelse). "tomat"
+giver 35 træffere hvoraf 31 kun har ordet i ingredienslisten. Står ordet i
+titlen, er det fremhævet. Ellers står der en lille linje: "broccoli i
+ingredienser". Uden den ville over halvdelen af fliserne ligne en fejl.
+
+**Danske bogstaver foldes til ae, oe og aa. IKKE til a, o, a** som
+`klientSoegeMatch` i admin gør. Med a/o/a ville "æg" blive til "ag" og ramme
+bagt, mager, lagkage og asparges. Tjekket på alle 36 æg-træffere: nul manglede
+bogstavet. Sidegevinst: "aeg" og "groed" virker også.
+
+**Ingen stavefejls-tolerance.** Besluttet med Linn. Høstakken er hele
+ingredienslisten på flere hundrede tegn, og med to tilladte fejl i et langt
+ord rammer den nærmest hvad som helst.
+
+### Kategorier, se `src/lib/content/opskriftKategori3.ts`
+
+**Snack er sin egen kategori i 3.0.** Den gamle indlæser folder snack, salat,
+dessert og tilbehør sammen til "andet", så 15 snack-opskrifter ikke kunne
+findes som snack. Den gamle må ikke rettes, så `opskrifter3.ts` læser de samme
+dokumenter på ny.
+
+**Salat, dessert og tilbehør foldes fortsat til Andet.** De er ikke måltider
+på samme måde, og et filter der rammer fem opskrifter er ikke en knap værd.
+Fordelingen er morgenmad 24, frokost 51, aftensmad 46, snack 15, andet 8.
+
+**Ukendte værdier lander i Andet**, så en opskrift aldrig falder ud af alle
+filtre og bliver usynlig.
+
+**Farven følger filteret når der er filtreret.** Så er farven altid sand for
+det hun kigger på. Ellers fast rækkefølge: morgenmad, frokost, aftensmad,
+snack, andet.
+
+### Filtrene ligger i eget ark, se `OpskriftFiltre.svelte`
+
+Filtrene lå først som tre rækker knapper over listen. Overskrift, søgefelt og
+filtre åd **215 px**, altså over en fjerdedel af arket, før den første
+opskrift kom til syne. De ligger nu i et ark bag en knap ved siden af
+søgefeltet, og hovedet er nede på **92 px**.
+
+**Måltidet er forvalgt ud fra den skærm hun kom fra.** Åbner hun listen inde
+fra Frokost, står den på frokost og hun møder 51 opskrifter i stedet for 130.
+Hun står i køkkenet og skal bruge noget at spise nu, ikke bladre i et
+opslagsværk. Det almindelige tilfælde koster nul tryk.
+
+**Prisen ved at gemme filtre væk er at de bliver brugt mindre. Den betales
+tre steder, så begrænsningen aldrig er usynlig:**
+
+- overskriften siger "Opskrifter til frokost", ikke bare "Opskrifter"
+- filter-knappen bærer et tal når der er filtre i brug
+- "Vis alle 130" står ved overskriften, så vejen ud er ét tryk
+
+Søgefeltet siger hvad hun søger i, og en tom skærm har altid en knap der
+fjerner filtrene, så hun aldrig skal gætte hvad der står i vejen.
+
+**Tallene ud for hvert filter tælles UDEN filteret selv**, så tallet siger
+hvad hun får hvis hun trykker, ikke hvad hun allerede har.
+
+### Billeder hører hjemme i Storage, aldrig i dokumentet
+
+Opskrift-billederne lå som base64-tekst inde i selve Firestore-dokumentet. To
+billeder vejede **189 KB, altså halvdelen af hele samlingens 379 KB**, og de
+blev hentet hver gang listen blev åbnet, uanset om nogen rullede ned til dem.
+Tinnas kyllingesalat vejede 99 KB hvor de 128 andre vejer 2-3 KB.
+
+**Flyttet 11. august til `opskrifter/{filnavn}` i Firebase Storage.** Samlingen
+vejer nu 195 KB. Den gamle app henter de samme opskrifter i Biblioteket og
+30-30-3, så alle kunder fik den samme forbedring.
+
+Dokumentet har nu `billedeUrl` med en adresse og `billedeSti` med filens sti.
+Storage-reglen står i `storage.rules` under `/opskrifter/`. Sikkerhedskopi af
+de gamle værdier ligger i `backup/`, som er uden for git.
+
+**Læg aldrig et billede ind i et Firestore-dokument igen.** Læg det i Storage
+og gem adressen.
+
+**Etape-hentning blev vurderet og fravalgt.** Efter flytningen var listen hurtig
+nok, og maskineriet ville koste kompleksitet for altid. Firestore-klienten kan
+i øvrigt ikke hente et dokument uden ét felt: man får hele dokumentet eller
+ingenting. Kun `src/lib/server/firestoreRest.ts` kan bede om bestemte felter,
+og det ville kræve et endpoint plus tabt offline-cache.
+
 ## 27. Åbne punkter på Mad
 
 - Farve på plejer-fliserne: udskudt med vilje, og de holdes hvide indtil
@@ -944,6 +1083,10 @@ ny global nulstilling, så gør det samme.
 - Gamle registreringer med enheder der ikke giver mening for varen, fx "1 spsk
   æg", dukker op som forslag under "det du plejer". Set hos test-profilen 11.
   august. Afklares om det også sker hos rigtige kunder
+- **Billede-upload i admin.** Regel og mappe findes nu, men admin-siden siger
+  stadig at upload tilføjes senere. Indtil da har kun 2 af 130 opskrifter et
+  billede
+- **`static/mockup/` skal slettes.** Var stillads til 30-30 og er ikke i brug
 
 **Arbejdsform aftalt 9. august:** vi tager Mad ét skærmbillede ad gangen i
 stedet for at tegne hele modulet på én gang. De første fem runder mockups
