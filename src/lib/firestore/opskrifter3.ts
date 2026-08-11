@@ -19,7 +19,13 @@ export interface Opskrift3 {
 	id: string;
 	titel: string;
 	beskrivelse: string;
+	/** Den STORE, 1000 px. Bruges af opskrift-arket og af hele den gamle app. */
 	billedeUrl: string | null;
+	/** Den LILLE, 480 px, til fliserne i gitteret. Se opskriftBillede3.ts. */
+	billedeUrlLille: string | null;
+	/** Stierne i Storage, saa gamle filer kan ryddes ved skift. */
+	billedeSti: string | null;
+	billedeStiLille: string | null;
 	/** 3.0-kategorierne, hvor snack er sin egen. */
 	kategorier3: Kategori3[];
 	dietTags: DietTag[];
@@ -38,6 +44,9 @@ function fraDoc(id: string, data: Record<string, unknown>): Opskrift3 {
 		titel: raa.titel ?? '',
 		beskrivelse: raa.beskrivelse ?? '',
 		billedeUrl: raa.billedeUrl ?? null,
+		billedeUrlLille: (data as { billedeUrlLille?: string | null }).billedeUrlLille ?? null,
+		billedeSti: (data as { billedeSti?: string | null }).billedeSti ?? null,
+		billedeStiLille: (data as { billedeStiLille?: string | null }).billedeStiLille ?? null,
 		kategorier3: kategorier3((data as { kategorier?: unknown }).kategorier),
 		dietTags: Array.isArray(raa.dietTags) ? raa.dietTags : [],
 		ingredienser: Array.isArray(raa.ingredienser)

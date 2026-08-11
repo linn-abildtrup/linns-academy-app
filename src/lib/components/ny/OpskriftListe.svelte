@@ -205,10 +205,13 @@
 						{@const grund = grundTekst(r.grunde)}
 						<button type="button" class="ol-flise" onclick={() => onvaelg(r.opskrift.id)}>
 							<span class="ol-top f-{farve ?? 'andet'}">
-								{#if r.opskrift.billedeUrl}
+								{#if r.opskrift.billedeUrlLille || r.opskrift.billedeUrl}
+									<!-- Den lille er 480 px og vejer cirka 17 KB. Findes den ikke,
+									     falder vi tilbage til den store, saa de to billeder der blev
+									     flyttet 11. august stadig vises. -->
 									<img
 										class="ol-foto"
-										src={r.opskrift.billedeUrl}
+										src={r.opskrift.billedeUrlLille ?? r.opskrift.billedeUrl}
 										alt=""
 										loading="lazy"
 										decoding="async"

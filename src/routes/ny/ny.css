@@ -5339,3 +5339,500 @@ button.tm-ikon:active > span {
 	outline: 3px solid var(--plum);
 	outline-offset: 2px;
 }
+
+/* ============================================================
+   Admin: opskrift-billeder. Se /ny/admin/opskrift-billeder.
+
+   Bygget smalt foerst, fordi billedet ligger i telefonen lige efter
+   maden er lavet. Paa en laptop bliver listen bredere og arket
+   midterstillet, i stedet for at ét af de to steder foeles forkert.
+   ============================================================ */
+
+.ob-hoved {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 10px;
+	margin-bottom: 13px;
+}
+
+.ob-h1 {
+	font-family: var(--serif);
+	font-size: calc(24px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 0;
+}
+
+.ob-tael {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+}
+
+.ob-tal {
+	font-family: var(--serif);
+	font-size: calc(16px * var(--fs-scale, 1));
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	color: var(--espresso);
+}
+
+.ob-bar {
+	width: 92px;
+	height: 8px;
+	border-radius: 4px;
+	background: var(--paper-2);
+	box-shadow: inset 0 0 0 1px var(--line);
+	overflow: hidden;
+}
+
+.ob-bar span {
+	display: block;
+	height: 100%;
+	background: var(--sage);
+}
+
+.ob-tekst {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.ob-soeg {
+	width: 100%;
+	box-sizing: border-box;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	padding: 12px 14px;
+	font-family: var(--sans);
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	color: var(--espresso);
+	min-height: 46px;
+}
+
+.ob-soeg:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 1px;
+}
+
+.ob-udsnit {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 9px 0 13px;
+}
+
+.ob-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	padding: 7px 13px;
+	font-family: var(--sans);
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-2);
+	min-height: 38px;
+	cursor: pointer;
+}
+
+.ob-chip.valgt {
+	background: var(--plum);
+	border-color: var(--plum);
+	color: #fff;
+}
+
+.ob-chip:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.ob-n {
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	opacity: 0.7;
+	font-variant-numeric: tabular-nums;
+}
+
+.ob-note,
+.ob-hjaelp {
+	margin: 0 0 12px;
+	padding: 10px 12px;
+	background: var(--honey-tint);
+	border-radius: 11px;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	line-height: 1.45;
+	color: var(--espresso);
+}
+
+.ob-hjaelp {
+	background: var(--paper-2);
+	color: var(--ink-2);
+}
+
+.ob-liste {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+}
+
+.ob-raekke {
+	display: grid;
+	grid-template-columns: 74px minmax(0, 1fr) auto;
+	gap: 12px;
+	align-items: center;
+	width: 100%;
+	background: var(--paper);
+	border: 0;
+	border-radius: 13px;
+	padding: 9px 12px;
+	box-shadow: var(--shadow-soft);
+	font-family: var(--sans);
+	text-align: left;
+	color: var(--espresso);
+	/* Maalgruppen er Linn selv, men reglen om tommelfingre gaelder stadig. */
+	min-height: 56px;
+	cursor: pointer;
+}
+
+.ob-raekke:active {
+	background: var(--paper-2);
+}
+
+.ob-raekke:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+/* Samme form som flisen i kundens gitter, saa hun ser billedet som det
+   faktisk bliver brugt og ikke som et pyntet kvadrat. */
+.ob-thumb {
+	width: 74px;
+	height: 27px;
+	border-radius: 6px;
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+}
+
+.ob-thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.ob-mangler {
+	font-size: calc(8.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.ob-midt {
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.ob-navn {
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.ob-under {
+	font-size: calc(11px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	display: flex;
+	gap: 7px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.ob-advar {
+	background: var(--honey-tint);
+	color: var(--honey-deep);
+	border-radius: 999px;
+	padding: 1px 7px;
+	font-size: calc(9.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+}
+
+.ob-handling {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--plum);
+}
+
+.ob-tom,
+.ob-nej,
+.ob-kvit {
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	line-height: 1.5;
+	margin: 18px 2px;
+}
+
+.ob-kvit {
+	background: var(--sage-tint);
+	color: var(--sage-tekst);
+	border-radius: 12px;
+	padding: 11px 14px;
+	font-weight: 600;
+	margin-top: 14px;
+}
+
+.ob-fejl {
+	background: #f6e3e0;
+	color: #8a3f3f;
+	border-radius: 12px;
+	padding: 11px 14px;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	line-height: 1.45;
+	margin: 0 0 12px;
+}
+
+/* ── Arket hvor billedet vaelges ── */
+
+.ob-ark {
+	position: relative;
+	width: 100%;
+	background: var(--oat);
+	border-radius: 22px 22px 0 0;
+	padding: 9px 17px calc(14px + env(safe-area-inset-bottom, 0px));
+	box-shadow: 0 -10px 30px rgba(50, 34, 24, 0.2);
+	/* dvh er den SYNLIGE hoejde, se .ma-ark. */
+	height: 84vh;
+	height: 86dvh;
+	max-height: calc(100dvh - 10px);
+	display: flex;
+	flex-direction: column;
+}
+
+.ob-ark-titel {
+	font-family: var(--serif);
+	font-size: calc(18px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 0 44px 10px 0;
+	line-height: 1.25;
+}
+
+.ob-ark-rul {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.ob-etiket {
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	margin: 14px 0 7px;
+}
+
+.ob-etiket:first-child {
+	margin-top: 0;
+}
+
+/* Flisen i naturlig stoerrelse, saa hun kan se om hovedet er skaaret af. */
+.ob-demo-flise {
+	width: 170px;
+	border-radius: 14px;
+	overflow: hidden;
+	background: var(--paper);
+	box-shadow: var(--shadow-soft);
+	display: block;
+}
+
+.ob-demo-top {
+	display: block;
+	height: 62px;
+	background-size: cover;
+	background-position: center;
+}
+
+.ob-demo-tekst {
+	display: block;
+	padding: 8px 10px 10px;
+}
+
+.ob-demo-navn {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1.28;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.ob-demo-ark {
+	width: 100%;
+	height: 150px;
+	border-radius: 14px;
+	background-size: cover;
+	background-position: center;
+	background-color: var(--paper-2);
+}
+
+.ob-maal {
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.ob-maal div {
+	display: flex;
+	justify-content: space-between;
+	gap: 14px;
+	border-bottom: 1px dotted var(--line);
+	padding-bottom: 5px;
+}
+
+.ob-maal dt {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+}
+
+.ob-maal dd {
+	margin: 0;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+.ob-bekraeft {
+	margin-top: 14px;
+	padding: 13px;
+	background: #f6e3e0;
+	border-radius: 13px;
+}
+
+.ob-bekraeft p {
+	margin: 0 0 11px;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	line-height: 1.45;
+	color: #7a3838;
+}
+
+.ob-bekraeft-knapper {
+	display: flex;
+	gap: 8px;
+}
+
+.ob-ark-bund {
+	display: flex;
+	gap: 8px;
+	margin-top: 12px;
+	flex-shrink: 0;
+}
+
+.ob-rolig,
+.ob-gem,
+.ob-farlig {
+	border-radius: 999px;
+	padding: 0 18px;
+	font-family: var(--sans);
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 600;
+	min-height: 50px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	border: 0;
+}
+
+.ob-rolig {
+	background: var(--paper);
+	border: 1px solid var(--line);
+	color: var(--ink-2);
+}
+
+.ob-gem {
+	flex: 1;
+	background: var(--plum);
+	color: #fff;
+}
+
+.ob-farlig {
+	flex: 1;
+	background: #9a4b4b;
+	color: #fff;
+}
+
+.ob-gem:disabled,
+.ob-farlig:disabled,
+.ob-rolig:disabled {
+	opacity: 0.55;
+	cursor: default;
+}
+
+/* Filvaelgeren gemmer sig bag etiketten, saa knappen kan se ud som de andre. */
+.ob-vaelg {
+	flex: 1;
+	position: relative;
+	overflow: hidden;
+}
+
+.ob-vaelg input {
+	position: absolute;
+	inset: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+
+.ob-vaelg.travl {
+	opacity: 0.55;
+}
+
+.ob-rolig:focus-visible,
+.ob-gem:focus-visible,
+.ob-farlig:focus-visible,
+.ob-vaelg:focus-within {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+/* Paa en laptop bliver listen bredere og arket midterstillet. */
+@media (min-width: 720px) {
+	.ob-raekke {
+		grid-template-columns: 96px minmax(0, 1fr) auto;
+	}
+
+	.ob-thumb {
+		width: 96px;
+		height: 35px;
+	}
+
+	.ob-ark {
+		max-width: 560px;
+		margin: 0 auto;
+		border-radius: 22px;
+		height: auto;
+		max-height: calc(100dvh - 60px);
+	}
+
+	.ark-lag:has(.ob-ark) {
+		align-items: center;
+		padding: 20px;
+	}
+}
