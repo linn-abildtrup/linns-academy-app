@@ -92,7 +92,16 @@
 	box-sizing: border-box;
 }
 
-.ny-app button {
+/*
+   Nulstilling af knapper. :where() goer reglen VAEGTLOES, saa en
+   komponents egen klasse altid vinder over den.
+
+   Uden :where() var .ny-app button staerkere end fx .tm-flise, og saa
+   mistede fliserne deres baggrund og fik den nedarvede skriftstoerrelse
+   i stedet for deres egen. Det ramte plejer-fliserne, chipsene i
+   maengde-arket og teksten under ikonerne 11. august.
+*/
+.ny-app :where(button) {
 	font: inherit;
 	color: inherit;
 	background: none;
@@ -3900,7 +3909,7 @@ a.dag {
 	gap: 6px;
 }
 
-.tm-ikon {
+.tm-ikoner .tm-ikon {
 	/* Baade knap og span bruger den. Knappen skal ikke ligne en knap. */
 	border: 0;
 	background: none;
@@ -3910,8 +3919,10 @@ a.dag {
 	flex-direction: column;
 	align-items: center;
 	gap: 5px;
+	font-family: var(--sans);
 	font-size: calc(10.5px * var(--fs-scale, 1));
 	font-weight: 600;
+	line-height: 1.2;
 	color: var(--ink-2);
 	text-align: center;
 }
@@ -3922,35 +3933,47 @@ button.tm-ikon:focus-visible {
 	border-radius: 12px;
 }
 
-button.tm-ikon:active i {
+button.tm-ikon:active > span {
 	filter: brightness(0.95);
 }
 
-.tm-ikon i {
-	display: block;
+/* Cirklen med ikonet i. Farven siger hvem tingen kommer fra, og
+   stregen inde i siger hvad den er. Ingen af delene kan staa alene. */
+.tm-ikon > span {
+	display: grid;
+	place-items: center;
 	width: 44px;
 	height: 44px;
 	border-radius: 50%;
 	border: 1px solid;
 }
 
+.tm-ikon svg {
+	width: 20px;
+	height: 20px;
+}
+
 /* To groenne er Linns ting, to blomme er kundens eget. Farven baerer
    parringen, saa vi slipper for at gruppere dem og dermed for et klik. */
-.tm-ikon i.i1 {
+.tm-ikon .i1 {
 	background: var(--sage-tint);
 	border-color: #bcd0bb;
+	color: #46603f;
 }
-.tm-ikon i.i2 {
+.tm-ikon .i2 {
 	background: #dbe7d8;
 	border-color: #bcd0bb;
+	color: #46603f;
 }
-.tm-ikon i.i3 {
+.tm-ikon .i3 {
 	background: var(--plum-tint);
 	border-color: #d9bcc7;
+	color: var(--plum-deep);
 }
-.tm-ikon i.i4 {
+.tm-ikon .i4 {
 	background: #ead8de;
 	border-color: #d9bcc7;
+	color: var(--plum-deep);
 }
 
 .tm-liste {
@@ -4382,7 +4405,12 @@ button.tm-ikon:active i {
 
 /* ── 30-30: plejer-fliser, soegning og traef ───────────────── */
 
-.tm-plejer button.tm-flise {
+.tm-plejer .tm-flise {
+	/* Baggrund og kant staar ogsaa her, saa knappen faar flisens
+	   udseende. Uden det ser vanerne ud som loes tekst. */
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 11px;
 	flex-direction: column;
 	align-items: flex-start;
 	justify-content: center;
@@ -4393,12 +4421,12 @@ button.tm-ikon:active i {
 	cursor: pointer;
 }
 
-.tm-plejer button.tm-flise:disabled {
+.tm-plejer .tm-flise:disabled {
 	opacity: 0.5;
 	cursor: default;
 }
 
-.tm-plejer button.tm-flise:focus-visible {
+.tm-plejer .tm-flise:focus-visible {
 	outline: 3px solid var(--plum);
 	outline-offset: 2px;
 }

@@ -448,17 +448,45 @@
 		</div>
 	{/if}
 
+	<!-- To groenne er Linns ting, to blomme er kundens eget. Farven
+	     baerer parringen, saa vi slipper for at gruppere dem i layoutet
+	     og dermed for et ekstra klik. Se SPEC-3.0.md afsnit 26.2. -->
 	<div class="tm-ikoner">
 		<button type="button" class="tm-ikon" onclick={() => aabnKilde('opskrifter')}>
-			<i class="i1"></i>Opskrifter
+			<span class="i1">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v16H5.5A1.5 1.5 0 0 1 4 18.5Z" />
+					<path d="M8 8h7M8 12h7M8 16h4" />
+				</svg>
+			</span>
+			Opskrifter
 		</button>
 		<!-- Madplanen er en generator med sin egen logik og bygges for sig. -->
-		<span class="tm-ikon skitse"><i class="i2"></i>Madplan</span>
+		<span class="tm-ikon skitse">
+			<span class="i2">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+					<path d="M3.5 10h17M8 3.5v3M16 3.5v3" />
+				</svg>
+			</span>
+			Madplan
+		</span>
 		<button type="button" class="tm-ikon" onclick={() => aabnKilde('favoritter')}>
-			<i class="i3"></i>Favoritter
+			<span class="i3">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8C19 15.6 12 20 12 20Z" />
+				</svg>
+			</span>
+			Favoritter
 		</button>
 		<button type="button" class="tm-ikon" onclick={() => aabnKilde('mine')}>
-			<i class="i4"></i>Mine
+			<span class="i4">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M17 3.5 20.5 7 10 17.5l-4.5 1 1-4.5Z" />
+					<path d="M4 20.5h9" />
+				</svg>
+			</span>
+			Mine
 		</button>
 	</div>
 
