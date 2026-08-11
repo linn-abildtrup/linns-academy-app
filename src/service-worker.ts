@@ -134,28 +134,43 @@ async function navigationSvar(event: FetchEvent): Promise<Response> {
 	// await, kan enkelte browsere afvise det.
 	//
 	// .catch() er vigtig: uden den bliver et fejlet kald til en ubehandlet
-	// rejection inde i service workeren.
-	const fraNettet = fetch(req)
-		.then(async (res) => {
-			if (res.ok) {
-				const cache = await caches.open(NAVIGATION_CACHE);
-				await cache.put(req, res.clone());
-			}
-			return res;
-		})
-		.catch(() => null);
+	// rejection inde i service workeren. null betyder "nettet svarede ikke".
+	const fraNettet = fetch(req).catch(() => null);
+
+	// Selve gemningen holdes UDEN FOR svaret til kunden. Er browserens lagring
+	// slaaet fra, fx privat vindue, fuld kvota eller en iPhone der har ryddet
+	// op, kaster caches. Det maa aldrig kunne vaelte en hentning der gik fint.
+	const faerdig = fraNettet.then(async (res) => {
+		if (!res?.ok) return res;
+		// Klones med det samme, foer nogen begynder at laese svaret.
+		const tilCache = res.clone();
+		try {
+			const cache = await caches.open(NAVIGATION_CACHE);
+			await cache.put(req, tilCache);
+		} catch {
+			// Ingen lagring til raadighed. Ikke kritisk, kunden faar sit svar.
+		}
+		return res;
+	});
 
 	// Hold service workeren i live til baggrunds-hentningen er faerdig, ogsaa
 	// efter vi har svaret kunden med kopien.
 	try {
-		event.waitUntil(fraNettet);
+		event.waitUntil(faerdig);
 	} catch {
 		// Ikke kritisk. Baggrunds-opdateringen naar det maaske ikke, men kunden
 		// faar stadig sit svar.
 	}
 
-	const cache = await caches.open(NAVIGATION_CACHE);
-	const kopi = (await cache.match(req)) ?? (await caches.match('/'));
+	// Samme forsigtighed her. Kan vi ikke laese lagringen, opfoerer vi os som en
+	// helt almindelig hentning i stedet for at fejle.
+	let kopi: Response | undefined;
+	try {
+		const cache = await caches.open(NAVIGATION_CACHE);
+		kopi = (await cache.match(req)) ?? (await caches.match('/'));
+	} catch {
+		kopi = undefined;
+	}
 
 	// Ingen kopi at falde tilbage paa, fx allerfoerste besoeg. Saa maa vi vente.
 	if (!kopi) {
