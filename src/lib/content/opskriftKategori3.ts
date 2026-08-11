@@ -107,3 +107,19 @@ export function fliseBogstav(titel: string): string {
 	if (t.length === 0) return '·';
 	return t[0].toUpperCase();
 }
+
+/**
+ * Kategorien der skal vaere forvalgt naar hun aabner opskrift-listen inde fra
+ * et maaltid. Aabner hun fra Frokost, er listen sat til frokost med det samme.
+ *
+ * Alle fire maaltidstyper findes som kategori, saa det er en ren oversaettelse.
+ * Funktionen findes for at et femte maaltid ikke stille kan holde op med at
+ * virke: testen gaar igennem MAALTIDSTYPER og kraever et svar for hver.
+ */
+export function kategoriForMaaltid(maaltid: string): Kategori3 | null {
+	const k = kategorier3([maaltid]);
+	// kategorier3 lader ukendte vaerdier lande i andet. Det maa IKKE ske her,
+	// for saa ville et ukendt maaltid forvaelge Andet og skjule alt det andet.
+	if (k.length === 1 && k[0] !== 'andet') return k[0];
+	return null;
+}

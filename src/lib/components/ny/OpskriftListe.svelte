@@ -10,9 +10,20 @@
 	// IKKE ordet i titlen. Soeger hun paa tomat kommer der 35 frem, og paa
 	// de 31 staar ordet kun i ingredienslisten. Derfor skriver flisen
 	// grunden til at den kom med, saa ingen flise ser ud som en fejl.
+	//
+	// Filtrene ligger i et eget ark, se OpskriftFiltre.svelte. De laa foer
+	// som tre raekker knapper her og aad 215 pixels foer den foerste
+	// opskrift. Nu er hovedet 92.
+	//
+	// Maaltidet er forvalgt ud fra den skaerm hun kom fra: aabner hun
+	// listen inde fra Frokost, staar den paa frokost. Det er det
+	// almindelige tilfaelde, og det koster nul tryk. Fordi filtrene er
+	// skjulte, SKAL det kunne ses at listen er begraenset. Derfor staar
+	// maaltidet i overskriften og et tal paa filter-knappen.
 	// ============================================================
 
 	import { portal } from '$lib/actions/portal';
+	import OpskriftFiltre from './OpskriftFiltre.svelte';
 	import {
 		filtrerOpskrifter3,
 		fremhaev,
@@ -20,7 +31,6 @@
 		soegetermer
 	} from '$lib/content/opskriftSoeg3';
 	import {
-		KATEGORIER3,
 		KATEGORI_NAVN,
 		antalPrKategori,
 		farveKategori,
@@ -33,37 +43,38 @@
 	interface Props {
 		opskrifter: Opskrift3[];
 		henter?: boolean;
+		/** Maaltidet hun kom fra. Forvaelges. null = ingen forvalg. */
+		startKategori?: Kategori3 | null;
 		onvaelg: (id: string) => void;
 		onluk: () => void;
 	}
 
-	let { opskrifter, henter = false, onvaelg, onluk }: Props = $props();
+	let { opskrifter, henter = false, startKategori = null, onvaelg, onluk }: Props = $props();
 
 	let soegeord = $state('');
-	let valgteKategorier = $state<Kategori3[]>([]);
+	// Kun STARTvaerdien, med vilje. Aendrer hun filteret bagefter, skal
+	// forvalget ikke traekke det tilbage. Arket bygges forfra hver gang hun
+	// aabner det, saa hun faar altid det rigtige maaltid forvalgt.
+	// svelte-ignore state_referenced_locally
+	let valgteKategorier = $state<Kategori3[]>(startKategori ? [startKategori] : []);
 	let valgteDiet = $state<DietTag[]>([]);
-
-	const DIET: { id: DietTag; navn: string }[] = [
-		{ id: 'vegetar', navn: 'Vegetar' },
-		{ id: 'glutenfri', navn: 'Glutenfri' }
-	];
+	let filtreAabne = $state(false);
 
 	const termer = $derived(soegetermer(soegeord));
 
 	/** Listen efter soegning og diaet, men UDEN kategori-filteret. Tallene ud
-	    for kategori-knapperne taelles paa den, saa tallet siger hvad hun
-	    faktisk faar hvis hun trykker. */
+	    for kategorierne taelles paa den, saa tallet siger hvad hun faar hvis
+	    hun trykker, ikke hvad hun allerede har. */
 	const udenKategori = $derived(
 		filtrerOpskrifter3(opskrifter, { soegeord, dietTags: valgteDiet })
 	);
-
 	const antal = $derived(antalPrKategori(udenKategori.map((r) => r.opskrift)));
 
-	/** Samme for diaet-knapperne: talt uden diaet-filteret selv. */
+	/** Samme for kost-knapperne: talt uden diaet-filteret selv. */
 	const udenDiet = $derived(
 		filtrerOpskrifter3(opskrifter, { soegeord, kategorier: valgteKategorier })
 	);
-	const dietAntal = $derived({
+	const dietAntal = $derived<Record<DietTag, number>>({
 		vegetar: udenDiet.filter((r) => r.opskrift.dietTags.includes('vegetar')).length,
 		glutenfri: udenDiet.filter((r) => r.opskrift.dietTags.includes('glutenfri')).length
 	});
@@ -76,9 +87,28 @@
 		})
 	);
 
-	const harFiltre = $derived(
-		termer.length > 0 || valgteKategorier.length > 0 || valgteDiet.length > 0
+	/** Hvor mange der er inden for filtrene UDEN soegning. Staar i
+	    soegefeltet, saa hun ved hvad hun soeger i. */
+	const udenSoegning = $derived(
+		filtrerOpskrifter3(opskrifter, {
+			kategorier: valgteKategorier,
+			dietTags: valgteDiet
+		}).length
 	);
+
+	const antalFiltre = $derived(valgteKategorier.length + valgteDiet.length);
+	const harFiltre = $derived(antalFiltre > 0);
+	const soeger = $derived(termer.length > 0);
+
+	/** Staar der praecis ét maaltid, siger overskriften hvilket. Det er den
+	    eneste plads hvor begraensningen kan ses gratis, nu hvor filtrene er
+	    gemt vaek. */
+	const overskrift = $derived.by(() => {
+		if (valgteKategorier.length === 1) {
+			return `Opskrifter til ${KATEGORI_NAVN[valgteKategorier[0]].toLowerCase()}`;
+		}
+		return 'Opskrifter';
+	});
 
 	function slaaKategori(k: Kategori3) {
 		valgteKategorier = valgteKategorier.includes(k)
@@ -87,13 +117,10 @@
 	}
 
 	function slaaDiet(d: DietTag) {
-		valgteDiet = valgteDiet.includes(d)
-			? valgteDiet.filter((x) => x !== d)
-			: [...valgteDiet, d];
+		valgteDiet = valgteDiet.includes(d) ? valgteDiet.filter((x) => x !== d) : [...valgteDiet, d];
 	}
 
 	function ryd() {
-		soegeord = '';
 		valgteKategorier = [];
 		valgteDiet = [];
 	}
@@ -102,11 +129,6 @@
 		// Tastaturet maa ikke springe op af sig selv. Hun vil oftest bladre
 		// foerst, og et tastatur ville daekke halvdelen af listen.
 		node.blur();
-	}
-
-	function traefTekst(n: number): string {
-		if (n === 0) return 'ingen træffer';
-		return n === 1 ? '1 træffer' : `${n} træffere`;
 	}
 </script>
 
@@ -117,66 +139,65 @@
 		<div class="ma-greb" aria-hidden="true"></div>
 		<button type="button" class="ma-luk" onclick={onluk} aria-label="Luk">×</button>
 
-		<h2 class="ol-titel" id="ol-titel">Opskrifter</h2>
+		<div class="ol-hoved">
+			<h2 class="ol-titel" id="ol-titel">{overskrift}</h2>
+			{#if harFiltre}
+				<!-- Vejen ud af begraensningen, ét tryk. Uden den ville hun skulle
+				     ind i filter-arket for at komme tilbage til alle 130. -->
+				<button type="button" class="ol-alle" onclick={ryd}>
+					Vis alle {opskrifter.length}
+				</button>
+			{/if}
+		</div>
 
-		<div class="ol-soegfelt">
+		<div class="ol-linje">
 			<input
 				class="ol-soeg"
 				type="search"
 				bind:value={soegeord}
 				use:fokuser
-				placeholder="Søg blandt {opskrifter.length} opskrifter"
+				placeholder="Søg blandt {udenSoegning} opskrifter"
 				aria-label="Søg i opskrifter"
 			/>
-			{#if harFiltre}
-				<span class="ol-tael" aria-live="polite">{traefTekst(resultater.length)}</span>
-			{/if}
+			<button
+				type="button"
+				class="ol-filterknap"
+				class:aktiv={harFiltre}
+				onclick={() => (filtreAabne = true)}
+				aria-label="Filtre{harFiltre ? `, ${antalFiltre} valgt` : ''}"
+			>
+				Filtre
+				{#if harFiltre}<span class="ol-badge">{antalFiltre}</span>{/if}
+			</button>
 		</div>
 
-		<div class="ol-filtre" role="group" aria-label="Filtrér på måltid">
-			{#each KATEGORIER3 as k (k)}
-				<button
-					type="button"
-					class="ol-chip"
-					class:valgt={valgteKategorier.includes(k)}
-					aria-pressed={valgteKategorier.includes(k)}
-					onclick={() => slaaKategori(k)}
-				>
-					{KATEGORI_NAVN[k]}
-					<span class="ol-n">{antal[k]}</span>
-				</button>
-			{/each}
-		</div>
-
-		<div class="ol-filtre" role="group" aria-label="Filtrér på kost">
-			{#each DIET as d (d.id)}
-				<button
-					type="button"
-					class="ol-chip diet"
-					class:valgt={valgteDiet.includes(d.id)}
-					aria-pressed={valgteDiet.includes(d.id)}
-					onclick={() => slaaDiet(d.id)}
-				>
-					{d.navn}
-					<span class="ol-n">{dietAntal[d.id]}</span>
-				</button>
-			{/each}
-			{#if harFiltre}
-				<button type="button" class="ol-chip ryd" onclick={ryd}>Ryd</button>
-			{/if}
-		</div>
+		{#if soeger}
+			<p class="ol-traef" aria-live="polite">
+				{resultater.length === 0
+					? 'Ingen træffere'
+					: resultater.length === 1
+						? '1 træffer'
+						: `${resultater.length} træffere`}
+			</p>
+		{/if}
 
 		<div class="ol-liste">
 			{#if henter}
 				<p class="ol-tom">Henter opskrifter</p>
 			{:else if resultater.length === 0}
-				<p class="ol-tom">
-					{#if harFiltre}
-						Ingen opskrifter passer på det. Prøv at fjerne et filter.
+				<div class="ol-tom">
+					{#if soeger && harFiltre}
+						<p>Ingen opskrifter passer på både søgningen og filtrene.</p>
+						<button type="button" class="ol-udvej" onclick={ryd}>Søg i alle {opskrifter.length}</button>
+					{:else if soeger}
+						<p>Ingen opskrifter passer på det ord.</p>
+					{:else if harFiltre}
+						<p>Ingen opskrifter passer på filtrene.</p>
+						<button type="button" class="ol-udvej" onclick={ryd}>Vis alle {opskrifter.length}</button>
 					{:else}
-						Der er ingen opskrifter endnu.
+						<p>Der er ingen opskrifter endnu.</p>
 					{/if}
-				</p>
+				</div>
 			{:else}
 				<div class="ol-gitter">
 					{#each resultater as r (r.opskrift.id)}
@@ -229,3 +250,17 @@
 		</div>
 	</div>
 </div>
+
+{#if filtreAabne}
+	<OpskriftFiltre
+		{valgteKategorier}
+		{valgteDiet}
+		{antal}
+		{dietAntal}
+		resultatAntal={resultater.length}
+		onkategori={slaaKategori}
+		ondiet={slaaDiet}
+		onnulstil={ryd}
+		onluk={() => (filtreAabne = false)}
+	/>
+{/if}

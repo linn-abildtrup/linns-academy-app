@@ -36,6 +36,7 @@
 	import OpskriftListe from '$lib/components/ny/OpskriftListe.svelte';
 	import { hentMineCustomFodevarer, hentFavoritter } from '$lib/firestore/kost';
 	import { hentOpskrifter3, type Opskrift3 } from '$lib/firestore/opskrifter3';
+	import { kategoriForMaaltid } from '$lib/content/opskriftKategori3';
 	import { parseOpskriftMakro } from '$lib/content/opskrifter';
 	import type { Opskrift } from '$lib/content/opskrifter';
 	import type { FavoritMaaltid } from '$lib/content/kost';
@@ -569,6 +570,7 @@
 	<OpskriftListe
 		{opskrifter}
 		henter={arkHenter}
+		startKategori={kategoriForMaaltid(type)}
 		onvaelg={vaelgFraArk}
 		onluk={() => (aabentArk = null)}
 	/>

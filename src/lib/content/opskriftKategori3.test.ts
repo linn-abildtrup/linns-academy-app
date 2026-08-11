@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import { MAALTIDSTYPER } from './kost';
 import {
 	kategorier3,
+	kategoriForMaaltid,
 	farveKategori,
 	antalPrKategori,
 	fliseBogstav,
@@ -127,5 +129,29 @@ describe('fliseBogstav', () => {
 	it('giver en prik ved tom titel', () => {
 		expect(fliseBogstav('')).toBe('·');
 		expect(fliseBogstav('   ')).toBe('·');
+	});
+});
+
+describe('kategoriForMaaltid', () => {
+	it('oversaetter de fire maaltider', () => {
+		expect(kategoriForMaaltid('morgenmad')).toBe('morgenmad');
+		expect(kategoriForMaaltid('frokost')).toBe('frokost');
+		expect(kategoriForMaaltid('aftensmad')).toBe('aftensmad');
+		expect(kategoriForMaaltid('snack')).toBe('snack');
+	});
+
+	// Faelden: et femte maaltid ville lande i andet og dermed forvaelge et
+	// filter der skjuler alt. Bedre at forvaelge ingenting.
+	it('giver null for noget der ikke er et maaltid', () => {
+		expect(kategoriForMaaltid('andet')).toBe(null);
+		expect(kategoriForMaaltid('salat')).toBe(null);
+		expect(kategoriForMaaltid('noget-nyt')).toBe(null);
+		expect(kategoriForMaaltid('')).toBe(null);
+	});
+
+	it('har et svar for HVERT maaltid i MAALTIDSTYPER', () => {
+		for (const m of MAALTIDSTYPER) {
+			expect(kategoriForMaaltid(m), `maaltidet ${m} mangler en kategori`).not.toBe(null);
+		}
 	});
 });

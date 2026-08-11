@@ -4891,13 +4891,56 @@ button.tm-ikon:active > span {
 	margin: 0 44px 10px 0;
 }
 
-.ol-soegfelt {
-	position: relative;
+/* Overskrift og udvej paa samme linje. Overskriften siger hvad listen er
+   begraenset til, fx "Opskrifter til frokost". Det er den eneste plads hvor
+   begraensningen kan ses gratis, nu hvor filtrene ligger i eget ark. */
+.ol-hoved {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 10px;
+	margin: 0 44px 0 0;
+	flex-shrink: 0;
+}
+
+.ol-titel {
+	font-family: var(--serif);
+	font-size: calc(19px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 0;
+	min-width: 0;
+}
+
+.ol-alle {
+	flex-shrink: 0;
+	background: none;
+	border: 0;
+	padding: 4px 0;
+	font-family: var(--sans);
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--plum);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	cursor: pointer;
+}
+
+.ol-alle:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.ol-linje {
+	display: flex;
+	gap: 7px;
+	margin-top: 9px;
 	flex-shrink: 0;
 }
 
 .ol-soeg {
-	width: 100%;
+	flex: 1;
+	min-width: 0;
 	box-sizing: border-box;
 	background: var(--paper);
 	border: 1px solid var(--line);
@@ -4914,81 +4957,52 @@ button.tm-ikon:active > span {
 	outline-offset: 1px;
 }
 
-/* Antal traeffere staar i selve feltet, saa hun ved besked uden at
-   taelle fliser. Peger ikke, saa den ikke stjaeler trykket paa feltet. */
-.ol-tael {
-	position: absolute;
-	right: 13px;
-	top: 50%;
-	transform: translateY(-50%);
-	font-size: calc(11.5px * var(--fs-scale, 1));
-	font-weight: 600;
-	color: var(--ink-3);
-	background: var(--paper);
-	padding-left: 8px;
-	pointer-events: none;
-}
-
-/* Ombrydes i stedet for at ligge i en vandret scroll. Snack laa som femte
-   knap uden for skaermen, og en vandret scroll er ikke til at se at der er. */
-.ol-filtre {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
-	margin-top: 9px;
-	flex-shrink: 0;
-}
-
-.ol-chip {
+/* Filtre man ikke kan se, bliver brugt mindre. Tallet paa knappen er den
+   halve betaling for at gemme dem vaek, overskriften er den anden. */
+.ol-filterknap {
 	flex-shrink: 0;
 	display: inline-flex;
 	align-items: center;
-	gap: 5px;
+	gap: 6px;
 	background: var(--paper);
 	border: 1px solid var(--line);
-	border-radius: 999px;
-	padding: 7px 11px;
+	border-radius: 14px;
+	padding: 0 14px;
 	font-family: var(--sans);
-	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-size: calc(13.5px * var(--fs-scale, 1));
 	font-weight: 600;
 	color: var(--ink-2);
-	/* Maalgruppen skal kunne ramme knappen med en tommelfinger. */
-	min-height: 38px;
+	min-height: 46px;
 	cursor: pointer;
 }
 
-.ol-chip.valgt {
+.ol-filterknap.aktiv {
 	background: var(--plum);
 	border-color: var(--plum);
 	color: #fff;
 }
 
-.ol-chip.diet {
-	border-style: dashed;
-}
-
-.ol-chip.diet.valgt {
-	background: var(--sage-tint);
-	border-color: var(--sage);
-	border-style: solid;
-	color: var(--sage-tekst);
-}
-
-.ol-chip.ryd {
-	border-style: dashed;
-	color: var(--ink-3);
-}
-
-.ol-chip:focus-visible {
+.ol-filterknap:focus-visible {
 	outline: 3px solid var(--plum);
 	outline-offset: 2px;
 }
 
-.ol-n {
-	font-size: calc(10.5px * var(--fs-scale, 1));
-	font-weight: 600;
-	opacity: 0.7;
+.ol-badge {
+	background: var(--honey);
+	color: #40301c;
+	border-radius: 999px;
+	padding: 1px 7px;
+	font-size: calc(11px * var(--fs-scale, 1));
+	font-weight: 700;
 	font-variant-numeric: tabular-nums;
+}
+
+.ol-traef {
+	margin: 7px 2px 0;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-3);
+	flex-shrink: 0;
 }
 
 .ol-liste {
@@ -5004,6 +5018,31 @@ button.tm-ikon:active > span {
 	font-size: calc(14px * var(--fs-scale, 1));
 	color: var(--ink-2);
 	line-height: 1.5;
+}
+
+.ol-tom p {
+	margin: 0;
+}
+
+/* Er skaermen tom, skal der altid vaere en vej ud der ikke kraever at hun
+   gaetter hvilket filter der staar i vejen. */
+.ol-udvej {
+	margin-top: 11px;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	padding: 9px 16px;
+	font-family: var(--sans);
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--plum);
+	min-height: 42px;
+	cursor: pointer;
+}
+
+.ol-udvej:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
 }
 
 .ol-gitter {
@@ -5156,4 +5195,147 @@ button.tm-ikon:active > span {
 .ol-grund-ikon {
 	color: var(--ink-3);
 	flex-shrink: 0;
+}
+
+/* ── Filter-arket til opskrift-listen ──────────────────────── */
+/*
+   Ligger OVEN PAA opskrift-listen, som selv ligger paa 95. Er lavere end
+   listen, saa hun kan se at listen stadig er der bagved.
+*/
+
+.of-lag {
+	z-index: 96;
+}
+
+.of-ark {
+	position: relative;
+	width: 100%;
+	background: var(--oat);
+	border-radius: 22px 22px 0 0;
+	padding: 9px 17px calc(14px + env(safe-area-inset-bottom, 0px));
+	box-shadow: 0 -10px 30px rgba(50, 34, 24, 0.24);
+	/* dvh er den SYNLIGE hoejde, se .ma-ark. */
+	max-height: 76vh;
+	max-height: 78dvh;
+	display: flex;
+	flex-direction: column;
+}
+
+.of-titel {
+	font-family: var(--serif);
+	font-size: calc(19px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 0 44px 4px 0;
+}
+
+.of-rul {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.of-gruppe {
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	margin: 14px 0 8px;
+}
+
+.of-raekke {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 7px;
+}
+
+/* Store, tydelige valg. Her er der plads, saa knapperne behoever ikke
+   klemmes sammen som da de laa oven over listen. */
+.of-valg {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	padding: 10px 15px;
+	font-family: var(--sans);
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-2);
+	min-height: 46px;
+	cursor: pointer;
+}
+
+.of-valg.valgt {
+	background: var(--plum);
+	border-color: var(--plum);
+	color: #fff;
+}
+
+.of-valg:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.of-n {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	opacity: 0.7;
+	font-variant-numeric: tabular-nums;
+}
+
+.of-note {
+	margin: 9px 2px 0;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	line-height: 1.45;
+}
+
+.of-bund {
+	display: flex;
+	gap: 9px;
+	margin-top: 13px;
+	flex-shrink: 0;
+}
+
+.of-nulstil {
+	background: none;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	padding: 0 18px;
+	font-family: var(--sans);
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-2);
+	min-height: 50px;
+	cursor: pointer;
+}
+
+.of-vis {
+	flex: 1;
+	background: var(--plum);
+	border: 0;
+	border-radius: 999px;
+	padding: 0 18px;
+	font-family: var(--sans);
+	font-size: calc(15px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: #fff;
+	min-height: 50px;
+	cursor: pointer;
+}
+
+.of-vis:disabled {
+	background: var(--line);
+	color: var(--ink-3);
+	cursor: default;
+}
+
+.of-nulstil:focus-visible,
+.of-vis:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
 }
