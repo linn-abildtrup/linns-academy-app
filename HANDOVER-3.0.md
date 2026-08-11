@@ -2,6 +2,8 @@
 
 Sidst opdateret 11. august 2026.
 
+**Læs i denne rækkefølge hvis du er ny:** afsnit 2 om den vigtigste regel, afsnit 7 om fælderne, og så afsnit 9 om hvor vi står. Resten kan slås op efter behov.
+
 Denne fil er til den næste der skal arbejde videre, uanset om det er et nyt Claude-vindue, Bo eller en udvikler udefra. Den fortæller hvor vi er, hvordan tingene hænger sammen, og hvor fælderne ligger.
 
 Læs den sammen med disse tre:
@@ -49,18 +51,43 @@ To ting der har kostet tid før, og som skal huskes:
 
 | Sted | Hvad |
 |---|---|
-| `src/routes/ny/+layout.svelte` | Skallen. Adgangs-gate, bundmenu, contexts for `user`, `userDoc`, `adgang` og `forlob` |
-| `src/routes/ny/ny.css` | Alt design. Scoped under `.ny-app` |
-| `src/lib/content/adgang3.ts` | Adgangsmodellen. Rene funktioner, 44 tests |
-| `src/lib/content/nulDage3.ts` | Pause-dage. Rene funktioner, 24 tests. Se 9.2 |
-| `src/lib/content/spaerring3.ts` | Spærring ved abo-udløb. Rene funktioner, 12 tests. Se 9.3 |
-| `src/lib/content/challenge3.ts` | Challenge: mål, gitter, stilling. 42 tests. Se 9.1 |
-| `src/lib/content/forside3.ts` | Kurve, målinger, kadence. Rene funktioner, 27 tests |
-| `src/lib/content/inspirator3.ts` | Hvornår AI-inspiratoren skal dukke op. 12 tests |
-| `src/lib/content/beskeder3.ts` | "Til dig lige nu". 8 tests |
-| `src/lib/firestore/forside3.ts` | Al Firestore-læsning til forsiden |
-| `src/lib/components/ny/` | 15 komponenter, alle kun brugt i 3.0 |
-| `src/routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
+**Alt der hører til 3.0 ender på `3`.** `adgang3.ts`, `forside3.ts`,
+`maaltider3.ts` og så videre. Ser du en fil uden 3-tallet, hører den til den
+gamle app og må kun læses.
+
+| Sted | Hvad |
+|---|---|
+| `src/routes/ny/+layout.svelte` | Skallen. Adgangs-gate, spærring, bundmenu, contexts for `user`, `userDoc`, `adgang` og `forlob`. **Læg ikke nyt her uden en god grund**, se SPEC 26.5 |
+| `src/routes/ny/ny.css` | Alt design. Scoped under `.ny-app`. Cirka 2.000 linjer |
+| `src/lib/components/ny/` | 20 komponenter, alle kun brugt i 3.0 |
+
+**Ren logik, ingen database, alt sammen testet:**
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/adgang3.ts` | Adgangsmodellen, dagnummer, medlemstid | 44 |
+| `content/challenge3.ts` | Challenge: mål, gitter, stilling | 42 |
+| `content/maengde3.ts` | Mængde, spring pr enhed, næring | 28 |
+| `content/forside3.ts` | Kurve, målinger, kadence | 27 |
+| `content/maaltider3.ts` | Dagens fire måltider og deres tal | 27 |
+| `content/nulDage3.ts` | Pause-dage. Se 9.2 | 24 |
+| `content/spaerring3.ts` | Spærring ved abo-udløb. Se 9.3 | 12 |
+| `content/inspirator3.ts` | Hvornår AI-inspiratoren dukker op | 12 |
+| `content/plejer3.ts` | "Det du plejer". Modulets vigtigste fil, læs toppen | 12 |
+| `content/beskeder3.ts` | "Til dig lige nu" | 8 |
+
+**Firestore-laget, kun læsning på nær måltider:**
+
+| Fil | Hvad |
+|---|---|
+| `firestore/forside3.ts` | Alt til forsiden |
+| `firestore/maaltider3.ts` | Dagens måltider |
+| `firestore/plejer3.ts` | Vaner, og den eneste fil i 3.0 der **skriver** kundedata |
+| `firestore/challenge3.ts` | Challenge, både nye og gamle |
+| `firestore/nulDage3.ts` | Pause-dage |
+| `firestore/featureAdgang3.ts` | Feature-adgang. Hentes her, ikke i skallen |
+| `firestore/challengeAdmin3.ts` | Admin: opret og tildel challenges |
+| `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
 
@@ -85,11 +112,13 @@ Alle ruter ligger under `/ny`.
 | `/ny/snak` | Kunde-chat med AI. Færdig |
 | `/ny/maaling` | Spørgeskema. Færdig |
 | `/ny/udvikling` | Bygget, men ikke gennemgået mod den gamle app endnu |
-| `/ny/moduler` | Skitse. Etape 4 |
+| `/ny/moduler` | Gammel skitse. **Ikke længere i bundmenuen**, erstattet af 30-30 |
 | `/ny/profil`, `/ny/hjaelp`, `/ny/forlob` | Bygget |
 | `/ny/admin/challenges` | Admin: opret og tildel challenges. Kun admin. Intet menupunkt, skriv adressen |
-| `/ny/30-30` | 30-30 beregneren, oversigten. Fire måltider og dagens tal |
-| `/ny/30-30/[type]` | Inde i et måltid. Alt indhold hænger her |
+| `/ny/30-30` | 30-30 beregneren, oversigten. Fire måltider og dagens tal. Færdig |
+| `/ny/30-30/[type]` | Inde i et måltid. Alt indhold hænger her. Færdig |
+
+**Bundmenuen:** Forside · 30-30 · Snak · Udvikling · Profil.
 
 Forsiden består af, i rækkefølge: hilsen med Linns ansigt, Til dig lige nu, noten fra Linn, Dit overskud med kurven, AI-inspiratoren, datostrimlen, dagens små skridt, dagens lektioner, dagens træning, dagens refleksion, dagens tal, challenge og næste hold.
 
@@ -138,6 +167,12 @@ Læs den her, inden du fejlsøger noget der ligner.
 
 Bemærk sidegevinsten: før rettelsen fandtes `ANTHROPIC_API_KEY` slet ikke som selvstændig variabel lokalt, så AI-funktionerne kunne ikke virke i dev.
 
+**Farverne forsvinder når noget flyttes ud af `.ny-app`.** Modaler og ark portalles til `document.body` for at bryde ud af et område der ruller på iOS. Men farverne er variabler defineret på `.ny-app`, så `var(--oat)` resolver til ingenting, og arket bliver gennemsigtigt. **Sæt klassen `ny-tokens` på rod-elementet i alt der portalles.** Kostede en aften 10. august, og challenge-stillingen havde samme fejl uden at nogen havde opdaget den.
+
+**En for stærk nulstilling slår komponenternes egen stil ihjel.** `.ny-app button` satte `font: inherit` og `background: none`, og reglen var stærkere end en komponents egen klasse. Fliser mistede deres baggrund og fik forkert skriftstørrelse. Det så ud som tre forskellige fejl. Reglen er nu pakket i `:where()`, så den er vægtløs. Gør det samme hvis du skriver en ny.
+
+**Læg ikke noget nyt i skallen uden en god grund.** Et forsøg på at hente feature-adgangen i `routes/ny/+layout.svelte` gav en helt blank app 11. august, og årsagen kunne aldrig findes. Vi rullede tilbage og byggede det i mindre bidder, hvor hentningen ligger dér hvor den bruges. Skallen omgiver hver eneste side, så en fejl der rammer den, rammer alt.
+
 **`opretDoc` findes ikke i `firestoreRest.ts`.** Brug `gemDocMerge` med et selvlavet dokument-id.
 
 **Firestore-regler driver.** Sammenlign altid de live regler med `firestore.rules` i repoet, inden du udgiver noget. Det er nu ét kald, se afsnit 8.
@@ -167,7 +202,9 @@ Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx 
 
 ## 9. Hvor vi står, og hvad der er næste skridt
 
-Opdateret 9. august 2026. Alt herunder er kodet, committet og pushet, og `main` er i sync. **Hele den åbne liste er klaret**, og næste skridt er etape 4.
+Opdateret 11. august 2026. Alt herunder er kodet, committet og pushet, og `main` er i sync.
+
+**Etape 1 til 3 er færdige, og hele den åbne liste fra 6. august er klaret.** Etape 4 er i gang: 30-30 beregneren er bygget og i brug, se 9.4.
 
 ### Åben liste, aftalt 6. august
 
@@ -242,15 +279,39 @@ Verificeret mod virkeligheden samme dag: for alle 12 giver den gamle app og 3.0 
 
 **Tonen er med vilje.** Teksten er ikke en fejlmeddelelse, og båndet under nåden er honningfarvet og ikke rødt. Hun har ikke gjort noget forkert. Der står at hendes data ligger og venter, og at alt kommer tilbage når hun fornyer. Lav ikke om på det uden at tale med Linn.
 
-### Efter den liste
+### 9.4 30-30 beregneren, etape 4's første modul
 
-Etape 4, altså modulerne. **Retningen blev lagt om 9. august:** Moduler-fanen udgår, og Mad tager dens plads i bundmenuen. Se `SPEC-3.0.md` afsnit 22 til 27, som er en fuld gennemgang af Mad-modulet blok for blok, med målinger på rigtige kundedata og de beslutninger Linn har truffet. **Læs det afsnit før du rører Mad**, ellers bygger du på gæt, og det gjorde vi allerede i fem runder mockups.
+**Moduler-fanen er udgået.** Den var en menu der førte til en menu, og alt
+andet end Biblioteket kan nås fra forsiden. **30-30 beregneren** har taget
+dens plads i bundmenuen.
 
-Kort: bundmenuen er nu Forside, **30-30**, Snak, Udvikling, Profil. Træning nås fra dagens træning på forsiden. Biblioteket bliver et kort nederst på forsiden for dem der har adgang.
+Den er **færdig og i brug** pr 11. august: oversigt med fire måltider og dagens
+tal, måltidsskærm, "det du plejer", søgning, mængde med genveje og plus/minus,
+fortryd, fjern, opskrifter, favoritter og egne fødevarer. **Madplanen er
+parkeret**, ikonet er fjernet, motoren urørt.
 
-**30-30 beregneren er bygget og ude** pr 11. august. **Madplanen er parkeret**, se SPEC afsnit 26: ikonet er fjernet helt, men motoren er urørt hvis den tages op igen. Ruterne er `/ny/30-30` og `/ny/30-30/[type]`. Kunden vælger måltid, ser sine hyppigste madvarer som fliser, kan søge, sætte mængde med genveje eller plus og minus, fortryde, fjerne igen, og hente fra opskrifter, favoritter og egne fødevarer.
+**Læs SPEC afsnit 22 til 27 før du rører den.** Det er en fuld gennemgang af
+det gamle Mad-modul, målinger på rigtige kundedata, og hver eneste beslutning
+med sin begrundelse. Uden det bygger du på gæt, og det gjorde vi allerede i
+fem runder mockups før gennemgangen.
 
-**Læs SPEC afsnit 26.4 og 26.5 før du fejlsøger noget visuelt i den nye flade, og før du lægger noget nyt i skallen.** De to fælder der står der kostede en aften: tokens forsvinder når noget portalles ud af `.ny-app`, og en for stærk knap-nulstilling slog komponenternes egen stil ihjel.
+**De tre målinger der ændrede designet mest:**
+
+- **68,5 %** af alt kunderne registrerer er en gentagelse. Derfor er den
+  hurtigste vej ikke bedre søgning, men at hun slet ikke skal søge
+- **13 madvarer** på en almindelig dag, median. Derfor foldes måltiderne
+  sammen til én linje
+- **38 %** af dagene har en måltidstype der går igen. Derfor kan en plads
+  rumme mere end én ting
+
+### Efter 30-30
+
+Resten af etape 4:
+
+- **Træning.** Kunden skal kunne vælge sit program første gang der trykkes, og
+  skifte valg løbende. Nås fra dagens træning på forsiden
+- **Biblioteket** som et kort nederst på forsiden, kun for dem der har adgang
+- **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app
 
 ### Bevidst udskudt
 
@@ -275,3 +336,21 @@ Linn koder ikke selv og har ingen teknisk baggrund. Tal almindeligt dansk, forkl
 I tekst til hende bruges hverken tankestreg eller semikolon. Det gælder tekst, ikke kode.
 
 Bo arbejder med på projektet og kan give et go på samme måde som hun kan.
+
+### Arbejdsformen der virker
+
+Det her er ikke teori. Det er hvad der faktisk har fungeret, og hvad der ikke har.
+
+**Mål på rigtige kundedata før du vælger design.** Det har ændret designet flere gange, og hver gang til det bedre. Skriv scriptet som `scripts/_navn.ts`, kør det læs-kun, vis Linn tallene, og slet scriptet bagefter. Tre eksempler: de 68,5 % gentagelser flyttede hele Mad-skærmen, de 13 madvarer om dagen aflivede tre forslag, og en måling viste at ingen kunde ville blive låst ude af spærringen.
+
+**Ét skærmbillede ad gangen.** Tegn det, få det låst, byg det. Vi tegnede fem runder mockups af Mad-modulet på et gæt om hvad det indeholdt, før vi gennemgik det. Det var spildt arbejde.
+
+**Gennemgå det gamle modul blok for blok, før du tegner noget.** Det gælder både forsiden og Mad, og det gav begge gange en liste over ting der ellers var blevet glemt.
+
+**Byg i små bidder når noget er gået galt.** En samlet ændring gav en blank app uden at årsagen kunne findes. Delt i to bidder virkede den samme funktion uden problemer.
+
+**Linn tester på telefonen, og hun finder ting du ikke kan se.** Fem fejl på to aftener: tomme cirkler, forkerte skriftstørrelser, et gennemsigtigt ark, et mærkat der lå hen over et ikon, og et tal uden ord på. Vurdér aldrig et design færdigt før det har været i hendes hånd.
+
+**Skærmbillederne ligger i `Projekter/v3 app/Screenshots v3/`**, ikke i repoets `screenshots`-mappe.
+
+**Efter hver udrulning skal hun lukke fanen helt.** Appen gemmer en kopi af sig selv, og den viser gerne den gamle udgave. Det har fire gange lignet en fejl i koden.
