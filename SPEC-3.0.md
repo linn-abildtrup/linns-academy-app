@@ -634,15 +634,23 @@ den admin-styrede adgangsmatrix, se `content/features.ts`.
 **Favoritter skal kunne vælges og ses.** De skal have en synlig plads, ikke
 kun dukke op i søgningen.
 
-**Madplanen bliver i 3.0.** Linns beslutning 9. august, truffet med tallene
-på bordet: madplanen er ikke blevet brugt en eneste gang af nogen kunde de
-sidste 60 dage, mens 603 måltider i samme periode blev logget direkte fra en
-opskrift, af 75 kunder.
+**Madplanen er PARKERET.** Linns beslutning 11. august, som afløser
+beslutningen fra 9. august om at beholde den.
 
-At den ikke bruges betyder ikke nødvendigvis at den ikke er ønsket. Den ligger
-som fjerde fane ude i højre kant på en telefon, og den skjules helt når
-måltids-fokus er aktivt. Det er værd at give den en bedre plads i 3.0 frem for
-at gentage den placering der gav nul.
+Baggrunden: madplanen er ikke blevet brugt en eneste gang af nogen kunde over
+60 dage, mens 603 måltider i samme periode blev logget direkte fra en opskrift,
+af 75 kunder. Da den skulle bygges, viste der sig desuden et problem med hvor
+den hører hjemme: **den lægger en plan for hele dagen, men ikonet sad inde i ét
+måltid.** Det er underligt at stå i Morgenmad og få forslag til aftensmad.
+
+**Ikonet er fjernet helt**, ikke bare slået fra, så der ikke står noget der ser
+halvfærdigt ud. Kunden kan ikke bruge madplanen i 3.0.
+
+**Motoren er urørt** og kan tages op igen: `content/foreslaaMadplan.ts` og
+`api/foreslaa-madplan`. Den kalder AI'en og koster derfor penge pr kald, ikke
+kun et opslag. Tages den op, hører den formentlig hjemme på oversigten og ikke
+inde i et måltid, for kunden åbner et måltid for at registrere noget hun HAR
+spist, mens en plan lægges på et helt andet tidspunkt.
 
 **Egne fødevarer skal have en synlig plads**, ikke kun dukke op i søgningen.
 Kunden opretter dem når en vare ikke findes i databasen, typisk mærkevarer fra
@@ -725,15 +733,15 @@ fra. Kunden skal ikke vide om "Grøn grød" er en opskrift eller en fødevare.
 Stregkode-scanneren sidder i samme felt. Det løser samtidig kravet om at
 egne fødevarer skal kunne søges i.
 
-**Fire veje til at bladre:** opskrifter, madplan, favoritter og mine
-fødevarer. Det er her madplanen endelig får en synlig plads, i stedet for at
-ligge som fjerde fane ude i højre kant.
+**Tre veje til at bladre:** opskrifter, favoritter og mine fødevarer.
+Madplanen var oprindeligt den fjerde, men blev parkeret 11. august, se afsnit
+26.
 
-De vises som **fire runde ikoner på 44 px med navnet under**, farvet i to
-familier: to grønne er Linns ting, altså opskrifter og madplan, og to blomme
-er kundens eget, altså favoritter og mine fødevarer. **Farven bærer
-parringen**, så vi slipper for at gruppere dem i layoutet og dermed slipper
-for et ekstra klik. Fire direkte veje i stedet for to der hver åbner et valg.
+De vises som **runde ikoner på 44 px med navnet under**, farvet i to familier:
+grøn er Linns ting, altså opskrifter, og blomme er kundens eget, altså
+favoritter og mine fødevarer. **Farven bærer parringen**, så vi slipper for at
+gruppere dem i layoutet og dermed slipper for et ekstra klik. Direkte veje i
+stedet for grupper der hver åbner et valg.
 
 **Navnet står altid med.** Ikoner alene er udelukket: et blyant-ikon betyder
 ikke "mine fødevarer" for nogen der ikke har set det før, og målgruppen er
@@ -874,8 +882,7 @@ ny global nulstilling, så gør det samme.
 
 - Farve på plejer-fliserne: udskudt med vilje, og de holdes hvide indtil
   videre, fordi de fire veje allerede bærer farven
-- **Madplanen.** Det sidste stykke af 30-30 beregneren. Den er en generator og
-  ikke en liste, så den har sin egen runde til gode
+- ~~Madplanen~~. **Parkeret 11. august.** Ikonet er fjernet, motoren er urørt
 - Gamle registreringer med enheder der ikke giver mening for varen, fx "1 spsk
   æg", dukker op som forslag under "det du plejer". Set hos test-profilen 11.
   august. Afklares om det også sker hos rigtige kunder

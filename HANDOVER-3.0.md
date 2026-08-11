@@ -248,7 +248,7 @@ Etape 4, altså modulerne. **Retningen blev lagt om 9. august:** Moduler-fanen u
 
 Kort: bundmenuen er nu Forside, **30-30**, Snak, Udvikling, Profil. Træning nås fra dagens træning på forsiden. Biblioteket bliver et kort nederst på forsiden for dem der har adgang.
 
-**30-30 beregneren er bygget og ude** pr 11. august, på nær madplanen. Ruterne er `/ny/30-30` og `/ny/30-30/[type]`. Kunden vælger måltid, ser sine hyppigste madvarer som fliser, kan søge, sætte mængde med genveje eller plus og minus, fortryde, fjerne igen, og hente fra opskrifter, favoritter og egne fødevarer.
+**30-30 beregneren er bygget og ude** pr 11. august. **Madplanen er parkeret**, se SPEC afsnit 26: ikonet er fjernet helt, men motoren er urørt hvis den tages op igen. Ruterne er `/ny/30-30` og `/ny/30-30/[type]`. Kunden vælger måltid, ser sine hyppigste madvarer som fliser, kan søge, sætte mængde med genveje eller plus og minus, fortryde, fjerne igen, og hente fra opskrifter, favoritter og egne fødevarer.
 
 **Læs SPEC afsnit 26.4 før du fejlsøger noget visuelt i den nye flade.** De to fælder der står der kostede en aften: tokens forsvinder når noget portalles ud af `.ny-app`, og en for stærk knap-nulstilling slog komponenternes egen stil ihjel.
 

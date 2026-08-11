@@ -3903,10 +3903,13 @@ a.dag {
 	color: var(--ink-3);
 }
 
+/* Tre veje. Madplanen er parkeret 11. august og ikonet fjernet helt,
+   saa der ikke staar noget halvfaerdigt. Bliver den taget op igen, skal
+   tallet her foelge med. */
 .tm-ikoner {
 	display: grid;
-	grid-template-columns: repeat(4, 1fr);
-	gap: 6px;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 8px;
 }
 
 .tm-ikoner .tm-ikon {
