@@ -15,7 +15,7 @@
 // femogtyve tryk, og med 10 g kunne hun slet ikke ramme 65.
 // ============================================================
 
-import { getEnheder, gramForEnhed, type Enhed, type Fodevare } from './kost';
+import { effektivKcal, getEnheder, gramForEnhed, type Enhed, type Fodevare } from './kost';
 
 /**
  * Hvor meget ét tryk paa plus eller minus flytter, pr enhed.
@@ -68,6 +68,14 @@ export interface Naering {
 	protein: number;
 	fiber: number;
 	gram: number;
+	/**
+	 * Udvidet naering. Regnes ALTID ud, men vises kun for kunder der har
+	 * adgang til den. Adgangen afgoeres i visningen, ikke her, saa den
+	 * her fil kan testes uden at vide noget om kundetyper.
+	 */
+	kh: number;
+	fedt: number;
+	kcal: number;
 }
 
 /**
@@ -80,13 +88,18 @@ export function naeringFor(
 	portion: number,
 	enhedId: string | undefined
 ): Naering {
-	if (!food) return { protein: 0, fiber: 0, gram: 0 };
+	if (!food) return { protein: 0, fiber: 0, gram: 0, kh: 0, fedt: 0, kcal: 0 };
 	const gram = portion * gramForEnhed(food, enhedId);
 	const f = gram / 100;
 	return {
 		protein: rund1(food.p * f),
 		fiber: rund1(food.f * f),
-		gram: Math.round(gram)
+		gram: Math.round(gram),
+		kh: rund1((food.kh ?? 0) * f),
+		fedt: rund1((food.fedt ?? 0) * f),
+		// effektivKcal retter de foedevarer der ved en fejl staar med 0 kcal.
+		// Se den fejl der blev rettet i juni 2026.
+		kcal: Math.round(effektivKcal(food) * f)
 	};
 }
 
