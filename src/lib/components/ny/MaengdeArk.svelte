@@ -33,11 +33,24 @@
 		/** Den maengde hun plejer at bruge, hvis vi kender den. */
 		saedvanlig?: { portion: number; enhedId?: string } | null;
 		gemmer?: boolean;
+		/**
+		 * Maa kunden se kulhydrat, fedt og kalorier? Afgoeres af siden og
+		 * gives med, saa arket ikke selv skal kende til kundetyper.
+		 */
+		visUdvidet?: boolean;
 		ongem: (portion: number, enhedId: string | undefined) => void;
 		onluk: () => void;
 	}
 
-	let { food, maaltidLabel, saedvanlig = null, gemmer = false, ongem, onluk }: Props = $props();
+	let {
+		food,
+		maaltidLabel,
+		saedvanlig = null,
+		gemmer = false,
+		visUdvidet = false,
+		ongem,
+		onluk
+	}: Props = $props();
 
 	const genveje = $derived(genvejeFor(food, saedvanlig));
 	const enheder = $derived(enhederFor(food));
@@ -115,7 +128,23 @@
 				<div class="ma-m-navn">Fiber</div>
 				<div class="ma-m-tal">{formatPortion(naering.fiber)} g</div>
 			</div>
+			<!-- Protein og fiber er metodens tal og staar groent. Kulhydrat
+			     og fedt er til orientering og staar daempet, saa skaermen
+			     ikke ser ud som om alle fire er lige vigtige. -->
+			{#if visUdvidet}
+				<div>
+					<div class="ma-m-navn">Kulhydrat</div>
+					<div class="ma-m-tal blaeg">{formatPortion(naering.kh)} g</div>
+				</div>
+				<div>
+					<div class="ma-m-navn">Fedt</div>
+					<div class="ma-m-tal blaeg">{formatPortion(naering.fedt)} g</div>
+				</div>
+			{/if}
 		</div>
+		{#if visUdvidet}
+			<div class="ma-kcal">{naering.kcal} kcal · {naering.gram} g</div>
+		{/if}
 
 		{#if visEnheder}
 			<div class="ma-k">Vælg enhed</div>

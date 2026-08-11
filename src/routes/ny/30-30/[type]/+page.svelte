@@ -28,6 +28,7 @@
 		gendanMadvare
 	} from '$lib/firestore/plejer3';
 	import { hentAlleFodevarer } from '$lib/firestore/kost';
+	import { hentAdgangsskema, maaSeUdvidetNaering } from '$lib/firestore/featureAdgang3';
 	import { datoNoegle } from '$lib/firestore/forside3';
 	import MaengdeArk from '$lib/components/ny/MaengdeArk.svelte';
 	import VaelgArk, { type Valg } from '$lib/components/ny/VaelgArk.svelte';
@@ -41,7 +42,14 @@
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
+	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(hentUser());
+	const userDoc = $derived(hentUserDoc());
+
+	// Maa kunden se kulhydrat, fedt og kalorier? Skemaet hentes for sig
+	// selv og maa gerne komme et halvt sekund senere. Indtil da er det
+	// falsk, saa vi hellere viser for lidt end for meget.
+	let visUdvidet = $state(false);
 
 	const iDag = datoNoegle(new Date());
 
@@ -152,6 +160,8 @@
 			henter = false;
 			// Vanerne hentes bagefter. De maa ikke forsinke maaltidet.
 			plejer = await hentPlejer(uid, t, kort);
+			const skema = await hentAdgangsskema();
+			if (!afbrudt) visUdvidet = maaSeUdvidetNaering(userDoc, skema);
 		})().catch((e) => {
 			console.error('[ny] kunne ikke hente maaltidet', e);
 			henter = false;
@@ -515,6 +525,7 @@
 		maaltidLabel={LABELS[type]}
 		saedvanlig={valgt.saedvanlig}
 		{gemmer}
+		{visUdvidet}
 		ongem={(portion, enhedId) => gem(valgt!.food, portion, enhedId)}
 		onluk={() => (valgt = null)}
 	/>
