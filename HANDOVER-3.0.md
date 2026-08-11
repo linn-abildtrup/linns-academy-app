@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 11. august 2026.
+Sidst opdateret 11. august 2026, sen aften.
 
 **Læs i denne rækkefølge hvis du er ny:** afsnit 2 om den vigtigste regel, afsnit 7 om fælderne, og så afsnit 9 om hvor vi står. Resten kan slås op efter behov.
 
@@ -11,7 +11,7 @@ Denne fil er til den næste der skal arbejde videre, uanset om det er et nyt Cla
 Læs den sammen med disse tre:
 
 - `CLAUDE.md` i repo-roden er arbejdsreglerne. De er ikke til forhandling.
-- `SPEC-3.0.md` er hvad der bygges og hvorfor. 27 afsnit. 13 til 21 er designbeslutningerne fra 5. august, og 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning.
+- `SPEC-3.0.md` er hvad der bygges og hvorfor. 28 afsnit. 13 til 21 er designbeslutningerne fra 5. august, 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning, og 28 er opstarten, altså det der sker før den første skærm kommer frem.
 - `v3 app/linns-academy-design/DESIGN-SPEC.md` og `mockups.html` er hvordan det ser ud.
 
 ---
@@ -78,7 +78,10 @@ gamle app og må kun læses.
 | `content/opskriftKategori3.ts` | Opskrift-kategorier, hvor snack er sin egen | 23 |
 | `content/inspirator3.ts` | Hvornår AI-inspiratoren dukker op | 12 |
 | `content/plejer3.ts` | "Det du plejer". Modulets vigtigste fil, læs toppen | 12 |
+| `content/hurtigStart3.ts` | 3.0's opstartsregel plus `opstartsBillede()`. Se 9.7 | 13 |
 | `content/beskeder3.ts` | "Til dig lige nu" | 8 |
+
+**To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
 
 **Firestore-laget, kun læsning på nær måltider:**
 
@@ -93,6 +96,7 @@ gamle app og må kun læses.
 | `firestore/opskrifter3.ts` | Opskrifter. Egen indlæser, fordi den gamle taber snack |
 | `firestore/opskriftBillede3.ts` | Upload og sletning af opskrift-billeder. Kun admin |
 | `firestore/challengeAdmin3.ts` | Admin: opret og tildel challenges |
+| `firestore/hurtigStart3.ts` | Hele opstarts-billedet, læst lokalt uden netværk. Se 9.7 |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
@@ -196,6 +200,12 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 **Læg aldrig et billede ind i et Firestore-dokument.** Opskrift-billeder lå som base64-tekst inde i dokumentet. To billeder vejede 189 KB, altså halvdelen af hele opskrift-samlingens 379 KB, og de blev hentet hver gang listen blev åbnet, uanset om nogen rullede ned til dem. Flyttet til Storage 11. august, se 9.5. **Læg billedet i Storage og gem adressen.**
 
+**Appen ventede på netværket, selv om svaret lå lokalt.** Det gennemgående mønster i hele opstarten, og det kostede Linns telefon over ét minut på logoet og "Et øjeblik" den 11. august. Firestore gemmer i forvejen hvert dokument i telefonens egen hukommelse, se `localCache` i `lib/firebase.ts`, men det almindelige `getDoc` spørger serveren alligevel, og på en forbindelse der er der men død, kan det tage et minut før browseren giver op. Det samme gjaldt app-skallen i service workeren og skrifterne fra Google. **Spørg altid om svaret allerede ligger lokalt, før du lægger et kald i opstarten.** Se SPEC afsnit 28 for hele gennemgangen og for de fem flaskehalse der blev fjernet.
+
+**En LUKKET dør åbnes aldrig på en lokal kopi.** Følger af ovenstående, og den er vigtigere end hastigheden. Både "du har ingen adgang" i den gamle app og "Din adgang er udløbet" i 3.0 skal bekræftes af serveren, for kopien kan være gammel, fx hvis kunden lige har fornyet. Den anden vej er ufarlig. Se `maaAabnePaaKopi` og `maaAabnePaaKopi3`, og der er test på begge.
+
+**Spærringen i 3.0 hviler på det aktive forløb, så halve data er farlige.** Regel 1 i `spaerring3.ts` siger at et aktivt forløb vinder over alt. Kender koden ikke forløbene endnu, ser en Kropsro-kunde med udløbet abonnement ud som om hun ingen forløb har, og så får hun spærre-skærmen midt i sit forløb. **Læs aldrig kun bruger-dokumentet og træf en adgangs-beslutning på det.** Bemærk også at en forløbs-række kræver begge ben, altså `forlobIds` på kunden OG selve forløbs-dokumentet, se `udledAdgange` i `adgang3.ts`.
+
 **`opretDoc` findes ikke i `firestoreRest.ts`.** Brug `gemDocMerge` med et selvlavet dokument-id.
 
 **Firestore-regler driver.** Sammenlign altid de live regler med `firestore.rules` i repoet, inden du udgiver noget. Det er nu ét kald, se afsnit 8.
@@ -206,7 +216,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1021 tests lige nu, alle grønne
+npm test                               # 1050 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -228,9 +238,11 @@ Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx 
 
 ## 9. Hvor vi står, og hvad der er næste skridt
 
-Opdateret 11. august 2026. Alt herunder er kodet, committet og pushet, og `main` er i sync.
+Opdateret 11. august 2026, sen aften. Alt herunder er kodet, committet og pushet, og `main` er i sync.
 
 **Etape 1 til 3 er færdige, og hele den åbne liste fra 6. august er klaret.** Etape 4 er i gang: 30-30 beregneren er bygget og i brug, se 9.4.
+
+**Sidst på aftenen 11. august blev hele opstarten rettet**, efter at Linns telefon stod over ét minut på "Et øjeblik". Fem flaskehalse, fire af dem i den app der er i drift. Se 9.7, og SPEC afsnit 28 for hele gennemgangen.
 
 ### Åben liste, aftalt 6. august
 
@@ -439,6 +451,39 @@ lavet. Bliver bredere på en laptop, se `@media (min-width: 720px)` i `ny.css`.
 stor udgave" i listen. De virker, men fliserne henter 38 KB hvor de kunne nøjes
 med 17. Det retter sig når billedet lægges på igen.
 
+### 9.7 Opstarten, rettet 11. august om aftenen
+
+**Baggrunden.** Linns telefon stod i over ét minut på logoet og "Et øjeblik". En gennemgang af hele opstarts-kæden fandt fem flaskehalse. Det gennemgående mønster: appen ventede på netværket, selv om svaret lå lokalt. Se fælde-afsnittet i 7.
+
+**Fire af de fem ligger i den app der er i drift**, ikke i 3.0, og er derfor rettet gennem ventilen i `CLAUDE.md` regel 2, som selvstændige opgaver med eget go og egne commits. Der er syv commits i alt.
+
+| Rettelse | Hvem rammes | Hvor |
+|---|---|---|
+| Tidsgrænse på app-skallen, 3 sek | Alle i drift | `service-worker.ts` |
+| Skrifterne blokerer ikke optegningen | Alle i drift | `app.html` |
+| Lagring kan ikke vælte en navigation | Alle i drift | `service-worker.ts` |
+| Hurtig opstart, gamle app | **Kun flaget** | `routes/app/+layout.svelte` |
+| Hurtig opstart, 3.0 | Kun `/ny` | `routes/ny/+layout.svelte` |
+| `static/mockup` slettet, 808 KB | Alle i drift | `static/` |
+| Én fejlet fil kaster ikke resten væk | Alle i drift | `service-worker.ts` |
+
+**Den hurtige opstart i den gamle app er bag flag.** Kun admin og kunder med `ny-app` får den. Kontakten er én linje, `HURTIG_START_FOR_ALLE` i `content/hurtigStart.ts`, og der er en test der fælder hvis nogen vipper den uden at ville det. **Den skal åbnes for alle når den har kørt et par dage hos testerne.** Det er det vigtigste åbne punkt herfra.
+
+**Nye filer:**
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/hurtigStart.ts` | Reglen og tidsgrænsen. Delt af begge apps | 16 |
+| `content/hurtigStart3.ts` | 3.0's regel plus `opstartsBillede()` | 13 |
+| `firestore/hurtigStart3.ts` | Læser hele opstarts-billedet lokalt | |
+| `userDocCache.ts` | Læser bruger-dokumentet lokalt | |
+
+`userDoc.ts` er bevidst urørt. Kopi-læsningen ligger i sin egen nye fil netop derfor.
+
+**Udregningen af adgang og spærring er flyttet ud af 3.0's skal** og ind i `opstartsBillede()`. Reglerne er uændrede, linje for linje. Grunden er at kopien og serveren skal besvares med nøjagtig samme spørgsmål, ellers kan de to vise hver sin skærm.
+
+**Det er ikke bekræftet på en rigtig telefon endnu.** Fem flaskehalse er fundet i koden og fjernet, men problemet er aldrig set ske under måling. Hænger den stadig, så mål i stedet for at gætte, og spørg først om skærmen er **helt blank**, altså skallen eller skrifterne, eller viser **logoet og "Et øjeblik"**, altså Firebase-kæden. Firebase Auth selv er ikke undersøgt.
+
 ### Efter 30-30
 
 Resten af etape 4:
@@ -447,9 +492,10 @@ Resten af etape 4:
   skifte valg løbende. Nås fra dagens træning på forsiden
 - **Biblioteket** som et kort nederst på forsiden, kun for dem der har adgang
 - **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app
-- **`static/mockup/` slettes.** Var stillads til 30-30 og er ikke i brug
-- **SPEC mangler et afsnit 26.7** om billede-uploaden. Beslutningerne står i
-  9.6 her og i commit-beskeden, men ikke i spec'en endnu
+- ~~`static/mockup/` slettes~~. **Klaret 11. august.** Se 9.7
+- ~~SPEC mangler et afsnit 26.7~~. **Passede ikke.** Afsnittet står i spec'en
+  og er fyldigt. Tidligere udgaver af det her dokument sagde at det manglede,
+  og det var forkert
 
 ### Bevidst udskudt
 
