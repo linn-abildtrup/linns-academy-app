@@ -24,6 +24,11 @@ const sw = self as unknown as ServiceWorkerGlobalScope;
 const ASSET_CACHE = `assets-${version}`;
 const NAVIGATION_CACHE = `navigation-${version}`;
 
+// Hvor laenge nettet maa vaere om at svare paa selve app-skallen (HTML), foer
+// vi serverer den gemte kopi i stedet. En almindelig hentning tager 0,2-0,5
+// sek, saa 3 sek er rigelig plads til en langsom forbindelse.
+const NAV_TIMEOUT_MS = 3000;
+
 // Alle built JS/CSS/font-assets — har hashed filnavne, så de er sikre at
 // cache for evigt (gamle versioner ryddes når en ny SW aktiveres).
 const ALLE_ASSETS = [...build, ...files];
@@ -92,31 +97,77 @@ sw.addEventListener('fetch', (event) => {
 		return;
 	}
 
-	// For navigation requests (HTML): network-first, fald tilbage til cache
-	// hvis offline. Det sikrer at brugeren altid får nyeste version når
-	// online, men kan stadig bruge appen offline.
+	// For navigation requests (HTML): se navigationSvar nedenfor.
 	if (req.mode === 'navigate') {
-		event.respondWith(
-			(async () => {
-				try {
-					const res = await fetch(req);
-					if (res.ok) {
-						const cache = await caches.open(NAVIGATION_CACHE);
-						cache.put(req, res.clone());
-					}
-					return res;
-				} catch {
-					const cached = await caches.match(req);
-					if (cached) return cached;
-					// Sidste udvej: forsiden fra cache
-					const forsiden = await caches.match('/');
-					if (forsiden) return forsiden;
-					throw new Error('offline og ingen cache');
-				}
-			})()
-		);
+		event.respondWith(navigationSvar(event));
 		return;
 	}
 
 	// Alt andet: lad gå direkte til netværk (eller browser-håndteret)
 });
+
+/**
+ * Svarer paa en navigation, altsaa selve app-skallen (HTML).
+ *
+ * Foer spurgte vi ALTID nettet foerst og faldt kun tilbage til den gemte kopi
+ * hvis nettet sagde klart nej. Er forbindelsen der, men doed, hvilket er helt
+ * normalt naar en telefon lige er vaagnet eller skifter mellem wifi og
+ * mobilnet, kan browseren bruge et minut foer den giver op. Kunden ser en tom
+ * skaerm imens, selv om kopien laa klar hele tiden.
+ *
+ * Nu faar nettet NAV_TIMEOUT_MS. Naar tiden er gaaet, serverer vi kopien og
+ * lader hentningen loebe faerdig i baggrunden, saa cachen er frisk til naeste
+ * opstart. Har vi ingen kopi, venter vi paa nettet praecis som foer.
+ *
+ * Konsekvens ved en langsom forbindelse lige efter en udrulning: kunden kan
+ * faa den forrige version én gang. Baggrunds-hentningen opdaterer kopien, og
+ * de eksisterende mekanismer (SW-update ved focus, controllerchange og
+ * vite:preloadError-selvhelbredelsen i routes/+layout.svelte) bringer hende
+ * paa den nye version. Det er en bevidst byttehandel: ét ekstra gensyn med
+ * den gamle version vejer mindre end et minuts sort skaerm.
+ */
+async function navigationSvar(event: FetchEvent): Promise<Response> {
+	const req = event.request;
+
+	// Start hentningen og reserver service workerens levetid FOER vi venter paa
+	// noget som helst. Begge dele skal ske synkront: kaldes waitUntil efter et
+	// await, kan enkelte browsere afvise det.
+	//
+	// .catch() er vigtig: uden den bliver et fejlet kald til en ubehandlet
+	// rejection inde i service workeren.
+	const fraNettet = fetch(req)
+		.then(async (res) => {
+			if (res.ok) {
+				const cache = await caches.open(NAVIGATION_CACHE);
+				await cache.put(req, res.clone());
+			}
+			return res;
+		})
+		.catch(() => null);
+
+	// Hold service workeren i live til baggrunds-hentningen er faerdig, ogsaa
+	// efter vi har svaret kunden med kopien.
+	try {
+		event.waitUntil(fraNettet);
+	} catch {
+		// Ikke kritisk. Baggrunds-opdateringen naar det maaske ikke, men kunden
+		// faar stadig sit svar.
+	}
+
+	const cache = await caches.open(NAVIGATION_CACHE);
+	const kopi = (await cache.match(req)) ?? (await caches.match('/'));
+
+	// Ingen kopi at falde tilbage paa, fx allerfoerste besoeg. Saa maa vi vente.
+	if (!kopi) {
+		const res = await fraNettet;
+		if (res) return res;
+		throw new Error('offline og ingen cache');
+	}
+
+	const svar = await Promise.race([
+		fraNettet,
+		new Promise<null>((afslut) => setTimeout(() => afslut(null), NAV_TIMEOUT_MS))
+	]);
+
+	return svar ?? kopi;
+}

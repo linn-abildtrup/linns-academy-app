@@ -19,10 +19,29 @@
 		<link rel="icon" type="image/svg+xml" href="/icon.svg" />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<!-- Skrifterne hentes UDEN at blokere foerste optegning. Som almindeligt
+		     stylesheet naegter browseren at tegne noget som helst foer Googles
+		     server har svaret, og det er den eneste ting i hele appen der stadig
+		     hentes udefra. Paa en doed mobilforbindelse blev det til en tom
+		     skaerm i lang tid.
+		     media="print" faar browseren til at hente filen uden at vente paa
+		     den, og onload saetter den i brug saa snart den er hjemme. Teksten
+		     tegnes i mellemtiden med reserve-skriften, praecis som display=swap
+		     allerede goer i dag.
+		     Skrifterne bruges kun af den gamle app. /ny har sine egne indlejret,
+		     saa der var ventetiden ren spildtid. -->
 		<link
 			href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,700&family=DM+Sans:wght@400;500;600;700&display=swap"
 			rel="stylesheet"
+			media="print"
+			onload="this.media='all'"
 		/>
+		<noscript>
+			<link
+				href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,700&family=DM+Sans:wght@400;500;600;700&display=swap"
+				rel="stylesheet"
+			/>
+		</noscript>
 		<title>Linn's Academy</title>
 		%sveltekit.head%
 	</head>
