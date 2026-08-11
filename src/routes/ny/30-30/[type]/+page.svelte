@@ -33,8 +33,9 @@
 	import MaengdeArk from '$lib/components/ny/MaengdeArk.svelte';
 	import VaelgArk, { type Valg } from '$lib/components/ny/VaelgArk.svelte';
 	import OpskriftArk from '$lib/components/ny/OpskriftArk.svelte';
+	import OpskriftListe from '$lib/components/ny/OpskriftListe.svelte';
 	import { hentMineCustomFodevarer, hentFavoritter } from '$lib/firestore/kost';
-	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
+	import { hentOpskrifter3, type Opskrift3 } from '$lib/firestore/opskrifter3';
 	import { parseOpskriftMakro } from '$lib/content/opskrifter';
 	import type { Opskrift } from '$lib/content/opskrifter';
 	import type { FavoritMaaltid } from '$lib/content/kost';
@@ -87,7 +88,7 @@
 	type Kilde = 'opskrifter' | 'favoritter' | 'mine';
 	let aabentArk = $state<Kilde | null>(null);
 	let arkHenter = $state(false);
-	let opskrifter = $state<Opskrift[]>([]);
+	let opskrifter = $state<Opskrift3[]>([]);
 	let favoritter = $state<FavoritMaaltid[]>([]);
 	let egne = $state<Fodevare[]>([]);
 	/** Den opskrift hun kigger paa. Vises oven paa listen. */
@@ -194,7 +195,7 @@
 		arkHenter = true;
 		try {
 			if (kilde === 'opskrifter' && opskrifter.length === 0) {
-				opskrifter = (await hentAlleOpskrifter()).filter((o) => o.aktiv);
+				opskrifter = await hentOpskrifter3();
 			} else if (kilde === 'favoritter' && favoritter.length === 0) {
 				favoritter = await hentFavoritter(uid);
 			} else if (kilde === 'mine' && egne.length === 0) {
@@ -220,16 +221,7 @@
 	};
 
 	const arkPoster = $derived.by<Valg[]>(() => {
-		if (aabentArk === 'opskrifter') {
-			return opskrifter.map((o) => {
-				const mk = parseOpskriftMakro(o.instruktioner);
-				return {
-					id: o.id,
-					navn: o.titel,
-					under: mk.protein ? `${Math.round(mk.protein)} g protein pr portion` : ''
-				};
-			});
-		}
+		// Opskrifter har sit eget gitter, se OpskriftListe.svelte.
 		if (aabentArk === 'favoritter') {
 			return favoritter.map((f) => ({
 				id: f.id,
@@ -267,7 +259,7 @@
 		if (kilde === 'opskrifter') {
 			const o = opskrifter.find((x) => x.id === id);
 			if (!o) return;
-			aabenOpskrift = o;
+			aabenOpskrift = o.raa;
 			return;
 		}
 
@@ -573,7 +565,14 @@
 	/>
 {/if}
 
-{#if aabentArk}
+{#if aabentArk === 'opskrifter'}
+	<OpskriftListe
+		{opskrifter}
+		henter={arkHenter}
+		onvaelg={vaelgFraArk}
+		onluk={() => (aabentArk = null)}
+	/>
+{:else if aabentArk}
 	<VaelgArk
 		titel={arkTitel[aabentArk]}
 		poster={arkPoster}

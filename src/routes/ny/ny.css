@@ -61,6 +61,11 @@
 	/* Positiv, gennemfoert */
 	--sage: #86a188;
 	--sage-tint: #e7efe5;
+	--sage-tekst: #46603f;
+
+	/* Snack. Egen farve saa de fem maaltider kan skelnes paa opskrift-fliserne. */
+	--ler-tint: #f4e6de;
+	--ler-tekst: #8a5439;
 
 	--shadow: 0 1px 2px rgba(80, 55, 40, 0.05), 0 12px 28px rgba(90, 62, 44, 0.08);
 	--shadow-soft: 0 1px 2px rgba(80, 55, 40, 0.04), 0 6px 16px rgba(90, 62, 44, 0.06);
@@ -4835,4 +4840,308 @@ button.tm-ikon:active > span {
 .tm-ekstra b {
 	font-weight: 700;
 	color: var(--ink-2);
+}
+
+/* ============================================================
+   Opskrift-listen i 30-30 beregneren, se OpskriftListe.svelte.
+
+   To i bredden med farvet flise efter maaltid. Gitteret bliver det
+   samme naar hun soeger, der bliver bare faerre fliser: et layout der
+   skifter facon under fingrene er forvirrende.
+
+   Reglerne staar top-level og IKKE under .ny-app, fordi arket
+   portalleres ud til body. Derfor faar knapperne deres egen nulstilling
+   her i stedet for at arve .ny-app-resettet.
+   ============================================================ */
+
+.ol-ark {
+	position: relative;
+	width: 100%;
+	background: var(--oat);
+	border-radius: 22px 22px 0 0;
+	padding: 9px 13px calc(16px + env(safe-area-inset-bottom, 0px));
+	box-shadow: 0 -10px 30px rgba(50, 34, 24, 0.2);
+	height: 86vh;
+	display: flex;
+	flex-direction: column;
+}
+
+.ol-titel {
+	font-family: var(--serif);
+	font-size: calc(19px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 0 44px 10px 0;
+}
+
+.ol-soegfelt {
+	position: relative;
+	flex-shrink: 0;
+}
+
+.ol-soeg {
+	width: 100%;
+	box-sizing: border-box;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	padding: 12px 14px;
+	font-family: var(--sans);
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	color: var(--espresso);
+	min-height: 46px;
+}
+
+.ol-soeg:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 1px;
+}
+
+/* Antal traeffere staar i selve feltet, saa hun ved besked uden at
+   taelle fliser. Peger ikke, saa den ikke stjaeler trykket paa feltet. */
+.ol-tael {
+	position: absolute;
+	right: 13px;
+	top: 50%;
+	transform: translateY(-50%);
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-3);
+	background: var(--paper);
+	padding-left: 8px;
+	pointer-events: none;
+}
+
+.ol-filtre {
+	display: flex;
+	gap: 6px;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+	margin-top: 9px;
+	padding-bottom: 2px;
+	flex-shrink: 0;
+}
+
+.ol-filtre::-webkit-scrollbar {
+	display: none;
+}
+
+.ol-chip {
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	padding: 7px 13px;
+	font-family: var(--sans);
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-2);
+	/* Maalgruppen skal kunne ramme knappen med en tommelfinger. */
+	min-height: 38px;
+	cursor: pointer;
+}
+
+.ol-chip.valgt {
+	background: var(--plum);
+	border-color: var(--plum);
+	color: #fff;
+}
+
+.ol-chip.diet {
+	border-style: dashed;
+}
+
+.ol-chip.diet.valgt {
+	background: var(--sage-tint);
+	border-color: var(--sage);
+	border-style: solid;
+	color: var(--sage-tekst);
+}
+
+.ol-chip.ryd {
+	border-style: dashed;
+	color: var(--ink-3);
+}
+
+.ol-chip:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.ol-n {
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	opacity: 0.7;
+	font-variant-numeric: tabular-nums;
+}
+
+.ol-liste {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	margin-top: 10px;
+}
+
+.ol-tom {
+	margin: 22px 6px;
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	line-height: 1.5;
+}
+
+.ol-gitter {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+	padding-bottom: 8px;
+}
+
+.ol-flise {
+	display: flex;
+	flex-direction: column;
+	background: var(--paper);
+	border: 0;
+	border-radius: 14px;
+	box-shadow: var(--shadow-soft);
+	overflow: hidden;
+	padding: 0;
+	font-family: var(--sans);
+	text-align: left;
+	color: var(--espresso);
+	cursor: pointer;
+}
+
+.ol-flise:active {
+	background: var(--paper-2);
+}
+
+.ol-flise:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+/* Billede og farve har SAMME plads og facon, saa den dag der kommer et
+   foto glider det ind uden at layoutet flytter sig. */
+.ol-top {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 62px;
+	flex-shrink: 0;
+}
+
+.ol-foto {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.ol-bogstav {
+	font-family: var(--serif);
+	font-size: calc(24px * var(--fs-scale, 1));
+	font-weight: 600;
+	opacity: 0.55;
+}
+
+.f-morgenmad {
+	background: var(--sage-tint);
+	color: var(--sage-tekst);
+}
+
+.f-frokost {
+	background: var(--honey-tint);
+	color: var(--honey-deep);
+}
+
+.f-aftensmad {
+	background: var(--plum-tint);
+	color: var(--plum-deep);
+}
+
+.f-snack {
+	background: var(--ler-tint);
+	color: var(--ler-tekst);
+}
+
+.f-andet {
+	background: var(--paper-2);
+	color: var(--ink-3);
+}
+
+/* Daekker fotoet farven, staar maaltidet som et lille maerkat i stedet. */
+.ol-maerkat {
+	position: absolute;
+	left: 7px;
+	bottom: 6px;
+	font-size: calc(8.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	background: rgba(255, 255, 255, 0.85);
+	color: var(--espresso);
+	border-radius: 999px;
+	padding: 2px 7px;
+}
+
+.ol-tekst {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	flex: 1;
+	padding: 8px 10px 10px;
+}
+
+/* Tre linjer. Medianen paa titlerne er 36 tegn og den laengste 83, saa
+   én linje ville klippe halvdelen midt i navnet. */
+.ol-navn {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1.28;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.ol-navn mark {
+	background: var(--honey-tint);
+	color: var(--honey-deep);
+	border-radius: 3px;
+	padding: 0 2px;
+	font-weight: 700;
+}
+
+.ol-makro {
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-top: auto;
+}
+
+/* Grunden til at flisen kom med, naar ordet ikke staar i titlen. 56% af
+   alle traeffere ligger kun i ingredienser eller beskrivelse, saa uden
+   den linje ville over halvdelen af fliserne ligne en fejl. */
+.ol-grund {
+	display: flex;
+	gap: 4px;
+	align-items: baseline;
+	margin-top: 4px;
+	padding: 3px 6px;
+	background: var(--paper-2);
+	border-radius: 6px;
+	font-size: calc(10px * var(--fs-scale, 1));
+	line-height: 1.3;
+	color: var(--ink-2);
+}
+
+.ol-grund-ikon {
+	color: var(--ink-3);
+	flex-shrink: 0;
 }
