@@ -148,7 +148,7 @@ Bemærk sidegevinsten: før rettelsen fandtes `ANTHROPIC_API_KEY` slet ikke som 
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 914 tests lige nu, alle grønne
+npm test                               # 916 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -250,7 +250,7 @@ Kort: bundmenuen er nu Forside, **30-30**, Snak, Udvikling, Profil. Træning nå
 
 **30-30 beregneren er bygget og ude** pr 11. august. **Madplanen er parkeret**, se SPEC afsnit 26: ikonet er fjernet helt, men motoren er urørt hvis den tages op igen. Ruterne er `/ny/30-30` og `/ny/30-30/[type]`. Kunden vælger måltid, ser sine hyppigste madvarer som fliser, kan søge, sætte mængde med genveje eller plus og minus, fortryde, fjerne igen, og hente fra opskrifter, favoritter og egne fødevarer.
 
-**Læs SPEC afsnit 26.4 før du fejlsøger noget visuelt i den nye flade.** De to fælder der står der kostede en aften: tokens forsvinder når noget portalles ud af `.ny-app`, og en for stærk knap-nulstilling slog komponenternes egen stil ihjel.
+**Læs SPEC afsnit 26.4 og 26.5 før du fejlsøger noget visuelt i den nye flade, og før du lægger noget nyt i skallen.** De to fælder der står der kostede en aften: tokens forsvinder når noget portalles ud af `.ny-app`, og en for stærk knap-nulstilling slog komponenternes egen stil ihjel.
 
 ### Bevidst udskudt
 

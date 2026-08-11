@@ -855,6 +855,64 @@ i stedet for at hoppe tilfældigt rundt.
 opslag over 45 dage hver gang kunden åbner et måltid ville være spild, og
 vaner ændrer sig ikke på et kvarter.
 
+## 26.5 Udvidet næring: kulhydrat, fedt og kalorier
+
+Linns beslutning 11. august, efter at have set de fire forslag.
+
+### Hvor tallene står
+
+**Protein og fiber står i kortet**, med striben mod de 30 g. Uændret. Det er
+metodens tal, og de skal beholde deres vægt.
+
+**Kulhydrat, fedt og kalorier står som en fri linje under kortet**, uden
+baggrund, dæmpet. Udgave C af fire. Grunden til at den vandt: kortet beholder
+sin vægt, og de tre andre føles som noget ekstra i stedet for som en del af
+målet. Havde de stået inde i kortet, ville skærmen se ud som om alle fem tal
+er lige vigtige.
+
+**Samme opdeling i hver række under "I dette måltid":** mængde, protein og
+fiber i normal farve, resten dæmpet bagefter. Og i mængde-arket når kunden
+vælger en fødevare.
+
+**Der står altid hvad tallene er.** Før stod der bare "5 g" ud for en madvare,
+og man kunne ikke vide om de fem gram var protein, fiber eller vægten af
+pastaen.
+
+### Gemmes altid, vises efter adgang
+
+**De tre tal gemmes ALTID når der registreres**, også for kunder der ikke må
+se dem. Det er en bevidst beslutning, ikke et tilfælde.
+
+Grunden: giver Linn en dag et hold adgang til udvidet næring, skal tallene
+også være der for det de allerede har tastet. Ellers ville kunden få en
+halvtom historik, og det ville ligne en fejl.
+
+**Hvad der gemmes og hvad der vises er to forskellige ting.** Adgangen
+afgøres i visningen. Rækker gemt før 11. august har ikke de tre felter. De
+tæller nul med i summen i stedet for at vælte den, og felterne vises bare ikke
+på den enkelte række.
+
+### Hvem må se dem
+
+**Linns regel 11. august:** Kickstart ser kun protein og fiber. Kropsro og
+medlemmer ser det hele. Admin kan ændre det pr kundetype på
+`/app/admin/feature-adgang`.
+
+**Reglen er IKKE håndhævet endnu, og det er med vilje.** Skemaet siger i dag ja
+til alle fire kundetyper, også Kickstart. Målt 11. august: **556 kunder har
+Kickstart som seneste forløb, og 160 af dem har selv slået udvidet næring til**
+og bruger den i den gamle app. De skal ikke miste noget uden varsel.
+
+Reglen får først virkning den dag Linn ændrer skemaet i admin. Så gælder den
+både i den gamle og den nye app, og hun bestemmer selv hvornår.
+
+**Adgangen hentes i `firestore/featureAdgang3.ts`, ikke i skallen.** Første
+forsøg lagde hentningen i `routes/ny/+layout.svelte`, altså det der omgiver
+alle sider, og kort efter var appen helt blank uden at årsagen kunne findes.
+Vi rullede tilbage og byggede det i mindre bidder. **Læg ikke noget nyt i
+skallen uden en god grund.** Skemaet bruges ét sted og hentes ét sted, så en
+fejl kun kan ramme måltidsskærmen.
+
 ## 26.4 To fælder i den nye flade, som kostede tid
 
 Læs de her to inden du fejlsøger noget der ligner.
