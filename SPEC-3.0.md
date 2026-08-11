@@ -2,7 +2,7 @@
 
 **Dato:** 3. august 2026
 **Status:** Specifikation. Der er IKKE skrevet kode.
-**Baggrund:** Sparring med Linn og Bo, august 2026. Erstatter den ikke-implementerede 2.0-plan i `handover-til-naeste-chat-v27.md`.
+**Baggrund:** Sparring med Linn og Bo, august 2026. Erstatter den ikke-implementerede 2.0-plan i `arkiv/handover-til-naeste-chat-v27.md`.
 
 > **Formål:** Appen skal kunne stå alene som et abonnements-produkt, samtidig med at Linns forløb kører videre inde i den. Det kræver, at kunden bliver omdrejningspunktet i stedet for forløbet.
 
