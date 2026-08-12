@@ -14,17 +14,30 @@
 	import type { Opskrift } from '$lib/content/opskrifter';
 	import { formatMaengde, parseOpskriftMakro, skalerMaengde } from '$lib/content/opskrifter';
 	import { formatPortion } from '$lib/content/maengde3';
+	import { HJERTE_ETIKET } from '$lib/content/favoritOpskrift3';
 	import { portal } from '$lib/actions/portal';
 
 	interface Props {
 		opskrift: Opskrift;
 		maaltidLabel: string;
 		gemmer?: boolean;
+		/** Har hun markeret den her opskrift? */
+		erFavorit?: boolean;
 		ongem: (portioner: number) => void;
+		/** Slaar bogmaerket til eller fra. Udeladt = intet hjerte. */
+		onfavorit?: (() => void) | null;
 		ontilbage: () => void;
 	}
 
-	let { opskrift, maaltidLabel, gemmer = false, ongem, ontilbage }: Props = $props();
+	let {
+		opskrift,
+		maaltidLabel,
+		gemmer = false,
+		erFavorit = false,
+		ongem,
+		onfavorit = null,
+		ontilbage
+	}: Props = $props();
 
 	const basis = $derived(opskrift.defaultPortioner || 1);
 	let portioner = $state(1);
@@ -108,8 +121,37 @@
 			{/if}
 		</div>
 
-		<button type="button" class="ma-gem op-gem" disabled={gemmer} onclick={() => ongem(portioner)}>
-			{gemmer ? 'Gemmer' : `Læg i ${maaltidLabel.toLowerCase()}`}
-		</button>
+		<!-- Hjertet sidder HER, ved siden af den knap hun i forvejen trykker paa,
+		     saa hun ikke skal flytte haanden op i hjoernet. Linns valg 12. august.
+		     Se SPEC-3.0.md. -->
+		<div class="op-gem-rk">
+			<button type="button" class="ma-gem op-gem" disabled={gemmer} onclick={() => ongem(portioner)}>
+				{gemmer ? 'Gemmer' : `Læg i ${maaltidLabel.toLowerCase()}`}
+			</button>
+			{#if onfavorit}
+				<button
+					type="button"
+					class="op-hj"
+					class:fyldt={erFavorit}
+					aria-pressed={erFavorit}
+					aria-label={HJERTE_ETIKET}
+					onclick={onfavorit}
+				>
+					<svg
+						viewBox="0 0 24 24"
+						fill={erFavorit ? 'currentColor' : 'none'}
+						stroke="currentColor"
+						stroke-width="1.9"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path
+							d="M12 20.5s-7.1-4.4-9-8.7C1.6 8.5 3.3 5.2 6.6 5.2c1.9 0 3.2 1 4 2.2l1.4 1.9 1.4-1.9c.8-1.2 2.1-2.2 4-2.2 3.3 0 5 3.3 3.6 6.6-1.9 4.3-9 8.7-9 8.7Z"
+						/>
+					</svg>
+				</button>
+			{/if}
+		</div>
 	</div>
 </div>

@@ -35,6 +35,8 @@
 	import OpskriftArk from '$lib/components/ny/OpskriftArk.svelte';
 	import OpskriftListe from '$lib/components/ny/OpskriftListe.svelte';
 	import { hentMineCustomFodevarer, hentFavoritter } from '$lib/firestore/kost';
+	import { favoritterFra, erFavorit, skiftFavorit } from '$lib/content/favoritOpskrift3';
+	import { saetFavoritOpskrift } from '$lib/firestore/favoritOpskrift3';
 	import { hentOpskrifter3, type Opskrift3 } from '$lib/firestore/opskrifter3';
 	import { kategoriForMaaltid } from '$lib/content/opskriftKategori3';
 	import { parseOpskriftMakro } from '$lib/content/opskrifter';
@@ -94,6 +96,17 @@
 	let egne = $state<Fodevare[]>([]);
 	/** Den opskrift hun kigger paa. Vises oven paa listen. */
 	let aabenOpskrift = $state<Opskrift | null>(null);
+
+	// Favorit-opskrifter, altsaa bogmaerker. Se content/favoritOpskrift3.ts.
+	//
+	// Sandheden staar paa kundens dokument, men vi holder en lokal kopi, saa
+	// hjertet skifter i samme oejeblik hun trykker. Uden den ville hun vente
+	// paa at skrivningen naaede serveren og kom tilbage gennem lytTilUserDoc,
+	// og et hjerte der halter efter fingeren foeles i stykker.
+	//
+	// null betyder "ikke roert endnu, brug det der staar paa kunden".
+	let favoritRettet = $state<string[] | null>(null);
+	const favoritOpskrifter = $derived(favoritRettet ?? favoritterFra(userDoc));
 
 	const erIDag = $derived(dato === iDag);
 	const kanFrem = $derived(dato < iDag);
@@ -317,6 +330,30 @@
 			console.error('[ny] kunne ikke laegge opskriften i', e);
 		} finally {
 			gemmer = false;
+		}
+	}
+
+	/**
+	 * Slaar bogmaerket til eller fra paa den opskrift hun kigger paa.
+	 *
+	 * Visningen rettes foerst, saa hjertet skifter med det samme, og rulles
+	 * tilbage hvis skrivningen fejler. Vi viser ikke en fejlbesked: hun har
+	 * ikke mistet noget, og et bogmaerke er ikke vigtigt nok til at afbryde
+	 * hende midt i at registrere sin mad.
+	 */
+	async function skiftFavoritOpskrift() {
+		const uid = user?.uid;
+		const id = aabenOpskrift?.id;
+		if (!uid || !id) return;
+
+		const foer = favoritOpskrifter;
+		const skalVaere = !erFavorit(foer, id);
+		favoritRettet = skiftFavorit(foer, id);
+		try {
+			await saetFavoritOpskrift(uid, id, skalVaere);
+		} catch (e) {
+			console.warn('[ny] kunne ikke gemme favorit-opskriften', e);
+			favoritRettet = foer;
 		}
 	}
 
@@ -590,7 +627,9 @@
 		opskrift={aabenOpskrift}
 		maaltidLabel={LABELS[type]}
 		{gemmer}
+		erFavorit={erFavorit(favoritOpskrifter, aabenOpskrift.id)}
 		ongem={gemOpskrift}
+		onfavorit={skiftFavoritOpskrift}
 		ontilbage={() => (aabenOpskrift = null)}
 	/>
 {/if}

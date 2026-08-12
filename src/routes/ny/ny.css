@@ -4788,6 +4788,72 @@ button.tm-ikon:active > span {
 	flex-shrink: 0;
 }
 
+/* ── Hjertet ved gem-knappen ────────────────────────────────── */
+/*
+   Hjertet sidder ved siden af "Laeg i", fordi det er dér haanden er i
+   forvejen. Linns valg 12. august, se SPEC-3.0.md.
+
+   Raekken arver .ma-gem's margin-top, saa knappen selv skal have den
+   nulstillet. Ellers ville de to elementer staa i hver sin hoejde.
+*/
+.op-gem-rk {
+	display: flex;
+	align-items: stretch;
+	gap: 8px;
+	margin-top: 14px;
+	flex-shrink: 0;
+}
+
+.op-gem-rk .op-gem {
+	flex: 1;
+	margin-top: 0;
+}
+
+.op-hj {
+	flex: 0 0 auto;
+	width: 54px;
+	min-height: 50px;
+	border-radius: 14px;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	color: var(--ink-3);
+	display: grid;
+	place-items: center;
+	cursor: pointer;
+	padding: 0;
+	transition: none;
+}
+
+.op-hj svg {
+	width: 24px;
+	height: 24px;
+	display: block;
+}
+
+/* Markeret. Samme blomme som knappen ved siden af, saa de to tydeligt
+   hoerer sammen og hjertet ikke ligner en anden slags handling. */
+.op-hj.fyldt {
+	background: var(--plum-tint);
+	border-color: var(--plum-tint);
+	color: var(--plum);
+}
+
+.op-hj:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.op-hj svg {
+		transition:
+			transform 140ms ease,
+			fill 140ms ease;
+	}
+	.op-hj.fyldt svg {
+		transform: scale(1.08);
+	}
+}
+
 /* Udvidet naering i maengde-arket. Protein og fiber er metodens tal og
    staar groent. Kulhydrat og fedt er til orientering og staar daempet,
    saa skaermen ikke ser ud som om alle fire er lige vigtige. */
