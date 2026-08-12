@@ -24,6 +24,7 @@
 	import { KATEGORIER3, KATEGORI_NAVN, type Kategori3 } from '$lib/content/opskriftKategori3';
 	import {
 		START_PORTIONER,
+		arkBillede,
 		ingrediensMaengde,
 		makroFor,
 		type MinOpskrift3
@@ -39,6 +40,10 @@
 		ongem: (portioner: number) => void;
 		onkategorier: (kategorier: Kategori3[]) => void;
 		onret: () => void;
+		/** Hun har valgt et foto af retten til flisen. */
+		onbillede: (fil: File) => void;
+		/** Sat mens billedet laegges op. */
+		lagerBillede?: boolean;
 		onslet: () => void;
 		ontilbage: () => void;
 	}
@@ -52,9 +57,18 @@
 		ongem,
 		onkategorier,
 		onret,
+		onbillede,
+		lagerBillede = false,
 		onslet,
 		ontilbage
 	}: Props = $props();
+
+	let billedeInput: HTMLInputElement | null = $state(null);
+
+	function valgtBillede(e: Event) {
+		const fil = (e.target as HTMLInputElement).files?.[0];
+		if (fil) onbillede(fil);
+	}
 
 	// Kun STARTvaerdien. Arket bygges forfra hver gang hun aabner en
 	// opskrift, saa den starter altid paa én portion.
@@ -90,9 +104,35 @@
 		<button type="button" class="ma-luk" onclick={ontilbage} aria-label="Tilbage til listen">×</button>
 
 		<div class="op-rul">
-			{#if opskrift.billedeUrl}
-				<img class="op-billede" src={opskrift.billedeUrl} alt="" />
+			{#if arkBillede(opskrift)}
+				<img class="op-billede" src={arkBillede(opskrift)} alt="" />
 			{/if}
+
+			<!-- Et foto af RETTEN, til flisen i gitteret. Opskrift-fotoet
+			     bliver staaende: det er kogebogssiden AI'en laeste, og da
+			     der ikke gemmes nogen fremgangsmaade er det hendes eneste
+			     opskrift paa hvordan retten laves. -->
+			<input
+				class="no-input"
+				type="file"
+				accept="image/*"
+				bind:this={billedeInput}
+				onchange={valgtBillede}
+			/>
+			<button
+				type="button"
+				class="mo-foto"
+				disabled={lagerBillede}
+				onclick={() => billedeInput?.click()}
+			>
+				{#if lagerBillede}
+					Lægger billedet op
+				{:else if opskrift.madBilledeUrl}
+					Skift billedet af retten
+				{:else}
+					Tag et billede af retten
+				{/if}
+			</button>
 
 			<h2 class="op-titel" id="mo-titel">{opskrift.navn}</h2>
 			<p class="mo-egen">Din egen opskrift</p>

@@ -81,7 +81,7 @@ gamle app og må kun læses.
 | `content/hurtigStart3.ts` | 3.0's opstartsregel plus `opstartsBillede()`. Se 9.7 | 13 |
 | `content/favoritOpskrift3.ts` | Favorit-opskrifter, altså bogmærker. Se 9.8 | 22 |
 | `content/fasteMaaltider3.ts` | Faste måltider, altså "byg et måltid". Se 9.10 | 36 |
-| `content/mineOpskrifter3.ts` | Kundens egne opskrifter. Se 9.11 | 61 |
+| `content/mineOpskrifter3.ts` | Kundens egne opskrifter. Se 9.11 | 66 |
 | `content/opskriftPortion3.ts` | Portioner og makro. **Regnereglen**, se 9.9 | 14 |
 | `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid. Se 9.9 | 20 |
 | `content/beskeder3.ts` | "Til dig lige nu" | 8 |
@@ -234,7 +234,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1205 tests lige nu, alle grønne
+npm test                               # 1210 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -629,11 +629,13 @@ Reglen var spredt ud over tre skærme i to apps, og de var uenige. På de 122 op
 
 **Billedet lægges op FØR dokumentet skrives.** Den omvendte rækkefølge ville give en halv opskrift uden billede.
 
+**Hun kan tage et foto af RETTEN til flisen, og det erstatter ikke opskrift-fotoet.** `billedeUrl` er kogebogssiden AI'en læste, og da der ikke gemmes nogen fremgangsmåde er det hendes eneste opskrift på hvordan retten laves. Fotoet af maden ligger derfor i `madBilledeUrl` med sine egne felter, i to størrelser. Flisen tager madfotoet, så opskriftfotoet, så bogstavet.
+
 **Nye filer:**
 
 | Fil | Hvad | Tests |
 |---|---|---|
-| `content/mineOpskrifter3.ts` | Måltider, filtrering, portioner, makro, udkast og AI-svaret | 61 |
+| `content/mineOpskrifter3.ts` | Måltider, filtrering, portioner, makro, udkast, AI-svaret og billederne | 66 |
 | `firestore/mineOpskrifter3.ts` | Læsning, måltider og sletning | |
 | `components/ny/MinOpskriftArk.svelte` | Arket | |
 

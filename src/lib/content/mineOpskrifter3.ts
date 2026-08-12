@@ -63,6 +63,33 @@ export interface MinOpskrift3 {
 	ingredienser: MinIngrediens[];
 	makroPrPortion: MinMakro;
 	kategorier3?: Kategori3[];
+	/**
+	 * Et foto af RETTEN, taget af hende, til flisen i gitteret.
+	 *
+	 * Det er ikke det samme som `billedeUrl`. Det felt er fotoet af selve
+	 * OPSKRIFTEN, altsaa kogebogssiden eller skaermbilledet AI'en laeste,
+	 * og da der ikke gemmes nogen fremgangsmaade er det hendes eneste
+	 * opskrift paa hvordan retten laves. Derfor erstattes det aldrig, det
+	 * faar selskab.
+	 *
+	 * To stoerrelser, samme grund som paa Linns opskrifter: flisen er
+	 * 62 px hoej, og at sende et 1000 px billede til den er som at sende
+	 * en plakat for at vise et frimaerke. Se SPEC 26.7.
+	 */
+	madBilledeUrl?: string;
+	madBilledeUrlLille?: string;
+	madBilledeSti?: string;
+	madBilledeStiLille?: string;
+}
+
+/** Billedet i ARKET: retten hvis hun har taget et, ellers opskriften. */
+export function arkBillede(min: MinOpskrift3): string | null {
+	return min.madBilledeUrl ?? min.billedeUrl ?? null;
+}
+
+/** Billedet paa FLISEN. Den lille udgave hvis den findes. */
+export function fliseBillede(min: MinOpskrift3): string | null {
+	return min.madBilledeUrlLille ?? min.madBilledeUrl ?? min.billedeUrl ?? null;
 }
 
 /** Det filtreringen og soegningen ser. Se FiltrerbarOpskrift. */
@@ -150,8 +177,8 @@ export function tilListePost(min: MinOpskrift3, kategorier: Kategori3[]): MinLis
 		ingredienser: (min.ingredienser ?? []).map((i) => ({ navn: i.navn })),
 		kategorier3: kategorier,
 		dietTags: [],
-		billedeUrl: min.billedeUrl ?? null,
-		billedeUrlLille: null,
+		billedeUrl: arkBillede(min),
+		billedeUrlLille: fliseBillede(min),
 		protein: min.makroPrPortion?.protein ?? null,
 		fiber: min.makroPrPortion?.fiber ?? null,
 		min

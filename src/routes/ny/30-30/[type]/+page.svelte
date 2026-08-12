@@ -93,6 +93,7 @@
 	import {
 		gemMinOpskrift3,
 		opretMinOpskrift3,
+		saetMadBillede,
 		hentBrugteOpskrifter,
 		hentMineOpskrifter3,
 		saetKategorier3,
@@ -197,6 +198,8 @@
 	let nyFejl = $state<string | null>(null);
 	/** Udkastet AI'en har laest, og billedet der skal gemmes med det. */
 	let nytUdkast = $state<{ start: OpskriftUdkast; billede: Blob | null } | null>(null);
+	/** Sat mens hendes foto af retten laegges op. */
+	let lagerBillede = $state(false);
 
 	// Favorit-opskrifter, altsaa bogmaerker. Se content/favoritOpskrift3.ts.
 	//
@@ -655,6 +658,39 @@
 			console.error('[ny] kunne ikke gemme den nye opskrift', e);
 		} finally {
 			gemmer = false;
+		}
+	}
+
+	/**
+	 * Hendes foto af RETTEN, til flisen. Opskrift-fotoet roeres ikke, se
+	 * mineOpskrifter3.ts.
+	 */
+	async function saetBilledeAfRetten(fil: File) {
+		const uid = user?.uid;
+		const o = aabenEgen;
+		if (!uid || !o || lagerBillede) return;
+		lagerBillede = true;
+		try {
+			const saet = await forberedBillede(fil);
+			const nye = await saetMadBillede(
+				uid,
+				o.id,
+				{ stor: saet.stor.blob, lille: saet.lille.blob },
+				{ stor: o.madBilledeSti, lille: o.madBilledeStiLille }
+			);
+			const opdateret = { ...o, ...nye };
+			mineOpskrifter = mineOpskrifter.map((m) => (m.id === o.id ? { ...m, ...nye } : m));
+			aabenEgen = opdateret;
+		} catch (e) {
+			console.error('[ny] kunne ikke laegge billedet op', e);
+			// HEIC fra en iPhone kan ikke aabnes i alle browsere. Sker det,
+			// skal hun vide hvorfor og ikke se en teknisk fejl.
+			visKvittering({
+				slags: 'besked',
+				tekst: 'Billedet kunne ikke bruges. Prøv at vælge det på selve telefonen.'
+			});
+		} finally {
+			lagerBillede = false;
 		}
 	}
 
@@ -1168,6 +1204,8 @@
 		ongem={gemEgenOpskrift}
 		onkategorier={saetEgnesKategorier}
 		onret={retEgen}
+		onbillede={saetBilledeAfRetten}
+		{lagerBillede}
 		onslet={sletEgenOpskrift}
 		ontilbage={() => (aabenEgen = null)}
 	/>

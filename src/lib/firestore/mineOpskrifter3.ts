@@ -16,7 +16,7 @@
 // ============================================================
 
 import { collection, deleteDoc, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
-import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
+import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { db, storage } from '$lib/firebase';
 import type { Kategori3 } from '$lib/content/opskriftKategori3';
 import type {
@@ -167,4 +167,59 @@ export async function opretMinOpskrift3(
 		opdateret: nu
 	});
 	return id;
+}
+
+/**
+ * Laegger hendes foto af RETTEN paa opskriften, i to stoerrelser.
+ *
+ * Opskrift-fotoet i `billedeUrl` roeres ikke. Det er kogebogssiden
+ * AI'en laeste, og da der ikke gemmes nogen fremgangsmaade er det
+ * hendes eneste opskrift paa hvordan retten laves.
+ *
+ * Filerne laegges op FOER dokumentet opdateres, saa en halv fejl
+ * efterlader det gamle billede intakt og opskriften virker som foer.
+ * De gamle filer slettes bagefter, og kun hvis de nye ligger et andet
+ * sted. Samme raekkefoelge som billed-uploaden i admin, se SPEC 26.7.
+ */
+export async function saetMadBillede(
+	uid: string,
+	id: string,
+	billeder: { stor: Blob; lille: Blob },
+	gamleStier: { stor?: string; lille?: string }
+): Promise<{ madBilledeUrl: string; madBilledeUrlLille: string }> {
+	const stamme = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+	const stiStor = `users/${uid}/opskrift-billeder/${stamme}_ret`;
+	const stiLille = `users/${uid}/opskrift-billeder/${stamme}_ret_lille`;
+
+	const refStor = storageRef(storage, stiStor);
+	const refLille = storageRef(storage, stiLille);
+	await uploadBytes(refStor, billeder.stor, { contentType: billeder.stor.type });
+	await uploadBytes(refLille, billeder.lille, { contentType: billeder.lille.type });
+	const madBilledeUrl = await getDownloadURL(refStor);
+	const madBilledeUrlLille = await getDownloadURL(refLille);
+
+	await setDoc(
+		dokument(uid, id),
+		{
+			madBilledeUrl,
+			madBilledeUrlLille,
+			madBilledeSti: stiStor,
+			madBilledeStiLille: stiLille,
+			opdateret: serverTimestamp()
+		},
+		{ merge: true }
+	);
+
+	// Rydder op efter et tidligere billede af retten. Fejler det, er det
+	// en foraeldreloes fil og ikke noget hun maerker, saa vi afbryder ikke.
+	for (const gammel of [gamleStier.stor, gamleStier.lille]) {
+		if (!gammel || gammel === stiStor || gammel === stiLille) continue;
+		try {
+			await deleteObject(storageRef(storage, gammel));
+		} catch (e) {
+			console.warn('[ny] kunne ikke slette det gamle billede', gammel, e);
+		}
+	}
+
+	return { madBilledeUrl, madBilledeUrlLille };
 }

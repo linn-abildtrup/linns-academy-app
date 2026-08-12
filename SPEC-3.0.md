@@ -1668,6 +1668,24 @@ billed-uploaden i admin, se 26.7.
 fordi det er det samme endpoint. Det er den gamle apps regler, og de er ikke
 rørt.
 
+### Et foto af retten, til flisen
+
+**Det erstatter ikke opskrift-fotoet, det får selskab.** `billedeUrl` er fotoet
+af selve opskriften, altså kogebogssiden eller skærmbilledet AI'en læste. Da
+der **ikke gemmes nogen fremgangsmåde** nogen steder, er det billede hendes
+eneste opskrift på hvordan retten laves. Blev det skiftet ud med et foto af
+maden, ville hun miste metoden uden at nogen sagde det. Derfor ligger fotoet af
+retten i egne felter, `madBilledeUrl` og de tre der hører til.
+
+**To størrelser, samme grund som på Linns opskrifter, se 26.7.** Flisen er
+62 px høj, og at sende et 1000 px billede til den er som at sende en plakat for
+at vise et frimærke. Rækkefølgen er: filerne op først, dokumentet bagefter, og
+de gamle filer slettes til sidst.
+
+**Rækkefølgen på flisen er madfoto, så opskriftfoto, så bogstavet.** Så ser
+gitteret rigtigt ud fra dag ét for de 222 der findes, og bliver bedre efterhånden
+som hun tager billeder af maden.
+
 ### Den vigtigste regel
 
 **En opskrift uden måltid vises ALTID**, uanset hvilket filter der er sat.

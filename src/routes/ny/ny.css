@@ -6830,3 +6830,31 @@ button.tm-ikon:active > span {
 	color: var(--ink-2);
 	margin: 11px 0 0;
 }
+
+/* Foto af RETTEN, til flisen. Opskrift-fotoet bliver staaende: det er
+   kogebogssiden AI'en laeste, og da der ikke gemmes nogen fremgangsmaade
+   er det hendes eneste opskrift paa hvordan retten laves. */
+.mo-foto {
+	width: 100%;
+	background: var(--paper);
+	border: 1px dashed var(--line);
+	border-radius: 12px;
+	padding: 10px;
+	margin: 9px 0 4px;
+	font-family: var(--sans);
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--plum);
+	min-height: 44px;
+	cursor: pointer;
+}
+
+.mo-foto:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
+.mo-foto:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}

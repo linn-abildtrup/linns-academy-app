@@ -10,6 +10,8 @@ import {
 	makroForPortioner,
 	tilListePost,
 	tilUdkast,
+	arkBillede,
+	fliseBillede,
 	fraAiSvar,
 	fraUdkast,
 	hvadMangler,
@@ -429,5 +431,44 @@ describe('fraAiSvar', () => {
 
 	it('giver et udkast der kan gemmes med det samme', () => {
 		expect(udkastDuger(fraAiSvar(godt).udkast!)).toBe(true);
+	});
+});
+
+describe('billederne', () => {
+	// billedeUrl er fotoet af selve OPSKRIFTEN, altsaa kogebogssiden.
+	// madBilledeUrl er hendes foto af RETTEN. De to er ikke det samme, og
+	// det foerste maa aldrig erstattes: der gemmes ingen fremgangsmaade,
+	// saa det er hendes eneste opskrift paa hvordan retten laves.
+	it('viser opskrift-fotoet naar hun ikke har taget et af retten', () => {
+		const m = min('a', 'Suppe', { billedeUrl: 'opskrift.jpg' });
+		expect(arkBillede(m)).toBe('opskrift.jpg');
+		expect(fliseBillede(m)).toBe('opskrift.jpg');
+	});
+
+	it('lader billedet af retten vinde naar hun har taget et', () => {
+		const m = min('a', 'Suppe', {
+			billedeUrl: 'opskrift.jpg',
+			madBilledeUrl: 'ret.jpg',
+			madBilledeUrlLille: 'ret-lille.jpg'
+		});
+		expect(arkBillede(m)).toBe('ret.jpg');
+		expect(fliseBillede(m)).toBe('ret-lille.jpg');
+	});
+
+	// Flisen er 62 px hoej. Den skal have den lille, ellers henter den
+	// 38 KB hvor 17 raekker. Se SPEC 26.7.
+	it('flisen tager den lille udgave naar den findes', () => {
+		const m = min('a', 'Suppe', { madBilledeUrl: 'stor.jpg', madBilledeUrlLille: 'lille.jpg' });
+		expect(fliseBillede(m)).toBe('lille.jpg');
+	});
+
+	it('falder tilbage til den store hvis den lille mangler', () => {
+		const m = min('a', 'Suppe', { madBilledeUrl: 'stor.jpg' });
+		expect(fliseBillede(m)).toBe('stor.jpg');
+	});
+
+	it('giver null naar der slet ikke er noget billede', () => {
+		expect(arkBillede(min('a', 'Suppe'))).toBeNull();
+		expect(fliseBillede(min('a', 'Suppe'))).toBeNull();
 	});
 });
