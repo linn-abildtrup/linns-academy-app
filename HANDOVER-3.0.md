@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 12. august 2026, aften.
+Sidst opdateret 12. august 2026, sen aften.
 
 **Læs i denne rækkefølge hvis du er ny:** afsnit 2 om den vigtigste regel, afsnit 7 om fælderne, og så afsnit 9 om hvor vi står. Resten kan slås op efter behov.
 
@@ -59,7 +59,7 @@ gamle app og må kun læses.
 |---|---|
 | `src/routes/ny/+layout.svelte` | Skallen. Adgangs-gate, spærring, bundmenu, contexts for `user`, `userDoc`, `adgang` og `forlob`. **Læg ikke nyt her uden en god grund**, se SPEC 26.5 |
 | `src/routes/ny/ny.css` | Alt design. Scoped under `.ny-app`. Cirka 2.000 linjer |
-| `src/lib/components/ny/` | 27 komponenter, alle kun brugt i 3.0 |
+| `src/lib/components/ny/` | 29 komponenter, alle kun brugt i 3.0 |
 | `src/lib/utils/billede3.ts` | Skalering og webp i browseren. `billede.ts` er den gamle og må ikke røres |
 
 **Ren logik, ingen database, alt sammen testet:**
@@ -82,6 +82,8 @@ gamle app og må kun læses.
 | `content/favoritOpskrift3.ts` | Favorit-opskrifter, altså bogmærker. Se 9.8 | 22 |
 | `content/fasteMaaltider3.ts` | Faste måltider, altså "byg et måltid". Se 9.10 | 36 |
 | `content/mineOpskrifter3.ts` | Kundens egne opskrifter. Se 9.11 | 66 |
+| `content/egneFodevarer3.ts` | Kundens egne fødevarer. Se 9.12 | 22 |
+| `content/tal3.ts` | Dansk komma og Atwater. Delt af de skærme hvor hun taster næringstal | via de to |
 | `content/opskriftPortion3.ts` | Portioner og makro. **Regnereglen**, se 9.9 | 14 |
 | `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid. Se 9.9 | 20 |
 | `content/beskeder3.ts` | "Til dig lige nu" | 8 |
@@ -94,7 +96,7 @@ gamle app og må kun læses.
 |---|---|
 | `firestore/forside3.ts` | Alt til forsiden |
 | `firestore/maaltider3.ts` | Dagens måltider |
-| `firestore/plejer3.ts` | Vaner og måltider. Den første af **fire** filer i 3.0 der **skriver** kundedata |
+| `firestore/plejer3.ts` | Vaner og måltider. Den første af **fem** filer i 3.0 der **skriver** kundedata |
 | `firestore/challenge3.ts` | Challenge, både nye og gamle |
 | `firestore/nulDage3.ts` | Pause-dage |
 | `firestore/featureAdgang3.ts` | Feature-adgang. Hentes her, ikke i skallen |
@@ -105,6 +107,7 @@ gamle app og må kun læses.
 | `firestore/favoritOpskrift3.ts` | Bogmærket på en opskrift. Den anden der **skriver** kundedata. Se 9.8 |
 | `firestore/fasteMaaltider3.ts` | Faste måltider. Den tredje der **skriver** kundedata, både genvejen og dagbogen. Se 9.10 |
 | `firestore/mineOpskrifter3.ts` | Kundens egne opskrifter. Den fjerde der **skriver** kundedata. Se 9.11 |
+| `firestore/egneFodevarer3.ts` | Kundens egne fødevarer. Den femte der **skriver** kundedata. Se 9.12 |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
@@ -234,7 +237,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1210 tests lige nu, alle grønne
+npm test                               # 1232 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -640,6 +643,30 @@ Reglen var spredt ud over tre skærme i to apps, og de var uenige. På de 122 op
 | `components/ny/MinOpskriftArk.svelte` | Arket | |
 
 **Test-data:** `test-medlem@linnsacademy.dk` har tre opskrifter hvis id starter med `test_`. De dækker de tre tilstande: med foto og måltid, uden måltid, og uden foto. Slet dem når de ikke skal bruges mere.
+
+### 9.12 Egne fødevarer og de sidste huller i Mad, 12. august
+
+**Hun kan nu lave sine egne fødevarer i 3.0.** Før kunne hun kun se dem. Se SPEC 26.12 for hele gennemgangen.
+
+**To veje ind, og den anden findes ikke i den gamle app:** en knap i Mine-arket, og en når søgningen ikke finder noget. Den sidste er den vigtigste, for det er dér hun står i stå med varen i hånden. Ordet hun søgte på følger med ind i navnefeltet.
+
+**Tallene er PR 100 G, og det står tre steder.** Står det ikke på skærmen, taster hun tallene for hele pakken.
+
+**Mængde-arket åbner af sig selv når hun har gemt en ny.** Slagsen er forvalgt til Andet så hun kan springe den over, og hun kan sætte flueben ved at det er noget man drikker, så deciliter virker.
+
+**Retter hun en vare hun allerede har brugt, ændres hendes gamle registreringer ikke.** Hvert måltid gemmer sine egne tal. Der står bevidst ingenting om det på skærmen.
+
+**Hun kan også rette mængden på en linje hun har tastet**, se SPEC 26.13. Et tryk på linjen åbner mængden. Vi opdaterer det samme dokument, så linjen bliver liggende hvor den står.
+
+### 9.13 Tre bevidste nej i Mad, så de ikke tages op igen
+
+**Stregkode-scanneren: nej.** De 49 varer i den fælles fødevare-samling ligner scanninger, men **kun 3 har en rigtig stregkode**. De øvrige 46 er tastet manuelt. Scanneren er brugt tre gange i appens levetid. Delene findes hvis den skal bygges en dag, se SPEC 26.14.
+
+**Kopiér et måltid til en anden dag: nej.** Faste måltider gør det bedre.
+
+**Rediger et helt måltid: nej.** I 3.0 er hver madvare sin egen post, så der er ikke noget måltid at redigere.
+
+**Og en regel fra Linn 12. august:** en fødevare kunden opretter eller scanner må **kun kunne ses af hende selv**. Kilden er allerede lukket, `gemCommunityFodevare` kaldes ikke længere. De 49 gamle blev gennemgået, og tre blev rettet efter Linns go, med sikkerhedskopi i `backup/`. Historikken blev ikke rørt. Se SPEC 26.14.
 
 ### Efter 30-30
 

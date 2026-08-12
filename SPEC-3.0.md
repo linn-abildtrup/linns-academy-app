@@ -1734,6 +1734,159 @@ skærmene, ikke motoren.
 | `components/ny/NyOpskriftArk.svelte` | Vælg billeder og send til AI'en | |
 | `OpskriftListe.svelte` | Fik den tredje fane | |
 
+## 26.12 Egne fødevarer. LÅST 12. august
+
+I 3.0 kunne hun **se** sine egne fødevarer, men ikke lave dem. Det var det
+eneste hul i Mad uden en omvej: står hun med en vare der ikke findes i
+databasen, kan hun ikke komme videre.
+
+**Her blev der ikke målt først, og det var med vilje.** Spørgsmålet er ikke hvor
+mange der bruger funktionen, men om en kunde kan gå i stå midt i sin dag. Alt
+andet på listen har en løsning hun kan bruge i mellemtiden.
+
+### To veje ind, og den anden findes ikke i den gamle app
+
+1. En **+ Ny fødevare** knap i Mine-arket
+2. **Når søgningen ikke finder noget.** Det er dér hun står i stå: varen i
+   hånden, en tom skærm og ingen vej videre. Ordet hun søgte på følger med ind
+   i navnefeltet
+
+Vej 2 er den vigtigste. Vej 1 er den man finder hvis man leder.
+
+### Tallene er pr 100 g, og det står tre steder
+
+Hun taster dem af varedeklarationen, hvor de netop står pr 100 g. Står det ikke
+på skærmen, taster hun tallene for hele pakken, og så er hendes protein tre
+gange for højt resten af året. Derfor står det i overskriften over felterne, i
+hjælpeteksten under dem, og i listen bagefter.
+
+### Fire beslutninger
+
+**1. Slagsen er med, men forvalgt til Andet.** Linns valg: feltet skal være der,
+men hun skal kunne springe det over. 3.0 bruger kategorien til ingenting, men
+den gamle app grupperer efter den, og kunderne flyttes hold for hold.
+
+**2. Mængde-arket åbner af sig selv når hun har gemt en ny.** Den gamle app
+lægger varen i på 100 g uden at spørge, og det passer ikke til 3.0, hvor
+mængden altid vælges. Hun er jo midt i at taste sit måltid.
+
+**3. "Det er noget man drikker"**, ét afkryds. Den gamle app sætter altid nej
+til det felt, selv om datamodellen har det, så en kunde med proteinshake skal
+taste i gram. Fluebenet giver hende deciliter i mængde-arket.
+
+**4. Kalorier regnes af makroerne** hvis hun ikke selv skriver dem. Samme
+Atwater-formel som den gamle apps dialog, så de to apper aldrig kan give hver
+sit tal for den samme vare.
+
+### Retter hun en vare hun allerede har brugt
+
+**Hendes gamle registreringer ændrer sig ikke.** Hvert måltid gemmer sine egne
+tal da det blev registreret, så en rettelse rammer kun fremtiden. Det er den
+rigtige opførsel, og der står bevidst ingenting om det på skærmen: en forklaring
+om historik ville forvirre mere end den gavner. Linns valg 12. august.
+
+### Hvorfor det også lukker et hul i noget andet
+
+En **manuelt tastet linje uden makro** tæller nul gram i dagbogen uden at nogen
+siger det. Det er fejlen på 178 af de 2.905 faste måltider i drift. Hver gang
+hun laver en rigtig fødevare i stedet, kan den fejl ikke opstå.
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/egneFodevarer3.ts` | Felter, kalorier, dubletter | 22 |
+| `content/tal3.ts` | Dansk komma og Atwater, delt med opskrifterne | via de to |
+| `firestore/egneFodevarer3.ts` | Læsning, gem og sletning | |
+| `components/ny/MineFodevarerArk.svelte` | Hylden | |
+| `components/ny/NyFodevareArk.svelte` | Formularen | |
+
+## 26.13 Ret mængden på en linje. LÅST 12. august
+
+**Kan hun vælge noget til sit måltid, skal hun også kunne rette det.** Linns
+beslutning. Før kunne hun kun slette linjen og taste den igen.
+
+Et tryk på linjen åbner mængde-arket med det tal der står, og knappen siger Gem
+mængden. Fortryd sætter det gamle tilbage.
+
+**Vi opdaterer det SAMME dokument** i stedet for at slette og skrive et nyt. Så
+bliver linjen liggende hvor den står og beholder sit tidsstempel. Sletter man og
+skriver nyt, hopper den øverst, og så ser det ud som om hun har tastet den en
+gang til.
+
+**Linjen ser ud præcis som før:** ingen ramme, ingen farve, intet ikon. Det er
+ikke en knap man skal lede efter, det er linjen selv. Krydset er stadig sit
+eget, så hun ikke rammer forkert.
+
+**En linje fra en opskrift kan ikke rettes.** Den har hverken en madvare eller
+en mængde at skrue på, kun et samlet tal. Det gælder også de gamle rækker fra
+før 12. august, hvor et fast måltid blev lagt i som én samlet linje.
+
+## 26.14 De bevidste nej i Mad. LÅST 12. august
+
+Det her afsnit findes for at beslutningerne ikke bliver taget op igen om tre
+måneder. Alt herunder er fravalgt med et tal bag.
+
+### Stregkode-scanneren: nej
+
+Målt 12. august på hele fødevare-databasen: der ligger **49 varer i den fælles
+samling**, og de så ved første øjekast ud som scanninger.
+
+**Kun 3 af dem har en rigtig stregkode.** De øvrige 46 er tastet manuelt og fik
+bare et id der lignede. **Scanneren har altså været brugt tre gange i appens
+levetid.**
+
+Det er ikke nok til et fuldskærms kamera-lag, en tilladelses-flow og en
+fejlhåndtering når koden ikke findes. Og behovet er dækket: hun kan nu selv
+oprette en fødevare, se 26.12.
+
+**Bygges den alligevel en dag**, findes delene: `BarcodeScanner.svelte` med
+`@zxing/browser`, opslaget i `/api/off-search`, og Open Food Facts-læsningen i
+`content/openFoodFacts.ts`. Kun kamera-laget skal kobles på det ark vi har.
+
+### Kopiér et måltid til en anden dag: nej
+
+Faste måltider gør det bedre, se 26.10: hun lægger den samme morgenmad i på
+hvilken som helst dag med ét tryk, og hun kan skifte dato på måltidsskærmen.
+Kopiér-funktionen var den gamle apps måde at gøre det på, fordi den ikke havde
+faste måltider.
+
+### Rediger et helt måltid: nej
+
+Giver ikke mening i 3.0. I den gamle app er et måltid ét dokument med mange
+varelinjer, så det skal kunne redigeres. I 3.0 er hver madvare sin egen post.
+Det der var værd at redde fra punktet, er bygget, se 26.13.
+
+### De 49 fælles fødevarer, og hvad der blev gjort ved dem
+
+**Kilden er allerede lukket.** `gemCommunityFodevare` kaldes ikke fra nogen
+skærm længere, så både scannede og manuelt oprettede varer havner i dag privat
+under kunden selv. De 49 stammer fra en tidligere udgave.
+
+**Linns regel 12. august: en fødevare hun opretter eller scanner må kun kunne
+ses af hende selv.** Begrundelsen er erfaring med at folk ikke opretter dem
+korrekt, og data gav hende ret: 45 af de 49 mangler kalorier, 46 mangler
+kulhydrat. Folk taster protein og fiber, som er det 30-30 handler om, og
+springer resten over.
+
+**Men protein-tallene holdt.** Clear Whey med 80 g passer for pulver, Optifiber
+med 83 g fiber passer for loppefrøskaller. Kun fire så forkerte ud, og den ene
+af dem, Pepsi Max med nul i alt, var faktisk rigtig.
+
+**Tre blev rettet 12. august efter Linns go**, med sikkerhedskopi i `backup/`:
+
+| Vare | Hvad | Brug |
+|---|---|---|
+| Æg | protein 26 → 13 g pr 100 g | 71 gange, 30 kunder |
+| Æg, alle tal nul | slettet | 1 gang |
+| Advokado, alle tal nul | slettet | 0 gange |
+
+**Historikken blev ikke rørt**, og det var betingelsen. Hvert måltid gemmer sine
+egne tal, så de 71 registreringer med det gamle tal står præcis som de gjorde.
+Kun fremtiden er rettet.
+
+**En ting værd at huske fra oprydningen:** ægget med de forkerte 26 gram var
+markeret som **verificeret**. Tre kunder havde stemt ok på tallet. Det siger
+hvad den stemme-mekanik er værd, og det bekræfter at den blev droppet i 3.0.
+
 ## 27. Åbne punkter på Mad
 
 - Farve på plejer-fliserne: udskudt med vilje, og de holdes hvide indtil
@@ -1759,6 +1912,13 @@ skærmene, ikke motoren.
   forsiden, så vil hun bare se hvad der findes, skal hun først vælge om det er
   morgenmad eller aftensmad. Biblioteket, som er den vej i den gamle app, er
   bevidst udskudt
+- ~~Egne fødevarer kan kun ses, ikke laves~~. **Klaret 12. august**, se 26.12
+- ~~Stregkode-scanneren mangler~~. **Bevidst nej 12. august**, se 26.14. Brugt
+  tre gange i appens levetid
+- ~~Ret og kopiér et måltid mangler~~. **Afgjort 12. august.** Mængden kan
+  rettes, se 26.13. Resten er et bevidst nej, se 26.14
+- **Tilbage i Mad:** stjerne på en enkelt fødevare, indkøbslisten, og madplanen
+  der skal have et ja eller et endeligt nej
 - ~~Der er stadig ingen vej til at gemme et MÅLTID som favorit i 3.0~~.
   **Klaret 12. august**, se 26.10. Hylden hedder nu Faste måltider, og teksten
   i arket lover ikke længere noget appen ikke holder
