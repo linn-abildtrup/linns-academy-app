@@ -21,7 +21,7 @@
 		makroForPortioner,
 		gemEtiket
 	} from '$lib/content/opskriftPortion3';
-	import { fremgangsmaade, tilberedningstid } from '$lib/content/opskriftTekst3';
+	import { fremgangsmaadeTrin, tilberedningstid } from '$lib/content/opskriftTekst3';
 	import { portal } from '$lib/actions/portal';
 
 	interface Props {
@@ -75,7 +75,7 @@
 	// samme tal én gang til som en teknisk streng midt i madlavningen. Data er
 	// uroert, se content/opskriftTekst3.ts. Tiden traekkes ud og vises for sig,
 	// for den ville ellers ryge med.
-	const trin = $derived(fremgangsmaade(opskrift.instruktioner));
+	const trin = $derived(fremgangsmaadeTrin(opskrift.instruktioner));
 	const tid = $derived(tilberedningstid(opskrift.instruktioner));
 
 	// En halv portion er en almindelig maengde, saa vi springer halve.
@@ -184,9 +184,17 @@
 				</div>
 			{/if}
 
-			{#if trin}
+			{#if trin.length > 0}
 				<div class="op-k">Fremgangsmåde</div>
-				<div class="op-instruktioner">{trin}</div>
+				<!-- Hvert trin staar for sig med luft imellem. Foer loeb de sammen
+				     til én blok, fordi opskrifterne ikke er skrevet ens: nogle har
+				     hvert trin paa sin egen linje, andre har alle fire i én linje.
+				     Se content/opskriftTekst3.ts. -->
+				<div class="op-instruktioner">
+					{#each trin as t, i (i)}
+						<p class="op-trin" class:nr={t.nummereret}>{t.tekst}</p>
+					{/each}
+				</div>
 			{/if}
 		</div>
 

@@ -4819,8 +4819,42 @@ button.tm-ikon:active > span {
 	font-size: calc(13.5px * var(--fs-scale, 1));
 	line-height: 1.6;
 	color: var(--espresso);
-	/* Fremgangsmaaden er skrevet med linjeskift, og de skal bevares. */
-	white-space: pre-wrap;
+}
+
+/*
+   Hvert trin staar for sig med luft imellem. Foer var hele feltet én blok med
+   white-space: pre-wrap, og saa loeb trinnene sammen: "1. Pisk aeggene ... 2.
+   Smelt smoerret ..." laeste som én lang saetning. Nu er opdelingen gjort i
+   teksten, se content/opskriftTekst3.ts, saa hvert trin er sit eget afsnit.
+*/
+.op-trin {
+	margin: 0;
+}
+
+.op-trin + .op-trin {
+	margin-top: 11px;
+}
+
+/*
+   Haengende indrykning paa de nummererede: ombrudte linjer stiller sig under
+   TEKSTEN og ikke under tallet, saa 1, 2 og 3 staar frit i venstre kant og
+   raekken kan taelles med oejnene.
+
+   1em passer til ét ciffer og et punktum. Bliver en opskrift saa lang at der
+   kommer to cifre, rykker teksten en anelse, og det er finere end at reservere
+   plads til noget der naesten aldrig sker.
+*/
+.op-trin.nr {
+	padding-left: 1em;
+	text-indent: -1em;
+}
+
+/* Noten til sidst, fx "Tip: ..." eller "Kan laves til 2 til 3 dage". Den er
+   ikke et trin, saa den faar lidt mere luft over sig og staar daempet. */
+.op-trin:not(.nr) + .op-trin:not(.nr),
+.op-trin.nr + .op-trin:not(.nr) {
+	margin-top: 14px;
+	color: var(--ink-2);
 }
 
 .op-gem {
