@@ -18,7 +18,12 @@
 import { collection, deleteDoc, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { Kategori3 } from '$lib/content/opskriftKategori3';
-import type { BrugtOpskrift, MinOpskrift3 } from '$lib/content/mineOpskrifter3';
+import type {
+	BrugtOpskrift,
+	MinIngrediens,
+	MinMakro,
+	MinOpskrift3
+} from '$lib/content/mineOpskrifter3';
 import { hentHistorik } from '$lib/firestore/plejer3';
 
 function samling(uid: string) {
@@ -90,4 +95,27 @@ export async function saetKategorier3(
 
 export async function sletMinOpskrift3(uid: string, id: string): Promise<void> {
 	await deleteDoc(dokument(uid, id));
+}
+
+/**
+ * Gemmer det hun har rettet. Merge, saa billedet og alt andet vi ikke
+ * roerer bliver staaende.
+ *
+ * Kulhydrat, fedt og kalorier gemmes ALTID, ogsaa naar hun ikke maa se
+ * dem og derfor ikke har kunnet rette dem. Ellers ville tallene falde
+ * bort den dag Linn giver et hold adgang til udvidet naering. Se
+ * SPEC-3.0.md 26.5.
+ */
+export async function gemMinOpskrift3(
+	uid: string,
+	id: string,
+	data: {
+		navn: string;
+		beskrivelse: string;
+		antalPortioner: number;
+		ingredienser: MinIngrediens[];
+		makroPrPortion: MinMakro;
+	}
+): Promise<void> {
+	await setDoc(dokument(uid, id), { ...data, opdateret: serverTimestamp() }, { merge: true });
 }

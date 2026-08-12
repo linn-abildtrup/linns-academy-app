@@ -82,16 +82,21 @@
 		gaetKategorier,
 		kategorierFor,
 		makroFor,
+		fraUdkast,
 		tilListePost,
-		type MinOpskrift3
+		tilUdkast,
+		type MinOpskrift3,
+		type OpskriftUdkast
 	} from '$lib/content/mineOpskrifter3';
 	import {
+		gemMinOpskrift3,
 		hentBrugteOpskrifter,
 		hentMineOpskrifter3,
 		saetKategorier3,
 		sletMinOpskrift3
 	} from '$lib/firestore/mineOpskrifter3';
 	import MinOpskriftArk from '$lib/components/ny/MinOpskriftArk.svelte';
+	import RetOpskriftArk from '$lib/components/ny/RetOpskriftArk.svelte';
 	import type { Kategori3 } from '$lib/content/opskriftKategori3';
 
 	const hentUser = getContext<() => User | null>('user');
@@ -173,6 +178,8 @@
 	let mineOpskrifter = $state<MinOpskrift3[]>([]);
 	let gaettedeKategorier = $state<Map<string, Kategori3[]>>(new Map());
 	let aabenEgen = $state<MinOpskrift3 | null>(null);
+	/** Udkastet hun retter i. Null naar rediger-arket er lukket. */
+	let retterEgen = $state<{ id: string; start: OpskriftUdkast } | null>(null);
 
 	// Favorit-opskrifter, altsaa bogmaerker. Se content/favoritOpskrift3.ts.
 	//
@@ -477,6 +484,35 @@
 			visKvittering({ slags: 'tilfoejet', ...svar });
 		} catch (e) {
 			console.error('[ny] kunne ikke laegge din egen opskrift i', e);
+		} finally {
+			gemmer = false;
+		}
+	}
+
+	function retEgen() {
+		if (!aabenEgen) return;
+		retterEgen = { id: aabenEgen.id, start: tilUdkast(aabenEgen) };
+	}
+
+	/**
+	 * Gemmer det hun har rettet. Visningen opdateres af det vi selv har
+	 * skrevet, saa arket bagved viser det nye med det samme uden at vi
+	 * skal hente hele listen igen.
+	 */
+	async function gemRettelse(udkast: OpskriftUdkast) {
+		const uid = user?.uid;
+		const r = retterEgen;
+		if (!uid || !r) return;
+		gemmer = true;
+		try {
+			const data = fraUdkast(udkast);
+			await gemMinOpskrift3(uid, r.id, data);
+			mineOpskrifter = mineOpskrifter.map((m) => (m.id === r.id ? { ...m, ...data } : m));
+			if (aabenEgen?.id === r.id) aabenEgen = { ...aabenEgen, ...data };
+			retterEgen = null;
+			visKvittering({ slags: 'besked', tekst: `${data.navn} er rettet` });
+		} catch (e) {
+			console.error('[ny] kunne ikke gemme rettelsen', e);
 		} finally {
 			gemmer = false;
 		}
@@ -989,8 +1025,21 @@
 		{visUdvidet}
 		ongem={gemEgenOpskrift}
 		onkategorier={saetEgnesKategorier}
+		onret={retEgen}
 		onslet={sletEgenOpskrift}
 		ontilbage={() => (aabenEgen = null)}
+	/>
+{/if}
+
+{#if retterEgen}
+	<RetOpskriftArk
+		start={retterEgen.start}
+		titel="Ret opskriften"
+		gemTekst="Gem ændringerne"
+		{gemmer}
+		{visUdvidet}
+		ongem={gemRettelse}
+		onluk={() => (retterEgen = null)}
 	/>
 {/if}
 

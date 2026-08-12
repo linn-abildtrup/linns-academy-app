@@ -9,6 +9,13 @@ import {
 	makroFor,
 	makroForPortioner,
 	tilListePost,
+	tilUdkast,
+	fraUdkast,
+	hvadMangler,
+	talFra,
+	talTil,
+	tomIngrediens,
+	udkastDuger,
 	type BrugtOpskrift,
 	type MinOpskrift3
 } from './mineOpskrifter3';
@@ -233,5 +240,109 @@ describe('dagbogsNavn', () => {
 
 	it('skriver en halv portion med komma', () => {
 		expect(dagbogsNavn(min('a', 'Suppe'), 0.5)).toBe('Suppe (0,5 port.)');
+	});
+});
+
+describe('at rette i en opskrift', () => {
+	const suppe = min('a', 'Mors græskarsuppe', {
+		antalPortioner: 4,
+		beskrivelse: 'Den gode',
+		ingredienser: [
+			{ navn: 'Hokkaido', maengde: 600, enhed: 'g' },
+			{ navn: 'Ingefær', maengde: 1.5, enhed: 'spsk' }
+		]
+	});
+
+	describe('talFra', () => {
+		// Dansk komma SKAL virke. Skriver hun 1,5 spsk er det halvanden.
+		it('laeser dansk komma', () => {
+			expect(talFra('1,5')).toBe(1.5);
+		});
+
+		it('laeser almindeligt punktum ogsaa', () => {
+			expect(talFra('1.5')).toBe(1.5);
+		});
+
+		it('taaler mellemrum', () => {
+			expect(talFra(' 600 ')).toBe(600);
+		});
+
+		// Et halvfaerdigt felt maa ALDRIG blive til NaN i hendes dagbog.
+		it('giver nul paa tomt og volapyk', () => {
+			expect(talFra('')).toBe(0);
+			expect(talFra('abc')).toBe(0);
+		});
+
+		// Midt i "1,5" staar der et oejeblik "1,". Det skal give 1 og ikke
+		// nul, ellers nulstiller vi hendes tal mens hun skriver det.
+		it('taaler et komma der ikke er skrevet faerdigt', () => {
+			expect(talFra('1,')).toBe(1);
+		});
+
+		it('giver nul paa negative tal', () => {
+			expect(talFra('-5')).toBe(0);
+		});
+	});
+
+	it('talTil giver dansk komma tilbage', () => {
+		expect(talTil(1.5)).toBe('1,5');
+		expect(talTil(600)).toBe('600');
+		expect(talTil(undefined)).toBe('');
+	});
+
+	it('kan gaa frem og tilbage uden at miste noget', () => {
+		const tilbage = fraUdkast(tilUdkast(suppe));
+		expect(tilbage.navn).toBe('Mors græskarsuppe');
+		expect(tilbage.antalPortioner).toBe(4);
+		expect(tilbage.ingredienser).toEqual(suppe.ingredienser);
+		expect(tilbage.makroPrPortion).toEqual(suppe.makroPrPortion);
+	});
+
+	// Hun faar en tom linje naar hun trykker tilfoej. Traekker hun sig,
+	// skal den ikke gemmes som en ingrediens uden navn.
+	it('smider tomme ingrediens-linjer vaek', () => {
+		const u = tilUdkast(suppe);
+		u.ingredienser.push(tomIngrediens());
+		expect(fraUdkast(u).ingredienser.length).toBe(2);
+	});
+
+	it('trimmer navnet og klemmer mellemrum sammen', () => {
+		const u = tilUdkast(suppe);
+		u.navn = '  Mors   græskarsuppe  ';
+		expect(fraUdkast(u).navn).toBe('Mors græskarsuppe');
+	});
+
+	it('falder tilbage til gram naar enheden er tom', () => {
+		const u = tilUdkast(suppe);
+		u.ingredienser[0].enhed = '';
+		expect(fraUdkast(u).ingredienser[0].enhed).toBe('g');
+	});
+
+	it('kan aldrig gemme under én portion', () => {
+		const u = tilUdkast(suppe);
+		u.antalPortioner = 0;
+		expect(fraUdkast(u).antalPortioner).toBe(1);
+	});
+
+	it('runder kalorier til et helt tal', () => {
+		const u = tilUdkast(suppe);
+		u.makro.kcal = '340,6';
+		expect(fraUdkast(u).makroPrPortion.kcal).toBe(341);
+	});
+
+	it('kraever et navn', () => {
+		const u = tilUdkast(suppe);
+		u.navn = '   ';
+		expect(udkastDuger(u)).toBe(false);
+		expect(hvadMangler(u)).toContain('navn');
+	});
+
+	// Hun kan have en opskrift hun kun bruger som huskeseddel. At spaerre
+	// for den ville vaere at bestemme over hendes egen mad.
+	it('tillader en opskrift helt uden makro', () => {
+		const u = tilUdkast(min('b', 'Huskeseddel'));
+		u.makro = { protein: '', fiber: '', kh: '', fedt: '', kcal: '' };
+		expect(udkastDuger(u)).toBe(true);
+		expect(fraUdkast(u).makroPrPortion.protein).toBe(0);
 	});
 });

@@ -38,6 +38,7 @@
 		visUdvidet?: boolean;
 		ongem: (portioner: number) => void;
 		onkategorier: (kategorier: Kategori3[]) => void;
+		onret: () => void;
 		onslet: () => void;
 		ontilbage: () => void;
 	}
@@ -50,6 +51,7 @@
 		visUdvidet = false,
 		ongem,
 		onkategorier,
+		onret,
 		onslet,
 		ontilbage
 	}: Props = $props();
@@ -197,9 +199,12 @@
 					</div>
 				</div>
 			{:else}
-				<button type="button" class="mo-slet-link" onclick={() => (spoergSlet = true)}>
-					Slet opskriften
-				</button>
+				<div class="mo-handlinger">
+					<button type="button" class="mo-ret" onclick={onret}>Ret opskriften</button>
+					<button type="button" class="mo-slet-link" onclick={() => (spoergSlet = true)}>
+						Slet
+					</button>
+				</div>
 			{/if}
 		</div>
 

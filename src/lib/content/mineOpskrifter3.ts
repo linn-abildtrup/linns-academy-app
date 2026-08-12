@@ -255,3 +255,130 @@ export function dagbogsNavn(min: MinOpskrift3, portioner: number): string {
 	const tal = Number.isInteger(portioner) ? String(portioner) : String(portioner).replace('.', ',');
 	return `${min.navn} (${tal} port.)`;
 }
+
+// ============================================================
+// At rette i en opskrift
+//
+// Skaermen bruges TO steder: naar hun retter en opskrift hun har, og
+// naar hun gennemgaar det AI'en har laest af et billede, foer hun
+// gemmer. Derfor arbejder den paa et udkast og ikke paa dokumentet.
+//
+// Felterne er tekst mens hun skriver, ikke tal. Et talfelt der bliver
+// til NaN midt i en indtastning er en klassisk maade at tabe det hun
+// har skrevet paa, og hun skal kunne skrive "1," foer hun skriver "5".
+// ============================================================
+
+export interface UdkastIngrediens {
+	navn: string;
+	maengde: string;
+	enhed: string;
+}
+
+export interface OpskriftUdkast {
+	navn: string;
+	beskrivelse: string;
+	antalPortioner: number;
+	ingredienser: UdkastIngrediens[];
+	makro: { protein: string; fiber: string; kh: string; fedt: string; kcal: string };
+}
+
+/**
+ * Laeser et tal som hun ville skrive det.
+ *
+ * Dansk komma skal virke: skriver hun 1,5 spsk, er det halvanden og
+ * ikke femten. Tomt og volapyk bliver til nul, saa et halvfaerdigt felt
+ * aldrig kan blive til NaN i hendes dagbog.
+ */
+export function talFra(tekst: string): number {
+	const rent = (tekst ?? '').trim().replace(',', '.').replace(/\s/g, '');
+	if (!rent) return 0;
+	const n = Number(rent);
+	if (!Number.isFinite(n) || n < 0) return 0;
+	return Math.round(n * 100) / 100;
+}
+
+/** Tallet tilbage som tekst, med dansk komma. */
+export function talTil(n: number | undefined): string {
+	if (n === undefined || n === null) return '';
+	return String(n).replace('.', ',');
+}
+
+export function tilUdkast(min: MinOpskrift3): OpskriftUdkast {
+	const m = min.makroPrPortion;
+	return {
+		navn: min.navn,
+		beskrivelse: min.beskrivelse ?? '',
+		antalPortioner: min.antalPortioner || 1,
+		ingredienser: (min.ingredienser ?? []).map((i) => ({
+			navn: i.navn,
+			maengde: talTil(i.maengde),
+			enhed: i.enhed
+		})),
+		makro: {
+			protein: talTil(m?.protein ?? 0),
+			fiber: talTil(m?.fiber ?? 0),
+			kh: talTil(m?.kh ?? 0),
+			fedt: talTil(m?.fedt ?? 0),
+			kcal: talTil(m?.kcal ?? 0)
+		}
+	};
+}
+
+/**
+ * Udkastet tilbage til det der gemmes.
+ *
+ * Tomme ingrediens-linjer smides vaek. Hun faar en tom linje at skrive
+ * i naar hun trykker tilfoej, og traekker hun sig, skal den ikke gemmes
+ * som en ingrediens uden navn.
+ */
+export function fraUdkast(udkast: OpskriftUdkast): {
+	navn: string;
+	beskrivelse: string;
+	antalPortioner: number;
+	ingredienser: MinIngrediens[];
+	makroPrPortion: MinMakro;
+} {
+	return {
+		navn: udkast.navn.trim().replace(/\s+/g, ' '),
+		beskrivelse: udkast.beskrivelse.trim(),
+		antalPortioner: Math.max(1, Math.round(udkast.antalPortioner || 1)),
+		ingredienser: udkast.ingredienser
+			.filter((i) => i.navn.trim().length > 0)
+			.map((i) => ({
+				navn: i.navn.trim(),
+				maengde: talFra(i.maengde),
+				enhed: (i.enhed ?? '').trim() || 'g'
+			})),
+		makroPrPortion: {
+			protein: talFra(udkast.makro.protein),
+			fiber: talFra(udkast.makro.fiber),
+			kh: talFra(udkast.makro.kh),
+			fedt: talFra(udkast.makro.fedt),
+			kcal: Math.round(talFra(udkast.makro.kcal))
+		}
+	};
+}
+
+/**
+ * Hvad der mangler, foer den kan gemmes. Tom tekst betyder at den duer.
+ *
+ * Vi kraever kun et navn. Makroen maa gerne vaere nul: hun kan have en
+ * opskrift hun kun bruger som huskeseddel, og at spaerre for den ville
+ * vaere at bestemme over hendes egen mad.
+ */
+export function hvadMangler(udkast: OpskriftUdkast): string {
+	if (udkast.navn.trim().length === 0) return 'Opskriften skal have et navn.';
+	return '';
+}
+
+export function udkastDuger(udkast: OpskriftUdkast): boolean {
+	return hvadMangler(udkast) === '';
+}
+
+/** En tom linje at skrive i. */
+export function tomIngrediens(): UdkastIngrediens {
+	return { navn: '', maengde: '', enhed: 'g' };
+}
+
+/** Enhederne hun kan vaelge mellem. De samme som i maengde-arket. */
+export const ENHEDER = ['g', 'ml', 'dl', 'stk', 'spsk', 'tsk', 'skive'];

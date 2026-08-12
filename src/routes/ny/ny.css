@@ -6509,3 +6509,203 @@ button.tm-ikon:active > span {
 	outline: 3px solid var(--plum);
 	outline-offset: 2px;
 }
+
+/* ── At rette i en egen opskrift ───────────────────────────── */
+/*
+   Arket bruges TO steder: naar hun retter en opskrift hun har, og naar
+   hun gennemgaar det AI'en har laest af et billede foer hun gemmer.
+   Se SPEC-3.0.md 26.11.
+*/
+
+.mo-handlinger {
+	display: flex;
+	gap: 9px;
+	align-items: center;
+	margin-top: 14px;
+}
+
+.mo-ret {
+	flex: 1;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 11px;
+	font-family: var(--sans);
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--plum);
+	min-height: 46px;
+	cursor: pointer;
+}
+
+.mo-ret:active {
+	background: var(--paper-2);
+}
+
+.mo-ret:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+/* Slet staar som en daempet tekst ved siden af Ret, saa den ikke
+   indbyder til et tryk. Den spoerger stadig foer den goer noget. */
+.mo-handlinger .mo-slet-link {
+	width: auto;
+	flex: 0 0 auto;
+	padding: 11px 4px;
+}
+
+.ro-k {
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	margin: 15px 0 6px;
+}
+
+.ro-felt {
+	width: 100%;
+	box-sizing: border-box;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 11px 13px;
+	font-family: var(--sans);
+	/* 16px reelt, saa iOS ikke zoomer ind naar hun taster. */
+	font-size: calc(15px * var(--fs-scale, 1));
+	color: var(--espresso);
+	min-height: 46px;
+}
+
+.ro-felt:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 1px;
+}
+
+.ro-stepper {
+	margin-bottom: 4px;
+}
+
+.ro-hjaelp {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	line-height: 1.45;
+	margin: 0;
+}
+
+.ro-ing {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+/* Navnet faar al den plads der er tilovers, for det er det laengste.
+   Maengde og enhed staar smalt ved siden af, saa raekken bliver paa
+   én linje ogsaa paa en lille telefon. */
+.ro-i-raekke {
+	display: grid;
+	grid-template-columns: 1fr 58px 72px 32px;
+	gap: 5px;
+	align-items: center;
+}
+
+.ro-i-navn,
+.ro-i-m,
+.ro-i-e {
+	min-height: 44px;
+	padding: 9px 10px;
+	font-size: calc(14px * var(--fs-scale, 1));
+}
+
+.ro-i-m {
+	text-align: center;
+}
+
+.ro-i-e {
+	appearance: none;
+	background: var(--paper);
+}
+
+.ro-i-fjern {
+	background: none;
+	border: 0;
+	color: var(--ink-3);
+	font-size: calc(19px * var(--fs-scale, 1));
+	line-height: 1;
+	min-height: 44px;
+	cursor: pointer;
+}
+
+.ro-i-fjern:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: -2px;
+	border-radius: 8px;
+}
+
+.ro-tilfoej {
+	width: 100%;
+	background: none;
+	border: 1px dashed var(--line);
+	border-radius: 12px;
+	padding: 10px;
+	margin-top: 7px;
+	font-family: var(--sans);
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--plum);
+	min-height: 44px;
+	cursor: pointer;
+}
+
+.ro-tilfoej:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.ro-makro {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.ro-m {
+	display: grid;
+	grid-template-columns: 1fr 84px 42px;
+	gap: 8px;
+	align-items: center;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+}
+
+.ro-m input {
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 9px 10px;
+	font-family: var(--sans);
+	font-size: calc(15px * var(--fs-scale, 1));
+	color: var(--espresso);
+	text-align: center;
+	min-height: 44px;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.ro-m input:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 1px;
+}
+
+.ro-m i {
+	font-style: normal;
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.ro-mangler {
+	background: var(--honey-tint);
+	border-radius: 12px;
+	padding: 10px 12px;
+	margin: 13px 0 0;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: #6d4f22;
+}
