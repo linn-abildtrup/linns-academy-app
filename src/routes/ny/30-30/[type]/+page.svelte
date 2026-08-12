@@ -30,7 +30,8 @@
 		gemMadvare,
 		fortrydMadvare,
 		fjernMadvare,
-		gendanMadvare
+		gendanMadvare,
+		opdaterMadvare
 	} from '$lib/firestore/plejer3';
 	import { hentAlleFodevarer } from '$lib/firestore/kost';
 	import { hentAdgangsskema, maaSeUdvidetNaering } from '$lib/firestore/featureAdgang3';
@@ -146,7 +147,15 @@
 	let soegeord = $state('');
 
 	// Arket og kvitteringen
-	let valgt = $state<{ food: Fodevare; saedvanlig: { portion: number; enhedId?: string } | null } | null>(null);
+	/**
+	 * Maengde-arket. `retter` er sat naar hun aendrer en maengde hun
+	 * allerede har tastet, i stedet for at laegge noget nyt i.
+	 */
+	let valgt = $state<{
+		food: Fodevare;
+		saedvanlig: { portion: number; enhedId?: string } | null;
+		retter?: GemtMaaltid;
+	} | null>(null);
 	let gemmer = $state(false);
 	// Kvitteringen daekker begge veje: tilfoejet og fjernet. Fortryd
 	// betyder derfor enten slet igen eller gendan.
@@ -156,6 +165,8 @@
 		// skal kunne tage dem alle sammen paa én gang.
 		| { slags: 'faste'; ids: string[]; navn: string }
 		| { slags: 'fjernet'; maaltid: GemtMaaltid }
+		// Rettet en maengde. Fortryd saetter den gamle raekke tilbage.
+		| { slags: 'rettet'; foer: GemtMaaltid }
 		// Ren besked uden Fortryd, fx naar et fast maaltid er gemt. Der er
 		// intet at fortryde: hendes dagbog er ikke roert.
 		| { slags: 'besked'; tekst: string }
@@ -962,11 +973,44 @@
 		await gem(food, p.portion, p.enhedId);
 	}
 
+	/**
+	 * Hun trykker paa en linje hun allerede har tastet, for at rette
+	 * maengden. Linns beslutning 12. august: kan hun vaelge noget til sit
+	 * maaltid, skal hun ogsaa kunne rette det. Foer kunne hun kun slette.
+	 *
+	 * Kun linjer der ER en madvare kan rettes. En linje fra en opskrift
+	 * har hverken foodId eller maengde, saa der er intet at skrue paa.
+	 */
+	function retMaengde(m: GemtMaaltid) {
+		const it = m.items?.[0];
+		const food = it?.foodId ? foods.get(it.foodId) : undefined;
+		if (!food || !it?.portion) return;
+		valgt = {
+			food,
+			saedvanlig: { portion: it.portion, enhedId: it.enhedId },
+			retter: m
+		};
+	}
+
+	/** Kan linjen rettes, eller kan den kun fjernes. */
+	function kanRettes(m: GemtMaaltid): boolean {
+		const it = m.items?.[0];
+		return !!it?.foodId && !!it.portion && foods.has(it.foodId);
+	}
+
 	async function gem(food: Fodevare, portion: number, enhedId: string | undefined) {
 		const uid = user?.uid;
 		if (!uid) return;
+		const retter = valgt?.retter;
 		gemmer = true;
 		try {
+			if (retter) {
+				await opdaterMadvare({ uid, maaltidId: retter.id, food, portion, enhedId });
+				valgt = null;
+				await indlaesDagen();
+				visKvittering({ slags: 'rettet', foer: retter });
+				return;
+			}
 			const svar = await gemMadvare({ uid, dato, type, food, portion, enhedId });
 			valgt = null;
 			soegeord = '';
@@ -1013,6 +1057,9 @@
 		try {
 			if (k.slags === 'tilfoejet') {
 				await fortrydMadvare(uid, k.id);
+			} else if (k.slags === 'rettet') {
+				// Saetter hele den gamle raekke tilbage, med samme dokument-id.
+				await gendanMadvare(uid, k.foer);
 			} else if (k.slags === 'faste') {
 				// Hele det faste maaltid ud igen, og saa er der heller ikke
 				// noget at spoerge om i baandet laengere.
@@ -1180,7 +1227,19 @@
 		<div class="tm-liste">
 			{#each poster as p (p.id)}
 				<div class="tm-raekke">
-					<span class="tm-r-t">
+					<!-- Et tryk paa linjen retter maengden. Kan hun vaelge noget
+					     til sit maaltid, skal hun ogsaa kunne rette det, ikke
+					     kun slette det. Linns beslutning 12. august.
+					     En linje fra en opskrift har ingen maengde at skrue paa,
+					     og saa er den ikke en knap. -->
+					<svelte:element
+						this={kanRettes(p) ? 'button' : 'span'}
+						class="tm-r-t"
+						role={kanRettes(p) ? 'button' : undefined}
+						type={kanRettes(p) ? 'button' : undefined}
+						onclick={kanRettes(p) ? () => retMaengde(p) : undefined}
+						aria-label={kanRettes(p) ? `Ret mængden af ${p.navn}` : undefined}
+					>
 						<span class="tm-r-navn">{p.navn}</span>
 						<!-- Foer stod der bare "5 g", og man kunne ikke vide hvad
 						     de fem gram var. Nu staar maengden og hvad hver ting
@@ -1199,7 +1258,7 @@
 								<span class="daempet">{Math.round(p.totalKcal)} kcal</span>
 							{/if}
 						</span>
-					</span>
+					</svelte:element>
 					<button
 						type="button"
 						class="tm-r-fjern"
@@ -1220,6 +1279,7 @@
 		saedvanlig={valgt.saedvanlig}
 		{gemmer}
 		{visUdvidet}
+		retter={!!valgt.retter}
 		ongem={(portion, enhedId) => gem(valgt!.food, portion, enhedId)}
 		onluk={() => (valgt = null)}
 	/>
@@ -1361,6 +1421,8 @@
 				{kvittering.navn} lagt til {LABELS[type].toLowerCase()}
 			{:else if kvittering.slags === 'besked'}
 				{kvittering.tekst}
+			{:else if kvittering.slags === 'rettet'}
+				Mængden af {kvittering.foer.navn} er rettet
 			{:else}
 				{kvittering.maaltid.navn} er fjernet
 			{/if}

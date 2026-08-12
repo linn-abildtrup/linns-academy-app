@@ -6979,3 +6979,33 @@ button.tm-ikon:active > span {
 	outline: 3px solid var(--plum);
 	outline-offset: 2px;
 }
+
+/*
+   Linjen i maaltidet er en knap naar den KAN rettes. Et tryk aabner
+   maengden med det tal der staar. Kan hun vaelge noget til sit maaltid,
+   skal hun ogsaa kunne rette det, ikke kun slette det. Linns
+   beslutning 12. august.
+
+   Den ser ud praecis som foer: ingen ramme, ingen farve, venstrestillet.
+   Det er ikke en knap man skal lede efter, det er linjen selv.
+*/
+button.tm-r-t {
+	border: 0;
+	background: none;
+	padding: 0;
+	margin: 0;
+	font-family: var(--sans);
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+button.tm-r-t:active {
+	opacity: 0.65;
+}
+
+button.tm-r-t:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 3px;
+	border-radius: 8px;
+}

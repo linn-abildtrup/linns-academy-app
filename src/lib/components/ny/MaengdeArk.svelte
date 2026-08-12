@@ -38,6 +38,12 @@
 		 * gives med, saa arket ikke selv skal kende til kundetyper.
 		 */
 		visUdvidet?: boolean;
+		/**
+		 * Sat naar hun RETTER en maengde hun allerede har tastet, ikke
+		 * laegger noget nyt i. Saa skal knappen sige noget andet, ellers
+		 * ser det ud som om hun er ved at tilfoeje varen en gang til.
+		 */
+		retter?: boolean;
 		ongem: (portion: number, enhedId: string | undefined) => void;
 		onluk: () => void;
 	}
@@ -48,6 +54,7 @@
 		saedvanlig = null,
 		gemmer = false,
 		visUdvidet = false,
+		retter = false,
 		ongem,
 		onluk
 	}: Props = $props();
@@ -228,7 +235,7 @@
 			disabled={gemmer}
 			onclick={() => ongem(portion, enhedId)}
 		>
-			{gemmer ? 'Gemmer' : `Læg i ${maaltidLabel.toLowerCase()}`}
+			{gemmer ? 'Gemmer' : retter ? 'Gem mængden' : `Læg i ${maaltidLabel.toLowerCase()}`}
 		</button>
 	</div>
 </div>

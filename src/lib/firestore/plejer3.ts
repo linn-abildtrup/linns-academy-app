@@ -204,3 +204,39 @@ export async function gendanMadvare(uid: string, maaltid: GemtMaaltid): Promise<
 	});
 	glemHistorik();
 }
+
+/**
+ * Retter maengden paa noget hun allerede har tastet.
+ *
+ * Vi opdaterer det SAMME dokument i stedet for at slette og skrive et
+ * nyt. Saa bliver linjen liggende hvor den staar i maaltidet, og den
+ * beholder sit tidsstempel. Sletter vi og skriver nyt, ville den hoppe
+ * oeverst, og det ville se ud som om hun havde tastet den igen.
+ *
+ * Alle fem tal regnes om, ogsaa dem hun ikke maa se. Se SPEC-3.0.md 26.5.
+ */
+export async function opdaterMadvare(args: {
+	uid: string;
+	maaltidId: string;
+	food: Fodevare;
+	portion: number;
+	enhedId?: string;
+}): Promise<void> {
+	const { uid, maaltidId, food, portion, enhedId } = args;
+	const n = naeringFor(food, portion, enhedId);
+	await setDoc(
+		doc(db, 'users', uid, 'maaltider', maaltidId),
+		{
+			navn: food.name,
+			items: [{ foodId: food.id, portion, ...(enhedId ? { enhedId } : {}) }],
+			totalP: n.protein,
+			totalF: n.fiber,
+			totalKh: n.kh,
+			totalFedt: n.fedt,
+			totalKcal: n.kcal,
+			opdateret: serverTimestamp()
+		},
+		{ merge: true }
+	);
+	glemHistorik();
+}
