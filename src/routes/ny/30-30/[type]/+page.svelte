@@ -36,6 +36,7 @@
 	import OpskriftListe from '$lib/components/ny/OpskriftListe.svelte';
 	import { hentMineCustomFodevarer, hentFavoritter } from '$lib/firestore/kost';
 	import { favoritterFra, erFavorit, skiftFavorit } from '$lib/content/favoritOpskrift3';
+	import { makroForPortioner } from '$lib/content/opskriftPortion3';
 	import { saetFavoritOpskrift } from '$lib/firestore/favoritOpskrift3';
 	import { hentOpskrifter3, type Opskrift3 } from '$lib/firestore/opskrifter3';
 	import { kategoriForMaaltid } from '$lib/content/opskriftKategori3';
@@ -286,16 +287,34 @@
 		aabentArk = null;
 		gemmer = true;
 		try {
+			// Alle fem tal laegges sammen, ikke kun protein og fiber. De tre sidste
+			// gemmes ogsaa hvis hun ikke maa se dem, se SPEC-3.0.md 26.5.
 			let protein = 0;
 			let fiber = 0;
+			let kh = 0;
+			let fedt = 0;
+			let kcal = 0;
 			for (const it of f.items ?? []) {
 				const food = foods.get(it.foodId);
 				if (!food) continue;
 				const n = naeringFor(food, it.portion ?? 0, it.enhedId);
 				protein += n.protein;
 				fiber += n.fiber;
+				kh += n.kh;
+				fedt += n.fedt;
+				kcal += n.kcal;
 			}
-			const svar = await gemSammensat({ uid, dato, type, navn: f.navn, protein, fiber });
+			const svar = await gemSammensat({
+				uid,
+				dato,
+				type,
+				navn: f.navn,
+				protein,
+				fiber,
+				kh,
+				fedt,
+				kcal
+			});
 			await indlaesDagen();
 			visKvittering({ slags: 'tilfoejet', ...svar });
 		} catch (e) {
@@ -314,13 +333,20 @@
 		try {
 			const mk = parseOpskriftMakro(o.instruktioner);
 			const navn = portioner === 1 ? o.titel : `${o.titel} (${formatPortion(portioner)} port.)`;
+			// Alle fem tal skalerer med portionerne, og alle fem gemmes, ogsaa hvis
+			// hun ikke maa se de tre sidste. Se SPEC-3.0.md 26.5. Makroen er PR
+			// PORTION, saa defaultPortioner indgaar ALDRIG her, se
+			// content/opskriftPortion3.ts.
 			const svar = await gemSammensat({
 				uid,
 				dato,
 				type,
 				navn,
-				protein: (mk.protein ?? 0) * portioner,
-				fiber: (mk.fiber ?? 0) * portioner
+				protein: makroForPortioner(mk.protein ?? 0, portioner) ?? 0,
+				fiber: makroForPortioner(mk.fiber ?? 0, portioner) ?? 0,
+				kh: makroForPortioner(mk.kh ?? 0, portioner) ?? 0,
+				fedt: makroForPortioner(mk.fedt ?? 0, portioner) ?? 0,
+				kcal: makroForPortioner(mk.kalorier ?? 0, portioner) ?? 0
 			});
 			aabenOpskrift = null;
 			aabentArk = null;
@@ -628,6 +654,7 @@
 		opskrift={aabenOpskrift}
 		maaltidLabel={LABELS[type]}
 		{gemmer}
+		{visUdvidet}
 		erFavorit={erFavorit(favoritOpskrifter, aabenOpskrift.id)}
 		ongem={gemOpskrift}
 		onfavorit={skiftFavoritOpskrift}

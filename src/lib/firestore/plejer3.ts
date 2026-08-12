@@ -133,8 +133,12 @@ export async function gemSammensat(args: {
 	navn: string;
 	protein: number;
 	fiber: number;
+	/** Kulhydrat, fedt og kalorier. Gemmes ALTID, se nedenfor. */
+	kh?: number;
+	fedt?: number;
+	kcal?: number;
 }): Promise<GemtSvar> {
-	const { uid, dato, type, navn, protein, fiber } = args;
+	const { uid, dato, type, navn, protein, fiber, kh, fedt, kcal } = args;
 	const ref = doc(collection(db, 'users', uid, 'maaltider'));
 	await setDoc(ref, {
 		navn,
@@ -143,6 +147,17 @@ export async function gemSammensat(args: {
 		items: [{ foodId: '', portion: 1, manuel: { navn, enhed: 'portion' } }],
 		totalP: Math.round(protein * 10) / 10,
 		totalF: Math.round(fiber * 10) / 10,
+		// De tre gemmes ALTID, ogsaa for kunder der ikke maa se dem. Giver Linn
+		// en dag et hold adgang til udvidet naering, skal tallene ogsaa vaere
+		// der for det de allerede har tastet, ellers faar kunden en halvtom
+		// historik der ligner en fejl. Se SPEC-3.0.md 26.5.
+		//
+		// Foer 12. august gemte den her funktion KUN protein og fiber, saa
+		// opskrifter og favoritter brød den regel mens almindelige madvarer
+		// fulgte den. Raekker gemt foer da har ikke felterne og taeller nul med.
+		totalKh: Math.round((kh ?? 0) * 10) / 10,
+		totalFedt: Math.round((fedt ?? 0) * 10) / 10,
+		totalKcal: Math.round(kcal ?? 0),
 		oprettet: serverTimestamp(),
 		opdateret: serverTimestamp()
 	});

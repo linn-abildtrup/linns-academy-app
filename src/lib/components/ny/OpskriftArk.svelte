@@ -27,6 +27,8 @@
 		opskrift: Opskrift;
 		maaltidLabel: string;
 		gemmer?: boolean;
+		/** Maa hun se kulhydrat, fedt og kalorier? Se SPEC-3.0.md 26.5. */
+		visUdvidet?: boolean;
 		/** Har hun markeret den her opskrift? */
 		erFavorit?: boolean;
 		ongem: (portioner: number) => void;
@@ -39,6 +41,7 @@
 		opskrift,
 		maaltidLabel,
 		gemmer = false,
+		visUdvidet = false,
 		erFavorit = false,
 		ongem,
 		onfavorit = null,
@@ -61,6 +64,11 @@
 	// content/opskriftPortion3.ts for maalingerne bag.
 	const protein = $derived(makroForPortioner(makro.protein ?? 0, portioner) ?? 0);
 	const fiber = $derived(makroForPortioner(makro.fiber ?? 0, portioner) ?? 0);
+	// Alle fem skalerer ens. Kulhydrat, fedt og kalorier vises kun med adgang,
+	// men regnes altid ud, saa de kan gemmes uanset. Se SPEC-3.0.md 26.5.
+	const kh = $derived(makroForPortioner(makro.kh ?? 0, portioner) ?? 0);
+	const fedt = $derived(makroForPortioner(makro.fedt ?? 0, portioner) ?? 0);
+	const kalorier = $derived(Math.round(makroForPortioner(makro.kalorier ?? 0, portioner) ?? 0));
 
 	// En halv portion er en almindelig maengde, saa vi springer halve.
 	const SPRING = 0.5;
@@ -89,6 +97,10 @@
 				<p class="op-beskrivelse">{opskrift.beskrivelse}</p>
 			{/if}
 
+			<!-- Protein og fiber er metodens tal og staar groent. Kulhydrat og fedt
+			     er til orientering og staar daempet, saa skaermen ikke ser ud som om
+			     alle fire er lige vigtige. Samme opdeling som i maengde-arket.
+			     Se SPEC-3.0.md 26.5. -->
 			<div class="op-makro">
 				<div>
 					<div class="op-m-navn">Protein</div>
@@ -98,7 +110,20 @@
 					<div class="op-m-navn">Fiber</div>
 					<div class="op-m-tal">{formatPortion(fiber)} g</div>
 				</div>
+				{#if visUdvidet}
+					<div>
+						<div class="op-m-navn">Kulhydrat</div>
+						<div class="op-m-tal blaeg">{formatPortion(kh)} g</div>
+					</div>
+					<div>
+						<div class="op-m-navn">Fedt</div>
+						<div class="op-m-tal blaeg">{formatPortion(fedt)} g</div>
+					</div>
+				{/if}
 			</div>
+			{#if visUdvidet}
+				<div class="op-kcal">{kalorier} kcal</div>
+			{/if}
 
 			<div class="op-k">Hvor meget spiste du?</div>
 			<div class="ma-stepper op-stepper">
