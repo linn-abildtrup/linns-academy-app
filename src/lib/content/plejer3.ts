@@ -37,6 +37,13 @@ export interface PlejerPost {
 export interface HistorikMaaltid {
 	type: Maaltidstype;
 	items: { foodId?: string; portion?: number; enhedId?: string; manuel?: { navn: string } }[];
+	/**
+	 * Dagen. Fliserne her i filen bruger den ikke, men de faste maaltider
+	 * goer, for de skal laegge en hel dags maaltid sammen paa tvaers af
+	 * dokumenterne. Se fasteMaaltider3.brugsstatistik. Den ligger her og
+	 * ikke i sin egen hentning, saa de 45 dage kun hentes én gang.
+	 */
+	dato?: string;
 }
 
 /** Navne slaas op udefra, saa den her fil kan testes uden database. */

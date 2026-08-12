@@ -45,7 +45,7 @@ export async function hentHistorik(uid: string): Promise<HistorikMaaltid[]> {
 	);
 	const maaltider: HistorikMaaltid[] = snap.docs.map((d) => {
 		const m = d.data() as GemtMaaltid;
-		return { type: m.type, items: m.items ?? [] };
+		return { type: m.type, items: m.items ?? [], dato: m.dato };
 	});
 	cache = { uid, hentetMs: Date.now(), maaltider };
 	return maaltider;
