@@ -23,14 +23,17 @@ import { harIngenAdgang, harTestAdgang } from '$lib/utils/userAdgang';
 /**
  * UDRULNING. Den hurtige opstart ligger i den gamle apps login-flow, altsaa
  * noget hver eneste af de cirka 760 kunder i drift gaar igennem hver gang.
- * Derfor aabnes den ikke for alle paa én gang.
+ * Derfor blev den ikke aabnet for alle paa én gang.
  *
- * Indtil videre faar KUN admin og kunder med flaget HURTIG_START_FLAG den.
- * Alle andre koerer videre paa praecis den opstart de koerer paa i dag, linje
- * for linje. Virker den i en uges tid hos testerne, saettes den her til true,
- * og saa gaelder den alle. Det er den eneste linje der skal aendres.
+ * AABNET FOR ALLE 12. august 2026, efter at have koert bag HURTIG_START_FLAG
+ * hos admin og de to testkonti siden 11. august uden problemer.
+ *
+ * Kontakten bliver staaende med vilje. Dukker der noget op, vippes den
+ * tilbage til false, og saa er alle andre end testerne oejeblikkeligt tilbage
+ * paa den opstart de koerte paa foer. Det er den eneste linje der skal
+ * aendres, begge veje.
  */
-export const HURTIG_START_FOR_ALLE = false;
+export const HURTIG_START_FOR_ALLE = true;
 
 /**
  * Flaget der giver den hurtige opstart under udrulningen. Vi genbruger med

@@ -466,12 +466,12 @@ med 17. Det retter sig når billedet lægges på igen.
 | Tidsgrænse på app-skallen, 3 sek | Alle i drift | `service-worker.ts` |
 | Skrifterne blokerer ikke optegningen | Alle i drift | `app.html` |
 | Lagring kan ikke vælte en navigation | Alle i drift | `service-worker.ts` |
-| Hurtig opstart, gamle app | **Kun flaget** | `routes/app/+layout.svelte` |
+| Hurtig opstart, gamle app | Alle i drift, fra 12/8 | `routes/app/+layout.svelte` |
 | Hurtig opstart, 3.0 | Kun `/ny` | `routes/ny/+layout.svelte` |
 | `static/mockup` slettet, 808 KB | Alle i drift | `static/` |
 | Én fejlet fil kaster ikke resten væk | Alle i drift | `service-worker.ts` |
 
-**Den hurtige opstart i den gamle app er bag flag.** Kun admin og kunder med `ny-app` får den. Kontakten er én linje, `HURTIG_START_FOR_ALLE` i `content/hurtigStart.ts`, og der er en test der fælder hvis nogen vipper den uden at ville det. **Den skal åbnes for alle når den har kørt et par dage hos testerne.** Det er det vigtigste åbne punkt herfra.
+**Den hurtige opstart i den gamle app blev rullet ud bag flag og er nu åben for alle.** Først kun admin og kunder med `ny-app`, og **åbnet for alle 12. august** efter et døgn uden problemer. Kontakten er én linje, `HURTIG_START_FOR_ALLE` i `content/hurtigStart.ts`, og der er en test der fælder hvis nogen vipper den uden at ville det. **Kontakten bliver stående**, så et problem kan rulles tilbage med den ene linje. De to sikkerhedsregler, altså aldrig uden kopi og aldrig en lukket dør, gælder uanset kontakten.
 
 **Nye filer:**
 

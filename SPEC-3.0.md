@@ -1469,17 +1469,25 @@ efter. Se `maaAabnePaaKopi` i `content/hurtigStart.ts`, og der er test på.
 **Sidegevinst.** Kan serveren slet ikke nås, kommer kunden nu ind på kopien i
 stedet for at stå med spinneren for evigt.
 
-**Udrulning bag flag.** Det her ligger i den gamle apps login-flow, altså noget
-alle cirka 760 kunder i drift går igennem hver gang. Derfor får kun admin og
-kunder med `ny-app`-flaget den hurtige opstart indtil videre. Alle andre kører
-videre på præcis den kæde de kørte på før. Kontakten er én linje:
+**Udrulning bag flag, og så åbnet for alle.** Det her ligger i den gamle apps
+login-flow, altså noget alle cirka 760 kunder i drift går igennem hver gang.
+Derfor fik kun admin og kunder med `ny-app`-flaget den først, mens alle andre
+kørte videre på præcis den kæde de kørte på før.
+
+**Åbnet for alle 12. august**, efter at have kørt bag flaget siden 11. august
+uden problemer. Kontakten er én linje:
 
 ```ts
-export const HURTIG_START_FOR_ALLE = false;  // content/hurtigStart.ts
+export const HURTIG_START_FOR_ALLE = true;  // content/hurtigStart.ts
 ```
 
-Sættes den til `true`, gælder den alle. Der er en test der fælder hvis nogen
-kommer til at vippe den uden at ville det.
+**Kontakten bliver stående med vilje.** Dukker der noget op, sættes den til
+`false`, og så er alle andre end testerne øjeblikkeligt tilbage på den gamle
+opstart. Det er den eneste linje der skal ændres, begge veje. Der er en test
+der fælder hvis nogen kommer til at vippe den uden at ville det.
+
+**De to sikkerhedsregler gælder uanset kontakten:** der åbnes aldrig uden en
+lokal kopi, og aldrig på en kopi der ville føre til en lukket dør.
 
 **Filer:** `content/hurtigStart.ts` er reglen og tidsgrænsen, ren logik uden
 database. `userDocCache.ts` læser kopien. `userDoc.ts` er bevidst **urørt**,
@@ -1544,8 +1552,9 @@ ned til hver kunde ved hver udrulning, så 808 KB stillads kostede alle.
 
 ### 28.6 Åbne punkter på opstarten
 
-- **Åbne den hurtige opstart for alle 760.** Én linje, se 28.3. Bør vente til
-  den har kørt et par dage hos testerne
+- ~~Åbne den hurtige opstart for alle 760~~. **Klaret 12. august.** Se 28.3.
+  Kontakten står nu på `true`, og den bliver stående så den kan vippes tilbage
+  med én linje
 - **Det er ikke bekræftet på en rigtig telefon endnu** at ventetiden faktisk er
   væk. Fem flaskehalse er fundet i koden og fjernet, men problemet er aldrig
   set ske under måling. Hænger den stadig, er næste skridt at måle i stedet for

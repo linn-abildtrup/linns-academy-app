@@ -92,44 +92,58 @@ describe('maaAabnePaaKopi', () => {
 	});
 });
 
-// Udrulningen. Det her er testen der beskytter de cirka 760 kunder i drift
-// mens vi ser den hurtige opstart an. De skal koere videre paa praecis den
-// opstart de koerer paa i dag.
-describe('udrulning bag flag', () => {
-	it('giver IKKE en almindelig kunde uden flaget den hurtige opstart', () => {
-		expect(maaAabnePaaKopi(udenFlag(), false)).toBe(false);
+// Udrulningen. Foer 12. august holdt de her tests de cirka 760 kunder i drift
+// UDE af den hurtige opstart mens vi saa den an. Nu holder de fast i at alle
+// er kommet med, saa en utilsigtet vipning af kontakten faelder testen.
+describe('udrulning, aabnet for alle 12. august', () => {
+	// Faelder den her, er kontakten blevet vippet. Det kan vaere helt rigtigt,
+	// fx hvis noget dukkede op og vi ruller tilbage, men saa er det et bevidst
+	// valg nogen skal have set.
+	it('staar paa alle', () => {
+		expect(HURTIG_START_FOR_ALLE).toBe(true);
 	});
 
-	it('giver heller ikke forloebskunden uden flaget den', () => {
+	it('giver den almindelige kunde uden flaget den hurtige opstart', () => {
+		expect(maaAabnePaaKopi(udenFlag(), false)).toBe(true);
+	});
+
+	it('giver ogsaa forloebskunden uden flaget den', () => {
 		const k = udenFlag({
 			accessLevel: 'premium',
 			accessSource: 'forløb',
 			activeSubscription: false
 		});
-		expect(maaAabnePaaKopi(k, false)).toBe(false);
+		expect(maaAabnePaaKopi(k, false)).toBe(true);
 	});
 
-	it('giver kunden med flaget den', () => {
+	it('giver stadig kunden med flaget den', () => {
 		expect(maaAabnePaaKopi(kunde(), false)).toBe(true);
 	});
 
-	it('giver admin den, ogsaa uden flaget', () => {
+	it('giver admin den', () => {
 		expect(maaAabnePaaKopi(udenFlag(), true)).toBe(true);
 	});
 
 	// Et manglende testerFeatures-felt er det normale for langt de fleste
-	// dokumenter, og det skal opfoere sig som "ingen flag".
-	it('behandler et manglende testerFeatures-felt som ingen adgang', () => {
+	// dokumenter, og efter udrulningen betyder det ingenting laengere.
+	it('bekymrer sig ikke laengere om et manglende testerFeatures-felt', () => {
 		const k = kunde({ testerFeatures: undefined });
-		expect(maaAabnePaaKopi(k, false)).toBe(false);
+		expect(maaAabnePaaKopi(k, false)).toBe(true);
 	});
 
-	// Naar kontakten en dag saettes til true, skal den almindelige kunde med.
-	// Vi kan ikke aendre konstanten i en test, saa vi laeser den i stedet og
-	// bekraefter at den stadig staar paa udrulning. Faelder testen, er
-	// kontakten blevet vippet, og saa er det et bevidst valg der skal ses.
-	it('staar stadig paa udrulning og ikke paa alle', () => {
-		expect(HURTIG_START_FOR_ALLE).toBe(false);
+	// Udrulningen aabner IKKE for de to sikkerhedsregler. De gaelder stadig
+	// alle, uanset kontakten, og de har deres egne tests ovenfor.
+	it('aabner stadig ikke uden en kopi, heller ikke efter udrulningen', () => {
+		expect(maaAabnePaaKopi(null, false)).toBe(false);
+	});
+
+	it('aabner stadig ikke paa en kopi uden adgang', () => {
+		const udloebet = udenFlag({
+			accessLevel: 'none',
+			accessSource: 'forløb',
+			activeSubscription: false
+		});
+		expect(maaAabnePaaKopi(udloebet, false)).toBe(false);
 	});
 });
 
