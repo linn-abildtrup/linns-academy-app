@@ -116,6 +116,7 @@
 		sletEgenFodevare3
 	} from '$lib/firestore/egneFodevarer3';
 	import MineFodevarerArk from '$lib/components/ny/MineFodevarerArk.svelte';
+	import TilfoejArk from '$lib/components/ny/TilfoejArk.svelte';
 
 	// Hjertet paa en foedevare. Se SPEC-3.0.md afsnit 26.15.
 	import {
@@ -191,6 +192,16 @@
 	// content/foreslaaMadplan.ts og api/foreslaa-madplan, uroert.
 	type Kilde = 'opskrifter' | 'faste' | 'mine';
 	let aabentArk = $state<Kilde | null>(null);
+	/**
+	 * Arket der samler alt det der tilfoejer noget. Forslag 2 fra
+	 * design-gennemgangen 12. august: maaltidsskaermen var vokset til ni
+	 * lag, og hun laeste fem afsnit foer hun saa sin egen mad.
+	 *
+	 * Arket er en FORDELING, ikke et sted hun bliver. Vaelger hun noget,
+	 * lukker det, saa der kun er ét ark aabent ad gangen og kvitteringen
+	 * med Fortryd kan ses.
+	 */
+	let tilfoejArk = $state(false);
 	let arkHenter = $state(false);
 	let opskrifter = $state<Opskrift3[]>([]);
 	let egne = $state<Fodevare[]>([]);
@@ -1009,7 +1020,26 @@
 		const uid = user?.uid;
 		const food = foods.get(p.foodId);
 		if (!uid || !food) return;
+		tilfoejArk = false;
 		await gem(food, p.portion, p.enhedId);
+	}
+
+	/** Fra tilfoej-arket: en traeffer aabner maengden, og arket lukker. */
+	function vaelgTraef(food: Fodevare) {
+		tilfoejArk = false;
+		aabnArk(food, null);
+	}
+
+	/** Fra tilfoej-arket: en hylde aabnes, og arket lukker. */
+	function aabnKildeFraArk(kilde: Kilde) {
+		tilfoejArk = false;
+		void aabnKilde(kilde);
+	}
+
+	/** Fra tilfoej-arket: lav en madvare selv, og arket lukker. */
+	function lavSelvFraArk(navn: string) {
+		tilfoejArk = false;
+		nyFodevare(navn);
 	}
 
 	/**
@@ -1155,128 +1185,15 @@
 		</div>
 	</div>
 
-	{#if plejer.length > 0}
-		<!-- Udgave C: kortet er uroert, og de tre andre staar som en fri linje
-	     lige under. Saa beholder metodens tal deres vaegt, og resten
-	     foeles som noget ekstra i stedet for som en del af maalet. -->
-	{#if visUdvidet}
-		<div class="tm-ekstra">
-			<span>Kulhydrat <b>{kh} g</b></span>
-			<span>Fedt <b>{fedt} g</b></span>
-			<span>Kalorier <b>{kcal}</b></span>
-		</div>
-	{/if}
-
-	<div class="tm-k">Det du plejer</div>
-		<div class="tm-plejer">
-			{#each plejer as p (p.foodId)}
-				<button type="button" class="tm-flise" disabled={gemmer} onclick={() => gemDirekte(p)}>
-					<span class="tm-f-navn">{p.navn}</span>
-					<span class="tm-f-m">{formatPortion(p.portion)} {p.enhedId ?? 'g'}</span>
-				</button>
-			{/each}
-		</div>
-	{/if}
-
-	<div class="tm-soegefelt">
-		<input
-			type="search"
-			bind:value={soegeord}
-			placeholder="Søg efter mad"
-			aria-label="Søg efter mad"
-		/>
-	</div>
-
-	<!-- Vejen ind naar soegningen ikke finder noget. Det er HER hun staar
-	     i staa i dag: hun har varen i haanden, soeger, og faar en tom
-	     skaerm. Ordet foelger med ind i navnefeltet. -->
-	{#if soegeord.trim().length >= 2 && traef.length === 0}
-		<div class="kort rolig tm-intet">
-			<span>Ingen fødevarer hedder det.</span>
-			<button type="button" class="tm-lav-selv" onclick={() => nyFodevare(soegeord)}>
-				+ Lav "{soegeord.trim()}" selv
-			</button>
-		</div>
-	{/if}
-
-	{#if traef.length > 0}
-		<div class="tm-traef">
-			{#each traef as f (f.id)}
-				<!-- Hjertet staar for sig til hoejre, saa et tryk paa selve
-				     linjen stadig aabner maengden. Samme opdeling som krydset
-				     i "I dette maaltid". Linns valg 12. august. -->
-				<div class="tm-tr-raekke">
-					<button type="button" class="tm-tr-vaelg" onclick={() => aabnArk(f, null)}>
-						<span class="tm-tr-navn">{f.name}</span>
-						<span class="tm-tr-makro">{f.p} g protein pr 100 g</span>
-					</button>
-					<button
-						type="button"
-						class="tm-tr-hjerte"
-						class:paa={erHjertet(hjerter, f.id)}
-						aria-pressed={erHjertet(hjerter, f.id)}
-						aria-label="Marker med hjerte"
-						onclick={() => skiftHjertePaa(f.id)}
-					>
-						<svg viewBox="0 0 24 24" fill={erHjertet(hjerter, f.id) ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8C19 15.6 12 20 12 20Z" /></svg>
-					</button>
-				</div>
-			{/each}
-		</div>
-	{/if}
-
-	<!-- Groen er Linns ting, blomme er kundens eget. Farven baerer
-	     parringen, saa vi slipper for at gruppere dem i layoutet og
-	     dermed for et ekstra klik. Se SPEC-3.0.md afsnit 26.2. -->
-	<div class="tm-ikoner">
-		<button type="button" class="tm-ikon" onclick={() => aabnKilde('opskrifter')}>
-			<span class="i1">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v16H5.5A1.5 1.5 0 0 1 4 18.5Z" />
-					<path d="M8 8h7M8 12h7M8 16h4" />
-				</svg>
-			</span>
-			Opskrifter
-		</button>
-		<button type="button" class="tm-ikon" onclick={() => aabnKilde('faste')}>
-			<span class="i3">
-				<!-- Tallerken, ikke hjerte. Hjertet betyder bogmaerke i det her
-				     modul, baade paa en opskrift og paa en madvare, og det maa
-				     ikke ogsaa betyde en hylde. Linns valg 12. august. -->
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-					<circle cx="12" cy="12" r="8.5" />
-					<circle cx="12" cy="12" r="3.8" />
-				</svg>
-			</span>
-			Faste måltider
-		</button>
-		<button type="button" class="tm-ikon" onclick={() => aabnKilde('mine')}>
-			<span class="i4">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<path d="M17 3.5 20.5 7 10 17.5l-4.5 1 1-4.5Z" />
-					<path d="M4 20.5h9" />
-				</svg>
-			</span>
-			Mine madvarer
-		</button>
-	</div>
+	<!-- Forslag 2 fra design-gennemgangen 12. august: ÉN knap i stedet for
+	     fem afsnit. Det du plejer, soegningen, traefferne og de tre hylder
+	     ligger nu i tilfoej-arket. Skaermen er tal, knap og mad.
+	     Se SPEC-3.0.md 26.17. -->
+	<button type="button" class="tm-tilfoej" onclick={() => (tilfoejArk = true)}>
+		+ Tilføj til {LABELS[type].toLowerCase()}
+	</button>
 
 	<div class="tm-k">I dette måltid</div>
-
-	<!-- Knappen staar OVER den foerste ingrediens, ikke under listen.
-	     Linns valg 12. august: ligger den under, falder den uden for
-	     skaermen saa snart maaltidet fylder noget, og saa findes den
-	     reelt ikke. En fjerdedel af de faste maaltider har mellem syv og
-	     ti ting i sig. Se SPEC-3.0.md 26.10. -->
-	{#if kanGemmeSomFast}
-		<button type="button" class="fm-gem-knap" onclick={() => (gemArk = true)}>
-			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-				<circle cx="12" cy="12" r="8.5" />
-				<circle cx="12" cy="12" r="3.8" />
-			</svg>
-			Gem som fast måltid
-		</button>
-	{/if}
 
 	{#if henter}
 		<div class="tt-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
@@ -1329,7 +1246,39 @@
 			{/each}
 		</div>
 	{/if}
+
+	<!-- Gem som fast maaltid ligger nu UNDER maden. Den laa foer mellem
+	     overskriften og den foerste ingrediens, fordi den ellers faldt
+	     uden for skaermen. Med forslag 2 er der ikke laengere fem afsnit
+	     over maden, saa den kan ligge hvor den hoerer til: efter det den
+	     handler om. -->
+	{#if kanGemmeSomFast}
+		<button type="button" class="fm-gem-knap" onclick={() => (gemArk = true)}>
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+				<circle cx="12" cy="12" r="8.5" />
+				<circle cx="12" cy="12" r="3.8" />
+			</svg>
+			Gem som fast måltid
+		</button>
+	{/if}
 </div>
+
+{#if tilfoejArk}
+	<TilfoejArk
+		maaltidLabel={LABELS[type]}
+		{plejer}
+		bind:soegeord
+		{traef}
+		{hjerter}
+		{gemmer}
+		onplejer={gemDirekte}
+		onvaelg={vaelgTraef}
+		onhjerte={skiftHjertePaa}
+		onlavSelv={lavSelvFraArk}
+		onkilde={aabnKildeFraArk}
+		onluk={() => (tilfoejArk = false)}
+	/>
+{/if}
 
 {#if valgt}
 	<MaengdeArk

@@ -7075,3 +7075,59 @@ button.tm-r-t:focus-visible {
 	outline-offset: -2px;
 	border-radius: 9px;
 }
+
+/* ── Tilfoej-arket, forslag 2 ──────────────────────────────── */
+/*
+   Se SPEC-3.0.md 26.17. Maaltidsskaermen var vokset fra fem lag til ni,
+   og hun laeste fem afsnit foer hun saa sin egen mad. Nu er skaermen
+   tal, én knap og maden, og de fem afsnit ligger i ét ark.
+
+   Arket er en FORDELING, ikke et sted hun bliver: vaelger hun noget,
+   lukker det, saa kvitteringen med Fortryd kan ses og hun ser sin mad
+   vokse. Prisen er ét tryk mere paa den vej der bruges mest.
+*/
+
+.tm-tilfoej {
+	width: 100%;
+	background: var(--plum);
+	color: #fff;
+	border: 0;
+	border-radius: 14px;
+	padding: 14px;
+	font-family: var(--sans);
+	font-size: calc(15px * var(--fs-scale, 1));
+	font-weight: 700;
+	/* Den er skaermens hovedhandling nu, saa den maa gerne kunne ses. */
+	min-height: 52px;
+	margin: 4px 0 2px;
+	cursor: pointer;
+}
+
+.tm-tilfoej:active {
+	background: var(--plum-deep);
+}
+
+.tm-tilfoej:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 3px;
+}
+
+/* Det der rulles i, inde i arket. Soegefeltet bliver staaende. */
+.ta-rul {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior: contain;
+	margin-top: 11px;
+}
+
+.ta-k:first-child {
+	margin-top: 0;
+}
+
+.ta-traef {
+	margin-bottom: 4px;
+}
+
+
