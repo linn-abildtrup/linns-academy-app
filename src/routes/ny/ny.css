@@ -130,6 +130,22 @@
 	overflow-y: auto;
 	-webkit-overflow-scrolling: touch;
 	padding-bottom: 24px;
+	/* Rullet bliver herinde. Uden den sendes det videre til dokumentet
+	   naar hun rammer bunden, og saa gynger hele skallen med bundmenuen.
+	   Menuen er hendes eneste faste holdepunkt og skal staa stille. */
+	overscroll-behavior: contain;
+}
+
+/*
+   Og selve dokumentet maa heller ikke gynge. Reglen staar her og ikke i
+   src/app.css, for den fil deles med den app der er i drift.
+   `:has(.ny-app)` goer at den KUN gaelder de sider hvor 3.0 vises, og
+   ny.css indlaeses i forvejen kun der. Browsere uden :has springer den
+   over, og saa er vi praecis hvor vi var foer.
+*/
+html:has(.ny-app),
+body:has(.ny-app) {
+	overscroll-behavior: none;
 }
 
 .ny-pad {
@@ -1106,6 +1122,17 @@
 
 .ny-nav {
 	flex: 0 0 auto;
+	/*
+	   MENUEN LIGGER FORREST. Linns regel 12. august 2026.
+	   Alt almindeligt indhold, kvitteringer og baand skal ligge BAG den,
+	   altsaa under 100. Ark og modaler er den bevidste undtagelse og
+	   ligger paa 110 og opefter, for et ark er en afbrydelse hvor menuen
+	   alligevel ikke kan bruges. Laegger du en ny svaevende ting ind, saa
+	   giv den under 100, ellers kan den daekke menuen uden at nogen
+	   opdager det.
+	*/
+	position: relative;
+	z-index: 100;
 	height: 76px;
 	background: rgba(251, 248, 242, 0.92);
 	backdrop-filter: blur(16px);
@@ -2811,7 +2838,8 @@
 .st-lag {
 	position: fixed;
 	inset: 0;
-	z-index: 90;
+	/* Over bundmenuen. Stillingen er en hel skaerm, ikke et lag ovenpaa. */
+	z-index: 110;
 	background: var(--oat);
 	display: flex;
 	flex-direction: column;
@@ -4054,7 +4082,9 @@ button.tm-ikon:active > span {
 .ark-lag {
 	position: fixed;
 	inset: 0;
-	z-index: 95;
+	/* Over bundmenuen, som ellers ligger paa 100. Et ark er en bevidst
+	   afbrydelse, og menuen kan alligevel ikke bruges mens det er aabent. */
+	z-index: 110;
 	display: flex;
 	align-items: flex-end;
 }
@@ -5396,12 +5426,12 @@ button.tm-ikon:active > span {
 
 /* ── Filter-arket til opskrift-listen ──────────────────────── */
 /*
-   Ligger OVEN PAA opskrift-listen, som selv ligger paa 95. Er lavere end
-   listen, saa hun kan se at listen stadig er der bagved.
+   Ligger OVEN PAA opskrift-listen, som selv ligger paa 110. Kun ét trin
+   over, saa hun kan se at listen stadig er der bagved.
 */
 
 .of-lag {
-	z-index: 96;
+	z-index: 111;
 }
 
 .of-ark {
