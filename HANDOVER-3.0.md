@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 11. august 2026, sen aften.
+Sidst opdateret 12. august 2026.
 
 **Læs i denne rækkefølge hvis du er ny:** afsnit 2 om den vigtigste regel, afsnit 7 om fælderne, og så afsnit 9 om hvor vi står. Resten kan slås op efter behov.
 
@@ -11,7 +11,7 @@ Denne fil er til den næste der skal arbejde videre, uanset om det er et nyt Cla
 Læs den sammen med disse tre:
 
 - `CLAUDE.md` i repo-roden er arbejdsreglerne. De er ikke til forhandling.
-- `SPEC-3.0.md` er hvad der bygges og hvorfor. 28 afsnit. 13 til 21 er designbeslutningerne fra 5. august, 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning, og 28 er opstarten, altså det der sker før den første skærm kommer frem.
+- `SPEC-3.0.md` er hvad der bygges og hvorfor. 28 afsnit, hvor 26 har en del underafsnit. 13 til 21 er designbeslutningerne fra 5. august, 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning, og 28 er opstarten, altså det der sker før den første skærm kommer frem.
 - `v3 app/linns-academy-design/DESIGN-SPEC.md` og `mockups.html` er hvordan det ser ud.
 
 ---
@@ -79,6 +79,7 @@ gamle app og må kun læses.
 | `content/inspirator3.ts` | Hvornår AI-inspiratoren dukker op | 12 |
 | `content/plejer3.ts` | "Det du plejer". Modulets vigtigste fil, læs toppen | 12 |
 | `content/hurtigStart3.ts` | 3.0's opstartsregel plus `opstartsBillede()`. Se 9.7 | 13 |
+| `content/favoritOpskrift3.ts` | Favorit-opskrifter, altså bogmærker. Se 9.8 | 22 |
 | `content/beskeder3.ts` | "Til dig lige nu" | 8 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
@@ -89,7 +90,7 @@ gamle app og må kun læses.
 |---|---|
 | `firestore/forside3.ts` | Alt til forsiden |
 | `firestore/maaltider3.ts` | Dagens måltider |
-| `firestore/plejer3.ts` | Vaner, og den eneste fil i 3.0 der **skriver** kundedata |
+| `firestore/plejer3.ts` | Vaner og måltider. Den ene af to filer i 3.0 der **skriver** kundedata |
 | `firestore/challenge3.ts` | Challenge, både nye og gamle |
 | `firestore/nulDage3.ts` | Pause-dage |
 | `firestore/featureAdgang3.ts` | Feature-adgang. Hentes her, ikke i skallen |
@@ -97,6 +98,7 @@ gamle app og må kun læses.
 | `firestore/opskriftBillede3.ts` | Upload og sletning af opskrift-billeder. Kun admin |
 | `firestore/challengeAdmin3.ts` | Admin: opret og tildel challenges |
 | `firestore/hurtigStart3.ts` | Hele opstarts-billedet, læst lokalt uden netværk. Se 9.7 |
+| `firestore/favoritOpskrift3.ts` | Bogmærket på en opskrift. Den anden af de to der **skriver** kundedata. Se 9.8 |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
@@ -206,6 +208,8 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 **Spærringen i 3.0 hviler på det aktive forløb, så halve data er farlige.** Regel 1 i `spaerring3.ts` siger at et aktivt forløb vinder over alt. Kender koden ikke forløbene endnu, ser en Kropsro-kunde med udløbet abonnement ud som om hun ingen forløb har, og så får hun spærre-skærmen midt i sit forløb. **Læs aldrig kun bruger-dokumentet og træf en adgangs-beslutning på det.** Bemærk også at en forløbs-række kræver begge ben, altså `forlobIds` på kunden OG selve forløbs-dokumentet, se `udledAdgange` i `adgang3.ts`.
 
+**En favorit har ikke plads til makro, og det opdager du ikke før tallet er forkert.** `favoritmaaltider` gemmer kun et navn og en liste af varelinjer. Protein og fiber regnes ud ved at slå hver linje op i fødevare-databasen, og en linje uden `foodId` springes over. Gemmer du derfor noget som favorit der ikke består af rigtige madvarer, fx en opskrift, lægger et tryk på den **0 g protein og 0 g fiber** i hendes dag, uden en eneste fejlmeddelelse. I et modul der hedder 30-30 og handler om præcis de to tal er det den værst tænkelige fejl, for den ser rigtig ud. Det er derfor favorit-opskrifter blev bygget som et bogmærke i stedet, se 9.8. **Målt 12. august: 178 af 2.905 favoritter, altså 6 %, har allerede mindst én linje uden makro**, så de kunder logger lige nu mindre end de spiste. Det er en grænse i den gamle model og ikke noget vi har lavet, og det er ikke løst.
+
 **`opretDoc` findes ikke i `firestoreRest.ts`.** Brug `gemDocMerge` med et selvlavet dokument-id.
 
 **Firestore-regler driver.** Sammenlign altid de live regler med `firestore.rules` i repoet, inden du udgiver noget. Det er nu ét kald, se afsnit 8.
@@ -216,7 +220,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1050 tests lige nu, alle grønne
+npm test                               # 1072 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -483,6 +487,37 @@ med 17. Det retter sig når billedet lægges på igen.
 **Udregningen af adgang og spærring er flyttet ud af 3.0's skal** og ind i `opstartsBillede()`. Reglerne er uændrede, linje for linje. Grunden er at kopien og serveren skal besvares med nøjagtig samme spørgsmål, ellers kan de to vise hver sin skærm.
 
 **Det er ikke bekræftet på en rigtig telefon endnu.** Fem flaskehalse er fundet i koden og fjernet, men problemet er aldrig set ske under måling. Hænger den stadig, så mål i stedet for at gætte, og spørg først om skærmen er **helt blank**, altså skallen eller skrifterne, eller viser **logoet og "Et øjeblik"**, altså Firebase-kæden. Firebase Auth selv er ikke undersøgt.
+
+### 9.8 Favorit på opskrifter, bygget 12. august
+
+**Hun kan markere en opskrift med et hjerte og finde den igen på en egen fane.** Se SPEC 26.8 for hele gennemgangen. Her står kun det en ny person skal vide med det samme.
+
+**Det startede et helt andet sted.** Spørgsmålet var hvordan en opskrift kunne gentages, fordi 30-30 hviler på at 68,5 % af alt der registreres er en gentagelse, og den regel slet ikke var anvendt på opskrifter. En måling på 9.347 måltider fra 204 kunder vendte samtalen:
+
+- **62 %** af opskrift-registreringer er gentagelser. Mekanikken er altså sund
+- **men opskrifter er kun 0,9 %** af alt der registreres, og kun **23 %** af kunderne har brugt én
+- **86 % af kunderne har favoritter.** Det er den suverænt mest brugte hylde i modulet
+
+Derfor blev genvejen bygget dér hvor kunden allerede er, og ikke som en femte plejer-flise. **Mål før du vælger, også når du tror du kender svaret.**
+
+**En favorit er et BOGMÆRKE, ikke et gemt måltid.** Det er den vigtigste ting at forstå her. Et tryk åbner opskriften som i dag, så hun kan sætte portioner, og makroen læses fra opskriften når hun trykker "Læg i". Derfor skal protein og fiber ikke kopieres nogen steder hen. Havde vi gemt et færdigt måltid i stedet, ville favoritten logge 0 g protein, se fælden i afsnit 7.
+
+**Bogmærkerne ligger i `userDoc.favoritOpskrifter`**, samme mønster som `favoritFodevarer` i den gamle app. Additivt, den gamle app læser det ikke, og der skal **intet udgives i Firebase Console**, for reglerne tillader det i forvejen.
+
+**`lib/types.ts` er urørt**, selv om feltet er nyt. Feltet læses gennem `favoritterFra()`, så castet ligger ét sted og er testet.
+
+**Nye filer:**
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/favoritOpskrift3.ts` | Bogmærkerne, og hvilke opskrifter der er favoritter | 22 |
+| `firestore/favoritOpskrift3.ts` | Skriver bogmærket | |
+
+**Tre ting der er bevidst besluttet:**
+
+- **Hjertet sidder ved "Læg i", ikke oppe i hjørnet.** Hånden er der i forvejen. Linns valg ud fra fire tegnede forslag
+- **Måltids-forvalget gælder BEGGE faner.** Linns valg, hvor hun vendte forslaget om at favoritter skulle vises på tværs. Det skabte en tilstand hvor hun kan have seks favoritter og se en tom skærm, og derfor er "Vis alle N" og et antal i den tomme tekst nødvendige. Uden dem modsiger tallet på fanen skærmen
+- **Fanen er et filter, lagt først**, ikke en anden liste. Derfor virker måltid, kost og søgning ens på begge faner uden at kende til fanerne
 
 ### Efter 30-30
 

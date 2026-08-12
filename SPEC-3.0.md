@@ -1188,6 +1188,139 @@ den nye side i stedet, den rydder begge dele plus filerne.
 stor udgave" i listen. De virker, men fliserne henter 38 KB hvor de kunne nøjes
 med 17. Det retter sig når billedet lægges på igen.
 
+## 26.8 Favorit på opskrifter. LÅST 12. august
+
+Kunden kan markere en opskrift som favorit og finde den igen på en egen fane.
+Bygget i to bidder, se `favoritOpskrift3.ts`.
+
+### Målingerne der kom først
+
+Opgaven startede et andet sted. Spørgsmålet var hvordan en opskrift kunne
+gentages, fordi 30-30 hviler på at 68,5 % af alt kunderne registrerer er en
+gentagelse, og den regel slet ikke var anvendt på opskrifter. En måling på
+9.347 måltider fra 204 aktive kunder over 60 dage flyttede så hele samtalen:
+
+| Tal | Hvad det betyder |
+|---|---|
+| **62 %** af opskrift-registreringer er gentagelser | Mekanikken er sund. En opskrift bruges typisk 3 gange, en enkelt kunde 26 gange |
+| **0,9 %** af alt registreret er en opskrift | 249 ud af 28.319 linjer. Vi taler om at gøre noget nemmere som knap nogen gør |
+| **23 %** af kunderne har brugt en opskrift | 46 af 204 |
+| **86 %** af kunderne har favoritter | 2.905 favoritter fordelt på 366 kunder, median 4 |
+
+**Konklusionen var ikke den forventede.** Favoritter er den suverænt mest brugte
+hylde i modulet, og opskrifter en af de mindst brugte. Derfor blev genvejen
+bygget dér hvor kunden allerede er, i stedet for som en ny hylde eller som en
+femte plejer-flise.
+
+**Fravalgt undervejs:** at lade opskrifter konkurrere om de fire
+plejer-fliser. Målingen viste at en opskrift kun ville nå top fire i 58 % af
+tilfældene, og tallet er endda for optimistisk, fordi de kunder der bruger
+opskrifter taster få enkelte madvarer og derfor har lidt at konkurrere med.
+
+### En favorit er et BOGMÆRKE, ikke et gemt måltid
+
+Den vigtigste beslutning, og den kom af et andet svar.
+
+Linn valgte at et tryk på en favorit skal **åbne opskriften som i dag**, så hun
+kan sætte portioner. Dermed skal protein og fiber ikke kopieres nogen steder
+hen. Makroen læses fra opskriften i det øjeblik hun trykker "Læg i", altså den
+kode der allerede kørte.
+
+**Det var ikke en detalje.** Var favoritten i stedet gemt som et færdigt måltid
+i `favoritmaaltider`, ville makroen skulle med, og den samling har ikke plads
+til den: den gemmer kun navn og varelinjer, og protein og fiber regnes ud ved
+at slå hver linje op. En opskrift har ingen linjer der kan slås op. En
+favorit-opskrift ville derfor **stille og roligt logge 0 g protein og 0 g
+fiber** i et modul der handler om præcis de to tal.
+
+Bemærk at det problem allerede findes i drift: **178 af de 2.905 favoritter,
+altså 6 %, indeholder mindst én manuel linje uden makro.** De kunder logger
+mindre end de spiste. Det er en grænse i den gamle model, ikke en fejl vi har
+lavet, og det er ikke løst her.
+
+### Hvor bogmærkerne ligger
+
+`userDoc.favoritOpskrifter`, et array af opskrift-id'er. Samme mønster som
+`favoritFodevarer` der allerede findes i den gamle app, så der er ikke opfundet
+noget nyt. Feltet er additivt og den gamle app læser det ikke.
+
+`arrayUnion` og `arrayRemove` i stedet for at skrive hele listen, så to enheder
+kan markere hver sin opskrift samtidig uden at overskrive hinanden.
+
+**Der skal intet udgives i Firebase Console.** Reglerne tillader i forvejen at
+kunden skriver sit eget dokument og validerer ikke felter, se `firestore.rules`
+linje 19. Tjekket 12. august.
+
+**`lib/types.ts` er IKKE ændret**, selv om feltet er nyt. Filen er delt med den
+app der er i drift. Feltet læses derfor gennem `favoritterFra()`, så castet
+ligger ét sted og er testet, herunder at det tåler et manglende felt, forkert
+type, dubletter og mellemrum.
+
+### Hjertet, se `OpskriftArk.svelte`
+
+**Det sidder til højre for "Læg i måltid", ikke oppe i hjørnet ved krydset.**
+Linns valg 12. august ud fra fire tegnede forslag. Hånden er der i forvejen.
+Fyldt hjerte bruger samme blomme som knappen ved siden af, så de to tydeligt
+hører sammen og hjertet ikke ligner en anden slags handling.
+
+**Hjertet skifter med det samme og venter ikke på serveren.** Fejler
+skrivningen, rulles visningen tilbage. Der vises ingen fejlbesked: hun har ikke
+mistet noget, og et bogmærke er ikke vigtigt nok til at afbryde hende midt i at
+registrere mad.
+
+**Knappens navn skifter med vilje ikke med tilstanden.** Den er en kontakt, og
+tilstanden meldes af `aria-pressed`, så VoiceOver siger "Favorit, til" og
+"Favorit, fra". Første udgave skiftede navnet med, og så blev både handling og
+tilstand læst op på én gang.
+
+### Fanerne, se `OpskriftListe.svelte`
+
+**Alle er forvalgt**, så hun lander præcis hvor hun landede før favoritterne
+fandtes, og intet ændrer sig for den der ikke bruger dem.
+
+**Fanen er bygget som endnu et filter, lagt først.** Derfor virker måltid, kost
+og søgning nøjagtig ens på begge faner, uden at nogen af dem skal vide at
+fanerne findes. Alt regnes ud fra `grundliste`.
+
+**Tallet på hver fane er det SAMLEDE antal**, ikke det måltids-filtrerede,
+præcis som "Alle 130" også er totalen.
+
+**Måltids-forvalget gælder BEGGE faner.** Linns valg 12. august, hvor hun
+vendte forslaget om at favoritter skulle vises på tværs af måltider. Det holder
+de to faner konsekvente, så begrænsningen betyder det samme hvor hun end står.
+
+**Den beslutning skabte en ny tilstand:** hun kan have seks favoritter og se en
+tom skærm, fordi ingen af dem er markeret til det måltid hun kom fra. Derfor er
+"Vis alle N" nødvendig på Favoritter, og derfor siger den tomme tekst hvor
+mange hun har i alt. Uden det ville tallet på fanen modsige skærmen.
+
+**Tre tomme tilstande, og de er ikke ens:**
+
+| Tilstand | Hvad der står, og hvorfor |
+|---|---|
+| Ingen favoritter overhovedet | Fortæller hvor hjertet sidder, med en vej tilbage til alle opskrifter. Der er intet filter at rydde, så "Vis alle" ville være forkert |
+| Favoritter, men ingen til måltidet | Antal i alt plus "Vis alle N" |
+| Søgning uden træffere | Siger favoritter i stedet for opskrifter når hun står på den fane |
+
+**Rækkefølgen på fanen Favoritter er listens, ikke bogmærkernes.**
+Opskrift-listen er alfabetisk, og den orden skal ikke skifte fordi hun står et
+andet sted. Ellers ville de samme seks retter ligge to forskellige steder
+afhængigt af fanen.
+
+**Fanerne bruger `role="group"` med `aria-pressed`, ikke `tablist` og `tab`.**
+De rigtige fane-roller lover en skærmlæser at der hører et panel til hver fane,
+og at piletasterne skifter mellem dem. Det er ikke bygget, og et løfte vi ikke
+holder er værre end ingen rolle. Det er også samme mønster som
+filter-knapperne bruger.
+
+### Hvad der ikke blev bygget
+
+**Der er stadig ingen vej til at gemme et MÅLTID som favorit i 3.0.**
+Favoritter-arket lover i sin tekst at hun kan, men knappen findes ikke, og alle
+2.905 favoritter er lavet i den gamle app. Favorit-opskrifter er en anden ting
+med et andet felt, så teksten i det ark er stadig et løfte appen ikke holder.
+Se 27.
+
 ## 27. Åbne punkter på Mad
 
 - Farve på plejer-fliserne: udskudt med vilje, og de holdes hvide indtil
@@ -1197,7 +1330,31 @@ med 17. Det retter sig når billedet lægges på igen.
   æg", dukker op som forslag under "det du plejer". Set hos test-profilen 11.
   august. Afklares om det også sker hos rigtige kunder
 - **128 af 130 opskrifter mangler et billede.** Værktøjet er bygget, se 26.7.
-  De to der har et, har kun den store udgave
+  De to der har et, har kun den store udgave. **Det er formentlig den vigtigste
+  enkeltting på hele listen.** Målingen 12. august viste at kun 23 % af
+  kunderne overhovedet bruger opskrifter, og gitteret er 128 farvede felter med
+  ét bogstav i. Ingen vælger aftensmad ud fra bogstavet K
+- **Makro-linjen står midt i fremgangsmåden.** Målt 12. august: alle 130 har
+  linjen inde i `instruktioner`, og på 125 af dem står den i sidste tredjedel.
+  Kunden læser altså `Protein: 24 g | Fiber: 11 g | Kulhydrater: 44 g | ...`
+  nederst under Fremgangsmåde, selv om tallene står pænt opsat øverst i arket.
+  Den gamle app gør præcis det samme, så det er ikke noget 3.0 har ødelagt
+- **Et løsrevet "stk" på 30 opskrifter.** 23 % har mindst én ingrediens uden
+  mængde. Koden skjuler tallet når det mangler, men ikke enheden, så linjen
+  bliver til "Salt og peber ... stk" og "Saft fra 1/2 lime ... stk"
+- **Otte opskrifter viser en ingrediensliste der ikke passer til portionen.**
+  122 af 130 er sat til én portion. De sidste 8 står til 2, 4 eller 12, og for
+  dem viser arket "1 portion" med et makro-tal for én portion, men
+  ingredienserne for hele retten. Konkret står "Kylling med broccoli i grøn
+  pestosauce" som 1 portion med 48 g protein og 600 g kyllingebryster.
+  **Det gemte tal er rigtigt**, det er kun visningen der taler om to forskellige
+  mængder. Trykker hun op til 4 portioner, ganges ingredienserne igen
+- **Hun kan kun nå opskrifter inde fra et måltid.** Der er ingen vej fra
+  forsiden, så vil hun bare se hvad der findes, skal hun først vælge om det er
+  morgenmad eller aftensmad. Biblioteket, som er den vej i den gamle app, er
+  bevidst udskudt
+- **Der er stadig ingen vej til at gemme et MÅLTID som favorit i 3.0**, selv om
+  Favoritter-arket lover det i sin tekst. Se 26.8
 - ~~**`static/mockup/` skal slettes.**~~ **Klaret 11. august.** Syv filer og
   808 KB stillads til 30-30. Static gik fra 1,1 MB til 280 KB, og alt i static
   hentes ned til hver kunde ved hver udrulning. Se 28.5
