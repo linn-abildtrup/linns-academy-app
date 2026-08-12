@@ -4513,13 +4513,32 @@ button.tm-ikon:active > span {
 	overflow: hidden;
 }
 
-.tm-traef button {
+/*
+   Hver traeffer er en RAEKKE med to knapper: madvaren til venstre og
+   stjernen for sig til hoejre. Reglen maa derfor ikke ramme "button"
+   bredt, for saa faar stjernen ogsaa width 100 % og lægger sig oven i
+   navnet. Det gjorde den 12. august, og teksten braekkede om paa ét ord
+   pr linje.
+*/
+.tm-tr-raekke {
+	display: flex;
+	align-items: stretch;
+	border-top: 1px solid var(--line);
+}
+
+.tm-tr-raekke:first-child {
+	border-top: 0;
+}
+
+.tm-traef .tm-tr-vaelg {
 	display: flex;
 	flex-direction: column;
+	justify-content: center;
 	gap: 1px;
-	width: 100%;
+	/* Al pladsen der er tilovers, saa navnet ikke braekker om. */
+	flex: 1 1 auto;
+	min-width: 0;
 	border: 0;
-	border-top: 1px solid var(--line);
 	background: none;
 	padding: 11px 13px;
 	min-height: 48px;
@@ -4529,11 +4548,7 @@ button.tm-ikon:active > span {
 	cursor: pointer;
 }
 
-.tm-traef button:first-child {
-	border-top: 0;
-}
-
-.tm-traef button:focus-visible {
+.tm-traef .tm-tr-vaelg:focus-visible {
 	outline: 3px solid var(--plum);
 	outline-offset: -3px;
 }
@@ -7017,17 +7032,6 @@ button.tm-r-t:focus-visible {
    Linns valg 12. august.
 */
 
-.tm-tr-raekke {
-	display: flex;
-	align-items: stretch;
-	gap: 2px;
-}
-
-.tm-traef .tm-tr-vaelg {
-	flex: 1;
-	min-width: 0;
-}
-
 .tm-tr-stjerne,
 .mf-stjerne {
 	border: 0;
@@ -7035,10 +7039,12 @@ button.tm-r-t:focus-visible {
 	color: var(--ink-3);
 	font-size: calc(19px * var(--fs-scale, 1));
 	line-height: 1;
-	/* Egen ramme, saa den ikke rammes naar hun sigter efter madvaren. */
+	/* Egen ramme paa 44 px, saa den ikke rammes naar hun sigter efter
+	   madvaren, og saa den ikke kan straekkes af raekken. */
+	flex: 0 0 44px;
 	width: 44px;
 	min-height: 44px;
-	flex-shrink: 0;
+	padding: 0;
 	cursor: pointer;
 }
 

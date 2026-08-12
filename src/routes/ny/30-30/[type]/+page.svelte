@@ -18,9 +18,9 @@
 	import {
 		MAALTIDSTYPER,
 		MAALTIDSTYPE_LABELS,
-		PROTEIN_MAALTIDS_MAAL,
-		filtrerFodevarer
+		PROTEIN_MAALTIDS_MAAL
 	} from '$lib/content/kost';
+	import { soegFodevarer } from '$lib/content/fodevareSoeg3';
 	import { LABELS, harProteinMaal } from '$lib/content/maaltider3';
 	import { formatPortion, naeringFor } from '$lib/content/maengde3';
 	import type { PlejerPost } from '$lib/content/plejer3';
@@ -300,11 +300,10 @@
 	const traef = $derived.by(() => {
 		const ord = soegeord.trim();
 		if (ord.length < 2) return [] as Fodevare[];
-		// Kortest navn foerst: 'Skyr' foer 'Skyr med vanilje'. Det er
-		// oftest den enkle vare hun leder efter.
-		return filtrerFodevarer([...foods.values()], ord, 'all')
-			.sort((a, b) => a.name.length - b.name.length)
-			.slice(0, 8);
+		// Hele ord foerst, saa "aeg" ikke drukner i Aeggenudler, og
+		// derefter korteste navn. Se content/fodevareSoeg3.ts for hvorfor
+		// det er sortering og ikke et afkryds som i den gamle app.
+		return soegFodevarer([...foods.values()], ord);
 	});
 
 	/** Maengden som den blev tastet, fx "1 dl" eller "100 g". Tom hvis
