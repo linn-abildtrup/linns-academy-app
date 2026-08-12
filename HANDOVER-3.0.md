@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 12. august 2026.
+Sidst opdateret 12. august 2026, eftermiddag.
 
 **Læs i denne rækkefølge hvis du er ny:** afsnit 2 om den vigtigste regel, afsnit 7 om fælderne, og så afsnit 9 om hvor vi står. Resten kan slås op efter behov.
 
@@ -11,7 +11,7 @@ Denne fil er til den næste der skal arbejde videre, uanset om det er et nyt Cla
 Læs den sammen med disse tre:
 
 - `CLAUDE.md` i repo-roden er arbejdsreglerne. De er ikke til forhandling.
-- `SPEC-3.0.md` er hvad der bygges og hvorfor. 28 afsnit, hvor 26 har en del underafsnit. 13 til 21 er designbeslutningerne fra 5. august, 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning, og 28 er opstarten, altså det der sker før den første skærm kommer frem.
+- `SPEC-3.0.md` er hvad der bygges og hvorfor. 28 afsnit, hvor 26 har en del underafsnit. 13 til 21 er designbeslutningerne fra 5. august, 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning, og 28 er opstarten, altså det der sker før den første skærm kommer frem. **Efter afsnit 27 ligger Ventelisten**, altså alt det der bevidst er sat på pause til appen er designet færdig. Læs den før du går i gang med noget i Mad.
 - `v3 app/linns-academy-design/DESIGN-SPEC.md` og `mockups.html` er hvordan det ser ud.
 
 ---
@@ -80,6 +80,8 @@ gamle app og må kun læses.
 | `content/plejer3.ts` | "Det du plejer". Modulets vigtigste fil, læs toppen | 12 |
 | `content/hurtigStart3.ts` | 3.0's opstartsregel plus `opstartsBillede()`. Se 9.7 | 13 |
 | `content/favoritOpskrift3.ts` | Favorit-opskrifter, altså bogmærker. Se 9.8 | 22 |
+| `content/opskriftPortion3.ts` | Portioner og makro. **Regnereglen**, se 9.9 | 14 |
+| `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid. Se 9.9 | 20 |
 | `content/beskeder3.ts` | "Til dig lige nu" | 8 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
@@ -208,6 +210,12 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 **Spærringen i 3.0 hviler på det aktive forløb, så halve data er farlige.** Regel 1 i `spaerring3.ts` siger at et aktivt forløb vinder over alt. Kender koden ikke forløbene endnu, ser en Kropsro-kunde med udløbet abonnement ud som om hun ingen forløb har, og så får hun spærre-skærmen midt i sit forløb. **Læs aldrig kun bruger-dokumentet og træf en adgangs-beslutning på det.** Bemærk også at en forløbs-række kræver begge ben, altså `forlobIds` på kunden OG selve forløbs-dokumentet, se `udledAdgange` i `adgang3.ts`.
 
+**Makroen på en opskrift er PR PORTION. Del den aldrig med `defaultPortioner`.** Det tal fortæller kun hvor mange portioner INGREDIENSLISTEN rækker til. Reglen blev brudt tre forskellige steder i to apps uden at nogen opdagede det, fordi 122 af 130 opskrifter står til én portion, og at dele med 1 ændrer ingenting. Kun på de 8 der står til 2, 4 eller 12 slår fejlen igennem, og der lå de to apps 2, 4 og 12 gange fra hinanden. Se 9.9 og SPEC 26.9. Regnereglen ligger i `content/opskriftPortion3.ts`, brug den i stedet for at skrive den forfra.
+
+**Makro-tallene er gemt inde i `instruktioner`-teksten. Slet aldrig den linje.** Alle fem tal parses ud af en linje der starter med `Protein:`, se `parseOpskriftMakro`. Fjernes den fra teksten, mister alle 130 opskrifter deres næringstal i BEGGE apps på én gang. Skal den ikke ses, klip den ud af VISNINGEN, se `content/opskriftTekst3.ts`. Tiden ligger i samme linje og ryger med hvis man ikke trækker den ud.
+
+**Regn ikke makro af råvarerne ved at gætte fødevaren ud fra navnet.** Forsøgt 12. august som kontrol af alle 130. Fødevare-databasen har både tørre og kogte udgaver, og matcheren valgte systematisk den tørre: "kikærter" blev til *tørrede, rå* med 337 kcal, og "bouillon" blev til *koncentreret terning*, så 300 g suppe blev til 480 kcal. Prøven udpegede **59 opskrifter som forkerte, og de var det ikke.** Skal det gøres rigtigt, skal hver ingrediens kobles til en bestemt fødevare, ikke slås op på navnet.
+
 **En favorit har ikke plads til makro, og det opdager du ikke før tallet er forkert.** `favoritmaaltider` gemmer kun et navn og en liste af varelinjer. Protein og fiber regnes ud ved at slå hver linje op i fødevare-databasen, og en linje uden `foodId` springes over. Gemmer du derfor noget som favorit der ikke består af rigtige madvarer, fx en opskrift, lægger et tryk på den **0 g protein og 0 g fiber** i hendes dag, uden en eneste fejlmeddelelse. I et modul der hedder 30-30 og handler om præcis de to tal er det den værst tænkelige fejl, for den ser rigtig ud. Det er derfor favorit-opskrifter blev bygget som et bogmærke i stedet, se 9.8. **Målt 12. august: 178 af 2.905 favoritter, altså 6 %, har allerede mindst én linje uden makro**, så de kunder logger lige nu mindre end de spiste. Det er en grænse i den gamle model og ikke noget vi har lavet, og det er ikke løst.
 
 **`opretDoc` findes ikke i `firestoreRest.ts`.** Brug `gemDocMerge` med et selvlavet dokument-id.
@@ -220,7 +228,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1072 tests lige nu, alle grønne
+npm test                               # 1108 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -518,6 +526,34 @@ Derfor blev genvejen bygget dér hvor kunden allerede er, og ikke som en femte p
 - **Hjertet sidder ved "Læg i", ikke oppe i hjørnet.** Hånden er der i forvejen. Linns valg ud fra fire tegnede forslag
 - **Måltids-forvalget gælder BEGGE faner.** Linns valg, hvor hun vendte forslaget om at favoritter skulle vises på tværs. Det skabte en tilstand hvor hun kan have seks favoritter og se en tom skærm, og derfor er "Vis alle N" og et antal i den tomme tekst nødvendige. Uden dem modsiger tallet på fanen skærmen
 - **Fanen er et filter, lagt først**, ikke en anden liste. Derfor virker måltid, kost og søgning ens på begge faner uden at kende til fanerne
+
+### 9.9 Portioner og makro på opskrifter, rettet 12. august
+
+**Det eneste sted hvor de to apps skrev forskellige tal i kundens dagbog for den samme handling.** Se SPEC 26.9 for hele gennemgangen med målingerne.
+
+**Reglen, i én sætning:** `defaultPortioner` bruges på **ingredienserne** og **ALDRIG** på makroen. Makroen er pr portion, også på de retter der er skrevet til fire.
+
+Reglen var spredt ud over tre skærme i to apps, og de var uenige. På de 122 opskrifter der står til én portion gav det samme svar, for at dele med 1 ændrer ingenting. På de 8 der står til 2, 4 eller 12 gav det svar der lå 2, 4 og 12 gange fra hinanden. **En kunde fik krediteret 12 g protein hvor hun spiste 48.**
+
+**Regnereglen ligger nu ét sted**, `content/opskriftPortion3.ts`, med målingerne i filens hoved så den næste ikke skal regne det ud forfra.
+
+**3.0 er rettet. Den gamle app er ikke.** Se ventelisten i SPEC efter afsnit 27.
+
+**Fire ting kom med samme dag:**
+
+- **Arket åbner på opskriftens eget tal**, altså 1 for de 122 og 4 for familieretterne. Skruer hun ned, regner alt sig om. Gem-knappen siger antallet når det ikke er 1, for starttallet er også dét der gemmes
+- **Alle fem tal vises og gemmes.** Kulhydrat og fedt dæmpet på linjen, kalorier under, skjult uden udvidet næring. `gemSammensat` gemte før kun protein og fiber og brød dermed reglen i SPEC 26.5 som resten af modulet fulgte
+- **Makro-linjen er klippet ud af fremgangsmåden.** Data er urørt, se nedenfor. Tiden trækkes ud og vises ved titlen
+- **Trinnene står hver for sig.** Opskrifterne er ikke skrevet ens, så der deles på numrene og ikke på linjeskift
+
+**Nye filer:**
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/opskriftPortion3.ts` | Portioner og makro. Regnereglen | 14 |
+| `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid | 20 |
+
+**Én rigtig datafejl fundet og rettet:** "Den grønne grød - isterninger" havde hele holdets makro stående som om det var pr terning, så 3.0 viste 144 g protein og 4.800 kcal ud for 75 g avocado. Rettet i data efter tørløb, sikkerhedskopi i `backup/`.
 
 ### Efter 30-30
 

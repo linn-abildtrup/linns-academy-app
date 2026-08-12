@@ -1321,6 +1321,119 @@ Favoritter-arket lover i sin tekst at hun kan, men knappen findes ikke, og alle
 med et andet felt, så teksten i det ark er stadig et løfte appen ikke holder.
 Se 27.
 
+## 26.9 Portioner og makro. LÅST 12. august
+
+Dagens vigtigste fund, og det eneste sted hvor de to apps skrev forskellige tal
+i kundens dagbog for den samme handling.
+
+### De to konventioner, som alt hviler på
+
+**1. Makroen er PR PORTION.** Altid, også på de opskrifter der er skrevet til
+fire. Målt 12. august på alle 130.
+
+**2. Ingredienslisten rækker til `defaultPortioner`.** De 8 flerportioners har
+500 til 800 g kød, de 122 énportioners har 50 til 250 g.
+
+Deraf følger reglen i én sætning: **`defaultPortioner` bruges på
+ingredienserne og ALDRIG på makroen.**
+
+**Sådan blev det bevist**, for det var ikke oplagt:
+
+- De 8 flerportioners ligger i **samme leje** som de 122, altså protein median
+  38 mod 30 g. Var tallet for hele retten, skulle de ligge fire gange højere
+- "Kylling med broccoli" erklærer 475 kcal, mens råvarerne alene er omkring
+  1.400. Tallet **kan** altså ikke dække hele retten
+- Kalorier stemmer med protein, kulhydrat og fedt inden for 10 % på 103 af 130,
+  median 6 % afvigelse. Makro-blokken er troværdig i sig selv
+
+### Fejlen den afdækkede
+
+Reglen var spredt ud over tre skærme i to apps, og de var uenige:
+
+| Sted | Makro | Ingredienser |
+|---|---|---|
+| Gammel app, opskrift-side | **Deler** med `defaultPortioner` | Rigtigt |
+| Gammel app, madplan-vej | Ganger ikke, deler ikke | Ikke relevant |
+| 3.0, opskrift-ark | Rigtigt | **Gangede** uden at dele |
+
+På de 122 énportioners gav det samme svar, for at dele med 1 ændrer ingenting.
+På de 8 gav det svar der lå 2, 4 og 12 gange fra hinanden. En kunde fik
+krediteret 12 g protein hvor hun spiste 48.
+
+**3.0 er rettet 12. august.** Regnereglen ligger nu ét sted, i
+`content/opskriftPortion3.ts` med 14 tests, og kommentaren i filens hoved
+bærer målingerne, så den næste ikke skal regne det ud forfra.
+
+**Den gamle app er IKKE rettet.** Se 27.
+
+### Arket åbner på opskriftens eget tal
+
+Linns valg 12. august, efter fire tegnede forslag. Arket åbner på 1 for de 122
+og 4 for de retter der er skrevet til en familie, så ingredienslisten kan læses
+direkte som opskrift. Skruer hun ned til 1, regner både makro og ingredienser
+sig om med det samme.
+
+**Starttallet er også dét der gemmes.** Derfor siger gem-knappen antallet når
+det ikke er 1, altså "Læg 4 portioner i aftensmad". Ved 1 portion ville tallet
+bare være støj.
+
+### Alle fem tal, og de gemmes altid
+
+Opskrift-arket var den sidste flade der kun kendte protein og fiber. Kulhydrat
+og fedt står nu dæmpet på samme linje, kalorier for sig under, og det hele er
+skjult uden udvidet næring. Samme opdeling som mængde-arket, se 26.5. Rækken
+ombryder, for fire tal kan ikke stå på én linje på en iPhone SE.
+
+**`gemSammensat` gemte kun protein og fiber.** Almindelige madvarer har hele
+tiden gemt alle fem, så opskrifter og favoritter brød en regel resten af
+modulet fulgte. Rettet 12. august. Rækker gemt før da har ikke felterne og
+tæller nul med, som beskrevet i 26.5.
+
+### Makro-linjen er væk fra fremgangsmåden
+
+Tallene lå som en tekstlinje nederst i `instruktioner` og blev vist råt, så
+kunden læste dem to gange, anden gang som en teknisk streng midt i
+madlavningen.
+
+**Data er urørt.** Linjen ER kilden til alle fem tal. Slettes den, mister alle
+130 opskrifter deres næringstal i begge apps. Den klippes derfor kun ud af
+visningen, se `content/opskriftTekst3.ts`.
+
+**Tiden trækkes ud og vises ved titlen** med et lille ur. Den lå inde i samme
+linje og ville ellers være røget med. 129 af 130 har feltet.
+
+### Trinnene står hver for sig
+
+Fremgangsmåden var én blok, så trinnene løb sammen. **Opskrifterne er ikke
+skrevet ens:** nogle har hvert trin på sin egen linje, andre har alle fire i
+én lang linje. Derfor deles der på selve numrene og ikke på linjeskift.
+
+**Reglen kan ikke ødelægge en sætning.** Kun en række der begynder på 1 og
+tæller ét op accepteres, så "hvile i 5 minutter", "mindst 3 timer" og "skær
+kålen i 4" ikke åbner falske trin. Der er test på alle tre. Nummererede trin
+får hængende indrykning, så tallene står frit i venstre kant.
+
+### Gennemgang af makro-tallene, 12. august
+
+Alle 130 er gennemgået. **Ingen umulige tal**, ingen med mere fiber end
+kulhydrat, og protein udgør 28 % af kalorierne i median.
+
+**En prøve blev kasseret.** Et forsøg på at regne makro af råvarerne og
+sammenligne pegede på 59 opskrifter som forkerte. **De er det ikke.**
+Fødevare-databasen har både tørre og kogte udgaver, og matcheren valgte
+systematisk den tørre: "kikærter" blev til *tørrede, rå* med 337 kcal, og
+"bouillon" blev til *koncentreret terning*, så 300 g suppe blev til 480 kcal.
+**Skriv ikke den prøve igen uden at koble ingredienserne til bestemte
+fødevarer.**
+
+**Én rigtig fejl fundet og rettet:** "Den grønne grød - isterninger" havde
+hele holdets makro stående som om det var pr terning. De to grønne grød har
+fuldstændig identiske ingredienslister, og tallene var kopieret over uden at
+blive delt med 12. I 3.0 stod der derfor 144 g protein og 4.800 kcal ud for
+75 g avocado. Rettet i data 12. august efter tørløb, med sikkerhedskopi i
+`backup/`. Kontrol mod råvarerne: ingredienserne giver cirka 12,4 g protein og
+380 kcal, så holdets tal var rigtige, kun delingen manglede.
+
 ## 27. Åbne punkter på Mad
 
 - Farve på plejer-fliserne: udskudt med vilje, og de holdes hvide indtil
@@ -1334,21 +1447,14 @@ Se 27.
   enkeltting på hele listen.** Målingen 12. august viste at kun 23 % af
   kunderne overhovedet bruger opskrifter, og gitteret er 128 farvede felter med
   ét bogstav i. Ingen vælger aftensmad ud fra bogstavet K
-- **Makro-linjen står midt i fremgangsmåden.** Målt 12. august: alle 130 har
-  linjen inde i `instruktioner`, og på 125 af dem står den i sidste tredjedel.
-  Kunden læser altså `Protein: 24 g | Fiber: 11 g | Kulhydrater: 44 g | ...`
-  nederst under Fremgangsmåde, selv om tallene står pænt opsat øverst i arket.
-  Den gamle app gør præcis det samme, så det er ikke noget 3.0 har ødelagt
+- ~~Makro-linjen står midt i fremgangsmåden~~. **Klaret 12. august**, se 26.9.
+  Den klippes ud af visningen, og data er urørt
+- ~~Otte opskrifter viser en ingrediensliste der ikke passer til portionen~~.
+  **Klaret i 3.0 12. august**, se 26.9. Står stadig i den gamle app, se
+  listen nedenfor
 - **Et løsrevet "stk" på 30 opskrifter.** 23 % har mindst én ingrediens uden
   mængde. Koden skjuler tallet når det mangler, men ikke enheden, så linjen
   bliver til "Salt og peber ... stk" og "Saft fra 1/2 lime ... stk"
-- **Otte opskrifter viser en ingrediensliste der ikke passer til portionen.**
-  122 af 130 er sat til én portion. De sidste 8 står til 2, 4 eller 12, og for
-  dem viser arket "1 portion" med et makro-tal for én portion, men
-  ingredienserne for hele retten. Konkret står "Kylling med broccoli i grøn
-  pestosauce" som 1 portion med 48 g protein og 600 g kyllingebryster.
-  **Det gemte tal er rigtigt**, det er kun visningen der taler om to forskellige
-  mængder. Trykker hun op til 4 portioner, ganges ingredienserne igen
 - **Hun kan kun nå opskrifter inde fra et måltid.** Der er ingen vej fra
   forsiden, så vil hun bare se hvad der findes, skal hun først vælge om det er
   morgenmad eller aftensmad. Biblioteket, som er den vej i den gamle app, er
@@ -1362,6 +1468,89 @@ Se 27.
 **Arbejdsform aftalt 9. august:** vi tager Mad ét skærmbillede ad gangen i
 stedet for at tegne hele modulet på én gang. De første fem runder mockups
 byggede på gæt om hvad Mad indeholdt, og det skal ikke gentages.
+
+---
+
+# Ventelisten. Sat på pause 12. august 2026
+
+**Linns beslutning 12. august: det herunder tages FØRST når hele appen er
+designet færdig.** Ikke fordi punkterne er ligegyldige, men fordi det er
+dyrere at rette den gamle app og kundedata undervejs end at gøre det samlet,
+og fordi designet stadig kan flytte på hvad der overhovedet skal rettes.
+
+Listen er sorteret efter hvor meget det gør ondt at lade den ligge. Den
+øverste skriver forkerte tal ind i kunders dagbøger lige nu.
+
+### Rammer kunder i drift
+
+**1. Den gamle app deler makroen med `defaultPortioner`.** Se 26.9. På de 8
+retter der er skrevet til flere portioner skriver den for lidt protein i
+dagbogen, fx 12 g hvor kunden spiste 48. 3.0 er rettet, den gamle er ikke.
+Rettelsen ligger i `routes/app/moduler/30-30-3/opskrifter/[id]/+page.svelte`
+omkring `skaleretMakro`, og den er ventilen i `CLAUDE.md` regel 2, altså en
+selvstændig opgave med eget go.
+
+**2. Nye opskrifter starter på 4 portioner i admin.** `defaultPortioner: 4` i
+`routes/app/admin/opskrifter/+page.svelte`. **Fejlen i punkt 1 vokser derfor af
+sig selv** hver gang Linn lægger en ny opskrift ind uden at rette feltet. 122 af
+de nuværende 130 er sat ned til 1 i hånden. Det her er billigt at rette og
+stopper blødningen.
+
+**3. Femten gamle registreringer hos 13 kunder har for lidt protein**, som
+følge af punkt 1. Målt over hele historikken 12. august. De kan rettes med et
+script, men det er skrivning til kundedata og kræver sit eget ja. 15 poster er
+lidt, og derfor også let at overskue.
+
+### Data og indhold
+
+**4. 128 af 130 opskrifter mangler et billede.** Se 26.7. Formentlig den
+vigtigste enkeltting på hele listen, fordi kun 23 % af kunderne overhovedet
+bruger opskrifter og gitteret er 128 farvede felter med ét bogstav i. Værktøjet
+er bygget og virker. Det er Linns arbejde, ikke kodearbejde.
+
+**5. 22 opskrifter har kalorier der ikke passer med deres egen makro**, mere
+end 12 % fra. **21 af de 22 har kalorierne sat for højt**, hvilket tyder på at
+tallet er sat uafhængigt af de andre fire snarere end regnet ud af dem.
+Protein og fiber, som 30-30 faktisk bruger, er ikke berørt. Betyder mere nu,
+hvor kalorier vises for dem med udvidet næring. Listen kan genskabes med et
+Atwater-tjek, se 26.9.
+
+**6. De 8 opskrifters portionstal.** Linn overvejede 12. august at sætte
+frokost og aftensmad til 4 portioner og morgenmad og snack til 1. **Det blev
+IKKE gjort**, fordi ingredienslisterne i dag er skrevet til én person: 59 af de
+65 der kunne vurderes har 50 til 250 g kød. Skulle de være familiemad, skal
+cirka 700 mængder ganges med fire, og det ændrer hvad 760 kunder ser. Den
+modsatte vej, altså at sætte de 8 ned til 1 og dele deres mængder med fire, er
+cirka 60 tal og gør data mere ensartet.
+
+**7. Beskrivelsen på "Den grønne grød" er kopieret** fra isterninge-udgaven.
+Den siger "Fryses i isterninger", men instruktionerne slutter med "Server med
+det samme". Linns indhold.
+
+**8. Et løsrevet "stk" på 30 opskrifter**, se listen ovenfor.
+
+### Struktur, når der alligevel skal ryddes
+
+**9. Makro bør ligge i egne felter på opskriften** i stedet for at være gemt
+som tal inde i en tekst. Så forsvinder både parsing, udklipning af linjen og
+hele klassen af fejl vi har fundet i dag. Det er en migrering der rører den
+gamle app, og den bør laves samtidig med punkt 1.
+
+**10. Der er stadig ingen vej til at gemme et MÅLTID som favorit i 3.0**, selv
+om Favoritter-arket lover det i sin tekst. Se 26.8.
+
+**11. Opskrifter kan kun nås inde fra et måltid.** Se listen ovenfor.
+
+### Sådan bør punkt 1, 3 og 9 gribes an
+
+De tre hænger sammen og bør tages i én omgang, i den rækkefølge: først flyt
+makro ud i egne felter, så ret begge apps til at læse dem, og først derefter
+ret de 15 gamle poster. Rettes den gamle app først, skal den samme kode rettes
+to gange.
+
+**Verificering af protein og fiber mod ingredienserne er IKKE gjort**, og det
+kræver at hver ingrediens kobles til en bestemt fødevare. Forsøget 12. august
+på at gætte koblingen ud fra navnet gav 59 falske alarmer, se 26.9.
 
 ---
 
