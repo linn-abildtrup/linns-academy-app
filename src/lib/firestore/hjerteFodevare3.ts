@@ -1,10 +1,10 @@
-// Saetter og fjerner stjernen paa en foedevare.
+// Saetter og fjerner hjertet paa en foedevare.
 //
-// Stjernerne ligger i userDoc.favoritFodevarer, samme felt som den gamle
-// app bruger, se content/stjerneFodevare3.ts.
+// Hjerterne ligger i userDoc.favoritFodevarer, samme felt som den gamle
+// app bruger, se content/hjerteFodevare3.ts.
 //
 // arrayUnion og arrayRemove i stedet for at skrive hele listen, saa to
-// enheder kan stjerne hver sin vare samtidig uden at overskrive hinanden.
+// enheder kan hjerte hver sin vare samtidig uden at overskrive hinanden.
 //
 // Ny fil med vilje: userDoc.ts er et delt modul som den app der er i
 // drift bygger paa, og den maa kun laeses. Se CLAUDE.md regel 2.
@@ -14,22 +14,22 @@
 
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '$lib/firebase';
-import { STJERNE_FELT } from '$lib/content/stjerneFodevare3';
+import { HJERTE_FELT } from '$lib/content/hjerteFodevare3';
 
 /**
- * Slaar stjernen til eller fra paa serveren.
+ * Slaar hjertet til eller fra paa serveren.
  *
- * Kalderen har allerede rettet sin egen visning, saa stjernen skifter med
+ * Kalderen har allerede rettet sin egen visning, saa hjertet skifter med
  * det samme. Gaar skrivningen galt, kastes fejlen videre, saa kalderen kan
  * rulle visningen tilbage i stedet for at vise noget der ikke blev gemt.
  */
-export async function saetStjerne3(
+export async function saetHjerte3(
 	uid: string,
 	foodId: string,
-	skalVaereStjernet: boolean
+	skalVaereHjertet: boolean
 ): Promise<void> {
 	if (!uid || !foodId) return;
 	await updateDoc(doc(db, 'users', uid), {
-		[STJERNE_FELT]: skalVaereStjernet ? arrayUnion(foodId) : arrayRemove(foodId)
+		[HJERTE_FELT]: skalVaereHjertet ? arrayUnion(foodId) : arrayRemove(foodId)
 	});
 }

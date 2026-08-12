@@ -7025,15 +7025,20 @@ button.tm-r-t:focus-visible {
 	border-radius: 8px;
 }
 
-/* ── Stjernen paa en foedevare ─────────────────────────────── */
+/* ── Hjertet paa en foedevare ──────────────────────────────── */
 /*
-   Se SPEC-3.0.md 26.15. Stjernen staar for sig til hoejre i
+   Se SPEC-3.0.md 26.15. Hjertet staar for sig til hoejre i
    soegeresultatet, saa et tryk paa selve linjen stadig aabner maengden.
    Linns valg 12. august.
+
+   SAMME symbol og samme farve som hjertet paa en opskrift. De to goer
+   det samme paa hver sin slags indhold, og saa skal de ligne hinanden.
+   Tallerkenen er hylden Faste maaltider, og den skal IKKE vaere et
+   hjerte, for saa betyder hjertet to ting.
 */
 
-.tm-tr-stjerne,
-.mf-stjerne {
+.tm-tr-hjerte,
+.mf-hjerte {
 	border: 0;
 	background: none;
 	color: var(--ink-3);
@@ -7048,13 +7053,24 @@ button.tm-r-t:focus-visible {
 	cursor: pointer;
 }
 
-.tm-tr-stjerne.paa,
-.mf-stjerne.paa {
-	color: var(--honey);
+/* Fyldt hjerte i blomme, samme farve som paa en opskrift. Honning er
+   reserveret til det der kraever hendes opmaerksomhed, og et bogmaerke
+   er ikke en advarsel. */
+.tm-tr-hjerte.paa,
+.mf-hjerte.paa {
+	color: var(--plum);
 }
 
-.tm-tr-stjerne:focus-visible,
-.mf-stjerne:focus-visible {
+.tm-tr-hjerte svg,
+.mf-hjerte svg {
+	width: 19px;
+	height: 19px;
+	display: block;
+	margin: 0 auto;
+}
+
+.tm-tr-hjerte:focus-visible,
+.mf-hjerte:focus-visible {
 	outline: 3px solid var(--plum);
 	outline-offset: -2px;
 	border-radius: 9px;

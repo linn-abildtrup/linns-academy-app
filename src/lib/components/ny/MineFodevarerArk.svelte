@@ -19,31 +19,31 @@
 	interface Props {
 		egne: Fodevare[];
 		/**
-		 * Hendes stjernede varer, UDEN hendes egne. De staar i forvejen
+		 * Hendes hjertede varer, UDEN hendes egne. De staar i forvejen
 		 * under Mine egne, og uden det ville halvdelen af listen vaere en
-		 * kopi af den anden halvdel. Se stjerneFodevare3.ts.
+		 * kopi af den anden halvdel. Se hjerteFodevare3.ts.
 		 */
-		stjernede?: Fodevare[];
+		hjertede?: Fodevare[];
 		henter?: boolean;
 		/** Vaelg den, altsaa aabn maengde-arket. */
 		onvaelg: (id: string) => void;
 		onny: () => void;
 		onret: (id: string) => void;
 		onslet: (id: string) => void;
-		/** Tager stjernen af igen. */
-		onstjerne?: (id: string) => void;
+		/** Tager hjertet af igen. */
+		onhjerte?: (id: string) => void;
 		onluk: () => void;
 	}
 
 	let {
 		egne,
-		stjernede = [],
+		hjertede = [],
 		henter = false,
 		onvaelg,
 		onny,
 		onret,
 		onslet,
-		onstjerne = () => {},
+		onhjerte = () => {},
 		onluk
 	}: Props = $props();
 
@@ -58,11 +58,11 @@
 	}
 
 	const traef = $derived(filtrer(egne));
-	const traefStjerner = $derived(filtrer(stjernede));
-	const ialt = $derived(egne.length + stjernede.length);
-	/** Grupperne staar kun paa naar der ER to. Har hun ingen stjerner,
+	const traefHjerter = $derived(filtrer(hjertede));
+	const ialt = $derived(egne.length + hjertede.length);
+	/** Grupperne staar kun paa naar der ER to. Har hun ingen hjerter,
 	    ser arket praecis ud som foer. */
-	const harGrupper = $derived(stjernede.length > 0 && egne.length > 0);
+	const harGrupper = $derived(hjertede.length > 0 && egne.length > 0);
 
 	function fokuser(node: HTMLInputElement) {
 		// Tastaturet maa ikke springe op af sig selv. Hun vil oftest
@@ -83,7 +83,9 @@
 		<div class="ma-greb" aria-hidden="true"></div>
 		<button type="button" class="ma-luk" onclick={onluk} aria-label="Luk">×</button>
 
-		<h2 class="va-titel" id="mf-titel">{harGrupper ? 'Mine ting' : 'Mine fødevarer'}</h2>
+		<!-- Titlen skifter IKKE efter indhold. Et sted der aendrer navn alt
+		     efter hvad der ligger i det, er svaert at finde tilbage til. -->
+		<h2 class="va-titel" id="mf-titel">Mine madvarer</h2>
 
 		{#if ialt > 0}
 			<input
@@ -91,8 +93,8 @@
 				type="search"
 				bind:value={soegeord}
 				use:fokuser
-				placeholder="Søg i mine fødevarer"
-				aria-label="Søg i mine fødevarer"
+				placeholder="Søg i mine madvarer"
+				aria-label="Søg i mine madvarer"
 			/>
 		{/if}
 
@@ -101,9 +103,9 @@
 		<div class="fm-liste">
 			{#if henter}
 				<p class="va-tom">Henter</p>
-			{:else if stjernede.length > 0}
-				{#if harGrupper}<div class="fm-gruppe">Med stjerne</div>{/if}
-				{#each traefStjerner as f (f.id)}
+			{:else if hjertede.length > 0}
+				{#if harGrupper}<div class="fm-gruppe">Med hjerte</div>{/if}
+				{#each traefHjerter as f (f.id)}
 					<div class="fm-kort">
 						<button type="button" class="fm-vaelg" onclick={() => onvaelg(f.id)}>
 							<span class="fm-navn">{f.name}</span>
@@ -111,13 +113,17 @@
 						</button>
 						<button
 							type="button"
-							class="mf-stjerne paa"
-							onclick={() => onstjerne(f.id)}
-							aria-label="Fjern stjernen fra {f.name}">★</button
+							class="mf-hjerte paa"
+							onclick={() => onhjerte(f.id)}
+							aria-label="Fjern hjertet fra {f.name}"
 						>
+							<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+								<path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8C19 15.6 12 20 12 20Z" />
+							</svg>
+						</button>
 					</div>
 				{/each}
-				{#if harGrupper}<div class="fm-gruppe">Mine egne fødevarer</div>{/if}
+				{#if harGrupper}<div class="fm-gruppe">Mine egne</div>{/if}
 				{#each traef as f (f.id)}
 					{#if sletId === f.id}
 						<div class="fm-bekraeft">
@@ -143,7 +149,7 @@
 				{/each}
 			{:else if egne.length === 0}
 				<p class="va-tom">
-					Du har ikke lavet nogen egne fødevarer endnu. Dem laver du, når en vare ikke findes i
+					Du har ikke lavet nogen egne madvarer endnu. Dem laver du, når en vare ikke findes i
 					forvejen, for eksempel et brød fra din egen bager.
 				</p>
 			{:else if traef.length === 0}

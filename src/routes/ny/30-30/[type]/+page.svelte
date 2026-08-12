@@ -117,14 +117,14 @@
 	} from '$lib/firestore/egneFodevarer3';
 	import MineFodevarerArk from '$lib/components/ny/MineFodevarerArk.svelte';
 
-	// Stjernen paa en foedevare. Se SPEC-3.0.md afsnit 26.15.
+	// Hjertet paa en foedevare. Se SPEC-3.0.md afsnit 26.15.
 	import {
-		erStjernet,
-		skiftStjerne,
-		stjernedeFodevarer,
-		stjernerFra
-	} from '$lib/content/stjerneFodevare3';
-	import { saetStjerne3 } from '$lib/firestore/stjerneFodevare3';
+		erHjertet,
+		skiftHjerte,
+		hjertedeFodevarer,
+		hjerterFra
+	} from '$lib/content/hjerteFodevare3';
+	import { saetHjerte3 } from '$lib/firestore/hjerteFodevare3';
 	import NyFodevareArk from '$lib/components/ny/NyFodevareArk.svelte';
 	import { forberedBillede } from '$lib/utils/billede3';
 	import { harFeatureAdgang } from '$lib/content/features';
@@ -249,14 +249,14 @@
 	// null betyder "ikke roert endnu, brug det der staar paa kunden".
 	let favoritRettet = $state<string[] | null>(null);
 
-	// Stjernerne paa foedevarer. Samme moenster som hjertet: en lokal kopi,
-	// saa stjernen skifter i samme oejeblik hun trykker.
-	let stjerneRettet = $state<string[] | null>(null);
+	// Hjerterne paa foedevarer. Samme moenster som hjertet: en lokal kopi,
+	// saa hjertet skifter i samme oejeblik hun trykker.
+	let hjerteRettet = $state<string[] | null>(null);
 	const favoritOpskrifter = $derived(favoritRettet ?? favoritterFra(userDoc));
-	const stjerner = $derived(stjerneRettet ?? stjernerFra(userDoc));
-	/** Hendes stjernede varer, UDEN hendes egne. De staar under Mine egne. */
-	const stjernede = $derived(
-		stjernedeFodevarer(stjerner, foods, new Set(egne.map((f) => f.id)))
+	const hjerter = $derived(hjerteRettet ?? hjerterFra(userDoc));
+	/** Hendes hjertede varer, UDEN hendes egne. De staar under Mine egne. */
+	const hjertede = $derived(
+		hjertedeFodevarer(hjerter, foods, new Set(egne.map((f) => f.id)))
 	);
 
 	const erIDag = $derived(dato === iDag);
@@ -975,24 +975,24 @@
 	}
 
 	/**
-	 * Slaar stjernen til eller fra paa en foedevare.
+	 * Slaar hjertet til eller fra paa en foedevare.
 	 *
-	 * Visningen rettes foerst, saa stjernen skifter med det samme, og rulles
+	 * Visningen rettes foerst, saa hjertet skifter med det samme, og rulles
 	 * tilbage hvis skrivningen fejler. Ingen fejlbesked: hun har ikke mistet
-	 * noget, og en stjerne er ikke vigtig nok til at afbryde hende midt i at
+	 * noget, og en hjerte er ikke vigtig nok til at afbryde hende midt i at
 	 * registrere sin mad. Samme aftale som hjertet paa en opskrift.
 	 */
-	async function skiftStjernePaa(foodId: string) {
+	async function skiftHjertePaa(foodId: string) {
 		const uid = user?.uid;
 		if (!uid || !foodId) return;
-		const foer = stjerner;
-		const skalVaere = !erStjernet(foer, foodId);
-		stjerneRettet = skiftStjerne(foer, foodId);
+		const foer = hjerter;
+		const skalVaere = !erHjertet(foer, foodId);
+		hjerteRettet = skiftHjerte(foer, foodId);
 		try {
-			await saetStjerne3(uid, foodId, skalVaere);
+			await saetHjerte3(uid, foodId, skalVaere);
 		} catch (e) {
-			console.warn('[ny] kunne ikke gemme stjernen', e);
-			stjerneRettet = foer;
+			console.warn('[ny] kunne ikke gemme hjertet', e);
+			hjerteRettet = foer;
 		}
 	}
 
@@ -1202,7 +1202,7 @@
 	{#if traef.length > 0}
 		<div class="tm-traef">
 			{#each traef as f (f.id)}
-				<!-- Stjernen staar for sig til hoejre, saa et tryk paa selve
+				<!-- Hjertet staar for sig til hoejre, saa et tryk paa selve
 				     linjen stadig aabner maengden. Samme opdeling som krydset
 				     i "I dette maaltid". Linns valg 12. august. -->
 				<div class="tm-tr-raekke">
@@ -1212,13 +1212,13 @@
 					</button>
 					<button
 						type="button"
-						class="tm-tr-stjerne"
-						class:paa={erStjernet(stjerner, f.id)}
-						aria-pressed={erStjernet(stjerner, f.id)}
-						aria-label="Stjerne"
-						onclick={() => skiftStjernePaa(f.id)}
+						class="tm-tr-hjerte"
+						class:paa={erHjertet(hjerter, f.id)}
+						aria-pressed={erHjertet(hjerter, f.id)}
+						aria-label="Marker med hjerte"
+						onclick={() => skiftHjertePaa(f.id)}
 					>
-						{erStjernet(stjerner, f.id) ? '★' : '☆'}
+						<svg viewBox="0 0 24 24" fill={erHjertet(hjerter, f.id) ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8C19 15.6 12 20 12 20Z" /></svg>
 					</button>
 				</div>
 			{/each}
@@ -1240,8 +1240,12 @@
 		</button>
 		<button type="button" class="tm-ikon" onclick={() => aabnKilde('faste')}>
 			<span class="i3">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8C19 15.6 12 20 12 20Z" />
+				<!-- Tallerken, ikke hjerte. Hjertet betyder bogmaerke i det her
+				     modul, baade paa en opskrift og paa en madvare, og det maa
+				     ikke ogsaa betyde en hylde. Linns valg 12. august. -->
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+					<circle cx="12" cy="12" r="8.5" />
+					<circle cx="12" cy="12" r="3.8" />
 				</svg>
 			</span>
 			Faste måltider
@@ -1253,7 +1257,7 @@
 					<path d="M4 20.5h9" />
 				</svg>
 			</span>
-			Mine
+			Mine madvarer
 		</button>
 	</div>
 
@@ -1266,8 +1270,9 @@
 	     ti ting i sig. Se SPEC-3.0.md 26.10. -->
 	{#if kanGemmeSomFast}
 		<button type="button" class="fm-gem-knap" onclick={() => (gemArk = true)}>
-			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-				<path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8C19 15.6 12 20 12 20Z" />
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+				<circle cx="12" cy="12" r="8.5" />
+				<circle cx="12" cy="12" r="3.8" />
 			</svg>
 			Gem som fast måltid
 		</button>
@@ -1365,9 +1370,9 @@
 {:else if aabentArk === 'mine'}
 	<MineFodevarerArk
 		{egne}
-		{stjernede}
+		{hjertede}
 		henter={arkHenter}
-		onstjerne={skiftStjernePaa}
+		onhjerte={skiftHjertePaa}
 		onvaelg={vaelgFraArk}
 		onny={() => nyFodevare()}
 		onret={retFodevare}

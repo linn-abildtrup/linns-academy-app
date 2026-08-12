@@ -123,7 +123,7 @@
 			{:else if uden.length > 0 && linjer.length > 0}
 				Gem de {linjer.length} andre
 			{:else}
-				Gem
+				Gem det faste måltid
 			{/if}
 		</button>
 	</div>

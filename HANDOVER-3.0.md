@@ -84,7 +84,7 @@ gamle app og må kun læses.
 | `content/mineOpskrifter3.ts` | Kundens egne opskrifter. Se 9.11 | 66 |
 | `content/egneFodevarer3.ts` | Kundens egne fødevarer. Se 9.12 | 22 |
 | `content/tal3.ts` | Dansk komma og Atwater. Delt af de skærme hvor hun taster næringstal | via de to |
-| `content/stjerneFodevare3.ts` | Stjernen på en fødevare. Se 9.14 | 15 |
+| `content/hjerteFodevare3.ts` | Hjertet på en fødevare. Se 9.14 | 15 |
 | `content/fodevareSoeg3.ts` | Søgning i fødevarer: hele ord og flere ord. Se 9.14 | 24 |
 | `content/opskriftPortion3.ts` | Portioner og makro. **Regnereglen**, se 9.9 | 14 |
 | `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid. Se 9.9 | 20 |
@@ -110,7 +110,7 @@ gamle app og må kun læses.
 | `firestore/fasteMaaltider3.ts` | Faste måltider. Den tredje der **skriver** kundedata, både genvejen og dagbogen. Se 9.10 |
 | `firestore/mineOpskrifter3.ts` | Kundens egne opskrifter. Den fjerde der **skriver** kundedata. Se 9.11 |
 | `firestore/egneFodevarer3.ts` | Kundens egne fødevarer. Den femte der **skriver** kundedata. Se 9.12 |
-| `firestore/stjerneFodevare3.ts` | Stjernen på en fødevare. Den sjette der **skriver** kundedata. Se 9.14 |
+| `firestore/hjerteFodevare3.ts` | Hjertet på en fødevare. Den sjette der **skriver** kundedata. Se 9.14 |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
@@ -228,7 +228,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 **En favorit har ikke plads til makro, og det opdager du ikke før tallet er forkert.** `favoritmaaltider` gemmer kun et navn og en liste af varelinjer. Protein og fiber regnes ud ved at slå hver linje op i fødevare-databasen, og en linje uden `foodId` springes over. Gemmer du derfor noget som favorit der ikke består af rigtige madvarer, fx en opskrift, lægger et tryk på den **0 g protein og 0 g fiber** i hendes dag, uden en eneste fejlmeddelelse. I et modul der hedder 30-30 og handler om præcis de to tal er det den værst tænkelige fejl, for den ser rigtig ud. Det er derfor favorit-opskrifter blev bygget som et bogmærke i stedet, se 9.8. **Målt 12. august: 178 af 2.905 favoritter, altså 6 %, har allerede mindst én linje uden makro**, så de kunder logger lige nu mindre end de spiste. Det er en grænse i den gamle model og ikke noget vi har lavet, og det er ikke løst.
 
-**En bred CSS-regel rammer også den nye knap du lægger ved siden af.** Stjernen i søgeresultatet lagde sig 12. august oven i madvarens navn, og teksten brækkede om på ét ord pr linje. Årsagen var `.tm-traef button`, som satte `width: 100%` på ALT hvad der var en knap i søgeresultatet. Den ramte også stjernen. **Se efter brede regler på det gamle element, før du lægger en knap ved siden af det.** Der er flere af dem i `ny.css`, for eksempel `.va-liste button` og `.ol-faner button`. **Og bemærk at hverken `svelte-check`, testene eller et build fanger den slags.** Det gør kun øjne.
+**En bred CSS-regel rammer også den nye knap du lægger ved siden af.** Hjertet i søgeresultatet lagde sig 12. august oven i madvarens navn, og teksten brækkede om på ét ord pr linje. Årsagen var `.tm-traef button`, som satte `width: 100%` på ALT hvad der var en knap i søgeresultatet. Den ramte også hjertet. **Se efter brede regler på det gamle element, før du lægger en knap ved siden af det.** Der er flere af dem i `ny.css`, for eksempel `.va-liste button` og `.ol-faner button`. **Og bemærk at hverken `svelte-check`, testene eller et build fanger den slags.** Det gør kun øjne.
 
 **En komponent kan være skrevet, testet og importeret uden nogensinde at blive brugt.** Faste måltider åbnede 12. august et tomt ark uden en eneste fejl. Det nye ark var aldrig kommet ind i markup, så det gamle Vælg-ark åbnede i stedet, med den nye titel på og uden en tom tekst at vise. **Hverken `svelte-check` eller testene fanger det**, for koden er korrekt, den bliver bare aldrig kaldt. Tjek at en ny komponent faktisk står i markup, ikke kun at den er importeret.
 
@@ -673,14 +673,14 @@ Reglen var spredt ud over tre skærme i to apps, og de var uenige. På de 122 op
 
 **Og en regel fra Linn 12. august:** en fødevare kunden opretter eller scanner må **kun kunne ses af hende selv**. Kilden er allerede lukket, `gemCommunityFodevare` kaldes ikke længere. De 49 gamle blev gennemgået, og tre blev rettet efter Linns go, med sikkerhedskopi i `backup/`. Historikken blev ikke rørt. Se SPEC 26.14.
 
-### 9.14 Stjernen og søgningen, 12. august
+### 9.14 Hjertet og søgningen, 12. august
 
-**Stjernen på en fødevare er bygget.** Jeg troede den var dobbeltarbejde ved siden af Det du plejer, og målingen viste at det passer ikke: kun 18 % af de stjernede ville stå på fliserne. Fliserne viser fire pr måltid, og kunden har median 13 stjerner. Se SPEC 26.15.
+**Hjertet på en fødevare er bygget.** Jeg troede den var dobbeltarbejde ved siden af Det du plejer, og målingen viste at det passer ikke: kun 18 % af de hjertede ville stå på fliserne. Fliserne viser fire pr måltid, og kunden har median 13 hjerter. Se SPEC 26.15.
 
 **To regler du ikke må bryde, begge med test:**
 
-- **Hendes EGNE fødevarer holdes UDE af stjerne-gruppen.** 72 % af de 6.855 stjerner er varer hun selv har oprettet, sat automatisk af den gamle app. De står i forvejen under Mine egne, og uden filteret ville halvdelen af listen være en kopi af den anden halvdel
-- **3.0 sætter ALDRIG stjernen automatisk.** Gør vi det, fyldes listen igen med noget hun ikke har valgt, og så er tallet ubrugeligt næste gang nogen måler
+- **Hendes EGNE fødevarer holdes UDE af hjerte-gruppen.** 72 % af de 6.855 hjerter er varer hun selv har oprettet, sat automatisk af den gamle app. De står i forvejen under Mine egne, og uden filteret ville halvdelen af listen være en kopi af den anden halvdel
+- **3.0 sætter ALDRIG hjertet automatisk.** Gør vi det, fyldes listen igen med noget hun ikke har valgt, og så er tallet ubrugeligt næste gang nogen måler
 
 **Søgningen i fødevarer kan nu to ting mere.** Hele ord kommer først, så "æg" ikke drukner i Æggenudler. Og to ord virker, delt ved mellemrum eller komma. Begge dele er fejl vi har set før i opskrifterne, se 9.5. Den gamle apps afkryds "Kun hele ord" blev bevidst ikke kopieret: sortering skjuler ingenting, hvor afkrydset er enten eller. Se SPEC 26.16.
 
