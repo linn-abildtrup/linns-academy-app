@@ -32,6 +32,7 @@ import {
 	type SoegeFiltre
 } from './opskriftSoeg3';
 import { KATEGORIER3, type Kategori3 } from './opskriftKategori3';
+import { talFra, talTil } from './tal3';
 
 export interface MinIngrediens {
 	navn: string;
@@ -309,26 +310,10 @@ export interface OpskriftUdkast {
 	makro: { protein: string; fiber: string; kh: string; fedt: string; kcal: string };
 }
 
-/**
- * Laeser et tal som hun ville skrive det.
- *
- * Dansk komma skal virke: skriver hun 1,5 spsk, er det halvanden og
- * ikke femten. Tomt og volapyk bliver til nul, saa et halvfaerdigt felt
- * aldrig kan blive til NaN i hendes dagbog.
- */
-export function talFra(tekst: string): number {
-	const rent = (tekst ?? '').trim().replace(',', '.').replace(/\s/g, '');
-	if (!rent) return 0;
-	const n = Number(rent);
-	if (!Number.isFinite(n) || n < 0) return 0;
-	return Math.round(n * 100) / 100;
-}
-
-/** Tallet tilbage som tekst, med dansk komma. */
-export function talTil(n: number | undefined): string {
-	if (n === undefined || n === null) return '';
-	return String(n).replace('.', ',');
-}
+// De to bor i tal3.ts, saa de skaerme hvor hun taster naeringstal selv
+// laeser tallene ens. Genudgivet her, saa alt om opskrifter kan hentes
+// ét sted.
+export { talFra, talTil };
 
 export function tilUdkast(min: MinOpskrift3): OpskriftUdkast {
 	const m = min.makroPrPortion;

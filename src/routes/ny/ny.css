@@ -6858,3 +6858,124 @@ button.tm-ikon:active > span {
 	outline: 3px solid var(--plum);
 	outline-offset: 2px;
 }
+
+/* ── Egne foedevarer ───────────────────────────────────────── */
+/*
+   Se SPEC-3.0.md afsnit 26.12. Foer i dag kunne 3.0 kun VISE hendes
+   egne foedevarer. Det var det eneste hul i Mad uden en omvej.
+*/
+
+.mf-ny {
+	margin-bottom: 0;
+}
+
+.mf-ret {
+	border: 0;
+	background: none;
+	color: var(--plum);
+	font-family: var(--sans);
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	padding: 0 6px;
+	min-height: 46px;
+	flex-shrink: 0;
+	cursor: pointer;
+}
+
+.mf-ret:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: -2px;
+	border-radius: 9px;
+}
+
+/*
+   Vejen ind naar soegningen ikke finder noget. Det er HER hun staar i
+   staa i dag: varen i haanden, en tom skaerm, og ingen vej videre.
+*/
+.tm-intet {
+	display: flex;
+	flex-direction: column;
+	gap: 9px;
+	align-items: flex-start;
+}
+
+.tm-lav-selv {
+	width: 100%;
+	background: var(--paper);
+	border: 1px dashed var(--line);
+	border-radius: 12px;
+	padding: 10px;
+	font-family: var(--sans);
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--plum);
+	min-height: 44px;
+	cursor: pointer;
+}
+
+.tm-lav-selv:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.nf-advarsel {
+	background: var(--honey-tint);
+	border-radius: 12px;
+	padding: 9px 12px;
+	margin: 0 0 11px;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: #6d4f22;
+}
+
+.nf-tjek {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 11px 13px;
+	margin-top: 11px;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	min-height: 46px;
+	cursor: pointer;
+}
+
+.nf-tjek input {
+	position: absolute;
+	opacity: 0;
+	width: 1px;
+	height: 1px;
+}
+
+.nf-boks {
+	width: 20px;
+	height: 20px;
+	border-radius: 6px;
+	border: 1px solid var(--line);
+	background: var(--paper-2);
+	flex-shrink: 0;
+	position: relative;
+}
+
+.nf-tjek input:checked + .nf-boks {
+	background: var(--plum);
+	border-color: var(--plum);
+}
+
+.nf-tjek input:checked + .nf-boks::after {
+	content: '';
+	position: absolute;
+	left: 6px;
+	top: 2px;
+	width: 5px;
+	height: 10px;
+	border: solid #fff;
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+}
+
+.nf-tjek input:focus-visible + .nf-boks {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}

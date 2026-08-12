@@ -36,10 +36,8 @@
 	import { hentAdgangsskema, maaSeUdvidetNaering } from '$lib/firestore/featureAdgang3';
 	import { datoNoegle } from '$lib/firestore/forside3';
 	import MaengdeArk from '$lib/components/ny/MaengdeArk.svelte';
-	import VaelgArk, { type Valg } from '$lib/components/ny/VaelgArk.svelte';
 	import OpskriftArk from '$lib/components/ny/OpskriftArk.svelte';
 	import OpskriftListe from '$lib/components/ny/OpskriftListe.svelte';
-	import { hentMineCustomFodevarer } from '$lib/firestore/kost';
 	import { favoritterFra, erFavorit, skiftFavorit } from '$lib/content/favoritOpskrift3';
 	import { makroForPortioner } from '$lib/content/opskriftPortion3';
 	import { saetFavoritOpskrift } from '$lib/firestore/favoritOpskrift3';
@@ -102,6 +100,22 @@
 	import MinOpskriftArk from '$lib/components/ny/MinOpskriftArk.svelte';
 	import RetOpskriftArk from '$lib/components/ny/RetOpskriftArk.svelte';
 	import NyOpskriftArk from '$lib/components/ny/NyOpskriftArk.svelte';
+
+	// Hendes egne foedevarer. Se SPEC-3.0.md afsnit 26.12.
+	import {
+		findesAllerede,
+		fraUdkast as fodevareFraUdkast,
+		tilUdkast as fodevareTilUdkast,
+		tomtUdkast,
+		type FodevareUdkast
+	} from '$lib/content/egneFodevarer3';
+	import {
+		gemEgenFodevare3,
+		hentEgneFodevarer3,
+		sletEgenFodevare3
+	} from '$lib/firestore/egneFodevarer3';
+	import MineFodevarerArk from '$lib/components/ny/MineFodevarerArk.svelte';
+	import NyFodevareArk from '$lib/components/ny/NyFodevareArk.svelte';
 	import { forberedBillede } from '$lib/utils/billede3';
 	import { harFeatureAdgang } from '$lib/content/features';
 	import type { Kategori3 } from '$lib/content/opskriftKategori3';
@@ -200,6 +214,10 @@
 	let nytUdkast = $state<{ start: OpskriftUdkast; billede: Blob | null } | null>(null);
 	/** Sat mens hendes foto af retten laegges op. */
 	let lagerBillede = $state(false);
+
+	// ── Egne foedevarer ────────────────────────────────────────
+	/** Arket hvor hun laver eller retter en. Null naar det er lukket. */
+	let fodevareArk = $state<{ id?: string; start: FodevareUdkast } | null>(null);
 
 	// Favorit-opskrifter, altsaa bogmaerker. Se content/favoritOpskrift3.ts.
 	//
@@ -334,8 +352,8 @@
 				// ingenting naar den allerede er hentet til fliserne.
 				faste = await hentFasteMaaltider(uid);
 				brug = brugsstatistik(await hentBrugshistorik(uid), faste);
-			} else if (kilde === 'mine' && egne.length === 0) {
-				egne = await hentMineCustomFodevarer(uid);
+			} else if (kilde === 'mine') {
+				egne = await hentEgneFodevarer3(uid);
 			}
 		} catch (e) {
 			console.error('[ny] kunne ikke hente', kilde, e);
@@ -343,32 +361,6 @@
 			arkHenter = false;
 		}
 	}
-
-	const arkTitel: Record<Kilde, string> = {
-		opskrifter: 'Opskrifter',
-		faste: 'Faste måltider',
-		mine: 'Mine fødevarer'
-	};
-
-	const arkTom: Record<Kilde, string> = {
-		opskrifter: 'Der er ingen opskrifter endnu.',
-		// Faste maaltider har sit eget ark med sin egen tomme tekst, se
-		// FasteMaaltiderArk. Den her bruges aldrig, men typen kraever den.
-		faste: '',
-		mine: 'Du har ikke lavet nogen egne fødevarer endnu. Dem laver du, når en vare ikke findes i forvejen.'
-	};
-
-	const arkPoster = $derived.by<Valg[]>(() => {
-		// Opskrifter og faste maaltider har hver deres eget ark.
-		if (aabentArk === 'mine') {
-			return egne.map((f) => ({
-				id: f.id,
-				navn: f.name,
-				under: `${f.p} g protein pr 100 g`
-			}));
-		}
-		return [];
-	});
 
 	/** Hvad der sker naar hun vaelger noget i arket. */
 	async function vaelgFraArk(id: string) {
@@ -691,6 +683,79 @@
 			});
 		} finally {
 			lagerBillede = false;
+		}
+	}
+
+	// ── Egne foedevarer ────────────────────────────────────────
+
+	/** Har hun allerede en vare der hedder det samme. Kun en advarsel. */
+	const fodevareAdvarsel = $derived.by(() => {
+		const a = fodevareArk;
+		if (!a) return null;
+		return findesAllerede(egne, a.start.navn, a.id)
+			? 'Du har allerede en fødevare der hedder det samme.'
+			: null;
+	});
+
+	function nyFodevare(navn = '') {
+		fodevareArk = { start: tomtUdkast(navn) };
+	}
+
+	function retFodevare(id: string) {
+		const f = egne.find((x) => x.id === id);
+		if (!f) return;
+		fodevareArk = { id, start: fodevareTilUdkast(f) };
+	}
+
+	/**
+	 * Gemmer varen. Er den NY, aabner maengde-arket bagefter, saa hun kan
+	 * laegge den i med det samme. Den gamle app laegger den i paa 100 g
+	 * uden at spoerge, og det passer ikke til 3.0, hvor maengden altid
+	 * vaelges. Hun er jo midt i at taste sit maaltid.
+	 */
+	async function gemFodevare(udkast: FodevareUdkast) {
+		const uid = user?.uid;
+		if (!uid) return;
+		gemmer = true;
+		try {
+			const data = fodevareFraUdkast(udkast);
+			const erNy = !fodevareArk?.id;
+			const id = await gemEgenFodevare3(uid, data, fodevareArk?.id);
+			const vare = { id, ...data };
+			// Ind i den liste soegningen bruger, saa den kan findes med det
+			// samme uden at hele foedevare-databasen hentes igen.
+			foods = new Map(foods).set(id, vare);
+			egne = erNy
+				? [...egne, vare].sort((a, b) => a.name.localeCompare(b.name, 'da'))
+				: egne.map((f) => (f.id === id ? vare : f));
+			fodevareArk = null;
+			if (erNy) {
+				aabentArk = null;
+				soegeord = '';
+				valgt = { food: vare, saedvanlig: null };
+			} else {
+				visKvittering({ slags: 'besked', tekst: `${data.name} er rettet` });
+			}
+		} catch (e) {
+			console.error('[ny] kunne ikke gemme foedevaren', e);
+		} finally {
+			gemmer = false;
+		}
+	}
+
+	async function sletFodevare(id: string) {
+		const uid = user?.uid;
+		const f = egne.find((x) => x.id === id);
+		if (!uid || !f) return;
+		try {
+			await sletEgenFodevare3(uid, id);
+			egne = egne.filter((x) => x.id !== id);
+			const uden = new Map(foods);
+			uden.delete(id);
+			foods = uden;
+			visKvittering({ slags: 'besked', tekst: `${f.name} er slettet` });
+		} catch (e) {
+			console.error('[ny] kunne ikke slette foedevaren', e);
 		}
 	}
 
@@ -1036,6 +1101,18 @@
 		/>
 	</div>
 
+	<!-- Vejen ind naar soegningen ikke finder noget. Det er HER hun staar
+	     i staa i dag: hun har varen i haanden, soeger, og faar en tom
+	     skaerm. Ordet foelger med ind i navnefeltet. -->
+	{#if soegeord.trim().length >= 2 && traef.length === 0}
+		<div class="kort rolig tm-intet">
+			<span>Ingen fødevarer hedder det.</span>
+			<button type="button" class="tm-lav-selv" onclick={() => nyFodevare(soegeord)}>
+				+ Lav "{soegeord.trim()}" selv
+			</button>
+		</div>
+	{/if}
+
 	{#if traef.length > 0}
 		<div class="tm-traef">
 			{#each traef as f (f.id)}
@@ -1171,14 +1248,28 @@
 		onslet={sletFast}
 		onluk={() => (aabentArk = null)}
 	/>
-{:else if aabentArk}
-	<VaelgArk
-		titel={arkTitel[aabentArk]}
-		poster={arkPoster}
+{:else if aabentArk === 'mine'}
+	<MineFodevarerArk
+		{egne}
 		henter={arkHenter}
-		tomTekst={arkTom[aabentArk]}
 		onvaelg={vaelgFraArk}
+		onny={() => nyFodevare()}
+		onret={retFodevare}
+		onslet={sletFodevare}
 		onluk={() => (aabentArk = null)}
+	/>
+{/if}
+
+{#if fodevareArk}
+	<NyFodevareArk
+		start={fodevareArk.start}
+		titel={fodevareArk.id ? 'Ret fødevaren' : 'Ny fødevare'}
+		gemTekst={fodevareArk.id ? 'Gem ændringerne' : 'Gem og vælg mængde'}
+		{gemmer}
+		{visUdvidet}
+		advarsel={fodevareAdvarsel}
+		ongem={gemFodevare}
+		onluk={() => (fodevareArk = null)}
 	/>
 {/if}
 
