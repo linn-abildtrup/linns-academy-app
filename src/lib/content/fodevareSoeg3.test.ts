@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MAKS_TRAEF, erHeltOrd, rang, soegFodevarer } from './fodevareSoeg3';
+import { MAKS_TRAEF, erHeltOrd, rang, soegFodevarer, soegetermer } from './fodevareSoeg3';
 import type { Fodevare } from './kost';
 
 function f(navn: string): Fodevare {
@@ -94,5 +94,65 @@ describe('soegFodevarer', () => {
 	it('kan bede om et andet antal', () => {
 		const mange = Array.from({ length: 20 }, (_, i) => f(`Ost nummer ${i}`));
 		expect(soegFodevarer(mange, 'ost', 3).length).toBe(3);
+	});
+});
+
+describe('flere ord', () => {
+	const foods = [
+		f('Skyr med vanilje'),
+		f('Skyr, naturel'),
+		f('Vaniljeis'),
+		f('Vanilje skyr drik'),
+		f('Kylling og broccoli'),
+		f('Broccoli')
+	];
+
+	// Foer 12. august gav "skyr vanilje" NUL traeffere, fordi hele
+	// strengen blev slaaet op paa én gang. Samme fejl som i
+	// opskrift-soegningen, se SPEC 9.5.
+	it('finder paa to ord adskilt af mellemrum', () => {
+		const r = soegFodevarer(foods, 'skyr vanilje').map((x) => x.name);
+		expect(r).toContain('Skyr med vanilje');
+		expect(r).toContain('Vanilje skyr drik');
+	});
+
+	it('er ligeglad med raekkefoelgen', () => {
+		const a = soegFodevarer(foods, 'skyr vanilje').map((x) => x.name);
+		const b = soegFodevarer(foods, 'vanilje skyr').map((x) => x.name);
+		expect(a).toEqual(b);
+	});
+
+	it('kraever at ALLE ord findes', () => {
+		const r = soegFodevarer(foods, 'skyr broccoli');
+		expect(r).toEqual([]);
+	});
+
+	// Den gamle app kraever komma. Her virker begge dele.
+	it('virker ogsaa med komma imellem', () => {
+		const r = soegFodevarer(foods, 'skyr, vanilje').map((x) => x.name);
+		expect(r).toContain('Skyr med vanilje');
+	});
+
+	it('taaler flere mellemrum og et komma til sidst', () => {
+		const r = soegFodevarer(foods, '  skyr   vanilje , ').map((x) => x.name);
+		expect(r).toContain('Skyr med vanilje');
+	});
+
+	// Vigtigt: et enkelt ord skal give praecis det samme som foer.
+	it('aendrer ikke noget for et enkelt ord', () => {
+		const r = soegFodevarer(foods, 'broccoli').map((x) => x.name);
+		expect(r).toEqual(['Broccoli', 'Kylling og broccoli']);
+	});
+
+	it('saetter dem hvor flest ord staar helt foerst', () => {
+		const r = soegFodevarer(foods, 'skyr vanilje').map((x) => x.name);
+		// Begge ord staar helt i "Vanilje skyr drik". I "Skyr med vanilje"
+		// staar de ogsaa begge helt, saa korteste navn afgoer.
+		expect(r[0]).toBe('Skyr med vanilje');
+	});
+
+	it('soegetermer deler ved baade mellemrum og komma', () => {
+		expect(soegetermer('skyr, vanilje  drik')).toEqual(['skyr', 'vanilje', 'drik']);
+		expect(soegetermer('   ')).toEqual([]);
 	});
 });

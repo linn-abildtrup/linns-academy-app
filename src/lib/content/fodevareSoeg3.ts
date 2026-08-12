@@ -49,27 +49,57 @@ export function rang(navn: string, ord: string): number {
 }
 
 /**
+ * Soegningen delt op i ord.
+ *
+ * Der deles ved MELLEMRUM saavel som komma. Foer 12. august blev hele
+ * strengen slaaet op paa én gang, saa "skyr vanilje" gav NUL traeffere.
+ * Praecis samme fejl som i opskrift-soegningen, hvor otte almindelige
+ * to-ords-soegninger alle gav nul. Se SPEC-3.0.md 9.5.
+ *
+ * Den gamle app kraever komma for det samme. Her virker begge dele.
+ */
+export function soegetermer(soegeord: string): string[] {
+	return (soegeord ?? '')
+		.toLowerCase()
+		.split(ORD_SKEL)
+		.map((t) => t.trim())
+		.filter((t) => t.length > 0);
+}
+
+/** Hvor mange af soegeordene der staar som HELE ord i navnet. */
+export function antalHeleOrd(navn: string, termer: string[]): number {
+	return termer.filter((t) => erHeltOrd(navn, t)).length;
+}
+
+/**
  * Soeger og sorterer.
  *
- * Matchningen er uaendret: navnet skal indeholde soegeordet. Det er kun
- * RAEKKEFOELGEN der er ny, saa ingen foedevare forsvinder af at vi
- * sorterer bedre.
+ * ALLE ord skal findes, men de maa staa i hvert sit hjoerne af navnet og
+ * i vilkaarlig raekkefoelge: "vanilje skyr" finder ogsaa Skyr med
+ * vanilje. Et enkelt ord giver praecis samme traeffere som foer, saa
+ * ingenting forsvandt da flere ord blev muligt.
+ *
+ * Raekkefoelgen: flest hele ord foerst, saa korteste navn.
  */
 export function soegFodevarer(
 	foods: Fodevare[],
 	soegeord: string,
 	maks: number = MAKS_TRAEF
 ): Fodevare[] {
-	const q = soegeord.trim().toLowerCase();
-	if (!q) return [];
+	const termer = soegetermer(soegeord);
+	if (termer.length === 0) return [];
 
-	const traef = foods.filter((f) => f.name.toLowerCase().includes(q));
+	const traef = foods.filter((f) => {
+		const navn = f.name.toLowerCase();
+		return termer.every((t) => navn.includes(t));
+	});
 
 	return traef
 		.sort((a, b) => {
-			const ra = rang(a.name, q);
-			const rb = rang(b.name, q);
-			if (ra !== rb) return ra - rb;
+			const ha = antalHeleOrd(a.name, termer);
+			const hb = antalHeleOrd(b.name, termer);
+			// Flest hele ord foerst, saa "aeg" ikke drukner i Aeggenudler.
+			if (ha !== hb) return hb - ha;
 			// Kortest navn foerst inden for hver gruppe: "Skyr" foer
 			// "Skyr med vanilje". Det er den enkle vare hun oftest vil have.
 			if (a.name.length !== b.name.length) return a.name.length - b.name.length;
