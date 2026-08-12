@@ -7009,3 +7009,47 @@ button.tm-r-t:focus-visible {
 	outline-offset: 3px;
 	border-radius: 8px;
 }
+
+/* ── Stjernen paa en foedevare ─────────────────────────────── */
+/*
+   Se SPEC-3.0.md 26.15. Stjernen staar for sig til hoejre i
+   soegeresultatet, saa et tryk paa selve linjen stadig aabner maengden.
+   Linns valg 12. august.
+*/
+
+.tm-tr-raekke {
+	display: flex;
+	align-items: stretch;
+	gap: 2px;
+}
+
+.tm-traef .tm-tr-vaelg {
+	flex: 1;
+	min-width: 0;
+}
+
+.tm-tr-stjerne,
+.mf-stjerne {
+	border: 0;
+	background: none;
+	color: var(--ink-3);
+	font-size: calc(19px * var(--fs-scale, 1));
+	line-height: 1;
+	/* Egen ramme, saa den ikke rammes naar hun sigter efter madvaren. */
+	width: 44px;
+	min-height: 44px;
+	flex-shrink: 0;
+	cursor: pointer;
+}
+
+.tm-tr-stjerne.paa,
+.mf-stjerne.paa {
+	color: var(--honey);
+}
+
+.tm-tr-stjerne:focus-visible,
+.mf-stjerne:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: -2px;
+	border-radius: 9px;
+}

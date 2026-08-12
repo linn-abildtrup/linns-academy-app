@@ -18,26 +18,51 @@
 
 	interface Props {
 		egne: Fodevare[];
+		/**
+		 * Hendes stjernede varer, UDEN hendes egne. De staar i forvejen
+		 * under Mine egne, og uden det ville halvdelen af listen vaere en
+		 * kopi af den anden halvdel. Se stjerneFodevare3.ts.
+		 */
+		stjernede?: Fodevare[];
 		henter?: boolean;
 		/** Vaelg den, altsaa aabn maengde-arket. */
 		onvaelg: (id: string) => void;
 		onny: () => void;
 		onret: (id: string) => void;
 		onslet: (id: string) => void;
+		/** Tager stjernen af igen. */
+		onstjerne?: (id: string) => void;
 		onluk: () => void;
 	}
 
-	let { egne, henter = false, onvaelg, onny, onret, onslet, onluk }: Props = $props();
+	let {
+		egne,
+		stjernede = [],
+		henter = false,
+		onvaelg,
+		onny,
+		onret,
+		onslet,
+		onstjerne = () => {},
+		onluk
+	}: Props = $props();
 
 	let soegeord = $state('');
 	/** Den raekke der spoerger "slet?" lige nu. Kun én ad gangen. */
 	let sletId = $state<string | null>(null);
 
-	const traef = $derived.by(() => {
+	function filtrer(liste: Fodevare[]): Fodevare[] {
 		const q = soegeord.trim().toLowerCase();
-		if (!q) return egne;
-		return egne.filter((f) => f.name.toLowerCase().includes(q));
-	});
+		if (!q) return liste;
+		return liste.filter((f) => f.name.toLowerCase().includes(q));
+	}
+
+	const traef = $derived(filtrer(egne));
+	const traefStjerner = $derived(filtrer(stjernede));
+	const ialt = $derived(egne.length + stjernede.length);
+	/** Grupperne staar kun paa naar der ER to. Har hun ingen stjerner,
+	    ser arket praecis ud som foer. */
+	const harGrupper = $derived(stjernede.length > 0 && egne.length > 0);
 
 	function fokuser(node: HTMLInputElement) {
 		// Tastaturet maa ikke springe op af sig selv. Hun vil oftest
@@ -58,9 +83,9 @@
 		<div class="ma-greb" aria-hidden="true"></div>
 		<button type="button" class="ma-luk" onclick={onluk} aria-label="Luk">×</button>
 
-		<h2 class="va-titel" id="mf-titel">Mine fødevarer</h2>
+		<h2 class="va-titel" id="mf-titel">{harGrupper ? 'Mine ting' : 'Mine fødevarer'}</h2>
 
-		{#if egne.length > 0}
+		{#if ialt > 0}
 			<input
 				class="va-soeg"
 				type="search"
@@ -76,6 +101,46 @@
 		<div class="fm-liste">
 			{#if henter}
 				<p class="va-tom">Henter</p>
+			{:else if stjernede.length > 0}
+				{#if harGrupper}<div class="fm-gruppe">Med stjerne</div>{/if}
+				{#each traefStjerner as f (f.id)}
+					<div class="fm-kort">
+						<button type="button" class="fm-vaelg" onclick={() => onvaelg(f.id)}>
+							<span class="fm-navn">{f.name}</span>
+							<span class="fm-under">{underTekst(f)}</span>
+						</button>
+						<button
+							type="button"
+							class="mf-stjerne paa"
+							onclick={() => onstjerne(f.id)}
+							aria-label="Fjern stjernen fra {f.name}">★</button
+						>
+					</div>
+				{/each}
+				{#if harGrupper}<div class="fm-gruppe">Mine egne fødevarer</div>{/if}
+				{#each traef as f (f.id)}
+					{#if sletId === f.id}
+						<div class="fm-bekraeft">
+							<span class="fm-b-t">Slet {f.name}?</span>
+							<span class="fm-b-n">
+								Det du allerede har registreret bliver stående. Kun genvejen forsvinder.
+							</span>
+							<div class="fm-b-k">
+								<button type="button" class="fm-b-nej" onclick={() => (sletId = null)}>Behold</button>
+								<button type="button" class="fm-b-ja" onclick={() => slet(f.id)}>Slet</button>
+							</div>
+						</div>
+					{:else}
+						<div class="fm-kort">
+							<button type="button" class="fm-vaelg" onclick={() => onvaelg(f.id)}>
+								<span class="fm-navn">{f.name}</span>
+								<span class="fm-under">{underTekst(f)}</span>
+							</button>
+							<button type="button" class="mf-ret" onclick={() => onret(f.id)} aria-label="Ret {f.name}">Ret</button>
+							<button type="button" class="fm-slet" onclick={() => (sletId = f.id)} aria-label="Slet {f.name}">×</button>
+						</div>
+					{/if}
+				{/each}
 			{:else if egne.length === 0}
 				<p class="va-tom">
 					Du har ikke lavet nogen egne fødevarer endnu. Dem laver du, når en vare ikke findes i

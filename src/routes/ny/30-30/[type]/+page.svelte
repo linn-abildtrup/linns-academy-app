@@ -116,6 +116,15 @@
 		sletEgenFodevare3
 	} from '$lib/firestore/egneFodevarer3';
 	import MineFodevarerArk from '$lib/components/ny/MineFodevarerArk.svelte';
+
+	// Stjernen paa en foedevare. Se SPEC-3.0.md afsnit 26.15.
+	import {
+		erStjernet,
+		skiftStjerne,
+		stjernedeFodevarer,
+		stjernerFra
+	} from '$lib/content/stjerneFodevare3';
+	import { saetStjerne3 } from '$lib/firestore/stjerneFodevare3';
 	import NyFodevareArk from '$lib/components/ny/NyFodevareArk.svelte';
 	import { forberedBillede } from '$lib/utils/billede3';
 	import { harFeatureAdgang } from '$lib/content/features';
@@ -239,7 +248,16 @@
 	//
 	// null betyder "ikke roert endnu, brug det der staar paa kunden".
 	let favoritRettet = $state<string[] | null>(null);
+
+	// Stjernerne paa foedevarer. Samme moenster som hjertet: en lokal kopi,
+	// saa stjernen skifter i samme oejeblik hun trykker.
+	let stjerneRettet = $state<string[] | null>(null);
 	const favoritOpskrifter = $derived(favoritRettet ?? favoritterFra(userDoc));
+	const stjerner = $derived(stjerneRettet ?? stjernerFra(userDoc));
+	/** Hendes stjernede varer, UDEN hendes egne. De staar under Mine egne. */
+	const stjernede = $derived(
+		stjernedeFodevarer(stjerner, foods, new Set(egne.map((f) => f.id)))
+	);
 
 	const erIDag = $derived(dato === iDag);
 	const kanFrem = $derived(dato < iDag);
@@ -957,6 +975,28 @@
 		}
 	}
 
+	/**
+	 * Slaar stjernen til eller fra paa en foedevare.
+	 *
+	 * Visningen rettes foerst, saa stjernen skifter med det samme, og rulles
+	 * tilbage hvis skrivningen fejler. Ingen fejlbesked: hun har ikke mistet
+	 * noget, og en stjerne er ikke vigtig nok til at afbryde hende midt i at
+	 * registrere sin mad. Samme aftale som hjertet paa en opskrift.
+	 */
+	async function skiftStjernePaa(foodId: string) {
+		const uid = user?.uid;
+		if (!uid || !foodId) return;
+		const foer = stjerner;
+		const skalVaere = !erStjernet(foer, foodId);
+		stjerneRettet = skiftStjerne(foer, foodId);
+		try {
+			await saetStjerne3(uid, foodId, skalVaere);
+		} catch (e) {
+			console.warn('[ny] kunne ikke gemme stjernen', e);
+			stjerneRettet = foer;
+		}
+	}
+
 	function aabnArk(food: Fodevare, saedvanlig: { portion: number; enhedId?: string } | null) {
 		valgt = { food, saedvanlig };
 	}
@@ -1163,10 +1203,25 @@
 	{#if traef.length > 0}
 		<div class="tm-traef">
 			{#each traef as f (f.id)}
-				<button type="button" onclick={() => aabnArk(f, null)}>
-					<span class="tm-tr-navn">{f.name}</span>
-					<span class="tm-tr-makro">{f.p} g protein pr 100 g</span>
-				</button>
+				<!-- Stjernen staar for sig til hoejre, saa et tryk paa selve
+				     linjen stadig aabner maengden. Samme opdeling som krydset
+				     i "I dette maaltid". Linns valg 12. august. -->
+				<div class="tm-tr-raekke">
+					<button type="button" class="tm-tr-vaelg" onclick={() => aabnArk(f, null)}>
+						<span class="tm-tr-navn">{f.name}</span>
+						<span class="tm-tr-makro">{f.p} g protein pr 100 g</span>
+					</button>
+					<button
+						type="button"
+						class="tm-tr-stjerne"
+						class:paa={erStjernet(stjerner, f.id)}
+						aria-pressed={erStjernet(stjerner, f.id)}
+						aria-label="Stjerne"
+						onclick={() => skiftStjernePaa(f.id)}
+					>
+						{erStjernet(stjerner, f.id) ? '★' : '☆'}
+					</button>
+				</div>
 			{/each}
 		</div>
 	{/if}
@@ -1311,7 +1366,9 @@
 {:else if aabentArk === 'mine'}
 	<MineFodevarerArk
 		{egne}
+		{stjernede}
 		henter={arkHenter}
+		onstjerne={skiftStjernePaa}
 		onvaelg={vaelgFraArk}
 		onny={() => nyFodevare()}
 		onret={retFodevare}
