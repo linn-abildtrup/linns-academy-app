@@ -55,9 +55,13 @@
 		 * findes fanen slet ikke. Se mineOpskrifter3.ts.
 		 */
 		mine?: MinListePost[];
+		/** Maa hun lave en ny med kamera og AI. Feature-styret. */
+		kanOprette?: boolean;
 		onvaelg: (id: string) => void;
 		/** Kaldes i stedet for onvaelg naar hun vaelger en af sine egne. */
 		onvaelgEgen?: (id: string) => void;
+		/** Hun vil lave en ny af et billede. */
+		onny?: () => void;
 		onluk: () => void;
 	}
 
@@ -67,8 +71,10 @@
 		startKategori = null,
 		favoritter = [],
 		mine = [],
+		kanOprette = false,
 		onvaelg,
 		onvaelgEgen = () => {},
+		onny = () => {},
 		onluk
 	}: Props = $props();
 
@@ -247,6 +253,14 @@
 					onclick={() => (fane = 'mine')}
 				>
 					Mine <span class="ol-fane-tal">{mine.length}</span>
+				</button>
+			{/if}
+			<!-- Knappen skal vaere der OGSAA naar hun ingen egne har.
+			     Ellers kunne den foerste aldrig laves, for fanen findes
+			     ikke endnu. -->
+			{#if kanOprette}
+				<button type="button" class="ol-ny" onclick={onny} aria-label="Ny opskrift af et billede">
+					+ Ny
 				</button>
 			{/if}
 		</div>

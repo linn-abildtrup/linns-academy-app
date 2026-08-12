@@ -6709,3 +6709,124 @@ button.tm-ikon:active > span {
 	font-size: calc(12.5px * var(--fs-scale, 1));
 	color: #6d4f22;
 }
+
+/* ── Ny opskrift af et billede ─────────────────────────────── */
+
+/* Knappen ligger ved fanerne og er der OGSAA naar hun ingen egne
+   opskrifter har. Ellers kunne den foerste aldrig laves. */
+.ol-ny {
+	margin-left: auto;
+	background: var(--paper);
+	border: 1px dashed var(--line);
+	border-radius: 999px;
+	padding: 7px 13px;
+	font-family: var(--sans);
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--plum);
+	min-height: 38px;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.ol-ny:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.no-under {
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	line-height: 1.5;
+	margin: 4px 0 13px;
+}
+
+.no-billeder {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-bottom: 11px;
+}
+
+.no-b {
+	position: relative;
+	width: 88px;
+	height: 88px;
+	border-radius: 12px;
+	overflow: hidden;
+	background: var(--paper-2);
+}
+
+.no-b img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.no-b-fjern {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	width: 26px;
+	height: 26px;
+	border: 0;
+	border-radius: 50%;
+	background: rgba(56, 44, 42, 0.72);
+	color: #fff;
+	font-size: calc(15px * var(--fs-scale, 1));
+	line-height: 1;
+	cursor: pointer;
+}
+
+/* Det raa fil-felt ser forskelligt ud i hver browser og siger ikke hvad
+   der sker. Knappen herunder er den hun ser. */
+.no-input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.no-vaelg {
+	width: 100%;
+	background: var(--paper);
+	border: 1px dashed var(--line);
+	border-radius: 13px;
+	padding: 13px;
+	font-family: var(--sans);
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--plum);
+	min-height: 50px;
+	cursor: pointer;
+}
+
+.no-vaelg:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.no-hjaelp {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	line-height: 1.45;
+	margin: 8px 0 0;
+}
+
+.no-fejl {
+	background: var(--honey-tint);
+	border-radius: 12px;
+	padding: 10px 12px;
+	margin: 11px 0 0;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: #6d4f22;
+	line-height: 1.45;
+}
+
+.no-arbejder {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin: 11px 0 0;
+}

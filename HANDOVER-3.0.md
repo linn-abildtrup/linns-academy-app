@@ -59,7 +59,7 @@ gamle app og må kun læses.
 |---|---|
 | `src/routes/ny/+layout.svelte` | Skallen. Adgangs-gate, spærring, bundmenu, contexts for `user`, `userDoc`, `adgang` og `forlob`. **Læg ikke nyt her uden en god grund**, se SPEC 26.5 |
 | `src/routes/ny/ny.css` | Alt design. Scoped under `.ny-app`. Cirka 2.000 linjer |
-| `src/lib/components/ny/` | 25 komponenter, alle kun brugt i 3.0 |
+| `src/lib/components/ny/` | 27 komponenter, alle kun brugt i 3.0 |
 | `src/lib/utils/billede3.ts` | Skalering og webp i browseren. `billede.ts` er den gamle og må ikke røres |
 
 **Ren logik, ingen database, alt sammen testet:**
@@ -81,7 +81,7 @@ gamle app og må kun læses.
 | `content/hurtigStart3.ts` | 3.0's opstartsregel plus `opstartsBillede()`. Se 9.7 | 13 |
 | `content/favoritOpskrift3.ts` | Favorit-opskrifter, altså bogmærker. Se 9.8 | 22 |
 | `content/fasteMaaltider3.ts` | Faste måltider, altså "byg et måltid". Se 9.10 | 36 |
-| `content/mineOpskrifter3.ts` | Kundens egne opskrifter. Se 9.11 | 34 |
+| `content/mineOpskrifter3.ts` | Kundens egne opskrifter. Se 9.11 | 61 |
 | `content/opskriftPortion3.ts` | Portioner og makro. **Regnereglen**, se 9.9 | 14 |
 | `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid. Se 9.9 | 20 |
 | `content/beskeder3.ts` | "Til dig lige nu" | 8 |
@@ -234,7 +234,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1178 tests lige nu, alle grønne
+npm test                               # 1205 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -619,13 +619,21 @@ Reglen var spredt ud over tre skærme i to apps, og de var uenige. På de 122 op
 
 **Der skal intet udgives i Firebase**, hverken regler eller Storage-regler. Alt er dækket i forvejen. **Og AI-motoren findes allerede** som `/api/analyser-opskrift`, som 3.0 bare kalder.
 
-**Bygget i tre bidder:** finde og logge, så rette og slette, så oprette med kamera og AI.
+**Bygget i tre bidder samme dag:** finde og logge, så rette og slette, så oprette med kamera og AI.
+
+**`RetOpskriftArk` bruges TO steder:** når hun retter en opskrift hun har, og når hun gennemgår det AI'en har læst af et billede. Derfor arbejder den på et udkast og ikke på dokumentet. Retter du noget der, så husk at det rammer begge veje.
+
+**Hun gennemgår altid AI'ens svar før der gemmes.** Et gæt der lander direkte i dagbogen uden at hun har set det, ville være den forkerte slags automatik i et modul der handler om præcis to tal.
+
+**Alt hvad AI'en svarer læses defensivt**, se `fraAiSvar`. Svaret er skrevet af en model og ikke af vores kode, og hun har lige taget et billede hun ikke vil miste. Der er tolv tests på netop de tilfælde.
+
+**Billedet lægges op FØR dokumentet skrives.** Den omvendte rækkefølge ville give en halv opskrift uden billede.
 
 **Nye filer:**
 
 | Fil | Hvad | Tests |
 |---|---|---|
-| `content/mineOpskrifter3.ts` | Måltider, filtrering, portioner og makro | 34 |
+| `content/mineOpskrifter3.ts` | Måltider, filtrering, portioner, makro, udkast og AI-svaret | 61 |
 | `firestore/mineOpskrifter3.ts` | Læsning, måltider og sletning | |
 | `components/ny/MinOpskriftArk.svelte` | Arket | |
 

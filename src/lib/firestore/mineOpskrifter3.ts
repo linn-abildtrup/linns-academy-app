@@ -16,7 +16,8 @@
 // ============================================================
 
 import { collection, deleteDoc, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
-import { db } from '$lib/firebase';
+import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
+import { db, storage } from '$lib/firebase';
 import type { Kategori3 } from '$lib/content/opskriftKategori3';
 import type {
 	BrugtOpskrift,
@@ -118,4 +119,52 @@ export async function gemMinOpskrift3(
 	}
 ): Promise<void> {
 	await setDoc(dokument(uid, id), { ...data, opdateret: serverTimestamp() }, { merge: true });
+}
+
+/**
+ * Opretter en ny opskrift med hendes billede.
+ *
+ * BILLEDET LAEGGES OP FOERST, og dokumentet skrives bagefter. Fejler
+ * uploaden, findes der ingen halv opskrift uden billede. Fejler
+ * dokumentet, ligger der en foraeldreloes fil i Storage, og det er den
+ * billige af de to fejl.
+ *
+ * Stien er den samme som den gamle app bruger, saa reglerne daekker den
+ * i forvejen og der skal intet udgives i Firebase.
+ */
+export async function opretMinOpskrift3(
+	uid: string,
+	data: {
+		navn: string;
+		beskrivelse: string;
+		antalPortioner: number;
+		ingredienser: MinIngrediens[];
+		makroPrPortion: MinMakro;
+		kategorier3: Kategori3[];
+	},
+	billede: Blob | null
+): Promise<string> {
+	let billedeUrl: string | undefined;
+	let billedeSti: string | undefined;
+
+	if (billede) {
+		// Tidsstempel plus tilfaeldige tegn, saa to billeder taget i samme
+		// sekund ikke kan skrive oven i hinanden.
+		const navn = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+		billedeSti = `users/${uid}/opskrift-billeder/${navn}`;
+		const filRef = storageRef(storage, billedeSti);
+		await uploadBytes(filRef, billede, { contentType: billede.type });
+		billedeUrl = await getDownloadURL(filRef);
+	}
+
+	// Samme id-form som den gamle app bruger, saa de to ser ens ud.
+	const id = `opskrift_${Date.now()}`;
+	const nu = serverTimestamp();
+	await setDoc(dokument(uid, id), {
+		...data,
+		...(billedeUrl ? { billedeUrl, billedeSti } : {}),
+		oprettet: nu,
+		opdateret: nu
+	});
+	return id;
 }

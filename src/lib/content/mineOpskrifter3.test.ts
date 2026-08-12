@@ -10,6 +10,7 @@ import {
 	makroForPortioner,
 	tilListePost,
 	tilUdkast,
+	fraAiSvar,
 	fraUdkast,
 	hvadMangler,
 	talFra,
@@ -344,5 +345,89 @@ describe('at rette i en opskrift', () => {
 		u.makro = { protein: '', fiber: '', kh: '', fedt: '', kcal: '' };
 		expect(udkastDuger(u)).toBe(true);
 		expect(fraUdkast(u).makroPrPortion.protein).toBe(0);
+	});
+});
+
+describe('fraAiSvar', () => {
+	const godt = {
+		navn: 'Mors græskarsuppe',
+		antalPortioner: 4,
+		ingredienser: [
+			{ navn: 'Hokkaido', maengde: 600, enhed: 'g' },
+			{ navn: 'Ingefær', maengde: 1.5, enhed: 'spsk' }
+		],
+		makroPrPortion: { protein: 18, fiber: 7, kh: 34, fedt: 12, kcal: 340 }
+	};
+
+	it('laeser et almindeligt svar', () => {
+		const r = fraAiSvar(godt);
+		expect(r.fejl).toBeUndefined();
+		expect(r.udkast?.navn).toBe('Mors græskarsuppe');
+		expect(r.udkast?.antalPortioner).toBe(4);
+		expect(r.udkast?.ingredienser.length).toBe(2);
+		expect(r.udkast?.makro.protein).toBe('18');
+	});
+
+	it('giver dansk komma tilbage i felterne', () => {
+		expect(fraAiSvar(godt).udkast?.ingredienser[1].maengde).toBe('1,5');
+	});
+
+	// Modellen svarer med error naar billedet ikke er en opskrift.
+	it('siger pænt fra naar billedet ikke er en opskrift', () => {
+		const r = fraAiSvar({ error: 'Billedet indeholder ikke en madopskrift' });
+		expect(r.udkast).toBeUndefined();
+		expect(r.fejl).toContain('opskrift');
+	});
+
+	it('siger fra naar der slet ikke kom et svar', () => {
+		expect(fraAiSvar(null).fejl).toBeTruthy();
+		expect(fraAiSvar('noget tekst').fejl).toBeTruthy();
+	});
+
+	// Alt herunder er svar en model kan finde paa at give. Ingen af dem
+	// maa vaelte skaermen, for hun har lige taget et billede.
+	it('giver den et navn naar modellen glemte det', () => {
+		const r = fraAiSvar({ ...godt, navn: undefined });
+		expect(r.udkast?.navn).toBe('Min opskrift');
+	});
+
+	it('taaler at ingredienserne mangler helt', () => {
+		const r = fraAiSvar({ ...godt, ingredienser: undefined });
+		// Én tom linje at skrive i, saa skaermen ikke staar bar.
+		expect(r.udkast?.ingredienser.length).toBe(1);
+		expect(r.udkast?.ingredienser[0].navn).toBe('');
+	});
+
+	it('taaler tal der kommer som tekst', () => {
+		const r = fraAiSvar({
+			...godt,
+			antalPortioner: '4',
+			makroPrPortion: { protein: '18', fiber: '7', kh: '34', fedt: '12', kcal: '340' }
+		});
+		expect(r.udkast?.antalPortioner).toBe(4);
+		expect(r.udkast?.makro.protein).toBe('18');
+	});
+
+	it('smider ingredienser uden navn vaek', () => {
+		const r = fraAiSvar({ ...godt, ingredienser: [{ maengde: 100, enhed: 'g' }, ...godt.ingredienser] });
+		expect(r.udkast?.ingredienser.length).toBe(2);
+	});
+
+	it('falder tilbage til gram naar enheden mangler', () => {
+		const r = fraAiSvar({ ...godt, ingredienser: [{ navn: 'Salt' }] });
+		expect(r.udkast?.ingredienser[0].enhed).toBe('g');
+	});
+
+	it('kan aldrig give under én portion', () => {
+		expect(fraAiSvar({ ...godt, antalPortioner: 0 }).udkast?.antalPortioner).toBe(1);
+	});
+
+	it('taaler at makroen mangler helt', () => {
+		const r = fraAiSvar({ ...godt, makroPrPortion: undefined });
+		expect(r.udkast?.makro.protein).toBe('0');
+	});
+
+	it('giver et udkast der kan gemmes med det samme', () => {
+		expect(udkastDuger(fraAiSvar(godt).udkast!)).toBe(true);
 	});
 });

@@ -382,3 +382,82 @@ export function tomIngrediens(): UdkastIngrediens {
 
 /** Enhederne hun kan vaelge mellem. De samme som i maengde-arket. */
 export const ENHEDER = ['g', 'ml', 'dl', 'stk', 'spsk', 'tsk', 'skive'];
+
+// ============================================================
+// Det AI'en laeser af et billede
+//
+// Svaret kommer fra /api/analyser-opskrift, som er den gamle apps
+// endpoint. Vi kalder det, vi aendrer det ikke.
+//
+// ALT herunder er defensivt med vilje. Svaret er skrevet af en model
+// og ikke af vores egen kode, saa et felt kan mangle, vaere tekst hvor
+// vi ventede et tal, eller vaere helt tomt. Falder skaermen over det,
+// har hun taget et billede og faaet en fejl uden at vide hvorfor.
+// Hun gennemgaar alligevel det hele foer det gemmes.
+// ============================================================
+
+export interface AiSvar {
+	fejl?: string;
+	udkast?: OpskriftUdkast;
+}
+
+function somTal(v: unknown): number {
+	if (typeof v === 'number' && Number.isFinite(v) && v >= 0) return Math.round(v * 100) / 100;
+	if (typeof v === 'string') return talFra(v);
+	return 0;
+}
+
+function somTekst(v: unknown): string {
+	return typeof v === 'string' ? v.trim() : '';
+}
+
+/**
+ * Laeser AI'ens svar om til et udkast hun kan gennemgaa.
+ *
+ * Mangler navnet, giver vi den et. Hun kan rette alt alligevel, og et
+ * navn hun skal skrive selv er bedre end en fejl der sender hende
+ * tilbage til start med et billede hun lige har taget.
+ */
+export function fraAiSvar(svar: unknown): AiSvar {
+	if (!svar || typeof svar !== 'object') {
+		return { fejl: 'Der kom ikke noget svar. Prøv igen.' };
+	}
+	const s = svar as Record<string, unknown>;
+
+	// Modellen svarer med et error-felt hvis billedet ikke er en opskrift.
+	if (typeof s.error === 'string' && s.error.trim()) {
+		return { fejl: 'Billedet ser ikke ud til at være en opskrift. Prøv et andet.' };
+	}
+
+	const raaIng = Array.isArray(s.ingredienser) ? s.ingredienser : [];
+	const ingredienser: UdkastIngrediens[] = raaIng
+		.map((i) => {
+			const o = (i ?? {}) as Record<string, unknown>;
+			return {
+				navn: somTekst(o.navn),
+				maengde: talTil(somTal(o.maengde)),
+				enhed: somTekst(o.enhed) || 'g'
+			};
+		})
+		.filter((i) => i.navn.length > 0);
+
+	const m = (s.makroPrPortion ?? {}) as Record<string, unknown>;
+	const udkast: OpskriftUdkast = {
+		navn: somTekst(s.navn) || 'Min opskrift',
+		beskrivelse: '',
+		antalPortioner: Math.max(1, Math.round(somTal(s.antalPortioner) || 1)),
+		ingredienser: ingredienser.length > 0 ? ingredienser : [tomIngrediens()],
+		makro: {
+			protein: talTil(somTal(m.protein)),
+			fiber: talTil(somTal(m.fiber)),
+			kh: talTil(somTal(m.kh)),
+			fedt: talTil(somTal(m.fedt)),
+			kcal: talTil(Math.round(somTal(m.kcal)))
+		}
+	};
+
+	return { udkast };
+}
+
+/** Hvor mange billeder hun maa vaelge. Endpointet tager imod tre. */
+export const MAX_BILLEDER = 3;

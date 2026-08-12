@@ -82,6 +82,8 @@
 		gaetKategorier,
 		kategorierFor,
 		makroFor,
+		MAX_BILLEDER,
+		fraAiSvar,
 		fraUdkast,
 		tilListePost,
 		tilUdkast,
@@ -90,6 +92,7 @@
 	} from '$lib/content/mineOpskrifter3';
 	import {
 		gemMinOpskrift3,
+		opretMinOpskrift3,
 		hentBrugteOpskrifter,
 		hentMineOpskrifter3,
 		saetKategorier3,
@@ -97,6 +100,9 @@
 	} from '$lib/firestore/mineOpskrifter3';
 	import MinOpskriftArk from '$lib/components/ny/MinOpskriftArk.svelte';
 	import RetOpskriftArk from '$lib/components/ny/RetOpskriftArk.svelte';
+	import NyOpskriftArk from '$lib/components/ny/NyOpskriftArk.svelte';
+	import { forberedBillede } from '$lib/utils/billede3';
+	import { harFeatureAdgang } from '$lib/content/features';
 	import type { Kategori3 } from '$lib/content/opskriftKategori3';
 
 	const hentUser = getContext<() => User | null>('user');
@@ -180,6 +186,17 @@
 	let aabenEgen = $state<MinOpskrift3 | null>(null);
 	/** Udkastet hun retter i. Null naar rediger-arket er lukket. */
 	let retterEgen = $state<{ id: string; start: OpskriftUdkast } | null>(null);
+
+	// ── En ny opskrift af et billede ───────────────────────────
+	/** Maa hun bruge AI-opskriften. Samme flag som den gamle app. */
+	let maaOprette = $state(false);
+	let nyArk = $state(false);
+	let nyFiler = $state<File[]>([]);
+	let nyPreviews = $state<string[]>([]);
+	let nyArbejder = $state(false);
+	let nyFejl = $state<string | null>(null);
+	/** Udkastet AI'en har laest, og billedet der skal gemmes med det. */
+	let nytUdkast = $state<{ start: OpskriftUdkast; billede: Blob | null } | null>(null);
 
 	// Favorit-opskrifter, altsaa bogmaerker. Se content/favoritOpskrift3.ts.
 	//
@@ -277,7 +294,10 @@
 			// Vanerne hentes bagefter. De maa ikke forsinke maaltidet.
 			plejer = await hentPlejer(uid, t, kort);
 			const skema = await hentAdgangsskema();
-			if (!afbrudt) visUdvidet = maaSeUdvidetNaering(userDoc, skema);
+			if (!afbrudt) {
+				visUdvidet = maaSeUdvidetNaering(userDoc, skema);
+				maaOprette = harFeatureAdgang(userDoc, skema, 'ai-opskrift');
+			}
 		})().catch((e) => {
 			console.error('[ny] kunne ikke hente maaltidet', e);
 			henter = false;
@@ -513,6 +533,126 @@
 			visKvittering({ slags: 'besked', tekst: `${data.navn} er rettet` });
 		} catch (e) {
 			console.error('[ny] kunne ikke gemme rettelsen', e);
+		} finally {
+			gemmer = false;
+		}
+	}
+
+	// ── En ny opskrift af et billede ───────────────────────────
+
+	function vaelgBilleder(liste: FileList | null) {
+		if (!liste) return;
+		const nye = [...liste].filter((f) => f.type.startsWith('image/'));
+		if (nye.length === 0) {
+			// HEIC fra en iPhone kan ikke aabnes i alle browsere. Sker det,
+			// skal hun vide hvorfor, ikke se en teknisk fejl.
+			nyFejl = 'Det billede kan ikke bruges. Prøv at vælge det på selve telefonen.';
+			return;
+		}
+		nyFejl = null;
+		const plads = MAX_BILLEDER - nyFiler.length;
+		const taget = nye.slice(0, plads);
+		if (nye.length > plads) {
+			nyFejl = `Der er plads til ${MAX_BILLEDER} billeder af den samme opskrift.`;
+		}
+		nyFiler = [...nyFiler, ...taget];
+		nyPreviews = [...nyPreviews, ...taget.map((f) => URL.createObjectURL(f))];
+	}
+
+	function fjernBillede(i: number) {
+		URL.revokeObjectURL(nyPreviews[i]);
+		nyFiler = nyFiler.filter((_, n) => n !== i);
+		nyPreviews = nyPreviews.filter((_, n) => n !== i);
+	}
+
+	function rydNy() {
+		for (const p of nyPreviews) URL.revokeObjectURL(p);
+		nyFiler = [];
+		nyPreviews = [];
+		nyFejl = null;
+		nyArbejder = false;
+		nyArk = false;
+	}
+
+	function blobTilBase64(blob: Blob): Promise<string> {
+		return new Promise((klar, fejl) => {
+			const l = new FileReader();
+			l.onload = () => klar(String(l.result).split(',')[1] ?? '');
+			l.onerror = () => fejl(new Error('Kunne ikke laese billedet'));
+			l.readAsDataURL(blob);
+		});
+	}
+
+	/**
+	 * Sender billederne til AI'en og aabner gennemgangen med svaret.
+	 *
+	 * Billederne skaleres foerst i telefonen. Et billede lige fra
+	 * kameraet er flere megabyte, og det ville baade koste hende data og
+	 * gaa langsomt paa en daarlig forbindelse.
+	 */
+	async function analyserBilleder() {
+		const u = user;
+		if (!u || nyFiler.length === 0 || nyArbejder) return;
+		nyArbejder = true;
+		nyFejl = null;
+		try {
+			const saet = await Promise.all(nyFiler.map((f) => forberedBillede(f)));
+			const billeder = await Promise.all(
+				saet.map(async (s) => ({
+					billedeBase64: await blobTilBase64(s.stor.blob),
+					mediaType: s.stor.mime
+				}))
+			);
+			const svar = await fetch('/api/analyser-opskrift', {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${await u.getIdToken()}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ billeder })
+			});
+			if (!svar.ok) {
+				const krop = (await svar.json().catch(() => ({}))) as { message?: string };
+				throw new Error(krop.message ?? 'Kunne ikke læse opskriften. Prøv igen.');
+			}
+			const laest = fraAiSvar(await svar.json());
+			if (laest.fejl || !laest.udkast) {
+				nyFejl = laest.fejl ?? 'Kunne ikke læse opskriften. Prøv igen.';
+				return;
+			}
+			// Det FOERSTE billede gemmes med opskriften. AI'en har allerede
+			// laest de andre, saa de behoever ikke ligge i Storage.
+			nytUdkast = { start: laest.udkast, billede: saet[0].stor.blob };
+			rydNy();
+		} catch (e) {
+			console.error('[ny] kunne ikke analysere opskriften', e);
+			nyFejl = e instanceof Error ? e.message : 'Kunne ikke læse opskriften. Prøv igen.';
+		} finally {
+			nyArbejder = false;
+		}
+	}
+
+	/** Hun har gennemgaaet svaret og gemmer. Foerst nu skrives der noget. */
+	async function gemNyOpskrift(udkast: OpskriftUdkast) {
+		const uid = user?.uid;
+		const n = nytUdkast;
+		if (!uid || !n) return;
+		gemmer = true;
+		try {
+			const data = fraUdkast(udkast);
+			// Maaltidet hun staar i er et godt foerste gaet, og hun kan
+			// altid rette det i arket bagefter.
+			const start = kategoriForMaaltid(type);
+			await opretMinOpskrift3(
+				uid,
+				{ ...data, kategorier3: start ? [start] : [] },
+				n.billede
+			);
+			nytUdkast = null;
+			mineOpskrifter = await hentMineOpskrifter3(uid);
+			visKvittering({ slags: 'besked', tekst: `${data.navn} er gemt` });
+		} catch (e) {
+			console.error('[ny] kunne ikke gemme den nye opskrift', e);
 		} finally {
 			gemmer = false;
 		}
@@ -979,8 +1119,10 @@
 		startKategori={kategoriForMaaltid(type)}
 		favoritter={favoritOpskrifter}
 		mine={mineTilListen}
+		kanOprette={maaOprette}
 		onvaelg={vaelgFraArk}
 		onvaelgEgen={aabnEgen}
+		onny={() => (nyArk = true)}
 		onluk={() => (aabentArk = null)}
 	/>
 {:else if aabentArk === 'faste'}
@@ -1028,6 +1170,31 @@
 		onret={retEgen}
 		onslet={sletEgenOpskrift}
 		ontilbage={() => (aabenEgen = null)}
+	/>
+{/if}
+
+{#if nyArk}
+	<NyOpskriftArk
+		filer={nyFiler}
+		previews={nyPreviews}
+		arbejder={nyArbejder}
+		fejl={nyFejl}
+		onvaelg={vaelgBilleder}
+		onfjern={fjernBillede}
+		onanalyser={analyserBilleder}
+		onluk={rydNy}
+	/>
+{/if}
+
+{#if nytUdkast}
+	<RetOpskriftArk
+		start={nytUdkast.start}
+		titel="Se opskriften efter"
+		gemTekst="Gem opskriften"
+		{gemmer}
+		{visUdvidet}
+		ongem={gemNyOpskrift}
+		onluk={() => (nytUdkast = null)}
 	/>
 {/if}
 

@@ -1629,8 +1629,44 @@ hjertet på Linns opskrifter, og rulles tilbage uden fejlbesked hvis skrivningen
 går galt.
 
 **4. Rette, slette og oprette skal alt sammen med.** Linns valg, hvor hun
-vendte mit forslag om at nøjes med at finde og logge. Bygges i tre bidder:
-finde og logge, så rette og slette, så oprette med kamera og AI.
+vendte mit forslag om at nøjes med at finde og logge. Bygget i tre bidder samme
+dag: finde og logge, så rette og slette, så oprette med kamera og AI.
+
+### Rediger-arket bruges to steder
+
+`RetOpskriftArk` arbejder på et **udkast** og ikke på dokumentet, fordi den
+samme skærm bruges både når hun retter en opskrift hun har, og når hun
+gennemgår det AI'en har læst af et billede. Så bygges og vedligeholdes den ét
+sted.
+
+**Felterne er tekst mens hun skriver, ikke tal.** Et talfelt der bliver til NaN
+midt i en indtastning er en klassisk måde at tabe det hun har skrevet på. Dansk
+komma virker, og "1," midt i "1,5" giver 1 og ikke nul, så hendes tal ikke
+nulstilles mens hun skriver det.
+
+### At oprette en ny
+
+**Hun gennemgår ALTID svaret før der gemmes noget.** AI'en gætter makro ud fra
+et billede, og et gæt der lander direkte i dagbogen uden at hun har set det
+ville være den forkerte slags automatik i et modul der handler om præcis to
+tal.
+
+**Knappen ligger ved fanerne og findes også når hun ingen egne har.** Ellers
+kunne den første aldrig laves, for Mine-fanen findes jo ikke endnu.
+
+**Alt hvad AI'en svarer læses defensivt**, se `fraAiSvar`. Mangler navnet, får
+den et. Kommer tallene som tekst, læses de alligevel. Er der ingen
+ingredienser, får hun en tom linje at skrive i. Svaret er skrevet af en model
+og ikke af vores kode, og hun har lige taget et billede hun ikke vil miste.
+
+**Billedet lægges op FØR dokumentet skrives.** Fejler uploaden, findes der ingen
+halv opskrift uden billede. Fejler dokumentet, ligger der en forældreløs fil i
+Storage, og det er den billige af de to fejl. Samme rækkefølge som
+billed-uploaden i admin, se 26.7.
+
+**Funktionen er styret af `ai-opskrift`** og deler daglig kvote med Linn AI,
+fordi det er det samme endpoint. Det er den gamle apps regler, og de er ikke
+rørt.
 
 ### Den vigtigste regel
 
@@ -1673,9 +1709,11 @@ skærmene, ikke motoren.
 
 | Fil | Hvad | Tests |
 |---|---|---|
-| `content/mineOpskrifter3.ts` | Måltider, filtrering, portioner og makro | 34 |
-| `firestore/mineOpskrifter3.ts` | Læsning, måltider og sletning | |
-| `components/ny/MinOpskriftArk.svelte` | Arket | |
+| `content/mineOpskrifter3.ts` | Måltider, filtrering, portioner, makro, udkast og AI-svaret | 61 |
+| `firestore/mineOpskrifter3.ts` | Læsning, måltider, gem, opret og sletning | |
+| `components/ny/MinOpskriftArk.svelte` | Arket hun ser opskriften i | |
+| `components/ny/RetOpskriftArk.svelte` | Rediger og gennemgang. Bruges to steder | |
+| `components/ny/NyOpskriftArk.svelte` | Vælg billeder og send til AI'en | |
 | `OpskriftListe.svelte` | Fik den tredje fane | |
 
 ## 27. Åbne punkter på Mad
