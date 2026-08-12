@@ -4699,6 +4699,24 @@ button.tm-ikon:active > span {
 	margin: 5px 0 0;
 }
 
+/* Tilberedningstiden. Stod foer gemt inde i makro-linjen nederst, som nu er
+   klippet ud af visningen. Den er brugbar naar hun skal beslutte om hun har
+   tid til retten i aften, saa den staar oppe ved titlen. */
+.op-tid {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	margin: 6px 0 0;
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.op-tid svg {
+	width: calc(13px * var(--fs-scale, 1));
+	height: calc(13px * var(--fs-scale, 1));
+	flex: 0 0 auto;
+}
+
 /* Fire tal kan ikke staa paa én linje paa en iPhone SE, slet ikke naar
    kunden har skruet tekststoerrelsen op. De ombryder derfor til en ny raekke
    i stedet for at blive klemt sammen eller skubbet ud over kanten. */

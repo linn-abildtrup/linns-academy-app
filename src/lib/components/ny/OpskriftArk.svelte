@@ -21,6 +21,7 @@
 		makroForPortioner,
 		gemEtiket
 	} from '$lib/content/opskriftPortion3';
+	import { fremgangsmaade, tilberedningstid } from '$lib/content/opskriftTekst3';
 	import { portal } from '$lib/actions/portal';
 
 	interface Props {
@@ -70,6 +71,13 @@
 	const fedt = $derived(makroForPortioner(makro.fedt ?? 0, portioner) ?? 0);
 	const kalorier = $derived(Math.round(makroForPortioner(makro.kalorier ?? 0, portioner) ?? 0));
 
+	// Makro-linjen klippes ud af fremgangsmaaden, saa kunden ikke laeser de
+	// samme tal én gang til som en teknisk streng midt i madlavningen. Data er
+	// uroert, se content/opskriftTekst3.ts. Tiden traekkes ud og vises for sig,
+	// for den ville ellers ryge med.
+	const trin = $derived(fremgangsmaade(opskrift.instruktioner));
+	const tid = $derived(tilberedningstid(opskrift.instruktioner));
+
 	// En halv portion er en almindelig maengde, saa vi springer halve.
 	const SPRING = 0.5;
 
@@ -93,6 +101,24 @@
 			{/if}
 
 			<h2 class="op-titel" id="op-titel">{opskrift.titel}</h2>
+			{#if tid}
+				<!-- Tiden stod foer gemt inde i makro-linjen nederst. Den er brugbar
+				     naar hun skal beslutte om hun har tid til retten i aften, saa den
+				     staar her i stedet for at forsvinde med linjen. -->
+				<p class="op-tid">
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.9"
+						stroke-linecap="round"
+						aria-hidden="true"
+					>
+						<circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.2 2" />
+					</svg>
+					{tid}
+				</p>
+			{/if}
 			{#if opskrift.beskrivelse}
 				<p class="op-beskrivelse">{opskrift.beskrivelse}</p>
 			{/if}
@@ -158,9 +184,9 @@
 				</div>
 			{/if}
 
-			{#if opskrift.instruktioner?.trim()}
+			{#if trin}
 				<div class="op-k">Fremgangsmåde</div>
-				<div class="op-instruktioner">{opskrift.instruktioner}</div>
+				<div class="op-instruktioner">{trin}</div>
 			{/if}
 		</div>
 
