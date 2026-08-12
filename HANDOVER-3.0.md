@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 12. august 2026, eftermiddag.
+Sidst opdateret 12. august 2026, sen eftermiddag.
 
 **Læs i denne rækkefølge hvis du er ny:** afsnit 2 om den vigtigste regel, afsnit 7 om fælderne, og så afsnit 9 om hvor vi står. Resten kan slås op efter behov.
 
@@ -59,7 +59,7 @@ gamle app og må kun læses.
 |---|---|
 | `src/routes/ny/+layout.svelte` | Skallen. Adgangs-gate, spærring, bundmenu, contexts for `user`, `userDoc`, `adgang` og `forlob`. **Læg ikke nyt her uden en god grund**, se SPEC 26.5 |
 | `src/routes/ny/ny.css` | Alt design. Scoped under `.ny-app`. Cirka 2.000 linjer |
-| `src/lib/components/ny/` | 22 komponenter, alle kun brugt i 3.0 |
+| `src/lib/components/ny/` | 24 komponenter, alle kun brugt i 3.0 |
 | `src/lib/utils/billede3.ts` | Skalering og webp i browseren. `billede.ts` er den gamle og må ikke røres |
 
 **Ren logik, ingen database, alt sammen testet:**
@@ -80,6 +80,7 @@ gamle app og må kun læses.
 | `content/plejer3.ts` | "Det du plejer". Modulets vigtigste fil, læs toppen | 12 |
 | `content/hurtigStart3.ts` | 3.0's opstartsregel plus `opstartsBillede()`. Se 9.7 | 13 |
 | `content/favoritOpskrift3.ts` | Favorit-opskrifter, altså bogmærker. Se 9.8 | 22 |
+| `content/fasteMaaltider3.ts` | Faste måltider, altså "byg et måltid". Se 9.10 | 36 |
 | `content/opskriftPortion3.ts` | Portioner og makro. **Regnereglen**, se 9.9 | 14 |
 | `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid. Se 9.9 | 20 |
 | `content/beskeder3.ts` | "Til dig lige nu" | 8 |
@@ -92,7 +93,7 @@ gamle app og må kun læses.
 |---|---|
 | `firestore/forside3.ts` | Alt til forsiden |
 | `firestore/maaltider3.ts` | Dagens måltider |
-| `firestore/plejer3.ts` | Vaner og måltider. Den ene af to filer i 3.0 der **skriver** kundedata |
+| `firestore/plejer3.ts` | Vaner og måltider. Den første af **tre** filer i 3.0 der **skriver** kundedata |
 | `firestore/challenge3.ts` | Challenge, både nye og gamle |
 | `firestore/nulDage3.ts` | Pause-dage |
 | `firestore/featureAdgang3.ts` | Feature-adgang. Hentes her, ikke i skallen |
@@ -100,7 +101,8 @@ gamle app og må kun læses.
 | `firestore/opskriftBillede3.ts` | Upload og sletning af opskrift-billeder. Kun admin |
 | `firestore/challengeAdmin3.ts` | Admin: opret og tildel challenges |
 | `firestore/hurtigStart3.ts` | Hele opstarts-billedet, læst lokalt uden netværk. Se 9.7 |
-| `firestore/favoritOpskrift3.ts` | Bogmærket på en opskrift. Den anden af de to der **skriver** kundedata. Se 9.8 |
+| `firestore/favoritOpskrift3.ts` | Bogmærket på en opskrift. Den anden der **skriver** kundedata. Se 9.8 |
+| `firestore/fasteMaaltider3.ts` | Faste måltider. Den tredje der **skriver** kundedata, både genvejen og dagbogen. Se 9.10 |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
@@ -218,6 +220,8 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 **En favorit har ikke plads til makro, og det opdager du ikke før tallet er forkert.** `favoritmaaltider` gemmer kun et navn og en liste af varelinjer. Protein og fiber regnes ud ved at slå hver linje op i fødevare-databasen, og en linje uden `foodId` springes over. Gemmer du derfor noget som favorit der ikke består af rigtige madvarer, fx en opskrift, lægger et tryk på den **0 g protein og 0 g fiber** i hendes dag, uden en eneste fejlmeddelelse. I et modul der hedder 30-30 og handler om præcis de to tal er det den værst tænkelige fejl, for den ser rigtig ud. Det er derfor favorit-opskrifter blev bygget som et bogmærke i stedet, se 9.8. **Målt 12. august: 178 af 2.905 favoritter, altså 6 %, har allerede mindst én linje uden makro**, så de kunder logger lige nu mindre end de spiste. Det er en grænse i den gamle model og ikke noget vi har lavet, og det er ikke løst.
 
+**En komponent kan være skrevet, testet og importeret uden nogensinde at blive brugt.** Faste måltider åbnede 12. august et tomt ark uden en eneste fejl. Det nye ark var aldrig kommet ind i markup, så det gamle Vælg-ark åbnede i stedet, med den nye titel på og uden en tom tekst at vise. **Hverken `svelte-check` eller testene fanger det**, for koden er korrekt, den bliver bare aldrig kaldt. Tjek at en ny komponent faktisk står i markup, ikke kun at den er importeret.
+
 **`opretDoc` findes ikke i `firestoreRest.ts`.** Brug `gemDocMerge` med et selvlavet dokument-id.
 
 **Firestore-regler driver.** Sammenlign altid de live regler med `firestore.rules` i repoet, inden du udgiver noget. Det er nu ét kald, se afsnit 8.
@@ -228,7 +232,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1108 tests lige nu, alle grønne
+npm test                               # 1144 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -554,6 +558,46 @@ Reglen var spredt ud over tre skærme i to apps, og de var uenige. På de 122 op
 | `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid | 20 |
 
 **Én rigtig datafejl fundet og rettet:** "Den grønne grød - isterninger" havde hele holdets makro stående som om det var pr terning, så 3.0 viste 144 g protein og 4.800 kcal ud for 75 g avocado. Rettet i data efter tørløb, sikkerhedskopi i `backup/`.
+
+### 9.10 Faste måltider, bygget 12. august
+
+**Hun kan gemme det måltid hun lige har tastet, og lægge det i igen med ét tryk.** Det den gamle app kalder "byg måltid". Se SPEC 26.10 for hele gennemgangen med målingerne. Her står kun det en ny person skal vide med det samme.
+
+**Det hedder Faste måltider og ikke favoritter**, selv om det ligger i den gamle samling `favoritmaaltider`. Ordet favorit er reserveret til hjertet på en opskrift, se 9.8. De to ting er ikke det samme og må ikke hedde det samme: et bogmærke ligger på `userDoc.favoritOpskrifter`, et fast måltid er varelinjer i `favoritmaaltider`.
+
+**Målingen på alle 616 kunder 12. august:** 2.905 faste måltider hos 365 kunder, altså 59 %. Median 5 varelinjer, men 33 % har kun én. 76 % bruges altid til det samme måltid, og 48 % af al brug er morgenmad. Kun 3 % er nogensinde blevet redigeret, og det er derfor der ikke findes en redigér-skærm.
+
+**Fire ting der er bevidst besluttet:**
+
+- **Knappen står OVER den første ingrediens**, ikke under listen. Linns valg, og begrundelsen er god: ligger den under, falder den uden for skærmen så snart måltidet fylder noget, og en knap man skal rulle efter bliver aldrig brugt
+- **Et fast måltid må gerne være én madvare.** Linns valg, som vendte forslaget om at skjule de 945 med kun én linje
+- **Det lægges i som én linje pr madvare**, ikke som én samlet. Se nedenfor, det er den vigtigste
+- **Retter hun i det bagefter, spørger et blødt bånd** om det faste måltid skal opdateres. Ikke en pop-up, for den ville lægge sig hen over kvitteringen med Fortryd
+
+**Den vigtigste ændring, og hvorfor.** Før i dag lagde 3.0 en favorit i som ÉN linje med de fem tal lagt sammen. Det havde tre følger: hun kunne ikke fjerne én enkelt ting, en linje uden makro talte lydløst nul, og **"Det du plejer" lærte ingenting**. Brugte hun genvejen hver morgen, blev hendes fire fliser ved med at være tomme, fordi de tæller `foodId` og den samlede linje ikke har nogen.
+
+**Tre fælder du skal kende, hvis du retter noget her:**
+
+- **En linje uden `foodId` kan ikke gemmes.** En opskrift har ingen enkelte varer at slå op. Arket siger det højt i stedet for at droppe linjen i stilhed. Det er samme fejl som de 178 af 2.905 i drift, hvor kunden logger mindre end hun spiste
+- **`foerIds` husker hvad der lå i måltidet FØR hun lagde det faste måltid i.** Uden dem ville en æggemad hun tastede i forvejen blive regnet som en del af hendes morgengrød
+- **Er en madvare forsvundet fra databasen, holder vi slet ikke øje.** Ellers ville båndet spørge med det samme om hun ville gemme måltidet uden den linje, og et ja ville klippe hendes eget faste måltid ned
+
+**Båndet spørger én gang og standarden er at der ikke sker noget.** De fleste ændringer er engangs-ting. Hun har ikke flere blåbær i dag, men i morgen har hun. Et "opdatér" der lyser mest ville langsomt tygge hendes eget faste måltid i stykker. Vi holder desuden kun øje så længe hun bliver på skærmen.
+
+**Måltidstypen er et nyt felt**, og de 2.905 fra den gamle app har det ikke. Derfor gættes den ud af hendes egen historik. Det rammer som regel, fordi tre ud af fire altid bruges til det samme måltid.
+
+**Der skal intet udgives i Firebase Console.** Reglerne tillader det i forvejen, se `firestore.rules` linje 62.
+
+**Nye filer:**
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/fasteMaaltider3.ts` | Reglerne, sorteringen og båndets betingelse | 36 |
+| `firestore/fasteMaaltider3.ts` | Læsning og skrivning | |
+| `components/ny/FasteMaaltiderArk.svelte` | Hylden | |
+| `components/ny/GemFastMaaltidArk.svelte` | Gem-arket | |
+
+`plejer3.ts` fik et frivilligt `dato`-felt på historikken, så en hel dags måltid kan lægges sammen uden at hente de 45 dage en gang til.
 
 ### Efter 30-30
 

@@ -15,7 +15,12 @@
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { Fodevare, GemtMaaltid, Maaltidstype } from '$lib/content/kost';
-	import { MAALTIDSTYPER, PROTEIN_MAALTIDS_MAAL, filtrerFodevarer } from '$lib/content/kost';
+	import {
+		MAALTIDSTYPER,
+		MAALTIDSTYPE_LABELS,
+		PROTEIN_MAALTIDS_MAAL,
+		filtrerFodevarer
+	} from '$lib/content/kost';
 	import { LABELS, harProteinMaal } from '$lib/content/maaltider3';
 	import { formatPortion, naeringFor } from '$lib/content/maengde3';
 	import type { PlejerPost } from '$lib/content/plejer3';
@@ -34,7 +39,7 @@
 	import VaelgArk, { type Valg } from '$lib/components/ny/VaelgArk.svelte';
 	import OpskriftArk from '$lib/components/ny/OpskriftArk.svelte';
 	import OpskriftListe from '$lib/components/ny/OpskriftListe.svelte';
-	import { hentMineCustomFodevarer, hentFavoritter } from '$lib/firestore/kost';
+	import { hentMineCustomFodevarer } from '$lib/firestore/kost';
 	import { favoritterFra, erFavorit, skiftFavorit } from '$lib/content/favoritOpskrift3';
 	import { makroForPortioner } from '$lib/content/opskriftPortion3';
 	import { saetFavoritOpskrift } from '$lib/firestore/favoritOpskrift3';
@@ -42,9 +47,34 @@
 	import { kategoriForMaaltid } from '$lib/content/opskriftKategori3';
 	import { parseOpskriftMakro } from '$lib/content/opskrifter';
 	import type { Opskrift } from '$lib/content/opskrifter';
-	import type { FavoritMaaltid } from '$lib/content/kost';
 	import { gemSammensat } from '$lib/firestore/plejer3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+
+	// Faste maaltider. Se SPEC-3.0.md afsnit 26.10.
+	import {
+		antalTing,
+		brugsstatistik,
+		delLinjer,
+		erAendret,
+		foreslaaNavn,
+		maaltidFor,
+		nyeLinjer,
+		rensNavn,
+		sorterTilHylde,
+		type Brug,
+		type FastMaaltid
+	} from '$lib/content/fasteMaaltider3';
+	import {
+		fortrydFasteLinjer,
+		gemFastMaaltid,
+		hentBrugshistorik,
+		hentFasteMaaltider,
+		laegFastMaaltidI,
+		opdaterFastMaaltid,
+		sletFastMaaltid
+	} from '$lib/firestore/fasteMaaltider3';
+	import FasteMaaltiderArk, { type FastPost } from '$lib/components/ny/FasteMaaltiderArk.svelte';
+	import GemFastMaaltidArk, { type GemLinje } from '$lib/components/ny/GemFastMaaltidArk.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -78,7 +108,13 @@
 	// betyder derfor enten slet igen eller gendan.
 	let kvittering = $state<
 		| { slags: 'tilfoejet'; id: string; navn: string }
+		// Et fast maaltid bliver til ét dokument pr madvare, saa Fortryd
+		// skal kunne tage dem alle sammen paa én gang.
+		| { slags: 'faste'; ids: string[]; navn: string }
 		| { slags: 'fjernet'; maaltid: GemtMaaltid }
+		// Ren besked uden Fortryd, fx naar et fast maaltid er gemt. Der er
+		// intet at fortryde: hendes dagbog er ikke roert.
+		| { slags: 'besked'; tekst: string }
 		| null
 	>(null);
 	let kvitTimer: ReturnType<typeof setTimeout> | null = null;
@@ -89,12 +125,28 @@
 	// fjernet helt, ikke bare slaaet fra, saa der ikke staar noget der
 	// ser halvfaerdigt ud. Motoren bag findes stadig i
 	// content/foreslaaMadplan.ts og api/foreslaa-madplan, uroert.
-	type Kilde = 'opskrifter' | 'favoritter' | 'mine';
+	type Kilde = 'opskrifter' | 'faste' | 'mine';
 	let aabentArk = $state<Kilde | null>(null);
 	let arkHenter = $state(false);
 	let opskrifter = $state<Opskrift3[]>([]);
-	let favoritter = $state<FavoritMaaltid[]>([]);
 	let egne = $state<Fodevare[]>([]);
+
+	// ── Faste maaltider ────────────────────────────────────────
+	let faste = $state<FastMaaltid[]>([]);
+	let brug = $state<Map<string, Brug>>(new Map());
+	/** Gem-arket er aabent. */
+	let gemArk = $state(false);
+	/**
+	 * Det faste maaltid hun lige har lagt i, og hvad der laa i maaltidet
+	 * FOER hun gjorde det. Uden `foerIds` ville en aeggemad hun tastede i
+	 * forvejen blive regnet som en del af hendes morgengroed.
+	 *
+	 * Den lever kun saa laenge hun bliver paa skaermen. Lukker hun appen
+	 * og fjerner noget tre dage senere, spoerger vi ikke, for hun kan
+	 * alligevel ikke huske hvad hun lagde i, og et spoergsmaal om noget
+	 * hun ikke kan huske er vaerre end intet spoergsmaal.
+	 */
+	let ilagt = $state<{ fast: FastMaaltid; foerIds: string[] } | null>(null);
 	/** Den opskrift hun kigger paa. Vises oven paa listen. */
 	let aabenOpskrift = $state<Opskrift | null>(null);
 
@@ -178,6 +230,10 @@
 		if (!uid) return;
 		let afbrudt = false;
 		henter = true;
+		// Skifter hun dag eller maaltid, holder vi op med at holde oeje.
+		// Baandet hoerer til den skaerm hun lagde det faste maaltid i.
+		ilagt = null;
+		baandLukket = false;
 
 		(async () => {
 			const alle = await hentAlleFodevarer();
@@ -211,8 +267,12 @@
 		try {
 			if (kilde === 'opskrifter' && opskrifter.length === 0) {
 				opskrifter = await hentOpskrifter3();
-			} else if (kilde === 'favoritter' && favoritter.length === 0) {
-				favoritter = await hentFavoritter(uid);
+			} else if (kilde === 'faste') {
+				// Hentes hver gang, saa en hun lige har gemt eller slettet er
+				// med. Historikken kommer fra plejer3's cache og koster
+				// ingenting naar den allerede er hentet til fliserne.
+				faste = await hentFasteMaaltider(uid);
+				brug = brugsstatistik(await hentBrugshistorik(uid), faste);
 			} else if (kilde === 'mine' && egne.length === 0) {
 				egne = await hentMineCustomFodevarer(uid);
 			}
@@ -225,25 +285,20 @@
 
 	const arkTitel: Record<Kilde, string> = {
 		opskrifter: 'Opskrifter',
-		favoritter: 'Favoritter',
+		faste: 'Faste måltider',
 		mine: 'Mine fødevarer'
 	};
 
 	const arkTom: Record<Kilde, string> = {
 		opskrifter: 'Der er ingen opskrifter endnu.',
-		favoritter: 'Du har ingen favoritter endnu. Du kan gemme et måltid som favorit, når du har sat det sammen.',
+		// Faste maaltider har sit eget ark med sin egen tomme tekst, se
+		// FasteMaaltiderArk. Den her bruges aldrig, men typen kraever den.
+		faste: '',
 		mine: 'Du har ikke lavet nogen egne fødevarer endnu. Dem laver du, når en vare ikke findes i forvejen.'
 	};
 
 	const arkPoster = $derived.by<Valg[]>(() => {
-		// Opskrifter har sit eget gitter, se OpskriftListe.svelte.
-		if (aabentArk === 'favoritter') {
-			return favoritter.map((f) => ({
-				id: f.id,
-				navn: f.navn,
-				under: `${f.items?.length ?? 0} madvarer`
-			}));
-		}
+		// Opskrifter og faste maaltider har hver deres eget ark.
 		if (aabentArk === 'mine') {
 			return egne.map((f) => ({
 				id: f.id,
@@ -278,50 +333,160 @@
 			return;
 		}
 
-		// Favoritter er hendes egne, faerdige maaltider. Dem har hun sat
-		// sammen selv, saa de laegges direkte i.
+		// Et fast maaltid er hendes eget, faerdige maaltid. Det laegges
+		// direkte i, uden at hun skal se det foerst.
 		const uid = user?.uid;
 		if (!uid) return;
-		const f = favoritter.find((x) => x.id === id);
+		const f = faste.find((x) => x.id === id);
 		if (!f) return;
 		aabentArk = null;
 		gemmer = true;
 		try {
-			// Alle fem tal laegges sammen, ikke kun protein og fiber. De tre sidste
-			// gemmes ogsaa hvis hun ikke maa se dem, se SPEC-3.0.md 26.5.
-			let protein = 0;
-			let fiber = 0;
-			let kh = 0;
-			let fedt = 0;
-			let kcal = 0;
-			for (const it of f.items ?? []) {
-				const food = foods.get(it.foodId);
-				if (!food) continue;
-				const n = naeringFor(food, it.portion ?? 0, it.enhedId);
-				protein += n.protein;
-				fiber += n.fiber;
-				kh += n.kh;
-				fedt += n.fedt;
-				kcal += n.kcal;
+			// ÉT DOKUMENT PR MADVARE, praecis som hvis hun havde trykket paa
+			// dem selv. Derfor laerer "Det du plejer" af det, derfor kan hun
+			// fjerne én enkelt ting, og derfor kan en linje uden makro ikke
+			// snige sig ind og taelle nul. Se SPEC-3.0.md 26.10.
+			const foerIds = poster.map((p) => p.id);
+			const svar = await laegFastMaaltidI({ uid, dato, type, fast: f, foods });
+			if (svar.ids.length === 0) {
+				console.warn('[ny] intet i det faste maaltid kunne laegges i');
+				return;
 			}
-			const svar = await gemSammensat({
-				uid,
-				dato,
-				type,
-				navn: f.navn,
-				protein,
-				fiber,
-				kh,
-				fedt,
-				kcal
-			});
+			// Vi holder oeje med om hun retter i det bagefter, saa baandet
+			// kan spoerge om det faste maaltid skal opdateres.
+			//
+			// MEN KUN hvis alt kom med. Er en madvare forsvundet fra
+			// databasen, springes den over, og saa ville baandet spoerge
+			// med det samme om hun vil gemme det uden den linje, uden at
+			// hun har roert noget. Et ja ville stille og roligt klippe
+			// hendes eget faste maaltid ned.
+			if (svar.sprunget === 0) {
+				ilagt = { fast: f, foerIds };
+				baandLukket = false;
+			} else {
+				console.warn('[ny] linjer sprunget over i det faste maaltid:', svar.sprunget);
+			}
 			await indlaesDagen();
-			visKvittering({ slags: 'tilfoejet', ...svar });
+			visKvittering({ slags: 'faste', ids: svar.ids, navn: f.navn });
 		} catch (e) {
-			console.error('[ny] kunne ikke laegge favoritten i', e);
+			console.error('[ny] kunne ikke laegge det faste maaltid i', e);
 		} finally {
 			gemmer = false;
 		}
+	}
+
+	// ============================================================
+	// Faste maaltider: hylden, gemningen og baandet
+	// ============================================================
+
+	/** Det maaltid hun staar i, delt og sorteret til hylden. */
+	const hylde = $derived(sorterTilHylde(faste, brug, type));
+
+	/** Protein i et fast maaltid, regnet naar hylden aabnes og ikke gemt.
+	    Saa kan tallet aldrig blive forældet. */
+	function proteinFor(f: FastMaaltid): number {
+		let p = 0;
+		for (const it of f.items ?? []) {
+			const food = foods.get(it.foodId);
+			if (!food) continue;
+			p += naeringFor(food, it.portion ?? 0, it.enhedId).protein;
+		}
+		return Math.round(p);
+	}
+
+	function tilPost(f: FastMaaltid, medBadge: boolean): FastPost {
+		const b = brug.get(f.id);
+		const dele = [`${antalTing(f)} ting`, `${proteinFor(f)} g protein`];
+		// Tallet taelles paa de 45 dage vi henter i forvejen, saa teksten
+		// maa ikke love mere end den ved.
+		if (b?.antal) dele.push(`brugt ${b.antal} ${b.antal === 1 ? 'gang' : 'gange'} på det seneste`);
+		const m = medBadge ? maaltidFor(f, b) : undefined;
+		return {
+			id: f.id,
+			navn: f.navn,
+			under: dele.join(' · '),
+			badge: m ? MAALTIDSTYPE_LABELS[m] : undefined
+		};
+	}
+
+	const hyldeTil = $derived(hylde.tilMaaltidet.map((f) => tilPost(f, false)));
+	const hyldeAndre = $derived(hylde.andre.map((f) => tilPost(f, true)));
+
+	/** Det hun har i maaltidet, delt i det der kan gemmes og det der ikke kan. */
+	const tilGemning = $derived(delLinjer(poster));
+
+	/**
+	 * Knappen vises kun naar der er noget at gemme, og den gemmer sig
+	 * mens baandet staar der. Saa er spoergsmaalet et andet.
+	 */
+	const kanGemmeSomFast = $derived(tilGemning.med.length > 0 && !ilagt);
+
+	const gemLinjer = $derived.by<GemLinje[]>(() =>
+		tilGemning.med.map((it) => ({
+			navn: foods.get(it.foodId)?.name ?? 'Madvare',
+			maengde: it.portion ? `${formatPortion(it.portion)} ${it.enhedId ?? 'g'}` : ''
+		}))
+	);
+
+	async function gemSomFast(navn: string, maaltid: Maaltidstype) {
+		const uid = user?.uid;
+		if (!uid || tilGemning.med.length === 0) return;
+		gemmer = true;
+		try {
+			await gemFastMaaltid(uid, { navn: rensNavn(navn), items: tilGemning.med, maaltid });
+			gemArk = false;
+			// Hylden hentes forfra naeste gang den aabnes, saa den nye er med.
+			faste = [];
+			visKvittering({ slags: 'besked', tekst: `${rensNavn(navn)} er gemt som fast måltid` });
+		} catch (e) {
+			console.error('[ny] kunne ikke gemme det faste maaltid', e);
+		} finally {
+			gemmer = false;
+		}
+	}
+
+	async function sletFast(id: string) {
+		const uid = user?.uid;
+		if (!uid) return;
+		try {
+			await sletFastMaaltid(uid, id);
+			faste = faste.filter((f) => f.id !== id);
+		} catch (e) {
+			console.error('[ny] kunne ikke slette det faste maaltid', e);
+		}
+	}
+
+	// ── Baandet ────────────────────────────────────────────────
+	//
+	// Vi spoerger ÉN gang, ikke pr aendring, og standarden er at der ikke
+	// sker noget. De fleste aendringer er engangs-ting: hun har ikke
+	// flere blaabaer i dag, men i morgen har hun. Spurgte vi hver gang,
+	// ville hun langsomt tygge sit eget faste maaltid i stykker.
+	let baandLukket = $state(false);
+
+	const baandLinjer = $derived(ilagt ? nyeLinjer(poster, ilagt.foerIds) : []);
+	const visBaand = $derived(!!ilagt && !baandLukket && erAendret(ilagt.fast, baandLinjer));
+
+	async function opdaterFast() {
+		const uid = user?.uid;
+		const i = ilagt;
+		if (!uid || !i) return;
+		baandLukket = true;
+		try {
+			await opdaterFastMaaltid(uid, i.fast.id, baandLinjer);
+			faste = [];
+			visKvittering({ slags: 'besked', tekst: `${i.fast.navn} er opdateret` });
+		} catch (e) {
+			console.error('[ny] kunne ikke opdatere det faste maaltid', e);
+		} finally {
+			// Uanset hvad spoerger vi ikke igen paa den her skaerm.
+			ilagt = null;
+		}
+	}
+
+	function beholdFast() {
+		baandLukket = true;
+		ilagt = null;
 	}
 
 	/** Laegger opskriften i, med det antal portioner hun har valgt. */
@@ -446,9 +611,15 @@
 		const k = kvittering;
 		if (!uid || !k) return;
 		kvittering = null;
+		if (k.slags === 'besked') return;
 		try {
 			if (k.slags === 'tilfoejet') {
 				await fortrydMadvare(uid, k.id);
+			} else if (k.slags === 'faste') {
+				// Hele det faste maaltid ud igen, og saa er der heller ikke
+				// noget at spoerge om i baandet laengere.
+				await fortrydFasteLinjer(uid, k.ids);
+				ilagt = null;
 			} else {
 				await gendanMadvare(uid, k.maaltid);
 			}
@@ -556,13 +727,13 @@
 			</span>
 			Opskrifter
 		</button>
-		<button type="button" class="tm-ikon" onclick={() => aabnKilde('favoritter')}>
+		<button type="button" class="tm-ikon" onclick={() => aabnKilde('faste')}>
 			<span class="i3">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 					<path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8C19 15.6 12 20 12 20Z" />
 				</svg>
 			</span>
-			Favoritter
+			Faste måltider
 		</button>
 		<button type="button" class="tm-ikon" onclick={() => aabnKilde('mine')}>
 			<span class="i4">
@@ -576,6 +747,21 @@
 	</div>
 
 	<div class="tm-k">I dette måltid</div>
+
+	<!-- Knappen staar OVER den foerste ingrediens, ikke under listen.
+	     Linns valg 12. august: ligger den under, falder den uden for
+	     skaermen saa snart maaltidet fylder noget, og saa findes den
+	     reelt ikke. En fjerdedel af de faste maaltider har mellem syv og
+	     ti ting i sig. Se SPEC-3.0.md 26.10. -->
+	{#if kanGemmeSomFast}
+		<button type="button" class="fm-gem-knap" onclick={() => (gemArk = true)}>
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8C19 15.6 12 20 12 20Z" />
+			</svg>
+			Gem som fast måltid
+		</button>
+	{/if}
+
 	{#if henter}
 		<div class="tt-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
 	{:else if poster.length === 0}
@@ -638,6 +824,16 @@
 		onvaelg={vaelgFraArk}
 		onluk={() => (aabentArk = null)}
 	/>
+{:else if aabentArk === 'faste'}
+	<FasteMaaltiderArk
+		tilMaaltidet={hyldeTil}
+		andre={hyldeAndre}
+		maaltidLabel={LABELS[type].toLowerCase()}
+		henter={arkHenter}
+		onvaelg={vaelgFraArk}
+		onslet={sletFast}
+		onluk={() => (aabentArk = null)}
+	/>
 {:else if aabentArk}
 	<VaelgArk
 		titel={arkTitel[aabentArk]}
@@ -646,6 +842,18 @@
 		tomTekst={arkTom[aabentArk]}
 		onvaelg={vaelgFraArk}
 		onluk={() => (aabentArk = null)}
+	/>
+{/if}
+
+{#if gemArk}
+	<GemFastMaaltidArk
+		startNavn={foreslaaNavn(poster, type)}
+		startMaaltid={type}
+		linjer={gemLinjer}
+		uden={tilGemning.uden}
+		{gemmer}
+		ongem={gemSomFast}
+		onluk={() => (gemArk = false)}
 	/>
 {/if}
 
@@ -667,10 +875,34 @@
 		<span class="kvit-t">
 			{#if kvittering.slags === 'tilfoejet'}
 				{kvittering.navn} lagt til {LABELS[type].toLowerCase()}
+			{:else if kvittering.slags === 'faste'}
+				{kvittering.navn} lagt til {LABELS[type].toLowerCase()}
+			{:else if kvittering.slags === 'besked'}
+				{kvittering.tekst}
 			{:else}
 				{kvittering.maaltid.navn} er fjernet
 			{/if}
 		</span>
-		<button type="button" class="kvit-f" onclick={fortryd}>Fortryd</button>
+		<!-- En besked har intet at fortryde. Hendes dagbog er ikke roert. -->
+		{#if kvittering.slags !== 'besked'}
+			<button type="button" class="kvit-f" onclick={fortryd}>Fortryd</button>
+		{/if}
+	</div>
+{/if}
+
+<!-- Baandet. Det spoerger ÉN gang, det spaerrer ikke, og goer hun
+     ingenting sker der ingenting. De fleste aendringer er engangs-ting,
+     og et "opdatér" der lyser ville langsomt tygge hendes eget faste
+     maaltid i stykker. Se SPEC-3.0.md 26.10. -->
+{#if visBaand && ilagt}
+	<div class="fm-baand">
+		<div class="fm-b-tekst">
+			Du har ændret <strong>{ilagt.fast.navn}</strong> i dag. Skal det faste måltid gemmes sådan
+			fremover?
+		</div>
+		<div class="fm-b-knapper">
+			<button type="button" class="fm-b-nej" onclick={beholdFast}>Nej, kun i dag</button>
+			<button type="button" class="fm-b-ja" onclick={opdaterFast}>Ja, opdatér</button>
+		</div>
 	</div>
 {/if}

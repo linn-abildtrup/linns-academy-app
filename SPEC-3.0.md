@@ -1315,11 +1315,11 @@ filter-knapperne bruger.
 
 ### Hvad der ikke blev bygget
 
-**Der er stadig ingen vej til at gemme et MÅLTID som favorit i 3.0.**
-Favoritter-arket lover i sin tekst at hun kan, men knappen findes ikke, og alle
-2.905 favoritter er lavet i den gamle app. Favorit-opskrifter er en anden ting
-med et andet felt, så teksten i det ark er stadig et løfte appen ikke holder.
-Se 27.
+~~Der er stadig ingen vej til at gemme et MÅLTID som favorit i 3.0.~~
+**Klaret senere samme dag, se 26.10.** Hylden hedder nu Faste måltider, netop
+for at de to slags favoritter ikke hedder det samme: hjertet på en opskrift er
+et bogmærke på `userDoc.favoritOpskrifter`, et fast måltid er varelinjer i
+`favoritmaaltider`.
 
 ## 26.9 Portioner og makro. LÅST 12. august
 
@@ -1434,6 +1434,147 @@ blive delt med 12. I 3.0 stod der derfor 144 g protein og 4.800 kcal ud for
 `backup/`. Kontrol mod råvarerne: ingredienserne giver cirka 12,4 g protein og
 380 kcal, så holdets tal var rigtige, kun delingen manglede.
 
+## 26.10 Faste måltider. LÅST 12. august
+
+Kunden kan gemme det måltid hun lige har tastet, og lægge det i igen med ét
+tryk. Det den gamle app kalder "byg måltid" og gemmer i `favoritmaaltider`.
+
+### Målingerne der kom først
+
+En læs-kun måling af alle 616 kunder 12. august, med brug målt over 90 dage.
+
+| Tal | Hvad det betyder |
+|---|---|
+| **2.905** faste måltider hos **365** kunder, 59 % | Den mest brugte hylde i modulet. Median 4 pr kunde, højeste 60 |
+| Median **5** varelinjer, men **33 %** har kun ÉN | De 945 med én linje er ikke måltider, de er genveje til en madvare |
+| **49 %** af dem med to linjer eller flere er brugt | Målt strengt, se nedenfor. Det er et gulv, ikke et facit |
+| **76 %** bruges ALTID til det samme måltid | Derfor skal måltidstypen med |
+| **48 %** af al brug er morgenmad, aftensmad kun 9 % | Knappen skal virke bedst på morgenmaden |
+| Kun **3 %** er nogensinde redigeret | Derfor er der ingen redigér-skærm |
+
+**Om de 49 %, og hvorfor tallet ikke er skarpere.** Vi kan ikke se i data om
+hun trykkede på en favorit. Vi kan kun se om der ligger et måltid med de samme
+varelinjer. Retter hun én ting undervejs, tæller det ikke med. Den løse
+måling, hvor kun navnene blev sammenlignet, sagde 83 %, men den tæller også
+alt hvad der bare hedder "Morgenmad", og det gør 739 af de 2.905. Sandheden
+ligger imellem. **Skriv ikke navne-målingen igen og tro på den.**
+
+### De seks beslutninger
+
+**1. Det hedder Faste måltider.** Ordet favorit er reserveret til hjertet på
+opskrifter, se 26.8. To ting med samme navn i samme modul er en fælde.
+
+**2. Et fast måltid må gerne være én madvare.** Linns valg, som vendte
+forslaget om at skjule de 945. Følgen er at den samme skyr kan stå to steder
+på skærmen på én gang, både som flise under "Det du plejer" og på hylden.
+Måltids-inddelingen og mest brugte øverst holder det nede.
+
+**3. Knappen står OVER den første ingrediens**, lige under overskriften "I
+dette måltid". Linns valg, og begrundelsen er god: ligger den under listen,
+falder den uden for skærmen så snart måltidet fylder noget, og en knap man
+skal rulle efter bliver aldrig brugt. En fjerdedel af de faste måltider har
+mellem syv og ti ting i sig. Prisen er at hun ser knappen før sin mad.
+
+**Knappen findes kun når der er noget at gemme**, og den skjuler sig igen mens
+båndet står der, for så er spørgsmålet et andet.
+
+**4. Det lægges i som ÉN LINJE PR MADVARE**, ikke som én samlet linje.
+
+Det er den vigtigste ændring, for den retter noget der allerede var galt. Før
+12. august lagde 3.0 en favorit i som én linje med de fem tal lagt sammen, og
+det havde tre følger: hun kunne ikke fjerne én enkelt ting, en linje uden
+makro talte lydløst nul, og **"Det du plejer" lærte ingenting**. Brugte hun
+genvejen hver morgen, blev hendes fire fliser ved med at være tomme, fordi de
+tæller `foodId` og den samlede linje ikke har nogen.
+
+**5. Retter hun i det bagefter, spørger et blødt bånd** om det faste måltid
+skal opdateres. Linns idé, og den erstatter en redigér-skærm med noget bedre:
+hun vedligeholder listen mens hun bruger den. Det forklarer også hvorfor kun
+3 % nogensinde har redigeret i den gamle app, hvor funktionen ligger et sted
+hun aldrig kommer forbi.
+
+**Et bånd og IKKE en pop-up.** En pop-up ville lægge sig hen over
+kvitteringen med Fortryd, og det er præcis den knap hun skal bruge hvis hun
+kom til at fjerne noget ved et uheld.
+
+**Tre regler, og de er der for at beskytte hendes eget måltid:**
+
+- vi spørger **én gang**, ikke pr ændring
+- standarden er **kun i dag**. Gør hun ingenting, sker der ingenting
+- der står **fremover** i teksten, så det er tydeligt at det gælder alle de
+  næste dage og ikke dagens registrering
+
+De fleste ændringer er engangs-ting. Hun har ikke flere blåbær i dag, men i
+morgen har hun. Et "opdatér" der lyser mest ville langsomt tygge hendes eget
+faste måltid i stykker uden at nogen opdagede det.
+
+**6. Sletning sker på kortet i hylden**, med et kryds der spørger først. Det
+er med vilje anderledes end resten af modulet, hvor handlingen sker straks og
+Fortryd er ét tryk væk. Her er der ingen Fortryd, og hun mister noget hun selv
+har bygget. Bekræftelsen ligger inde i selve rækken og ikke i en boks ovenpå,
+fordi arket er portalled ud af `.ny-app`.
+
+### Tre fælder i koden
+
+**En linje uden `foodId` kan ikke gemmes.** En opskrift har ingen enkelte
+varer at slå op, så makroen ville blive nul. Arket siger det højt i stedet for
+at droppe linjen i stilhed. Det er præcis den fejl der findes på **178 af de
+2.905 i drift**, hvor kunden logger mindre end hun spiste. Den er ikke løst
+her, se ventelisten.
+
+**Båndet må ikke spørge om noget hun ikke har gjort.** To steder:
+
+- `foerIds` husker hvad der lå i måltidet FØR hun lagde det faste måltid i.
+  Uden dem ville en æggemad hun tastede i forvejen blive regnet som en del af
+  hendes morgengrød
+- er en madvare forsvundet fra databasen, springes den over, og så holder vi
+  slet ikke øje. Ellers ville båndet spørge med det samme om hun ville gemme
+  måltidet uden den linje, og et ja ville klippe hendes faste måltid ned
+
+**Vi holder kun øje så længe hun bliver på skærmen.** Lukker hun appen og
+fjerner noget tre dage senere, spørger vi ikke. Hun kan alligevel ikke huske
+hvad hun lagde i, og et spørgsmål om noget hun ikke kan huske er værre end
+intet spørgsmål.
+
+### Hvordan brug tælles
+
+Den gamle app skriver ét dokument med alle linjerne i, 3.0 skriver ét pr
+madvare. Derfor kan vi ikke sammenligne dokument for dokument. Vi lægger hele
+dagens måltid sammen først, og et fast måltid tæller med hvis ALLE dets
+madvarer står der. At der også står en banan ved siden af betyder ikke at hun
+ikke brugte det. Der er test på begge former, så de to apper aldrig kan give
+hvert sit svar.
+
+Tallet tælles på de 45 dage `plejer3` henter i forvejen, derfor står der
+"brugt 12 gange **på det seneste**". Historikken fik et frivilligt `dato`-felt
+netop for det, så de 45 dage kun hentes én gang.
+
+### Hvor det ligger
+
+Vi bliver i den gamle samling `users/{uid}/favoritmaaltider`, så et fast
+måltid lavet i 3.0 også virker i den app der er i drift, og de 2.905 der
+findes virker i 3.0 fra dag ét. Feltet `maaltid` er nyt og additivt, og de
+gamle har det ikke. Derfor gættes måltidstypen ud af hendes egen historik når
+feltet mangler, og det rammer som regel, fordi 76 % altid bruges til det
+samme. **Der skal intet udgives i Firebase Console**, reglerne tillader det i
+forvejen, se `firestore.rules` linje 62. Tjekket 12. august.
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/fasteMaaltider3.ts` | Reglerne, sorteringen og båndets betingelse | 36 |
+| `firestore/fasteMaaltider3.ts` | Læsning og skrivning | |
+| `components/ny/FasteMaaltiderArk.svelte` | Hylden | |
+| `components/ny/GemFastMaaltidArk.svelte` | Gem-arket | |
+
+### En fælde i arbejdsformen, ikke i koden
+
+Første udgave så halvfærdig ud på skærmen: arket åbnede tomt uden en eneste
+fejl. Årsagen var at komponenten var skrevet, testet og **importeret, men
+aldrig sat ind i markup**. Det gamle Vælg-ark åbnede i stedet, med den nye
+titel på og uden en tom tekst at vise. Hverken `svelte-check` eller testene
+fanger det, for koden er korrekt, den bliver bare aldrig brugt. **Tjek at en
+ny komponent faktisk står i markup, ikke kun at den er importeret.**
+
 ## 27. Åbne punkter på Mad
 
 - Farve på plejer-fliserne: udskudt med vilje, og de holdes hvide indtil
@@ -1459,8 +1600,9 @@ blive delt med 12. I 3.0 stod der derfor 144 g protein og 4.800 kcal ud for
   forsiden, så vil hun bare se hvad der findes, skal hun først vælge om det er
   morgenmad eller aftensmad. Biblioteket, som er den vej i den gamle app, er
   bevidst udskudt
-- **Der er stadig ingen vej til at gemme et MÅLTID som favorit i 3.0**, selv om
-  Favoritter-arket lover det i sin tekst. Se 26.8
+- ~~Der er stadig ingen vej til at gemme et MÅLTID som favorit i 3.0~~.
+  **Klaret 12. august**, se 26.10. Hylden hedder nu Faste måltider, og teksten
+  i arket lover ikke længere noget appen ikke holder
 - ~~**`static/mockup/` skal slettes.**~~ **Klaret 11. august.** Syv filer og
   808 KB stillads til 30-30. Static gik fra 1,1 MB til 280 KB, og alt i static
   hentes ned til hver kunde ved hver udrulning. Se 28.5
@@ -1536,8 +1678,11 @@ som tal inde i en tekst. Så forsvinder både parsing, udklipning af linjen og
 hele klassen af fejl vi har fundet i dag. Det er en migrering der rører den
 gamle app, og den bør laves samtidig med punkt 1.
 
-**10. Der er stadig ingen vej til at gemme et MÅLTID som favorit i 3.0**, selv
-om Favoritter-arket lover det i sin tekst. Se 26.8.
+**10.** ~~Der er stadig ingen vej til at gemme et MÅLTID som favorit i 3.0.~~
+**Klaret 12. august**, se 26.10. Det der stadig står tilbage er de **178 af
+2.905 faste måltider der har en linje uden makro** og derfor logger for lidt.
+Det er en grænse i den gamle model, og 3.0 kan ikke længere lave nye af dem,
+men de gamle er ikke rettet.
 
 **11. Opskrifter kan kun nås inde fra et måltid.** Se listen ovenfor.
 
