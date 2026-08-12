@@ -608,6 +608,7 @@
 		{opskrifter}
 		henter={arkHenter}
 		startKategori={kategoriForMaaltid(type)}
+		favoritter={favoritOpskrifter}
 		onvaelg={vaelgFraArk}
 		onluk={() => (aabentArk = null)}
 	/>

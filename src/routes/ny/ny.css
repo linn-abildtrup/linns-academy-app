@@ -4997,6 +4997,54 @@ button.tm-ikon:active > span {
 	outline-offset: 2px;
 }
 
+/* ── Fanerne Alle og Favoritter ─────────────────────────────── */
+/*
+   Alle er forvalgt, saa hun lander praecis hvor hun landede foer
+   favoritterne fandtes. Tallet paa hver fane er det SAMLEDE antal, ikke
+   det maaltids-filtrerede, praecis som "Alle 130" ogsaa er totalen. Staar
+   der 6 men vises der 2, er det maaltids-forvalget der arbejder, og
+   "Vis alle 6" er vejen ud. Se SPEC-3.0.md.
+*/
+.ol-faner {
+	display: flex;
+	gap: 4px;
+	margin-top: 9px;
+	padding: 3px;
+	background: var(--paper);
+	border-radius: 999px;
+	flex-shrink: 0;
+}
+
+.ol-fane {
+	flex: 1;
+	border: 0;
+	background: none;
+	border-radius: 999px;
+	padding: 8px 6px;
+	font-family: var(--sans);
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-2);
+	cursor: pointer;
+	min-height: 36px;
+}
+
+.ol-fane.valgt {
+	background: var(--plum);
+	color: #fff;
+}
+
+.ol-fane-tal {
+	font-size: calc(11px * var(--fs-scale, 1));
+	opacity: 0.72;
+	font-variant-numeric: tabular-nums;
+}
+
+.ol-fane:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
 .ol-linje {
 	display: flex;
 	gap: 7px;
@@ -5088,6 +5136,16 @@ button.tm-ikon:active > span {
 
 .ol-tom p {
 	margin: 0;
+}
+
+/* Anden linje i en tom skaerm: hvor mange hun har i alt, eller hvor hjertet
+   sidder. Daempet, saa den foerste linje stadig er beskeden.
+   Skrevet som .ol-tom .ol-tom-hjaelp og ikke med !important, saa den slaar
+   .ol-tom p paa specificitet. Se faelden med .ny-app button i HANDOVER 7. */
+.ol-tom .ol-tom-hjaelp {
+	margin-top: 6px;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
 }
 
 /* Er skaermen tom, skal der altid vaere en vej ud der ikke kraever at hun

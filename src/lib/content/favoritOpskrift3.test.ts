@@ -3,6 +3,7 @@ import {
 	favoritterFra,
 	erFavorit,
 	skiftFavorit,
+	kunFavoritter,
 	HJERTE_ETIKET,
 	FAVORIT_FELT
 } from './favoritOpskrift3';
@@ -87,6 +88,39 @@ describe('skiftFavorit', () => {
 		const start = ['a', 'b'];
 		const til = skiftFavorit(start, 'c');
 		expect(skiftFavorit(til, 'c')).toEqual(start);
+	});
+});
+
+describe('kunFavoritter', () => {
+	const liste = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }];
+
+	it('tager kun dem hun har markeret', () => {
+		expect(kunFavoritter(liste, ['b', 'd'])).toEqual([{ id: 'b' }, { id: 'd' }]);
+	});
+
+	it('giver tom liste naar hun ingen har', () => {
+		expect(kunFavoritter(liste, [])).toEqual([]);
+	});
+
+	// Fanen skal vise de samme retter i samme orden som fanen Alle. Ellers
+	// ligger den samme ret to forskellige steder afhaengigt af hvor hun staar.
+	it('beholder listens egen raekkefoelge, ikke bogmaerkernes', () => {
+		expect(kunFavoritter(liste, ['d', 'a']).map((o) => o.id)).toEqual(['a', 'd']);
+	});
+
+	// Et bogmaerke til en opskrift Linn har slettet skal bare falde ud.
+	it('springer bogmaerker over der ikke findes laengere', () => {
+		expect(kunFavoritter(liste, ['b', 'findes-ikke'])).toEqual([{ id: 'b' }]);
+	});
+
+	it('roerer ikke den liste der kom ind', () => {
+		const foer = [...liste];
+		kunFavoritter(liste, ['a']);
+		expect(liste).toEqual(foer);
+	});
+
+	it('taaler en tom opskrift-liste', () => {
+		expect(kunFavoritter([], ['a'])).toEqual([]);
 	});
 });
 

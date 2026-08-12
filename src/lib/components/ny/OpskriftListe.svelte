@@ -37,6 +37,7 @@
 		fliseBogstav,
 		type Kategori3
 	} from '$lib/content/opskriftKategori3';
+	import { kunFavoritter } from '$lib/content/favoritOpskrift3';
 	import type { Opskrift3 } from '$lib/firestore/opskrifter3';
 	import type { DietTag } from '$lib/content/opskrifter';
 
@@ -45,11 +46,34 @@
 		henter?: boolean;
 		/** Maaltidet hun kom fra. Forvaelges. null = ingen forvalg. */
 		startKategori?: Kategori3 | null;
+		/** Id'erne paa de opskrifter hun har markeret. Se favoritOpskrift3.ts. */
+		favoritter?: string[];
 		onvaelg: (id: string) => void;
 		onluk: () => void;
 	}
 
-	let { opskrifter, henter = false, startKategori = null, onvaelg, onluk }: Props = $props();
+	let {
+		opskrifter,
+		henter = false,
+		startKategori = null,
+		favoritter = [],
+		onvaelg,
+		onluk
+	}: Props = $props();
+
+	// Fanerne. Alle er forvalgt, saa hun lander praecis hvor hun landede foer
+	// favoritterne fandtes, og intet aendrer sig for den der ikke bruger dem.
+	let fane = $state<'alle' | 'favoritter'>('alle');
+
+	/** Alle hendes favoritter, UDEN maaltid og soegning. Tallet paa fanen. */
+	const favoritListe = $derived(kunFavoritter(opskrifter, favoritter));
+
+	/**
+	 * Den liste alt andet regnes ud fra. Fanen er altsaa bare endnu et filter,
+	 * lagt foerst, saa maaltid, kost og soegning virker praecis ens paa begge
+	 * faner uden at nogen af dem skal vide at fanerne findes.
+	 */
+	const grundliste = $derived(fane === 'favoritter' ? favoritListe : opskrifter);
 
 	let soegeord = $state('');
 	// Kun STARTvaerdien, med vilje. Aendrer hun filteret bagefter, skal
@@ -66,13 +90,13 @@
 	    for kategorierne taelles paa den, saa tallet siger hvad hun faar hvis
 	    hun trykker, ikke hvad hun allerede har. */
 	const udenKategori = $derived(
-		filtrerOpskrifter3(opskrifter, { soegeord, dietTags: valgteDiet })
+		filtrerOpskrifter3(grundliste, { soegeord, dietTags: valgteDiet })
 	);
 	const antal = $derived(antalPrKategori(udenKategori.map((r) => r.opskrift)));
 
 	/** Samme for kost-knapperne: talt uden diaet-filteret selv. */
 	const udenDiet = $derived(
-		filtrerOpskrifter3(opskrifter, { soegeord, kategorier: valgteKategorier })
+		filtrerOpskrifter3(grundliste, { soegeord, kategorier: valgteKategorier })
 	);
 	const dietAntal = $derived<Record<DietTag, number>>({
 		vegetar: udenDiet.filter((r) => r.opskrift.dietTags.includes('vegetar')).length,
@@ -80,7 +104,7 @@
 	});
 
 	const resultater = $derived(
-		filtrerOpskrifter3(opskrifter, {
+		filtrerOpskrifter3(grundliste, {
 			soegeord,
 			kategorier: valgteKategorier,
 			dietTags: valgteDiet
@@ -90,7 +114,7 @@
 	/** Hvor mange der er inden for filtrene UDEN soegning. Staar i
 	    soegefeltet, saa hun ved hvad hun soeger i. */
 	const udenSoegning = $derived(
-		filtrerOpskrifter3(opskrifter, {
+		filtrerOpskrifter3(grundliste, {
 			kategorier: valgteKategorier,
 			dietTags: valgteDiet
 		}).length
@@ -99,15 +123,21 @@
 	const antalFiltre = $derived(valgteKategorier.length + valgteDiet.length);
 	const harFiltre = $derived(antalFiltre > 0);
 	const soeger = $derived(termer.length > 0);
+	const paaFavoritter = $derived(fane === 'favoritter');
+	/** Hun staar paa Favoritter og har slet ingen. En anden tom skaerm end
+	    "ingen passer paa filtrene", for der er intet at rydde. */
+	const ingenFavoritter = $derived(paaFavoritter && favoritListe.length === 0);
 
 	/** Staar der praecis ét maaltid, siger overskriften hvilket. Det er den
 	    eneste plads hvor begraensningen kan ses gratis, nu hvor filtrene er
-	    gemt vaek. */
+	    gemt vaek. Maaltids-forvalget gaelder BEGGE faner, Linns valg 12.
+	    august, saa overskriften skal ogsaa sige det paa Favoritter. */
 	const overskrift = $derived.by(() => {
+		const hvad = paaFavoritter ? 'Favoritter' : 'Opskrifter';
 		if (valgteKategorier.length === 1) {
-			return `Opskrifter til ${KATEGORI_NAVN[valgteKategorier[0]].toLowerCase()}`;
+			return `${hvad} til ${KATEGORI_NAVN[valgteKategorier[0]].toLowerCase()}`;
 		}
-		return 'Opskrifter';
+		return hvad;
 	});
 
 	function slaaKategori(k: Kategori3) {
@@ -141,13 +171,44 @@
 
 		<div class="ol-hoved">
 			<h2 class="ol-titel" id="ol-titel">{overskrift}</h2>
-			{#if harFiltre}
+			{#if harFiltre && grundliste.length > 0}
 				<!-- Vejen ud af begraensningen, ét tryk. Uden den ville hun skulle
-				     ind i filter-arket for at komme tilbage til alle 130. -->
+				     ind i filter-arket for at komme tilbage til alle 130.
+				     Tallet foelger fanen: paa Favoritter staar der hendes eget
+				     antal, saa knappen aldrig lover flere end der findes. -->
 				<button type="button" class="ol-alle" onclick={ryd}>
-					Vis alle {opskrifter.length}
+					Vis alle {grundliste.length}
 				</button>
 			{/if}
+		</div>
+
+		<!-- Fanerne. Maaltids-forvalget gaelder begge, saa de opfoerer sig ens.
+		     Se SPEC-3.0.md.
+
+		     role="group" med aria-pressed, IKKE tablist og tab. De rigtige
+		     fane-roller lover en skaermlaeser at der hoerer et panel til hver
+		     fane, og at piletasterne skifter mellem dem. Det har vi ikke bygget,
+		     og et loefte vi ikke holder er vaerre end ingen rolle. Det er ogsaa
+		     samme moenster som filter-knapperne, se OpskriftFiltre.svelte. -->
+		<div class="ol-faner" role="group" aria-label="Vis alle opskrifter eller kun dine favoritter">
+			<button
+				type="button"
+				class="ol-fane"
+				class:valgt={!paaFavoritter}
+				aria-pressed={!paaFavoritter}
+				onclick={() => (fane = 'alle')}
+			>
+				Alle <span class="ol-fane-tal">{opskrifter.length}</span>
+			</button>
+			<button
+				type="button"
+				class="ol-fane"
+				class:valgt={paaFavoritter}
+				aria-pressed={paaFavoritter}
+				onclick={() => (fane = 'favoritter')}
+			>
+				Favoritter <span class="ol-fane-tal">{favoritListe.length}</span>
+			</button>
 		</div>
 
 		<div class="ol-linje">
@@ -156,7 +217,7 @@
 				type="search"
 				bind:value={soegeord}
 				use:fokuser
-				placeholder="Søg blandt {udenSoegning} opskrifter"
+				placeholder="Søg blandt {udenSoegning} {paaFavoritter ? 'favoritter' : 'opskrifter'}"
 				aria-label="Søg i opskrifter"
 			/>
 			<button
@@ -186,14 +247,41 @@
 				<p class="ol-tom">Henter opskrifter</p>
 			{:else if resultater.length === 0}
 				<div class="ol-tom">
-					{#if soeger && harFiltre}
-						<p>Ingen opskrifter passer på både søgningen og filtrene.</p>
-						<button type="button" class="ol-udvej" onclick={ryd}>Søg i alle {opskrifter.length}</button>
+					{#if ingenFavoritter}
+						<!-- Hun har slet ingen. Der er intet filter at rydde, saa vejen
+						     videre er at fortaelle hvor hjertet sidder. -->
+						<p>Du har ingen favoritter endnu.</p>
+						<p class="ol-tom-hjaelp">
+							Åbn en opskrift du kan lide, og tryk på hjertet ved siden af knappen nederst.
+							Så ligger den her næste gang.
+						</p>
+						<button type="button" class="ol-udvej" onclick={() => (fane = 'alle')}>
+							Se alle {opskrifter.length} opskrifter
+						</button>
+					{:else if soeger && harFiltre}
+						<p>Ingen {paaFavoritter ? 'favoritter' : 'opskrifter'} passer på både søgningen og filtrene.</p>
+						<button type="button" class="ol-udvej" onclick={ryd}>Søg i alle {grundliste.length}</button>
 					{:else if soeger}
-						<p>Ingen opskrifter passer på det ord.</p>
+						<p>Ingen {paaFavoritter ? 'favoritter' : 'opskrifter'} passer på det ord.</p>
 					{:else if harFiltre}
-						<p>Ingen opskrifter passer på filtrene.</p>
-						<button type="button" class="ol-udvej" onclick={ryd}>Vis alle {opskrifter.length}</button>
+						<!-- Hun HAR favoritter, men ingen til det maaltid hun kom fra.
+						     Tallet skal med, ellers modsiger fanen skaermen. -->
+						<p>
+							{#if paaFavoritter}
+								Ingen af dine favoritter er til {valgteKategorier.length === 1
+									? KATEGORI_NAVN[valgteKategorier[0]].toLowerCase()
+									: 'det valgte'}.
+							{:else}
+								Ingen opskrifter passer på filtrene.
+							{/if}
+						</p>
+						{#if paaFavoritter}
+							<p class="ol-tom-hjaelp">
+								Du har {grundliste.length}
+								{grundliste.length === 1 ? 'favorit' : 'favoritter'} i alt.
+							</p>
+						{/if}
+						<button type="button" class="ol-udvej" onclick={ryd}>Vis alle {grundliste.length}</button>
 					{:else}
 						<p>Der er ingen opskrifter endnu.</p>
 					{/if}

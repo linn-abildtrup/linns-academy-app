@@ -81,3 +81,24 @@ export function skiftFavorit(favoritter: readonly string[], opskriftId: string):
  * tilstanden eller handlingen der bliver laest op.
  */
 export const HJERTE_ETIKET = 'Favorit';
+
+/**
+ * De opskrifter hun har markeret, i den raekkefoelge listen kom ind.
+ *
+ * Raekkefoelgen er med vilje listens og ikke bogmaerkernes. Opskrift-listen er
+ * sorteret alfabetisk, og den orden skal ikke skifte bare fordi hun staar paa
+ * fanen Favoritter. Ville vi vise dem i den orden hun markerede dem, ville de
+ * samme seks retter ligge to forskellige steder afhaengigt af fanen.
+ *
+ * Et bogmaerke til en opskrift der ikke laengere findes, fx fordi Linn har
+ * slettet den, forsvinder af sig selv her. Vi rydder ikke op i kundens felt
+ * for det, for opskriften kan komme igen.
+ */
+export function kunFavoritter<T extends { id: string }>(
+	opskrifter: readonly T[],
+	favoritter: readonly string[]
+): T[] {
+	if (favoritter.length === 0) return [];
+	const saet = new Set(favoritter);
+	return opskrifter.filter((o) => saet.has(o.id));
+}
