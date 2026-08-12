@@ -1,0 +1,237 @@
+import { describe, it, expect } from 'vitest';
+import {
+	dagbogsNavn,
+	filtrerMine,
+	gaetKategorier,
+	harEgne,
+	ingrediensMaengde,
+	kategorierFor,
+	makroFor,
+	makroForPortioner,
+	tilListePost,
+	type BrugtOpskrift,
+	type MinOpskrift3
+} from './mineOpskrifter3';
+import type { Kategori3 } from './opskriftKategori3';
+
+function min(
+	id: string,
+	navn: string,
+	opts: Partial<MinOpskrift3> = {}
+): MinOpskrift3 {
+	return {
+		id,
+		navn,
+		antalPortioner: 1,
+		ingredienser: [{ navn: 'Hokkaido', maengde: 600, enhed: 'g' }],
+		makroPrPortion: { protein: 18, fiber: 7, kh: 30, fedt: 12, kcal: 340 },
+		...opts
+	};
+}
+
+/** Et maaltid hvor hun har logget en af sine egne opskrifter. */
+function logget(type: string, opskriftId: string): BrugtOpskrift {
+	return { type, items: [{ opskriftRef: { id: opskriftId, erEgen: true } }] };
+}
+
+function post(m: MinOpskrift3, k: Kategori3[] = []) {
+	return tilListePost(m, k);
+}
+
+describe('gaetKategorier', () => {
+	it('gaetter ud af det hun faktisk har logget den som', () => {
+		const g = gaetKategorier([logget('frokost', 'a'), logget('frokost', 'a')]);
+		expect(g.get('a')).toEqual(['frokost']);
+	});
+
+	// En suppe kan sagtens vaere baade frokost og aftensmad.
+	it('giver flere maaltider naar hun bruger den til flere', () => {
+		const g = gaetKategorier([logget('aftensmad', 'a'), logget('frokost', 'a')]);
+		expect(g.get('a')).toEqual(['frokost', 'aftensmad']);
+	});
+
+	it('holder to opskrifter adskilt', () => {
+		const g = gaetKategorier([logget('morgenmad', 'a'), logget('aftensmad', 'b')]);
+		expect(g.get('a')).toEqual(['morgenmad']);
+		expect(g.get('b')).toEqual(['aftensmad']);
+	});
+
+	// Kun hendes EGNE. Linns opskrifter skrives med erEgen: false.
+	it('taeller ikke Linns opskrifter med', () => {
+		const g = gaetKategorier([
+			{ type: 'frokost', items: [{ opskriftRef: { id: 'linns', erEgen: false } }] }
+		]);
+		expect(g.size).toBe(0);
+	});
+
+	it('taeller ikke almindelige madvarer med', () => {
+		expect(gaetKategorier([{ type: 'frokost', items: [{}] }]).size).toBe(0);
+	});
+
+	it('springer et ukendt maaltid over', () => {
+		expect(gaetKategorier([logget('natmad', 'a')].map((m) => m)).size).toBe(0);
+	});
+});
+
+describe('kategorierFor', () => {
+	const gaet = new Map<string, Kategori3[]>([['a', ['frokost']]]);
+
+	it('lader hendes eget valg vinde over gaettet', () => {
+		expect(kategorierFor(min('a', 'Suppe', { kategorier3: ['aftensmad'] }), gaet)).toEqual([
+			'aftensmad'
+		]);
+	});
+
+	// De 222 fra den gamle app har intet felt.
+	it('falder tilbage paa gaettet naar feltet mangler', () => {
+		expect(kategorierFor(min('a', 'Suppe'), gaet)).toEqual(['frokost']);
+	});
+
+	it('giver ingen naar der hverken er felt eller historik', () => {
+		expect(kategorierFor(min('z', 'Ukendt'), gaet)).toEqual([]);
+	});
+
+	it('saetter altid maaltiderne i fast raekkefoelge', () => {
+		const k = kategorierFor(min('a', 'Suppe', { kategorier3: ['aftensmad', 'morgenmad'] }), gaet);
+		expect(k).toEqual(['morgenmad', 'aftensmad']);
+	});
+
+	it('smider vaerdier vi ikke kender vaek', () => {
+		const k = kategorierFor(
+			min('a', 'Suppe', { kategorier3: ['natmad' as Kategori3, 'frokost'] }),
+			undefined
+		);
+		expect(k).toEqual(['frokost']);
+	});
+});
+
+describe('tilListePost', () => {
+	it('goer opskriften soegbar paa titel og ingredienser', () => {
+		const p = post(min('a', 'Mors græskarsuppe'), ['frokost']);
+		expect(p.titel).toBe('Mors græskarsuppe');
+		expect(p.ingredienser).toEqual([{ navn: 'Hokkaido' }]);
+		expect(p.kategorier3).toEqual(['frokost']);
+	});
+
+	// Hun har ingen diaet-maerker, saa kost-filteret maa aldrig ramme hende
+	// paa noget andet end at hun ikke har maerket.
+	it('giver tomme diaet-maerker', () => {
+		expect(post(min('a', 'Suppe')).dietTags).toEqual([]);
+	});
+});
+
+describe('filtrerMine', () => {
+	const suppe = post(min('a', 'Mors græskarsuppe'), ['frokost']);
+	const gryde = post(min('b', 'Kikærtegryde'), ['aftensmad']);
+	// Den her har intet maaltid. Det er de 222 fra den gamle app.
+	const uden = post(min('c', 'Havregrød med æble'), []);
+	const alle = [suppe, gryde, uden];
+
+	it('filtrerer paa maaltid som alt andet', () => {
+		const r = filtrerMine(alle, { kategorier: ['frokost'] });
+		expect(r.map((x) => x.opskrift.id)).toContain('a');
+		expect(r.map((x) => x.opskrift.id)).not.toContain('b');
+	});
+
+	// Den vigtigste test i filen. Hendes egen mad maa ikke forsvinde fordi
+	// hun aldrig er blevet bedt om at udfylde et felt.
+	it('viser ALTID en opskrift uden maaltid, uanset filteret', () => {
+		const r = filtrerMine(alle, { kategorier: ['frokost'] });
+		expect(r.map((x) => x.opskrift.id)).toContain('c');
+	});
+
+	it('viser den uden maaltid ogsaa naar filteret er noget helt andet', () => {
+		const r = filtrerMine(alle, { kategorier: ['snack'] });
+		expect(r.map((x) => x.opskrift.id)).toEqual(['c']);
+	});
+
+	// Soegningen gaelder ogsaa dem. Det er KUN maaltidet der springes over.
+	it('soegningen gaelder ogsaa dem uden maaltid', () => {
+		const r = filtrerMine(alle, { soegeord: 'græskar' });
+		expect(r.map((x) => x.opskrift.id)).toEqual(['a']);
+	});
+
+	it('finder paa en ingrediens', () => {
+		const r = filtrerMine(alle, { soegeord: 'hokkaido' });
+		expect(r.length).toBe(3);
+	});
+
+	it('bevarer raekkefoelgen fra listen', () => {
+		const r = filtrerMine(alle, {});
+		expect(r.map((x) => x.opskrift.id)).toEqual(['a', 'b', 'c']);
+	});
+
+	it('giver alt naar der ikke er filtre', () => {
+		expect(filtrerMine(alle, {}).length).toBe(3);
+	});
+});
+
+describe('harEgne', () => {
+	// Har hun ingen, findes fanen slet ikke. 91 % af kunderne.
+	it('siger nej naar listen er tom', () => {
+		expect(harEgne([])).toBe(false);
+	});
+
+	it('siger ja fra den foerste', () => {
+		expect(harEgne([post(min('a', 'Suppe'))])).toBe(true);
+	});
+});
+
+describe('portioner og makro', () => {
+	// Samme regel som paa Linns opskrifter: makroen er PR PORTION og
+	// ganges. antalPortioner maa ALDRIG bruges paa den. Se SPEC 26.9.
+	it('ganger makroen med antallet af portioner', () => {
+		expect(makroForPortioner(18, 2)).toBe(36);
+	});
+
+	it('roerer ikke makroen ved én portion', () => {
+		expect(makroForPortioner(18, 1)).toBe(18);
+	});
+
+	it('taaler en halv portion', () => {
+		expect(makroForPortioner(18, 0.5)).toBe(9);
+	});
+
+	it('bruger ALDRIG antalPortioner paa makroen', () => {
+		// Opskriften raekker til fire, men makroen er stadig pr portion.
+		const m = min('a', 'Gryde', { antalPortioner: 4 });
+		expect(makroFor(m, 1).protein).toBe(18);
+		expect(makroFor(m, 2).protein).toBe(36);
+	});
+
+	it('regner alle fem tal', () => {
+		const m = makroFor(min('a', 'Suppe'), 2);
+		expect(m).toEqual({ protein: 36, fiber: 14, kh: 60, fedt: 24, kcal: 680 });
+	});
+
+	// Ingredienserne gaar den ANDEN vej: listen raekker til antalPortioner.
+	it('halverer maengderne naar listen er til fire og hun vil have to', () => {
+		expect(ingrediensMaengde(600, 4, 2)).toBe(300);
+	});
+
+	it('roerer ikke maengden naar listen passer til det hun vil have', () => {
+		expect(ingrediensMaengde(600, 1, 1)).toBe(600);
+	});
+
+	it('fordobler naar hun vil have to og listen er til én', () => {
+		expect(ingrediensMaengde(600, 1, 2)).toBe(1200);
+	});
+
+	it('taaler at antalPortioner mangler', () => {
+		expect(ingrediensMaengde(600, 0, 2)).toBe(600);
+	});
+});
+
+describe('dagbogsNavn', () => {
+	it('skriver bare navnet ved én portion', () => {
+		expect(dagbogsNavn(min('a', 'Mors græskarsuppe'), 1)).toBe('Mors græskarsuppe');
+	});
+
+	it('skriver antallet med naar det ikke er én', () => {
+		expect(dagbogsNavn(min('a', 'Mors græskarsuppe'), 2)).toBe('Mors græskarsuppe (2 port.)');
+	});
+
+	it('skriver en halv portion med komma', () => {
+		expect(dagbogsNavn(min('a', 'Suppe'), 0.5)).toBe('Suppe (0,5 port.)');
+	});
+});

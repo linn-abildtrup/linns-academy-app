@@ -36,7 +36,19 @@ export interface PlejerPost {
 /** Det vi skal bruge fra hendes tidligere maaltider. */
 export interface HistorikMaaltid {
 	type: Maaltidstype;
-	items: { foodId?: string; portion?: number; enhedId?: string; manuel?: { navn: string } }[];
+	items: {
+		foodId?: string;
+		portion?: number;
+		enhedId?: string;
+		manuel?: { navn: string };
+		/**
+		 * Sat naar linjen kom fra en opskrift. Fliserne her i filen bruger
+		 * den ikke, men de egne opskrifter goer: den fortaeller praecis
+		 * hvilken opskrift hun loggede, saa maaltidet kan gaettes uden at
+		 * gaette paa navnet. Se mineOpskrifter3.gaetKategorier.
+		 */
+		opskriftRef?: { id?: string; erEgen?: boolean };
+	}[];
 	/**
 	 * Dagen. Fliserne her i filen bruger den ikke, men de faste maaltider
 	 * goer, for de skal laegge en hel dags maaltid sammen paa tvaers af

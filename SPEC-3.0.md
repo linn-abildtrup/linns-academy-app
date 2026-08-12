@@ -1575,6 +1575,109 @@ titel på og uden en tom tekst at vise. Hverken `svelte-check` eller testene
 fanger det, for koden er korrekt, den bliver bare aldrig brugt. **Tjek at en
 ny komponent faktisk står i markup, ikke kun at den er importeret.**
 
+## 26.11 Mine opskrifter. LÅST 12. august
+
+Kundens egne opskrifter, altså dem hun har fotograferet og fået AI'en til at
+læse. De lå i den gamle app og fandtes slet ikke i 3.0. Afsnit 23 havde
+noteret at de skulle have enten en plads eller et bevidst nej, og de havde
+fået ingen af delene. Det blev opdaget fordi Linn spurgte.
+
+### Målingerne der kom først
+
+Læs-kun måling af alle 616 kunder 12. august, brug målt over 90 dage.
+
+| Tal | Hvad det betyder |
+|---|---|
+| **222** egne opskrifter hos **53** kunder, 9 % | En minoritets-funktion. Median 2 pr kunde, en enkelt har 27 |
+| **87 %** af de 53 har logget en af deres egne | Men de der har dem, bruger dem |
+| **9 %** af alt de taster er en egen opskrift | Til sammenligning: hele Linns bibliotek er **0,9 %** af alt der registreres |
+| **100 %** har et foto | Af Linns 130 har 2 |
+| **71 %** af de 222 er brugt mindst én gang | Kvaliteten er høj: alle har ingredienser, én mangler protein |
+| **24 %** er rettet efter oprettelsen | Derfor skal hun kunne rette |
+
+**Det tal der vendte samtalen er de 9 mod 0,9.** Hendes egne opskrifter bruges
+cirka ti gange så meget som hele Linns bibliotek gør. Fotoet er formentlig en
+del af forklaringen, og det peger tilbage på at 128 af de 130 mangler et
+billede, se ventelisten.
+
+**Det tal der styrer designet er derimod de 91 %** der ingen egne har. For dem
+må intet ændre sig. Derfor findes fanen slet ikke når hun ingen har.
+
+**En fælde i selve målingen, værd at kende:** feltet `opdateret` sættes også
+ved oprettelsen, se `opretMinOpskrift`. Første kørsel sagde derfor at 100 % var
+rettet. En rigtig rettelse er først når `opdateret` og `oprettet` er
+forskellige, og så er tallet 24 %.
+
+### De fire beslutninger
+
+**1. En tredje fane i opskrift-listen**, ved siden af Alle og Favoritter. Linns
+valg 12. august ud fra fire tegnede forslag. De tre fravalgte var: alt i ét
+blandet gitter, hendes ting samlet under "Mine", og et fjerde ikon. Det sidste
+blev valgt fra fordi ikon-rækken er den dyreste plads i modulet, og 9 % af
+kunderne skal ikke have en fjerdedel af den.
+
+**2. Kunden sætter selv måltidet**, og hun må vælge flere. Linns idé, og den er
+bedre end de to jeg foreslog, som begge byggede på et gæt. En suppe er tit både
+frokost og aftensmad. Kategorierne er **de samme fem som på Linns opskrifter og
+i samme feltform**, så hendes egne løber gennem præcis den samme søgning og de
+samme filtre. Der er ikke én undtagelse i filter-koden.
+
+**3. Hun skal kunne rette det bagefter.** Linns tilføjelse. Uden den ville de
+222 der findes aldrig kunne få et måltid, for de har ingen og kan ikke få et af
+sig selv. Måltiderne gemmes med det samme når hun trykker på en chip, præcis som
+hjertet på Linns opskrifter, og rulles tilbage uden fejlbesked hvis skrivningen
+går galt.
+
+**4. Rette, slette og oprette skal alt sammen med.** Linns valg, hvor hun
+vendte mit forslag om at nøjes med at finde og logge. Bygges i tre bidder:
+finde og logge, så rette og slette, så oprette med kamera og AI.
+
+### Den vigtigste regel
+
+**En opskrift uden måltid vises ALTID**, uanset hvilket filter der er sat.
+
+De 222 fra den gamle app har intet måltid. Faldt de ud af kategori-filteret,
+ville hendes egen mad forsvinde fra skærmen fordi hun aldrig er blevet bedt om
+at udfylde et felt. **Det er bedre at vise en aftensmad under morgenmad end at
+skjule noget hun selv har lavet.** Undtagelsen ligger ét sted, i `filtrerMine`,
+og der er test på den. Søgningen gælder også dem, det er kun måltidet der
+springes over.
+
+### Portioner og makro
+
+Samme regel som på Linns opskrifter, se 26.9, og det er ikke tilfældigt:
+
+- `makroPrPortion` er **pr portion** og ganges med det antal hun spiser
+- `antalPortioner` siger kun hvor mange portioner **ingredienslisten** rækker
+  til, og må ALDRIG bruges på makroen
+
+De to skalerer derfor hver sin vej på skærmen: skruer hun ned fra fire til to
+portioner, halveres ingrediens-mængderne, mens makroen falder til to gange
+tallet pr portion. Brydes det, skriver de to slags opskrifter forskellige tal i
+den samme dagbog for den samme handling.
+
+### Hvor det ligger
+
+`users/{uid}/privateOpskrifter`, altså den gamle samling, så en opskrift virker
+begge steder mens kunderne flyttes hold for hold. Feltet `kategorier3` er nyt og
+additivt, og den gamle apps egen gemning bruger merge, så den kan ikke komme til
+at slette det igen.
+
+**Der skal intet udgives i Firebase.** Både dokumenterne og billederne i Storage
+er dækket i forvejen, se `firestore.rules` og `/users/{uid}/opskrift-billeder` i
+`storage.rules`. Tjekket 12. august.
+
+**AI-motoren findes allerede** som `/api/analyser-opskrift`. 3.0 kalder den, og
+at kalde et endpoint er ikke at ændre det. Det der mangler at bygges er
+skærmene, ikke motoren.
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/mineOpskrifter3.ts` | Måltider, filtrering, portioner og makro | 34 |
+| `firestore/mineOpskrifter3.ts` | Læsning, måltider og sletning | |
+| `components/ny/MinOpskriftArk.svelte` | Arket | |
+| `OpskriftListe.svelte` | Fik den tredje fane | |
+
 ## 27. Åbne punkter på Mad
 
 - Farve på plejer-fliserne: udskudt med vilje, og de holdes hvide indtil

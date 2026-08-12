@@ -76,6 +76,24 @@
 	import FasteMaaltiderArk, { type FastPost } from '$lib/components/ny/FasteMaaltiderArk.svelte';
 	import GemFastMaaltidArk, { type GemLinje } from '$lib/components/ny/GemFastMaaltidArk.svelte';
 
+	// Kundens egne opskrifter. Se SPEC-3.0.md afsnit 26.11.
+	import {
+		dagbogsNavn,
+		gaetKategorier,
+		kategorierFor,
+		makroFor,
+		tilListePost,
+		type MinOpskrift3
+	} from '$lib/content/mineOpskrifter3';
+	import {
+		hentBrugteOpskrifter,
+		hentMineOpskrifter3,
+		saetKategorier3,
+		sletMinOpskrift3
+	} from '$lib/firestore/mineOpskrifter3';
+	import MinOpskriftArk from '$lib/components/ny/MinOpskriftArk.svelte';
+	import type { Kategori3 } from '$lib/content/opskriftKategori3';
+
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(hentUser());
@@ -149,6 +167,12 @@
 	let ilagt = $state<{ fast: FastMaaltid; foerIds: string[] } | null>(null);
 	/** Den opskrift hun kigger paa. Vises oven paa listen. */
 	let aabenOpskrift = $state<Opskrift | null>(null);
+
+	// ── Hendes egne opskrifter ─────────────────────────────────
+	// Tom for de 91 % der ingen har, og saa findes fanen slet ikke.
+	let mineOpskrifter = $state<MinOpskrift3[]>([]);
+	let gaettedeKategorier = $state<Map<string, Kategori3[]>>(new Map());
+	let aabenEgen = $state<MinOpskrift3 | null>(null);
 
 	// Favorit-opskrifter, altsaa bogmaerker. Se content/favoritOpskrift3.ts.
 	//
@@ -265,8 +289,15 @@
 		aabentArk = kilde;
 		arkHenter = true;
 		try {
-			if (kilde === 'opskrifter' && opskrifter.length === 0) {
-				opskrifter = await hentOpskrifter3();
+			if (kilde === 'opskrifter') {
+				if (opskrifter.length === 0) opskrifter = await hentOpskrifter3();
+				// Hendes egne hentes samtidig, for de bor paa den samme hylde.
+				// Har hun ingen, findes fanen ikke, og saa koster det ét
+				// tomt opslag som Firestore i forvejen har liggende lokalt.
+				mineOpskrifter = await hentMineOpskrifter3(uid);
+				if (mineOpskrifter.length > 0) {
+					gaettedeKategorier = gaetKategorier(await hentBrugteOpskrifter(uid));
+				}
 			} else if (kilde === 'faste') {
 				// Hentes hver gang, saa en hun lige har gemt eller slettet er
 				// med. Historikken kommer fra plejer3's cache og koster
@@ -372,6 +403,96 @@
 			console.error('[ny] kunne ikke laegge det faste maaltid i', e);
 		} finally {
 			gemmer = false;
+		}
+	}
+
+	// ============================================================
+	// Hendes egne opskrifter
+	// ============================================================
+
+	/** Hendes egne, klar til gitteret. Maaltiderne er hendes eget valg,
+	    ellers gaettet ud af historikken, ellers ingen. */
+	const mineTilListen = $derived(
+		mineOpskrifter.map((m) => tilListePost(m, kategorierFor(m, gaettedeKategorier)))
+	);
+
+	/** De maaltider den aabne opskrift hoerer til lige nu. */
+	const aabenEgenKategorier = $derived(
+		aabenEgen ? kategorierFor(aabenEgen, gaettedeKategorier) : []
+	);
+
+	function aabnEgen(id: string) {
+		aabenEgen = mineOpskrifter.find((m) => m.id === id) ?? null;
+	}
+
+	/**
+	 * Hun har sat maaltiderne. Visningen rettes foerst, saa chippen skifter
+	 * i samme oejeblik hun trykker, og rulles tilbage hvis skrivningen
+	 * fejler. Ingen fejlbesked: hun har ikke mistet noget, og et
+	 * maaltids-maerke er ikke vigtigt nok til at afbryde hende.
+	 */
+	async function saetEgnesKategorier(kategorier: Kategori3[]) {
+		const uid = user?.uid;
+		const o = aabenEgen;
+		if (!uid || !o) return;
+		const foer = o.kategorier3;
+		mineOpskrifter = mineOpskrifter.map((m) =>
+			m.id === o.id ? { ...m, kategorier3: kategorier } : m
+		);
+		aabenEgen = { ...o, kategorier3: kategorier };
+		try {
+			await saetKategorier3(uid, o.id, kategorier);
+		} catch (e) {
+			console.warn('[ny] kunne ikke gemme maaltiderne paa opskriften', e);
+			mineOpskrifter = mineOpskrifter.map((m) =>
+				m.id === o.id ? { ...m, kategorier3: foer } : m
+			);
+			aabenEgen = { ...o, kategorier3: foer };
+		}
+	}
+
+	/** Laegger en af hendes egne i dagen. Makroen er PR PORTION og ganges,
+	    aldrig delt med antalPortioner. Se SPEC-3.0.md 26.9 og 26.11. */
+	async function gemEgenOpskrift(portioner: number) {
+		const uid = user?.uid;
+		const o = aabenEgen;
+		if (!uid || !o) return;
+		gemmer = true;
+		try {
+			const m = makroFor(o, portioner);
+			const svar = await gemSammensat({
+				uid,
+				dato,
+				type,
+				navn: dagbogsNavn(o, portioner),
+				protein: m.protein,
+				fiber: m.fiber,
+				kh: m.kh,
+				fedt: m.fedt,
+				kcal: m.kcal
+			});
+			aabenEgen = null;
+			aabentArk = null;
+			await indlaesDagen();
+			visKvittering({ slags: 'tilfoejet', ...svar });
+		} catch (e) {
+			console.error('[ny] kunne ikke laegge din egen opskrift i', e);
+		} finally {
+			gemmer = false;
+		}
+	}
+
+	async function sletEgenOpskrift() {
+		const uid = user?.uid;
+		const o = aabenEgen;
+		if (!uid || !o) return;
+		try {
+			await sletMinOpskrift3(uid, o.id);
+			mineOpskrifter = mineOpskrifter.filter((m) => m.id !== o.id);
+			aabenEgen = null;
+			visKvittering({ slags: 'besked', tekst: `${o.navn} er slettet` });
+		} catch (e) {
+			console.error('[ny] kunne ikke slette opskriften', e);
 		}
 	}
 
@@ -821,7 +942,9 @@
 		henter={arkHenter}
 		startKategori={kategoriForMaaltid(type)}
 		favoritter={favoritOpskrifter}
+		mine={mineTilListen}
 		onvaelg={vaelgFraArk}
+		onvaelgEgen={aabnEgen}
 		onluk={() => (aabentArk = null)}
 	/>
 {:else if aabentArk === 'faste'}
@@ -854,6 +977,20 @@
 		{gemmer}
 		ongem={gemSomFast}
 		onluk={() => (gemArk = false)}
+	/>
+{/if}
+
+{#if aabenEgen}
+	<MinOpskriftArk
+		opskrift={aabenEgen}
+		kategorier={aabenEgenKategorier}
+		maaltidLabel={LABELS[type]}
+		{gemmer}
+		{visUdvidet}
+		ongem={gemEgenOpskrift}
+		onkategorier={saetEgnesKategorier}
+		onslet={sletEgenOpskrift}
+		ontilbage={() => (aabenEgen = null)}
 	/>
 {/if}
 

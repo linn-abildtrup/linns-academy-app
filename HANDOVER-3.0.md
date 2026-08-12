@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 12. august 2026, sen eftermiddag.
+Sidst opdateret 12. august 2026, aften.
 
 **Læs i denne rækkefølge hvis du er ny:** afsnit 2 om den vigtigste regel, afsnit 7 om fælderne, og så afsnit 9 om hvor vi står. Resten kan slås op efter behov.
 
@@ -59,7 +59,7 @@ gamle app og må kun læses.
 |---|---|
 | `src/routes/ny/+layout.svelte` | Skallen. Adgangs-gate, spærring, bundmenu, contexts for `user`, `userDoc`, `adgang` og `forlob`. **Læg ikke nyt her uden en god grund**, se SPEC 26.5 |
 | `src/routes/ny/ny.css` | Alt design. Scoped under `.ny-app`. Cirka 2.000 linjer |
-| `src/lib/components/ny/` | 24 komponenter, alle kun brugt i 3.0 |
+| `src/lib/components/ny/` | 25 komponenter, alle kun brugt i 3.0 |
 | `src/lib/utils/billede3.ts` | Skalering og webp i browseren. `billede.ts` er den gamle og må ikke røres |
 
 **Ren logik, ingen database, alt sammen testet:**
@@ -81,6 +81,7 @@ gamle app og må kun læses.
 | `content/hurtigStart3.ts` | 3.0's opstartsregel plus `opstartsBillede()`. Se 9.7 | 13 |
 | `content/favoritOpskrift3.ts` | Favorit-opskrifter, altså bogmærker. Se 9.8 | 22 |
 | `content/fasteMaaltider3.ts` | Faste måltider, altså "byg et måltid". Se 9.10 | 36 |
+| `content/mineOpskrifter3.ts` | Kundens egne opskrifter. Se 9.11 | 34 |
 | `content/opskriftPortion3.ts` | Portioner og makro. **Regnereglen**, se 9.9 | 14 |
 | `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid. Se 9.9 | 20 |
 | `content/beskeder3.ts` | "Til dig lige nu" | 8 |
@@ -93,7 +94,7 @@ gamle app og må kun læses.
 |---|---|
 | `firestore/forside3.ts` | Alt til forsiden |
 | `firestore/maaltider3.ts` | Dagens måltider |
-| `firestore/plejer3.ts` | Vaner og måltider. Den første af **tre** filer i 3.0 der **skriver** kundedata |
+| `firestore/plejer3.ts` | Vaner og måltider. Den første af **fire** filer i 3.0 der **skriver** kundedata |
 | `firestore/challenge3.ts` | Challenge, både nye og gamle |
 | `firestore/nulDage3.ts` | Pause-dage |
 | `firestore/featureAdgang3.ts` | Feature-adgang. Hentes her, ikke i skallen |
@@ -103,6 +104,7 @@ gamle app og må kun læses.
 | `firestore/hurtigStart3.ts` | Hele opstarts-billedet, læst lokalt uden netværk. Se 9.7 |
 | `firestore/favoritOpskrift3.ts` | Bogmærket på en opskrift. Den anden der **skriver** kundedata. Se 9.8 |
 | `firestore/fasteMaaltider3.ts` | Faste måltider. Den tredje der **skriver** kundedata, både genvejen og dagbogen. Se 9.10 |
+| `firestore/mineOpskrifter3.ts` | Kundens egne opskrifter. Den fjerde der **skriver** kundedata. Se 9.11 |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
@@ -232,7 +234,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1144 tests lige nu, alle grønne
+npm test                               # 1178 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -598,6 +600,36 @@ Reglen var spredt ud over tre skærme i to apps, og de var uenige. På de 122 op
 | `components/ny/GemFastMaaltidArk.svelte` | Gem-arket | |
 
 `plejer3.ts` fik et frivilligt `dato`-felt på historikken, så en hel dags måltid kan lægges sammen uden at hente de 45 dage en gang til.
+
+### 9.11 Mine opskrifter, bygget 12. august
+
+**Kundens egne opskrifter, altså dem hun har fotograferet og faaet AI'en til at laese.** De lå i den gamle app og fandtes slet ikke i 3.0. Se SPEC 26.11 for hele gennemgangen. Her står kun det en ny person skal vide med det samme.
+
+**Det blev opdaget fordi Linn spurgte.** SPEC afsnit 23 havde noteret at de skulle have enten en plads eller et bevidst nej, og de havde fået ingen af delene. Der kan ligge flere af den slags på den liste.
+
+**Målingen 12. august:** 222 egne opskrifter hos 53 kunder, altså 9 %. Men hos dem der har dem, er **9 % af alt de taster en egen opskrift**, mod 0,9 % for hele Linns bibliotek. Hendes egne bruges cirka ti gange så meget. Alle 222 har et foto, af Linns 130 har 2.
+
+**Fanen findes kun når hun har mindst én.** De 91 % der ingen har, ser præcis det de så før.
+
+**Kategorierne er de samme fem som på Linns opskrifter og ligger i samme feltform.** Derfor løber hendes egne gennem præcis den samme søgning og de samme filtre, uden en eneste undtagelse i filter-koden. Kunden sætter selv måltidet, hun må vælge flere, og hun kan rette det bagefter. Linns beslutninger 12. august.
+
+**DEN VIGTIGSTE REGEL: en opskrift uden måltid vises ALTID**, uanset filteret. De 222 fra den gamle app har intet måltid og kan ikke få et af sig selv. Faldt de ud af filteret, ville hendes egen mad forsvinde fordi hun aldrig er blevet bedt om at udfylde et felt. Undtagelsen ligger ét sted, i `filtrerMine`, og der er test på den.
+
+**Makroen er PR PORTION og ganges. `antalPortioner` må ALDRIG bruges på den**, kun på ingredienserne. De to skalerer derfor hver sin vej på skærmen. Det er samme regel som på Linns opskrifter, se 9.9.
+
+**Der skal intet udgives i Firebase**, hverken regler eller Storage-regler. Alt er dækket i forvejen. **Og AI-motoren findes allerede** som `/api/analyser-opskrift`, som 3.0 bare kalder.
+
+**Bygget i tre bidder:** finde og logge, så rette og slette, så oprette med kamera og AI.
+
+**Nye filer:**
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/mineOpskrifter3.ts` | Måltider, filtrering, portioner og makro | 34 |
+| `firestore/mineOpskrifter3.ts` | Læsning, måltider og sletning | |
+| `components/ny/MinOpskriftArk.svelte` | Arket | |
+
+**Test-data:** `test-medlem@linnsacademy.dk` har tre opskrifter hvis id starter med `test_`. De dækker de tre tilstande: med foto og måltid, uden måltid, og uden foto. Slet dem når de ikke skal bruges mere.
 
 ### Efter 30-30
 

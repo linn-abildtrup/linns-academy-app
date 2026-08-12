@@ -28,7 +28,8 @@
 		filtrerOpskrifter3,
 		fremhaev,
 		grundTekst,
-		soegetermer
+		soegetermer,
+		type SoegeFiltre
 	} from '$lib/content/opskriftSoeg3';
 	import {
 		KATEGORI_NAVN,
@@ -38,6 +39,7 @@
 		type Kategori3
 	} from '$lib/content/opskriftKategori3';
 	import { kunFavoritter } from '$lib/content/favoritOpskrift3';
+	import { filtrerMine, type MinListePost } from '$lib/content/mineOpskrifter3';
 	import type { Opskrift3 } from '$lib/firestore/opskrifter3';
 	import type { DietTag } from '$lib/content/opskrifter';
 
@@ -48,7 +50,14 @@
 		startKategori?: Kategori3 | null;
 		/** Id'erne paa de opskrifter hun har markeret. Se favoritOpskrift3.ts. */
 		favoritter?: string[];
+		/**
+		 * Hendes EGNE opskrifter. Tom for de 91 % der ingen har, og saa
+		 * findes fanen slet ikke. Se mineOpskrifter3.ts.
+		 */
+		mine?: MinListePost[];
 		onvaelg: (id: string) => void;
+		/** Kaldes i stedet for onvaelg naar hun vaelger en af sine egne. */
+		onvaelgEgen?: (id: string) => void;
 		onluk: () => void;
 	}
 
@@ -57,23 +66,42 @@
 		henter = false,
 		startKategori = null,
 		favoritter = [],
+		mine = [],
 		onvaelg,
+		onvaelgEgen = () => {},
 		onluk
 	}: Props = $props();
 
 	// Fanerne. Alle er forvalgt, saa hun lander praecis hvor hun landede foer
 	// favoritterne fandtes, og intet aendrer sig for den der ikke bruger dem.
-	let fane = $state<'alle' | 'favoritter'>('alle');
+	let fane = $state<'alle' | 'favoritter' | 'mine'>('alle');
 
 	/** Alle hendes favoritter, UDEN maaltid og soegning. Tallet paa fanen. */
 	const favoritListe = $derived(kunFavoritter(opskrifter, favoritter));
 
+	const paaMine = $derived(fane === 'mine');
+
 	/**
 	 * Den liste alt andet regnes ud fra. Fanen er altsaa bare endnu et filter,
-	 * lagt foerst, saa maaltid, kost og soegning virker praecis ens paa begge
+	 * lagt foerst, saa maaltid, kost og soegning virker praecis ens paa alle
 	 * faner uden at nogen af dem skal vide at fanerne findes.
+	 *
+	 * Hendes egne opskrifter har samme feltform som Linns, saa de loeber
+	 * gennem den samme soegning og de samme filtre. Se mineOpskrifter3.ts.
 	 */
-	const grundliste = $derived(fane === 'favoritter' ? favoritListe : opskrifter);
+	const grundliste = $derived<(Opskrift3 | MinListePost)[]>(
+		paaMine ? mine : fane === 'favoritter' ? favoritListe : opskrifter
+	);
+
+	/**
+	 * Filtreringen. Paa hendes egne bruges filtrerMine, som er den samme
+	 * filtrering med ÉN undtagelse: en opskrift uden maaltid vises altid.
+	 * De 222 fra den gamle app har intet maaltid, og hendes egen mad maa
+	 * ikke forsvinde fordi hun aldrig er blevet bedt om at udfylde et felt.
+	 */
+	function filtrer(liste: (Opskrift3 | MinListePost)[], f: SoegeFiltre) {
+		return paaMine ? filtrerMine(liste, f) : filtrerOpskrifter3(liste, f);
+	}
 
 	let soegeord = $state('');
 	// Kun STARTvaerdien, med vilje. Aendrer hun filteret bagefter, skal
@@ -89,22 +117,18 @@
 	/** Listen efter soegning og diaet, men UDEN kategori-filteret. Tallene ud
 	    for kategorierne taelles paa den, saa tallet siger hvad hun faar hvis
 	    hun trykker, ikke hvad hun allerede har. */
-	const udenKategori = $derived(
-		filtrerOpskrifter3(grundliste, { soegeord, dietTags: valgteDiet })
-	);
+	const udenKategori = $derived(filtrer(grundliste, { soegeord, dietTags: valgteDiet }));
 	const antal = $derived(antalPrKategori(udenKategori.map((r) => r.opskrift)));
 
 	/** Samme for kost-knapperne: talt uden diaet-filteret selv. */
-	const udenDiet = $derived(
-		filtrerOpskrifter3(grundliste, { soegeord, kategorier: valgteKategorier })
-	);
+	const udenDiet = $derived(filtrer(grundliste, { soegeord, kategorier: valgteKategorier }));
 	const dietAntal = $derived<Record<DietTag, number>>({
 		vegetar: udenDiet.filter((r) => r.opskrift.dietTags.includes('vegetar')).length,
 		glutenfri: udenDiet.filter((r) => r.opskrift.dietTags.includes('glutenfri')).length
 	});
 
 	const resultater = $derived(
-		filtrerOpskrifter3(grundliste, {
+		filtrer(grundliste, {
 			soegeord,
 			kategorier: valgteKategorier,
 			dietTags: valgteDiet
@@ -114,7 +138,7 @@
 	/** Hvor mange der er inden for filtrene UDEN soegning. Staar i
 	    soegefeltet, saa hun ved hvad hun soeger i. */
 	const udenSoegning = $derived(
-		filtrerOpskrifter3(grundliste, {
+		filtrer(grundliste, {
 			kategorier: valgteKategorier,
 			dietTags: valgteDiet
 		}).length
@@ -128,12 +152,15 @@
 	    "ingen passer paa filtrene", for der er intet at rydde. */
 	const ingenFavoritter = $derived(paaFavoritter && favoritListe.length === 0);
 
+	/** Hvad listen hedder i teksterne, saa beskederne passer til fanen. */
+	const ordet = $derived(paaMine ? 'egne opskrifter' : paaFavoritter ? 'favoritter' : 'opskrifter');
+
 	/** Staar der praecis ét maaltid, siger overskriften hvilket. Det er den
 	    eneste plads hvor begraensningen kan ses gratis, nu hvor filtrene er
 	    gemt vaek. Maaltids-forvalget gaelder BEGGE faner, Linns valg 12.
 	    august, saa overskriften skal ogsaa sige det paa Favoritter. */
 	const overskrift = $derived.by(() => {
-		const hvad = paaFavoritter ? 'Favoritter' : 'Opskrifter';
+		const hvad = paaMine ? 'Dine opskrifter' : paaFavoritter ? 'Favoritter' : 'Opskrifter';
 		if (valgteKategorier.length === 1) {
 			return `${hvad} til ${KATEGORI_NAVN[valgteKategorier[0]].toLowerCase()}`;
 		}
@@ -209,6 +236,19 @@
 			>
 				Favoritter <span class="ol-fane-tal">{favoritListe.length}</span>
 			</button>
+			<!-- Hendes egne. Fanen findes KUN naar hun har mindst én, saa de
+			     91 % der ingen har ser praecis det de ser i dag. -->
+			{#if mine.length > 0}
+				<button
+					type="button"
+					class="ol-fane"
+					class:valgt={paaMine}
+					aria-pressed={paaMine}
+					onclick={() => (fane = 'mine')}
+				>
+					Mine <span class="ol-fane-tal">{mine.length}</span>
+				</button>
+			{/if}
 		</div>
 
 		<div class="ol-linje">
@@ -217,7 +257,7 @@
 				type="search"
 				bind:value={soegeord}
 				use:fokuser
-				placeholder="Søg blandt {udenSoegning} {paaFavoritter ? 'favoritter' : 'opskrifter'}"
+				placeholder="Søg blandt {udenSoegning} {ordet}"
 				aria-label="Søg i opskrifter"
 			/>
 			<button
@@ -259,10 +299,10 @@
 							Se alle {opskrifter.length} opskrifter
 						</button>
 					{:else if soeger && harFiltre}
-						<p>Ingen {paaFavoritter ? 'favoritter' : 'opskrifter'} passer på både søgningen og filtrene.</p>
+						<p>Ingen {ordet} passer på både søgningen og filtrene.</p>
 						<button type="button" class="ol-udvej" onclick={ryd}>Søg i alle {grundliste.length}</button>
 					{:else if soeger}
-						<p>Ingen {paaFavoritter ? 'favoritter' : 'opskrifter'} passer på det ord.</p>
+						<p>Ingen {ordet} passer på det ord.</p>
 					{:else if harFiltre}
 						<!-- Hun HAR favoritter, men ingen til det maaltid hun kom fra.
 						     Tallet skal med, ellers modsiger fanen skaermen. -->
@@ -291,7 +331,11 @@
 					{#each resultater as r (r.opskrift.id)}
 						{@const farve = farveKategori(r.opskrift.kategorier3, valgteKategorier)}
 						{@const grund = grundTekst(r.grunde)}
-						<button type="button" class="ol-flise" onclick={() => onvaelg(r.opskrift.id)}>
+						<button
+							type="button"
+							class="ol-flise"
+							onclick={() => (paaMine ? onvaelgEgen(r.opskrift.id) : onvaelg(r.opskrift.id))}
+						>
 							<span class="ol-top f-{farve ?? 'andet'}">
 								{#if r.opskrift.billedeUrlLille || r.opskrift.billedeUrl}
 									<!-- Den lille er 480 px og vejer cirka 17 KB. Findes den ikke,
@@ -304,7 +348,11 @@
 										loading="lazy"
 										decoding="async"
 									/>
-									{#if farve}
+									{#if paaMine}
+										<!-- Alle hendes egne har et foto, og Linns har naesten
+										     ingen. Uden maerket kunne man ikke se hvad der er hvis. -->
+										<span class="ol-maerkat ol-mit">Min</span>
+									{:else if farve}
 										<span class="ol-maerkat">{KATEGORI_NAVN[farve]}</span>
 									{/if}
 								{:else}
