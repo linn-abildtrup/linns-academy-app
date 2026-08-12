@@ -12,9 +12,15 @@
 	// ============================================================
 
 	import type { Opskrift } from '$lib/content/opskrifter';
-	import { formatMaengde, parseOpskriftMakro, skalerMaengde } from '$lib/content/opskrifter';
+	import { formatMaengde, parseOpskriftMakro } from '$lib/content/opskrifter';
 	import { formatPortion } from '$lib/content/maengde3';
 	import { HJERTE_ETIKET } from '$lib/content/favoritOpskrift3';
+	import {
+		startPortioner,
+		ingrediensMaengde,
+		makroForPortioner,
+		gemEtiket
+	} from '$lib/content/opskriftPortion3';
 	import { portal } from '$lib/actions/portal';
 
 	interface Props {
@@ -39,12 +45,22 @@
 		ontilbage
 	}: Props = $props();
 
-	const basis = $derived(opskrift.defaultPortioner || 1);
-	let portioner = $state(1);
+	// Arket aabner paa opskriftens eget tal, altsaa 1 for de fleste og 4 for de
+	// retter der er skrevet til en familie. Linns valg 12. august: listen skal
+	// kunne laeses direkte som opskrift. Skruer hun ned til 1, regner baade
+	// makro og ingredienser sig om med det samme.
+	//
+	// Kun STARTvaerdien. Arket bygges forfra hver gang hun aabner en opskrift,
+	// for listen bagved kan ikke naas mens arket er aabent.
+	// svelte-ignore state_referenced_locally
+	let portioner = $state(startPortioner(opskrift.defaultPortioner));
 
 	const makro = $derived(parseOpskriftMakro(opskrift.instruktioner));
-	const protein = $derived(Math.round((makro.protein ?? 0) * portioner * 10) / 10);
-	const fiber = $derived(Math.round((makro.fiber ?? 0) * portioner * 10) / 10);
+	// Makroen er PR PORTION, ogsaa paa de retter der er til fire. Derfor ganges
+	// der kun med antal portioner, og defaultPortioner indgaar aldrig. Se
+	// content/opskriftPortion3.ts for maalingerne bag.
+	const protein = $derived(makroForPortioner(makro.protein ?? 0, portioner) ?? 0);
+	const fiber = $derived(makroForPortioner(makro.fiber ?? 0, portioner) ?? 0);
 
 	// En halv portion er en almindelig maengde, saa vi springer halve.
 	const SPRING = 0.5;
@@ -107,7 +123,9 @@
 						<div>
 							<span class="op-i-navn">{ing.navn}</span>
 							<span class="op-i-m">
-								{formatMaengde(skalerMaengde(ing.maengde, basis, basis * portioner))}
+								{formatMaengde(
+									ingrediensMaengde(ing.maengde, opskrift.defaultPortioner, portioner)
+								)}
 								{ing.enhed}
 							</span>
 						</div>
@@ -125,8 +143,11 @@
 		     saa hun ikke skal flytte haanden op i hjoernet. Linns valg 12. august.
 		     Se SPEC-3.0.md. -->
 		<div class="op-gem-rk">
+			<!-- Knappen siger antallet naar det ikke er 1. Aabner arket paa 4, fordi
+			     retten er skrevet til fire, skal hun kunne se hvad der bliver lagt i
+			     uden at kigge op paa taelleren. -->
 			<button type="button" class="ma-gem op-gem" disabled={gemmer} onclick={() => ongem(portioner)}>
-				{gemmer ? 'Gemmer' : `Læg i ${maaltidLabel.toLowerCase()}`}
+				{gemmer ? 'Gemmer' : gemEtiket(maaltidLabel, portioner)}
 			</button>
 			{#if onfavorit}
 				<button
