@@ -1887,6 +1887,92 @@ Kun fremtiden er rettet.
 markeret som **verificeret**. Tre kunder havde stemt ok på tallet. Det siger
 hvad den stemme-mekanik er værd, og det bekræfter at den blev droppet i 3.0.
 
+## 26.15 Stjernen på en fødevare. LÅST 12. august
+
+**Jeg troede den var dobbeltarbejde ved siden af "Det du plejer", og målingen
+viste at det passer ikke.** Derfor blev den bygget i stedet for droppet.
+
+### Målingen 12. august, alle 616 kunder
+
+| Tal | Hvad det betyder |
+|---|---|
+| **305** kunder, altså halvdelen, har stjernet noget | Median 13 stjerner, én har 150 |
+| **72 %** af stjernerne er hendes EGNE fødevarer | Sat automatisk af den gamle app hver gang hun oprettede en vare. Dem har hun ikke valgt |
+| Kun **18 %** af de stjernede ville stå på fliserne | Fliserne viser fire pr måltid, og hun har tretten stjerner |
+| **11 %** har hun ikke brugt de sidste 90 dage | Nogle stjerner er en huskeseddel, ikke en genvej |
+
+Når hendes egne varer trækkes fra, er der cirka **seks bevidst valgte stjerner
+pr kunde**.
+
+### Beslutningerne
+
+**Stjernen står i søgeresultatet**, ikke i mængde-arket. Linns valg 12. august,
+hvor hun vendte mit forslag. Den står for sig til højre med sit eget felt på
+44 punkter, så et tryk på selve linjen stadig åbner mængden. Samme opdeling som
+krydset i "I dette måltid".
+
+**De stjernede har en gruppe i Mine-arket**, forslag A af tre tegnede. Ingen ny
+hylde og intet nyt ikon. Har hun stjerner OG egne varer, hedder arket Mine ting
+og har to grupper. Har hun ingen stjerner, ser det ud præcis som før.
+
+**Forslag B og C blev valgt fra.** B lagde stjernerne som fliser sammen med Det
+du plejer, men der er fire pladser og hun har tretten. C lod stjernen ændre
+rækkefølgen i søgningen uden en hylde, men så kan hun ikke se sine stjerner
+nogen steder, og de 11 % der stjerner noget de ikke bruger, gør det netop for
+at kunne finde det igen.
+
+### To regler der følger af målingen, begge med test
+
+**1. Hendes EGNE fødevarer holdes UDE af stjerne-gruppen.** De står i forvejen
+under Mine egne, og uden filteret ville halvdelen af listen være en kopi af den
+anden halvdel.
+
+**2. 3.0 sætter ALDRIG stjernen automatisk.** Den gamle app gør det hver gang
+hun opretter en vare, og det er derfor 72 % af tallet er støj. Gjorde vi det
+samme, ville listen igen fyldes med noget hun ikke har valgt, og så er tallet
+ubrugeligt næste gang nogen måler.
+
+Feltet er `userDoc.favoritFodevarer`, samme som den gamle app, så de 6.855
+stjerner der findes virker fra dag ét. Der skal intet udgives i Firebase.
+
+## 26.16 Søgningen i fødevarer. LÅST 12. august
+
+To ting blev rettet samme dag, og begge er fejl vi har set før i opskrifterne.
+
+### Hele ord først, i stedet for et afkryds
+
+**Problemet:** korte ord drukner i støj. Søger hun "æg", finder en bred søgning
+også Æggenudler og pålæg, og det er værst på netop de ord folk søger mest efter.
+
+**Den gamle app løser det med et afkryds der hedder "Kun hele ord".** 3.0 løser
+det med rækkefølgen. Linns valg 12. august, og begrundelsen er værd at kende:
+
+1. **Målgruppen skal ikke kende en indstilling for at få et godt resultat.** Et
+   afkryds hun ikke forstår, prøver hun aldrig
+2. **Sortering skjuler ingenting.** Afkrydset er enten eller, så slår hun det
+   til, forsvinder Æggenudler også de gange det var den hun ledte efter
+3. **Det koster ingen plads.** Søgefeltet står lige over de tre ikoner
+
+Inden for hver gruppe står korteste navn først, så Skyr kommer før Skyr med
+vanilje.
+
+### To ord gav nul
+
+**Præcis samme fejl som i opskrift-søgningen**, se 9.5, hvor otte almindelige
+to-ords-søgninger alle gav nul træffere. Hele strengen blev slået op på én gang,
+så "skyr vanilje" fandt ingenting.
+
+Nu deles der ved **mellemrum såvel som komma**, og alle ord skal findes, uanset
+rækkefølge. Den gamle app kræver komma for det samme. **Et enkelt ord giver
+præcis samme træffere som før**, og der er test på det, for det var vigtigt at
+ingenting forsvandt da flere ord blev muligt.
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/stjerneFodevare3.ts` | Stjernen, og filteret der holder hendes egne ude | 15 |
+| `content/fodevareSoeg3.ts` | Hele ord, flere ord, rækkefølge | 24 |
+| `firestore/stjerneFodevare3.ts` | Skriver stjernen | |
+
 ## 27. Åbne punkter på Mad
 
 - Farve på plejer-fliserne: udskudt med vilje, og de holdes hvide indtil
@@ -1917,8 +2003,20 @@ hvad den stemme-mekanik er værd, og det bekræfter at den blev droppet i 3.0.
   tre gange i appens levetid
 - ~~Ret og kopiér et måltid mangler~~. **Afgjort 12. august.** Mængden kan
   rettes, se 26.13. Resten er et bevidst nej, se 26.14
-- **Tilbage i Mad:** stjerne på en enkelt fødevare, indkøbslisten, og madplanen
-  der skal have et ja eller et endeligt nej
+- ~~Stjerne på en enkelt fødevare~~. **Bygget 12. august**, se 26.15
+- ~~"Kun hele ord" i søgningen~~. **Løst 12. august med rækkefølge i stedet for
+  et afkryds**, se 26.16. To ord virker nu også
+- **Indkøbslisten mangler.** Den bygger på det mindst brugte i modulet:
+  opskrifter er 0,9 % af alt der registreres, og kun 23 % af kunderne har brugt
+  én. Og den har en forudsætning der ikke er opfyldt, nemlig at 128 af 130
+  opskrifter mangler et billede. **Anbefaling: tag den op igen når billederne er
+  på**, for da bliver opskrifterne noget man browser
+- **Madplanen mangler stadig et ja eller et endeligt nej.** Parkeret 11. august,
+  ikonet er fjernet, motoren er urørt
+- **Skærmen ser tom ud mens fødevare-databasen hentes.** 2.268 dokumenter tager
+  tid på en telefon, og imens er søgefeltet der uden at der sker noget. Set af
+  Linn 12. august, hvor det lignede at alt var forsvundet. Samme klasse som
+  opstarts-problemet i afsnit 28: appen fortæller ikke hvad den laver
 - ~~Der er stadig ingen vej til at gemme et MÅLTID som favorit i 3.0~~.
   **Klaret 12. august**, se 26.10. Hylden hedder nu Faste måltider, og teksten
   i arket lover ikke længere noget appen ikke holder

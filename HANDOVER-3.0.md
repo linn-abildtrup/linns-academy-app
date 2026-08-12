@@ -59,7 +59,7 @@ gamle app og må kun læses.
 |---|---|
 | `src/routes/ny/+layout.svelte` | Skallen. Adgangs-gate, spærring, bundmenu, contexts for `user`, `userDoc`, `adgang` og `forlob`. **Læg ikke nyt her uden en god grund**, se SPEC 26.5 |
 | `src/routes/ny/ny.css` | Alt design. Scoped under `.ny-app`. Cirka 2.000 linjer |
-| `src/lib/components/ny/` | 29 komponenter, alle kun brugt i 3.0 |
+| `src/lib/components/ny/` | 29 komponenter, alle kun brugt i 3.0. `VaelgArk.svelte` er ubrugt siden 12. august og skal enten slettes eller have en note |
 | `src/lib/utils/billede3.ts` | Skalering og webp i browseren. `billede.ts` er den gamle og må ikke røres |
 
 **Ren logik, ingen database, alt sammen testet:**
@@ -84,6 +84,8 @@ gamle app og må kun læses.
 | `content/mineOpskrifter3.ts` | Kundens egne opskrifter. Se 9.11 | 66 |
 | `content/egneFodevarer3.ts` | Kundens egne fødevarer. Se 9.12 | 22 |
 | `content/tal3.ts` | Dansk komma og Atwater. Delt af de skærme hvor hun taster næringstal | via de to |
+| `content/stjerneFodevare3.ts` | Stjernen på en fødevare. Se 9.14 | 15 |
+| `content/fodevareSoeg3.ts` | Søgning i fødevarer: hele ord og flere ord. Se 9.14 | 24 |
 | `content/opskriftPortion3.ts` | Portioner og makro. **Regnereglen**, se 9.9 | 14 |
 | `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid. Se 9.9 | 20 |
 | `content/beskeder3.ts` | "Til dig lige nu" | 8 |
@@ -96,7 +98,7 @@ gamle app og må kun læses.
 |---|---|
 | `firestore/forside3.ts` | Alt til forsiden |
 | `firestore/maaltider3.ts` | Dagens måltider |
-| `firestore/plejer3.ts` | Vaner og måltider. Den første af **fem** filer i 3.0 der **skriver** kundedata |
+| `firestore/plejer3.ts` | Vaner og måltider. Den første af **seks** filer i 3.0 der **skriver** kundedata |
 | `firestore/challenge3.ts` | Challenge, både nye og gamle |
 | `firestore/nulDage3.ts` | Pause-dage |
 | `firestore/featureAdgang3.ts` | Feature-adgang. Hentes her, ikke i skallen |
@@ -108,6 +110,7 @@ gamle app og må kun læses.
 | `firestore/fasteMaaltider3.ts` | Faste måltider. Den tredje der **skriver** kundedata, både genvejen og dagbogen. Se 9.10 |
 | `firestore/mineOpskrifter3.ts` | Kundens egne opskrifter. Den fjerde der **skriver** kundedata. Se 9.11 |
 | `firestore/egneFodevarer3.ts` | Kundens egne fødevarer. Den femte der **skriver** kundedata. Se 9.12 |
+| `firestore/stjerneFodevare3.ts` | Stjernen på en fødevare. Den sjette der **skriver** kundedata. Se 9.14 |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
@@ -225,6 +228,8 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 **En favorit har ikke plads til makro, og det opdager du ikke før tallet er forkert.** `favoritmaaltider` gemmer kun et navn og en liste af varelinjer. Protein og fiber regnes ud ved at slå hver linje op i fødevare-databasen, og en linje uden `foodId` springes over. Gemmer du derfor noget som favorit der ikke består af rigtige madvarer, fx en opskrift, lægger et tryk på den **0 g protein og 0 g fiber** i hendes dag, uden en eneste fejlmeddelelse. I et modul der hedder 30-30 og handler om præcis de to tal er det den værst tænkelige fejl, for den ser rigtig ud. Det er derfor favorit-opskrifter blev bygget som et bogmærke i stedet, se 9.8. **Målt 12. august: 178 af 2.905 favoritter, altså 6 %, har allerede mindst én linje uden makro**, så de kunder logger lige nu mindre end de spiste. Det er en grænse i den gamle model og ikke noget vi har lavet, og det er ikke løst.
 
+**En bred CSS-regel rammer også den nye knap du lægger ved siden af.** Stjernen i søgeresultatet lagde sig 12. august oven i madvarens navn, og teksten brækkede om på ét ord pr linje. Årsagen var `.tm-traef button`, som satte `width: 100%` på ALT hvad der var en knap i søgeresultatet. Den ramte også stjernen. **Se efter brede regler på det gamle element, før du lægger en knap ved siden af det.** Der er flere af dem i `ny.css`, for eksempel `.va-liste button` og `.ol-faner button`. **Og bemærk at hverken `svelte-check`, testene eller et build fanger den slags.** Det gør kun øjne.
+
 **En komponent kan være skrevet, testet og importeret uden nogensinde at blive brugt.** Faste måltider åbnede 12. august et tomt ark uden en eneste fejl. Det nye ark var aldrig kommet ind i markup, så det gamle Vælg-ark åbnede i stedet, med den nye titel på og uden en tom tekst at vise. **Hverken `svelte-check` eller testene fanger det**, for koden er korrekt, den bliver bare aldrig kaldt. Tjek at en ny komponent faktisk står i markup, ikke kun at den er importeret.
 
 **`opretDoc` findes ikke i `firestoreRest.ts`.** Brug `gemDocMerge` med et selvlavet dokument-id.
@@ -237,7 +242,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1232 tests lige nu, alle grønne
+npm test                               # 1271 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -667,6 +672,31 @@ Reglen var spredt ud over tre skærme i to apps, og de var uenige. På de 122 op
 **Rediger et helt måltid: nej.** I 3.0 er hver madvare sin egen post, så der er ikke noget måltid at redigere.
 
 **Og en regel fra Linn 12. august:** en fødevare kunden opretter eller scanner må **kun kunne ses af hende selv**. Kilden er allerede lukket, `gemCommunityFodevare` kaldes ikke længere. De 49 gamle blev gennemgået, og tre blev rettet efter Linns go, med sikkerhedskopi i `backup/`. Historikken blev ikke rørt. Se SPEC 26.14.
+
+### 9.14 Stjernen og søgningen, 12. august
+
+**Stjernen på en fødevare er bygget.** Jeg troede den var dobbeltarbejde ved siden af Det du plejer, og målingen viste at det passer ikke: kun 18 % af de stjernede ville stå på fliserne. Fliserne viser fire pr måltid, og kunden har median 13 stjerner. Se SPEC 26.15.
+
+**To regler du ikke må bryde, begge med test:**
+
+- **Hendes EGNE fødevarer holdes UDE af stjerne-gruppen.** 72 % af de 6.855 stjerner er varer hun selv har oprettet, sat automatisk af den gamle app. De står i forvejen under Mine egne, og uden filteret ville halvdelen af listen være en kopi af den anden halvdel
+- **3.0 sætter ALDRIG stjernen automatisk.** Gør vi det, fyldes listen igen med noget hun ikke har valgt, og så er tallet ubrugeligt næste gang nogen måler
+
+**Søgningen i fødevarer kan nu to ting mere.** Hele ord kommer først, så "æg" ikke drukner i Æggenudler. Og to ord virker, delt ved mellemrum eller komma. Begge dele er fejl vi har set før i opskrifterne, se 9.5. Den gamle apps afkryds "Kun hele ord" blev bevidst ikke kopieret: sortering skjuler ingenting, hvor afkrydset er enten eller. Se SPEC 26.16.
+
+### Mad er nu bygget faerdig paa naer to beslutninger
+
+Hele Mad-modulet blev gennemgaaet mod den gamle app 12. august, funktion for
+funktion. Det der mangler er ikke kode, men to beslutninger fra Linn:
+
+- **Indkoebslisten.** Anbefaling: vent til billederne er paa opskrifterne. Den
+  bygger paa det mindst brugte i modulet, og gitteret er 128 farvede felter
+- **Madplanen.** Parkeret 11. august og mangler et endeligt ja eller nej
+
+Og én ting der er set, men ikke rettet: **skaermen ser tom ud mens
+foedevare-databasen hentes.** 2.268 dokumenter tager tid paa en telefon, og
+imens lignede det for Linn at alt var forsvundet. Samme klasse som
+opstarts-problemet i 9.7.
 
 ### Efter 30-30
 
