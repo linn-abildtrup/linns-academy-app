@@ -1973,6 +1973,166 @@ ingenting forsvandt da flere ord blev muligt.
 | `content/fodevareSoeg3.ts` | Hele ord, flere ord, rækkefølge | 24 |
 | `firestore/hjerteFodevare3.ts` | Skriver hjertet | |
 
+## 26.17 Måltidsskærmen lagt om. LÅST 12. august
+
+Kom ud af en kritisk gennemgang af selve designet, ikke af funktionerne.
+
+**Skærmen var vokset fra fem lag til ni på én dag:** tal, udvidet næring, det du
+plejer, søgefelt, træffere, tre hylder, overskrift, gem-knap og så endelig
+maden. **Hun læste fem afsnit før hun så sin egen mad.**
+
+Seks forslag blev tegnet. Linn valgte nummer 2: **ét felt der åbner alt.**
+
+Skærmen er nu måltidets navn, datoen, tallene, **én knap** og maden. De fem
+afsnit ligger i `TilfoejArk`.
+
+**Arket er en FORDELING, ikke et sted hun bliver.** Vælger hun en madvare, en
+hylde eller lav-selv, lukker det. Så er der kun ét ark åbent ad gangen,
+kvitteringen med Fortryd kan ses, og hun ser sin mad vokse.
+
+**Prisen er ét tryk mere på den vej der bruges mest.** Hun taster cirka tre
+madvarer pr måltid. Det kan ikke regnes ud, kun mærkes, og derfor blev det
+sendt live samme aften.
+
+**Gem som fast måltid er flyttet ned under maden**, hvor den hører til. Den lå
+mellem overskriften og den første ingrediens, fordi den ellers faldt uden for
+skærmen. Det problem findes ikke når der ikke er fem afsnit ovenover.
+
+**De fravalgte fem:** maden først (hun skal rulle langt for at tilføje mere),
+faner (handling og resultat på hver sin skærm), vandret rulle (sparer 50 px og
+indfører en bevægelse appen ikke bruger), fast bundlinje (strider mod at
+bundmenuen skal ligge forrest), og den nuværende trimmet (mindre gevinst).
+
+### Tre ting der også kom ud af gennemgangen
+
+**Hjertet betød to ting.** Det var ikonet for hylden Faste måltider, det var på
+knappen Gem som fast måltid, OG det var bogmærket på en opskrift. Oveni var
+bogmærket på en fødevare en stjerne. Faste måltider har nu en **tallerken**, og
+stjernen er blevet et **hjerte** i samme blomme. Det løste også at honning
+betød både advarsel og bogmærke.
+
+**"Mine" var ikke et ord for noget.** De to andre etiketter er ting. Hedder nu
+**Mine madvarer**, som er appens eget ord: fliserne siger "13 madvarer". Og
+arket skifter ikke længere navn efter indhold.
+
+**Knappen siger hvad der sker**, ikke hvad man gør. "Gem" alene er væk.
+
+### Det der IKKE blev rettet
+
+Måltidsskærmen har stadig små etiketter: PROTEIN og FIBER på 9,5 punkter, DET
+DU PLEJER på 10,5. Der er tre af dem over hinanden. **Oversigten er stadig den
+roligste skærm i appen og den resten skal måles imod.**
+
+## 26.18 Hvor opskrifterne kommer fra, og hvorfor tallene ikke går op
+
+**Det her afsnit er det vigtigste i hele Mad-delen at læse, før nogen regner på
+en opskrift igen.** Det kostede en hel dag og fire runder at finde ud af.
+
+### Anledningen
+
+Kunder vil kunne rette i en opskrift, fx bytte ris ud med kartofler. Det kræver
+at ingredienserne kan kobles til fødevare-databasen, så makroen kan regnes om.
+Fire forsøg på den kobling fejlede, og forklaringen var ikke den forventede.
+
+### Hvad der faktisk ligger i data
+
+Opskrifterne blev fundet på **navngivne danske opskriftssider**. Kilde-kolonnen
+i den oprindelige `opskrifter-30-30-3.csv` hedder "Inspireret af":
+
+| Kilde | Antal |
+|---|---|
+| Valdemarsro | 23 |
+| I Form | 9 |
+| Spis Bedre | 8 |
+| Arla | 6 |
+| Mummum | 1 |
+| To kilder i kombination | 17 |
+
+Linjen "Inspireret af" blev senere fjernet fra `instruktioner` af
+`_fjern-inspireret-af.ts`, så den står ikke i appen. Den ligger stadig i
+CSV-filen fra 22. maj 2026.
+
+### Og så det afgørende
+
+**CSV'ens kolonner hedder:**
+
+```
+Estimeret protein (g/portion)
+Estimeret fiber (g/portion)
+Estimeret kalorier (kcal/portion)
+```
+
+**Der står "Estimeret" i selve kolonne-navnet.** Protein, fiber og kalorier har
+aldrig været målte tal.
+
+**Mængderne er også estimater.** `_estimer-opskrifter-mangder.ts` brugte Claude
+til at gætte mængder på de ingredienser der kun stod som ord.
+`estimater-opskrifter-mangder.json` indeholder **820 estimerede
+ingredienslinjer**.
+
+**Og kulhydrat, fedt og de manglende kalorier blev beriget med AI 24. maj**, se
+memory-noten om makro-data.
+
+**Der findes altså ikke ét målt tal i en opskrift.** Mængderne er ét estimat,
+makroen er et andet, og de to blev lavet uafhængigt med en måneds mellemrum.
+**Det er hele forklaringen på at de ikke går op.**
+
+### Hvad målingerne viste undervejs
+
+Fire runder på ti opskrifter, med AI-kobling til fødevare-databasen:
+
+| Runde | Antagelse | Ramte |
+|---|---|---|
+| 1 | navne-match, blandet | 5 af 10 |
+| 2 | foretræk tilberedte former | 2 af 10 |
+| 3 | råvarer er rå | 2 af 10 |
+| 4 | rå, og kun den officielle database | 2 af 10 |
+
+**Da koblingen blev BEDRE, blev resultatet DÅRLIGERE.** Runde 1 klarede sig kun
+bedre fordi den sprang de svære ingredienser over. Det var held, ikke kvalitet.
+
+På alle 130 opskrifter: **63 ligger tæt på 1**, altså regnestykket stemmer.
+**15 ligger tæt på 2**, altså ingredienslisten rækker nok til to portioner.
+**52 ligger i et bånd omkring 1,2 til 1,6** som hverken portioner eller
+tilstand forklarer.
+
+### Bælgfrugterne, som er den ene ting der KAN rettes billigt
+
+**Opskrifterne er ikke konsekvente om linser, kikærter og bønner er tørre eller
+kogte.** Kalkun-rugbrødet skriver "afdryppede". 35 opskrifter skriver ingenting
+på i alt 38 linjer.
+
+Forskellen er en faktor tre: 150 g tørre linser giver 37 g protein, 150 g
+afdryppede giver 13.
+
+**To uafhængige kilder siger cirka 63 g tørre linser pr person.** Valdemarsros
+egen linsesalat er til 4 personer med 3 dl linser, og en anden dansk linsegryde
+bruger 250 g til fire. Flere af Linns opskrifter har 150 g til én portion.
+
+### Hvad der IKKE skal prøves igen
+
+**Kobl ikke ingredienser til fødevare-databasen for at verificere makroen.**
+Det er prøvet fire gange på to dage. Muren er ikke koblingen, den er at der
+ikke findes et facit at holde den op mod.
+
+**Og sammenlign ikke kalorier.** De er AI-estimeret, og 22 af dem stemmer ikke
+med deres egen makro.
+
+### Den beslutning der ligger og venter
+
+**Skal makroen regnes ud af ingredienslisten, så de to endelig taler sammen?**
+
+Gør vi det, får hver opskrift ét sammenhængende tal, kunden kan skrue op og ned
+for portioner, hun kan bytte en ingrediens ud, og indkøbslisten bliver mulig.
+Det er punkt 9 på ventelisten.
+
+**Prisen er at tallene ændrer sig for 760 kunder i drift**, og at nogle af dem
+vil stige mærkbart.
+
+**Rækkefølgen er ikke til forhandling:** bælgfrugt-ordet skal ind FØRST. Regnes
+makroen om mens tilstanden er ukendt, bages tvetydigheden ind i de nye tal og
+kan aldrig findes igen.
+
 ## 27. Åbne punkter på Mad
 
 - Farve på plejer-fliserne: udskudt med vilje, og de holdes hvide indtil

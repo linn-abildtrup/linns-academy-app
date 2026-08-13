@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 12. august 2026, sen aften.
+Sidst opdateret 13. august 2026.
 
 **Læs i denne rækkefølge hvis du er ny:** afsnit 2 om den vigtigste regel, afsnit 7 om fælderne, og så afsnit 9 om hvor vi står. Resten kan slås op efter behov.
 
@@ -683,6 +683,31 @@ Reglen var spredt ud over tre skærme i to apps, og de var uenige. På de 122 op
 - **3.0 sætter ALDRIG hjertet automatisk.** Gør vi det, fyldes listen igen med noget hun ikke har valgt, og så er tallet ubrugeligt næste gang nogen måler
 
 **Søgningen i fødevarer kan nu to ting mere.** Hele ord kommer først, så "æg" ikke drukner i Æggenudler. Og to ord virker, delt ved mellemrum eller komma. Begge dele er fejl vi har set før i opskrifterne, se 9.5. Den gamle apps afkryds "Kun hele ord" blev bevidst ikke kopieret: sortering skjuler ingenting, hvor afkrydset er enten eller. Se SPEC 26.16.
+
+### 9.15 Måltidsskærmen lagt om, og hvor opskrifterne kommer fra
+
+**Måltidsskærmen gik fra ni lag til fire**, se SPEC 26.17. Alt det der tilføjer noget ligger nu i ét ark bag knappen "Tilføj til morgenmaden". Arket er en fordeling og ikke et sted hun bliver: vælger hun noget, lukker det. Prisen er ét tryk mere på den vej der bruges mest, og det er derfor det skal mærkes på en telefon og ikke regnes ud.
+
+**Hjertet betyder nu kun ét: et bogmærke.** Faste måltider har fået en tallerken. Stjernen på en madvare er blevet et hjerte i samme blomme som på en opskrift. "Mine" hedder nu "Mine madvarer".
+
+### 9.16 LÆS DEN HER FØR DU REGNER PÅ EN OPSKRIFT
+
+**Der findes ikke ét målt tal i Linns opskrifter.** Se SPEC 26.18 for hele gennemgangen. Kort:
+
+- Opskrifterne blev fundet på navngivne danske sider: Valdemarsro 23, I Form 9, Spis Bedre 8, Arla 6. Kilde-linjen blev senere fjernet fra data
+- **CSV-kolonnerne hedder "Estimeret protein", "Estimeret fiber", "Estimeret kalorier".** Makroen har aldrig været målt
+- **820 ingrediens-mængder blev gættet af AI** i maj, se `estimater-opskrifter-mangder.json`
+- Kulhydrat og fedt blev beriget med AI 24. maj
+
+**Mængderne er ét estimat og makroen et andet, lavet uafhængigt med en måneds mellemrum.** Det er hele forklaringen på at de ikke går op.
+
+**PRØV IKKE at koble ingredienser til fødevare-databasen for at verificere makroen.** Det er gjort fire gange på to dage med stadig bedre metode, og det blev ikke bedre. Muren er ikke koblingen, den er at der ikke findes et facit.
+
+**Og sammenlign aldrig kalorier.** De er AI-estimerede, og 22 af dem stemmer ikke med deres egen makro.
+
+**Det ene der KAN rettes billigt:** 35 opskrifter siger ikke om linser, kikærter og bønner er tørre eller kogte. Forskellen er en faktor tre. Kalkun-rugbrødet skriver "afdryppede", resten skriver ingenting.
+
+**Rækkefølgen er ikke til forhandling:** skal makroen en dag regnes af ingredienserne, skal bælgfrugt-ordet ind FØRST. Ellers bages tvetydigheden ind i de nye tal.
 
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
