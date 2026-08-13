@@ -36,7 +36,18 @@
 				billedeUrl: null,
 				kategorier: [],
 				dietTags: [],
-				defaultPortioner: 4,
+				// ÉN portion, ikke fire. 122 af de 130 opskrifter er skrevet til
+				// én person, saa fire er ikke normen i den her app.
+				//
+				// Feltet fortaeller hvor mange portioner INGREDIENSLISTEN raekker
+				// til, og det bruges til at skalere maengderne. Stod der 4 paa en
+				// ret der er skrevet til én, ville kunden se en fjerdedel af hver
+				// maengde. Se SPEC-3.0.md 26.9 og 26.18.
+				//
+				// Foer 13. august 2026 stod her 4, saa hver ny opskrift var
+				// forkert indtil feltet blev rettet i haanden. De 122 er sat ned
+				// én ad gangen af netop den grund.
+				defaultPortioner: 1,
 				ingredienser: [],
 				instruktioner: '',
 				aktiv: false

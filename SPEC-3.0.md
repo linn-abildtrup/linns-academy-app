@@ -2317,11 +2317,10 @@ Rettelsen ligger i `routes/app/moduler/30-30-3/opskrifter/[id]/+page.svelte`
 omkring `skaleretMakro`, og den er ventilen i `CLAUDE.md` regel 2, altså en
 selvstændig opgave med eget go.
 
-**2. Nye opskrifter starter på 4 portioner i admin.** `defaultPortioner: 4` i
-`routes/app/admin/opskrifter/+page.svelte`. **Fejlen i punkt 1 vokser derfor af
-sig selv** hver gang Linn lægger en ny opskrift ind uden at rette feltet. 122 af
-de nuværende 130 er sat ned til 1 i hånden. Det her er billigt at rette og
-stopper blødningen.
+**2.** ~~Nye opskrifter starter på 4 portioner i admin.~~ **RETTET 13. august.**
+`defaultPortioner` er nu 1 ved oprettelse. 122 af de 130 er skrevet til én
+person, så fire var ikke normen, og hver ny opskrift var forkert indtil feltet
+blev rettet i hånden. De 122 er sat ned én ad gangen af netop den grund.
 
 **3. Femten gamle registreringer hos 13 kunder har for lidt protein**, som
 følge af punkt 1. Målt over hele historikken 12. august. De kan rettes med et
