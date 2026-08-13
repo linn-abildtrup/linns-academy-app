@@ -7,15 +7,18 @@ import {
 } from './opskriftPortion3';
 
 describe('startPortioner', () => {
-	it('aabner paa opskriftens eget tal', () => {
+	// Linns valg 13. august: arket aabner ALTID paa én portion. Spoergsmaalet
+	// er "hvor meget spiste du", og det almindelige svar er én portion, ikke
+	// hele gryden. Aabnede den paa 4 uden at hun opdagede det, ville hun logge
+	// fire gange for meget.
+	it('aabner altid paa én portion, uanset hvad opskriften er skrevet til', () => {
 		expect(startPortioner(1)).toBe(1);
-		expect(startPortioner(4)).toBe(4);
-		expect(startPortioner(12)).toBe(12);
+		expect(startPortioner(2)).toBe(1);
+		expect(startPortioner(4)).toBe(1);
+		expect(startPortioner(12)).toBe(1);
 	});
 
-	// Et manglende eller meningsloest tal maa aldrig give 0 portioner, for saa
-	// ville hele arket vise nul af alting.
-	it('falder tilbage til 1 naar tallet mangler eller er meningsloest', () => {
+	it('giver ogsaa 1 naar tallet mangler eller er meningsloest', () => {
 		expect(startPortioner(undefined)).toBe(1);
 		expect(startPortioner(0)).toBe(1);
 		expect(startPortioner(-3)).toBe(1);

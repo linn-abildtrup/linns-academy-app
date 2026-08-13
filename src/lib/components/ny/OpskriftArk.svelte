@@ -57,6 +57,8 @@
 	// Kun STARTvaerdien. Arket bygges forfra hver gang hun aabner en opskrift,
 	// for listen bagved kan ikke naas mens arket er aabent.
 	// svelte-ignore state_referenced_locally
+	// Altid én portion. Spoergsmaalet er "hvor meget spiste du", og det
+	// almindelige svar er én, ikke hele gryden. Linns valg 13. august.
 	let portioner = $state(startPortioner(opskrift.defaultPortioner));
 
 	const makro = $derived(parseOpskriftMakro(opskrift.instruktioner));

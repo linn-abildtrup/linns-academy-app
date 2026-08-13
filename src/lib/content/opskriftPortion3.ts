@@ -33,16 +33,43 @@ import { skalerMaengde } from './opskrifter';
 import { formatPortion } from './maengde3';
 
 /**
- * Hvor mange portioner arket aabner paa.
+ * Hvor mange portioner arket aabner paa. ALTID ÉN.
  *
- * Opskriftens eget tal, altsaa 1 for de fleste og 4 for de retter der er
- * skrevet til en familie. Linns valg 12. august: arket skal aabne som
- * opskriften er skrevet, saa ingredienslisten kan laeses direkte.
+ * Linns valg 13. august, som vendte beslutningen fra 12. august hvor
+ * arket aabnede paa opskriftens eget tal.
  *
- * Bemaerk at det samme tal ogsaa er dét der bliver gemt i dagbogen. Derfor
- * siger gem-knappen antallet naar det ikke er 1, se gemEtiket.
+ * HVORFOR: spoergsmaalet i arket er "hvor meget spiste du". Det
+ * almindelige svar er én portion, ikke hele gryden. Aabnede arket paa 4,
+ * og hun ikke opdagede det, ville hun logge fire gange for meget, og det
+ * samme tal er dét der gemmes i dagbogen.
+ *
+ * Og opskriftens eget tal er en oplysning hun ikke skal bruge til noget:
+ * ingredienserne skalerer med det antal hun vaelger, saa ved 1 portion
+ * staar der 75 g linser i stedet for 150. Det ER en opskrift til én
+ * person, og saa er det ligegyldigt at listen oprindeligt var skrevet
+ * til to.
+ *
+ * Bemaerk at defaultPortioner stadig bruges, bare ikke her: den fortaeller
+ * ingrediensMaengde hvad listen er skrevet til, saa der kan skaleres FRA
+ * det tal.
  */
-export function startPortioner(defaultPortioner: number | undefined): number {
+export function startPortioner(_defaultPortioner?: number | undefined): number {
+	return 1;
+}
+
+/**
+ * Hvor mange portioner ingredienslisten er SKREVET til.
+ *
+ * Den her og startPortioner er to forskellige ting, og de var det samme
+ * indtil 13. august. Da arket blev sat til altid at aabne paa én portion,
+ * troede ingrediensMaengde pludselig at ALLE lister var skrevet til én,
+ * saa 600 g kylling i en ret til fire blev til 2.400 g. Testene fangede
+ * det. Hold dem adskilt.
+ *
+ * Et manglende eller meningsloest tal bliver til 1, for ellers ville hele
+ * listen vise nul af alting.
+ */
+export function listenErSkrevetTil(defaultPortioner: number | undefined): number {
 	const d = defaultPortioner ?? 1;
 	return d > 0 ? d : 1;
 }
@@ -59,7 +86,7 @@ export function ingrediensMaengde(
 	defaultPortioner: number | undefined,
 	portioner: number
 ): number {
-	return skalerMaengde(maengde, startPortioner(defaultPortioner), portioner);
+	return skalerMaengde(maengde, listenErSkrevetTil(defaultPortioner), portioner);
 }
 
 /**
@@ -79,9 +106,9 @@ export function makroForPortioner(prPortion: number | null, portioner: number): 
 /**
  * Teksten paa gem-knappen.
  *
- * Antallet naevnes kun naar det ikke er 1. Aabner arket paa 4, fordi retten er
- * skrevet til fire, skal hun kunne se hvad der bliver lagt i uden at kigge op
- * paa taelleren. Ved 1 portion ville tallet bare vaere stoej.
+ * Antallet naevnes kun naar det ikke er 1. Arket aabner altid paa én, saa
+ * teksten er den samme indtil hun selv skruer op, og saa skal hun kunne se
+ * hvad der bliver lagt i uden at kigge op paa taelleren.
  */
 export function gemEtiket(maaltidLabel: string, portioner: number): string {
 	const maaltid = maaltidLabel.toLowerCase();
