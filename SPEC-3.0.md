@@ -2118,6 +2118,51 @@ ikke findes et facit at holde den op mod.
 **Og sammenlign ikke kalorier.** De er AI-estimeret, og 22 af dem stemmer ikke
 med deres egen makro.
 
+### Hvad der BLEV rettet 13. august
+
+**38 ingredienslinjer på 35 opskrifter fik tilstanden skrevet ind:** tørre eller
+afdryppede. Sikkerhedskopi i `backup/opskrifter-ingredienser-foer-baelgfrugt.json`.
+
+Reglerne der blev brugt, i den rækkefølge:
+
+1. **Røde linser er ALTID tørre.** De sælges ikke på dåse i Danmark. Første
+   udgave af scriptet foreslog "afdryppede" på en rød linsesuppe, og det er
+   forkert
+2. **Siger instruktionen at de skal koges, er de tørre**
+3. **Ellers afgør mængden:** 100 g eller mere er en dåse, altså afdryppede
+
+Efter rettelsen har alle 55 bælgfrugt-linjer et ord, ingen er dobbelt-mærket.
+
+**Ordet er ren tekst, og ingen beregning hænger på det**, så ingen kundes tal
+flyttede sig. Det er derfor rettelsen kunne laves med det samme, hvor
+portionstallet ikke kunne.
+
+### Portionstallet der IKKE blev rettet, og hvorfor
+
+**Seks opskrifter rækker til to personer, men står som én portion.** Linn
+bekræftede det 13. august, og regnestykket bekræfter det: 150 g tørre linser
+delt med to er 75 g pr person, hvilket ligger tæt på de 63 g som både
+Valdemarsro og en anden dansk opskrift bruger.
+
+**De må alligevel ikke sættes til 2 endnu**, og det er vigtigt at forstå
+hvorfor, for det ser ud som en simpel rettelse:
+
+- **Den gamle app DELER makroen med portionstallet.** `skala = portioner /
+  defaultPortioner` i `routes/app/moduler/30-30-3/opskrifter/[id]`. Sætter vi
+  2, viser og gemmer den **16 g protein i stedet for 32**
+- **3.0 åbner arket på opskriftens eget portionstal.** Den ville åbne på 2
+  portioner og logge **64 g**
+
+**De to apper ville tage fejl i hver sin retning på samme tid**, på seks
+opskrifter, for 760 kunder.
+
+**Rækkefølgen er derfor:** først punkt 1 på ventelisten, altså den gamle apps
+deling. Så kan de seks portionstal sættes til 2. Ikke omvendt.
+
+De seks er: Grøn salat med linser og rødbeder, Linsesalat med blødkogt æg,
+Ørredfilet med lun linsesalat, Stegt laks på grønne linser, Krydret ovnkylling
+med linser, og Vegetarisk lasagne.
+
 ### Den beslutning der ligger og venter
 
 **Skal makroen regnes ud af ingredienslisten, så de to endelig taler sammen?**
@@ -2173,6 +2218,15 @@ kan aldrig findes igen.
   på**, for da bliver opskrifterne noget man browser
 - **Madplanen mangler stadig et ja eller et endeligt nej.** Parkeret 11. august,
   ikonet er fjernet, motoren er urørt
+- ~~Bælgfrugter siger ikke om de er tørre eller kogte~~. **Klaret 13. august**,
+  se 26.18. 38 linjer på 35 opskrifter
+- **Punkt 1 på ventelisten er rykket op i vigtighed.** Den gamle apps deling af
+  makroen med portionstallet blokerer nu også for at rette portionstallet på de
+  seks opskrifter der rækker til to personer, se 26.18
+- **Kunder vil kunne rette i en opskrift**, fx bytte ris ud med kartofler. Vejen
+  er IKKE at koble ingredienser til fødevare-databasen, se 26.18. Den skal
+  bygges som "Lav min egen udgave", hvor opskriften kopieres til hendes egne og
+  AI'en regner næringen forfra ud fra hele ingredienslisten
 - **Skærmen ser tom ud mens fødevare-databasen hentes.** 2.268 dokumenter tager
   tid på en telefon, og imens er søgefeltet der uden at der sker noget. Set af
   Linn 12. august, hvor det lignede at alt var forsvundet. Samme klasse som

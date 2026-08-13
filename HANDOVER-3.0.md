@@ -709,6 +709,10 @@ Reglen var spredt ud over tre skærme i to apps, og de var uenige. På de 122 op
 
 **Rækkefølgen er ikke til forhandling:** skal makroen en dag regnes af ingredienserne, skal bælgfrugt-ordet ind FØRST. Ellers bages tvetydigheden ind i de nye tal.
 
+**Bælgfrugt-ordet ER sat ind 13. august**, 38 linjer på 35 opskrifter, sikkerhedskopi i `backup/`. Reglen var: røde linser er altid tørre, koges de i opskriften er de tørre, ellers er 100 g eller mere en dåse.
+
+**Men portionstallet er IKKE rettet, og det må det ikke blive endnu.** Seks opskrifter rækker til to personer. Sættes de til 2, viser den GAMLE app 16 g protein i stedet for 32, fordi den deler makroen med portionstallet. Og 3.0 ville logge 64, fordi arket åbner på opskriftens eget tal. **De to apper ville tage fejl i hver sin retning.** Først skal punkt 1 på ventelisten rettes.
+
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
 Hele Mad-modulet blev gennemgaaet mod den gamle app 12. august, funktion for
