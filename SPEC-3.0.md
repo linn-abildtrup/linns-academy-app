@@ -2322,10 +2322,24 @@ selvstændig opgave med eget go.
 person, så fire var ikke normen, og hver ny opskrift var forkert indtil feltet
 blev rettet i hånden. De 122 er sat ned én ad gangen af netop den grund.
 
-**3. Femten gamle registreringer hos 13 kunder har for lidt protein**, som
-følge af punkt 1. Målt over hele historikken 12. august. De kan rettes med et
-script, men det er skrivning til kundedata og kræver sit eget ja. 15 poster er
-lidt, og derfor også let at overskue.
+**3.** ~~Gamle registreringer har for lidt protein.~~ **BEVIDST NEJ 13. august.
+Vi retter ikke bagud.**
+
+Gennemgangen af hele historikken, 31.136 måltider, fandt **8 registreringer hos
+7 kunder** hvor tallet er tre til tolv gange for lavt. Den tidligere måling 12.
+august sagde 15 hos 13, og forskellen blev ikke afklaret, fordi beslutningen
+gjorde den ligegyldig.
+
+**Linns beslutning: der rettes ikke i det kunderne har registreret.** Det er
+deres egen dagbog, ingen af dem har bedt om det, og de ville se dagstal fra juni
+stige uden varsel.
+
+**Kilden er lukket**, se punkt 1 og 2, så tallet kan ikke vokse.
+
+**En ting værd at kende, hvis nogen tager det op igen:** efter rettelsen 13.
+august kan en post på 48 g protein både betyde "hun spiste én portion i dag" og
+"hun spiste fire portioner før rettelsen". De to kan kun skilles ad på datoen.
+En eventuel senere oprydning skal derfor kun se på poster fra før 13. august.
 
 ### Data og indhold
 

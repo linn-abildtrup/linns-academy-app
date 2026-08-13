@@ -709,6 +709,8 @@ Reglen var spredt ud over tre skærme i to apps, og de var uenige. På de 122 op
 
 **Rækkefølgen er ikke til forhandling:** skal makroen en dag regnes af ingredienserne, skal bælgfrugt-ordet ind FØRST. Ellers bages tvetydigheden ind i de nye tal.
 
+**Der rettes ikke bagud i kundernes dagbøger.** Linns beslutning 13. august. 8 registreringer hos 7 kunder har for lidt protein som følge af den fejl der blev rettet samme dag, men de bliver stående. Det er kundernes egen dagbog. Kilden er lukket, så tallet kan ikke vokse. Se SPEC ventelisten punkt 3.
+
 **Bælgfrugt-ordet ER sat ind 13. august**, 38 linjer på 35 opskrifter, sikkerhedskopi i `backup/`. Reglen var: røde linser er altid tørre, koges de i opskriften er de tørre, ellers er 100 g eller mere en dåse.
 
 **Portionstallet ER rettet 13. august**, efter at den gamle apps deling blev fixet. De seks står nu på 2, sikkerhedskopi i `backup/opskrifter-portionstal-foer.json`. Ørred-opskriften hænger endelig sammen.
