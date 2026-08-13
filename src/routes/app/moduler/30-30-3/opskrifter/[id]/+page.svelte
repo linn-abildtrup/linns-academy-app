@@ -105,7 +105,19 @@
 			? (() => {
 					const m = parseOpskriftMakro(opskrift.instruktioner);
 					const p = Math.max(0.01, maaltidPortioner);
-					const skala = p / (opskrift.defaultPortioner || 1);
+					// MAKROEN ER PR PORTION og ganges KUN med det antal hun spiste.
+					// defaultPortioner fortæller hvor mange portioner
+					// INGREDIENSLISTEN rækker til, og må aldrig bruges her.
+					// Ingredienserne skaleres af skalerMaengde, som bruger tallet
+					// korrekt.
+					//
+					// Før 13. august 2026 stod der p / defaultPortioner. På de 122
+					// opskrifter der står til 1 portion gav det samme svar, for at
+					// dele med 1 ændrer ingenting. På de 8 der står til 2, 4 eller
+					// 12 blev makroen delt med netop det tal, så en kunde fik
+					// krediteret 12 g protein hvor hun spiste 48. Se SPEC-3.0.md
+					// 26.9, hvor 3.0 blev rettet 12. august.
+					const skala = p;
 					const round1 = (v: number) => Math.round(v * 10) / 10;
 					return {
 						protein: m.protein === null ? null : round1(m.protein * skala),
