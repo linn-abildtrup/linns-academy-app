@@ -1366,16 +1366,37 @@ bærer målingerne, så den næste ikke skal regne det ud forfra.
 
 **Den gamle app er IKKE rettet.** Se 27.
 
-### Arket åbner på opskriftens eget tal
+### Arket åbner ALTID på én portion. OMGJORT 13. august
 
-Linns valg 12. august, efter fire tegnede forslag. Arket åbner på 1 for de 122
-og 4 for de retter der er skrevet til en familie, så ingredienslisten kan læses
-direkte som opskrift. Skruer hun ned til 1, regner både makro og ingredienser
-sig om med det samme.
+**Den her beslutning blev vendt.** Frem til 13. august åbnede arket på
+opskriftens eget tal, altså 1 for de fleste og 4 for familieretterne, så
+ingredienslisten kunne læses direkte som opskrift. Det var Linns valg 12.
+august efter fire tegnede forslag.
 
-**Starttallet er også dét der gemmes.** Derfor siger gem-knappen antallet når
-det ikke er 1, altså "Læg 4 portioner i aftensmad". Ved 1 portion ville tallet
-bare være støj.
+**Nu åbner den altid på én portion.** Linns valg 13. august, og begrundelsen er
+stærkere end den oprindelige:
+
+- **Spørgsmålet i arket er "hvor meget spiste du".** Det almindelige svar er én
+  portion, ikke hele gryden
+- **Starttallet er også dét der gemmes.** Åbnede arket på 4, og hun ikke
+  opdagede det, ville hun logge fire gange for meget
+- **Opskriftens eget tal er en oplysning hun ikke skal bruge til noget.**
+  Ingredienserne skalerer med det antal hun vælger, så ved 1 portion står der
+  75 g linser i stedet for 150. Det ER en opskrift til én person
+
+Jeg foreslog at skrive "Opskriften rækker til 2 portioner" på skærmen som
+oplysning. **Linn afviste det, og hun havde ret:** når mængderne følger det
+valgte antal, er opskriftens egen ydelse en intern detalje.
+
+Gem-knappen siger stadig antallet når det ikke er 1, altså "Læg 2 portioner i
+aftensmad", for da har hun selv skruet op.
+
+**En fælde der kostede fire faldne tests undervejs:** `startPortioner` gjorde
+TO ting. Den sagde både hvad arket åbner på OG hvad ingredienslisten er skrevet
+til. Da den blev sat til altid at give 1, troede `ingrediensMaengde` at alle
+lister var skrevet til én portion, så 600 g kylling i en ret til fire blev til
+2.400 g. De to hedder nu `startPortioner` og `listenErSkrevetTil`, og de må
+aldrig smelte sammen igen.
 
 ### Alle fem tal, og de gemmes altid
 
@@ -2163,6 +2184,37 @@ De seks er: Grøn salat med linser og rødbeder, Linsesalat med blødkogt æg,
 Ørredfilet med lun linsesalat, Stegt laks på grønne linser, Krydret ovnkylling
 med linser, og Vegetarisk lasagne.
 
+### Punkt 1 blev rettet 13. august, og hvad det låste op
+
+**Den gamle app delte makroen med portionstallet.** `skala = portioner /
+defaultPortioner` i `routes/app/moduler/30-30-3/opskrifter/[id]`. Makroen er pr
+portion, så divisionen var forkert. Rettet til `skala = portioner`.
+
+På de 122 opskrifter med portionstal 1 ændrede det ingenting. På de 8 andre:
+
+| Opskrift | Viste | Viser nu |
+|---|---|---|
+| Kylling med broccoli i grøn pestosauce | 12,0 g | 48 g |
+| Kyllingefrikadeller med tzatziki | 10,5 g | 42 g |
+| Mættende oksekødsbowl | 21,0 g | 42 g |
+| Tex-mex bowl med krydret oksekød | 9,5 g | 38 g |
+| Sojamarineret laks med sesam | 9,5 g | 38 g |
+| Plancha grøntsager med flankesteak | 8,0 g | 32 g |
+| Hjemmebagte energikugler | 1,3 g | 5 g |
+| Den grønne grød, isterninger | 0,1 g | 1 g |
+
+Det var ventilen i `CLAUDE.md` regel 2: egen opgave, eget go, egen commit.
+Ingredienserne blev ikke rørt, de skaleres af `skalerMaengde`. Historikken blev
+ikke rettet, se punkt 3 på ventelisten.
+
+**Og så kunne de seks portionstal endelig sættes til 2.** Ørredfilet med lun
+linsesalat, Grøn salat med linser og rødbeder, Linsesalat med blødkogt æg,
+Stegt laks på grønne linser, Krydret ovnkylling med linser, og Vegetarisk
+lasagne. Sikkerhedskopi i `backup/opskrifter-portionstal-foer.json`.
+
+**Ørred-opskriften hænger nu sammen:** 150 g tørre linser og 130 g ørred til to
+personer giver cirka 32 g protein pr portion, og det er præcis det der står.
+
 ### Den beslutning der ligger og venter
 
 **Skal makroen regnes ud af ingredienslisten, så de to endelig taler sammen?**
@@ -2256,7 +2308,9 @@ Listen er sorteret efter hvor meget det gør ondt at lade den ligge. Den
 
 ### Rammer kunder i drift
 
-**1. Den gamle app deler makroen med `defaultPortioner`.** Se 26.9. På de 8
+**1.** ~~Den gamle app deler makroen med `defaultPortioner`.~~ **RETTET 13.
+august**, se 26.18. Det var det eneste punkt der skrev forkerte tal ind i
+kunders dagbøger lige nu. Den oprindelige tekst stod: På de 8
 retter der er skrevet til flere portioner skriver den for lidt protein i
 dagbogen, fx 12 g hvor kunden spiste 48. 3.0 er rettet, den gamle er ikke.
 Rettelsen ligger i `routes/app/moduler/30-30-3/opskrifter/[id]/+page.svelte`
