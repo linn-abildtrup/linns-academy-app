@@ -178,7 +178,7 @@ export async function sletForlob(forlobId: string): Promise<void> {
 }
 
 /**
- * Kopierer alt indhold (vaneprogram-dage, FAQ, guides) fra et eksisterende
+ * Kopierer alt indhold (vaneprogram-dage, FAQ, guides, smaa skridt) fra et eksisterende
  * forløb til et nyt. Bruges når et nyt forløb oprettes baseret på et tidligere
  * — fx Linn laver "Kickstart august 2026" med samme spørgsmål og guides som
  * maj-forløbet.
@@ -201,17 +201,27 @@ export async function kopierForlobIndhold(
 	guideItems: number;
 	mikrotraeningProgrammer: number;
 	mikrotraeningDage: number;
+	smaaSkridt: number;
 }> {
-	const [fraVane, fraDage, fraFaqKats, fraFaqItems, fraGuideKats, fraGuideItems, fraMikroProgs] =
-		await Promise.all([
-			getDocs(collection(db, 'forlob', fraForlobId, 'vaneprogram')),
-			getDocs(collection(db, 'forlob', fraForlobId, 'forlobsdage')),
-			getDocs(collection(db, 'forlob', fraForlobId, 'faqKategorier')),
-			getDocs(collection(db, 'forlob', fraForlobId, 'faqItems')),
-			getDocs(collection(db, 'forlob', fraForlobId, 'guideKategorier')),
-			getDocs(collection(db, 'forlob', fraForlobId, 'guideItems')),
-			getDocs(collection(db, 'forlob', fraForlobId, 'mikrotraeningProgrammer'))
-		]);
+	const [
+		fraVane,
+		fraDage,
+		fraFaqKats,
+		fraFaqItems,
+		fraGuideKats,
+		fraGuideItems,
+		fraMikroProgs,
+		fraSmaaSkridt
+	] = await Promise.all([
+		getDocs(collection(db, 'forlob', fraForlobId, 'vaneprogram')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'forlobsdage')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'faqKategorier')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'faqItems')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'guideKategorier')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'guideItems')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'mikrotraeningProgrammer')),
+		getDocs(collection(db, 'forlob', fraForlobId, 'smaaSkridt'))
+	]);
 
 	// Hent dage for hvert mikrotræningsprogram parallelt så vi kan kopiere
 	// både program-dokument og subcollection days/{dagId} i samme batch.
@@ -222,42 +232,62 @@ export async function kopierForlobIndhold(
 	);
 	let mikroDageTotal = 0;
 
-	const batch = writeBatch(db);
+	// Alle skrivninger samles foerst, og commites derefter i klumper. En
+	// writeBatch kan maks rumme 500 skrivninger, og et 84-dages forloeb ligger
+	// allerede paa ca 390. Uden opdeling ville et lidt stoerre forloeb faa hele
+	// kopien til at fejle.
+	const skrivninger: { ref: ReturnType<typeof doc>; data: Record<string, unknown> }[] = [];
+	const tilfoej = (ref: ReturnType<typeof doc>, data: Record<string, unknown>) =>
+		skrivninger.push({ ref, data });
+
 	for (const d of fraVane.docs) {
-		batch.set(doc(db, 'forlob', tilForlobId, 'vaneprogram', d.id), d.data());
+		tilfoej(doc(db, 'forlob', tilForlobId, 'vaneprogram', d.id), d.data());
 	}
 	for (const d of fraDage.docs) {
 		// Lektioner markeret "kun dette hold" kopieres ikke med til det nye hold.
-		batch.set(
+		tilfoej(
 			doc(db, 'forlob', tilForlobId, 'forlobsdage', d.id),
 			fjernKunDetteHoldLektioner(d.data())
 		);
 	}
 	for (const d of fraFaqKats.docs) {
-		batch.set(doc(db, 'forlob', tilForlobId, 'faqKategorier', d.id), d.data());
+		tilfoej(doc(db, 'forlob', tilForlobId, 'faqKategorier', d.id), d.data());
 	}
 	for (const d of fraFaqItems.docs) {
-		batch.set(doc(db, 'forlob', tilForlobId, 'faqItems', d.id), d.data());
+		tilfoej(doc(db, 'forlob', tilForlobId, 'faqItems', d.id), d.data());
 	}
 	for (const d of fraGuideKats.docs) {
-		batch.set(doc(db, 'forlob', tilForlobId, 'guideKategorier', d.id), d.data());
+		tilfoej(doc(db, 'forlob', tilForlobId, 'guideKategorier', d.id), d.data());
 	}
 	for (const d of fraGuideItems.docs) {
-		batch.set(doc(db, 'forlob', tilForlobId, 'guideItems', d.id), d.data());
+		tilfoej(doc(db, 'forlob', tilForlobId, 'guideItems', d.id), d.data());
+	}
+	// Smaa skridt er admin-opskriften bag dagenes afkrydsninger. Uden dem faar
+	// det nye hold ganske vist de rigtige checks paa dagene (de ligger i
+	// vaneprogram), men listen i admin staar tom og kan ikke redigeres.
+	// Doc-id og checkId bevares, saa de matcher de kopierede checks.
+	for (const d of fraSmaaSkridt.docs) {
+		tilfoej(doc(db, 'forlob', tilForlobId, 'smaaSkridt', d.id), d.data());
 	}
 	for (let i = 0; i < fraMikroProgs.docs.length; i++) {
 		const p = fraMikroProgs.docs[i];
-		batch.set(doc(db, 'forlob', tilForlobId, 'mikrotraeningProgrammer', p.id), p.data());
+		tilfoej(doc(db, 'forlob', tilForlobId, 'mikrotraeningProgrammer', p.id), p.data());
 		const dageSnap = mikroDageSnaps[i];
 		mikroDageTotal += dageSnap.size;
 		for (const d of dageSnap.docs) {
-			batch.set(
+			tilfoej(
 				doc(db, 'forlob', tilForlobId, 'mikrotraeningProgrammer', p.id, 'days', d.id),
 				d.data()
 			);
 		}
 	}
-	await batch.commit();
+
+	const KLUMPE_STOERRELSE = 400;
+	for (let i = 0; i < skrivninger.length; i += KLUMPE_STOERRELSE) {
+		const batch = writeBatch(db);
+		for (const s of skrivninger.slice(i, i + KLUMPE_STOERRELSE)) batch.set(s.ref, s.data);
+		await batch.commit();
+	}
 
 	return {
 		vaneprogramDage: fraVane.size,
@@ -267,7 +297,8 @@ export async function kopierForlobIndhold(
 		guideKategorier: fraGuideKats.size,
 		guideItems: fraGuideItems.size,
 		mikrotraeningProgrammer: fraMikroProgs.size,
-		mikrotraeningDage: mikroDageTotal
+		mikrotraeningDage: mikroDageTotal,
+		smaaSkridt: fraSmaaSkridt.size
 	};
 }
 
