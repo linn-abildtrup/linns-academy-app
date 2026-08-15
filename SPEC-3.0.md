@@ -2596,3 +2596,224 @@ ned til hver kunde ved hver udrulning, så 808 KB stillads kostede alle.
 - **`/ny` har fået samme kur**, se 28.4, men er heller ikke bekræftet på telefon
 - **Firebase Auth selv er ikke undersøgt.** Hænger noget dér, altså før kæden
   overhovedet går i gang, er intet af det her dækket
+
+## 29. Træning. Modellen låst 15. august, bid 1 bygget samme dag
+
+Hele modulet blev gennemgået 15. august, først som diagnose af den gamle app,
+så som mockups, og derefter blev bid 1 bygget. Afsnittet her er beslutningerne
+og hvorfor de er som de er.
+
+### 29.1 Hvad der er galt med træningen i dag
+
+Diagnosen er lavet på koden, ikke på et gæt.
+
+**Omfanget.** Kunde-siderne under `app/moduler/traening/` er 9.901 linjer
+fordelt på elleve filer. Admin-siderne er 6.930 linjer. Til sammenligning er
+hele 30-30 modulet i 3.0 mindre end det.
+
+**Fire slags programmer, tre steder.** Abo-mikrotræningen ligger i
+`aboMikrotraening/{premium|basis}`, forløbets egne i
+`forlob/{id}/mikrotraeningProgrammer`, master-programmerne i `trainingPrograms`
+og kundens egne i `users/{uid}/mineProgrammer`. To af de tre steder er bundet
+til enten et forløb eller et abonnement, og det er præcis den binding 3.0
+skiller sig af med.
+
+**Tre forskellige regler for hvilken dag hun står på.** Abo regner kalenderdage
+siden `aboStartDato` modulo 21. Forløb bruger forløbets dag med nul-dage trukket
+fra. Master og eget låser op efterhånden som hun gennemfører. Samme spørgsmål,
+tre svar.
+
+**Fremgangen ligger fem steder.** `products/{produkt}.fremgang.mikrotraening`,
+`aboMikrotraeningFremgang/aktiv`, `aboMikrotraeningTraeninger/{dato}`,
+`programFremgang/{id}` og `traeningHistorik`. Kun den sidste er bundet til en
+dato på tværs af alle kilder, og det er den 3.0's forside allerede læser.
+
+**Fire afspillere på cirka 1.400 linjer hver.** En for abo, en for forløb, en
+for master og en for byg-eget. Cirka 5.700 linjer der gør det samme. De bliver
+til én.
+
+### 29.2 Beslutningerne, truffet af Linn 15. august
+
+1. **Ét sted at bygge programmer.** Uafhængigt af forløb og abonnement
+2. **Kategorierne er data, ikke kode.** Linn opretter dem selv. I dag findes
+   kun kettlebell og uden kettlebell, og de står hårdkodet flere steder i den
+   gamle app
+3. **Kunden vælger sit udstyr** første gang og siden i Profil, og ser derefter
+   kun de tildelte programmer der passer. Hun må vælge flere slags på én gang
+4. **Uden redskaber vises altid.** Hun har altid sin egen krop med
+5. **Ét program har én kategori.** Kræver det en stol, skriver Linn det i
+   beskrivelsen. Alternativet var et filter kunden ikke kan gennemskue
+6. **Dagen rykker først når hun har trænet**, ikke når kalenderen skifter. Det
+   gælder også forløbskunder. Én regel i stedet for tre
+7. **Hun er ikke låst til ét program** og kan skifte frit. Hvert program husker
+   sin egen plads, så hun kan gå frem og tilbage uden at miste noget
+8. **Hun bliver altid spurgt** når hun går væk fra en træning, også efter ti
+   sekunder. Svarene er Ja, Nej og Gem hvor jeg er kommet til
+9. **Efter en gennemført træning kommer hun tilbage til træningens forside.**
+   Vil hun tage en mere, starter hun den derfra. Ingen næste dag-knap
+10. **Hun ser aldrig programmer hun ikke har fået.** Ingen grå låste kasser
+11. **Fjernes et program, beholder hun sin historik**, og får hun det igen,
+    starter hun hvor hun slap
+12. **Tildeling kan gælde fra og til.** Standarden er uden slutdato
+13. **Byg eget program styres af de samme tildelinger** som programmerne, altså
+    person, hold eller alle app-brugere
+14. **Kladde og Klar.** Kun et program der er sat til klar kan tildeles
+
+### 29.3 Datamodellen
+
+Alt nyt ligger i sit eget hjørne som kun 3.0 læser. Den gamle app kender
+ingenting af det, og de 760 kunder i drift mærker ingenting.
+
+```
+traeningKategorier3/{id}                kategorierne
+traeningsprogrammer3/{id}               programmet
+traeningsprogrammer3/{id}/dage/{dagN}   dagene med øvelser
+traeningTildelinger3/{id}               hvem får hvad, og hvornår   (bid 2)
+
+users/{uid}/traeningFremgang3/{programId}   hvor langt hun er        (bid 4)
+users/{uid}/traeningPlads3/{programId}      gemt plads i en træning  (bid 4)
+userDoc.traeningsudstyr3                    hendes udstyrsvalg       (bid 3)
+```
+
+**Dagene ligger i en undersamling** og ikke i selve programmet. Et 84-dages
+program med fem øvelser om dagen er for stort til ét dokument, og listen over
+programmer skal kunne hentes uden at trække 420 dage med.
+
+**En dag genbruger den gamle form**, altså `TrainingDay` med `DayExercise`.
+Det er med vilje. Så kan de seks programmer der kører i dag kopieres over uden
+at blive skrevet om, udkast-generatoren fra den gamle app kan bruges som den
+er, og afspilleren kan bygges på den samme form.
+
+**Fremgangen ligger pr program.** Det er dét der gør at hun kan skifte mellem
+programmer uden at miste noget, og at fremgangen overlever at et program bliver
+fjernet fra hende.
+
+**Øvelsesbanken genbruges** som den er. Der er ingen grund til at lave 200
+øvelser og deres videoer om.
+
+### 29.4 Kategorierne
+
+En kategori er det udstyr kunden træner med. Feltet `visesAltid` sættes på
+Uden redskaber, og det er ikke pynt: uden det kunne hun vælge håndvægte og stå
+tilbage med en tom skærm.
+
+`udstyrTag` kobler kategorien til de mærkater øvelserne allerede har, altså
+ingen, kettlebell, elastik, håndvægte og forhøjning. Koblingen bruges **kun**
+til at forudfiltrere når Linn vælger øvelser eller beder om et udkast.
+
+**Filteret må aldrig spærre.** Et nyt redskab som sjippetov findes ikke som
+mærkat i banken, og så står `udstyrTag` til null og hun vælger frit fra hele
+listen. At sætte nye mærkater på øvelserne rører den gamle app og skal være sin
+egen opgave med sit eget go.
+
+**Et redskabs-program indeholder også kropsvægt.** Derfor giver
+`filtrerOevelserTilKategori` både øvelser med det valgte redskab og øvelser
+der intet kræver. Øvelser der kræver et ANDET redskab falder fra, for dem har
+hun ikke.
+
+### 29.5 Tildelingen. Bid 2, ikke bygget endnu
+
+| Felt | Hvad |
+|---|---|
+| Program | Hvilket program, og kun et der er sat til Klar |
+| Modtager | Én person, ét hold, eller alle app-brugere |
+| Gælder fra | Hold: dag i forløbet. Person og alle app: en dato |
+| Gælder til | Samme to former, og standarden er uden slutdato |
+
+**Hold måles i forløbsdage og ikke i kalenderdatoer.** En dato rammer kun det
+hold der kører netop nu. Med "fra dag 15" virker den samme tildeling
+automatisk rigtigt for alle kommende hold.
+
+**Admin skal kunne se hvilke kategorier der er dækket for et hold.** Tildeler
+Linn fem programmer til et Kickstart-hold, og de alle sammen kræver redskaber,
+ser en kvinde der kun har valgt uden redskaber ingenting. Hun er på et forløb
+hvor træning er en del af konceptet, og hun har ikke gjort noget forkert.
+
+**Kunden får aldrig en helt tom skærm.** Passer intet til hendes udstyr, står
+der hvad der mangler, med en knap der viser resten.
+
+### 29.6 Reglerne for en træning. Bid 4
+
+Hun møder altid den laveste dag hun ikke har klaret.
+
+| Svar når hun går væk | Hvad der sker |
+|---|---|
+| Ja | Dagen er gennemført, den ryger i historikken, den gemte plads slettes |
+| Nej | Intet gemmes. Den samme dag ligger der i morgen |
+| Gem hvor jeg er | Pladsen gemmes. Dagen tæller ikke |
+
+Kører hun hele træningen færdig i appen, spørger vi ikke. Så er den gennemført.
+
+**Et program kan sættes til at starte forfra**, som et flueben. Standarden er
+at det gør, fordi mikrotræningens 21 dage looper i dag, og ellers ville de
+kunder stå med ingenting på dag 22.
+
+**Historikken skrives i den samme samling som i dag**, `traeningHistorik`, med
+en ny kilde-værdi. Så passer hendes flueben uanset hvilken app hun har trænet
+i. Den gamle app kender ikke de nye programmer og linker den dag til
+mikrotræningen. Det er den eneste følge, og den er harmløs.
+
+### 29.7 Bid 1. LÅST og bygget 15. august
+
+Mockups ligger i `v3 app/linns-academy-design/mockups-traening-admin.html` og
+blev gennemgået før der blev kodet.
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/traeningsprogram3.ts` | Programmer, dage, validering, udkast-fletning | 41 |
+| `content/traeningKategori3.ts` | Kategorier, rækkefølge, øvelsesfilter | 27 |
+| `firestore/traeningsprogram3.ts` | Programmer og dage | |
+| `firestore/traeningKategori3.ts` | Kategorier | |
+| `/ny/admin/traening` | Programlisten med kategori-chips | |
+| `/ny/admin/traening/kategorier` | Kategorierne | |
+| `/ny/admin/traening/[programId]` | Dagene, rediger, fyld ud, sæt til klar | |
+| `/ny/admin/traening/[programId]/[dag]` | Øvelserne på én dag | |
+
+**Fire ting der er værd at kende:**
+
+- **Udkast-knappen er ikke pynt.** Et 84-dages program er en hel aften i
+  hånden. Generatoren er den samme som den gamle app bruger, og den rører som
+  standard KUN de tomme dage. Ellers kunne ét tryk kaste en aftens arbejde væk
+- **Programmet husker selv hvor mange dage der mangler øvelser.** Uden det tal
+  skulle listen hente 84 dage for hvert program bare for at kunne advare.
+  Mangler tallet, går vi ud fra at ALLE dage er tomme. En manglende advarsel er
+  værre end en overflødig
+- **Opret-formularen ligger på siden og ikke i et ark.** Ark skal portalles ud
+  af det område der ruller, og det har kostet en aften før. En admin-side har
+  ikke brug for den risiko
+- **Øvelserne flyttes med pil op og pil ned**, ikke med træk og slip. Træk er
+  upræcist med en finger, og der er sjældent mere end fem øvelser på en dag
+
+**Firestore-reglerne blev udgivet 15. august** efter samme fremgangsmåde som
+altid: de live regler blev læst og sammenlignet med repoet først, og igen
+bagefter. 67 blokke begge steder, og de er ens.
+
+### 29.8 Rækkefølgen
+
+| Bid | Hvad | Tilstand |
+|---|---|---|
+| 1 | Datamodel, kategorier, admin så programmer kan bygges | **Færdig 15. august** |
+| 2 | Tildeling med gælder fra og til, plus dækning pr hold | Ikke bygget |
+| 3 | Kundens udstyrsvalg og hendes programliste | Ikke bygget |
+| 4 | Afspilleren med Ja, Nej og Gem | Ikke bygget |
+| 5 | Forsidens flise kobles på | Ikke bygget |
+| 6 | Byg eget program | Ikke bygget |
+| 7 | De seks programmer kopieres over | Kører når første hold flyttes |
+
+**Udstyrsvalget kommer første gang hun trykker på træning**, ikke når hun logger
+ind. Et forkert skridt i opstarten har givet en helt blank app for alle før, og
+en kvinde der bare vil se sin dag skal ikke mødes af et spørgsmål om sjippetov.
+
+### 29.9 Kopieringen af de seks programmer
+
+Kickstart med og uden kettlebell, Kropsro med og uden, og abo-mikrotræningen i
+to udgaver. De kopieres over med kategori sat, og originalerne bliver liggende
+urørte.
+
+**Fremgangen skal med over.** Linns beslutning 15. august. Den ligger tre
+forskellige steder i dag og kan bygges op igen, også for abo-kunderne, fordi
+der ligger et dokument pr dag de har trænet.
+
+**Kopieringen af fremgang skal køre når et hold faktisk flyttes**, ikke i
+forvejen. Kører den for tidligt, træner kunden videre i den gamle app bagefter,
+og så er tallet forældet den dag hun lander i 3.0.
