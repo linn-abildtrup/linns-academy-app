@@ -2597,10 +2597,10 @@ ned til hver kunde ved hver udrulning, så 808 KB stillads kostede alle.
 - **Firebase Auth selv er ikke undersøgt.** Hænger noget dér, altså før kæden
   overhovedet går i gang, er intet af det her dækket
 
-## 29. Træning. Modellen låst 15. august, bid 1 og 2 bygget samme dag
+## 29. Træning. Modellen låst 15. august, bid 1 til 4 bygget samme dag
 
 Hele modulet blev gennemgået 15. august, først som diagnose af den gamle app,
-så som mockups, og derefter blev bid 1 og bid 2 bygget. Afsnittet her er
+så som mockups, og derefter blev bid 1 til 4 bygget. Afsnittet her er
 beslutningerne og hvorfor de er som de er.
 
 **Arbejdsformen var mockups før kode, hver gang.** Hver bid blev tegnet i
@@ -2666,6 +2666,9 @@ til én.
 15. **Fire slags modtagere**, besluttet 15. august da tildelingen blev tegnet:
     ét bestemt hold, én person, alle medlemmer, eller alle. Medlem betyder
     aktivt app-abonnement. Se 29.5
+16. **Det hedder træning og ikke dag.** Ordet dag er forbeholdt kalenderdage
+    i et forløb. Se 29.6
+17. **Udstyrsvalget hører hjemme i onboarding**, ikke i træningen. Se 29.6.1
 
 ### 29.3 Datamodellen
 
@@ -2832,26 +2835,130 @@ skal ske på en måde hvor hun kun kan hente de rækker der handler om hende,
 enten med målrettede forespørgsler plus en skarpere regel, eller gennem et
 endpoint. Beslutningen er bevidst udskudt til den skærm findes.
 
-### 29.6 Reglerne for en træning. Bid 4
+### 29.6 Det hedder træning, ikke dag. LÅST 15. august
 
-Hun møder altid den laveste dag hun ikke har klaret.
+Linns rettelse, og den er vigtigere end den lyder.
 
-| Svar når hun går væk | Hvad der sker |
+**Programmets numre rykker kun når hun har trænet.** "Dag 5" ville derfor
+lyde som om hun er bagud efter en uges pause. Det er hun ikke, hun har bare
+trænet fire gange.
+
+**Og den rydder op i en tvetydighed der lå gemt i modulet:** ordet dag betød
+to forskellige ting.
+
+| Hvor | Ordet | Fordi |
+|---|---|---|
+| Kunden, inde i et program | Træning 5 af 21 | Det er femte gang hun træner |
+| Admin, når der bygges | Træning 1, 2, 3 | Samme ord begge steder |
+| Admin, når der tildeles | Fra dag 15 i forløbet | Det ER en kalenderdag på holdet |
+
+Rettet overalt i 3.0, også i admin fra bid 1 og 2. **Kun tekst, ingen data.**
+Feltet hedder stadig `antalDage` i databasen, og det bliver stående: et
+navneskift ville kræve en migrering uden at kunden fik noget ud af det. Brug
+`antalTraeninger3()` i UI-kode i stedet, så ordet dag ikke sniger sig tilbage.
+
+### 29.6.1 Kundens side. LÅST og bygget 15. august, bid 3
+
+Mockups i `v3 app/linns-academy-design/mockups-traening-kunde.html`, tegnet
+om én gang efter Linns svar.
+
+**Siden hedder Mikrotræning.** Det hun sidst trænede står øverst under "Du er
+i gang med", resten nedenunder. Rækkefølgen er: i gang, ikke begyndt,
+færdige. Inden for "i gang" står den hun sidst trænede øverst.
+
+**Ingen Vælg-knap.** Hun skal ikke først udpege et program og så starte det,
+det er to trin til det samme.
+
+**Filtreringen bruger `programmerForKunde3`**, altså nøjagtig den samme
+funktion som admin-opslaget i bid 2. Ikke en kopi.
+
+#### Udstyrsvalget
+
+**Spørgsmålet hører hjemme i onboarding**, første gang en ny kunde logger på,
+sammen med resten af det hun skal spørges om. Linns beslutning 15. august.
+Onboarding er ikke bygget, så vælgeren bor indtil videre kun i Profil, som
+"Sådan træner jeg".
+
+**Vælgeren er derfor en komponent**, `UdstyrValg.svelte`, så onboarding kan
+genbruge præcis den skærm i stedet for at få sin egen.
+
+**Kategorier der vises altid kan ikke slås fra.** Uden den lås kunne hun
+fjerne alle flueben og stå uden træning, og det er netop det kropsvægt-
+kategorien er til for at forhindre.
+
+**En tom udstyrsliste betyder "hun har ikke valgt endnu", og så ser hun
+alt.** Det er ikke en midlertidig nødløsning, det er den rigtige regel: at
+skjule hendes træning fordi hun ikke er blevet spurgt ville være at straffe
+hende for noget vi ikke har bygget. De eksisterende kunder kommer aldrig
+gennem onboarding og vil derfor blive stående med tom liste, indtil de selv
+vælger i Profil.
+
+#### Den tomme skærm
+
+Der findes **kun én**: "Du har ikke fået nogen træning endnu."
+
+Skærmen om at intet passer til hendes udstyr blev bevidst fjernet 15. august.
+Linns pointe: hun har altid sin egen krop, så der er altid noget til hende,
+så længe holdet har et program uden redskaber. **Det er dækningssiden fra bid
+2 der er værnet**, og den skal bruges.
+
+Konsekvensen skal kendes: har et hold KUN fået programmer med redskaber, ser
+en kvinde uden redskaber ingenting, og der står "du har ikke fået nogen
+træning endnu", hvilket teknisk set er forkert. Det er accepteret, fordi det
+ikke bør kunne ske.
+
+### 29.6.2 Afspilleren. LÅST og bygget 15. august, bid 4
+
+**ÉN afspiller.** Den gamle app har fire næsten ens på cirka 1.400 linjer
+hver, én for abo, én for forløb, én for master og én for byg-eget. Her er der
+ét program og én afspiller.
+
+**Tilstands-maskinen ligger i `content/afspiller3.ts` som ren logik**, uden
+timere, uden lyd og uden video, med 38 tests. Siden tæller kun ned og tegner.
+Faserne følger den gamle afspiller nøjagtigt, så træningen føles ens for de
+kunder der flyttes over:
+
+```
+klar   →  arbejd
+arbejd →  hvil      når der er flere sæt tilbage
+       →  skift     når sættene er brugt og der er en øvelse mere
+       →  færdig    når det var sidste sæt på sidste øvelse
+hvil   →  arbejd    med ét sæt mere
+skift  →  arbejd    på næste øvelse, første sæt
+```
+
+**Når hun går væk, spørges der altid.** Linns krav, og "spørg altid" var også
+hendes svar på om vi skulle lade være efter ti sekunder.
+
+| Svar | Hvad der sker |
 |---|---|
-| Ja | Dagen er gennemført, den ryger i historikken, den gemte plads slettes |
-| Nej | Intet gemmes. Den samme dag ligger der i morgen |
-| Gem hvor jeg er | Pladsen gemmes. Dagen tæller ikke |
+| Ja | Træningen tæller som gennemført, ryger i historikken, pladsen slettes |
+| Nej | Intet gemmes. Den samme træning ligger der igen |
+| Gem hvor jeg er | Pladsen gemmes. Træningen tæller ikke |
 
-Kører hun hele træningen færdig i appen, spørger vi ikke. Så er den gennemført.
+Gem-knappen vises kun når der faktisk er noget at gemme. Er hun kun nået til
+"gør dig klar", er der ingenting at vende tilbage til.
 
-**Et program kan sættes til at starte forfra**, som et flueben. Standarden er
-at det gør, fordi mikrotræningens 21 dage looper i dag, og ellers ville de
-kunder stå med ingenting på dag 22.
+**Kører hun træningen helt færdig, spørges der ikke.** Så er den gennemført,
+og hun kommer tilbage til Mikrotræning. Ingen næste træning-knap, Linns valg.
 
-**Historikken skrives i den samme samling som i dag**, `traeningHistorik`, med
-en ny kilde-værdi. Så passer hendes flueben uanset hvilken app hun har trænet
-i. Den gamle app kender ikke de nye programmer og linker den dag til
-mikrotræningen. Det er den eneste følge, og den er harmløs.
+**Hun må tage en træning om, men ikke springe frem.** Linns valg: ellers
+betyder "hvor langt er jeg" ingenting. Det tjekkes både i listen og i
+afspilleren, så en adresse skrevet i hånden heller ikke kan springe over.
+
+**Den gemte plads er en tilgift.** Kan den ikke hentes, startes træningen
+forfra i stedet for at gå i stå. En træning der ikke kan startes er meget
+værre end en glemt plads. En plads fra en anden træning genoptages aldrig, så
+hun kan ikke blive markeret færdig med noget hun ikke har lavet.
+
+**Historikken skrives i den delte `traeningHistorik`**, så fluebenet passer
+uanset hvilken app hun har trænet i. Kilden sættes til `mikrotraening`, fordi
+den gamle app kun kender sine egne programtyper og ellers ville bygge et link
+til ingenting. Programnavnet gemmes med, så den gamle app viser det rigtige
+navn på en historisk dato.
+
+**Skærmen holdes vågen** mens hun træner, og der er baggrundsmusik plus en
+lyd tre sekunder før hvert skift. Lyden kan slås fra.
 
 ### 29.7 Bid 1. LÅST og bygget 15. august
 
@@ -2894,8 +3001,8 @@ bagefter. 67 blokke begge steder, og de er ens.
 |---|---|---|
 | 1 | Datamodel, kategorier, admin så programmer kan bygges | **Færdig 15. august** |
 | 2 | Tildeling, dækning pr hold, kunde-opslag, byg-eget-adgang | **Færdig 15. august** |
-| 3 | Kundens udstyrsvalg og hendes programliste | Ikke bygget |
-| 4 | Afspilleren med Ja, Nej og Gem | Ikke bygget |
+| 3 | Kundens udstyrsvalg og hendes programliste | **Færdig 15. august** |
+| 4 | Afspilleren med Ja, Nej og Gem | **Færdig 15. august** |
 | 5 | Forsidens flise kobles på | Ikke bygget |
 | 6 | Byg eget program | Ikke bygget |
 | 7 | De seks programmer kopieres over | Kører når første hold flyttes |
