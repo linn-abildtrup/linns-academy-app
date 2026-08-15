@@ -25,6 +25,7 @@ import {
 	type ForlobKilde,
 	type KundeFelter
 } from '$lib/content/adgang3';
+import { udstyrFra } from '$lib/content/traeningKategori3';
 import type { KundeKontekst3 } from '$lib/content/traeningTildeling3';
 
 export interface Klient3 {
@@ -33,7 +34,41 @@ export interface Klient3 {
 	email: string;
 	/** Alt hvad der skal kunne soeges i, samlet i én streng. */
 	soegetekst: string;
+	/** Hendes eget udstyrsvalg. Tom liste = hun har ikke valgt endnu. */
+	udstyr: string[];
 	felter: KundeFelter;
+}
+
+/**
+ * De felter adgangs-udledningen laeser, plukket ud af bruger-dokumentet.
+ *
+ * Ét sted, saa admin-opslaget og kundens egen side spoerger om
+ * NOEJAGTIG det samme. Glemmer man ét felt det ene sted, viser de to
+ * skaerme forskellig adgang, og det er umuligt at fejlsoege bagefter.
+ */
+export function kundeFelterFra(doc: Partial<UserDoc> | null | undefined): KundeFelter {
+	return {
+		forlobIds: doc?.forlobIds ?? [],
+		aboKoebtAt: doc?.aboKoebtAt,
+		aboSlutterAt: doc?.aboSlutterAt,
+		aboProdukt: doc?.aboProdukt,
+		activeProduct: doc?.activeProduct,
+		activeSubscription: doc?.activeSubscription,
+		accessSource: doc?.accessSource,
+		bonusPeriodEndsAt: doc?.bonusPeriodEndsAt,
+		createdAt: doc?.createdAt
+	};
+}
+
+/** Har hun et aktivt app-abonnement lige nu. Linns definition af medlem. */
+export function harAbonnement3(
+	doc: Partial<UserDoc> | null | undefined,
+	forlob: ForlobKilde[],
+	nu: number
+): boolean {
+	return udledAdgange(kundeFelterFra(doc), forlob).some(
+		(a) => a.art === 'abo' && erAktiv(a, nu)
+	);
 }
 
 function navnFor(doc: Partial<UserDoc>): string {
@@ -55,17 +90,8 @@ export async function hentKlienter3(): Promise<Klient3[]> {
 			navn,
 			email,
 			soegetekst: `${navn} ${email}`,
-			felter: {
-				forlobIds: data.forlobIds ?? [],
-				aboKoebtAt: data.aboKoebtAt,
-				aboSlutterAt: data.aboSlutterAt,
-				aboProdukt: data.aboProdukt,
-				activeProduct: data.activeProduct,
-				activeSubscription: data.activeSubscription,
-				accessSource: data.accessSource,
-				bonusPeriodEndsAt: data.bonusPeriodEndsAt,
-				createdAt: data.createdAt
-			}
+			udstyr: udstyrFra(data),
+			felter: kundeFelterFra(data)
 		};
 	});
 }
@@ -94,10 +120,9 @@ export function isoDato3(nu: number): string {
 /**
  * Hele billedet for én kunde, i den form tildelings-reglerne vil have det.
  *
- * Udstyret staar tomt indtil kunden kan vaelge det i bid 3. En tom liste
- * betyder "hun har ikke valgt endnu", og reglen siger at hun saa ser alt.
- * Det er med vilje: ellers ville opslaget paastaa at ingen kunde har
- * nogen traening.
+ * En tom udstyrsliste betyder "hun har ikke valgt endnu", og reglen siger
+ * at hun saa ser alt. Spoergsmaalet stilles i onboarding, som ikke findes
+ * endnu, saa lige nu staar den tom for stort set alle.
  */
 export function kundeKontekst3(
 	klient: Klient3,
@@ -112,7 +137,7 @@ export function kundeKontekst3(
 		uid: klient.uid,
 		forlob: billede.aktiveForlob.map((f) => ({ id: f.forlobId, dag: f.dagNummer })),
 		harAbonnement,
-		udstyr: [],
+		udstyr: klient.udstyr,
 		idag: isoDato3(nu)
 	};
 }

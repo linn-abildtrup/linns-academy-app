@@ -162,7 +162,8 @@
 					</div>
 					{#if kontekst.udstyr.length === 0}
 						<p class="adm-hjaelp">
-							Valget kommer i bid 3. Indtil da ville hun se alle de programmer hun har fået.
+							Spørgsmålet stilles i onboarding, som ikke er bygget endnu. Indtil hun vælger, ser
+							hun alle de programmer hun har fået.
 						</p>
 					{/if}
 				</div>

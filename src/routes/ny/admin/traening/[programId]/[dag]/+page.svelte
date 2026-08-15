@@ -6,7 +6,7 @@
 	// laenge og hvor lang pause.
 	//
 	// TO TING DER SPARER TID PAA ET 84-DAGES PROGRAM
-	// "Kopiér fra en anden dag" henter en dag hun allerede har lavet.
+	// "Kopiér fra en anden traening" henter en hun allerede har lavet.
 	// Oevelses-listen staar som standard paa dem der passer til
 	// kategorien, men filteret spaerrer aldrig: hun kan altid skifte til
 	// hele banken, for et nyt redskab som sjippetov har ingen maerkater.
@@ -109,7 +109,7 @@
 			kategori = kategorier.find((k) => k.id === data.program.kategoriId) ?? null;
 			const dag = data.dage.find((d) => d.dagNummer === dagNummer);
 			if (!dag) {
-				fejl = 'Dagen findes ikke i programmet.';
+				fejl = 'Træningen findes ikke i programmet.';
 				return;
 			}
 			titel = dag.titel;
@@ -117,7 +117,7 @@
 			oevelser = dag.exercises;
 		} catch (e) {
 			console.error('[admin] kunne ikke hente dagen', e);
-			fejl = 'Kunne ikke hente dagen.';
+			fejl = 'Kunne ikke hente træningen.';
 		} finally {
 			henter = false;
 		}
@@ -177,7 +177,7 @@
 			await gemDag3(programId, dagNu, alleDage);
 			alleDage = alleDage.map((d) => (d.dagNummer === dagNummer ? dagNu : d));
 			urort = true;
-			besked = 'Dagen er gemt.';
+			besked = 'Træningen er gemt.';
 		} catch (e) {
 			console.error('[admin] kunne ikke gemme dagen', e);
 			fejl = 'Kunne ikke gemme.';
@@ -187,19 +187,19 @@
 	}
 </script>
 
-<svelte:head><title>Dag {dagNummer} · admin</title></svelte:head>
+<svelte:head><title>Træning {dagNummer} · admin</title></svelte:head>
 
 <div class="ny-pad adm">
 	{#if !maaVaereHer}
 		<div class="adm-kort">Siden er kun for admin.</div>
 	{:else if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
-	{:else if !program || fejl === 'Dagen findes ikke i programmet.'}
-		<p class="adm-fejl">{fejl || 'Dagen findes ikke.'}</p>
+	{:else if !program || fejl === 'Træningen findes ikke i programmet.'}
+		<p class="adm-fejl">{fejl || 'Træningen findes ikke.'}</p>
 	{:else}
 		<header class="adm-top">
 			<a class="tr-tilbage" href={`/ny/admin/traening/${programId}`}>‹ {program.navn}</a>
-			<h1>Dag {dagNummer}</h1>
+			<h1>Træning {dagNummer}</h1>
 			<p>
 				{#if oevelser.length === 0}
 					Ingen øvelser endnu
@@ -355,15 +355,15 @@
 
 		{#if kopiKandidater.length > 0}
 			<section class="adm-kort">
-				<h2>Kopiér fra en anden dag</h2>
-				<p class="adm-hjaelp">Erstatter øvelserne på dag {dagNummer} med dem fra den dag du vælger.</p>
+				<h2>Kopiér fra en anden træning</h2>
+				<p class="adm-hjaelp">Erstatter øvelserne på træning {dagNummer} med dem fra den du vælger.</p>
 				<label class="adm-felt">
-					<span>Dag</span>
+					<span>Træning</span>
 					<select bind:value={kopierFra}>
-						<option value={null}>Vælg en dag</option>
+						<option value={null}>Vælg en træning</option>
 						{#each kopiKandidater as d (d.dagNummer)}
 							<option value={d.dagNummer}>
-								Dag {d.dagNummer} · {d.exercises.length === 1
+								Træning {d.dagNummer} · {d.exercises.length === 1
 									? '1 øvelse'
 									: `${d.exercises.length} øvelser`}
 							</option>
@@ -383,7 +383,7 @@
 
 		<div class="tr-gem">
 			<button type="button" class="ch-knap primaer" onclick={gem} disabled={gemmer || urort}>
-				{gemmer ? 'Gemmer' : 'Gem dagen'}
+				{gemmer ? 'Gemmer' : 'Gem træningen'}
 			</button>
 			{#if !urort}
 				<p class="adm-hjaelp">Der er ændringer der ikke er gemt endnu.</p>

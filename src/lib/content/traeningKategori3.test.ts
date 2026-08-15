@@ -7,8 +7,13 @@ import {
 	kategoriKanSlettes3,
 	kategoriNavn3,
 	kraeverIntetUdstyr,
+	laasteKategorier3,
 	naesteRaekkefolge3,
+	rensUdstyr3,
 	sorterKategorier3,
+	udstyrFra,
+	udstyrTekst3,
+	valgbareKategorier3,
 	validerKategori3,
 	type TraeningKategori3
 } from './traeningKategori3';
@@ -170,5 +175,60 @@ describe('filtrerOevelserTilKategori', () => {
 
 	it('giver kun kropsvaegt naar kategorien er uden redskaber', () => {
 		expect(filtrerOevelserTilKategori(bank, 'ingen').map((e) => e.id)).toEqual(['krop']);
+	});
+});
+
+describe('udstyrFra', () => {
+	it('laeser feltet fra bruger-dokumentet', () => {
+		expect(udstyrFra({ traeningsudstyr3: ['kb', 'haand'] })).toEqual(['kb', 'haand']);
+	});
+
+	it('giver en tom liste naar hun ikke har valgt', () => {
+		// Tom betyder "ikke valgt endnu", og saa ser hun alt.
+		expect(udstyrFra({})).toEqual([]);
+		expect(udstyrFra(null)).toEqual([]);
+		expect(udstyrFra(undefined)).toEqual([]);
+	});
+
+	it('taaler at feltet indeholder skrald', () => {
+		expect(udstyrFra({ traeningsudstyr3: 'kb' })).toEqual([]);
+		expect(udstyrFra({ traeningsudstyr3: ['kb', 3, null, ''] })).toEqual(['kb']);
+	});
+});
+
+describe('valgbare og laaste kategorier', () => {
+	const alle = [kat('krop', 'Uden redskaber', 0), kat('kb', 'Med kettlebell', 1)];
+	alle[0].visesAltid = true;
+
+	it('holder dem der vises altid ude af valget', () => {
+		expect(valgbareKategorier3(alle).map((k) => k.id)).toEqual(['kb']);
+	});
+
+	it('samler dem der altid er med', () => {
+		expect(laasteKategorier3(alle).map((k) => k.id)).toEqual(['krop']);
+	});
+});
+
+describe('rensUdstyr3', () => {
+	it('fjerner kategorier der er slettet siden hun valgte', () => {
+		const alle = [kat('kb', 'Med kettlebell', 0)];
+		expect(rensUdstyr3(['kb', 'findes-ikke'], alle)).toEqual(['kb']);
+	});
+});
+
+describe('udstyrTekst3', () => {
+	const alle = [kat('krop', 'Uden redskaber', 0), kat('kb', 'Med kettlebell', 1)];
+	alle[0].visesAltid = true;
+
+	it('taeller dem der altid er med', () => {
+		expect(udstyrTekst3([], alle)).toBe('Uden redskaber');
+	});
+
+	it('laegger hendes eget valg til', () => {
+		expect(udstyrTekst3(['kb'], alle)).toBe('Uden redskaber, Med kettlebell');
+	});
+
+	it('siger til naar der slet ikke er noget', () => {
+		expect(udstyrTekst3([], [])).toBe('Ikke valgt endnu');
 	});
 });

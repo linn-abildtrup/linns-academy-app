@@ -136,9 +136,11 @@ export function dagensMinutter(dag: TrainingDay): number {
 export function manglerTekstFor(tomme: number, antalDage: number): string | null {
 	if (tomme <= 0) return null;
 	if (tomme >= antalDage) {
-		return antalDage === 1 ? 'Dagen mangler øvelser' : `Alle ${antalDage} dage mangler øvelser`;
+		return antalDage === 1
+			? 'Træningen mangler øvelser'
+			: `Alle ${antalDage} træninger mangler øvelser`;
 	}
-	return tomme === 1 ? '1 dag mangler øvelser' : `${tomme} dage mangler øvelser`;
+	return tomme === 1 ? '1 træning mangler øvelser' : `${tomme} træninger mangler øvelser`;
 }
 
 export function manglerTekst(dage: TrainingDay[]): string | null {

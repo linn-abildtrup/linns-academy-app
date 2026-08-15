@@ -118,6 +118,57 @@ export function kategoriNavn3(id: string, kategorier: TraeningKategori3[]): stri
 	return kategorier.find((k) => k.id === id)?.navn ?? '';
 }
 
+/**
+ * Kundens eget udstyrsvalg, laest fra bruger-dokumentet.
+ *
+ * Feltet er nyt og staar ikke i UserDoc-typen, for `lib/types.ts` hoerer
+ * til den gamle app og maa ikke roeres. Castet ligger derfor her, ét sted,
+ * og er testet. Samme moenster som favoritOpskrifter.
+ *
+ * TOM LISTE BETYDER "hun har ikke valgt endnu", og reglen er saa at hun
+ * ser alt. Spoergsmaalet stilles i onboarding, som ikke findes endnu, saa
+ * lige nu har ingen kunde valgt noget.
+ */
+export function udstyrFra(userDoc: unknown): string[] {
+	const felt = (userDoc as { traeningsudstyr3?: unknown } | null | undefined)?.traeningsudstyr3;
+	if (!Array.isArray(felt)) return [];
+	return felt.filter((x): x is string => typeof x === 'string' && x.length > 0);
+}
+
+/**
+ * Kategorierne hun faktisk kan slaa til og fra. Dem der vises altid er
+ * ikke et valg, de er der uanset hvad, saa de staar laast paa skaermen.
+ */
+export function valgbareKategorier3(kategorier: TraeningKategori3[]): TraeningKategori3[] {
+	return sorterKategorier3(kategorier).filter((k) => !k.visesAltid);
+}
+
+/** Dem der altid er med. Vises laast oeverst, saa hun kan se at de taeller. */
+export function laasteKategorier3(kategorier: TraeningKategori3[]): TraeningKategori3[] {
+	return sorterKategorier3(kategorier).filter((k) => k.visesAltid);
+}
+
+/**
+ * Renser valget for kategorier der er slettet siden hun valgte.
+ * Uden det kunne et gammelt id blive staaende og filtrere paa noget der
+ * ikke findes.
+ */
+export function rensUdstyr3(valgte: string[], kategorier: TraeningKategori3[]): string[] {
+	const findes = new Set(kategorier.map((k) => k.id));
+	return valgte.filter((id) => findes.has(id));
+}
+
+/** Navnene paa det hun har valgt, til linjen i Profil. */
+export function udstyrTekst3(valgte: string[], kategorier: TraeningKategori3[]): string {
+	const laaste = laasteKategorier3(kategorier).map((k) => k.navn);
+	const valgtNavne = sorterKategorier3(kategorier)
+		.filter((k) => !k.visesAltid && valgte.includes(k.id))
+		.map((k) => k.navn);
+	const alle = [...laaste, ...valgtNavne];
+	if (alle.length === 0) return 'Ikke valgt endnu';
+	return alle.join(', ');
+}
+
 /** Oevelser der ikke kraever noget som helst. Tomt udstyr taeller ogsaa. */
 export function kraeverIntetUdstyr(oevelse: Exercise): boolean {
 	const u = oevelse.udstyr ?? [];

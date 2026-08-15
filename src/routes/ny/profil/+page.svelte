@@ -7,11 +7,18 @@
 	// Resten af siden bygges i etape 5, se SPEC-3.0.md afsnit 7.
 	// ============================================================
 
-	import { getContext } from 'svelte';
+	import { getContext, onMount } from 'svelte';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import { isAdmin } from '$lib/admin';
 	import { formatMedlemstid, type Adgangsbillede } from '$lib/content/adgang3';
+	import {
+		rensUdstyr3,
+		udstyrFra,
+		udstyrTekst3,
+		type TraeningKategori3
+	} from '$lib/content/traeningKategori3';
+	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
@@ -21,6 +28,24 @@
 	const adgang = $derived(hentAdgang());
 	// Vejen ind i 3.0's admin. Kun for admin, saa ingen kunde ser den.
 	const visAdmin = $derived(isAdmin(hentUser()));
+
+	// Kategorierne hentes for at kunne skrive hendes valg med ord. Fejler
+	// det, staar der bare ingenting paa linjen. Profilen skal ikke gaa i
+	// staa fordi en undertekst ikke kunne hentes.
+	let kategorier = $state<TraeningKategori3[]>([]);
+	const udstyrTekst = $derived(
+		kategorier.length === 0
+			? 'Vælg det udstyr du har'
+			: udstyrTekst3(rensUdstyr3(udstyrFra(userDoc), kategorier), kategorier)
+	);
+
+	onMount(async () => {
+		try {
+			kategorier = await hentKategorier3();
+		} catch (e) {
+			console.warn('[ny] kunne ikke hente traeningskategorier', e);
+		}
+	});
 
 	const navn = $derived(
 		[userDoc?.firstName, userDoc?.lastName].filter(Boolean).join(' ') || 'Din konto'
@@ -84,6 +109,14 @@
 			</div>
 		</section>
 	{/if}
+
+	<section>
+		<div class="lab"><h2>Træning</h2></div>
+		<a class="adm-raekke tr-raekke" href="/ny/profil/traening">
+			<div class="adm-raekke-t"><span>Sådan træner jeg</span></div>
+			<div class="adm-raekke-s">{udstyrTekst}</div>
+		</a>
+	</section>
 
 	{#if visAdmin}
 		<section>

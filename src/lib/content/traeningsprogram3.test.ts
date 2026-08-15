@@ -147,23 +147,23 @@ describe('manglerTekst', () => {
 	});
 
 	it('taeller hullerne', () => {
-		expect(manglerTekst([dag(1, 3), tomDag3(2), tomDag3(3)])).toBe('2 dage mangler øvelser');
+		expect(manglerTekst([dag(1, 3), tomDag3(2), tomDag3(3)])).toBe('2 træninger mangler øvelser');
 	});
 
 	it('boejer ental rigtigt', () => {
-		expect(manglerTekst([dag(1, 3), tomDag3(2)])).toBe('1 dag mangler øvelser');
+		expect(manglerTekst([dag(1, 3), tomDag3(2)])).toBe('1 træning mangler øvelser');
 	});
 
 	it('siger det tydeligt naar hele programmet er tomt', () => {
 		expect(manglerTekst([tomDag3(1), tomDag3(2), tomDag3(3)])).toBe(
-			'Alle 3 dage mangler øvelser'
+			'Alle 3 træninger mangler øvelser'
 		);
 	});
 
 	it('kan regne paa tal alene, saa listen slipper for at hente 84 dage', () => {
 		expect(manglerTekstFor(0, 84)).toBeNull();
-		expect(manglerTekstFor(32, 84)).toBe('32 dage mangler øvelser');
-		expect(manglerTekstFor(84, 84)).toBe('Alle 84 dage mangler øvelser');
+		expect(manglerTekstFor(32, 84)).toBe('32 træninger mangler øvelser');
+		expect(manglerTekstFor(84, 84)).toBe('Alle 84 træninger mangler øvelser');
 	});
 });
 

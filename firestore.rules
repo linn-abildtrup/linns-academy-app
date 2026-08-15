@@ -141,6 +141,19 @@ service cloud.firestore {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
 			}
 
+			// Fremgang i 3.0's træningsprogrammer — ét dokument pr program.
+			// Kun kunden selv. Admin læser den ikke: admin-opslaget svarer på
+			// hvad hun MÅ se, ikke hvor langt hun er nået.
+			match /traeningFremgang3/{programId} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
+
+			// Gemt plads midt i en træning, så hun kan fortsætte hvor hun
+			// slap. Ét dokument pr program. Kun kunden selv.
+			match /traeningPlads3/{programId} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
+
 			// Klaret i den nye app (3.0) — hvilke lektioner kunden har
 			// markeret som taget. Ét dokument pr lektion, doc-id er
 			// lektionens id. Kun egen bruger, samme regel som alt andet
@@ -202,16 +215,27 @@ service cloud.firestore {
 			}
 		}
 
-		// Tildelinger af træning (3.0, bid 2). Hvem har fået hvilket program,
-		// og hvornår det gælder.
+		// Tildelinger af træning (3.0). Hvem har fået hvilket program, og
+		// hvornår det gælder. Kun admin må skrive.
 		//
-		// KUN ADMIN, både læsning og skrivning. Rækkerne indeholder navnet på
-		// den kunde der har fået noget, og det skal andre kunder ikke kunne
-		// læse. Når kunden selv skal se sine programmer i bid 3, åbnes
-		// læsningen på en måde hvor hun kun kan hente de rækker der handler
-		// om hende. Det er bevidst udskudt til den skærm findes.
+		// LÆSNINGEN ER DELT I TO, og det er med vilje (bid 3, 15. august):
+		//
+		//   - Rækker til et hold, til medlemmer og til alle indeholder ingen
+		//     personoplysninger. Dem må enhver indlogget kunde læse, for hun
+		//     skal kunne se hvilke programmer hun har fået gennem sit hold.
+		//   - En række til ÉN person indeholder hendes navn. Den må kun hun
+		//     selv læse, og reglen kræver at forespørgslen er snævret ind til
+		//     hendes eget uid.
+		//
+		// Et enkelt kald efter hele samlingen bliver derfor afvist for alle
+		// andre end admin, og det er meningen: kunder skal ikke kunne læse
+		// hinandens navne. Se hentMineTildelinger3 for de to forespørgsler.
 		match /traeningTildelinger3/{tildelingId} {
-			allow read, write: if isAdmin();
+			allow read: if isAdmin()
+				|| (request.auth != null
+					&& resource.data.modtagerType in ['hold', 'medlemmer', 'alle'])
+				|| (request.auth != null && resource.data.modtagerId == request.auth.uid);
+			allow write: if isAdmin();
 		}
 
 		// Challenges der ligger for sig selv og bliver tildelt (3.0).

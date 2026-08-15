@@ -197,7 +197,7 @@
 			await gemDage3(programId, flettet);
 			await hentAlt();
 			viserUdkast = false;
-			besked = uKunTomme ? 'De tomme dage er fyldt ud.' : 'Alle dage er fyldt ud.';
+			besked = uKunTomme ? 'De tomme træninger er fyldt ud.' : 'Alle træninger er fyldt ud.';
 		} catch (e) {
 			console.error('[admin] kunne ikke lave udkast', e);
 			// Generatoren kaster hvis en af de tre oevelses-grupper er tom.
@@ -243,7 +243,7 @@
 			<a class="tr-tilbage" href="/ny/admin/traening">‹ Træning</a>
 			<h1>{program.navn}</h1>
 			<p>
-				{kategoriNavn3(program.kategoriId, kategorier) || 'Uden kategori'} · {program.antalDage} dage
+				{kategoriNavn3(program.kategoriId, kategorier) || 'Uden kategori'} · {program.antalDage} træninger
 				· {program.klar ? 'Klar' : 'Kladde'}
 			</p>
 		</header>
@@ -261,7 +261,7 @@
 				Rediger
 			</button>
 			<button type="button" class="ch-knap primaer" onclick={aabnUdkast} disabled={gemmer}>
-				Fyld dage ud
+				Fyld træninger ud
 			</button>
 		</div>
 
@@ -293,12 +293,12 @@
 				</label>
 
 				<label class="adm-felt">
-					<span>Antal dage</span>
+					<span>Antal træninger</span>
 					<input type="number" bind:value={antalDage} min="1" max="365" />
 				</label>
 				<p class="adm-hjaelp">
-					Sætter du tallet op, kommer de nye dage tomme. Sætter du det ned, forsvinder de sidste
-					dage og deres øvelser.
+					Sætter du tallet op, kommer de nye træninger tomme. Sætter du det ned, forsvinder de
+					sidste træninger og deres øvelser.
 				</p>
 
 				<label class="adm-tjek">
@@ -326,7 +326,7 @@
 
 		{#if viserUdkast}
 			<section class="adm-kort">
-				<h2>Fyld dage ud</h2>
+				<h2>Fyld træninger ud</h2>
 				<p class="adm-hjaelp">
 					Laver et udkast til hele programmet. Øvelserne fordeles jævnt på ben, overkrop og core,
 					og der bruges kun øvelser der passer til kategorien. Du retter bagefter i de dage du vil
@@ -338,7 +338,7 @@
 				{:else}
 					<div class="adm-to">
 						<label class="adm-felt">
-							<span>Øvelser pr dag</span>
+							<span>Øvelser pr træning</span>
 							<input type="number" bind:value={uAntal} min="1" max="10" />
 						</label>
 						<label class="adm-felt">
@@ -359,10 +359,10 @@
 
 					<label class="adm-tjek">
 						<input type="checkbox" bind:checked={uKunTomme} />
-						<span>Rør kun de tomme dage</span>
+						<span>Rør kun de tomme træninger</span>
 					</label>
 					<p class="adm-hjaelp">
-						Med flueben bliver de dage du selv har fyldt ud stående. Uden bliver alle dage
+						Med flueben bliver de træninger du selv har fyldt ud stående. Uden bliver alle
 						erstattet, og dine egne øvelser forsvinder.
 					</p>
 
@@ -388,7 +388,7 @@
 			</section>
 		{/if}
 
-		<h2 class="tr-overskrift">Dagene</h2>
+		<h2 class="tr-overskrift">Træningerne</h2>
 		<div class="adm-liste tr-dage">
 			{#each dage as d (d.dagNummer)}
 				<a
@@ -397,7 +397,7 @@
 					href={`/ny/admin/traening/${programId}/${d.dagNummer}`}
 				>
 					<div class="adm-raekke-t">
-						<span>Dag {d.dagNummer}</span>
+						<span>Træning {d.dagNummer}</span>
 						{#if d.titel}<span class="tr-dag-titel">{d.titel}</span>{/if}
 					</div>
 					<div class="adm-raekke-s">
@@ -418,7 +418,7 @@
 		</button>
 		{#if mangler && !program.klar}
 			<p class="adm-hjaelp">
-				{mangler}. Du kan godt sætte den til klar alligevel, men så får kunden en tom dag.
+				{mangler}. Du kan godt sætte den til klar alligevel, men så får kunden en tom træning.
 			</p>
 		{/if}
 	{/if}

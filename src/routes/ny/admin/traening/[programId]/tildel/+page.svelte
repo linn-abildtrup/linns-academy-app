@@ -156,7 +156,7 @@
 			<h1>Tildel</h1>
 			<p>
 				{program.navn} · {kategoriNavn3(program.kategoriId, kategorier) || 'uden kategori'} · {program.antalDage}
-				dage
+				træninger
 			</p>
 		</header>
 

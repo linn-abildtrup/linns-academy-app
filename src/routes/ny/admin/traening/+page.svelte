@@ -211,7 +211,7 @@
 				</label>
 
 				<label class="adm-felt">
-					<span>Antal dage</span>
+					<span>Antal træninger</span>
 					<input type="number" bind:value={antalDage} min="1" max="365" />
 				</label>
 
@@ -220,8 +220,8 @@
 					<span>Starter forfra når den er slut</span>
 				</label>
 				<p class="adm-hjaelp">
-					Med flueben kører hun dag 1 igen efter sidste dag. Uden får hun besked om at programmet
-					er færdigt.
+					Med flueben kører hun træning 1 igen efter den sidste. Uden får hun besked om at
+					programmet er færdigt.
 				</p>
 
 				<div class="adm-knapper">
@@ -279,7 +279,7 @@
 							<span class="adm-mrk" class:klar={p.klar}>{p.klar ? 'Klar' : 'Kladde'}</span>
 						</div>
 						<div class="adm-raekke-s">
-							{kategoriNavn3(p.kategoriId, kategorier) || 'Uden kategori'} · {p.antalDage} dage
+							{kategoriNavn3(p.kategoriId, kategorier) || 'Uden kategori'} · {p.antalDage} træninger
 						</div>
 						{#if mangler}
 							<div class="tr-adv">{mangler}</div>
