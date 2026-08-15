@@ -179,6 +179,29 @@ service cloud.firestore {
 			}
 		}
 
+		// Træning i 3.0 (bid 1, 15. august 2026). Programmerne ligger for sig
+		// selv og er uafhængige af forløb og abonnement. Kun 3.0 læser her,
+		// den gamle app kender dem ikke.
+		//
+		// Samme adgang som de gamle trainingPrograms ovenfor: alle der er
+		// logget ind må læse, kun admin må skrive. Kunden skal kunne læse sit
+		// eget program, og hvem der har adgang til hvad afgøres af
+		// tildelingerne, som kommer i næste bid.
+		match /traeningKategorier3/{kategoriId} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
+		match /traeningsprogrammer3/{programId} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+
+			match /dage/{dagId} {
+				allow read: if request.auth != null;
+				allow write: if isAdmin();
+			}
+		}
+
 		// Challenges der ligger for sig selv og bliver tildelt (3.0).
 		// De gamle, der hører til ét forløb, ligger fortsat under
 		// forlob/{id}/challenges og har deres egen regel længere nede.

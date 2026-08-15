@@ -7739,3 +7739,217 @@ button.tm-r-t:focus-visible {
 	color: var(--ink-2);
 	padding: 20px 0;
 }
+
+/* ── Admin: traening ───────────────────────────────────────── */
+/*
+   Bid 1 af traeningsmodulet, 15. august 2026. Bygger videre paa
+   .adm-klasserne ovenfor, saa de fire sider ligner de andre
+   admin-sider. Alt her er praefikset tr- for at undgaa en bred
+   regel der rammer en knap i naboen. Se faelden om .tm-traef.
+*/
+
+.adm-felt select {
+	font-family: var(--sans);
+	font-size: calc(15px * var(--fs-scale, 1));
+	color: var(--espresso);
+	background: var(--paper-2);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 11px 12px;
+	min-height: 46px;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.adm-felt select:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 1px;
+}
+
+/* Klar er groen, kladde er honning. Farven alene maa ikke baere
+   beskeden, saa der staar ogsaa ord paa maerkatet. */
+.adm-mrk.klar {
+	color: var(--sage-tekst);
+	background: var(--sage-tint);
+}
+
+.adm-mrk.altid {
+	color: var(--plum);
+	background: var(--plum-tint);
+}
+
+.tr-tilbage {
+	display: inline-block;
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	text-decoration: none;
+	margin-bottom: 8px;
+}
+
+.tr-overskrift {
+	font-family: var(--serif);
+	font-size: calc(18px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 4px 0 -6px;
+}
+
+/* Et link der skal se ud som en knap. ch-knap er lavet til <button>
+   og centrerer ikke teksten af sig selv i et <a>. */
+.tr-knap-link {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-decoration: none;
+	text-align: center;
+}
+
+.tr-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 7px;
+}
+
+.tr-chip {
+	font-family: var(--sans);
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	padding: 8px 13px;
+	min-height: 38px;
+	cursor: pointer;
+}
+
+.tr-chip.valgt {
+	background: var(--plum);
+	border-color: var(--plum);
+	color: #fff;
+	font-weight: 600;
+}
+
+.tr-chip:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+/* Hele raekken er et link. Farven arves, saa den ikke bliver blaa. */
+.tr-raekke {
+	text-decoration: none;
+	color: inherit;
+	gap: 4px;
+}
+
+.tr-raekke:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.tr-adv {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--honey-deep);
+	background: var(--honey-tint);
+	border-radius: 10px;
+	padding: 6px 10px;
+	margin-top: 3px;
+}
+
+.tr-dag.tom .adm-raekke-t,
+.tr-dag.tom .adm-raekke-s {
+	color: var(--ink-3);
+}
+
+.tr-dag-titel {
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+}
+
+.tr-mini-raekke {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 7px;
+	margin-top: 2px;
+}
+
+.tr-mini {
+	font-family: var(--sans);
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--espresso);
+	background: var(--paper-2);
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	/* Maalgruppen skal kunne ramme knappen med en finger. */
+	min-height: 40px;
+	min-width: 44px;
+	padding: 8px 12px;
+	cursor: pointer;
+}
+
+.tr-mini:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.tr-mini:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.tr-tal {
+	display: flex;
+	gap: 9px;
+	margin-top: 4px;
+}
+
+.tr-tal .adm-felt {
+	flex: 1;
+	min-width: 0;
+}
+
+/* En hel raekke der kan trykkes paa, brugt naar en oevelse vaelges. */
+.tr-vaelg {
+	font-family: var(--sans);
+	text-align: left;
+	border: 0;
+	cursor: pointer;
+	gap: 3px;
+}
+
+.tr-vaelg:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.tr-slet {
+	font-family: var(--sans);
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	color: var(--plum-deep);
+	background: none;
+	border: 0;
+	padding: 8px 0 0;
+	min-height: 40px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.tr-gem {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding-bottom: 20px;
+}
+
+.tr-gem .ch-knap {
+	flex: none;
+}
+
+/* Paa en computer bygger Linn hurtigere naar hun kan se flere dage ad
+   gangen. Telefonen beholder den ene kolonne. */
+@media (min-width: 720px) {
+	.tr-dage {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 11px;
+	}
+}
