@@ -44,7 +44,6 @@
 		hentKlaret,
 		saetKlaret,
 		hentDagensTal,
-		hentDagensTraening,
 		hentNaesteHold,
 		dageSidenAktiv,
 		gemInspiratorAfvist,
@@ -52,7 +51,6 @@
 		datoNoegle,
 		type SmaaSkridtIDag,
 		type DagensTal,
-		type DagensTraening,
 		type NaesteHold as NaesteHoldType
 	} from '$lib/firestore/forside3';
 
@@ -60,6 +58,10 @@
 	import SmaaSkridt from '$lib/components/ny/SmaaSkridt.svelte';
 	import Lektioner from '$lib/components/ny/Lektioner.svelte';
 	import Traening from '$lib/components/ny/Traening.svelte';
+	import {
+		hentDagensTraening3,
+		type DagensTraening3
+	} from '$lib/firestore/traeningForside3';
 	import DagensTalKort from '$lib/components/ny/DagensTal.svelte';
 	import NaesteHoldKort from '$lib/components/ny/NaesteHold.svelte';
 	import Refleksion from '$lib/components/ny/Refleksion.svelte';
@@ -149,7 +151,7 @@
 	let challengeStilling = $state<StillingVisning | null>(null);
 	let henterStilling = $state(false);
 	let gemmerChallenge = $state(false);
-	let traening = $state<DagensTraening | null>(null);
+	let traening = $state<DagensTraening3 | null>(null);
 	let tal = $state<DagensTal | null>(null);
 	let naesteHold = $state<NaesteHoldType | null>(null);
 	let nyestSvar = $state<NyestSvar | null>(null);
@@ -217,7 +219,14 @@
 					datoNoegle(ugeStart)
 				).then((r) => (tael(), r)),
 				hentKlaret(uid).then((r) => (tael(), r)),
-				hentDagensTraening(uid, userDoc, nuMs, iDag).then((r) => (tael(), r)),
+				hentDagensTraening3(
+					uid,
+					userDoc,
+					forlobKilder(),
+					adgang.aktiveForlob,
+					nuMs,
+					iDag
+				).then((r) => (tael(), r)),
 				hentDagensTal(uid, iDag, userDoc).then((r) => (tael(), r))
 			]);
 			if (afbrudt) return;
@@ -710,7 +719,7 @@
 			{/if}
 		{/if}
 
-		{#if traening}
+		{#if traening && traening.tilstand !== 'ingen'}
 			{#if fold('traening', traening.klaretIDag)}
 				<FoldetRaekke
 					titel="Dagens træning"

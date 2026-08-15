@@ -393,7 +393,12 @@ function medFrist<T>(arbejde: Promise<T>, ms: number, opgiv: T): Promise<T> {
 /** Fire sekunder. Kommer videoen ikke inden, viser flisen bare farven. */
 const VIDEO_FRIST_MS = 4000;
 
-async function videoForDag(exerciseIds: string[]): Promise<string | null> {
+/**
+ * Eksporteret siden bid 5, saa den nye traenings-flise kan bruge noejagtig
+ * den samme video-hentning med den samme frist. To udgaver ville betyde at
+ * den ene kunne blokere forsiden mens den anden gav op.
+ */
+export async function videoForDag(exerciseIds: string[]): Promise<string | null> {
 	if (exerciseIds.length === 0) return null;
 	const exercises = await medFrist(hentExercises(exerciseIds), VIDEO_FRIST_MS, new Map());
 	const foerste = exercises.get(exerciseIds[0]);
@@ -415,11 +420,17 @@ async function videoForDag(exerciseIds: string[]): Promise<string | null> {
 }
 
 /**
- * Hvilket traeningsprogram hun er i gang med.
+ * ERSTATTET 15. august 2026 af hentDagensTraening3 i traeningForside3.ts.
+ * INGEN KALDER DEN LAENGERE.
  *
- * Kilden er det samme felt som den gamle app bruger, `aktivtTraeningsprogram`,
- * saa hun ser det samme program de to steder. Har hun ikke valgt noget,
- * er det mikrotraeningen.
+ * Den bliver staaende nogle dage som fortryd-mulighed: bid 5 aendrede hvad
+ * hver eneste bruger med ny-app-flaget ser paa forsiden, og skulle det vise
+ * sig forkert, er vejen tilbage ét linjeskift paa forsiden. Viser den nye
+ * flise sig at holde, skal alt herunder slettes sammen med DagensTraening,
+ * FULDT_PROGRAM og RESERVE_PROGRAM.
+ *
+ * Den gamle beskrivelse: hvilket traeningsprogram hun er i gang med, laest
+ * af det samme felt som den gamle app bruger, `aktivtTraeningsprogram`.
  */
 export async function hentDagensTraening(
 	uid: string,

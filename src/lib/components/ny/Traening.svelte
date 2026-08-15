@@ -1,19 +1,22 @@
 <script lang="ts">
 	// ============================================================
-	// Dagens traening. Samme raekke for begge kundetyper, saa en kvinde
-	// paa forloeb ogsaa har sin traening paa forsiden.
+	// Dagens traening paa forsiden. Bid 5, 15. august 2026.
+	//
+	// Flisen laeste hidtil den GAMLE apps programmer. Nu peger den paa
+	// den nye model, og den er blevet et link: et tryk foerer hende ind
+	// i programmet, hvor Start-knappen staar.
 	//
 	// Dagens foerste oevelse koerer lydloest i loop i et 16:9-felt paa
 	// 140 px, saa hele oevelsen er synlig uden at kortet fylder en
 	// tredjedel af skaermen. Er den klaret, bliver knappen til en chip
-	// med flueben, saa der ikke staar "Start" paa noget hun lige har gjort.
+	// med flueben, saa der ikke staar Start paa noget hun lige har gjort.
 	// ============================================================
 
-	import type { DagensTraening } from '$lib/firestore/forside3';
+	import type { DagensTraening3 } from '$lib/firestore/traeningForside3';
 	import Fluebe from './Fluebe.svelte';
 
 	interface Props {
-		traening: DagensTraening;
+		traening: DagensTraening3;
 	}
 
 	let { traening }: Props = $props();
@@ -24,10 +27,9 @@
 		<h2>Dagens træning</h2>
 	</div>
 
-	<article class="medie-raekke">
+	<a class="medie-raekke tr-flise" href={traening.href}>
 		<div class="medie-thumb traening">
 			{#if traening.videoUrl}
-				<!-- svelte-ignore a11y_media_has_caption -->
 				<video
 					class="medie-video"
 					src={traening.videoUrl}
@@ -53,5 +55,5 @@
 				</span>
 			{/if}
 		</div>
-	</article>
+	</a>
 </section>

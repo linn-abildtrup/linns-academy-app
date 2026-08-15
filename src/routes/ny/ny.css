@@ -8618,3 +8618,15 @@ a.mt-traening:focus-visible {
 	outline: 3px solid var(--plum);
 	outline-offset: 2px;
 }
+
+/* Traenings-flisen paa forsiden er et link siden bid 5. Farven arves,
+   saa den ikke bliver blaa, og hele raekken kan trykkes. */
+.medie-raekke.tr-flise {
+	text-decoration: none;
+	color: inherit;
+}
+
+.medie-raekke.tr-flise:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
