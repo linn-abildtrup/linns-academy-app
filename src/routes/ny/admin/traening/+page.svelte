@@ -31,6 +31,14 @@
 	} from '$lib/content/traeningsprogram3';
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 	import { hentProgrammer3, opretProgram3 } from '$lib/firestore/traeningsprogram3';
+	import { hentAlleForlob } from '$lib/firestore/forlob';
+	import { hentTildelinger3 } from '$lib/firestore/traeningTildeling3';
+	import {
+		daekning3,
+		huller3,
+		type ModtagerType3,
+		type Traeningstildeling3
+	} from '$lib/content/traeningTildeling3';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -56,6 +64,21 @@
 	const tal = $derived(antalPrKategori(programmer));
 	const viste = $derived(filtrerProgrammer3(programmer, valgtKategori));
 
+	// Modtagere der mangler et program i mindst én kategori. Tallet staar
+	// paa kortet, saa et nyt hold uden traening ikke kan naa at gaa i luften
+	// uden at nogen har set det.
+	let tildelinger = $state<Traeningstildeling3[]>([]);
+	let modtagere = $state<{ id: string; type: ModtagerType3 }[]>([]);
+
+	const medHul = $derived.by(() => {
+		if (kategorier.length === 0) return 0;
+		return modtagere.filter(
+			(m) => huller3(daekning3(programmer, tildelinger, kategorier, m)).length > 0
+		).length;
+	});
+
+	const antalBygEget = $derived(tildelinger.filter((t) => t.type === 'byg-eget').length);
+
 	onMount(async () => {
 		if (!isAdmin(user)) {
 			henter = false;
@@ -71,6 +94,21 @@
 			fejl = 'Kunne ikke hente. Tjek at reglerne i Firebase er lagt ind.';
 		} finally {
 			henter = false;
+		}
+		// Tallene paa de tre kort er en tilgift. Gaar de galt, skal
+		// program-listen stadig virke, saa de hentes for sig.
+		try {
+			const [forlob, t] = await Promise.all([hentAlleForlob(), hentTildelinger3()]);
+			tildelinger = t;
+			modtagere = [
+				...forlob
+					.filter((f) => f.aktiv !== false)
+					.map((f) => ({ id: f.id, type: 'hold' as ModtagerType3 })),
+				{ id: 'medlemmer', type: 'medlemmer' as ModtagerType3 },
+				{ id: 'alle', type: 'alle' as ModtagerType3 }
+			];
+		} catch (e) {
+			console.warn('[admin] kunne ikke hente daekningen til kortene', e);
 		}
 	});
 
@@ -249,5 +287,32 @@
 				{/each}
 			</div>
 		{/if}
+
+		<div class="adm-liste tr-kort-liste">
+			<a class="adm-raekke tr-raekke" href="/ny/admin/traening/hold">
+				<div class="adm-raekke-t"><span>Hold og dækning</span></div>
+				<div class="adm-raekke-s">
+					{#if medHul === 0}
+						Hvem har fået hvad, og mangler nogen noget
+					{:else}
+						{medHul === 1 ? '1 hold mangler noget' : `${medHul} hold mangler noget`}
+					{/if}
+				</div>
+			</a>
+			<a class="adm-raekke tr-raekke" href="/ny/admin/traening/kunde">
+				<div class="adm-raekke-t"><span>Slå en kunde op</span></div>
+				<div class="adm-raekke-s">Se hvad hun har, og hvorfor</div>
+			</a>
+			<a class="adm-raekke tr-raekke" href="/ny/admin/traening/byg-eget">
+				<div class="adm-raekke-t"><span>Byg eget program</span></div>
+				<div class="adm-raekke-s">
+					{antalBygEget === 0
+						? 'Ingen har adgang endnu'
+						: antalBygEget === 1
+							? 'Åbent for 1 modtager'
+							: `Åbent for ${antalBygEget} modtagere`}
+				</div>
+			</a>
+		</div>
 	{/if}
 </div>

@@ -45,6 +45,7 @@
 		sletDageOver3,
 		sletProgram3
 	} from '$lib/firestore/traeningsprogram3';
+	import { sletTildelingerForProgram3 } from '$lib/firestore/traeningTildeling3';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -215,6 +216,10 @@
 		if (!program) return;
 		if (!confirm(`Slet "${program.navn}" og alle dets dage?`)) return;
 		try {
+			// Tildelingerne skal med. Ellers bliver der liggende raekker der
+			// peger paa ingenting og taeller med i daekningen som om holdet
+			// havde et program.
+			await sletTildelingerForProgram3(programId);
 			await sletProgram3(programId);
 			await goto('/ny/admin/traening');
 		} catch (e) {
@@ -259,6 +264,10 @@
 				Fyld dage ud
 			</button>
 		</div>
+
+		<a class="ch-knap sekundaer tr-knap-link" href={`/ny/admin/traening/${programId}/tildel`}>
+			{program.klar ? 'Tildel' : 'Tildel, kræver at programmet er klar'}
+		</a>
 
 		{#if viserRet}
 			<section class="adm-kort">

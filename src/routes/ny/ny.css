@@ -7953,3 +7953,88 @@ button.tm-r-t:focus-visible {
 		gap: 11px;
 	}
 }
+
+/* ── Admin: tildeling (bid 2) ──────────────────────────────── */
+/*
+   15. august 2026. Bygger videre paa .adm- og .tr-klasserne ovenfor.
+*/
+
+.adm-mrk.slut {
+	color: var(--ink-3);
+	background: var(--paper-2);
+}
+
+/* Undertekst inde i et flueben, fx holdets dag og antal kunder. */
+.tr-tjek-sub {
+	display: block;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	line-height: 1.35;
+}
+
+/* Linjen der oversaetter et dag-tal til holdets virkelighed. */
+.tr-foelge {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--sage-tekst);
+	background: var(--sage-tint);
+	border-radius: 10px;
+	padding: 8px 11px;
+	margin: -6px 0 0;
+	line-height: 1.45;
+}
+
+/* Et hold uden et eneste program. Farven alene baerer ikke beskeden,
+   der staar ogsaa Tom paa maerkatet. */
+.tr-raekke.tom {
+	border: 1px solid var(--honey);
+	background: var(--honey-tint);
+}
+
+.tr-kort-liste {
+	margin-top: 4px;
+}
+
+/* Én kategori paa daeknings-siden. */
+.tr-daek {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	padding: 11px 13px;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	color: var(--espresso);
+}
+
+.tr-daek-ikon {
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	flex-shrink: 0;
+	font-size: calc(12px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: #fff;
+	background: var(--sage);
+}
+
+.tr-daek.mangler .tr-daek-ikon {
+	background: var(--honey);
+}
+
+.tr-daek-t {
+	flex: 1;
+	min-width: 0;
+	font-weight: 600;
+}
+
+.tr-daek-m {
+	display: block;
+	font-size: calc(12px * var(--fs-scale, 1));
+	font-weight: 400;
+	color: var(--ink-3);
+	line-height: 1.4;
+	margin-top: 2px;
+}
