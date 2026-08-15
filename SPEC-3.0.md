@@ -2597,11 +2597,17 @@ ned til hver kunde ved hver udrulning, så 808 KB stillads kostede alle.
 - **Firebase Auth selv er ikke undersøgt.** Hænger noget dér, altså før kæden
   overhovedet går i gang, er intet af det her dækket
 
-## 29. Træning. Modellen låst 15. august, bid 1 bygget samme dag
+## 29. Træning. Modellen låst 15. august, bid 1 og 2 bygget samme dag
 
 Hele modulet blev gennemgået 15. august, først som diagnose af den gamle app,
-så som mockups, og derefter blev bid 1 bygget. Afsnittet her er beslutningerne
-og hvorfor de er som de er.
+så som mockups, og derefter blev bid 1 og bid 2 bygget. Afsnittet her er
+beslutningerne og hvorfor de er som de er.
+
+**Arbejdsformen var mockups før kode, hver gang.** Hver bid blev tegnet i
+`v3 app/linns-academy-design/`, gennemgået med Linn, rettet efter hendes svar,
+og først derefter kodet. Det er ikke pynt: tildelingen blev tegnet om én gang
+undervejs, fordi hun ville have ét bestemt hold i stedet for forløbet
+generelt, og den ændring ville have været dyr at opdage i koden.
 
 ### 29.1 Hvad der er galt med træningen i dag
 
@@ -2655,9 +2661,11 @@ til én.
 11. **Fjernes et program, beholder hun sin historik**, og får hun det igen,
     starter hun hvor hun slap
 12. **Tildeling kan gælde fra og til.** Standarden er uden slutdato
-13. **Byg eget program styres af de samme tildelinger** som programmerne, altså
-    person, hold eller alle app-brugere
+13. **Byg eget program styres af de samme tildelinger** som programmerne
 14. **Kladde og Klar.** Kun et program der er sat til klar kan tildeles
+15. **Fire slags modtagere**, besluttet 15. august da tildelingen blev tegnet:
+    ét bestemt hold, én person, alle medlemmer, eller alle. Medlem betyder
+    aktivt app-abonnement. Se 29.5
 
 ### 29.3 Datamodellen
 
@@ -2711,26 +2719,118 @@ egen opgave med sit eget go.
 der intet kræver. Øvelser der kræver et ANDET redskab falder fra, for dem har
 hun ikke.
 
-### 29.5 Tildelingen. Bid 2, ikke bygget endnu
+### 29.5 Tildelingen. LÅST og bygget 15. august
 
-| Felt | Hvad |
+Mockups i `v3 app/linns-academy-design/mockups-traening-tildeling.html`,
+gennemgået i to runder før der blev kodet.
+
+**Fire slags modtagere.** Linns valg 15. august, hvor "medlemmer" kom til
+undervejs:
+
+| Modtager | Hvem |
 |---|---|
-| Program | Hvilket program, og kun et der er sat til Klar |
-| Modtager | Én person, ét hold, eller alle app-brugere |
-| Gælder fra | Hold: dag i forløbet. Person og alle app: en dato |
-| Gælder til | Samme to former, og standarden er uden slutdato |
+| Hold | Ét bestemt hold, fx Kickstart juni 2026 |
+| Én person | En enkelt kunde |
+| Medlemmer | Alle med et aktivt app-abonnement |
+| Alle | Alle der kan åbne appen, både forløb og abonnement |
 
-**Hold måles i forløbsdage og ikke i kalenderdatoer.** En dato rammer kun det
-hold der kører netop nu. Med "fra dag 15" virker den samme tildeling
-automatisk rigtigt for alle kommende hold.
+**Medlem betyder aktivt app-abonnement**, også hvis hun samtidig er på et
+forløb. Linns definition 15. august. Det rammer sjældent nogen, fordi et
+abonnement købt under et forløb først starter dagen efter forløbet, se
+afsnittet om udskudte app-køb.
 
-**Admin skal kunne se hvilke kategorier der er dækket for et hold.** Tildeler
-Linn fem programmer til et Kickstart-hold, og de alle sammen kræver redskaber,
-ser en kvinde der kun har valgt uden redskaber ingenting. Hun er på et forløb
-hvor træning er en del af konceptet, og hun har ikke gjort noget forkert.
+**Hold er ÉT bestemt hold og ikke forløbet generelt.** Linns valg, og det
+vendte den anbefaling der stod her først. Prisen er reel og skal kendes:
+**hvert nyt hold starter på nul.** Opretter Linn Kickstart januar 2027, har
+det ingen træning før hun selv giver det nogle. Derfor findes to ting:
+dæknings-siden viser tomme hold øverst og med farve, og der er en knap der
+kopierer et tidligere holds tildelinger over med de samme dage.
 
-**Kunden får aldrig en helt tom skærm.** Passer intet til hendes udstyr, står
-der hvad der mangler, med en knap der viser resten.
+**Tiden måles to steder.** Til et hold i DAGE, fordi holdet har sin egen
+startdato. Til en person, til medlemmer og til alle i DATOER. Det er den
+eneste rigtige forskel mellem de fire.
+
+**Dagen er den samme som resten af appen regner med**, altså den
+`getCurrentDay` giver, hvor startdatoen er dag 0. Der laves ingen omregning.
+En omregning er præcis det der gav en off-by-one i træningen 12. juni.
+Skærmen skriver "Dag 0 er forløbets første dag" så der ikke er tvivl.
+
+**Standarden er fra første dag og uden slutdato**, altså den Linn bruger
+mest. Der skal fjernes et flueben for at der overhovedet kommer en dato i
+spil.
+
+**Kun et program der er sat til klar kan gives ud.** Spærren fra bid 1 gælder
+også her, og knappen er slukket med en linje der siger hvorfor.
+
+**Fem regler der ikke har en skærm, men som afgør hvad kunden ser:**
+
+- Får hun det samme program to veje, ser hun det én gang. En aktiv tildeling
+  vinder over en der venter
+- Er hun på to forløb, tælles dagen i det forløb tildelingen gælder
+- Tildeler du fra dag 15 til et hold der er nået til dag 40, får de det med
+  det samme. Ikke om 15 dage
+- Slutter en tildeling, forsvinder programmet fra hendes liste, men hendes
+  fremgang bliver liggende
+- Slettes et program, slettes dets tildelinger med. Ellers ligger der rækker
+  der peger på ingenting og tæller med i dækningen
+
+**Byg eget program ligger i den samme tabel** som en tildeling uden program,
+så adgangen styres med de samme fire knapper. Linns valg.
+
+#### Dækning pr hold
+
+Den skærm der forhindrer at en kunde ender med en tom træningsside. Kunden
+vælger sit udstyr og ser kun de programmer der passer, så et hold med fem
+redskabs-programmer efterlader en kvinde uden redskaber med ingenting.
+
+Oversigten viser hvert hold plus medlemmer og alle, med Tom, Hul eller OK.
+Tomme først. Inde på ét hold står hver kategori med de programmer den har,
+og en linje der siger hvad et hul betyder for kunden. **Et hul er ikke altid
+en fejl**, og teksten siger derfor følgen og ikke at Linn har gjort noget
+forkert.
+
+#### Slå en kunde op
+
+Til den dag hun skriver at hun ikke kan se sin træning. Viser hendes forløb
+og dag, om hun har abonnement, hvilket udstyr hun har valgt, hvad hun ser, og
+**hvad hun ikke ser og hvorfor**, på almindeligt dansk.
+
+**Svaret regnes med `programmerForKunde3`, altså nøjagtig den samme funktion
+kundens egen liste bruger i bid 3.** Ikke en kopi. To udgaver af den regel
+ville drive fra hinanden, og så ville admin sige noget andet end kunden
+oplever.
+
+**En tom udstyrsliste betyder ja til alt.** Hun har ikke valgt endnu, og
+indtil valget findes i bid 3 har ingen kunde valgt noget. Skjulte vi alt for
+dem, ville opslaget påstå at 700 kunder ingen træning har.
+
+#### Filerne
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/traeningTildeling3.ts` | Hvem, hvornår, dækning, kopiering | 49 |
+| `firestore/traeningTildeling3.ts` | Tildelingerne |  |
+| `firestore/traeningKunde3.ts` | Kunderne set fra admin, med adgang og forløbsdag |  |
+| `components/ny/TildelPanel.svelte` | Vælg modtager og periode. Bruges to steder |  |
+| `/ny/admin/traening/[id]/tildel` | Hvem har programmet |  |
+| `/ny/admin/traening/hold` | Dækning for alle hold |  |
+| `/ny/admin/traening/hold/[id]` | Ét hold, plus kopiér-knappen |  |
+| `/ny/admin/traening/kunde` | Slå en kunde op |  |
+| `/ny/admin/traening/byg-eget` | Hvem må bygge selv |  |
+
+**Adgangen udledes med de samme funktioner som resten af 3.0.**
+`adgangsbilledeFor` giver hendes aktive forløb med dagnummer, og
+`udledAdgange` giver rækkerne så vi kan se om hun har et aktivt abonnement.
+
+**Firestore-reglerne er KUN admin**, både læsning og skrivning, og det er
+anderledes end programmerne i bid 1. Grunden er at en tildeling indeholder
+**navnet på den kunde der har fået noget**. Måtte alle indloggede læse
+samlingen, kunne en kunde læse hvilke andre kunder der har fået hvad.
+
+**Åben tråd til bid 3:** kunden skal kunne læse sine egne tildelinger. Det
+skal ske på en måde hvor hun kun kan hente de rækker der handler om hende,
+enten med målrettede forespørgsler plus en skarpere regel, eller gennem et
+endpoint. Beslutningen er bevidst udskudt til den skærm findes.
 
 ### 29.6 Reglerne for en træning. Bid 4
 
@@ -2793,7 +2893,7 @@ bagefter. 67 blokke begge steder, og de er ens.
 | Bid | Hvad | Tilstand |
 |---|---|---|
 | 1 | Datamodel, kategorier, admin så programmer kan bygges | **Færdig 15. august** |
-| 2 | Tildeling med gælder fra og til, plus dækning pr hold | Ikke bygget |
+| 2 | Tildeling, dækning pr hold, kunde-opslag, byg-eget-adgang | **Færdig 15. august** |
 | 3 | Kundens udstyrsvalg og hendes programliste | Ikke bygget |
 | 4 | Afspilleren med Ja, Nej og Gem | Ikke bygget |
 | 5 | Forsidens flise kobles på | Ikke bygget |
