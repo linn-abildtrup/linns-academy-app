@@ -27,6 +27,11 @@ export interface SmaaSkridt {
 	plan: SmaaSkridtPlan;
 	oprettetAf?: string;
 	oprettetAt?: Timestamp;
+	// Gravsten. Et slettet skridt bliver liggende med slettet=true indtil der
+	// publiceres, saa synken ved at netop dette checkId skal FJERNES fra dagene.
+	// Uden gravstenen ligner den slettede afkrydsning en gammel fremmed check,
+	// og synken ville bevare den for evigt. Ryddes vaek af synken bagefter.
+	slettet?: boolean;
 }
 
 /** Ugedag for en dato: 1=mandag ... 7=søndag. */
@@ -61,6 +66,37 @@ export function dageForPlan(plan: SmaaSkridtPlan, antalDage: number, startDato: 
 		if (med) dage.push(d);
 	}
 	return dage;
+}
+
+/** En afkrydsning paa en dag (samme form som Vane i vaner.ts). */
+export interface DagCheck {
+	id: string;
+	label: string;
+}
+
+/**
+ * Afstemmer én dags afkrydsninger mod de smaa skridt.
+ *
+ * - "Ejede" checks = dem hvis id hoerer til et lille skridt, ogsaa et der lige
+ *   er slettet (gravsten). De erstattes fuldstaendigt af 'ejetPaaDagen'.
+ * - Alt andet bevares uroert. Det er gamle faste vaner fra tiden foer smaa
+ *   skridt fandtes, og dem maa en publicering aldrig fjerne.
+ *
+ * Et slettet skridt staar ikke i 'ejetPaaDagen', men dets id staar i
+ * 'ejedeIds'. Derfor falder det ud af dagen, praecis som meningen er.
+ */
+export function afstemChecks(
+	gamle: DagCheck[],
+	ejedeIds: Set<string>,
+	ejetPaaDagen: DagCheck[]
+): DagCheck[] {
+	const fremmede = gamle.filter((c) => !ejedeIds.has(c.id));
+	return [...fremmede, ...ejetPaaDagen];
+}
+
+/** Er to lister af afkrydsninger ens, baade indhold og raekkefoelge? */
+export function checksErEns(a: DagCheck[], b: DagCheck[]): boolean {
+	return a.length === b.length && a.every((c, i) => c.id === b[i].id && c.label === b[i].label);
 }
 
 /** Kort menneskelig beskrivelse af en tidsplan (til listen). */

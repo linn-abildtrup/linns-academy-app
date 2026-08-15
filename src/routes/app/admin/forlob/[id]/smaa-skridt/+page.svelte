@@ -155,8 +155,15 @@
 		publicerer = true;
 		publResultat = null;
 		try {
-			const n = await synkSmaaSkridtTilDage(forlobId, forlob.antalDage, forlob.startDato.toDate());
-			publResultat = `Publiceret ✓ — opdaterede ${n} dag${n === 1 ? '' : 'e'}.`;
+			const r = await synkSmaaSkridtTilDage(
+				forlobId,
+				forlob.antalDage,
+				forlob.startDato.toDate()
+			);
+			const fjernetTekst = r.fjernede
+				? ` Fjernede ${r.fjernede} slettet${r.fjernede === 1 ? '' : 'e'} skridt fra dagene.`
+				: '';
+			publResultat = `Publiceret ✓ — opdaterede ${r.dage} dag${r.dage === 1 ? '' : 'e'}.${fjernetTekst}`;
 		} catch (e) {
 			console.error(e);
 			publResultat = 'Kunne ikke publicere. Prøv igen.';
@@ -357,7 +364,9 @@
 				<div class="publish-titel">Publicér til appen</div>
 				<p class="publish-sub">
 					Dine ændringer her er kun gemt som kladde. Først når du publicerer, skrives de små skridt
-					ind på de rigtige dage og bliver synlige for kunderne (besvares Ja/Delvist/Nej).
+					ind på de rigtige dage og bliver synlige for kunderne (besvares Ja/Delvist/Nej). Det
+					gælder også når du sletter et skridt. Det forsvinder først hos kunderne når du
+					publicerer.
 				</p>
 			</div>
 			<button class="form-knap primary" type="button" onclick={publicer} disabled={publicerer}>
@@ -406,7 +415,7 @@
 {#if sletKandidat}
 	<BekraeftModal
 		titel={'Slet "' + sletKandidat.label + '"?'}
-		beskrivelse="Det lille skridt fjernes fra forløbet."
+		beskrivelse="Skridtet forsvinder fra listen med det samme. Hos kunderne forsvinder det først når du trykker Publicér til appen."
 		bekraeftTekst="Slet"
 		destruktiv
 		arbejder={sletter}
