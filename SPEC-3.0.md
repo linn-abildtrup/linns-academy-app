@@ -3011,9 +3011,10 @@ bagefter. 67 blokke begge steder, og de er ens.
 er besluttet og tegnet, og Linns valg er at det kommer efter bid 2. Det kan
 altså bygges når som helst herfra, uden at det spærrer for noget andet.
 
-**Udstyrsvalget kommer første gang hun trykker på træning**, ikke når hun logger
-ind. Et forkert skridt i opstarten har givet en helt blank app for alle før, og
-en kvinde der bare vil se sin dag skal ikke mødes af et spørgsmål om sjippetov.
+**Udstyrsvalget hører hjemme i onboarding**, første gang en ny kunde logger på.
+Linns beslutning 15. august. Onboarding er ikke bygget, så vælgeren bor indtil
+videre kun i Profil, og den er lavet som en komponent så onboarding kan
+genbruge præcis den skærm. Se 29.6.1.
 
 ### 29.9 Kopieringen af de seks programmer
 
