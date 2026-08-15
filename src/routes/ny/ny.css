@@ -8038,3 +8038,12 @@ button.tm-r-t:focus-visible {
 	line-height: 1.4;
 	margin-top: 2px;
 }
+
+/* Overskrift over en gruppe paa admin-forsiden. */
+.adm-gruppe {
+	font-family: var(--serif);
+	font-size: calc(17px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 10px 0 -8px;
+}

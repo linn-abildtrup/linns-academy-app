@@ -159,6 +159,7 @@
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
 	{:else}
 		<header class="adm-top">
+			<a class="tr-tilbage" href="/ny/admin">‹ Admin</a>
 			<h1>Træning</h1>
 			<p>Alle træningsprogrammer. Byg dem her, tildel dem bagefter.</p>
 		</header>

@@ -98,6 +98,7 @@
 		<Ventetegn />
 	{:else}
 		<header class="rm-top">
+			<a class="tr-tilbage" href="/ny/admin">‹ Admin</a>
 			<h1>Regnemaskinen</h1>
 			<p class="rm-under">
 				Hvad ingredienserne regner sig frem til, ved siden af det tal der står i opskriften i dag.

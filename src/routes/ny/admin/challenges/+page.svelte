@@ -171,6 +171,7 @@
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
 	{:else}
 		<header class="adm-top">
+			<a class="tr-tilbage" href="/ny/admin">‹ Admin</a>
 			<h1>Challenges</h1>
 			<p>
 				En challenge ligger for sig selv og bliver tildelt. Du kan give den til et hold, til alle

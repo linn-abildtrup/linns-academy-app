@@ -179,6 +179,7 @@
 	<p class="ob-nej">Siden er kun for admin.</p>
 {:else}
 	<header class="ob-hoved">
+		<a class="tr-tilbage" href="/ny/admin">‹ Admin</a>
 		<h1 class="ob-h1">Opskrift-billeder</h1>
 		<div class="ob-tael">
 			<span class="ob-tal">{tal.medBillede} af {tal.ialt}</span>

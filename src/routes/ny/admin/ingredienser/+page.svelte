@@ -254,6 +254,7 @@
 		<Ventetegn />
 	{:else}
 		<header class="ing-top">
+			<a class="tr-tilbage" href="/ny/admin">‹ Admin</a>
 			<h1>Ingredienser</h1>
 			<p class="ing-under">
 				Hver ingrediens skal pege på en fødevare, før makroen kan regnes ud af mængderne. Vælger

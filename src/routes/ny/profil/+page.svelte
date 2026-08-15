@@ -8,14 +8,19 @@
 	// ============================================================
 
 	import { getContext } from 'svelte';
+	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
+	import { isAdmin } from '$lib/admin';
 	import { formatMedlemstid, type Adgangsbillede } from '$lib/content/adgang3';
 
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
+	const hentUser = getContext<() => User | null>('user');
 
 	const userDoc = $derived(hentUserDoc());
 	const adgang = $derived(hentAdgang());
+	// Vejen ind i 3.0's admin. Kun for admin, saa ingen kunde ser den.
+	const visAdmin = $derived(isAdmin(hentUser()));
 
 	const navn = $derived(
 		[userDoc?.firstName, userDoc?.lastName].filter(Boolean).join(' ') || 'Din konto'
@@ -77,6 +82,16 @@
 					</div>
 				{/each}
 			</div>
+		</section>
+	{/if}
+
+	{#if visAdmin}
+		<section>
+			<div class="lab"><h2>Admin</h2></div>
+			<a class="adm-raekke tr-raekke" href="/ny/admin">
+				<div class="adm-raekke-t"><span>Værktøjerne i den nye app</span></div>
+				<div class="adm-raekke-s">Træning, mad og challenges</div>
+			</a>
 		</section>
 	{/if}
 
