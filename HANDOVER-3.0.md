@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 13. august 2026.
+Sidst opdateret 15. august 2026.
 
 **Læs i denne rækkefølge hvis du er ny:** afsnit 2 om den vigtigste regel, afsnit 7 om fælderne, og så afsnit 9 om hvor vi står. Resten kan slås op efter behov.
 
@@ -61,6 +61,10 @@ gamle app og må kun læses.
 | `src/routes/ny/ny.css` | Alt design. Scoped under `.ny-app`. Cirka 2.000 linjer |
 | `src/lib/components/ny/` | 29 komponenter, alle kun brugt i 3.0. `VaelgArk.svelte` er ubrugt siden 12. august og skal enten slettes eller have en note |
 | `src/lib/utils/billede3.ts` | Skalering og webp i browseren. `billede.ts` er den gamle og må ikke røres |
+| `src/routes/ny/admin/ingredienser/` | Kobl ingredienser til fødevarer. Se 9.17 |
+| `src/routes/ny/admin/opskrift-makro/` | Regnestykket linje for linje. **Gå her når et tal ser forkert ud** |
+| `src/lib/firestore/ingrediensKobling3.ts` | Koblingerne. Læses af regnemaskinen |
+| `src/lib/firestore/opskriftBeregning3.ts` | De gemte beregninger. Overlejres i `hentOpskrifter3` |
 
 **Ren logik, ingen database, alt sammen testet:**
 
@@ -78,6 +82,10 @@ gamle app og må kun læses.
 | `content/opskriftKategori3.ts` | Opskrift-kategorier, hvor snack er sin egen | 23 |
 | `content/inspirator3.ts` | Hvornår AI-inspiratoren dukker op | 12 |
 | `content/plejer3.ts` | "Det du plejer". Modulets vigtigste fil, læs toppen | 12 |
+| `content/enhedsvaegt3.ts` | **Regnemaskinen etape 1.** Husholdningsmål til gram. Se 9.17 | 38 |
+| `content/ingrediensNavn3.ts` | **Etape 2.** 402 navne til 291 kernenavne. Tilstand står på navnet | 23 |
+| `content/ingrediensKobling3.ts` | **Etape 3.** Kernenavn til fødevare. Hele ord, sundhedstjek | 26 |
+| `content/opskriftMakro3.ts` | **Etape 4.** Selve regnestykket, plus `visMakro` | 24 |
 | `content/hurtigStart3.ts` | 3.0's opstartsregel plus `opstartsBillede()`. Se 9.7 | 13 |
 | `content/favoritOpskrift3.ts` | Favorit-opskrifter, altså bogmærker. Se 9.8 | 22 |
 | `content/fasteMaaltider3.ts` | Faste måltider, altså "byg et måltid". Se 9.10 | 36 |
@@ -140,6 +148,8 @@ Alle ruter ligger under `/ny`.
 | `/ny/profil`, `/ny/hjaelp`, `/ny/forlob` | Bygget |
 | `/ny/admin/challenges` | Admin: opret og tildel challenges. Kun admin. Intet menupunkt, skriv adressen |
 | `/ny/admin/opskrift-billeder` | Admin: læg billeder på opskrifter. Kun admin. Intet menupunkt. Se 9.6 |
+| `/ny/admin/ingredienser` | Admin: kobl ingredienser til fødevaredatabasen. Se 9.17 |
+| `/ny/admin/opskrift-makro` | Admin: regnestykket bag hver opskrift, linje for linje. Se 9.17 |
 | `/ny/30-30` | 30-30 beregneren, oversigten. Fire måltider og dagens tal. Færdig |
 | `/ny/30-30/[type]` | Inde i et måltid. Alt indhold hænger her. Færdig |
 
@@ -701,9 +711,9 @@ Reglen var spredt ud over tre skærme i to apps, og de var uenige. På de 122 op
 
 **Mængderne er ét estimat og makroen et andet, lavet uafhængigt med en måneds mellemrum.** Det er hele forklaringen på at de ikke går op.
 
-**PRØV IKKE at koble ingredienser til fødevare-databasen for at verificere makroen.** Det er gjort fire gange på to dage med stadig bedre metode, og det blev ikke bedre. Muren er ikke koblingen, den er at der ikke findes et facit.
+~~**PRØV IKKE at koble ingredienser til fødevare-databasen for at verificere makroen.**~~ **Det råd gælder ikke længere. Koblingen ER bygget 13. til 15. august, og den virker. Se 9.17.** Advarslen stod her fordi fire forsøg var slået fejl, og de slog fejl af én grund: navne blev matchet for løst, så tørre linser blev koblet til kogte. Det er løst ved at tilstanden nu står på navnet.
 
-**Og sammenlign aldrig kalorier.** De er AI-estimerede, og 22 af dem stemmer ikke med deres egen makro.
+**Sammenlign kalorier med varsomhed.** De skrevne er AI-estimerede, og 22 af dem stemmer ikke med deres egen makro.
 
 **Det ene der KAN rettes billigt:** 35 opskrifter siger ikke om linser, kikærter og bønner er tørre eller kogte. Forskellen er en faktor tre. Kalkun-rugbrødet skriver "afdryppede", resten skriver ingenting.
 
@@ -720,6 +730,83 @@ Reglen var spredt ud over tre skærme i to apps, og de var uenige. På de 122 op
 **Pas på `startPortioner`.** Den gjorde før TO ting: hvad arket åbner på OG hvad ingredienslisten er skrevet til. Da den blev sat til altid at give 1, blev 600 g kylling i en ret til fire til 2.400 g. De to hedder nu `startPortioner` og `listenErSkrevetTil` og må aldrig smelte sammen igen.
 
 Den oprindelige advarsel, som nu er historik: ~~portionstallet må ikke rettes endnu.~~ Seks opskrifter rækker til to personer. Sættes de til 2, viser den GAMLE app 16 g protein i stedet for 32, fordi den deler makroen med portionstallet. Og 3.0 ville logge 64, fordi arket åbner på opskriftens eget tal. **De to apper ville tage fejl i hver sin retning.** Først skal punkt 1 på ventelisten rettes.
+
+### 9.17 REGNEMASKINEN, bygget 13. til 15. august
+
+**Opskrifternes makro regnes nu ud af ingredienserne i 3.0.** Det er den største enkelt-ting i Mad, og den ophæver advarslen i 9.16.
+
+**Hvorfor den skulle bygges:** kunder vil kunne bytte ris ud med kartofler. Det kan kun lade sig gøre hvis hver ingrediens har sit eget tal. Man kan ikke trække ris fra et samlet tal man ikke ved hvordan er sat sammen.
+
+#### Fire filer, fire etaper
+
+Hver har sine tests. Læs dem i rækkefølge, de bygger ovenpå hinanden.
+
+**`content/enhedsvaegt3.ts`** oversætter husholdningsmål til gram. 1 spsk er 15 ml, 1 tsk er 5 ml, men vægten afhænger af hvad der ligger i skeen. Styk-vægtene er **DTU Fødevareinstituttets officielle tabel** fra fooddata.dk, mellem-størrelse og netto. Tørre varer målt i dl vejes efter massefylde og ikke som vand.
+
+**`content/ingrediensNavn3.ts`** samler 402 skrevne navne til 291 kernenavne. Olivenolie stod på seks måder, mandler på syv. **Den vigtigste regel i hele filen:** ordene tør, kogt og afdryppet bliver PÅ navnet for bælgfrugter, ris og korn. Tørre grønne linser har 20,5 g protein, afdryppede har 5,7. Slås de sammen, bliver makroen fire gange forkert. Der er en test der fejler hvis nogen gør det igen.
+
+**`content/ingrediensKobling3.ts`** går fra kernenavn til fødevare. Kun hele ord, aldrig stumper, så ærter ikke rammer kikærter. Et sundhedstjek afviser varer hvis kalorier ikke passer med deres egen makro.
+
+**`content/opskriftMakro3.ts`** er selve regnestykket, plus `visMakro` der vælger mellem beregnet og skrevet tal.
+
+#### Hvor tallene ligger
+
+**Alt nyt ligger i samlingen `ingrediensKobling`, aldrig i opskrifterne.**
+
+```
+ingrediensKobling/koblinger    297 koblinger fra kernenavn til foedevare
+ingrediensKobling/beregninger  133 opskrifters beregnede makro pr portion
+```
+
+**Opskrifter og fødevarer er ikke rørt af regnemaskinen.** Hele samlingen kan slettes uden spor. Det var Linns regel 13. august, og den skal holdes.
+
+#### Hvordan 3.0 bruger dem
+
+Overlejringen sker i **`hentOpskrifter3`**, altså helt inde i kilden. Så findes der ikke et sted i 3.0 hvor det gamle tal kan slippe igennem. Listen, opskrift-arket og det der gemmes i kundens måltid viser alle det samme.
+
+**Er dækningen under 90 procent, falder den tilbage på det skrevne tal.** Bruges ikke i dag, men står klar til nye opskrifter uden koblinger.
+
+**Mangler en fødevare sit kalorietal**, bruges beregnet protein men skrevet kalorietal. Uden det gav en omelet 27 g protein og 130 kalorier, hvilket er umuligt.
+
+#### Den gamle app er urørt
+
+**De 760 kunder ser præcis det samme som før.** Den læser videre fra instruktioner-teksten, som ikke er ændret. **Det er en åben tråd**, se nedenfor.
+
+#### 15 tal er slået op udenfor databasen
+
+Databasen manglede dem. Hver har **kilde og dato** gemt i koblingen, og alle er kontrolleret med Atwater, altså at kalorierne passer med varens egen makro.
+
+Ørred, torskefars, fiskefars med laks, tomatsauce, fuldkornspasta, fuldkornslasagneplader, proteinpasta, fuldkornsnudler, ærteskud, chiliflager, jalapeño, nori, vaniljepulver, gul karrypasta og hvide bønner på dåse.
+
+**To ting der bider ved opslag udefra:** amerikanske kilder opgiver kulhydrat INKLUSIVE fibre, mens vores database bruger uden. Og vaniljeEKSTRAKT har 288 kalorier fordi det indeholder alkohol, mens vaniljePULVER har 250. Begge fejl blev fanget af Atwater-tjekket.
+
+#### To admin-sider
+
+**`/ny/admin/ingredienser`** er koblingerne. De hyppigste først, med bud fra databasen.
+
+**`/ny/admin/opskrift-makro`** viser regnestykket linje for linje. **Det er her du går hen når et tal ser forkert ud.** Fold opskriften ud, og der står hvilken fødevare hver linje bruger og hvad den bidrager med.
+
+#### Hvad tallene viser
+
+De skrevne tal i opskrifterne er **runde måltal, ikke udregninger.** 80 procent af kalorietallene ender på nul, og 64 af 130 har enten 28, 30, 32 eller 34 g protein. De blev skrevet efter konceptet, ikke efter maden.
+
+**Retterne indeholder som regel mere end der står.** Protein 14 procent, fiber 40 procent, kalorier 20 procent i gennemsnit.
+
+#### FÆLDEN DER KOSTEDE MEST: portionstallet
+
+**Linsegryde med kylling stod 103 procent forkert. Årsagen var ikke regnemaskinen, men at retten er til to personer og stod som én.** Sat til 2 rammer den 32,4 mod de 32 der står, altså under én procent fra.
+
+**Se efter portionstallet FØR du mistænker beregningen.** Det er den enkelte ting der forbedrer tallene mest. Der står i dag 14 opskrifter med mere end én portion, og vi fandt to der manglede 15. august. Der er formentlig flere.
+
+#### Fejl jeg selv lavede, så du ikke gentager dem
+
+**Gæt aldrig et foodId eller et kernenavn. Slå det op.** Bulgur blev til chiafrø, brune ris til plantemargarine, pastinak til sød kartoffel og revet ost var lige ved at blive røget skinke. Alle fanget af tørløb, men tørløbet skal ikke være sikkerhedsnettet.
+
+**Erstat aldrig en vare med en anden uden at sige det.** Ørred blev til laks, 92 kalorier for meget per 100 g. Pastinak fandtes i databasen hele tiden, min søgning fandt den bare ikke.
+
+**En manglende kobling kan Linn se. En forkert kan hun ikke.**
+
+---
 
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
@@ -747,6 +834,56 @@ Resten af etape 4:
 - ~~SPEC mangler et afsnit 26.7~~. **Passede ikke.** Afsnittet står i spec'en
   og er fyldigt. Tidligere udgaver af det her dokument sagde at det manglede,
   og det var forkert
+
+### Åbne tråde på regnemaskinen, aftalt 15. august
+
+Rækkefølgen er Linns. Hun stoppede bevidst her.
+
+**1. Skriv de beregnede tal ud til den gamle app.** Linns beslutning 15. august: makrotallene skal være de samme i begge versioner. Det kræver at makro-linjen i opskrifternes `instruktioner` skrives om.
+
+Scriptet var klar og kørte tørløb, men blev ikke skrevet. **Sikkerhedskopi af alle 133 opskrifters tekst ligger i `backup/opskrifter-instruktioner-2026-08-13.json`.**
+
+Vær opmærksom på: **rør kun de fem tal.** Linjen ser sådan ud, og Tid-delen varierer fra opskrift til opskrift.
+
+```
+Protein: 24 g | Fiber: 11 g  | Kulhydrater: 44 g | Fedt: 16 g | Kalorier: 440 kcal | Tid: 15 minutter
+```
+
+**Hele tal, ikke decimaler.** Teksten har altid haft hele tal.
+
+**Og det er en synlig ændring for 760 kunder på én gang.** Nogle tal fordobles.
+
+**2. Find de øvrige retter til flere personer.** Se fælden ovenfor. Det er den enkelte ting der forbedrer tallene mest, og det kræver Linns viden om hver ret. Giv hende en liste med kandidater, lad hende sige til og fra.
+
+**3. Aftrykket af ingredienslisten.** Aftalt løsning 15. august, ikke bygget.
+
+Gem et aftryk af ingredienslisten sammen med det beregnede tal. Passer aftrykket ikke når 3.0 viser opskriften, er den rettet siden, og så træder det beregnede tal til side for Linns tal i teksten.
+
+**Linns regel: intet regnes om automatisk. Ændrer man opskriften, retter man selv makrotallet.** Aftrykket er det der gør at hun kan gøre det ét sted, i den gamle admin, uden at et forældet tal bliver hængende i 3.0.
+
+**4. Tre opskrifter hedder "Ny opskrift" og har nul ingredienser.** Tomme kladder, står som 4 portioner. Skal fyldes ud eller slettes.
+
+**5. Fødevare-listen kunden søger i.** Det største åbne spørgsmål i Mad, se nedenfor.
+
+### Den kuraterede fødevare-liste, diagnosticeret 13. august
+
+**Søger kunden på æg, får hun syv valg, og de tre øverste hedder bare "Æg" uden kalorier.** Det er scannede stregkoder oprettet tre gange.
+
+Databasen er én bunke af tre oprindelser:
+
+```
+frida       1381 varer   61%   den officielle foedevaredatabase
+kickstart    840 varer   37%   lavet til appen
+scannede      47 varer    2%   fra Open Food Facts
+```
+
+**Men kunderne spiser 79 procent fra Kickstart-listen og kun 11 procent fra Frida.** De 20 mest brugte madvarer er alle sammen fra Kickstart.
+
+**Kun Frida ville gøre det værre.** Søger man på æg i Frida alene, er de otte øverste andeæg, gåseæg, tørret æg og æggeblomme. Tørret æg har 564 kalorier, og intet i navnet advarer om det.
+
+**Problemet er ikke hvilken database. Det er at ingen har bestemt hvad kunden må se.** Løsningen er et kurateret lag ovenpå, ikke et databaseskifte. Kickstart-listen er allerede tæt på at være det lag.
+
+**Og 9.910 madvare-linjer, 10 procent af alt kunderne har registreret, peger på varer der ikke findes længere.** De viser stadig rigtige tal, fordi makroen fryses ind i måltidet når hun trykker gem. Men genveje som faste måltider og "det du plejer" slår varen op igen og går i stykker. **Rydder du op i listen, så peg gamle id'er videre i stedet for at slette.**
 
 ### Bevidst udskudt
 
