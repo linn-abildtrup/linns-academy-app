@@ -13,6 +13,8 @@
 
 	import type { Opskrift } from '$lib/content/opskrifter';
 	import { formatMaengde, parseOpskriftMakro } from '$lib/content/opskrifter';
+	import { visMakro } from '$lib/content/opskriftMakro3';
+	import type { Beregninger } from '$lib/firestore/opskriftBeregning3';
 	import { formatPortion } from '$lib/content/maengde3';
 	import { HJERTE_ETIKET } from '$lib/content/favoritOpskrift3';
 	import {
@@ -32,6 +34,15 @@
 		visUdvidet?: boolean;
 		/** Har hun markeret den her opskrift? */
 		erFavorit?: boolean;
+		/**
+		 * De beregnede makrotal, ét opslag pr opskrift-id.
+		 *
+		 * Er opskriften med og har god nok daekning, vises DEN i stedet
+		 * for tallet i teksten. Tom = fald tilbage paa teksten, saa arket
+		 * virker uaendret hvis beregningerne ikke er hentet.
+		 * Linns valg 13. august, se SPEC-3.0.md 26.19.
+		 */
+		beregninger?: Beregninger;
 		ongem: (portioner: number) => void;
 		/** Slaar bogmaerket til eller fra. Udeladt = intet hjerte. */
 		onfavorit?: (() => void) | null;
@@ -44,6 +55,7 @@
 		gemmer = false,
 		visUdvidet = false,
 		erFavorit = false,
+		beregninger = {},
 		ongem,
 		onfavorit = null,
 		ontilbage
@@ -61,7 +73,15 @@
 	// almindelige svar er én, ikke hele gryden. Linns valg 13. august.
 	let portioner = $state(startPortioner(opskrift.defaultPortioner));
 
-	const makro = $derived(parseOpskriftMakro(opskrift.instruktioner));
+	// Beregnet tal foerst, det skrevne som reserve. Se visMakro.
+	const makro = $derived(
+		visMakro(
+			opskrift.id,
+			opskrift.instruktioner,
+			beregninger,
+			parseOpskriftMakro(opskrift.instruktioner)
+		)
+	);
 	// Makroen er PR PORTION, ogsaa paa de retter der er til fire. Derfor ganges
 	// der kun med antal portioner, og defaultPortioner indgaar aldrig. Se
 	// content/opskriftPortion3.ts for maalingerne bag.

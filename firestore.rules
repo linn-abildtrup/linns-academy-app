@@ -227,6 +227,17 @@ service cloud.firestore {
 					.hasOnly(['okBy', 'ejBy', 'verificeret']);
 		}
 
+		// Ingrediens-koblingen. Kortet fra kernenavn til foedevare, som
+		// regnemaskinen bruger til at regne makro ud af maengderne.
+		// Etape 3, se SPEC-3.0.md 26.19.
+		//
+		// Alle indloggede maa laese, for kunden skal kunne se makroen paa
+		// en opskrift. Kun admin maa skrive.
+		match /ingrediensKobling/{dokId} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
 		// Opskrifter: alle autentificerede kan læse, kun admin kan skrive.
 		// Undtagelse: klienter må opdatere rating-aggregatet (ratingSum,
 		// ratingCount, ratingAvg) når de stemmer.

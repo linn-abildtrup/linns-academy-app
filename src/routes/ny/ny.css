@@ -7131,3 +7131,611 @@ button.tm-r-t:focus-visible {
 }
 
 
+
+/* ============================================================
+   Admin: kobl ingredienser til foedevaredatabasen.
+   Etape 3 af regnemaskinen, se SPEC-3.0.md 26.19.
+
+   Ren admin-side, saa den er bygget til at komme hurtigt igennem 290
+   valg og ikke til at vaere koen. Kortene er brede og knapperne store,
+   for det er de samme fire tryk 290 gange.
+   ============================================================ */
+
+.ing-side {
+	width: 100%;
+	max-width: 640px;
+	margin: 0 auto;
+	padding: 20px 16px 120px;
+	/* Intet herinde maa vaere bredere end skaermen. Uden den blev
+	   forklaringen under knappen klippet af midt i et ord. Set 13. august. */
+	overflow-x: hidden;
+}
+
+/* Lange ord og navne skal brydes frem for at skubbe siden ud i siden.
+   Foedevarenavne som "Pistacienoed, toerristet med salt" er lange. */
+.ing-side p,
+.ing-side h1,
+.ing-side h2,
+.ing-side span {
+	overflow-wrap: anywhere;
+}
+
+.ing-top h1 {
+	font-size: calc(26px * var(--fs-scale, 1));
+	font-weight: 700;
+	margin: 0 0 6px;
+	color: var(--text);
+}
+
+.ing-under {
+	font-size: calc(14px * var(--fs-scale, 1));
+	line-height: 1.5;
+	color: var(--ink-2);
+	margin: 0 0 14px;
+}
+
+.ing-tal {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.ing-tal-boks {
+	flex: 1;
+	min-width: 0;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 10px 12px;
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+}
+
+.ing-tal-boks strong {
+	display: block;
+	font-size: calc(22px * var(--fs-scale, 1));
+	color: var(--text);
+}
+
+.ing-auto {
+	width: 100%;
+	padding: 13px;
+	border: none;
+	border-radius: 12px;
+	background: var(--terra);
+	color: #fff;
+	font-size: calc(15px * var(--fs-scale, 1));
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.ing-auto:disabled {
+	opacity: 0.5;
+}
+
+.ing-note {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	line-height: 1.45;
+	color: var(--ink-2);
+	margin: 8px 0 0;
+}
+
+.ing-besked {
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 10px 12px;
+	font-size: calc(13px * var(--fs-scale, 1));
+	margin: 12px 0 0;
+}
+
+.ing-filter {
+	margin: 18px 0 12px;
+}
+
+.ing-soeg {
+	width: 100%;
+	padding: 12px 14px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--paper);
+	font-size: calc(15px * var(--fs-scale, 1));
+	font-family: inherit;
+	color: var(--text);
+}
+
+.ing-faner {
+	display: flex;
+	gap: 6px;
+	margin-top: 8px;
+}
+
+.ing-fane {
+	flex: 1;
+	min-width: 0;
+	padding: 9px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: transparent;
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-family: inherit;
+	color: var(--ink-2);
+	cursor: pointer;
+}
+
+.ing-fane.paa {
+	background: var(--text);
+	border-color: var(--text);
+	color: #fff;
+	font-weight: 600;
+}
+
+.ing-liste {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.ing-kort {
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	padding: 14px;
+}
+
+.ing-kort.klar {
+	border-color: var(--sage);
+}
+
+.ing-k-top {
+	display: flex;
+	min-width: 0;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.ing-k-top h2 {
+	font-size: calc(17px * var(--fs-scale, 1));
+	font-weight: 600;
+	margin: 0;
+	color: var(--text);
+}
+
+.ing-k-under {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin: 2px 0 0;
+}
+
+.ing-tilstand {
+	display: inline-block;
+	margin-left: 6px;
+	padding: 1px 7px;
+	border-radius: 99px;
+	background: var(--oat);
+	font-size: calc(11px * var(--fs-scale, 1));
+	font-weight: 600;
+}
+
+.ing-ryd {
+	flex: 0 0 auto;
+	padding: 6px 12px;
+	border: 1px solid var(--line);
+	border-radius: 99px;
+	background: transparent;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-family: inherit;
+	color: var(--ink-2);
+	cursor: pointer;
+}
+
+.ing-varianter,
+.ing-eksempel {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	line-height: 1.45;
+	color: var(--ink-2);
+	margin: 8px 0 0;
+}
+
+.ing-valgt {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-top: 10px;
+	padding: 10px 12px;
+	border-radius: 10px;
+	background: var(--paper-2);
+}
+
+.ing-v-navn {
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--text);
+}
+
+.ing-v-makro {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+}
+
+.ing-bekraeft {
+	margin-left: auto;
+	padding: 7px 14px;
+	border: none;
+	border-radius: 99px;
+	background: var(--text);
+	color: #fff;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-family: inherit;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.ing-bud {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-top: 10px;
+}
+
+.ing-b {
+	display: block;
+	width: 100%;
+	text-align: left;
+	padding: 11px 12px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--paper-2);
+	font-family: inherit;
+	cursor: pointer;
+}
+
+.ing-b:disabled {
+	opacity: 0.5;
+}
+
+.ing-b.advarsel {
+	border-color: #c98a72;
+}
+
+.ing-b-navn {
+	display: block;
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--text);
+}
+
+.ing-b-makro {
+	display: block;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin-top: 2px;
+}
+
+.ing-b-kilde,
+.ing-b-advarsel {
+	display: inline-block;
+	margin-left: 6px;
+	padding: 1px 7px;
+	border-radius: 99px;
+	font-size: calc(11px * var(--fs-scale, 1));
+	font-weight: 600;
+}
+
+.ing-b-kilde {
+	background: var(--oat);
+	color: var(--ink-2);
+}
+
+.ing-b-advarsel {
+	background: #f6e2da;
+	color: #8a4a3e;
+}
+
+.ing-b-hvorfor {
+	display: block;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin-top: 3px;
+	opacity: 0.8;
+}
+
+.ing-intet,
+.ing-tom,
+.ing-flere {
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin: 10px 0 0;
+	line-height: 1.5;
+}
+
+.ing-flere {
+	text-align: center;
+	margin-top: 16px;
+}
+
+/* ============================================================
+   Admin: regnemaskinen. Etape 4, se SPEC-3.0.md 26.19.
+
+   Bygget om ét spoergsmaal: kan jeg stole paa det her tal. Derfor
+   staar daekningen foerst, og afvigelsen faar farve naar den er stor.
+   ============================================================ */
+
+.rm-side {
+	width: 100%;
+	max-width: 680px;
+	margin: 0 auto;
+	padding: 20px 16px 120px;
+	overflow-x: hidden;
+}
+
+.rm-side p,
+.rm-side h1,
+.rm-side h2,
+.rm-side span {
+	overflow-wrap: anywhere;
+}
+
+.rm-top h1 {
+	font-size: calc(26px * var(--fs-scale, 1));
+	font-weight: 700;
+	margin: 0 0 6px;
+	color: var(--text);
+}
+
+.rm-under,
+.rm-note {
+	font-size: calc(13px * var(--fs-scale, 1));
+	line-height: 1.5;
+	color: var(--ink-2);
+	margin: 0 0 14px;
+}
+
+.rm-note {
+	margin: 10px 0 0;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+}
+
+.rm-tal {
+	display: flex;
+	gap: 8px;
+}
+
+.rm-tal-boks {
+	flex: 1;
+	min-width: 0;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 10px 12px;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+}
+
+.rm-tal-boks strong {
+	display: block;
+	font-size: calc(22px * var(--fs-scale, 1));
+	color: var(--text);
+}
+
+.rm-besked {
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 10px 12px;
+	font-size: calc(13px * var(--fs-scale, 1));
+	margin: 12px 0 0;
+}
+
+.rm-faner {
+	display: flex;
+	gap: 6px;
+	margin: 18px 0 12px;
+}
+
+.rm-fane {
+	flex: 1;
+	min-width: 0;
+	padding: 9px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: transparent;
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-family: inherit;
+	color: var(--ink-2);
+	cursor: pointer;
+}
+
+.rm-fane.paa {
+	background: var(--text);
+	border-color: var(--text);
+	color: #fff;
+	font-weight: 600;
+}
+
+.rm-liste {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.rm-kort {
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	overflow: hidden;
+}
+
+.rm-kort.god {
+	border-color: var(--sage);
+}
+
+.rm-hoved {
+	display: block;
+	width: 100%;
+	text-align: left;
+	padding: 14px;
+	background: transparent;
+	border: none;
+	font-family: inherit;
+	cursor: pointer;
+}
+
+.rm-h-navn {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.rm-h-navn h2 {
+	font-size: calc(16px * var(--fs-scale, 1));
+	font-weight: 600;
+	margin: 0;
+	color: var(--text);
+}
+
+.rm-daek {
+	flex: 0 0 auto;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--sage-tekst, var(--ink-2));
+	padding: 2px 8px;
+	border-radius: 99px;
+	background: var(--sage-tint, var(--oat));
+}
+
+.rm-daek.lav {
+	background: var(--oat);
+	color: var(--ink-3);
+}
+
+.rm-sammenlign {
+	display: flex;
+	gap: 10px;
+	margin-top: 10px;
+}
+
+.rm-s-kol {
+	flex: 1;
+	min-width: 0;
+	background: var(--paper-2);
+	border-radius: 10px;
+	padding: 8px 10px;
+}
+
+.rm-s-mrk {
+	display: block;
+	font-size: calc(11px * var(--fs-scale, 1));
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.rm-s-vaerdi {
+	display: block;
+	font-size: calc(15px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--text);
+	margin-top: 2px;
+}
+
+.rm-s-vaerdi.kanikke {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 500;
+	color: var(--ink-3);
+}
+
+.rm-pil {
+	color: var(--ink-3);
+	font-weight: 400;
+}
+
+.rm-afvig {
+	display: inline-block;
+	margin-top: 3px;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-2);
+}
+
+.rm-afvig.stor {
+	color: #8a4a3e;
+}
+
+.rm-advarsel {
+	font-size: calc(12px * var(--fs-scale, 1));
+	line-height: 1.45;
+	color: #8a4a3e;
+	margin: 8px 0 0;
+}
+
+.rm-linjer {
+	border-top: 1px solid var(--line);
+	padding: 4px 14px 14px;
+}
+
+.rm-l {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 8px 0;
+	border-bottom: 1px solid var(--line);
+}
+
+.rm-l.tom {
+	opacity: 0.45;
+}
+
+.rm-l-venstre {
+	min-width: 0;
+}
+
+.rm-l-navn {
+	display: block;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	color: var(--text);
+}
+
+.rm-l-vare {
+	display: block;
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-top: 1px;
+}
+
+.rm-l.mangler .rm-l-vare {
+	color: #8a4a3e;
+}
+
+.rm-l-makro {
+	flex: 0 0 auto;
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	text-align: right;
+}
+
+.rm-sum {
+	display: flex;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 10px 0 0;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--text);
+}
+
+.rm-sum.svag {
+	font-weight: 500;
+	color: var(--ink-2);
+	padding-top: 4px;
+}
+
+.rm-tom {
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	padding: 20px 0;
+}

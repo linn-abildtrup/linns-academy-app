@@ -45,6 +45,8 @@
 	import { hentOpskrifter3, type Opskrift3 } from '$lib/firestore/opskrifter3';
 	import { kategoriForMaaltid } from '$lib/content/opskriftKategori3';
 	import { parseOpskriftMakro } from '$lib/content/opskrifter';
+	import { visMakro } from '$lib/content/opskriftMakro3';
+	import { hentBeregninger, type Beregninger } from '$lib/firestore/opskriftBeregning3';
 	import type { Opskrift } from '$lib/content/opskrifter';
 	import { gemSammensat } from '$lib/firestore/plejer3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
@@ -204,6 +206,13 @@
 	let tilfoejArk = $state(false);
 	let arkHenter = $state(false);
 	let opskrifter = $state<Opskrift3[]>([]);
+	/**
+	 * De beregnede makrotal pr opskrift. Hentes sammen med opskrifterne
+	 * og bruges baade i arket og naar retten laegges i maaltidet, saa det
+	 * hun SER og det der bliver GEMT altid er det samme tal.
+	 * Se SPEC-3.0.md 26.19.
+	 */
+	let beregninger = $state<Beregninger>({});
 	let egne = $state<Fodevare[]>([]);
 
 	// ── Faste maaltider ────────────────────────────────────────
@@ -377,7 +386,11 @@
 		arkHenter = true;
 		try {
 			if (kilde === 'opskrifter') {
-				if (opskrifter.length === 0) opskrifter = await hentOpskrifter3();
+				if (opskrifter.length === 0) {
+					const [o, b] = await Promise.all([hentOpskrifter3(), hentBeregninger()]);
+					opskrifter = o;
+					beregninger = b;
+				}
 				// Hendes egne hentes samtidig, for de bor paa den samme hylde.
 				// Har hun ingen, findes fanen ikke, og saa koster det ét
 				// tomt opslag som Firestore i forvejen har liggende lokalt.
@@ -933,7 +946,9 @@
 		if (!uid || !o) return;
 		gemmer = true;
 		try {
-			const mk = parseOpskriftMakro(o.instruktioner);
+			// Samme tal som arket viste hende. Beregnet hvor vi har det,
+			// ellers det der staar i teksten.
+			const mk = visMakro(o.id, o.instruktioner, beregninger, parseOpskriftMakro(o.instruktioner));
 			const navn = portioner === 1 ? o.titel : `${o.titel} (${formatPortion(portioner)} port.)`;
 			// Alle fem tal skalerer med portionerne, og alle fem gemmes, ogsaa hvis
 			// hun ikke maa se de tre sidste. Se SPEC-3.0.md 26.5. Makroen er PR
@@ -1416,6 +1431,7 @@
 		{gemmer}
 		{visUdvidet}
 		erFavorit={erFavorit(favoritOpskrifter, aabenOpskrift.id)}
+		{beregninger}
 		ongem={gemOpskrift}
 		onfavorit={skiftFavoritOpskrift}
 		ontilbage={() => (aabenOpskrift = null)}

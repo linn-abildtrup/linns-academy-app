@@ -13,6 +13,8 @@
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import { parseOpskriftMakro, type DietTag, type Opskrift } from '$lib/content/opskrifter';
+import { visMakro } from '$lib/content/opskriftMakro3';
+import { hentBeregninger, type Beregninger } from '$lib/firestore/opskriftBeregning3';
 import { kategorier3, type Kategori3 } from '$lib/content/opskriftKategori3';
 
 export interface Opskrift3 {
@@ -36,9 +38,21 @@ export interface Opskrift3 {
 	raa: Opskrift;
 }
 
-function fraDoc(id: string, data: Record<string, unknown>): Opskrift3 {
+function fraDoc(
+	id: string,
+	data: Record<string, unknown>,
+	beregninger: Beregninger = {}
+): Opskrift3 {
 	const raa = { id, ...data } as Opskrift;
-	const makro = parseOpskriftMakro(raa.instruktioner ?? '');
+	// Beregnet makro foerst, det skrevne som reserve. Overlejringen sker
+	// HER og ikke ude i siderne, saa der ikke findes et sted i 3.0 hvor
+	// det gamle tal kan slippe igennem. Se SPEC-3.0.md 26.19.
+	const makro = visMakro(
+		id,
+		raa.instruktioner ?? '',
+		beregninger,
+		parseOpskriftMakro(raa.instruktioner ?? '')
+	);
 	return {
 		id,
 		titel: raa.titel ?? '',
@@ -69,9 +83,12 @@ export async function hentOpskrifter3(): Promise<Opskrift3[]> {
 	if (iGang) return iGang;
 	iGang = (async () => {
 		try {
-			const snap = await getDocs(collection(db, 'opskrifter'));
+			const [snap, beregninger] = await Promise.all([
+				getDocs(collection(db, 'opskrifter')),
+				hentBeregninger()
+			]);
 			const liste = snap.docs
-				.map((d) => fraDoc(d.id, d.data()))
+				.map((d) => fraDoc(d.id, d.data(), beregninger))
 				.filter((o) => (o.raa as { aktiv?: boolean }).aktiv !== false)
 				.sort((a, b) => a.titel.localeCompare(b.titel, 'da'));
 			cache = liste;
