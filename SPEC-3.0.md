@@ -2900,6 +2900,10 @@ bagefter. 67 blokke begge steder, og de er ens.
 | 6 | Byg eget program | Ikke bygget |
 | 7 | De seks programmer kopieres over | Kører når første hold flyttes |
 
+**AI-værktøjet til at bygge programmer ligger uden for rækken**, se 29.10. Det
+er besluttet og tegnet, og Linns valg er at det kommer efter bid 2. Det kan
+altså bygges når som helst herfra, uden at det spærrer for noget andet.
+
 **Udstyrsvalget kommer første gang hun trykker på træning**, ikke når hun logger
 ind. Et forkert skridt i opstarten har givet en helt blank app for alle før, og
 en kvinde der bare vil se sin dag skal ikke mødes af et spørgsmål om sjippetov.
@@ -2917,3 +2921,86 @@ der ligger et dokument pr dag de har trænet.
 **Kopieringen af fremgang skal køre når et hold faktisk flyttes**, ikke i
 forvejen. Kører den for tidligt, træner kunden videre i den gamle app bagefter,
 og så er tallet forældet den dag hun lander i 3.0.
+
+### 29.10 AI-værktøjet til at bygge programmer. Besluttet 15. august, ikke bygget
+
+Linn skriver sit ønske i fri tekst og snakker sig frem til et program.
+Mockups i `v3 app/linns-academy-design/mockups-traening-ai.html`, gennemgået
+før noget blev besluttet.
+
+**Til Linn nu, til kunden senere.** Hendes valg. Motoren bygges så den kan
+genbruges, men kunden kan først få den når bid 3, 4 og 6 er på plads, altså
+når hun har en træningsside, en afspiller og lov til at bygge selv.
+
+**Rækkefølge:** efter bid 2. Linns valg, fordi et program man ikke kan give
+til nogen stadig ikke er i brug.
+
+#### Den regel der bærer det hele
+
+**AI'en må aldrig finde på en øvelse.** Beder man en model om et
+træningsprogram, foreslår den glad en øvelse der ikke findes i banken, ikke
+har en video og ikke kan afspilles. Så ville kunden stå med en tom skærm
+midt i en træning.
+
+Løsningen er den samme som `/api/foreslaa-madplan` allerede bruger: øvelserne
+sendes med som en pulje, prompten siger at der kun må vælges derfra, og
+svaret valideres på serveren. Alt der ikke findes, smides væk.
+
+**Det er samtidig sikkerhedsnettet.** Alle øvelser i banken er Linns egne,
+med hendes videoer og hendes forklaringer. AI'en kan sammensætte dem, men den
+kan ikke opfinde træning til en kvinde med en dårlig skulder. Fagligheden
+bliver ved med at være hendes.
+
+#### Hvad der er besluttet
+
+- **Model: Claude Opus 5.** De øvrige AI-funktioner i appen kører på en
+  mindre model, fordi de svarer på korte spørgsmål. Her skal den forstå
+  "skånsomt for knæ" og oversætte det til de rigtige øvelser fra flere
+  hundrede
+- **Prisen** er under 1 krone pr besked, 2 til 4 kroner pr program, og under
+  100 kroner for tyve programmer. Til sammenligning koster videoerne i appen
+  100 til 130 kroner om måneden. Får kunderne den engang, skal der regnes
+  igen, og formentlig bruges en mindre model til dem
+- **Forslaget står som et kort med rigtige øvelsesnavne**, ikke som tekst
+  inde i samtalen. Linn skal kunne se hvad hun får uden at læse et afsnit
+- **Resultatet er et helt almindeligt program i kladde.** Ingen særlig
+  AI-type, ingenting er låst, og hun retter i det bagefter som i alt andet
+- **Der gemmes ingenting før hun trykker Opret**
+- **Et flueben pr samtale afgør om AI'en også skriver dagenes titler og en
+  kort tekst.** Linns valg
+- **AI'en opretter ikke kategorier.** Beder hun om sjippetov og kategorien
+  ikke findes, siger AI'en det. Linn beholder styringen over den liste
+  kunden ser
+- **Samtalerne gemmes en måned**, så det kan opklares hvad der gik galt hvis
+  et program bliver mærkeligt
+- **Den daglige grænse genbruges** fra de øvrige AI-funktioner, så en fejl i
+  koden ikke kan køre løbsk og koste penge natten over. Kan sættes op for
+  admin hvis den bliver for lav
+
+#### At rette et program der findes
+
+Den svære af de to. Linns krav 15. august: den skal både kunne lave nye
+programmer og rette dem der findes.
+
+**Der vises altid præcis hvilke dage der bliver ændret, før der gemmes**, med
+før og efter, plus en linje om hvad der er urørt. Den linje er lige så vigtig
+som listen.
+
+**Kun de dage sætningen handler om sendes til AI'en.** "Uge 3" oversættes
+til dag 15 til 21 på vores side. Et 84-dages program kan ikke sendes afsted
+hver gang hun skriver en sætning, hverken i tid eller i penge. Kan det ikke
+regnes ud, spørger AI'en hvilke dage hun mener i stedet for at gætte.
+
+#### En teknisk beslutning der sparer både penge og kvalitet
+
+**AI'en vælger øvelserne og opbygningen. Den eksisterende generator fordeler
+dem over de 84 dage.** Beder man en model skrive 84 dage ud i ét svar, bliver
+de sidste tredive sjuskede, og det koster mange penge. Lader man den designe
+en uge og lader koden variere den, bliver det både bedre og billigere.
+
+#### Det der ikke er afgjort endnu
+
+- Endpointet. Det bliver et nyt ved siden af, så `/api/ny-ai` og
+  `/api/linn-ai` er urørte, men navnet er ikke valgt
+- Hvad kunden må, den dag hun får den. Et program hun selv har snakket sig
+  frem til er ikke gennemgået af Linn, og det skal der tages stilling til
