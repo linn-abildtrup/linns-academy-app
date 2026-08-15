@@ -2678,13 +2678,21 @@ ingenting af det, og de 760 kunder i drift mærker ingenting.
 ```
 traeningKategorier3/{id}                kategorierne
 traeningsprogrammer3/{id}               programmet
-traeningsprogrammer3/{id}/dage/{dagN}   dagene med øvelser
-traeningTildelinger3/{id}               hvem får hvad, og hvornår   (bid 2)
+traeningsprogrammer3/{id}/dage/{dagN}   træningerne med øvelser
+traeningTildelinger3/{id}               hvem får hvad, og hvornår
 
-users/{uid}/traeningFremgang3/{programId}   hvor langt hun er        (bid 4)
-users/{uid}/traeningPlads3/{programId}      gemt plads i en træning  (bid 4)
-userDoc.traeningsudstyr3                    hendes udstyrsvalg       (bid 3)
+users/{uid}/traeningFremgang3/{programId}   hvor langt hun er
+users/{uid}/traeningPlads3/{programId}      gemt plads i en træning
+userDoc.traeningsudstyr3                    hendes udstyrsvalg
 ```
+
+Alt herover er bygget og i drift pr 15. august 2026.
+
+**Undersamlingen hedder `dage` og feltet hedder `antalDage`**, selv om det
+kunden ser hedder træninger. Navnene stammer fra før omdøbningen i 29.6 og
+bliver stående: et skift ville kræve en migrering uden at kunden fik noget ud
+af det. Brug `antalTraeninger3()` i UI-kode, så ordet dag ikke sniger sig
+tilbage på skærmen.
 
 **Dagene ligger i en undersamling** og ikke i selve programmet. Et 84-dages
 program med fem øvelser om dagen er for stort til ét dokument, og listen over

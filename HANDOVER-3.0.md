@@ -11,7 +11,7 @@ Denne fil er til den næste der skal arbejde videre, uanset om det er et nyt Cla
 Læs den sammen med disse tre:
 
 - `CLAUDE.md` i repo-roden er arbejdsreglerne. De er ikke til forhandling.
-- `SPEC-3.0.md` er hvad der bygges og hvorfor. 28 afsnit, hvor 26 har en del underafsnit. 13 til 21 er designbeslutningerne fra 5. august, 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning, og 28 er opstarten, altså det der sker før den første skærm kommer frem. **Efter afsnit 27 ligger Ventelisten**, altså alt det der bevidst er sat på pause til appen er designet færdig. Læs den før du går i gang med noget i Mad.
+- `SPEC-3.0.md` er hvad der bygges og hvorfor. 29 afsnit, hvor 26 og 29 har en del underafsnit. 13 til 21 er designbeslutningerne fra 5. august, 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning, 28 er opstarten, altså det der sker før den første skærm kommer frem, og **29 er hele træningsmodulet**. **Efter afsnit 27 ligger Ventelisten**, altså alt det der bevidst er sat på pause til appen er designet færdig. Læs afsnit 22 til 27 før du går i gang med noget i Mad, og afsnit 29 før du rører træningen.
 - `v3 app/linns-academy-design/DESIGN-SPEC.md` og `mockups.html` er hvordan det ser ud.
 
 ---
@@ -97,6 +97,11 @@ gamle app og må kun læses.
 | `content/opskriftPortion3.ts` | Portioner og makro. **Regnereglen**, se 9.9 | 14 |
 | `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid. Se 9.9 | 20 |
 | `content/beskeder3.ts` | "Til dig lige nu" | 8 |
+| `content/traeningsprogram3.ts` | **Træning.** Programmer og træninger. Se 9.18 | 44 |
+| `content/traeningKategori3.ts` | Kategorier og hendes udstyrsvalg | 34 |
+| `content/traeningTildeling3.ts` | Hvem får hvad, hvornår, og dækning | 49 |
+| `content/traeningFremgang3.ts` | Hvor langt hun er, og rækkefølgen | 30 |
+| `content/afspiller3.ts` | **Afspillerens fase-maskine.** Ren logik | 38 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
 
@@ -119,6 +124,14 @@ gamle app og må kun læses.
 | `firestore/mineOpskrifter3.ts` | Kundens egne opskrifter. Den fjerde der **skriver** kundedata. Se 9.11 |
 | `firestore/egneFodevarer3.ts` | Kundens egne fødevarer. Den femte der **skriver** kundedata. Se 9.12 |
 | `firestore/hjerteFodevare3.ts` | Hjertet på en fødevare. Den sjette der **skriver** kundedata. Se 9.14 |
+| `firestore/traeningsprogram3.ts` | Programmerne og deres træninger. Kun admin skriver |
+| `firestore/traeningKategori3.ts` | Kategorierne. Kun admin skriver |
+| `firestore/traeningTildeling3.ts` | Tildelingerne. Kun admin skriver. Kunden læser to snævre forespørgsler |
+| `firestore/traeningFremgang3.ts` | Hendes fremgang. Den syvende der **skriver** kundedata |
+| `firestore/traeningPlads3.ts` | Gemt plads i en træning. Den ottende der **skriver** |
+| `firestore/traeningUdstyr3.ts` | Hendes udstyrsvalg. Den niende der **skriver** |
+| `firestore/traeningKunde3.ts` | Kunderne set fra admin, med adgang og forløbsdag |
+| `firestore/traeningForside3.ts` | Træningsflisen på forsiden |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
@@ -152,6 +165,17 @@ Alle ruter ligger under `/ny`.
 | `/ny/admin/opskrift-makro` | Admin: regnestykket bag hver opskrift, linje for linje. Se 9.17 |
 | `/ny/30-30` | 30-30 beregneren, oversigten. Fire måltider og dagens tal. Færdig |
 | `/ny/30-30/[type]` | Inde i et måltid. Alt indhold hænger her. Færdig |
+| `/ny/admin` | **Admin-forsiden.** Ét sted at trykke sig videre fra. Nås fra Profil |
+| `/ny/admin/traening` | Admin: byg træningsprogrammer. Se 9.18 |
+| `/ny/admin/traening/kategorier` | Admin: det udstyr kunden kan vælge imellem |
+| `/ny/admin/traening/[id]/tildel` | Admin: hvem har programmet, og hvornår det gælder |
+| `/ny/admin/traening/hold` | Admin: **har hvert hold træning til alle slags udstyr** |
+| `/ny/admin/traening/kunde` | Admin: slå en kunde op, se hvad hun ser og hvorfor |
+| `/ny/admin/traening/byg-eget` | Admin: hvem må bygge sit eget program |
+| `/ny/traening` | Kunden: Mikrotræning, hendes programmer. Færdig |
+| `/ny/traening/[id]` | Kunden: træningerne og hvor langt hun er. Færdig |
+| `/ny/traening/[id]/[nr]` | Kunden: **afspilleren.** Én, hvor den gamle app har fire |
+| `/ny/profil/traening` | Kunden: Sådan træner jeg, altså udstyrsvalget |
 
 **Bundmenuen:** Forside · 30-30 · Snak · Udvikling · Profil.
 
@@ -252,7 +276,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1271 tests lige nu, alle grønne
+npm test                               # 1588 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -274,9 +298,13 @@ Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx 
 
 ## 9. Hvor vi står, og hvad der er næste skridt
 
-Opdateret 11. august 2026, sen aften. Alt herunder er kodet, committet og pushet, og `main` er i sync.
+Opdateret 15. august 2026, aften. Alt herunder er kodet, committet og pushet, og `main` er i sync.
 
-**Etape 1 til 3 er færdige, og hele den åbne liste fra 6. august er klaret.** Etape 4 er i gang: 30-30 beregneren er bygget og i brug, se 9.4.
+**Etape 1 til 3 er færdige, og hele den åbne liste fra 6. august er klaret.** Etape 4 er i gang.
+
+**30-30 beregneren** er bygget og i brug, se 9.4, og regnemaskinen bag opskrifternes makro er færdig, se 9.17.
+
+**Træningen er bygget om fra bunden 15. august**, hele modulet, fra Linns værktøj til kundens afspiller. Se 9.18, og læs SPEC afsnit 29 før du rører noget der.
 
 **Sidst på aftenen 11. august blev hele opstarten rettet**, efter at Linns telefon stod over ét minut på "Et øjeblik". Fem flaskehalse, fire af dem i den app der er i drift. Se 9.7, og SPEC afsnit 28 for hele gennemgangen.
 
@@ -808,6 +836,83 @@ De skrevne tal i opskrifterne er **runde måltal, ikke udregninger.** 80 procent
 
 ---
 
+### 9.18 TRÆNING, bygget 15. august
+
+**Hele modulet er lavet om fra bunden.** Det er den største enkelt-ting siden
+regnemaskinen. Fem bidder er bygget, tegnet og godkendt hver for sig, og der
+er sytten beslutninger bag. **Læs SPEC-3.0.md afsnit 29 før du rører noget.**
+Her står kun det en ny person skal vide med det samme.
+
+#### Hvad der var galt
+
+Programmerne lå tre steder, og to af dem var bundet til enten et forløb eller
+et abonnement. Dagen blev regnet ud på tre forskellige måder. Fremgangen lå
+fem steder. Og der var **fire næsten ens afspillere på cirka 1.400 linjer
+hver**, én for abo, én for forløb, én for master og én for byg-eget.
+
+#### Hvad der er nu
+
+Programmerne ligger ét sted, `traeningsprogrammer3`, og er uafhængige af
+kundetype. Linn bygger dem selv i admin og tildeler dem til et hold, en
+person, alle medlemmer eller alle. Kunden vælger sit udstyr, ser kun de
+programmer der passer, og træner i **én** afspiller.
+
+**Alt nyt er nye samlinger som kun 3.0 læser.** Den gamle app kender ingen af
+dem, og de 760 kunder i drift mærker ingenting.
+
+#### Fem ting der er dyre at genopdage
+
+**DET HEDDER TRÆNING, IKKE DAG.** Ordet betød to forskellige ting: dag 15 i et
+forløb, som er en rigtig kalenderdag, og dag 5 i et program, som bare er
+femte gang hun træner. Nu er de adskilt. Feltet hedder stadig `antalDage` i
+databasen, og undersamlingen hedder `dage`, men **brug `antalTraeninger3()` i
+UI-kode** så ordet ikke sniger sig tilbage på skærmen.
+
+**Dagen rykker først når hun har trænet**, ikke når kalenderen skifter. Det
+gælder også forløbskunder, og det er en ændring i forhold til den gamle app.
+Springer hun ti dage over, står hun stadig på træning 4.
+
+**En tildeling gælder ÉT bestemt hold.** Det var Linns valg, og prisen er
+reel: **hvert nyt hold starter på nul.** Derfor findes `/ny/admin/traening/hold`,
+der viser tomme hold øverst og med farve, og derfor findes knappen der
+kopierer et tidligere holds tildelinger over.
+
+**En tom udstyrsliste betyder at hun ser alt.** Spørgsmålet stilles i
+onboarding, som ikke er bygget, så ingen kunde har valgt endnu. At skjule
+hendes træning fordi hun ikke er blevet spurgt ville være at straffe hende
+for noget vi ikke har bygget.
+
+**`programmerForKunde3` bruges BEGGE steder**, både af admin-opslaget og af
+kundens egen liste. Det er med vilje. To udgaver af den regel ville drive fra
+hinanden, og så ville admin sige noget andet end kunden oplever. Retter du
+noget i filtreringen, retter du begge skærme på én gang, og det er meningen.
+
+#### Reglerne i Firebase
+
+Tre nye samlinger. Programmer og kategorier må alle indloggede læse, kun admin
+skriver. **Tildelingerne er delt i to**, og det er vigtigt: rækker til et
+hold, til medlemmer og til alle må enhver læse, men en række til én person
+indeholder hendes navn og må kun læses af hende selv. Derfor henter kunden
+med to snævre forespørgsler, se `hentMineTildelinger3`. Et enkelt kald efter
+hele samlingen bliver afvist, og det er meningen.
+
+#### Det der mangler
+
+- **Byg eget program.** Adgangen kan gives, men skærmen kunden bygger på
+  findes ikke endnu
+- **De seks gamle programmer er ikke kopieret over.** Kickstart med og uden
+  kettlebell, Kropsro med og uden, og abo-mikrotræningen i to udgaver
+- **AI-værktøjet** til at bygge programmer er tegnet og besluttet, ikke
+  bygget. Se SPEC 29.10
+
+#### DET VIGTIGSTE FØR ET HOLD FLYTTES TIL 3.0
+
+Forsidens træningsflise læser nu den nye model. **En kunde får ingen
+træningsflise før hun har fået et program tildelt i det nye system.** Det
+gælder også det første Kickstart-hold. Kopieringen af de seks programmer OG
+tildelingen af dem skal derfor være på plads **før** et hold flyttes over.
+Ellers starter et helt hold uden træning.
+
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
 Hele Mad-modulet blev gennemgaaet mod den gamle app 12. august, funktion for
@@ -826,8 +931,7 @@ opstarts-problemet i 9.7.
 
 Resten af etape 4:
 
-- **Træning.** Kunden skal kunne vælge sit program første gang der trykkes, og
-  skifte valg løbende. Nås fra dagens træning på forsiden
+- ~~**Træning.**~~ **Bygget 15. august**, hele modulet fra bunden. Se 9.18
 - **Biblioteket** som et kort nederst på forsiden, kun for dem der har adgang
 - **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app
 - ~~`static/mockup/` slettes~~. **Klaret 11. august.** Se 9.7
@@ -914,6 +1018,8 @@ Bo arbejder med på projektet og kan give et go på samme måde som hun kan.
 Det her er ikke teori. Det er hvad der faktisk har fungeret, og hvad der ikke har.
 
 **Mål på rigtige kundedata før du vælger design.** Det har ændret designet flere gange, og hver gang til det bedre. Skriv scriptet som `scripts/_navn.ts`, kør det læs-kun, vis Linn tallene, og slet scriptet bagefter. Tre eksempler: de 68,5 % gentagelser flyttede hele Mad-skærmen, de 13 madvarer om dagen aflivede tre forslag, og en måling viste at ingen kunde ville blive låst ude af spærringen.
+
+**Mockups før kode. Hver gang.** Linns faste regel siden 15. august, og den gælder også admin-skærme. Tegn skærmen som HTML i `v3 app/linns-academy-design/` som `mockups-<emne>.html`, gennemgå den med hende, ret efter hendes svar, og kod først derefter. Det er ikke pynt: tildelingen i træningen blev tegnet om én gang undervejs, fordi hun ville have ét bestemt hold i stedet for forløbet generelt, og den ændring ville have været dyr at opdage i koden.
 
 **Ét skærmbillede ad gangen.** Tegn det, få det låst, byg det. Vi tegnede fem runder mockups af Mad-modulet på et gæt om hvad det indeholdt, før vi gennemgik det. Det var spildt arbejde.
 
