@@ -2597,10 +2597,10 @@ ned til hver kunde ved hver udrulning, så 808 KB stillads kostede alle.
 - **Firebase Auth selv er ikke undersøgt.** Hænger noget dér, altså før kæden
   overhovedet går i gang, er intet af det her dækket
 
-## 29. Træning. Modellen låst 15. august, bid 1 til 4 bygget samme dag
+## 29. Træning. Modellen låst 15. august, bid 1 til 5 bygget samme dag
 
 Hele modulet blev gennemgået 15. august, først som diagnose af den gamle app,
-så som mockups, og derefter blev bid 1 til 4 bygget. Afsnittet her er
+så som mockups, og derefter blev bid 1 til 5 bygget. Afsnittet her er
 beslutningerne og hvorfor de er som de er.
 
 **Arbejdsformen var mockups før kode, hver gang.** Hver bid blev tegnet i
@@ -2960,6 +2960,46 @@ navn på en historisk dato.
 **Skærmen holdes vågen** mens hun træner, og der er baggrundsmusik plus en
 lyd tre sekunder før hvert skift. Lyden kan slås fra.
 
+### 29.6.3 Forsidens flise. LÅST og bygget 15. august, bid 5
+
+Flisen fandtes i forvejen, men læste `userDoc.aktivtTraeningsprogram` og
+viste den GAMLE apps programmer. Nu viser den det samme som
+Mikrotræning-siden, og den er blevet et link.
+
+**Tre tilstande, og de skal se forskellige ud:**
+
+| Tilstand | Hvad hun ser |
+|---|---|
+| Ingen | Flisen vises slet ikke |
+| Vælg | "Vælg din træning · 3 programmer er klar til dig" |
+| Program | Navnet · "Træning 5 · 3 øvelser · ca. 8 min", med video |
+
+**Har hun kun ét program, springes "vælg" over.** Der er ikke noget at vælge
+imellem, og det ville være et ekstra tryk uden indhold.
+
+**Flisen fører ind i programmet, ikke direkte ind i træningen.** Så ser hun
+hvor hun er, før hun starter, og det er den samme vej som fra listen.
+
+**Hentningen kaster aldrig.** Går noget galt, vises ingen flise i stedet for
+at vælte forsiden. Træningen er én blok blandt mange, og resten af dagen skal
+stadig kunne ses. Selve træningen hentes for sig, så flisen kan vise navnet
+selv om dagene ikke når frem.
+
+`videoForDag` er eksporteret fra `forside3.ts`, så flisen bruger nøjagtig den
+samme video-hentning med den samme frist. To udgaver ville betyde at den ene
+kunne blokere forsiden mens den anden gav op.
+
+**`hentDagensTraening` i `forside3.ts` kaldes ikke længere.** Den står tilbage
+nogle dage som fortryd-mulighed og er mærket tydeligt i koden. Holder den nye
+flise, slettes den sammen med `DagensTraening`, `FULDT_PROGRAM` og
+`RESERVE_PROGRAM`.
+
+**VIGTIGT FØR ET HOLD FLYTTES.** Nu hvor flisen læser den nye model, får en
+kunde ingen træningsflise før hun har fået et program tildelt i det nye
+system. Det gælder også det første Kickstart-hold der flyttes til 3.0.
+Kopieringen i 29.9 og tildelingen af de kopierede programmer skal derfor være
+på plads FØR et hold flyttes over.
+
 ### 29.7 Bid 1. LÅST og bygget 15. august
 
 Mockups ligger i `v3 app/linns-academy-design/mockups-traening-admin.html` og
@@ -3003,7 +3043,7 @@ bagefter. 67 blokke begge steder, og de er ens.
 | 2 | Tildeling, dækning pr hold, kunde-opslag, byg-eget-adgang | **Færdig 15. august** |
 | 3 | Kundens udstyrsvalg og hendes programliste | **Færdig 15. august** |
 | 4 | Afspilleren med Ja, Nej og Gem | **Færdig 15. august** |
-| 5 | Forsidens flise kobles på | Ikke bygget |
+| 5 | Forsidens flise kobles på | **Færdig 15. august** |
 | 6 | Byg eget program | Ikke bygget |
 | 7 | De seks programmer kopieres over | Kører når første hold flyttes |
 
