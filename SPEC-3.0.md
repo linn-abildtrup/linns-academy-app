@@ -2699,9 +2699,9 @@ program med fem øvelser om dagen er for stort til ét dokument, og listen over
 programmer skal kunne hentes uden at trække 420 dage med.
 
 **En dag genbruger den gamle form**, altså `TrainingDay` med `DayExercise`.
-Det er med vilje. Så kan de seks programmer der kører i dag kopieres over uden
-at blive skrevet om, udkast-generatoren fra den gamle app kan bruges som den
-er, og afspilleren kan bygges på den samme form.
+Det er med vilje. Udkast-generatoren fra den gamle app kan bruges som den er,
+afspilleren kan bygges på den samme form, og skulle nogen alligevel få brug
+for at hente et gammelt program ind, kan det gøres uden at skrive det om.
 
 **Fremgangen ligger pr program.** Det er dét der gør at hun kan skifte mellem
 programmer uden at miste noget, og at fremgangen overlever at et program bliver
@@ -3004,9 +3004,9 @@ flise, slettes den sammen med `DagensTraening`, `FULDT_PROGRAM` og
 
 **VIGTIGT FØR ET HOLD FLYTTES.** Nu hvor flisen læser den nye model, får en
 kunde ingen træningsflise før hun har fået et program tildelt i det nye
-system. Det gælder også det første Kickstart-hold der flyttes til 3.0.
-Kopieringen i 29.9 og tildelingen af de kopierede programmer skal derfor være
-på plads FØR et hold flyttes over.
+system. Det gælder også det første Kickstart-hold der flyttes til 3.0. Programmerne
+skal derfor være **bygget og tildelt** før et hold flyttes over. De gamle
+kopieres ikke, se 29.9.
 
 ### 29.7 Bid 1. LÅST og bygget 15. august
 
@@ -3053,7 +3053,7 @@ bagefter. 67 blokke begge steder, og de er ens.
 | 4 | Afspilleren med Ja, Nej og Gem | **Færdig 15. august** |
 | 5 | Forsidens flise kobles på | **Færdig 15. august** |
 | 6 | Byg eget program | Ikke bygget |
-| 7 | De seks programmer kopieres over | Kører når første hold flyttes |
+| 7 | De seks programmer kopieres over | **Udgår.** Linns valg 16. august, se 29.9 |
 
 **AI-værktøjet til at bygge programmer ligger uden for rækken**, se 29.10. Det
 er besluttet og tegnet, og Linns valg er at det kommer efter bid 2. Det kan
@@ -3064,19 +3064,56 @@ Linns beslutning 15. august. Onboarding er ikke bygget, så vælgeren bor indtil
 videre kun i Profil, og den er lavet som en komponent så onboarding kan
 genbruge præcis den skærm. Se 29.6.1.
 
-### 29.9 Kopieringen af de seks programmer
+### 29.9 De gamle programmer kopieres IKKE. Besluttet 16. august
 
-Kickstart med og uden kettlebell, Kropsro med og uden, og abo-mikrotræningen i
-to udgaver. De kopieres over med kategori sat, og originalerne bliver liggende
-urørte.
+Planen var at kopiere de gamle programmer over med fremgang og det hele.
+**Linn droppede det 16. august**, efter en diagnose af hvad der faktisk ligger.
+Programmerne bygges i stedet forfra i det nye værktøj.
 
-**Fremgangen skal med over.** Linns beslutning 15. august. Den ligger tre
-forskellige steder i dag og kan bygges op igen, også for abo-kunderne, fordi
-der ligger et dokument pr dag de har trænet.
+**Originalerne bliver liggende urørte**, så beslutningen kan tages om. Alt
+herunder er målt 16. august og er stadig sandt hvis nogen får brug for det.
 
-**Kopieringen af fremgang skal køre når et hold faktisk flyttes**, ikke i
-forvejen. Kører den for tidligt, træner kunden videre i den gamle app bagefter,
-og så er tallet forældet den dag hun lander i 3.0.
+#### Hvad der faktisk ligger, og hvorfor "de seks" var forkert
+
+**19 programmer, hvoraf kun 13 er forskellige.** Samme program-id går igen på
+flere hold, men indholdet er ikke altid det samme.
+
+| Program | Træninger | Hvor |
+|---|---|---|
+| Mikrotræning med kettlebell | 21 | Kickstart juni **og** september |
+| Mikrotræning uden udstyr | 21 | Kickstart juni **og** september |
+| Mikrotræning med kettlebell | 21 | Kickstart maj **og** Lise_Render |
+| Mikrotræning uden udstyr | 21 | Kickstart maj **og** Lise_Render |
+| 84 dage med kettlebell | 84 | Kropsro maj **og** 16. aug |
+| 84 dage uden kettlebell | 84 | Kropsro maj **og** 16. aug |
+| SommerRo med kettlebell | 55 | SommerRo |
+| SommerRo uden kettlebell | 55 | SommerRo |
+| Daglig mikrotræning | 14 | Abo, den gamle |
+| Daglig mikrotræning kettlebell | 21 | Abo basis |
+| Daglig mikrotræning uden udstyr | 21 | Abo basis |
+| Daglig mikrotræning kettlebell | 21 | Abo premium |
+| Daglig mikrotræning uden udstyr | 21 | Abo premium |
+
+**Tre ting der overraskede:**
+
+- **Kickstart findes i to udgaver.** Maj og Lise_Render deler én version med
+  64 øvelses-poster, juni og september deler en anden med 84. De er ikke ens
+- **SommerRo var slet ikke nævnt** i den oprindelige plan. To programmer på 55
+- **Abo har fem dokumenter, ikke to**, og premium og basis er ikke samme
+  indhold, selv om de hidtil er blevet omtalt som samme program i to udgaver
+
+**Alle øvelser findes i banken.** Intet peger på ingenting, så en kopiering
+ville ikke give brudte referencer, hvis beslutningen tages om.
+
+#### Hvad det betyder
+
+**Et hold der flyttes til 3.0 skal have programmer bygget og tildelt først.**
+Ikke kopieret, men bygget i det nye værktøj. Ellers har holdet ingen træning,
+og forsidens flise er tom.
+
+**Kunderne starter på træning 1.** Uden kopiering er der ingen fremgang at
+tage med, så en Kropsro-kunde midt i sit forløb begynder forfra i det nye
+program. Det er accepteret.
 
 ### 29.10 AI-værktøjet til at bygge programmer. Besluttet 15. august, ikke bygget
 

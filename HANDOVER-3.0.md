@@ -900,8 +900,10 @@ hele samlingen bliver afvist, og det er meningen.
 
 - **Byg eget program.** Adgangen kan gives, men skærmen kunden bygger på
   findes ikke endnu
-- **De seks gamle programmer er ikke kopieret over.** Kickstart med og uden
-  kettlebell, Kropsro med og uden, og abo-mikrotræningen i to udgaver
+- **De gamle programmer bliver IKKE kopieret over.** Linns valg 16. august.
+  Programmerne bygges forfra i det nye værktøj. Originalerne bliver liggende
+  urørte, så beslutningen kan tages om. Diagnosen af hvad der faktisk ligger,
+  altså 19 programmer hvoraf kun 13 er forskellige, står i SPEC 29.9
 - **AI-værktøjet** til at bygge programmer er tegnet og besluttet, ikke
   bygget. Se SPEC 29.10
 
@@ -909,9 +911,15 @@ hele samlingen bliver afvist, og det er meningen.
 
 Forsidens træningsflise læser nu den nye model. **En kunde får ingen
 træningsflise før hun har fået et program tildelt i det nye system.** Det
-gælder også det første Kickstart-hold. Kopieringen af de seks programmer OG
-tildelingen af dem skal derfor være på plads **før** et hold flyttes over.
-Ellers starter et helt hold uden træning.
+gælder også det første Kickstart-hold.
+
+Programmerne skal derfor være **bygget og tildelt** før et hold flyttes over.
+De gamle kopieres ikke, det droppede Linn 16. august, så der er ikke en
+genvej. Bliver det glemt, starter et helt hold uden træning.
+
+**Og kunderne starter på træning 1.** Der er ingen fremgang at tage med fra
+den gamle app, så en Kropsro-kunde midt i sit forløb begynder forfra. Det er
+accepteret, se SPEC 29.9.
 
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
