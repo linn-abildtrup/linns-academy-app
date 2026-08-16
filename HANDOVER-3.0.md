@@ -103,6 +103,7 @@ gamle app og må kun læses.
 | `content/traeningFremgang3.ts` | Hvor langt hun er, og rækkefølgen | 30 |
 | `content/afspiller3.ts` | **Afspillerens fase-maskine.** Ren logik | 38 |
 | `content/mineTraeninger3.ts` | Kundens egne programmer. Præfikset `egen_` | 26 |
+| `content/traeningAi3.ts` | **AI-værktøjet.** Validering mod banken, dage-fra-sætning | 44 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
 
@@ -169,6 +170,8 @@ Alle ruter ligger under `/ny`.
 | `/ny/admin` | **Admin-forsiden.** Ét sted at trykke sig videre fra. Nås fra Profil |
 | `/ny/admin/traening` | Admin: byg træningsprogrammer. Se 9.18 |
 | `/ny/admin/traening/kategorier` | Admin: det udstyr kunden kan vælge imellem |
+| `/ny/admin/traening/ai` | Admin: **byg et program med AI.** Se 9.18 |
+| `/ny/admin/traening/[id]/ai` | Admin: **ret et program med AI**, én uge ad gangen |
 | `/ny/admin/traening/[id]/tildel` | Admin: hvem har programmet, og hvornår det gælder |
 | `/ny/admin/traening/hold` | Admin: **har hvert hold træning til alle slags udstyr** |
 | `/ny/admin/traening/kunde` | Admin: slå en kunde op, se hvad hun ser og hvorfor |
@@ -280,7 +283,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1619 tests lige nu, alle grønne
+npm test                               # 1663 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -308,7 +311,7 @@ Opdateret 15. august 2026, aften. Alt herunder er kodet, committet og pushet, og
 
 **30-30 beregneren** er bygget og i brug, se 9.4, og regnemaskinen bag opskrifternes makro er færdig, se 9.17.
 
-**Træningen er bygget om fra bunden 15. og 16. august**, hele modulet, fra Linns værktøj til kundens afspiller og til at kunden bygger sit eget. Se 9.18, og læs SPEC afsnit 29 før du rører noget der.
+**Træningen er bygget om fra bunden 15. og 16. august**, hele modulet, fra Linns værktøj og AI-hjælperen til kundens afspiller og til at kunden bygger sit eget. Se 9.18, og læs SPEC afsnit 29 før du rører noget der.
 
 **Sidst på aftenen 11. august blev hele opstarten rettet**, efter at Linns telefon stod over ét minut på "Et øjeblik". Fem flaskehalse, fire af dem i den app der er i drift. Se 9.7, og SPEC afsnit 28 for hele gennemgangen.
 
@@ -840,11 +843,11 @@ De skrevne tal i opskrifterne er **runde måltal, ikke udregninger.** 80 procent
 
 ---
 
-### 9.18 TRÆNING, bygget 15. og 16. august
+### 9.18 TRÆNING, bygget 15. og 16. august. Modulet er færdigt
 
 **Hele modulet er lavet om fra bunden.** Det er den største enkelt-ting siden
-regnemaskinen. Seks bidder er bygget, tegnet og godkendt hver for sig, og der
-er en snes beslutninger bag. **Læs SPEC-3.0.md afsnit 29 før du rører noget.**
+regnemaskinen. Seks bidder plus AI-værktøjet er bygget, tegnet og godkendt hver for sig,
+og der er en snes beslutninger bag. **Læs SPEC-3.0.md afsnit 29 før du rører noget.**
 Her står kun det en ny person skal vide med det samme.
 
 #### Hvad der var galt
@@ -931,14 +934,42 @@ Fire ting der er dyre at genopdage:
 - **Der er ingen grænse** på antal træninger eller øvelser. Linns valg.
   Tiden står nederst i stedet
 
+#### AI-værktøjet, bygget 16. august
+
+To veje. `/ny/admin/traening/ai` bygger et nyt program, `/ny/admin/traening/[id]/ai`
+retter et der findes. Endpointet er `/api/traening-ai`, kun admin, Opus 5.
+**Læs SPEC 29.10 før du rører det.**
+
+Fem ting der er dyre at genopdage:
+
+- **AI'EN MÅ ALDRIG FINDE PÅ EN ØVELSE.** Puljen sendes med, prompten siger
+  at der kun må vælges derfra, og svaret valideres i `rensSvar3`. Alt der
+  ikke findes i banken, smides væk. En opfundet øvelse har ingen video, og så
+  står kunden med en tom skærm midt i en træning
+- **Sætningen oversættes til dage FØR der ringes nogen steder hen**, i
+  `dageFraSaetning3`. "Uge 3" bliver til dag 15 til 21. Kan det ikke regnes
+  ud, stiller skærmen selv spørgsmålet, uden at bruge et kald. Der sendes
+  højst 14 dage ad gangen, for 84 dage kan ikke sendes afsted hver gang hun
+  skriver en sætning
+- **AI'en skriver højst 14 dage.** Er programmet længere, designer den en
+  skabelon, og `udfoldDage3` fordeler den. Beder man en model skrive 84 dage
+  i ét svar, bliver de sidste tredive sjuskede
+- **`gemUdvalgteDage3` skriver kun de rettede dage**, men regner tælleren
+  over tomme dage ud af HELE programmet. Ellers ser et 84-dages program
+  næsten færdigt ud efter en rettelse af én uge
+- **Admin har sin egen daglige tæller på 60.** Kundernes 20 er urørte og
+  deler ikke tæller med den
+
 #### Det der mangler
 
 - **De gamle programmer bliver IKKE kopieret over.** Linns valg 16. august.
   Programmerne bygges forfra i det nye værktøj. Originalerne bliver liggende
   urørte, så beslutningen kan tages om. Diagnosen af hvad der faktisk ligger,
   altså 19 programmer hvoraf kun 13 er forskellige, står i SPEC 29.9
-- **AI-værktøjet** til at bygge programmer er tegnet og besluttet, ikke
-  bygget. Se SPEC 29.10
+- **AI-samtalerne slettes ikke automatisk.** De ligger i
+  `traeningAiSamtaler3` med et `udloeberAt` en måned frem, men der er ikke
+  noget der rydder op. Det kræver en TTL-regel i Firebase Console eller et
+  lille script
 
 #### DET VIGTIGSTE FØR ET HOLD FLYTTES TIL 3.0
 
@@ -972,7 +1003,7 @@ opstarts-problemet i 9.7.
 
 Resten af etape 4:
 
-- ~~**Træning.**~~ **Bygget 15. og 16. august**, hele modulet fra bunden, inklusive at kunden bygger sit eget. Se 9.18
+- ~~**Træning.**~~ **Bygget 15. og 16. august**, hele modulet fra bunden, inklusive at kunden bygger sit eget og AI-værktøjet. Se 9.18
 - **Biblioteket** som et kort nederst på forsiden, kun for dem der har adgang
 - **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app
 - ~~`static/mockup/` slettes~~. **Klaret 11. august.** Se 9.7

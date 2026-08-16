@@ -3055,9 +3055,9 @@ bagefter. 67 blokke begge steder, og de er ens.
 | 6 | Byg eget program | **Færdig 16. august**, se 29.11 |
 | 7 | De seks programmer kopieres over | **Udgår.** Linns valg 16. august, se 29.9 |
 
-**AI-værktøjet til at bygge programmer ligger uden for rækken**, se 29.10. Det
-er besluttet og tegnet, og Linns valg er at det kommer efter bid 2. Det kan
-altså bygges når som helst herfra, uden at det spærrer for noget andet.
+**AI-værktøjet til at bygge programmer lå uden for rækken**, se 29.10. Det er
+**bygget 16. august**, begge veje, altså både nye programmer og rettelser i
+dem der findes.
 
 **Udstyrsvalget hører hjemme i onboarding**, første gang en ny kunde logger på.
 Linns beslutning 15. august. Onboarding er ikke bygget, så vælgeren bor indtil
@@ -3115,7 +3115,7 @@ og forsidens flise er tom.
 tage med, så en Kropsro-kunde midt i sit forløb begynder forfra i det nye
 program. Det er accepteret.
 
-### 29.10 AI-værktøjet til at bygge programmer. Besluttet 15. august, ikke bygget
+### 29.10 AI-værktøjet til at bygge programmer. Besluttet 15. august, BYGGET 16. august
 
 Linn skriver sit ønske i fri tekst og snakker sig frem til et program.
 Mockups i `v3 app/linns-academy-design/mockups-traening-ai.html`, gennemgået
@@ -3191,10 +3191,51 @@ dem over de 84 dage.** Beder man en model skrive 84 dage ud i ét svar, bliver
 de sidste tredive sjuskede, og det koster mange penge. Lader man den designe
 en uge og lader koden variere den, bliver det både bedre og billigere.
 
+#### Sådan blev det bygget, 16. august
+
+**Endpointet hedder `/api/traening-ai`.** Nyt og ved siden af, så `/api/ny-ai`
+og `/api/linn-ai` er urørte. Auth er Firebase-token plus email i
+`ADMIN_EMAILS`, altså kun admin.
+
+**Den daglige grænse er 60 for admin, med sin egen tæller.** Linns valg 16.
+august, en ændring i forhold til beslutningen 15. august om at genbruge
+kundernes 20. Grunden er regnestykket: et program tager fem til ti beskeder,
+så 20 rækker kun til to eller tre programmer om dagen, og der skal bygges
+tretten. Kundernes 20 er urørte og deler ikke tæller med admins.
+
+**Kategorien vælges på skærmen, ikke af AI'en.** Det stod ikke i mockuppen,
+og det er en tilføjelse 16. august. To grunde: puljen af øvelser skal
+filtreres før den sendes afsted, og et program uden kategori kan kunden slet
+ikke se. Det ligger i forlængelse af at AI'en aldrig opretter kategorier.
+
+**AI'en skriver højst 14 dage.** Beder hun om flere, designer AI'en de første
+14 som en skabelon og sætter `antalDage` til det fulde tal, og `udfoldDage3`
+fordeler skabelonen ud. Skabelonen forskydes én plads pr gentagelse, så uge
+to ikke er en kopi af uge ét. Der kommer ingen nye øvelser til undervejs.
+
+**Ved ret-vejen oversættes sætningen til dage FØR der ringes nogen steder
+hen**, i `dageFraSaetning3`. "Uge 3" bliver til dag 15 til 21. Kan det ikke
+regnes ud, stiller skærmen selv spørgsmålet om hvilke dage hun mener, uden at
+bruge et kald. Der sendes højst 14 dage ad gangen.
+
+**Kun de dage der faktisk er ændret bliver skrevet**, se `gemUdvalgteDage3`.
+Tælleren over tomme dage regnes ud af HELE programmet, ikke af de dage der
+blev sendt. Ellers ville et program på 84 dage pludselig se næsten færdigt ud
+efter en rettelse af én uge, og så forsvinder advarslen mod at sætte et
+halvbygget program til klar.
+
+**Røgtestet mod den rigtige model 16. august** med sætningen fra mockuppen.
+Svaret kom som gyldig JSON, ingen opfundne øvelser, og modellen skrev selv at
+der kun var tre benøvelser i kategorien, at to af dem belaster knæene, og at
+den derfor havde undladt dem. Ét kald kostede omkring 65 øre, altså det der
+blev regnet med.
+
 #### Det der ikke er afgjort endnu
 
-- Endpointet. Det bliver et nyt ved siden af, så `/api/ny-ai` og
-  `/api/linn-ai` er urørte, men navnet er ikke valgt
+- **Samtalerne gemmes, men slettes ikke automatisk.** De ligger i
+  `traeningAiSamtaler3` med et `udloeberAt` en måned frem, og der er ikke
+  noget der rydder op endnu. Det kræver enten en TTL-regel i Firebase Console
+  eller et lille script
 - Hvad kunden må, den dag hun får den. Et program hun selv har snakket sig
   frem til er ikke gennemgået af Linn, og det skal der tages stilling til
 
