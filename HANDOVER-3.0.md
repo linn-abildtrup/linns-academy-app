@@ -305,9 +305,52 @@ Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx 
 
 ## 9. Hvor vi står, og hvad der er næste skridt
 
-Opdateret 15. august 2026, aften. Alt herunder er kodet, committet og pushet, og `main` er i sync.
+Opdateret 16. august 2026, aften. Alt herunder er kodet, committet og pushet, og `main` er i sync.
 
 **Etape 1 til 3 er færdige, og hele den åbne liste fra 6. august er klaret.** Etape 4 er i gang.
+
+### NÆSTE SKRIDT: onboarding
+
+Det er anbefalingen 16. august, og grunden er konkret. Træningsmodulet er
+færdigt, og kunden kan vælge hvilket udstyr hun har. **Men spørgsmålet stilles
+i onboarding, som ikke er bygget.** Derfor har ingen kunde valgt noget, og
+alle ser alle programmer. Filteret virker, det bliver bare aldrig brugt.
+
+Vælgeren findes allerede som komponenten `UdstyrValg.svelte` og bor i Profil,
+netop for at onboarding kan genbruge præcis den skærm. Se 9.18.
+
+**Og før et hold flyttes til 3.0:** programmerne skal være bygget OG tildelt i
+det nye system. De gamle kopieres ikke, det droppede Linn 16. august. Bliver
+det glemt, starter et helt hold uden træning.
+
+### Det der ellers står åbent, 16. august
+
+Spærrer for 3.0:
+
+- **Onboarding**, se ovenfor
+- **Biblioteket** som et kort nederst på forsiden, kun for dem der har adgang
+- **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app blok
+  for blok. Den slags gennemgang plejer at afsløre glemte ting
+
+Venter på en beslutning fra Linn:
+
+- **Indkøbslisten.** Anbefaling: vent til billederne er på opskrifterne
+- **Madplanen.** Parkeret 11. august, mangler et endeligt ja eller nej
+
+Kendt, ikke rettet:
+
+- **Skærmen ser tom ud mens fødevare-databasen hentes.** 2.268 dokumenter
+  tager tid på en telefon. Samme klasse som opstarts-problemet i 9.7
+- **Makrotallene skrives ikke ud til den gamle app.** Scriptet var klar og
+  kørte tørløb, men blev aldrig kørt. Synlig ændring for 760 kunder på én
+  gang, hvor nogle tal fordobles, så det skal times. Se afsnittet om åbne
+  tråde på regnemaskinen
+- **AI-samtalerne slettes ikke automatisk** efter en måned. Se 9.18
+
+Ældre tråde der ikke er statustjekket 16. august, og som skal verificeres mod
+koden før nogen regner med dem: forløb-webhooken til Simplero,
+feature-adgang-matricen, forløb-byggeværktøjet, Linn AI under Beskeder, og
+rettelsen af otte kunders købsdatoer.
 
 **30-30 beregneren** er bygget og i brug, se 9.4, og regnemaskinen bag opskrifternes makro er færdig, se 9.17.
 
