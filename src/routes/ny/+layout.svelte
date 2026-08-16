@@ -27,6 +27,8 @@
 	import { hentOpstartFraCache } from '$lib/firestore/hurtigStart3';
 	import { tidsgraense, HURTIG_START_MS } from '$lib/content/hurtigStart';
 	import { APP_KOB_URL } from '$lib/content/abonnement';
+	import { tekstSkalaFra3 } from '$lib/content/onboarding3';
+	import { anvendScale, gemScale, laesGemtScale } from '$lib/utils/textScale';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import './ny.css';
 
@@ -59,6 +61,18 @@
 	const spaerring = $derived(billede.spaerring);
 	const maaSeNyApp = $derived(billede.maaSeNyApp);
 	const erSpaerret = $derived(billede.erSpaerret);
+
+	// Skriftstoerrelsen. Rod-layoutet laeser den fra browseren ved opstart,
+	// men det valg findes ikke paa en ny telefon. Her sættes den fra hendes
+	// konto, saa den foelger med. Det er BEVIDST det eneste nye i skallen:
+	// det er et lokalt attribut-skift uden ét eneste netvaerkskald, altsaa
+	// ikke det der vaeltede appen 11. august. Se onboarding3.ts.
+	$effect(() => {
+		const valgt = tekstSkalaFra3(userDoc);
+		if (!userDoc || valgt === laesGemtScale()) return;
+		anvendScale(valgt);
+		gemScale(valgt);
+	});
 
 	setContext('userDoc', () => userDoc);
 	setContext('user', () => user);

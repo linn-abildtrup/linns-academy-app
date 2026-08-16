@@ -111,6 +111,18 @@
 	{/if}
 
 	<section>
+		<div class="lab"><h2>Opstart</h2></div>
+		<a class="adm-raekke tr-raekke" href="/ny/velkommen?kun=gennemgang">
+			<div class="adm-raekke-t"><span>Gennemgå appen</span></div>
+			<div class="adm-raekke-s">Se gennemgangen igen</div>
+		</a>
+		<a class="adm-raekke tr-raekke" href="/ny/velkommen?igen=1">
+			<div class="adm-raekke-t"><span>Kør opstarten igen</span></div>
+			<div class="adm-raekke-s">Både spørgsmål og gennemgang</div>
+		</a>
+	</section>
+
+	<section>
 		<div class="lab"><h2>Træning</h2></div>
 		<a class="adm-raekke tr-raekke" href="/ny/profil/traening">
 			<div class="adm-raekke-t"><span>Sådan træner jeg</span></div>

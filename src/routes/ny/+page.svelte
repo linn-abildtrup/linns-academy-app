@@ -13,6 +13,9 @@
 	// ============================================================
 
 	import { getContext, onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { isAdmin } from '$lib/admin';
+	import { skalOnboardes3 } from '$lib/content/onboarding3';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { LektionItem } from '$lib/content/forlob';
@@ -122,6 +125,16 @@
 
 	const nuMs = $derived(nu.getTime());
 	const iDag = $derived(datoNoegle(nu));
+
+	// Porten til onboarding ligger HER og ikke i skallen. Skallen omgiver
+	// hver eneste side, og et forsoeg paa at laegge noget nyt derind gav en
+	// helt blank app 11. august. Hun kommer altid ind via forsiden, saa det
+	// er nok i praksis. Se SPEC-3.0.md afsnit 31.
+	$effect(() => {
+		const ud = userDoc;
+		if (!ud) return;
+		if (skalOnboardes3(ud, isAdmin(user))) void goto('/ny/velkommen');
+	});
 
 	const fornavn = $derived(userDoc?.firstName ?? '');
 	const hilsen = $derived(getGreetingWithName(fornavn, nu));

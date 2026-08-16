@@ -8987,3 +8987,154 @@ a.ch-knap {
 .traad.nyt {
 	background: var(--plum-tint);
 }
+
+/* ── Onboarding ────────────────────────────────────────────── */
+/* Bid 1, 16. august 2026. Se SPEC-3.0.md afsnit 31. */
+
+.ob-side {
+	padding-bottom: 40px;
+}
+
+/* Én bjaelke, ikke elleve smaa felter. Med elleve trin bliver hvert
+   felt en splint paa en telefon. Linns beslutning 16. august. */
+.ob-trin {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 4px 0 20px;
+}
+
+.ob-bar {
+	flex: 1;
+	height: 5px;
+	border-radius: 99px;
+	background: var(--paper-2);
+	overflow: hidden;
+}
+
+.ob-bar i {
+	display: block;
+	height: 100%;
+	border-radius: 99px;
+	background: var(--plum);
+	transition: width 0.25s ease;
+}
+
+.ob-trin span {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	white-space: nowrap;
+}
+
+.ob-titel {
+	font-family: var(--serif);
+	font-size: calc(25px * var(--fs-scale, 1));
+	font-weight: 500;
+	margin: 0;
+	color: var(--espresso);
+	line-height: 1.2;
+}
+
+.ob-under {
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin: 9px 0 18px;
+	line-height: 1.55;
+}
+
+.ob-video {
+	border-radius: 18px;
+	overflow: hidden;
+	background: #3f3330;
+	aspect-ratio: 16 / 9;
+	margin-bottom: 16px;
+}
+
+.ob-video iframe {
+	width: 100%;
+	height: 100%;
+	border: 0;
+	display: block;
+}
+
+.ob-valg {
+	display: flex;
+	flex-direction: column;
+	gap: 9px;
+	margin-bottom: 6px;
+}
+
+.ob-raekke {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	text-align: left;
+	gap: 12px;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 16px;
+	padding: 14px 15px;
+	min-height: 44px;
+	font-family: inherit;
+	color: var(--espresso);
+	line-height: 1.45;
+}
+
+.ob-raekke.valgt {
+	border-color: var(--plum);
+	background: var(--plum-tint);
+}
+
+/* Trinnene paa hjemmeskaerm-skaermen er tekst, ikke knapper. */
+.ob-raekke.tal {
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--ink-2);
+}
+
+.ob-raekke.tal b {
+	color: var(--plum);
+	margin-right: 4px;
+}
+
+.ob-knap {
+	display: block;
+	width: 100%;
+	text-align: center;
+	background: var(--plum);
+	color: #fff;
+	border: 0;
+	border-radius: 15px;
+	padding: 14px;
+	min-height: 48px;
+	font-family: inherit;
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	margin-top: 14px;
+}
+
+.ob-knap:disabled {
+	opacity: 0.6;
+}
+
+.ob-knap.rolig {
+	background: var(--paper);
+	color: var(--ink-2);
+	border: 1px solid var(--line);
+	font-weight: 600;
+	margin-top: 9px;
+}
+
+.ob-hjaelp {
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin: 12px 0 0;
+	line-height: 1.5;
+}
+
+.ob-link {
+	display: inline-block;
+	color: var(--plum);
+	text-decoration: underline;
+	min-height: 44px;
+	line-height: 44px;
+}
