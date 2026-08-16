@@ -40,6 +40,13 @@ export interface Traeningsprogram3 {
 	 * Skrives hver gang dagene gemmes, se firestore/traeningsprogram3.
 	 */
 	tommeDage?: number;
+	/**
+	 * Sat naar programmet er ét kunden selv har bygget, se
+	 * content/mineTraeninger3. Listen saetter et maerkat paa, og
+	 * udstyrs-filteret springer den over: hun har selv valgt oevelserne,
+	 * saa der er ingen kategori at filtrere paa.
+	 */
+	egen?: boolean;
 	oprettetAt: number;
 	opdateretAt: number;
 }

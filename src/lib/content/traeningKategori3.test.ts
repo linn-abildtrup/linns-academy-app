@@ -9,6 +9,7 @@ import {
 	kraeverIntetUdstyr,
 	laasteKategorier3,
 	naesteRaekkefolge3,
+	oevelserTilKunde3,
 	rensUdstyr3,
 	sorterKategorier3,
 	udstyrFra,
@@ -230,5 +231,43 @@ describe('udstyrTekst3', () => {
 
 	it('siger til naar der slet ikke er noget', () => {
 		expect(udstyrTekst3([], [])).toBe('Ikke valgt endnu');
+	});
+});
+
+describe('oevelserTilKunde3', () => {
+	const bank = [
+		oevelse('krop', ['ingen']),
+		oevelse('kb', ['kettlebell']),
+		oevelse('haand', ['haandvaegte']),
+		oevelse('slukket', ['ingen'], false)
+	];
+	const kropsvaegt = kat('krop', 'Uden redskaber', 0);
+	kropsvaegt.visesAltid = true;
+	kropsvaegt.udstyrTag = 'ingen';
+	const kettlebell = kat('kb', 'Med kettlebell', 1);
+	kettlebell.udstyrTag = 'kettlebell';
+	const haand = kat('haand', 'Med håndvægte', 2);
+	haand.udstyrTag = 'haandvaegte';
+	const alle = [kropsvaegt, kettlebell, haand];
+
+	it('giver alle aktive naar hun ikke har valgt endnu', () => {
+		expect(oevelserTilKunde3(bank, alle, []).map((e) => e.id)).toEqual(['krop', 'kb', 'haand']);
+	});
+
+	it('tager aldrig en slukket oevelse med', () => {
+		expect(oevelserTilKunde3(bank, alle, []).map((e) => e.id)).not.toContain('slukket');
+	});
+
+	it('giver kropsvaegt plus hendes eget udstyr', () => {
+		expect(oevelserTilKunde3(bank, alle, ['haand']).map((e) => e.id)).toEqual(['krop', 'haand']);
+	});
+
+	it('holder et redskab hun ikke har valgt ude', () => {
+		expect(oevelserTilKunde3(bank, alle, ['haand']).map((e) => e.id)).not.toContain('kb');
+	});
+
+	it('lægger to valg sammen uden dubletter', () => {
+		const r = oevelserTilKunde3(bank, alle, ['haand', 'kb']).map((e) => e.id);
+		expect(r).toEqual(['krop', 'kb', 'haand']);
 	});
 });

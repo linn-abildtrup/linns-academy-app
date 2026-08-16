@@ -26,7 +26,12 @@
 	import { getAudioUrl, getVideoUrl } from '$lib/utils/storage';
 	import { rensUdstyr3, udstyrFra } from '$lib/content/traeningKategori3';
 	import type { Traeningsprogram3 } from '$lib/content/traeningsprogram3';
-	import { programmerForKunde3, type KundeKontekst3 } from '$lib/content/traeningTildeling3';
+	import {
+		maaByggeEget3,
+		programmerForKunde3,
+		type KundeKontekst3
+	} from '$lib/content/traeningTildeling3';
+	import { erEgetProgram3 } from '$lib/content/mineTraeninger3';
 	import {
 		maaAabnes3,
 		naesteTraening3,
@@ -47,7 +52,8 @@
 		type Stilling3
 	} from '$lib/content/afspiller3';
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
-	import { hentProgram3, hentProgrammer3 } from '$lib/firestore/traeningsprogram3';
+	import { hentProgrammer3 } from '$lib/firestore/traeningsprogram3';
+	import { hentProgramMedTraeninger3 } from '$lib/firestore/mineTraeninger3';
 	import { hentMineTildelinger3 } from '$lib/firestore/traeningTildeling3';
 	import { gemGennemfoert3, hentFremgang3 } from '$lib/firestore/traeningFremgang3';
 	import { gemPlads3, hentPlads3, sletPlads3 } from '$lib/firestore/traeningPlads3';
@@ -112,7 +118,9 @@
 			// traeningen stadig kunne startes forfra. En traening der ikke
 			// kan startes er meget vaerre end en glemt plads.
 			const [data, alle, kategorier, tildelinger, fremgangKort, plads] = await Promise.all([
-				hentProgram3(programId),
+				// Henter fra Linns programmer eller fra hendes egne, alt efter
+				// hvad id'et siger. Se firestore/mineTraeninger3.
+				hentProgramMedTraeninger3(uid, programId),
 				hentProgrammer3(),
 				hentKategorier3(),
 				hentMineTildelinger3(uid),
@@ -137,10 +145,15 @@
 				udstyr: rensUdstyr3(udstyrFra(userDoc), kategorier),
 				idag: isoDato3(Date.now())
 			};
-			const svar = programmerForKunde3(alle, tildelinger, kategorier, kontekst).find(
-				(x) => x.program.id === programId
-			);
-			if (!svar?.vises) {
+			// Hendes egne programmer har ingen tildeling at slaa op. Adgangen
+			// er i stedet om hun overhovedet maa bygge sine egne: bliver den
+			// ret taget fra hende, kan hun ikke laengere koere dem.
+			const maaKoere = erEgetProgram3(programId)
+				? maaByggeEget3(tildelinger, kontekst)
+				: programmerForKunde3(alle, tildelinger, kategorier, kontekst).find(
+						(x) => x.program.id === programId
+					)?.vises === true;
+			if (!maaKoere) {
 				fejl = 'Du har ikke det her program.';
 				skaerm = 'fejl';
 				return;

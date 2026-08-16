@@ -28,7 +28,12 @@
 		type TraeningKategori3
 	} from '$lib/content/traeningKategori3';
 	import type { Traeningsprogram3 } from '$lib/content/traeningsprogram3';
-	import { programmerForKunde3, type KundeKontekst3 } from '$lib/content/traeningTildeling3';
+	import {
+		maaByggeEget3,
+		programmerForKunde3,
+		type KundeKontekst3
+	} from '$lib/content/traeningTildeling3';
+	import { tilProgram3, type MinTraening3 } from '$lib/content/mineTraeninger3';
 	import {
 		antalTraeninger3,
 		fremgangTekst3,
@@ -40,6 +45,7 @@
 	import { hentProgrammer3 } from '$lib/firestore/traeningsprogram3';
 	import { hentMineTildelinger3 } from '$lib/firestore/traeningTildeling3';
 	import { hentFremgang3 } from '$lib/firestore/traeningFremgang3';
+	import { hentMineTraeninger3 } from '$lib/firestore/mineTraeninger3';
 	import { harAbonnement3, isoDato3 } from '$lib/firestore/traeningKunde3';
 	import type { Traeningstildeling3 } from '$lib/content/traeningTildeling3';
 
@@ -59,6 +65,7 @@
 	let programmer = $state<Traeningsprogram3[]>([]);
 	let tildelinger = $state<Traeningstildeling3[]>([]);
 	let fremgang = $state<Map<string, Traeningsfremgang3>>(new Map());
+	let mine3 = $state<MinTraening3[]>([]);
 
 	const nu = Date.now();
 
@@ -70,13 +77,20 @@
 		idag: isoDato3(nu)
 	});
 
-	const mine = $derived(
+	const fraLinn = $derived(
 		programmerForKunde3(programmer, tildelinger, kategorier, kontekst)
 			.filter((x) => x.vises)
 			.map((x) => x.program)
 	);
 
-	const liste = $derived<KundeProgram3[]>(kundeProgrammer3(mine, fremgang));
+	// Hendes egne filtreres IKKE paa udstyr. Hun har selv valgt oevelserne,
+	// saa der er ingen kategori at filtrere paa.
+	const maaBygge = $derived(maaByggeEget3(tildelinger, kontekst));
+	const egne = $derived(maaBygge ? mine3.map(tilProgram3) : []);
+
+	const liste = $derived<KundeProgram3[]>(
+		kundeProgrammer3([...fraLinn, ...egne], fremgang)
+	);
 	const iGang = $derived(liste.filter((k) => k.iGang));
 	const oevrige = $derived(liste.filter((k) => !k.iGang));
 
@@ -87,16 +101,23 @@
 			return;
 		}
 		try {
-			const [k, p, t, f] = await Promise.all([
+			const [k, p, t, f, egneRaa] = await Promise.all([
 				hentKategorier3(),
 				hentProgrammer3(),
 				hentMineTildelinger3(uid),
-				hentFremgang3(uid)
+				hentFremgang3(uid),
+				// Hendes egne er en tilgift. Kan de ikke hentes, skal Linns
+				// programmer stadig kunne vises.
+				hentMineTraeninger3(uid).catch((e) => {
+					console.warn('[ny] kunne ikke hente egne programmer', e);
+					return [];
+				})
 			]);
 			kategorier = k;
 			programmer = p;
 			tildelinger = t;
 			fremgang = f;
+			mine3 = egneRaa;
 		} catch (e) {
 			console.error('[ny] kunne ikke hente traeningen', e);
 			fejl = 'Din træning kunne ikke hentes lige nu. Prøv igen om lidt.';
@@ -106,8 +127,9 @@
 	});
 
 	function undertekst(k: KundeProgram3): string {
-		const kategori = kategoriNavn3(k.program.kategoriId, kategorier);
-		const dele = [kategori, `${antalTraeninger3(k.program)} træninger`].filter(Boolean);
+		const kategori = k.program.egen ? '' : kategoriNavn3(k.program.kategoriId, kategorier);
+		const antal = antalTraeninger3(k.program);
+		const dele = [kategori, antal === 1 ? '1 træning' : `${antal} træninger`].filter(Boolean);
 		return dele.join(' · ');
 	}
 </script>
@@ -129,6 +151,9 @@
 			<strong>Du har ikke fået nogen træning endnu.</strong>
 			<p>Linn lægger den ind når den er klar til dig.</p>
 		</div>
+		{#if maaBygge}
+			<a class="mt-byg" href="/ny/traening/byg-eget">+ Byg dit eget program</a>
+		{/if}
 	{:else}
 		<p class="mt-under">Vælg det program du har lyst til. Du kan skifte når du vil.</p>
 
@@ -136,7 +161,9 @@
 			<div class="lab"><h2>Du er i gang med</h2></div>
 			{#each iGang as k (k.program.id)}
 				<a class="mt-prog igang" href={`/ny/traening/${k.program.id}`}>
-					<div class="mt-navn">{k.program.navn}</div>
+					<div class="mt-navn">
+						{k.program.navn}{#if k.program.egen}<span class="mt-egen">Din egen</span>{/if}
+					</div>
 					<div class="mt-meta">{undertekst(k)}</div>
 					<div class="mt-bar"><i style={`width:${k.procent}%`}></i></div>
 					<div class="mt-fremgang">{fremgangTekst3(k)}</div>
@@ -151,12 +178,18 @@
 			{/if}
 			{#each oevrige as k (k.program.id)}
 				<a class="mt-prog" href={`/ny/traening/${k.program.id}`}>
-					<div class="mt-navn">{k.program.navn}</div>
+					<div class="mt-navn">
+						{k.program.navn}{#if k.program.egen}<span class="mt-egen">Din egen</span>{/if}
+					</div>
 					<div class="mt-meta">{undertekst(k)}</div>
 					<div class="mt-fremgang">{fremgangTekst3(k)}</div>
 					<span class="mt-knap">{k.faerdig ? 'Tag den igen' : 'Start'}</span>
 				</a>
 			{/each}
+		{/if}
+
+		{#if maaBygge}
+			<a class="mt-byg" href="/ny/traening/byg-eget">+ Byg dit eget program</a>
 		{/if}
 	{/if}
 </div>

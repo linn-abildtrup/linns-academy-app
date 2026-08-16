@@ -29,10 +29,12 @@
 	} from '$lib/content/traeningKategori3';
 	import { dagensMinutter, type Traeningsprogram3 } from '$lib/content/traeningsprogram3';
 	import {
+		maaByggeEget3,
 		programmerForKunde3,
 		type KundeKontekst3,
 		type Traeningstildeling3
 	} from '$lib/content/traeningTildeling3';
+	import { erEgetProgram3 } from '$lib/content/mineTraeninger3';
 	import {
 		antalKlaret3,
 		antalTraeninger3,
@@ -45,7 +47,8 @@
 		type Traeningsfremgang3
 	} from '$lib/content/traeningFremgang3';
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
-	import { hentProgram3, hentProgrammer3 } from '$lib/firestore/traeningsprogram3';
+	import { hentProgrammer3 } from '$lib/firestore/traeningsprogram3';
+	import { hentProgramMedTraeninger3 } from '$lib/firestore/mineTraeninger3';
 	import { hentMineTildelinger3 } from '$lib/firestore/traeningTildeling3';
 	import { hentFremgang3 } from '$lib/firestore/traeningFremgang3';
 	import { harAbonnement3, isoDato3 } from '$lib/firestore/traeningKunde3';
@@ -81,9 +84,13 @@
 
 	const undertekst = $derived.by(() => {
 		if (!program) return '';
-		const kategori = kategoriNavn3(program.kategoriId, kategorier);
+		const kategori = program.egen ? 'Dit eget program' : kategoriNavn3(program.kategoriId, kategorier);
 		const minutter = dage.length > 0 ? dagensMinutter(dage[0]) : 0;
-		return [kategori, `${antal} træninger`, minutter > 0 ? `ca. ${minutter} min hver` : '']
+		return [
+			kategori,
+			antal === 1 ? '1 træning' : `${antal} træninger`,
+			minutter > 0 ? `ca. ${minutter} min hver` : ''
+		]
 			.filter(Boolean)
 			.join(' · ');
 	});
@@ -96,7 +103,9 @@
 		}
 		try {
 			const [data, alle, k, t, f] = await Promise.all([
-				hentProgram3(programId),
+				// Henter fra Linns programmer eller fra hendes egne, alt efter
+				// hvad id'et siger. Se firestore/mineTraeninger3.
+				hentProgramMedTraeninger3(uid, programId),
 				hentProgrammer3(),
 				hentKategorier3(),
 				hentMineTildelinger3(uid),
@@ -118,10 +127,14 @@
 				udstyr: rensUdstyr3(udstyrFra(userDoc), k),
 				idag: isoDato3(nu)
 			};
-			const svar = programmerForKunde3(alle, t as Traeningstildeling3[], k, kontekst).find(
-				(x) => x.program.id === programId
-			);
-			maaSeDen = svar?.vises === true;
+			// Hendes egne har ingen tildeling. Adgangen er om hun maa bygge
+			// sine egne overhovedet. Bliver den ret taget fra hende, bliver
+			// programmet skjult, men det bliver ikke slettet.
+			maaSeDen = erEgetProgram3(programId)
+				? maaByggeEget3(t as Traeningstildeling3[], kontekst)
+				: programmerForKunde3(alle, t as Traeningstildeling3[], k, kontekst).find(
+						(x) => x.program.id === programId
+					)?.vises === true;
 		} catch (e) {
 			console.error('[ny] kunne ikke hente programmet', e);
 			fejl = 'Programmet kunne ikke hentes lige nu. Prøv igen om lidt.';
@@ -206,5 +219,11 @@
 				</span>
 			</svelte:element>
 		{/each}
+
+		{#if program.egen}
+			<a class="ch-knap sekundaer" href={`/ny/traening/byg-eget/${programId}`}>
+				Ret programmet
+			</a>
+		{/if}
 	{/if}
 </div>

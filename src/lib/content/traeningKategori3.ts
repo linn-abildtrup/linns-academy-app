@@ -195,3 +195,40 @@ export function filtrerOevelserTilKategori(
 	if (udstyrTag === 'ingen') return aktive.filter(kraeverIntetUdstyr);
 	return aktive.filter((e) => kraeverIntetUdstyr(e) || (e.udstyr ?? []).includes(udstyrTag));
 }
+
+
+/**
+ * Alle de oevelser kunden kan bruge, ud fra det udstyr hun har valgt.
+ *
+ * Foreningen af hendes kategorier plus dem der vises altid. Bruges naar
+ * hun bygger sit eget program: hun skal kun se oevelser hun faktisk kan
+ * lave, og en liste med kettlebell-oevelser hun ikke har ville vaere i
+ * vejen. Linns valg 16. august.
+ *
+ * Har hun ikke valgt endnu, faar hun alle aktive. Samme regel som alle
+ * andre steder: en tom liste betyder ikke "ingenting", den betyder
+ * "hun er ikke blevet spurgt endnu".
+ */
+export function oevelserTilKunde3(
+	oevelser: Exercise[],
+	kategorier: TraeningKategori3[],
+	udstyr: string[]
+): Exercise[] {
+	const aktive = oevelser.filter((e) => e.aktiv);
+	if (udstyr.length === 0) return aktive;
+
+	const hendes = kategorier.filter((k) => k.visesAltid || udstyr.includes(k.id));
+	if (hendes.length === 0) return aktive.filter(kraeverIntetUdstyr);
+
+	const set = new Set<string>();
+	const ud: Exercise[] = [];
+	for (const k of hendes) {
+		for (const e of filtrerOevelserTilKategori(aktive, k.udstyrTag)) {
+			if (set.has(e.id)) continue;
+			set.add(e.id);
+			ud.push(e);
+		}
+	}
+	// Samme raekkefoelge som banken, saa listen ikke hopper rundt.
+	return aktive.filter((e) => set.has(e.id));
+}

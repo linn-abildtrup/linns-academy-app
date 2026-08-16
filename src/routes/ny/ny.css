@@ -8630,3 +8630,109 @@ a.mt-traening:focus-visible {
 	outline: 3px solid var(--plum);
 	outline-offset: 2px;
 }
+
+/* ── Hun bygger sit eget program (bid 6) ───────────────────── */
+
+/* Maerkatet paa hendes egne i listen. Den skal kunne ses uden at
+   raabe: det er en oplysning, ikke en advarsel. */
+.mt-egen {
+	display: inline-block;
+	margin-left: 8px;
+	background: var(--paper-2);
+	border: 1px solid var(--line);
+	border-radius: 99px;
+	padding: 2px 9px;
+	font-size: calc(11px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-2);
+	vertical-align: middle;
+}
+
+/* Knappen der starter et nyt eget program. Den staar nederst, saa
+   Linns programmer er det foerste hun ser. */
+.mt-byg {
+	display: block;
+	margin-top: 14px;
+	background: var(--paper);
+	border: 1px dashed var(--line);
+	border-radius: 15px;
+	padding: 14px;
+	text-align: center;
+	text-decoration: none;
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	min-height: 46px;
+}
+
+.mt-byg:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+/* Én traening mens hun bygger. Selve raekken aabner den, og Fjern
+   ligger ved siden af, saa hun ikke kan komme til at slette den ved
+   at ville aabne den. */
+.mt-byg-raekke {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	margin-top: 7px;
+}
+
+.mt-byg-link {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 11px;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 15px;
+	padding: 12px 13px;
+	text-decoration: none;
+	color: var(--espresso);
+	font-size: calc(14px * var(--fs-scale, 1));
+}
+
+.mt-byg-link:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.mt-byg-ret {
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--plum);
+}
+
+/* Slet ligger nederst og ser ikke ud som en knap man kommer til at
+   trykke paa. Der er et bekraeft-trin bagefter. */
+.mt-slet {
+	display: block;
+	width: 100%;
+	margin-top: 18px;
+	background: none;
+	border: 0;
+	padding: 12px;
+	font-family: var(--sans);
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	text-decoration: underline;
+	cursor: pointer;
+	min-height: 44px;
+}
+
+.mt-slet:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+/* Nogle af knapperne er links. De skal se ud som knapper. */
+a.ch-knap {
+	display: block;
+	margin-top: 10px;
+	text-align: center;
+	text-decoration: none;
+	line-height: 22px;
+}

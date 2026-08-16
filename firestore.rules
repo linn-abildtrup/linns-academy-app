@@ -154,6 +154,15 @@ service cloud.firestore {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
 			}
 
+			// Programmerne kunden selv har bygget i 3.0. Ét dokument pr
+			// program, med træningerne i. Kun hun må skrive i dem, de er
+			// hendes. Admin må LÆSE dem, så Linn kan se dem i kunde-opslaget
+			// og hjælpe hende hvis hun spørger.
+			match /mineTraeninger3/{programId} {
+				allow read: if request.auth != null && (isAdmin() || request.auth.uid == uid);
+				allow write: if request.auth != null && request.auth.uid == uid;
+			}
+
 			// Klaret i den nye app (3.0) — hvilke lektioner kunden har
 			// markeret som taget. Ét dokument pr lektion, doc-id er
 			// lektionens id. Kun egen bruger, samme regel som alt andet

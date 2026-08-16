@@ -29,6 +29,8 @@
 		type ProgramForKunde3,
 		type Traeningstildeling3
 	} from '$lib/content/traeningTildeling3';
+	import { egetProgramTekst3, type MinTraening3 } from '$lib/content/mineTraeninger3';
+	import { hentMineTraeninger3 } from '$lib/firestore/mineTraeninger3';
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 	import { hentProgrammer3 } from '$lib/firestore/traeningsprogram3';
 	import { hentTildelinger3 } from '$lib/firestore/traeningTildeling3';
@@ -53,6 +55,8 @@
 	let tildelinger = $state<Traeningstildeling3[]>([]);
 	let soegeord = $state('');
 	let valgt = $state<Klient3 | null>(null);
+	let hendesEgne = $state<MinTraening3[]>([]);
+	let henterEgne = $state(false);
 
 	const nu = Date.now();
 
@@ -73,6 +77,25 @@
 	// hoerer ikke hjemme i et svar om hvad HUN kan se.
 	const serIkke = $derived(alle.filter((x) => !x.vises && x.afvisning !== 'kladde'));
 	const maaBygge = $derived(kontekst ? maaByggeEget3(tildelinger, kontekst) : false);
+
+	/**
+	 * Hendes egne programmer hentes foerst naar hun er slaaet op. De
+	 * ligger under hende selv, saa der er ét kald pr kunde. At hente dem
+	 * for alle paa forhaand ville vaere hundredvis af kald til noget
+	 * Linn sjaeldent har brug for.
+	 */
+	async function vaelg(k: Klient3) {
+		valgt = k;
+		hendesEgne = [];
+		henterEgne = true;
+		try {
+			hendesEgne = await hentMineTraeninger3(k.uid);
+		} catch (e) {
+			console.warn('[admin] kunne ikke hente hendes egne programmer', e);
+		} finally {
+			henterEgne = false;
+		}
+	}
 
 	onMount(async () => {
 		if (!isAdmin(user)) {
@@ -128,7 +151,7 @@
 			{:else}
 				<div class="adm-liste">
 					{#each traeffere as k (k.uid)}
-						<button type="button" class="adm-raekke tr-vaelg" onclick={() => (valgt = k)}>
+						<button type="button" class="adm-raekke tr-vaelg" onclick={() => vaelg(k)}>
 							<div class="adm-raekke-t"><span>{k.navn}</span></div>
 							<div class="adm-raekke-s">{k.email}</div>
 						</button>
@@ -194,6 +217,28 @@
 					? 'Hun må bygge sit eget program.'
 					: 'Hun må ikke bygge sit eget program.'}
 			</p>
+
+			<h2 class="tr-overskrift">Hendes egne programmer</h2>
+			{#if henterEgne}
+				<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
+			{:else if hendesEgne.length === 0}
+				<p class="adm-tom">Hun har ikke bygget nogen selv.</p>
+			{:else}
+				<div class="adm-liste">
+					{#each hendesEgne as m (m.id)}
+						<div class="adm-raekke">
+							<div class="adm-raekke-t"><span>{m.navn}</span></div>
+							<div class="adm-raekke-s">{egetProgramTekst3(m)}</div>
+						</div>
+					{/each}
+				</div>
+				<p class="adm-hjaelp">
+					De er hendes. Du kan se dem her, men ikke rette i dem.
+					{#if !maaBygge}
+						Hun kan ikke se dem lige nu, fordi hun ikke må bygge sine egne.
+					{/if}
+				</p>
+			{/if}
 
 			<h2 class="tr-overskrift">Ser ikke</h2>
 			{#if serIkke.length === 0}
