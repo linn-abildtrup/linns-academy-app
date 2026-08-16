@@ -2597,7 +2597,7 @@ ned til hver kunde ved hver udrulning, så 808 KB stillads kostede alle.
 - **Firebase Auth selv er ikke undersøgt.** Hænger noget dér, altså før kæden
   overhovedet går i gang, er intet af det her dækket
 
-## 29. Træning. Modellen låst 15. august, bid 1 til 5 bygget samme dag
+## 29. Træning. Modellen låst 15. august, bid 1 til 6 bygget
 
 Hele modulet blev gennemgået 15. august, først som diagnose af den gamle app,
 så som mockups, og derefter blev bid 1 til 5 bygget. Afsnittet her er
@@ -3052,7 +3052,7 @@ bagefter. 67 blokke begge steder, og de er ens.
 | 3 | Kundens udstyrsvalg og hendes programliste | **Færdig 15. august** |
 | 4 | Afspilleren med Ja, Nej og Gem | **Færdig 15. august** |
 | 5 | Forsidens flise kobles på | **Færdig 15. august** |
-| 6 | Byg eget program | Ikke bygget |
+| 6 | Byg eget program | **Færdig 16. august**, se 29.11 |
 | 7 | De seks programmer kopieres over | **Udgår.** Linns valg 16. august, se 29.9 |
 
 **AI-værktøjet til at bygge programmer ligger uden for rækken**, se 29.10. Det
@@ -3197,3 +3197,69 @@ en uge og lader koden variere den, bliver det både bedre og billigere.
   `/api/linn-ai` er urørte, men navnet er ikke valgt
 - Hvad kunden må, den dag hun får den. Et program hun selv har snakket sig
   frem til er ikke gennemgået af Linn, og det skal der tages stilling til
+
+
+### 29.11 Bid 6. Kunden bygger sit eget program. LÅST og bygget 16. august
+
+Mockup i `v3 app/linns-academy-design/mockups-traening-byg-eget.html`,
+gennemgået og godkendt før der blev kodet.
+
+**Hendes program har præcis samme form som Linns.** Det er hele pointen.
+Afspilleren, fremgangen, listen og forsidens flise virker på hendes egne
+uden en eneste ny regel. Havde hun fået sin egen lille type, skulle alle
+fem steder kende to slags programmer, og de ville drive fra hinanden.
+
+**Id'et afslører hvor programmet ligger.** Hendes får præfikset `egen_`.
+Så kan enhver skærm se på id'et alene om den skal hente fra
+`traeningsprogrammer3` eller fra hendes egen samling, uden at slå op to
+steder først. `hentProgramMedTraeninger3` er det ene sted der router, og
+både program-siden og afspilleren går gennem den.
+
+**Træningerne ligger i selve dokumentet**, ikke i en undersamling som
+Linns. Linns programmer på 84 dage skal kunne listes uden at trække 84
+træninger med. Hendes hentes altid helt, så ét dokument er både enklere
+og hurtigere.
+
+#### Beslutningerne, truffet af Linn 16. august
+
+- **Hun bygger flere træninger**, ikke én. Samme slags program som Linns
+- **Ingen grænse** på antal træninger eller antal øvelser. Tiden står
+  nederst i stedet, så en træning på halvanden time ikke kommer bag på
+  hende midt i den
+- **Hun kan tilføje og fjerne træninger bagefter.** Den sidste kan ikke
+  fjernes, et program uden træninger er ikke et program
+- **"Lav et forslag til mig" er sat på forhånd** når hun opretter. Så har
+  hun noget at rette i frem for et tomt program, og det er den vej de
+  fleste går. Genbruger `genererProgramMedConfig` fra den gamle app
+- **Kun øvelser hendes udstyr dækker.** Ingen "vis alle"-knap. Admin har
+  den knap, fordi Linn skal kunne bygge til udstyr øvelsesbanken endnu
+  ikke kender. Kunden skal ikke se en kettlebell-øvelse hun ikke har
+  redskabet til, den er kun i vejen. `oevelserTilKunde3` er reglen
+- **Hendes egne filtreres omvendt ikke på udstyr** når de vises i listen.
+  Hun har selv valgt øvelserne, så der er ingen kategori at filtrere på.
+  Derfor har de `kategoriId: ''` og `egen: true`
+- **De står under Linns i listen** med mærkatet "Din egen"
+- **Ingen adgang giver ingen knap.** Ikke en grå boks der forklarer hvad
+  hun ikke må
+- **Tages retten fra hende, bliver programmerne skjult, ikke slettet.**
+  Får hun retten igen, er de der stadig
+- **Admin kan se dem i kunde-opslaget, men ikke rette i dem.** De er
+  hendes
+
+#### Skærmene
+
+| Adresse | Hvad |
+|---|---|
+| `/ny/traening/byg-eget` | Opret: navn, antal træninger, forslag ja eller nej |
+| `/ny/traening/byg-eget/[programId]` | Ret programmet: navn, tilføj og fjern træninger, samlet tid, slet |
+| `/ny/traening/byg-eget/[programId]/[nr]` | Ret én træning: øvelser, rækkefølge, sæt og tid |
+
+Adgangen tjekkes på alle tre plus på program-siden og i afspilleren, ikke
+kun på knappen i listen. En adresse skrevet i hånden må ikke åbne noget
+hun ikke har fået.
+
+#### Firestore
+
+`users/{uid}/mineTraeninger3/{egen_xxx}` med felterne `navn`, `dage`,
+`oprettetAt` og `opdateretAt`. Reglen blev udgivet 16. august: hun skriver
+selv, admin må også læse.

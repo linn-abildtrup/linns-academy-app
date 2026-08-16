@@ -98,10 +98,11 @@ gamle app og må kun læses.
 | `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid. Se 9.9 | 20 |
 | `content/beskeder3.ts` | "Til dig lige nu" | 8 |
 | `content/traeningsprogram3.ts` | **Træning.** Programmer og træninger. Se 9.18 | 44 |
-| `content/traeningKategori3.ts` | Kategorier og hendes udstyrsvalg | 34 |
+| `content/traeningKategori3.ts` | Kategorier og hendes udstyrsvalg | 39 |
 | `content/traeningTildeling3.ts` | Hvem får hvad, hvornår, og dækning | 49 |
 | `content/traeningFremgang3.ts` | Hvor langt hun er, og rækkefølgen | 30 |
 | `content/afspiller3.ts` | **Afspillerens fase-maskine.** Ren logik | 38 |
+| `content/mineTraeninger3.ts` | Kundens egne programmer. Præfikset `egen_` | 26 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
 
@@ -175,6 +176,9 @@ Alle ruter ligger under `/ny`.
 | `/ny/traening` | Kunden: Mikrotræning, hendes programmer. Færdig |
 | `/ny/traening/[id]` | Kunden: træningerne og hvor langt hun er. Færdig |
 | `/ny/traening/[id]/[nr]` | Kunden: **afspilleren.** Én, hvor den gamle app har fire |
+| `/ny/traening/byg-eget` | Kunden: opret sit eget program. Se 9.18 |
+| `/ny/traening/byg-eget/[id]` | Kunden: ret sit eget program, tilføj og fjern træninger |
+| `/ny/traening/byg-eget/[id]/[nr]` | Kunden: vælg øvelser til én af sine egne træninger |
 | `/ny/profil/traening` | Kunden: Sådan træner jeg, altså udstyrsvalget |
 
 **Bundmenuen:** Forside · 30-30 · Snak · Udvikling · Profil.
@@ -276,7 +280,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1588 tests lige nu, alle grønne
+npm test                               # 1619 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -304,7 +308,7 @@ Opdateret 15. august 2026, aften. Alt herunder er kodet, committet og pushet, og
 
 **30-30 beregneren** er bygget og i brug, se 9.4, og regnemaskinen bag opskrifternes makro er færdig, se 9.17.
 
-**Træningen er bygget om fra bunden 15. august**, hele modulet, fra Linns værktøj til kundens afspiller. Se 9.18, og læs SPEC afsnit 29 før du rører noget der.
+**Træningen er bygget om fra bunden 15. og 16. august**, hele modulet, fra Linns værktøj til kundens afspiller og til at kunden bygger sit eget. Se 9.18, og læs SPEC afsnit 29 før du rører noget der.
 
 **Sidst på aftenen 11. august blev hele opstarten rettet**, efter at Linns telefon stod over ét minut på "Et øjeblik". Fem flaskehalse, fire af dem i den app der er i drift. Se 9.7, og SPEC afsnit 28 for hele gennemgangen.
 
@@ -836,11 +840,11 @@ De skrevne tal i opskrifterne er **runde måltal, ikke udregninger.** 80 procent
 
 ---
 
-### 9.18 TRÆNING, bygget 15. august
+### 9.18 TRÆNING, bygget 15. og 16. august
 
 **Hele modulet er lavet om fra bunden.** Det er den største enkelt-ting siden
-regnemaskinen. Fem bidder er bygget, tegnet og godkendt hver for sig, og der
-er sytten beslutninger bag. **Læs SPEC-3.0.md afsnit 29 før du rører noget.**
+regnemaskinen. Seks bidder er bygget, tegnet og godkendt hver for sig, og der
+er en snes beslutninger bag. **Læs SPEC-3.0.md afsnit 29 før du rører noget.**
 Her står kun det en ny person skal vide med det samme.
 
 #### Hvad der var galt
@@ -856,6 +860,10 @@ Programmerne ligger ét sted, `traeningsprogrammer3`, og er uafhængige af
 kundetype. Linn bygger dem selv i admin og tildeler dem til et hold, en
 person, alle medlemmer eller alle. Kunden vælger sit udstyr, ser kun de
 programmer der passer, og træner i **én** afspiller.
+
+Får hun lov, bygger hun også sine egne. De ligger under hende selv, men har
+**præcis samme form som Linns**, så afspilleren, fremgangen og listen virker
+på dem uden en eneste ny regel.
 
 **Alt nyt er nye samlinger som kun 3.0 læser.** Den gamle app kender ingen af
 dem, og de 760 kunder i drift mærker ingenting.
@@ -887,6 +895,13 @@ kundens egen liste. Det er med vilje. To udgaver af den regel ville drive fra
 hinanden, og så ville admin sige noget andet end kunden oplever. Retter du
 noget i filtreringen, retter du begge skærme på én gang, og det er meningen.
 
+**HENDES EGNE PROGRAMMER KENDES PÅ ID'ET.** De har præfikset `egen_`, og
+`hentProgramMedTraeninger3` er det ene sted der ser på det og henter det
+rigtige sted fra. Både program-siden og afspilleren går gennem den. Uden
+præfikset skulle hver skærm slå op to steder for at finde ud af hvad den
+havde med at gøre. Hendes egne har `kategoriId: ''` og `egen: true`, så
+udstyrs-filteret springer dem over: hun har selv valgt øvelserne.
+
 #### Reglerne i Firebase
 
 Tre nye samlinger. Programmer og kategorier må alle indloggede læse, kun admin
@@ -896,10 +911,28 @@ indeholder hendes navn og må kun læses af hende selv. Derfor henter kunden
 med to snævre forespørgsler, se `hentMineTildelinger3`. Et enkelt kald efter
 hele samlingen bliver afvist, og det er meningen.
 
+Dertil `users/{uid}/mineTraeninger3`, udgivet 16. august. Hun skriver selv,
+admin må også læse, så Linn kan hjælpe hende i kunde-opslaget.
+
+#### Hun bygger sit eget, bygget 16. august
+
+Tre skærme under `/ny/traening/byg-eget`: opret, ret programmet, ret én
+træning. Adgangen styres fra `/ny/admin/traening/byg-eget` og tjekkes på alle
+tre plus på program-siden og i afspilleren, ikke kun på knappen i listen.
+
+Fire ting der er dyre at genopdage:
+
+- **Ingen adgang giver ingen knap**, ikke en grå boks der forklarer hvad hun
+  ikke må
+- **Tages retten fra hende, bliver programmerne skjult, ikke slettet.** Får
+  hun retten igen, er de der stadig
+- **Hun ser kun øvelser hendes udstyr dækker**, se `oevelserTilKunde3`. Der
+  er med vilje ingen "vis alle"-knap som admin har
+- **Der er ingen grænse** på antal træninger eller øvelser. Linns valg.
+  Tiden står nederst i stedet
+
 #### Det der mangler
 
-- **Byg eget program.** Adgangen kan gives, men skærmen kunden bygger på
-  findes ikke endnu
 - **De gamle programmer bliver IKKE kopieret over.** Linns valg 16. august.
   Programmerne bygges forfra i det nye værktøj. Originalerne bliver liggende
   urørte, så beslutningen kan tages om. Diagnosen af hvad der faktisk ligger,
@@ -939,7 +972,7 @@ opstarts-problemet i 9.7.
 
 Resten af etape 4:
 
-- ~~**Træning.**~~ **Bygget 15. august**, hele modulet fra bunden. Se 9.18
+- ~~**Træning.**~~ **Bygget 15. og 16. august**, hele modulet fra bunden, inklusive at kunden bygger sit eget. Se 9.18
 - **Biblioteket** som et kort nederst på forsiden, kun for dem der har adgang
 - **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app
 - ~~`static/mockup/` slettes~~. **Klaret 11. august.** Se 9.7
