@@ -3512,11 +3512,18 @@ Firebase. De læses gennem et cast ét sted, samme greb som `udstyrFra`.
    tom URL betyder at skærmen springer afspilleren over og kun viser
    hilsenen. Hilsenen er allerede forskellig pr kundetype, så opstarten er
    personlig fra dag ét. Når de er optaget, er det én linje pr kundetype
-2. **Ti skærmbilleder tages og beskæres.** Beskåret til det ene sted kortet
-   handler om, ikke hele skærmen, og komprimeret. To sæt af forsiden, fordi
-   den ser forskellig ud for en forløbskunde og et medlem. Hvert kort bærer
-   en `billedeBeskrivelse` med præcis hvad billedet skal vise, så det ikke
-   skal gættes
+2. ~~Ti skærmbilleder~~. **Klaret 16. august**, og det blev otte. To sæt af
+   forsiden, fordi den ser forskellig ud for en forløbskunde og et medlem.
+
+   De tages af `scripts/skaermbilleder.ts`, som kan køres igen. Det var hele
+   grunden til at bygge et script frem for at tage dem i hånden: appen ændrer
+   sig, og et forældet skærmbillede er værre end ingenting.
+
+   **Fire fælder i den slags script, som kostede tid:** `networkidle` virker
+   ikke, fordi Firestore holder en åben forbindelse så netværket aldrig bliver
+   stille. Login-siden har ingen `<form>`. Testkontiene bliver sendt til
+   onboarding af porten, så hvert billede ville vise opstarten. Og ventetegnet
+   er den værste, for billedet er teknisk korrekt og viser bare "Et øjeblik" 
 
 ### 31.7 En åben tråd der blev fundet undervejs
 

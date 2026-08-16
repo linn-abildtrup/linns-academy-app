@@ -281,6 +281,8 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 **En komponent kan være skrevet, testet og importeret uden nogensinde at blive brugt.** Faste måltider åbnede 12. august et tomt ark uden en eneste fejl. Det nye ark var aldrig kommet ind i markup, så det gamle Vælg-ark åbnede i stedet, med den nye titel på og uden en tom tekst at vise. **Hverken `svelte-check` eller testene fanger det**, for koden er korrekt, den bliver bare aldrig kaldt. Tjek at en ny komponent faktisk står i markup, ikke kun at den er importeret.
 
+**Server-siden kan ikke naa Firestore paa localhost uden tre noegler.** Alt under `src/routes/api/` gaar gennem `firestoreRest.ts`, som kraever `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` og `FIREBASE_PRIVATE_KEY`. De har kun ligget i Cloudflares kontrolpanel, aldrig i `.env`, saa i lokal udvikling svarede AI'en i Beskeder, hilsenen paa forsiden og opskrift-analysen alle sammen **"Internal Error"**. I drift har det virket hele tiden, saa fejlen ser ud som en fejl i koden og er det ikke. Rettet 16. august ved at laegge de tre i `.env`, hentet fra `scripts/service-account-key.json`. Begge filer er i `.gitignore`.
+
 **`opretDoc` findes ikke i `firestoreRest.ts`.** Brug `gemDocMerge` med et selvlavet dokument-id.
 
 **Firestore-regler driver.** Sammenlign altid de live regler med `firestore.rules` i repoet, inden du udgiver noget. Det er nu ét kald, se afsnit 8.
@@ -340,8 +342,7 @@ det glemt, starter et helt hold uden træning.
 
 Spærrer for 3.0:
 
-- **De fire videoer og de ti skærmbilleder til onboarding.** Selve opstarten
-  virker uden dem, men den er bar
+- **De fire videoer til onboarding.** Skærmbillederne er taget 16. august
 - **Biblioteket** som et kort nederst på forsiden, kun for dem der har adgang
 - **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app blok
   for blok. Den slags gennemgang plejer at afsløre glemte ting
@@ -1159,8 +1160,17 @@ urørte, og der skal intet udgives i Firebase:
 - **Fire videoer**, én pr kundetype. `VELKOMSTVIDEO_3` står tom, og en tom URL
   betyder at skærmen springer afspilleren over og kun viser hilsenen.
   Hilsenen er allerede forskellig pr kundetype
-- **Ti skærmbilleder**, beskåret til det ene sted hvert kort handler om. Hvert
-  kort bærer en `billedeBeskrivelse` med præcis hvad billedet skal vise
+- ~~Ti skærmbilleder~~. **Klaret 16. august.** Det blev otte, ikke ti, for det
+  er hvad kortene faktisk bruger naar de to udgaver af forsiden taelles med.
+  De ligger i `static/onboarding/` og fylder 288 KB tilsammen.
+
+  **Taget af `scripts/skaermbilleder.ts`, som IKKE skal slettes.** Det er et
+  vaerktoej og ikke en engangs-opgave: aendrer en skaerm sig, koeres
+  `npm run skaermbilleder`, og saa er billedet friskt. Det logger selv ind som
+  begge testkonti, saetter vinduet til en iPhone og klipper om det element
+  hvert kort handler om. Koderne staar i `.env`.
+
+  Mangler en fil, fjerner kortet bare rammen, saa gennemgangen virker uanset
 
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
