@@ -2,9 +2,13 @@
 	// ============================================================
 	// AI-hjaelp til appen, i den nye flade.
 	//
-	// Samme motor og samme kvote som i dag: POST /api/app-hjaelp med et
-	// Firebase-token. Endepunktet er UROERT, vi kalder det bare herfra.
-	// Hun forlader aldrig det nye design.
+	// Egen videnbase siden 16. august 2026: POST /api/ny-app-hjaelp.
+	//
+	// FOER den dato kaldte siden /api/app-hjaelp, som bygger sit svar af
+	// den GAMLE apps videnbase. Spurgte en kunde hvor hun fandt sine
+	// moduler, fik hun forklaret en fane der ikke findes i 3.0. Baade det
+	// gamle endpoint og den gamle videnbase er UROERTE, se
+	// content/appHjaelp3.ts.
 	// ============================================================
 
 	import { getContext, tick } from 'svelte';
@@ -52,7 +56,7 @@
 
 		try {
 			const idToken = await u.getIdToken();
-			const res = await fetch('/api/app-hjaelp', {
+			const res = await fetch('/api/ny-app-hjaelp', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -78,12 +82,12 @@
 
 			const data = (await res.json()) as {
 				svar: string;
-				queriesIDag: number;
-				queriesMaks: number;
+				brugtIDag: number;
+				maksIDag: number;
 			};
 			beskeder = [...beskeder, { rolle: 'assistant', indhold: data.svar }];
-			brugtIDag = data.queriesIDag;
-			maksIDag = data.queriesMaks;
+			brugtIDag = data.brugtIDag;
+			maksIDag = data.maksIDag;
 			await rulTilBund();
 		} catch (e) {
 			console.error('[ny] app-hjaelp fejlede', e);
