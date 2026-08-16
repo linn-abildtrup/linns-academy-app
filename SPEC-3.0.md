@@ -3304,3 +3304,209 @@ hun ikke har fået.
 `users/{uid}/mineTraeninger3/{egen_xxx}` med felterne `navn`, `dage`,
 `oprettetAt` og `opdateretAt`. Reglen blev udgivet 16. august: hun skriver
 selv, admin må også læse.
+
+---
+
+# Tilføjelse: beslutninger truffet 16. august 2026
+
+To ting blev besluttet og tegnet samme dag: **Beskeder**, som er bygget, og
+**onboarding**, som er tegnet og godkendt men ikke kodet.
+
+---
+
+## 30. Beskeder. LÅST og bygget 16. august
+
+Det der før lå på to sider, `/ny/snak` og `/ny/beskeder`, er nu én side.
+
+### 30.1 Beslutningerne, truffet af Linn 16. august
+
+1. **Beskeder og Linn AI er det samme.** Derfor én side med to faner,
+   præcis som den gamle app gør på `/app/beskeder`
+2. **Ordet Snak er droppet.** Siden hedder Beskeder, og det er også navnet
+   i bundmenuen. Fanerne hedder Linn AI og Linn
+3. **Alle kan skrive til Linn AI**, uanset om de er på et forløb eller kun
+   har købt appen
+4. **Kun kunder på et forløb kan sende videre til Linn.** Et bygget forløb
+   som SommerRo tæller med, for det ER et forløb
+5. **Alle skriver til AI'en først.** Er hun ikke tilfreds med svaret,
+   sender hun netop det spørgsmål videre. Der findes derfor **intet
+   skrivefelt på fanen Linn**
+6. **Send videre står under hvert eneste svar**, ikke kun når AI'en selv er
+   i tvivl. Det er kunden der afgør om svaret duer, ikke modellen
+7. **Samtalen gemmes.** Før forsvandt den når hun lukkede siden
+8. **Siden åbner altid på Linn AI**, også når der ligger et nyt svar. En
+   prik på fanen Linn siger at der er noget. Skiftede siden selv fane,
+   ville hun miste det hun sidst skrev
+9. **Hun kan ikke slette en samtale.** Det er også den historik der gør at
+   AI'en kan huske hvad de har talt om
+10. **Grænsen er 20 spørgsmål om dagen**, uændret, selv om AI'en nu er den
+    eneste vej ind til Linn
+11. **Forsidens kort "Skriv til Linn" er fjernet.** Beskeder står i
+    bundmenuen hele tiden, så kortet var en genvej til noget der aldrig er
+    mere end ét tryk væk
+
+Mockups i `v3 app/linns-academy-design/mockups-snak.html`, tegnet om én gang
+efter Linns svar: den første udgave havde ét langt rul i stedet for faner.
+
+### 30.2 DEN VIGTIGSTE BESLUTNING: adgangen ligger i 3.0
+
+**Adgangen afgøres i `content/beskedside3.ts` og IKKE i det delte
+adgangs-skema.** Linns besked 16. august: hold det uden om den gamle app.
+
+Baggrunden er målt samme dag. Det live skema siger:
+
+| | Kickstart | Kropsro | Fleksibelt | Medlem |
+|---|---|---|---|---|
+| `linn-ai` | nej | ja | ja | ja |
+| `beskeder-til-linn` | ja | ja | nej | nej |
+
+Skulle 3.0 følge skemaet, skulle to flueben ændres. **Men skemaet styrer
+også den gamle app.** De to flueben ville give 6 Kickstart-kunder Linn AI
+og 11 SommerRo-kunder en Skriv til Linn-fane i den app der er i drift, samme
+dag. Derfor ligger reglen i 3.0 i stedet, hvor den kun rammer 3.0.
+
+Reglen er `beskedAdgang3(harAktivtForlob)` og er to linjer: AI til alle,
+send-videre til dem på et forløb. Den koster ingen hentning overhovedet.
+
+**Bemærk hvad det betyder for fremtiden:** ændrer Linn skemaet, sker der
+ingenting i 3.0. Skal de to en dag følges ad, er det en bevidst opgave.
+
+### 30.3 Hvor tingene gemmes
+
+Begge steder findes i forvejen, og begge tilgås gennem de helpers der
+allerede er skrevet. **Derfor er der ingen nye regler at udgive i Firebase,
+og Linns admin-værktøj er urørt.**
+
+```
+users/{uid}/linnAiSamtaler/{id}    samtalen med AI'en
+klientspoergsmaal/{id}             det hun har sendt videre til Linn
+```
+
+**Samtalen deles med den gamle app.** En kunde der har Linn AI begge steder
+ser den samme samtale. Det blev valgt frem for en egen 3.0-samling, fordi en
+ny samling ville kræve at `firestore.rules` blev udgivet på ny, og
+regelfilen udgives som helhed. Risikoen ved det er større end det løser.
+
+**Én samtale må højst rumme 200 beskeder.** Hele samtalen ligger i ét felt,
+og et Firestore-dokument kan højst fylde 1 MB. Bliver den fuld, startes en
+ny, og de gamle åbnes under "Se tidligere samtaler". Kunden mærker det ikke.
+
+### 30.4 To ting der er dyre at genopdage
+
+**Send videre gemmer det par hun kigger på**, ikke det sidste i tråden.
+Ruller hun tilbage til et svar fra i går og sender det videre, er det dét
+spørgsmål Linn får. Se `spoergsmaalFor` i siden.
+
+**Om et spørgsmål allerede er sendt afgøres på TEKSTEN**, ikke på et id.
+Samtalen og spørgsmålene ligger to forskellige steder og kender ikke
+hinanden. Rammer sammenligningen ved siden af, sker det i den sikre retning:
+hun kan sende igen, i stedet for at et spørgsmål lydløst ikke når frem.
+
+### 30.5 Filerne
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/beskedside3.ts` | Adgang, faner, send videre, samtalens længde, datolinjen | 43 |
+| `firestore/beskedside3.ts` | Kobler til de to samlinger der findes i forvejen | |
+| `routes/ny/beskeder/+page.svelte` | Selve siden | |
+| `routes/ny/snak/+page.svelte` | Nedlagt. Sender videre, med fanen i behold | |
+
+Filen hedder **beskedSIDE** fordi `content/beskeder3.ts` allerede findes og
+er noget andet, nemlig linjerne i "Til dig lige nu" på forsiden.
+
+---
+
+## 31. Onboarding. LÅST 16. august, ikke bygget
+
+Tegnet og godkendt, men der er ikke skrevet en linje kode. Mockups i
+`v3 app/linns-academy-design/mockups-onboarding.html`.
+
+### 31.1 Hvorfor den skal bygges nu
+
+Træningsmodulet er færdigt, og kunden kan vælge hvilket udstyr hun har.
+**Men spørgsmålet stilles i onboarding.** Derfor har ingen kunde valgt
+noget, og alle ser alle programmer. Filteret virker, det bliver bare aldrig
+brugt.
+
+### 31.2 Beslutningerne, truffet af Linn 16. august
+
+1. **Onboarding gælder alle**, første gang de åbner appen, uanset om de er
+   på et forløb eller kun har købt appen
+2. **To dele der kan køres hver for sig.** Del A er det hun skal oplyse,
+   del B er en gennemgang af appen. Det er derfor begge kan tilbydes under
+   Profil bagefter
+3. **Én tæller der går til 11**, ikke to. Vist som én bjælke med tallet ved
+   siden af, for elleve små felter bliver til splinter på en telefon. En
+   forløbskunde får 11, et medlem 9
+4. **Rigtige skærmbilleder** i gennemgangen, ikke tegninger
+5. **Én video pr kundetype**, altså fire optagelser
+6. **Gennemgangen kan ikke springes over**
+7. **Alt filtreres efter hvad kunden faktisk har adgang til.** Et kort hun
+   ikke har adgang til forsvinder helt. Ingen grå kasse der forklarer hvad
+   hun ikke må, samme regel som i træningen
+8. **Bygger vi noget nyt, opdateres gennemgangen**, så nye kunder ser den
+   rigtige app
+9. **Eksisterende kunder får ikke noget skubbet ud.** Vil de se det nye,
+   trykker de selv "Gennemgå appen" under Profil. Det sparer en hel mekanik
+10. **De fire kundetyper er nok.** Adgang skal ikke kunne sættes pr forløb
+
+### 31.3 Del A: de fire skærme
+
+| Nr | Skærm | Hvorfor den er med |
+|---|---|---|
+| 1 | Velkommen, med videoen og en linje til at rette navnet | Navnet kommer fra Simplero og kan stå tomt |
+| 2 | Hvor stor skal skriften være | Se 31.5. Målgruppen er kvinder i 40erne og opefter |
+| 3 | Hvad træner du med | Den der spærrer. Genbruger `UdstyrValg.svelte` |
+| 4 | Læg appen på din hjemmeskærm | Findes ikke i nogen af de to apper i dag |
+
+**Tre ting er bevidst valgt fra.** Nærings-mål, fordi 30-30 har faste tal og
+der ikke er noget at vælge. Kulhydrat, fedt og kalorier, fordi det styres
+fra admin. Og målingen, fordi de 16 spørgsmål ikke hører hjemme i en
+opstart. Onboarding **afleverer** hende i stedet til målingen på sidste
+skærm.
+
+### 31.4 Del B: hvem får hvilke kort
+
+| Kort | Kickstart | Kropsro | Fleksibelt | Medlem |
+|---|---|---|---|---|
+| Sådan finder du rundt | ja | ja | ja | ja |
+| Forsiden er din dag | ja | ja | ja | ja |
+| Sådan registrerer du mad | ja | ja | ja | ja |
+| Din træning | ja | ja | ja | ja |
+| Dit forløb og kalenderen | ja | ja | ja | nej |
+| Skriv til mig | ja | ja | ja | nej |
+| Din måling | ja | ja | ja | ja |
+
+Kortet om træning vises kun hvis hun faktisk har fået et program. Kortet om
+mad nævner kun kalorier hvis hun må se dem.
+
+**Onboarding må ikke have sin egen mening om hvad hun må se.** Én funktion
+afgør hvilke punkter og kort hun får, og den spørger de samme steder som
+appen selv. Samme princip som `programmerForKunde3` i træningen, hvor admin
+og kunden deler den samme regel.
+
+**Derfor regnes gennemgangen ud på ny hver gang og gemmes aldrig.** En kunde
+der er gået fra forløb til medlemskab får den app hun har nu.
+
+### 31.5 Det der skal på plads før onboarding kan bygges
+
+1. **Et lille felt der husker at hun har været igennem.** Uden det betyder
+   en tom udstyrsliste to ting på én gang: "hun er aldrig blevet spurgt" og
+   "hun har svaret, og hun har intet udstyr". I dag ser begge ens ud, og
+   `maaSesMedUdstyr3` viser alt i begge tilfælde. Så ville spørgsmålet blive
+   stillet uden at hendes svar betyder noget
+2. **Tekststørrelsen skal gemmes på kontoen.** Den findes kun i den gamle
+   apps profil i dag, og valget ligger i browserens `localStorage`, ikke på
+   kunden. I 3.0 kan hun slet ikke ændre den, og skifter hun telefon er
+   valget væk. Se `utils/textScale.ts`
+3. **Fire videoer optages**
+4. **Ti skærmbilleder tages og beskæres.** Beskåret til det ene sted kortet
+   handler om, ikke hele skærmen, og komprimeret. To sæt af forsiden, fordi
+   den ser forskellig ud for en forløbskunde og et medlem
+
+### 31.6 En åben tråd der blev fundet undervejs
+
+**AI-hjælpen i 3.0 beskriver den gamle app.** `/ny/hjaelp` bruger den samme
+videnbase som i dag, `content/appHjaelp.ts`, og den forklarer blandt andet
+Moduler-fanen, som ikke findes i 3.0. Spørger en kunde hvor hun finder sine
+moduler, får hun et forkert svar. Skal rettes før et hold flyttes over.

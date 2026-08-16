@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 15. august 2026.
+Sidst opdateret 16. august 2026.
 
 **Læs i denne rækkefølge hvis du er ny:** afsnit 2 om den vigtigste regel, afsnit 7 om fælderne, og så afsnit 9 om hvor vi står. Resten kan slås op efter behov.
 
@@ -11,7 +11,7 @@ Denne fil er til den næste der skal arbejde videre, uanset om det er et nyt Cla
 Læs den sammen med disse tre:
 
 - `CLAUDE.md` i repo-roden er arbejdsreglerne. De er ikke til forhandling.
-- `SPEC-3.0.md` er hvad der bygges og hvorfor. 29 afsnit, hvor 26 og 29 har en del underafsnit. 13 til 21 er designbeslutningerne fra 5. august, 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning, 28 er opstarten, altså det der sker før den første skærm kommer frem, og **29 er hele træningsmodulet**. **Efter afsnit 27 ligger Ventelisten**, altså alt det der bevidst er sat på pause til appen er designet færdig. Læs afsnit 22 til 27 før du går i gang med noget i Mad, og afsnit 29 før du rører træningen.
+- `SPEC-3.0.md` er hvad der bygges og hvorfor. 31 afsnit, hvor 26 og 29 har en del underafsnit. 13 til 21 er designbeslutningerne fra 5. august, 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning, 28 er opstarten, altså det der sker før den første skærm kommer frem, og **29 er hele træningsmodulet**, **30 er Beskeder** og **31 er onboarding**. **Efter afsnit 27 ligger Ventelisten**, altså alt det der bevidst er sat på pause til appen er designet færdig. Læs afsnit 22 til 27 før du går i gang med noget i Mad, og afsnit 29 før du rører træningen.
 - `v3 app/linns-academy-design/DESIGN-SPEC.md` og `mockups.html` er hvordan det ser ud.
 
 ---
@@ -96,7 +96,8 @@ gamle app og må kun læses.
 | `content/fodevareSoeg3.ts` | Søgning i fødevarer: hele ord og flere ord. Se 9.14 | 24 |
 | `content/opskriftPortion3.ts` | Portioner og makro. **Regnereglen**, se 9.9 | 14 |
 | `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid. Se 9.9 | 20 |
-| `content/beskeder3.ts` | "Til dig lige nu" | 8 |
+| `content/beskeder3.ts` | "Til dig lige nu". **Ikke Beskeder-siden**, se `beskedside3` | 8 |
+| `content/beskedside3.ts` | **Beskeder-siden.** Adgang, faner, send videre. Se 9.19 | 43 |
 | `content/traeningsprogram3.ts` | **Træning.** Programmer og træninger. Se 9.18 | 44 |
 | `content/traeningKategori3.ts` | Kategorier og hendes udstyrsvalg | 39 |
 | `content/traeningTildeling3.ts` | Hvem får hvad, hvornår, og dækning | 49 |
@@ -134,6 +135,7 @@ gamle app og må kun læses.
 | `firestore/traeningUdstyr3.ts` | Hendes udstyrsvalg. Den niende der **skriver** |
 | `firestore/traeningKunde3.ts` | Kunderne set fra admin, med adgang og forløbsdag |
 | `firestore/traeningForside3.ts` | Træningsflisen på forsiden |
+| `firestore/beskedside3.ts` | Beskeder. Kobler til `linnAiSamtaler` og `klientspoergsmaal`. Den tiende der **skriver** |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
@@ -155,8 +157,8 @@ Alle ruter ligger under `/ny`.
 | `/ny` | Forsiden. Færdig og i brug |
 | `/ny/dag/[dato]` | Én dag pr dato. Samme kort som forsiden. Færdig |
 | `/ny/lektion/[dag]/[id]` | Video- og lydlektion med rigtig gennemført-registrering. Færdig |
-| `/ny/beskeder` | Beskeder til Linn. Færdig |
-| `/ny/snak` | Kunde-chat med AI. Færdig |
+| `/ny/beskeder` | **Beskeder.** Linn AI og Linn i to faner. Færdig, se 9.19 |
+| `/ny/snak` | Nedlagt 16. august. Sender videre til `/ny/beskeder` |
 | `/ny/maaling` | Spørgeskema. Færdig |
 | `/ny/udvikling` | Bygget, men ikke gennemgået mod den gamle app endnu |
 | `/ny/moduler` | Gammel skitse. **Ikke længere i bundmenuen**, erstattet af 30-30 |
@@ -184,7 +186,10 @@ Alle ruter ligger under `/ny`.
 | `/ny/traening/byg-eget/[id]/[nr]` | Kunden: vælg øvelser til én af sine egne træninger |
 | `/ny/profil/traening` | Kunden: Sådan træner jeg, altså udstyrsvalget |
 
-**Bundmenuen:** Forside · 30-30 · Snak · Udvikling · Profil.
+**Bundmenuen:** Forside · 30-30 · Beskeder · Udvikling · Profil.
+
+**Ordet Snak er droppet 16. august.** Fanen hedder Beskeder, og siden rummer
+både Linn AI og Linn. Ser du ordet et sted, hører det til før den dato.
 
 Forsiden består af, i rækkefølge: hilsen med Linns ansigt, Til dig lige nu, noten fra Linn, Dit overskud med kurven, AI-inspiratoren, datostrimlen, dagens små skridt, dagens lektioner, dagens træning, dagens refleksion, dagens tal, challenge og næste hold.
 
@@ -283,7 +288,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1663 tests lige nu, alle grønne
+npm test                               # 1706 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -311,13 +316,21 @@ Opdateret 16. august 2026, aften. Alt herunder er kodet, committet og pushet, og
 
 ### NÆSTE SKRIDT: onboarding
 
-Det er anbefalingen 16. august, og grunden er konkret. Træningsmodulet er
-færdigt, og kunden kan vælge hvilket udstyr hun har. **Men spørgsmålet stilles
-i onboarding, som ikke er bygget.** Derfor har ingen kunde valgt noget, og
-alle ser alle programmer. Filteret virker, det bliver bare aldrig brugt.
+**Den er tegnet og godkendt 16. august, men ikke kodet.** Mockups ligger i
+`v3 app/linns-academy-design/mockups-onboarding.html`, og alle beslutninger
+står i SPEC afsnit 31. Se også 9.20 her i filen.
+
+Grunden til at den er næste skridt er konkret. Træningsmodulet er færdigt, og
+kunden kan vælge hvilket udstyr hun har. **Men spørgsmålet stilles i
+onboarding.** Derfor har ingen kunde valgt noget, og alle ser alle
+programmer. Filteret virker, det bliver bare aldrig brugt.
 
 Vælgeren findes allerede som komponenten `UdstyrValg.svelte` og bor i Profil,
 netop for at onboarding kan genbruge præcis den skærm. Se 9.18.
+
+**Fire ting skal på plads før der kan kodes**, se SPEC 31.5: et felt der
+husker at hun har været igennem, tekststørrelsen gemt på kontoen, fire videoer
+optaget og ti skærmbilleder taget.
 
 **Og før et hold flyttes til 3.0:** programmerne skal være bygget OG tildelt i
 det nye system. De gamle kopieres ikke, det droppede Linn 16. august. Bliver
@@ -331,6 +344,10 @@ Spærrer for 3.0:
 - **Biblioteket** som et kort nederst på forsiden, kun for dem der har adgang
 - **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app blok
   for blok. Den slags gennemgang plejer at afsløre glemte ting
+- **AI-hjælpen i 3.0 beskriver den GAMLE app.** `/ny/hjaelp` bruger
+  `content/appHjaelp.ts`, som stadig forklarer Moduler-fanen, der ikke findes
+  i 3.0. Spørger en kunde hvor hun finder sine moduler, får hun et forkert
+  svar. Fundet 16. august, ikke rettet
 
 Venter på en beslutning fra Linn:
 
@@ -353,6 +370,9 @@ feature-adgang-matricen, forløb-byggeværktøjet, Linn AI under Beskeder, og
 rettelsen af otte kunders købsdatoer.
 
 **30-30 beregneren** er bygget og i brug, se 9.4, og regnemaskinen bag opskrifternes makro er færdig, se 9.17.
+
+**Beskeder er lagt sammen til én side 16. august**, altså Linn AI og Linn i
+to faner, og ordet Snak er droppet. Se 9.19.
 
 **Træningen er bygget om fra bunden 15. og 16. august**, hele modulet, fra Linns værktøj og AI-hjælperen til kundens afspiller og til at kunden bygger sit eget. Se 9.18, og læs SPEC afsnit 29 før du rører noget der.
 
@@ -1027,6 +1047,102 @@ genvej. Bliver det glemt, starter et helt hold uden træning.
 **Og kunderne starter på træning 1.** Der er ingen fremgang at tage med fra
 den gamle app, så en Kropsro-kunde midt i sit forløb begynder forfra. Det er
 accepteret, se SPEC 29.9.
+
+### 9.19 BESKEDER, lagt sammen 16. august
+
+**Linn AI og Beskeder til Linn er nu én side med to faner.** Linns
+beslutning: det er det samme i hendes verden. **Læs SPEC afsnit 30** før du
+rører noget. Her står kun det en ny person skal vide med det samme.
+
+**Ordet Snak er droppet.** Siden hedder Beskeder, det gør fanen i bundmenuen
+også, og fanerne inde på siden hedder Linn AI og Linn. `/ny/snak` er nedlagt
+og sender videre, med fanen i behold, fordi der ligger links til den i
+kundernes browser-historik.
+
+#### DET VIGTIGSTE: adgangen ligger i 3.0, ikke i det delte skema
+
+**Reglen står i `content/beskedside3.ts` og er to linjer.** Alle kan skrive
+til Linn AI. Kun kunder på et forløb kan sende videre til Linn, og et bygget
+forløb som SommerRo tæller med.
+
+**Rør ikke adgangs-skemaet for at ændre det.** Det live skema siger nej til
+Linn AI for Kickstart og nej til skriv-til-Linn for fleksible forløb. Skulle
+3.0 følge det, skulle to flueben ændres, **men skemaet styrer også den gamle
+app**. De to flueben ville give 6 Kickstart-kunder Linn AI og 11
+SommerRo-kunder en Skriv til Linn-fane i den app der er i drift, samme dag.
+Linns besked 16. august: hold det uden om den gamle app.
+
+Konsekvensen skal kendes: **ændrer Linn skemaet, sker der ingenting i 3.0.**
+
+#### Fire ting der er dyre at genopdage
+
+**Vejen ind til Linn går gennem AI'en.** Der findes intet skrivefelt på fanen
+Linn. Hun spørger AI'en, og er hun ikke tilfreds, sender hun netop det
+spørgsmål videre. Bygger du et skrivefelt ind igen, ryger hele reglen.
+
+**Send videre gemmer det par hun kigger på**, ikke det sidste i tråden.
+Ruller hun tilbage til et svar fra i går, er det dét spørgsmål Linn får.
+
+**Om et spørgsmål allerede er sendt afgøres på TEKSTEN.** Samtalen ligger i
+`linnAiSamtaler` og spørgsmålene i `klientspoergsmaal`, og de kender ikke
+hinanden. Rammer sammenligningen ved siden af, sker det i den sikre retning:
+hun kan sende igen, i stedet for at et spørgsmål lydløst ikke når frem.
+
+**Samtalen deles med den gamle app.** Den ligger i `linnAiSamtaler`, altså
+den gamle apps egen samling, så en kunde ser den samme samtale begge steder.
+Det blev valgt frem for en egen 3.0-samling, fordi en ny samling ville kræve
+at `firestore.rules` blev udgivet på ny, og regelfilen udgives som helhed.
+**Der skal derfor intet udgives i Firebase, og Linns admin-værktøj er urørt.**
+
+#### Filerne
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/beskedside3.ts` | Adgang, faner, send videre, samtalens længde, datolinjen | 43 |
+| `firestore/beskedside3.ts` | Kobler til de to samlinger der findes i forvejen | |
+| `routes/ny/beskeder/+page.svelte` | Selve siden | |
+| `routes/ny/snak/+page.svelte` | Nedlagt, sender videre | |
+
+**Filen hedder beskedSIDE med vilje.** `content/beskeder3.ts` findes allerede
+og er noget andet, nemlig linjerne i "Til dig lige nu" på forsiden. Bland dem
+ikke sammen.
+
+**Forsidens kort "Skriv til Linn" er fjernet**, fordi Beskeder står i
+bundmenuen hele tiden.
+
+### 9.20 ONBOARDING, tegnet og godkendt 16. august. Ikke kodet
+
+**Alle beslutninger står i SPEC afsnit 31**, og skærmene er tegnet i
+`v3 app/linns-academy-design/mockups-onboarding.html`. Her står kun det en ny
+person skal vide med det samme.
+
+**Onboarding gælder alle**, første gang de åbner appen, uanset kundetype. Den
+er delt i to der kan køres hver for sig: del A er de fire ting hun skal
+oplyse, del B er en gennemgang af appen med rigtige skærmbilleder. Under
+Profil kan hun bagefter vælge "Kør opstarten igen" eller kun "Gennemgå
+appen". Én tæller der går til 11 for en forløbskunde og 9 for et medlem.
+
+**Alt filtreres efter hvad kunden faktisk har adgang til**, og et kort hun
+ikke har adgang til forsvinder helt. Ingen grå kasse. Onboarding må ikke have
+sin egen mening om det: én funktion afgør det, og den spørger de samme steder
+som appen selv, samme princip som `programmerForKunde3` i træningen.
+
+**Gennemgangen regnes ud på ny hver gang og gemmes aldrig.** Derfor får en
+kunde der er gået fra forløb til medlemskab den app hun har nu. Og derfor
+skubbes der aldrig nye kort ud til dem der allerede er i gang: vil de se det
+nye, trykker de selv "Gennemgå appen".
+
+**Fire ting spærrer, se SPEC 31.5:**
+
+- **Et felt der husker at hun har været igennem.** Uden det betyder en tom
+  udstyrsliste to ting på én gang, nemlig "aldrig spurgt" og "har intet
+  udstyr", og `maaSesMedUdstyr3` viser alt i begge tilfælde. Så ville
+  spørgsmålet blive stillet uden at hendes svar betyder noget
+- **Tekststørrelsen skal gemmes på kontoen.** Den findes kun i den gamle apps
+  profil, og valget ligger i browserens `localStorage`. I 3.0 kan hun slet
+  ikke ændre den, og skifter hun telefon er valget væk. Se `utils/textScale.ts`
+- **Fire videoer**, én pr kundetype
+- **Ti skærmbilleder**, beskåret til det ene sted hvert kort handler om
 
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
