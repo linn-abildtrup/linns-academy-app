@@ -99,6 +99,7 @@ gamle app og må kun læses.
 | `content/beskeder3.ts` | "Til dig lige nu". **Ikke Beskeder-siden**, se `beskedside3` | 8 |
 | `content/beskedside3.ts` | **Beskeder-siden.** Adgang, faner, send videre. Se 9.19 | 43 |
 | `content/onboarding3.ts` | **Onboarding.** Kortene, tælleren, de to felter. Se 9.20 | 32 |
+| `content/appHjaelp3.ts` | **Spørg om appen.** 3.0-videnbasen. Se 9.21 | 16 |
 | `content/traeningsprogram3.ts` | **Træning.** Programmer og træninger. Se 9.18 | 44 |
 | `content/traeningKategori3.ts` | Kategorier og hendes udstyrsvalg | 39 |
 | `content/traeningTildeling3.ts` | Hvem får hvad, hvornår, og dækning | 49 |
@@ -188,6 +189,7 @@ Alle ruter ligger under `/ny`.
 | `/ny/traening/byg-eget/[id]/[nr]` | Kunden: vælg øvelser til én af sine egne træninger |
 | `/ny/profil/traening` | Kunden: Sådan træner jeg, altså udstyrsvalget |
 | `/ny/velkommen` | **Onboarding.** Fire spørgsmål og en rundvisning. Se 9.20 |
+| `/ny/hjaelp` | Spørg om appen. Egen 3.0-videnbase siden 16. august. Se 9.21 |
 
 **Bundmenuen:** Forside · 30-30 · Beskeder · Udvikling · Profil.
 
@@ -281,6 +283,14 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 **En komponent kan være skrevet, testet og importeret uden nogensinde at blive brugt.** Faste måltider åbnede 12. august et tomt ark uden en eneste fejl. Det nye ark var aldrig kommet ind i markup, så det gamle Vælg-ark åbnede i stedet, med den nye titel på og uden en tom tekst at vise. **Hverken `svelte-check` eller testene fanger det**, for koden er korrekt, den bliver bare aldrig kaldt. Tjek at en ny komponent faktisk står i markup, ikke kun at den er importeret.
 
+**Tre fælder i `firestoreRest.ts`, alle tre fundet 16. august i det samme endpoint.** Ingen af dem fanges af typerne, testene eller et build, fordi et cast fortæller TypeScript at formen er rigtig. De blev kun fundet ved at spørge den kørende app.
+
+- **`hentAlleDocs` giver `{ id, data }` og IKKE dokumentet selv.** Et cast direkte til dokumentets form ser rigtigt ud og giver `undefined` hele vejen igennem
+- **En timestamp kommer som en ISO-STRENG**, ikke som det `_seconds`-objekt `firebase-admin` bruger. Læser du `_seconds`, får du intet, og datoen bliver til 1970
+- **Forløbene står på BRUGER-dokumentet som `forlobIds`. Samlingen `products` er TOM for forløbskunder.** Læser du products for at finde forløbet, ser hver eneste kunde ud som om hun ikke har et. Se `udledAdgange` i `adgang3.ts`, som gør det rigtigt
+
+**Regn aldrig selv ud hvornår et forløb slutter.** `forlobSlutMs` i `content/forlob.ts` gulver starten til midnat og lægger en dag til, så kunden får HELE den sidste dag. Uden det sagde AI-hjælpen 16. august til en kvinde på dag 84 af 84 at hun ikke var på et forløb. Der er allerede en lang kommentar over funktionen om præcis den fejl. Bemærk igen at der findes **to** funktioner med det navn, se 9.2.
+
 **Server-siden kan ikke naa Firestore paa localhost uden tre noegler.** Alt under `src/routes/api/` gaar gennem `firestoreRest.ts`, som kraever `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` og `FIREBASE_PRIVATE_KEY`. De har kun ligget i Cloudflares kontrolpanel, aldrig i `.env`, saa i lokal udvikling svarede AI'en i Beskeder, hilsenen paa forsiden og opskrift-analysen alle sammen **"Internal Error"**. I drift har det virket hele tiden, saa fejlen ser ud som en fejl i koden og er det ikke. Rettet 16. august ved at laegge de tre i `.env`, hentet fra `scripts/service-account-key.json`. Begge filer er i `.gitignore`.
 
 **`opretDoc` findes ikke i `firestoreRest.ts`.** Brug `gemDocMerge` med et selvlavet dokument-id.
@@ -293,7 +303,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1738 tests lige nu, alle grønne
+npm test                               # 1754 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -328,11 +338,9 @@ Derefter står to ting tilbage før et hold kan flyttes:
 
 - **`/ny/udvikling` gennemgået mod den gamle app blok for blok.** Den slags
   gennemgang har hver eneste gang afsløret ting der ellers var glemt
-- **AI-hjælpen beskriver den GAMLE app.** `/ny/hjaelp` bruger
-  `content/appHjaelp.ts`, som stadig forklarer Moduler-fanen der ikke findes i
-  3.0. En kunde der spørger hvor hun finder sine moduler får et forkert svar
+- ~~AI-hjælpen beskriver den GAMLE app~~. **Klaret 16. august**, se 9.21
 
-Og husk **Biblioteket** som et kort nederst på forsiden.
+Og husk **Biblioteket**, som efter Linns beslutning 16. august skal ligge under Profil og ikke på forsiden.
 
 **Og før et hold flyttes til 3.0:** programmerne skal være bygget OG tildelt i
 det nye system. De gamle kopieres ikke, det droppede Linn 16. august. Bliver
@@ -343,7 +351,7 @@ det glemt, starter et helt hold uden træning.
 Spærrer for 3.0:
 
 - **De fire videoer til onboarding.** Skærmbillederne er taget 16. august
-- **Biblioteket** som et kort nederst på forsiden, kun for dem der har adgang
+- **Biblioteket.** Linns beslutning 16. august: det skal ligge under **Profil**, ikke som et kort på forsiden
 - **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app blok
   for blok. Den slags gennemgang plejer at afsløre glemte ting
 - **AI-hjælpen i 3.0 beskriver den GAMLE app.** `/ny/hjaelp` bruger
@@ -1172,6 +1180,28 @@ urørte, og der skal intet udgives i Firebase:
 
   Mangler en fil, fjerner kortet bare rammen, saa gennemgangen virker uanset
 
+### 9.21 SPØRG OM APPEN, egen videnbase 16. august
+
+**`/ny/hjaelp` svarede ud fra den GAMLE apps videnbase.** Spurgte en kunde
+hvor hun fandt sine moduler, fik hun forklaret en fane der ikke findes i 3.0.
+
+**Både `content/appHjaelp.ts` og `/api/app-hjaelp` er urørte**, for de bruges
+af de 760 i drift. Alt nyt ligger ved siden af: `content/appHjaelp3.ts` med 18
+afsnit og 16 tests, endpointet `/api/ny-app-hjaelp`, og `/ny/hjaelp` peger nu
+på det nye.
+
+**Videnbasen skæres til efter hvad hun faktisk har**, med de samme spørgsmål
+som onboarding stiller. Et medlem hører ikke om forløb og får ikke at vide at
+hun kan skrive til Linn. Ordene premium og basis bruges ikke.
+
+**Den her fil forældes hvis ingen passer på den.** Ændrer du en skærm i 3.0,
+så ret afsnittet samme dag. Det er præcis den fejl der blev rettet da filen
+blev skrevet. Der er en test der fælder hvis Moduler-fanen sniger sig ind
+igen, og en der fælder hvis ordet Snak dukker op om fanen.
+
+**Verificeret mod den kørende app**, ikke kun med tests. Det var dér de fire
+fælder i afsnit 7 blev fundet, og de kostede fire runder.
+
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
 Hele Mad-modulet blev gennemgaaet mod den gamle app 12. august, funktion for
@@ -1191,7 +1221,7 @@ opstarts-problemet i 9.7.
 Resten af etape 4:
 
 - ~~**Træning.**~~ **Bygget 15. og 16. august**, hele modulet fra bunden, inklusive at kunden bygger sit eget og AI-værktøjet. Se 9.18
-- **Biblioteket** som et kort nederst på forsiden, kun for dem der har adgang
+- **Biblioteket.** Linns beslutning 16. august: det skal ligge under **Profil**, ikke som et kort på forsiden
 - **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app
 - ~~`static/mockup/` slettes~~. **Klaret 11. august.** Se 9.7
 - ~~SPEC mangler et afsnit 26.7~~. **Passede ikke.** Afsnittet står i spec'en

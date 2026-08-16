@@ -3525,9 +3525,16 @@ Firebase. De læses gennem et cast ét sted, samme greb som `udstyrFra`.
    onboarding af porten, så hvert billede ville vise opstarten. Og ventetegnet
    er den værste, for billedet er teknisk korrekt og viser bare "Et øjeblik" 
 
-### 31.7 En åben tråd der blev fundet undervejs
+### 31.7 En tråd der blev fundet undervejs, og lukket samme dag
 
-**AI-hjælpen i 3.0 beskriver den gamle app.** `/ny/hjaelp` bruger den samme
-videnbase som i dag, `content/appHjaelp.ts`, og den forklarer blandt andet
-Moduler-fanen, som ikke findes i 3.0. Spørger en kunde hvor hun finder sine
-moduler, får hun et forkert svar. Skal rettes før et hold flyttes over.
+**AI-hjælpen i 3.0 beskrev den gamle app.** `/ny/hjaelp` brugte
+`content/appHjaelp.ts`, som forklarer blandt andet Moduler-fanen, der ikke
+findes i 3.0.
+
+**Rettet 16. august.** Ny videnbase i `content/appHjaelp3.ts` og et nyt
+endpoint `/api/ny-app-hjaelp`. Den gamle videnbase og det gamle endpoint er
+urørte, for de bruges af de 760 i drift. Videnbasen skæres til efter hvad
+kunden faktisk har, med de samme spørgsmål som onboarding stiller.
+
+**Og en beslutning fra samme dag:** Biblioteket skal ligge under **Profil**,
+ikke som et kort nederst på forsiden.
