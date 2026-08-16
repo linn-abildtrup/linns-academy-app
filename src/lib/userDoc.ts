@@ -375,14 +375,22 @@ export async function synkroniserForlobskundeStatus(
 			}
 		}
 
-		// Beregn expiresAt + bonusPeriodEndsAt hvis de mangler. Det er
-		// forudsaetningen for at brugeren automatisk overgaar til "udlobet
-		// med bibliotek-adgang" naar forl0bet slutter. Dette er den ENESTE
-		// kilde til bonus-datoen (webhooks saetter den ikke laengere - A4).
-		if (slutMs > 0 && (!current.expiresAt || !current.bonusPeriodEndsAt)) {
+		// Beregn expiresAt + bonusPeriodEndsAt. Det er forudsaetningen for at
+		// brugeren automatisk overgaar til "udlobet med bibliotek-adgang" naar
+		// forl0bet slutter. Dette er den ENESTE kilde til bonus-datoen
+		// (webhooks saetter den ikke laengere - A4).
+		//
+		// expiresAt saettes kun naar den mangler - resolveren nedenfor er
+		// autoritativ for den. Bonus-datoen FORLAENGES derimod naar det
+		// aktuelle forl0b slutter senere end den gemte dato. Uden det arver en
+		// kunde der flyttes manuelt til et nyt hold det GAMLE forl0bs bonus og
+		// mister resten af sine 90 dage (fundet 16/8 2026 ved flytningen fra
+		// SommerRo til KropsRo). Datoen bliver aldrig forkortet.
+		if (slutMs > 0) {
 			if (!current.expiresAt) opdateringer.expiresAt = slutMs;
-			if (!current.bonusPeriodEndsAt) {
-				opdateringer.bonusPeriodEndsAt = bibliotekBonusSlutMs(forlobStartMs, forlobAntalDage);
+			const nyBonus = bibliotekBonusSlutMs(forlobStartMs, forlobAntalDage);
+			if (nyBonus > 0 && nyBonus > (current.bonusPeriodEndsAt ?? 0)) {
+				opdateringer.bonusPeriodEndsAt = nyBonus;
 			}
 		}
 	}
