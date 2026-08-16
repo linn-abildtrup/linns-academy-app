@@ -185,7 +185,7 @@
 	const faner = [
 		{ href: '/ny', navn: 'Forside' },
 		{ href: '/ny/30-30', navn: '30-30' },
-		{ href: '/ny/snak', navn: 'Snak' },
+		{ href: '/ny/beskeder', navn: 'Beskeder' },
 		{ href: '/ny/udvikling', navn: 'Udvikling' },
 		{ href: '/ny/profil', navn: 'Profil' }
 	];
@@ -275,7 +275,7 @@
 								<path d="M9 7.5c0-1.2 1.2-1.6 1.2-2.8S9 3 9 3" />
 								<path d="M14.2 7.5c0-1.2 1.2-1.6 1.2-2.8s-1.2-1.7-1.2-1.7" />
 							</svg>
-						{:else if fane.navn === 'Snak'}
+						{:else if fane.navn === 'Beskeder'}
 							<svg
 								viewBox="0 0 24 24"
 								fill="none"

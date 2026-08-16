@@ -8832,3 +8832,158 @@ a.ch-knap {
 	font-size: calc(12px * var(--fs-scale, 1));
 	color: var(--ink-3);
 }
+
+/* ── Beskeder: faner, datolinje og send videre ─────────────────── */
+/* Lagt sammen 16. august 2026. Samtalen med Linn AI og spoergsmaalene til Linn er
+   én side med to faner, se routes/ny/beskeder/+page.svelte. */
+
+.besk-faner {
+	display: flex;
+	gap: 4px;
+	background: var(--paper-2);
+	border-radius: 16px;
+	padding: 4px;
+	margin: 0 17px 10px;
+	flex-shrink: 0;
+}
+
+.besk-faner button {
+	flex: 1;
+	border: 0;
+	background: none;
+	border-radius: 13px;
+	padding: 11px 6px;
+	min-height: 44px;
+	font-family: inherit;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-2);
+}
+
+.besk-faner button.paa {
+	background: var(--paper);
+	color: var(--espresso);
+	box-shadow: var(--shadow-soft);
+}
+
+.besk-prik {
+	display: inline-block;
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: var(--plum);
+	margin-left: 5px;
+	vertical-align: 1px;
+}
+
+/* Den tynde linje mellem to dage i samtalen. */
+.besk-dato {
+	align-self: stretch;
+	position: relative;
+	text-align: center;
+	margin: 4px 0 0;
+	font-size: calc(11px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.besk-dato::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 50%;
+	height: 1px;
+	background: var(--line);
+}
+
+.besk-dato span {
+	position: relative;
+	background: var(--oat);
+	padding: 0 10px;
+}
+
+/* Send videre. Staar under hvert svar fra AI'en, diskret og ikke som
+   en stor knap, se Linns beslutning 16. august. */
+.besk-videre {
+	align-self: flex-start;
+	margin: -5px 0 0 2px;
+	padding: 4px 0;
+	min-height: 34px;
+	border: 0;
+	background: none;
+	font-family: inherit;
+	text-align: left;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--plum);
+	border-bottom: 1px solid rgba(124, 79, 99, 0.3);
+	line-height: 1.4;
+}
+
+.besk-videre:disabled {
+	color: var(--ink-3);
+	border-bottom-color: transparent;
+}
+
+.besk-videre.sendt {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	color: var(--sage-tekst);
+	border-bottom: 0;
+}
+
+.besk-tidligere {
+	align-self: center;
+	border: 1px solid var(--line);
+	background: var(--paper);
+	border-radius: 999px;
+	padding: 8px 16px;
+	min-height: 40px;
+	font-family: inherit;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+}
+
+.besk-tidligere-liste {
+	display: flex;
+	flex-direction: column;
+	gap: 9px;
+}
+
+.besk-gammel {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	width: 100%;
+	text-align: left;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 16px;
+	padding: 13px 15px;
+	min-height: 44px;
+	font-family: inherit;
+}
+
+.besk-gammel .t {
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--espresso);
+	line-height: 1.35;
+}
+
+.besk-gammel .s {
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.besk-fod {
+	margin: 4px 0 0;
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	line-height: 1.45;
+}
+
+/* Traaden med et svar hun ikke har set endnu. */
+.traad.nyt {
+	background: var(--plum-tint);
+}

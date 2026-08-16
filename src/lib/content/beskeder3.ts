@@ -75,7 +75,10 @@ export function byggBeskeder(g: BeskedGrundlag): Besked[] {
 			slags: 'svar',
 			titel: 'Nyt svar fra Linn',
 			uddrag: g.nyestSvar.svar.trim(),
-			href: '/ny/beskeder',
+			// Beskeder, fanen Linn. Hun har sagt hvad hun vil se ved at trykke
+			// paa linjen, saa her aabner vi paa den anden fane end normalt.
+			// Ordet Snak blev droppet 16. august 2026.
+			href: '/ny/beskeder?fane=linn',
 			ekstern: false
 		});
 	}

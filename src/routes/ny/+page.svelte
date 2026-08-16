@@ -775,17 +775,10 @@
 			<NaesteHoldKort hold={naesteHold} nu={nuMs} />
 		{/if}
 
-		{#if aktivtForlob}
-			<a class="coach" href="/ny/beskeder">
-				<span class="coach-ava" aria-hidden="true"></span>
-				<span class="coach-tekst">
-					<span class="k">En hånd i ryggen</span>
-					<span class="t">Skriv til Linn</span>
-					<span class="s">Du får svar inden for et døgn</span>
-				</span>
-				<span class="coach-pil" aria-hidden="true">›</span>
-			</a>
-		{/if}
+		<!-- Kortet "Skriv til Linn" er fjernet 16. august 2026. Snak staar i
+		     bundmenuen hele tiden, saa kortet var en genvej til noget der
+		     aldrig er mere end ét tryk vaek. Linns beslutning. -->
+
 
 		<a class="ai-kort" href="/ny/hjaelp">
 			<!-- Talebobbel med spoergsmaalstegn, og en lille glimt der siger at

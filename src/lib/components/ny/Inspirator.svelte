@@ -36,6 +36,6 @@
 		</div>
 	{:else}
 		<p class="inspirator-tekst">{tekst}</p>
-		<a class="btn" href="/ny/snak" onclick={ontagimod}>Snak med mig om det</a>
+		<a class="btn" href="/ny/beskeder" onclick={ontagimod}>Snak med mig om det</a>
 	{/if}
 </section>

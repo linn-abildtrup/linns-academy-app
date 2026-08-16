@@ -19,7 +19,7 @@ describe('byggBeskeder', () => {
 		expect(b.slags).toBe('svar');
 		expect(b.titel).toBe('Nyt svar fra Linn');
 		expect(b.uddrag).toBe('Ja, det er normalt.');
-		expect(b.href).toBe('/ny/beskeder');
+		expect(b.href).toBe('/ny/beskeder?fane=linn');
 		expect(b.ekstern).toBe(false);
 	});
 

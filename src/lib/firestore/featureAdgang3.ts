@@ -64,3 +64,8 @@ export function maaSeUdvidetNaering(
 ): boolean {
 	return harFeatureAdgang(userDoc, matrix, 'udvidet-naering');
 }
+
+// BEMAERK at Beskeder IKKE spoerger her. Linn AI og skriv-til-Linn staar
+// ogsaa i skemaet, men skemaet styrer den gamle app samtidig, og et
+// flueben ville derfor aendre noget for de 760 i drift. Reglen for 3.0
+// ligger i content/beskedside3.ts. Linns besked 16. august 2026.
