@@ -153,16 +153,27 @@ const STANDARD_PRODUKTER = ['basisabo', 'premiumabo', 'kickstart', 'premiumforl�
 
 /**
  * Udleder en kundes type ud fra adgangs-felterne. Aktive forløbskunder:
- * byggede/fleksible forløb (activeProduct = forløbets egen produktNøgle, ikke et
- * standard-produkt) → 'fleksibelt'; ellers Kropsro vs Kickstart efter det aktive
- * forløbs id. Returnerer null hvis kunden ikke har aktiv adgang (udløbet / ingen)
- * — saa faar hun ingen funktioner, praecis som harPremium=false i dag.
+ * forløbets EGET id afgør typen — et hold der hedder kickstart_* eller
+ * kropsro_* er den type, ogsaa naar det er bygget med sin egen produktNøgle
+ * (= egen dataskuffe). Foerst derefter falder vi tilbage paa activeProduct, saa
+ * byggede forløb med et frit navn (sommerro_ny, lise_render) stadig er
+ * 'fleksibelt'. Returnerer null hvis kunden ikke har aktiv adgang (udløbet /
+ * ingen) — saa faar hun ingen funktioner, praecis som harPremium=false i dag.
+ *
+ * Id'et vinder over produktnavnet fordi de to ellers kolliderer: KropsRo 16.
+ * aug fik 16/8 2026 sin egen dataskuffe for ikke at overskrive kundernes
+ * Kickstart-historik, og tabte dermed skriv-til-Linn og nul-dage, fordi
+ * produktnavnet ikke laengere var et standard-produkt. Samme regel som
+ * symptomcheck-kadencen bruger.
  */
 export function kundetypeFor(userDoc: UserDoc | null | undefined): Kundetype | null {
 	if (erForlobsklient(userDoc)) {
+		const forlobId = aktivtForlobId(userDoc);
+		if (forlobId?.startsWith('kropsro_')) return 'kropsro';
+		if (forlobId?.startsWith('kickstart_')) return 'kickstart';
 		const ap = userDoc?.activeProduct;
 		if (ap && !STANDARD_PRODUKTER.includes(ap)) return 'fleksibelt';
-		return aktivtForlobId(userDoc)?.startsWith('kropsro_') ? 'kropsro' : 'kickstart';
+		return 'kickstart';
 	}
 	if (erModulbruger(userDoc)) return 'app';
 	return null;
