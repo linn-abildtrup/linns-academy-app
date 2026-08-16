@@ -98,6 +98,7 @@ gamle app og må kun læses.
 | `content/opskriftTekst3.ts` | Fremgangsmåde, trin og tilberedningstid. Se 9.9 | 20 |
 | `content/beskeder3.ts` | "Til dig lige nu". **Ikke Beskeder-siden**, se `beskedside3` | 8 |
 | `content/beskedside3.ts` | **Beskeder-siden.** Adgang, faner, send videre. Se 9.19 | 43 |
+| `content/onboarding3.ts` | **Onboarding.** Kortene, tælleren, de to felter. Se 9.20 | 32 |
 | `content/traeningsprogram3.ts` | **Træning.** Programmer og træninger. Se 9.18 | 44 |
 | `content/traeningKategori3.ts` | Kategorier og hendes udstyrsvalg | 39 |
 | `content/traeningTildeling3.ts` | Hvem får hvad, hvornår, og dækning | 49 |
@@ -136,6 +137,7 @@ gamle app og må kun læses.
 | `firestore/traeningKunde3.ts` | Kunderne set fra admin, med adgang og forløbsdag |
 | `firestore/traeningForside3.ts` | Træningsflisen på forsiden |
 | `firestore/beskedside3.ts` | Beskeder. Kobler til `linnAiSamtaler` og `klientspoergsmaal`. Den tiende der **skriver** |
+| `firestore/onboarding3.ts` | `onboardet3` og `tekstSkala3`. Den ellevte der **skriver** |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
@@ -185,6 +187,7 @@ Alle ruter ligger under `/ny`.
 | `/ny/traening/byg-eget/[id]` | Kunden: ret sit eget program, tilføj og fjern træninger |
 | `/ny/traening/byg-eget/[id]/[nr]` | Kunden: vælg øvelser til én af sine egne træninger |
 | `/ny/profil/traening` | Kunden: Sådan træner jeg, altså udstyrsvalget |
+| `/ny/velkommen` | **Onboarding.** Fire spørgsmål og en rundvisning. Se 9.20 |
 
 **Bundmenuen:** Forside · 30-30 · Beskeder · Udvikling · Profil.
 
@@ -288,7 +291,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1706 tests lige nu, alle grønne
+npm test                               # 1738 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -314,23 +317,20 @@ Opdateret 16. august 2026, aften. Alt herunder er kodet, committet og pushet, og
 
 **Etape 1 til 3 er færdige, og hele den åbne liste fra 6. august er klaret.** Etape 4 er i gang.
 
-### NÆSTE SKRIDT: onboarding
+### NÆSTE SKRIDT
 
-**Den er tegnet og godkendt 16. august, men ikke kodet.** Mockups ligger i
-`v3 app/linns-academy-design/mockups-onboarding.html`, og alle beslutninger
-står i SPEC afsnit 31. Se også 9.20 her i filen.
+**Onboarding er bygget 16. august**, se 9.20. Det eneste der mangler af den er
+indhold og ikke kode: fire videoer og ti skærmbilleder, som Linn skal levere.
 
-Grunden til at den er næste skridt er konkret. Træningsmodulet er færdigt, og
-kunden kan vælge hvilket udstyr hun har. **Men spørgsmålet stilles i
-onboarding.** Derfor har ingen kunde valgt noget, og alle ser alle
-programmer. Filteret virker, det bliver bare aldrig brugt.
+Derefter står to ting tilbage før et hold kan flyttes:
 
-Vælgeren findes allerede som komponenten `UdstyrValg.svelte` og bor i Profil,
-netop for at onboarding kan genbruge præcis den skærm. Se 9.18.
+- **`/ny/udvikling` gennemgået mod den gamle app blok for blok.** Den slags
+  gennemgang har hver eneste gang afsløret ting der ellers var glemt
+- **AI-hjælpen beskriver den GAMLE app.** `/ny/hjaelp` bruger
+  `content/appHjaelp.ts`, som stadig forklarer Moduler-fanen der ikke findes i
+  3.0. En kunde der spørger hvor hun finder sine moduler får et forkert svar
 
-**Fire ting skal på plads før der kan kodes**, se SPEC 31.5: et felt der
-husker at hun har været igennem, tekststørrelsen gemt på kontoen, fire videoer
-optaget og ti skærmbilleder taget.
+Og husk **Biblioteket** som et kort nederst på forsiden.
 
 **Og før et hold flyttes til 3.0:** programmerne skal være bygget OG tildelt i
 det nye system. De gamle kopieres ikke, det droppede Linn 16. august. Bliver
@@ -340,7 +340,8 @@ det glemt, starter et helt hold uden træning.
 
 Spærrer for 3.0:
 
-- **Onboarding**, se ovenfor
+- **De fire videoer og de ti skærmbilleder til onboarding.** Selve opstarten
+  virker uden dem, men den er bar
 - **Biblioteket** som et kort nederst på forsiden, kun for dem der har adgang
 - **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app blok
   for blok. Den slags gennemgang plejer at afsløre glemte ting
@@ -1110,11 +1111,21 @@ ikke sammen.
 **Forsidens kort "Skriv til Linn" er fjernet**, fordi Beskeder står i
 bundmenuen hele tiden.
 
-### 9.20 ONBOARDING, tegnet og godkendt 16. august. Ikke kodet
+### 9.20 ONBOARDING, bygget 16. august
 
 **Alle beslutninger står i SPEC afsnit 31**, og skærmene er tegnet i
-`v3 app/linns-academy-design/mockups-onboarding.html`. Her står kun det en ny
-person skal vide med det samme.
+`v3 app/linns-academy-design/mockups-onboarding.html`. Hele flowet er bygget,
+både de fire spørgsmål og rundvisningen. Her står kun det en ny person skal
+vide med det samme.
+
+**Porten ligger på forsiden, ikke i skallen**, af samme grund som alt andet:
+skallen omgiver hver eneste side, og et forsøg på at lægge noget nyt derind
+gav en blank app 11. august. **Admin går udenom**, ellers kunne Linn ikke
+åbne sit eget værktøj uden at tage opstarten forfra.
+
+**Det ene nye i skallen er skriftstørrelsen**, som sættes fra kontoen. Det er
+et lokalt attribut-skift uden ét eneste netværkskald, altså ikke det der
+væltede appen.
 
 **Onboarding gælder alle**, første gang de åbner appen, uanset kundetype. Den
 er delt i to der kan køres hver for sig: del A er de fire ting hun skal
@@ -1132,17 +1143,24 @@ kunde der er gået fra forløb til medlemskab den app hun har nu. Og derfor
 skubbes der aldrig nye kort ud til dem der allerede er i gang: vil de se det
 nye, trykker de selv "Gennemgå appen".
 
-**Fire ting spærrer, se SPEC 31.5:**
+**To nye felter på kunden, begge additive.** `userDoc.ts` og `types.ts` er
+urørte, og der skal intet udgives i Firebase:
 
-- **Et felt der husker at hun har været igennem.** Uden det betyder en tom
-  udstyrsliste to ting på én gang, nemlig "aldrig spurgt" og "har intet
-  udstyr", og `maaSesMedUdstyr3` viser alt i begge tilfælde. Så ville
-  spørgsmålet blive stillet uden at hendes svar betyder noget
-- **Tekststørrelsen skal gemmes på kontoen.** Den findes kun i den gamle apps
-  profil, og valget ligger i browserens `localStorage`. I 3.0 kan hun slet
-  ikke ændre den, og skifter hun telefon er valget væk. Se `utils/textScale.ts`
-- **Fire videoer**, én pr kundetype
-- **Ti skærmbilleder**, beskåret til det ene sted hvert kort handler om
+- **`onboardet3`.** Uden det betød en tom udstyrsliste to ting på én gang,
+  nemlig "aldrig spurgt" og "har intet udstyr", og `maaSesMedUdstyr3` viser
+  alt i begge tilfælde. **Skrives først når hun er helt færdig.** Falder hun
+  ud midt i, starter hun forfra, for et halvt svar er værre end ingen
+- **`tekstSkala3`.** Skriftstørrelsen fandtes kun i den gamle apps profil, og
+  valget lå i browserens `localStorage`, så det var væk ved telefonskift. Nu
+  gemmes den begge steder
+
+**Det der mangler er indhold, ikke kode:**
+
+- **Fire videoer**, én pr kundetype. `VELKOMSTVIDEO_3` står tom, og en tom URL
+  betyder at skærmen springer afspilleren over og kun viser hilsenen.
+  Hilsenen er allerede forskellig pr kundetype
+- **Ti skærmbilleder**, beskåret til det ene sted hvert kort handler om. Hvert
+  kort bærer en `billedeBeskrivelse` med præcis hvad billedet skal vise
 
 ### Mad er nu bygget faerdig paa naer to beslutninger
 

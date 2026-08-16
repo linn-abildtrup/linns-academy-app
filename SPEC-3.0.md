@@ -3416,10 +3416,12 @@ er noget andet, nemlig linjerne i "Til dig lige nu" på forsiden.
 
 ---
 
-## 31. Onboarding. LÅST 16. august, ikke bygget
+## 31. Onboarding. LÅST og bygget 16. august
 
-Tegnet og godkendt, men der er ikke skrevet en linje kode. Mockups i
-`v3 app/linns-academy-design/mockups-onboarding.html`.
+Mockups i `v3 app/linns-academy-design/mockups-onboarding.html`. Hele flowet
+er bygget, altså både de fire spørgsmål og rundvisningen. **Det eneste der
+mangler er indhold, ikke kode:** de fire videoer og de ti skærmbilleder, se
+31.5.
 
 ### 31.1 Hvorfor den skal bygges nu
 
@@ -3488,23 +3490,35 @@ og kunden deler den samme regel.
 **Derfor regnes gennemgangen ud på ny hver gang og gemmes aldrig.** En kunde
 der er gået fra forløb til medlemskab får den app hun har nu.
 
-### 31.5 Det der skal på plads før onboarding kan bygges
+### 31.5 De to felter der blev bygget undervejs
 
-1. **Et lille felt der husker at hun har været igennem.** Uden det betyder
-   en tom udstyrsliste to ting på én gang: "hun er aldrig blevet spurgt" og
-   "hun har svaret, og hun har intet udstyr". I dag ser begge ens ud, og
-   `maaSesMedUdstyr3` viser alt i begge tilfælde. Så ville spørgsmålet blive
-   stillet uden at hendes svar betyder noget
-2. **Tekststørrelsen skal gemmes på kontoen.** Den findes kun i den gamle
-   apps profil i dag, og valget ligger i browserens `localStorage`, ikke på
-   kunden. I 3.0 kan hun slet ikke ændre den, og skifter hun telefon er
-   valget væk. Se `utils/textScale.ts`
-3. **Fire videoer optages**
-4. **Ti skærmbilleder tages og beskæres.** Beskåret til det ene sted kortet
+Begge er additive, så `lib/types.ts` er urørt og der skal intet udgives i
+Firebase. De læses gennem et cast ét sted, samme greb som `udstyrFra`.
+
+1. **`onboardet3`**, et tidspunkt. Uden det betød en tom udstyrsliste to ting
+   på én gang: "hun er aldrig blevet spurgt" og "hun har svaret, og hun har
+   intet udstyr". `maaSesMedUdstyr3` viser alt i begge tilfælde, så
+   spørgsmålet ville blive stillet uden at hendes svar betød noget.
+   **Skrives først når hun er helt færdig.** Falder hun ud midt i, starter
+   hun forfra, for et halvt svar er værre end ingen
+2. **`tekstSkala3`.** Skriftstørrelsen fandtes kun i den gamle apps profil,
+   og valget lå i browserens `localStorage`, ikke på kunden. Nu gemmes den
+   begge steder, så den følger med til en ny telefon. Det er også grunden til
+   det ene nye i 3.0's skal: et lokalt attribut-skift uden netværkskald
+
+### 31.6 Det der mangler, og det er indhold og ikke kode
+
+1. **Fire videoer optages.** URL'erne står tomme i `VELKOMSTVIDEO_3`, og en
+   tom URL betyder at skærmen springer afspilleren over og kun viser
+   hilsenen. Hilsenen er allerede forskellig pr kundetype, så opstarten er
+   personlig fra dag ét. Når de er optaget, er det én linje pr kundetype
+2. **Ti skærmbilleder tages og beskæres.** Beskåret til det ene sted kortet
    handler om, ikke hele skærmen, og komprimeret. To sæt af forsiden, fordi
-   den ser forskellig ud for en forløbskunde og et medlem
+   den ser forskellig ud for en forløbskunde og et medlem. Hvert kort bærer
+   en `billedeBeskrivelse` med præcis hvad billedet skal vise, så det ikke
+   skal gættes
 
-### 31.6 En åben tråd der blev fundet undervejs
+### 31.7 En åben tråd der blev fundet undervejs
 
 **AI-hjælpen i 3.0 beskriver den gamle app.** `/ny/hjaelp` bruger den samme
 videnbase som i dag, `content/appHjaelp.ts`, og den forklarer blandt andet
