@@ -9138,3 +9138,20 @@ a.ch-knap {
 	min-height: 44px;
 	line-height: 44px;
 }
+
+/* Skaermbilledet paa et rundvisnings-kort. Rammen fjernes af sig selv
+   hvis filen ikke findes, se velkommen/+page.svelte. */
+.ob-billede {
+	border-radius: 16px;
+	overflow: hidden;
+	border: 1px solid var(--line);
+	background: var(--paper);
+	margin-bottom: 16px;
+	line-height: 0;
+}
+
+.ob-billede img {
+	width: 100%;
+	height: auto;
+	display: block;
+}

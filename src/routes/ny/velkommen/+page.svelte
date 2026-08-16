@@ -300,8 +300,19 @@
 			</p>
 			<button class="ob-knap" onclick={videre}>Videre</button>
 		{:else if aktueltKort}
-			<!-- Skaermbillederne er ikke taget endnu. Indtil da staar kortet
-			     uden billede, og teksten baerer det alene. -->
+			<!-- Mangler skaermbilledet endnu, skjuler vi rammen i stedet for at
+			     vise et brudt billede. Saa virker gennemgangen fuldt ud, ogsaa
+			     foer billederne er taget. Se scripts/skaermbilleder.ts. -->
+			<div class="ob-billede">
+				<img
+					src="/onboarding/{aktueltKort.billede}.webp"
+					alt={aktueltKort.billedeBeskrivelse}
+					onerror={(e) => {
+						const el = e.currentTarget as HTMLImageElement;
+						el.closest('.ob-billede')?.remove();
+					}}
+				/>
+			</div>
 			<h1 class="ob-titel">{aktueltKort.titel}</h1>
 			<p class="ob-under">{aktueltKort.tekst}</p>
 			<button class="ob-knap" disabled={gemmer} onclick={videre}>

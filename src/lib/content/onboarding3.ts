@@ -114,6 +114,15 @@ export interface Rundvisningskort3 {
 	titel: string;
 	/** Én saetning. Bliver den to, er kortet for stort til en telefon. */
 	tekst: string;
+	/**
+	 * Filnavnet paa skaermbilledet, uden endelse. Ligger i
+	 * static/onboarding/ og tages af scripts/skaermbilleder.ts.
+	 *
+	 * To kort har hver sin udgave til en forloebskunde og et medlem,
+	 * fordi skaermen ser forskellig ud. Mangler filen, viser kortet bare
+	 * ingen billede, saa gennemgangen virker ogsaa foer de er taget.
+	 */
+	billede: string;
 	/** Hvad skaermbilledet skal vise. Staar her saa det ikke bliver gaettet. */
 	billedeBeskrivelse: string;
 }
@@ -144,17 +153,21 @@ export function rundvisningskort3(kunde: KundeBillede3): Rundvisningskort3[] {
 		tekst:
 			'Nederst har du fem knapper. Forsiden er din dag i dag, 30-30 er maden, ' +
 			'Beskeder er mig, Udvikling er dine tal, og Profil er dig.',
+		billede: 'rundt',
 		billedeBeskrivelse: 'Bundmenuen, beskaaret saa kun de fem knapper er med'
 	});
 
 	kort.push({
 		id: 'forside',
 		titel: 'Forsiden er din dag',
+		// Teksten skal passe til det skaermbilledet faktisk viser, og det er
+		// toppen af forsiden. Foldningen laa laengere nede og var ikke med.
 		tekst: kunde.harAktivtForlob
-			? 'Alt du skal i dag står her, også dagens lektion. Når du har klaret noget, ' +
-				'folder det sig sammen med et flueben, så du kan se hvor langt du er.'
-			: 'Alt du skal i dag står her. Når du har klaret noget, folder det sig sammen ' +
-				'med et flueben, så du kan se hvor langt du er.',
+			? 'Alt du skal i dag står her, også dagens lektion. Øverst kan du følge ' +
+				'hvordan dit overskud har flyttet sig siden du startede.'
+			: 'Alt du skal i dag står her. Øverst kan du følge hvordan dit overskud ' +
+				'har flyttet sig siden du startede.',
+		billede: kunde.harAktivtForlob ? 'forside-forlob' : 'forside-medlem',
 		billedeBeskrivelse: kunde.harAktivtForlob
 			? 'Forsiden for en forloebskunde, hvor en klaret sektion er foldet sammen'
 			: 'Forsiden for et medlem, hvor en klaret sektion er foldet sammen'
@@ -168,6 +181,7 @@ export function rundvisningskort3(kunde: KundeBillede3): Rundvisningskort3[] {
 				'pr måltid og 30 g fiber om dagen, og du kan også se kalorier og resten.'
 			: 'Tryk på måltidet, tryk tilføj, og find din madvare. Målet er 30 g protein ' +
 				'pr måltid og 30 g fiber om dagen.',
+		billede: 'mad',
 		billedeBeskrivelse: 'Maaltidsskaermen med Tilfoej-knappen'
 	});
 
@@ -180,6 +194,7 @@ export function rundvisningskort3(kunde: KundeBillede3): Rundvisningskort3[] {
 			tekst:
 				'Vælg et program, tryk på træningen, og følg med på videoen. ' +
 				'Du rykker først videre når du har trænet, så en pause sætter dig ikke bagud.',
+			billede: 'traening',
 			billedeBeskrivelse: 'Mikrotraening med et program der er i gang'
 		});
 	}
@@ -191,6 +206,7 @@ export function rundvisningskort3(kunde: KundeBillede3): Rundvisningskort3[] {
 			tekst:
 				'Her er alle dine dage. Du kan altid gå tilbage til en dag du har været på, ' +
 				'og se hvad der lå på den.',
+			billede: 'forlob',
 			billedeBeskrivelse: 'Forloebets kalender med baade klarede og laaste dage'
 		});
 	}
@@ -202,6 +218,7 @@ export function rundvisningskort3(kunde: KundeBillede3): Rundvisningskort3[] {
 			tekst:
 				'Spørg altid Linn AI først, den svarer med det samme. ' +
 				'Er du ikke tilfreds med svaret, sender du spørgsmålet videre til mig.',
+			billede: 'linn',
 			billedeBeskrivelse: 'Beskeder med send-videre-linjen under et svar'
 		});
 	}
@@ -212,6 +229,7 @@ export function rundvisningskort3(kunde: KundeBillede3): Rundvisningskort3[] {
 		tekst:
 			'Med jævne mellemrum spørger jeg hvordan du har det. ' +
 			'Det er den du kan følge under Udvikling.',
+		billede: 'maaling',
 		billedeBeskrivelse: 'Kortet Dit overskud paa forsiden med kurven'
 	});
 
