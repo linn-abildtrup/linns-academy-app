@@ -148,6 +148,31 @@ export async function gemDage3(programId: string, dage: TrainingDay[]): Promise<
 }
 
 /**
+ * Gemmer nogle faa dage i et program der findes. Bruges naar AI'en har
+ * rettet fx uge 3 i et program paa 84 dage.
+ *
+ * Kun de aendrede dage skrives, men taelleren over tomme dage regnes ud
+ * af HELE listen. Regnede vi den ud af de fem dage der blev sendt, ville
+ * programmet pludselig staa som naesten faerdigt, og saa ville advarslen
+ * mod at saette et halvbygget program til klar forsvinde.
+ */
+export async function gemUdvalgteDage3(
+	programId: string,
+	aendrede: TrainingDay[],
+	alleDage: TrainingDay[]
+): Promise<void> {
+	if (aendrede.length === 0) return;
+	const numre = new Map(aendrede.map((d) => [d.dagNummer, d]));
+	const opdateret = alleDage.map((d) => numre.get(d.dagNummer) ?? d);
+	const batch = writeBatch(db);
+	for (const dag of aendrede) {
+		batch.set(doc(db, SAMLING, programId, 'dage', dagId(dag.dagNummer)), dag);
+	}
+	await batch.commit();
+	await gemProgram3(programId, { tommeDage: antalTommeDage(opdateret) });
+}
+
+/**
  * Sletter dage der ligger over programmets nye antal. Kaldes naar Linn
  * saetter tallet ned, saa der ikke bliver liggende usynlige dage der
  * dukker op igen hvis hun senere saetter tallet op.

@@ -8736,3 +8736,99 @@ a.ch-knap {
 	text-decoration: none;
 	line-height: 22px;
 }
+
+/* ── AI-vaerktoejet til traeningsprogrammer (16. august) ───── */
+
+.ai-samtale {
+	display: flex;
+	flex-direction: column;
+	gap: 9px;
+	margin: 14px 0;
+}
+
+.ai-boble {
+	max-width: 88%;
+	align-self: flex-start;
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 15px;
+	border-bottom-left-radius: 5px;
+	padding: 11px 13px;
+	font-size: calc(14px * var(--fs-scale, 1));
+	line-height: 1.5;
+	color: var(--espresso);
+	white-space: pre-wrap;
+}
+
+.ai-boble.mig {
+	align-self: flex-end;
+	background: var(--plum);
+	border-color: var(--plum);
+	border-radius: 15px;
+	border-bottom-right-radius: 5px;
+	color: #fff;
+}
+
+/* Forslaget staar som et kort med rigtige oevelsesnavne, ikke som tekst
+   inde i samtalen. Hun skal kunne se hvad hun faar uden at laese et
+   afsnit. Linns valg 15. august. */
+.ai-forslag {
+	background: var(--paper);
+	border: 2px solid var(--plum);
+	border-radius: 17px;
+	padding: 15px;
+	margin: 14px 0;
+}
+
+.ai-forslag h2 {
+	margin: 0 0 4px;
+	font-size: calc(17px * var(--fs-scale, 1));
+	color: var(--espresso);
+}
+
+.ai-dag {
+	display: flex;
+	gap: 11px;
+	padding: 9px 0;
+	border-top: 1px solid var(--line);
+	font-size: calc(13px * var(--fs-scale, 1));
+}
+
+.ai-dag-nr {
+	flex: 0 0 auto;
+	min-width: 84px;
+	font-weight: 700;
+	color: var(--espresso);
+}
+
+.ai-dag-o {
+	flex: 1;
+	color: var(--ink-2);
+	line-height: 1.5;
+}
+
+/* Én foer-og-efter-linje naar hun retter et program. */
+.ai-linje {
+	display: block;
+}
+
+/* Linjen om hvad der IKKE bliver roert. Lige saa vigtig som listen over
+   det der aendres, saa den staar tydeligt og ikke som en fodnote. */
+.ai-uroert {
+	margin: 12px 0;
+	padding: 10px 12px;
+	background: var(--paper-2);
+	border-radius: 12px;
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+}
+
+/* Staar der hele vejen, saa hun aldrig er i tvivl om hvor oevelserne
+   kommer fra. */
+.ai-note {
+	margin: 18px 0 0;
+	text-align: center;
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}

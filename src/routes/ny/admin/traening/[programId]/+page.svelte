@@ -265,6 +265,10 @@
 			</button>
 		</div>
 
+		<a class="ch-knap sekundaer tr-knap-link" href={`/ny/admin/traening/${programId}/ai`}>
+			Ret med AI
+		</a>
+
 		<a class="ch-knap sekundaer tr-knap-link" href={`/ny/admin/traening/${programId}/tildel`}>
 			{program.klar ? 'Tildel' : 'Tildel, kræver at programmet er klar'}
 		</a>

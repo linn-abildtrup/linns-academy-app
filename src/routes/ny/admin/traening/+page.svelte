@@ -175,6 +175,11 @@
 			<a class="ch-knap sekundaer tr-knap-link" href="/ny/admin/traening/kategorier">Kategorier</a>
 		</div>
 
+		<a class="ch-knap sekundaer tr-knap-link" href="/ny/admin/traening/ai">
+			Byg med AI
+		</a>
+		<p class="adm-hjaelp">Beskriv hvad du vil have, og få et udkast bygget af dine egne øvelser.</p>
+
 		{#if kategorier.length === 0}
 			<div class="adm-kort">
 				<h2>Start med en kategori</h2>
