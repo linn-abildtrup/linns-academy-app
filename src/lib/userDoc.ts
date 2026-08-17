@@ -9,7 +9,11 @@ import {
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { BrugerProfil, DagligeMaal, UserDoc } from '$lib/types';
-import { hentAllowedEmail, markerAllowedEmailRegistreret } from '$lib/firestore/forlob';
+import {
+	hentAllowedEmail,
+	hentNulDagePrForlob,
+	markerAllowedEmailRegistreret
+} from '$lib/firestore/forlob';
 import {
 	forlobTypeForId,
 	programIdForVariant,
@@ -293,7 +297,17 @@ export async function synkroniserForlobskundeStatus(
 		}
 		// Fælles slut-beregning (forlobSlutMs i $lib/content/forlobAdgang) så
 		// login-sync og webhooks aldrig regner forskelligt. Se A4-oprydning.
-		const slutMs = forlobSlutMs(forlobStartMs, forlobAntalDage);
+		//
+		// Kundens nul-dage (pauser) laegges oveni. Uden dem lukkede kontoen paa
+		// kalenderdag 85 selv om forloebet reelt koerte videre, og saa mistede
+		// hun BAADE adgangen og sit tildelte traeningsprogram (forlobUdloebet
+		// nedenfor). Fundet 17/8 2026: 12 kunder paa Kropsro 24. maj.
+		const nulDagePrForlob = await hentNulDagePrForlob(uid);
+		const slutMs = forlobSlutMs(
+			forlobStartMs,
+			forlobAntalDage,
+			nulDagePrForlob[allowed.forlobId] ?? 0
+		);
 		// Forløbets feature-/trænings-vindue følger forløbets egen slutdato. Abo↔
 		// forløb-overgangen (inkl. "abo tager over efter forløb") styres nu af den
 		// dato-baserede resolver nedenfor — ikke længere af adgangFra-parkering.
@@ -388,7 +402,11 @@ export async function synkroniserForlobskundeStatus(
 		// SommerRo til KropsRo). Datoen bliver aldrig forkortet.
 		if (slutMs > 0) {
 			if (!current.expiresAt) opdateringer.expiresAt = slutMs;
-			const nyBonus = bibliotekBonusSlutMs(forlobStartMs, forlobAntalDage);
+			const nyBonus = bibliotekBonusSlutMs(
+				forlobStartMs,
+				forlobAntalDage,
+				nulDagePrForlob[allowed.forlobId] ?? 0
+			);
 			if (nyBonus > 0 && nyBonus > (current.bonusPeriodEndsAt ?? 0)) {
 				opdateringer.bonusPeriodEndsAt = nyBonus;
 			}
@@ -435,6 +453,9 @@ export async function synkroniserForlobskundeStatus(
 				...(allowed.forlobId ? [allowed.forlobId] : [])
 			])
 		);
+		// Samme nul-dage som ovenfor. Opslaget er mellemlagret, saa det andet
+		// kald ikke koster en ekstra laesning.
+		const nulDage = await hentNulDagePrForlob(uid);
 		const vinduer: ForlobVindue[] = [];
 		for (const fid of alleForlobIds) {
 			try {
@@ -458,7 +479,7 @@ export async function synkroniserForlobskundeStatus(
 				vinduer.push({
 					id: fid,
 					startMs,
-					slutMs: forlobSlutMs(startMs, d.antalDage ?? 0),
+					slutMs: forlobSlutMs(startMs, d.antalDage ?? 0, nulDage[fid] ?? 0),
 					accessLevel: felter.accessLevel,
 					activeProduct: felter.activeProduct
 				});

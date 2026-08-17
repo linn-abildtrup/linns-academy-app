@@ -23,6 +23,7 @@ import type {
 } from '$lib/content/mikrotraening';
 import { aktivBrugerBasisPath } from '$lib/utils/adminKlient';
 import { nulDageDatoer } from '$lib/content/forlob';
+import { rydNulDageCache } from '$lib/firestore/forlob';
 import {
 	forlobTypeForId,
 	programIdForVariant,
@@ -372,6 +373,9 @@ export async function tilfoejNulDageInterval(
 	}
 
 	await updateDoc(ref, { 'nulDage.intervaller': samlet });
+	// Nul-dage forlaenger forloebet, saa mellemlageret skal ryddes med det
+	// samme. Ellers regner resten af sessionen paa det gamle antal.
+	rydNulDageCache(uid);
 	return { ok: true, brugt };
 }
 
@@ -431,6 +435,7 @@ export async function fjernNulDageInterval(
 	const eksisterende = data.nulDage?.intervaller ?? [];
 	const filtreret = eksisterende.filter((iv) => iv.satMs !== satMs);
 	await updateDoc(ref, { 'nulDage.intervaller': filtreret });
+	rydNulDageCache(uid);
 }
 
 /**

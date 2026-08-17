@@ -21,7 +21,7 @@ import { db } from '$lib/firebase';
 import type { AllowedEmail, CsvRow, Forlob } from '$lib/content/forlobAdgang';
 import { forlobAdgangFelter, forlobSlutMs, produktTypeForForlob } from '$lib/content/forlobAdgang';
 import type { ForlobDag, LektionItem } from '$lib/content/forlob';
-import { tomForlobDag, fjernKunDetteHoldLektioner } from '$lib/content/forlob';
+import { tomForlobDag, fjernKunDetteHoldLektioner, nulDageDatoer } from '$lib/content/forlob';
 import { KICKSTART_PRODUCT_ID, type ForlobProduct } from '$lib/types';
 
 // ==============================================
@@ -93,16 +93,24 @@ export function ryForlobCache(): void {
  * Bruges af mikrotraenings-siderne som ellers hardcodede Kickstart og
  * derfor ikke kunne haandtere Kropsro-kunders programValg + fremgang.
  */
-export async function hentAktivProduktType(forlobIds: string[]): Promise<ForlobProduct | string> {
+export async function hentAktivProduktType(
+	forlobIds: string[],
+	uid?: string
+): Promise<ForlobProduct | string> {
 	if (forlobIds.length === 0) return KICKSTART_PRODUCT_ID;
-	const forløbsData = await Promise.all(forlobIds.map((id) => hentForlob(id)));
+	const [forløbsData, nulDage] = await Promise.all([
+		Promise.all(forlobIds.map((id) => hentForlob(id))),
+		uid ? hentNulDagePrForlob(uid) : Promise.resolve({} as Record<string, number>)
+	]);
 	const idagMs = Date.now();
 	for (const f of forløbsData) {
 		if (!f) continue;
 		const startMs = f.startDato.toMillis();
 		// Fælles slut-beregning (+1 dag) så kunden tæller som aktiv hele sin
-		// sidste dag — ikke off-by-one som den gamle inlinede formel.
-		const slutMs = forlobSlutMs(startMs, f.antalDage);
+		// sidste dag — ikke off-by-one som den gamle inlinede formel. Kundens
+		// nul-dage (pauser) laegges oveni, saa hendes skuffe ikke skifter
+		// under hende mens forloebet reelt stadig koerer.
+		const slutMs = forlobSlutMs(startMs, f.antalDage, nulDage[f.id] ?? 0);
 		if (idagMs >= startMs && idagMs < slutMs) {
 			return produktTypeForForlob(f);
 		}
@@ -120,17 +128,82 @@ export async function hentAktivProduktType(forlobIds: string[]): Promise<ForlobP
  */
 export async function hentAktivtForlob(
 	forlobIds: string[],
-	now: number = Date.now()
+	now: number = Date.now(),
+	uid?: string
 ): Promise<Forlob | null> {
 	if (forlobIds.length === 0) return null;
-	const forløbsData = await Promise.all(forlobIds.map((id) => hentForlob(id)));
+	const [forløbsData, nulDage] = await Promise.all([
+		Promise.all(forlobIds.map((id) => hentForlob(id))),
+		uid ? hentNulDagePrForlob(uid) : Promise.resolve({} as Record<string, number>)
+	]);
 	for (const f of forløbsData) {
 		if (!f) continue;
 		const startMs = f.startDato.toMillis();
-		const slutMs = forlobSlutMs(startMs, f.antalDage);
+		const slutMs = forlobSlutMs(startMs, f.antalDage, nulDage[f.id] ?? 0);
 		if (now >= startMs && now < slutMs) return f;
 	}
 	return null;
+}
+
+// ==============================================
+// Nul-dage (kundens pauser) pr forloeb
+// ==============================================
+
+const nulDageCache = new Map<string, Record<string, number>>();
+const nulDagePromises = new Map<string, Promise<Record<string, number>>>();
+
+/**
+ * Antal nul-dage kunden har brugt, slaaet op pr forloebs-id.
+ *
+ * Nul-dage er pauser kunden selv saetter paa profilen. De taeller ikke som
+ * forloebsdage, saa hendes forloeb slutter tilsvarende senere. De ligger i
+ * hendes produkt-skuffer (users/{uid}/products/{produkt}), og hver skuffe
+ * kender sit forlobId, saa ét opslag daekker alle hendes forloeb.
+ *
+ * Naesten alle kunder har ingen pauser, og saa er svaret et tomt objekt =
+ * regn som foer. Fejler opslaget, returneres ogsaa tomt, saa en hentefejl
+ * aldrig kan lukke nogen ude.
+ */
+export async function hentNulDagePrForlob(uid: string): Promise<Record<string, number>> {
+	const cached = nulDageCache.get(uid);
+	if (cached) return cached;
+	const igang = nulDagePromises.get(uid);
+	if (igang) return igang;
+
+	const opslag = (async () => {
+		const map: Record<string, number> = {};
+		try {
+			const snap = await getDocs(collection(db, 'users', uid, 'products'));
+			for (const d of snap.docs) {
+				const data = d.data() as {
+					forlobId?: string;
+					nulDage?: { intervaller?: { fra: string; til: string }[] };
+				};
+				if (!data.forlobId) continue;
+				const antal = nulDageDatoer(data.nulDage?.intervaller ?? []).length;
+				// Samme forloeb kan i teorien staa i to skuffer. Vi tager det
+				// stoerste tal, saa kunden aldrig snydes for en pause.
+				if (antal > 0) map[data.forlobId] = Math.max(map[data.forlobId] ?? 0, antal);
+			}
+		} catch (e) {
+			console.warn('Kunne ikke hente nul-dage:', e);
+		}
+		nulDageCache.set(uid, map);
+		nulDagePromises.delete(uid);
+		return map;
+	})();
+
+	nulDagePromises.set(uid, opslag);
+	return opslag;
+}
+
+/**
+ * Rydder mellemlageret for en bruger. Kaldes naar hun tilfoejer eller fjerner
+ * en pause, saa resten af sessionen regner med det nye tal.
+ */
+export function rydNulDageCache(uid: string): void {
+	nulDageCache.delete(uid);
+	nulDagePromises.delete(uid);
 }
 
 /**
