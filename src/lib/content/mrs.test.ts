@@ -5,6 +5,7 @@ import {
 	getInterpretation,
 	getSubskalaFortolkning,
 	MRS_ITEMS,
+	kropsroMaalepunkter,
 	naesteSoendagEfter,
 	naesteSoendagPaaEllerEfter,
 	naesteUdfyldelseDato,
@@ -259,6 +260,162 @@ describe('naesteUdfyldelseDato', () => {
 		// +28 dage = 1. juni 2026 (mandag) → næste søndag = 7. juni
 		expect(ud.getDate()).toBe(7);
 		expect(ud.getMonth()).toBe(5);
+	});
+});
+
+// KropsRo 16. aug 2026, 84 dage. Målepunkterne er 16/8, 13/9, 11/10 og 8/11.
+const KROPSRO_AUG = { startMs: new Date(2026, 7, 16).getTime(), antalDage: 84 };
+
+describe('kropsroMaalepunkter', () => {
+	it('84-dages forløb giver fire målepunkter med 28 dages mellemrum', () => {
+		const p = kropsroMaalepunkter(KROPSRO_AUG);
+		expect(p).toHaveLength(4);
+		expect(p.map((d) => [d.getDate(), d.getMonth() + 1])).toEqual([
+			[16, 8],
+			[13, 9],
+			[11, 10],
+			[8, 11]
+		]);
+	});
+
+	it('starten er en søndag, så alle målepunkter er søndage', () => {
+		for (const d of kropsroMaalepunkter(KROPSRO_AUG)) {
+			expect(d.getDay()).toBe(0);
+		}
+	});
+
+	it('sommertidsskiftet 25/10 flytter ikke det sidste målepunkt', () => {
+		const sidste = kropsroMaalepunkter(KROPSRO_AUG)[3];
+		expect(sidste.getDate()).toBe(8);
+		expect(sidste.getMonth()).toBe(10);
+		expect(sidste.getHours()).toBe(0);
+	});
+
+	it('målepunkter går aldrig ud over forløbets længde', () => {
+		const p = kropsroMaalepunkter({ ...KROPSRO_AUG, antalDage: 21 });
+		expect(p).toHaveLength(1);
+		expect(p[0].getDate()).toBe(16);
+	});
+});
+
+describe('naesteUdfyldelseDato med Kropsro-plan', () => {
+	it('aldrig udfyldt → forløbets startdag', () => {
+		const ud = naesteUdfyldelseDato('forløb', 'premiumforløb', null, false, KROPSRO_AUG);
+		expect(ud.getDate()).toBe(16);
+		expect(ud.getMonth()).toBe(7);
+	});
+
+	it('sidste udfyldelse før forløbsstart → startdagen (Meretes situation)', () => {
+		const sidste = new Date(2026, 6, 20).getTime(); // 20/7, på SommerRo
+		const ud = naesteUdfyldelseDato('forløb', 'premiumforløb', sidste, false, KROPSRO_AUG);
+		expect(ud.getDate()).toBe(16);
+		expect(ud.getMonth()).toBe(7);
+	});
+
+	it('udfyldt på startdagen → næste er 13/9, ikke 28 dage fra kundens eget ur', () => {
+		const sidste = new Date(2026, 7, 16, 7, 30).getTime();
+		const ud = naesteUdfyldelseDato('forløb', 'premiumforløb', sidste, false, KROPSRO_AUG);
+		expect(ud.getDate()).toBe(13);
+		expect(ud.getMonth()).toBe(8);
+	});
+
+	it('hele holdet lander på samme dato uanset hvornår på dagen de udfyldte', () => {
+		const tidlig = new Date(2026, 7, 16, 6, 5).getTime();
+		const sen = new Date(2026, 7, 16, 23, 40).getTime();
+		const a = naesteUdfyldelseDato('forløb', 'premiumforløb', tidlig, false, KROPSRO_AUG);
+		const b = naesteUdfyldelseDato('forløb', 'premiumforløb', sen, false, KROPSRO_AUG);
+		expect(a.getTime()).toBe(b.getTime());
+	});
+
+	it('udfyldt en hverdag midt i forløbet → næste er stadig forløbets målepunkt', () => {
+		const sidste = new Date(2026, 8, 14).getTime(); // mandag 14/9
+		const ud = naesteUdfyldelseDato('forløb', 'premiumforløb', sidste, false, KROPSRO_AUG);
+		expect(ud.getDate()).toBe(11);
+		expect(ud.getMonth()).toBe(9);
+	});
+
+	it('misset målepunkt bliver stående, ikke sprunget over', () => {
+		// Udfyldte 16/8, missede 13/9. Det ældste udækkede punkt er 13/9.
+		const sidste = new Date(2026, 7, 16).getTime();
+		const ud = naesteUdfyldelseDato('forløb', 'premiumforløb', sidste, false, KROPSRO_AUG);
+		expect(ud.getDate()).toBe(13);
+		expect(ud.getMonth()).toBe(8);
+	});
+
+	it('alle målepunkter dækket → falder tilbage til det personlige 4-ugers-ur', () => {
+		const sidste = new Date(2026, 10, 9).getTime(); // dagen efter sidste målepunkt
+		const ud = naesteUdfyldelseDato('forløb', 'premiumforløb', sidste, false, KROPSRO_AUG);
+		expect(ud.getTime()).toBeGreaterThan(sidste);
+		expect(ud.getDay()).toBe(0);
+	});
+
+	it('uden plan er opførslen uændret (Kickstart og app-kunder)', () => {
+		const sidste = new Date(2026, 6, 20).getTime();
+		const uden = naesteUdfyldelseDato('forløb', 'premiumforløb', sidste);
+		const med = naesteUdfyldelseDato('forløb', 'premiumforløb', sidste, false, KROPSRO_AUG);
+		expect(uden.getTime()).not.toBe(med.getTime());
+		expect(uden.getDay()).toBe(0);
+	});
+});
+
+/** Unix-ms for et tidspunkt midt på dagen, N dage fra i dag. */
+function dageFraIDag(dage: number): number {
+	const d = new Date();
+	d.setHours(12, 0, 0, 0);
+	d.setDate(d.getDate() + dage);
+	return d.getTime();
+}
+
+describe('skalUdfyldeNu med Kropsro-plan', () => {
+	const planStartetFor = (dage: number) => ({
+		startMs: dageFraIDag(-dage),
+		antalDage: 84
+	});
+
+	it('sidste udfyldelse ligger før forløbsstart → åbent', () => {
+		const ud = skalUdfyldeNu(
+			'forløb',
+			'premiumforløb',
+			dageFraIDag(-40),
+			false,
+			planStartetFor(30)
+		);
+		expect(ud).toBe(true);
+	});
+
+	it('udfyldt efter start, næste målepunkt endnu ikke nået → lukket', () => {
+		const ud = skalUdfyldeNu(
+			'forløb',
+			'premiumforløb',
+			dageFraIDag(-9),
+			false,
+			planStartetFor(10)
+		);
+		expect(ud).toBe(false);
+	});
+
+	it('missede målepunktet på dag 28 → åbent igen', () => {
+		const ud = skalUdfyldeNu(
+			'forløb',
+			'premiumforløb',
+			dageFraIDag(-29),
+			false,
+			planStartetFor(30)
+		);
+		expect(ud).toBe(true);
+	});
+
+	it('forløbet er ikke startet endnu → lukket', () => {
+		const ud = skalUdfyldeNu('forløb', 'premiumforløb', null, false, {
+			startMs: dageFraIDag(5),
+			antalDage: 84
+		});
+		expect(ud).toBe(false);
+	});
+
+	it('aldrig udfyldt og forløbet er i gang → åbent', () => {
+		const ud = skalUdfyldeNu('forløb', 'premiumforløb', null, false, planStartetFor(3));
+		expect(ud).toBe(true);
 	});
 });
 

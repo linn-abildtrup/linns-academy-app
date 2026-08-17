@@ -15,6 +15,7 @@
 	import {
 		forlobSlutMs,
 		forlobErKickstart,
+		forlobErKropsro,
 		getCurrentDay,
 		getCurrentDayMedNulDage,
 		toIsoLokal,
@@ -54,7 +55,10 @@
 	import { hentHistorikForDato } from '$lib/firestore/traeningHistorik';
 	import { senesteEntry, type TraeningHistorikEntry } from '$lib/content/traeningHistorik';
 	import { hentAlleMrsScores } from '$lib/firestore/mrs';
-	import { skalUdfyldeNu as skalUdfyldeMrsNu } from '$lib/content/mrs';
+	import {
+		skalUdfyldeNu as skalUdfyldeMrsNu,
+		type KropsroPlan
+	} from '$lib/content/mrs';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
 	import {
 		hentVaneprogramForForlob,
@@ -707,13 +711,23 @@
 	// resolvet som aktivt i dag), ikke om der ligger et udløbet kickstart_-id i
 	// forlobIds. Så en kunde der er gået videre fra Kickstart til fx SommerRo
 	// får SommerRo's 4-ugers-kadence i stedet for Kickstarts ugentlige.
+	//
+	// Paa Kropsro ligger maalepunkterne fast paa forloebets egne datoer
+	// (startdagen og hver 28. dag), saa hele holdet udfylder samme dag.
+	const kropsroMrsPlan = $derived<KropsroPlan | null>(
+		forlobErKropsro(forlob?.id) && forlob
+			? { startMs: forlob.startDato.toMillis(), antalDage: forlob.antalDage }
+			: null
+	);
+
 	const skalUdfyldeMrs = $derived(
 		mrsLoaded &&
 			skalUdfyldeMrsNu(
 				userDoc?.accessSource,
 				userDoc?.activeProduct,
 				mrsSidsteUdfyldelseAt,
-				forlobErKickstart(forlob?.id)
+				forlobErKickstart(forlob?.id),
+				kropsroMrsPlan
 			)
 	);
 

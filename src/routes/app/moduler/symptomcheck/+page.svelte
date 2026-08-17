@@ -19,6 +19,7 @@
 		SUBSCALES,
 		validerScores,
 		validerSliders,
+		type KropsroPlan,
 		type MaalePunkt,
 		type MrsScore,
 		type MrsSliders
@@ -201,22 +202,36 @@
 	const erKickstart = $derived(forlobErKickstart(aktivtForlob?.id));
 	const erKropsro = $derived(forlobErKropsro(aktivtForlob?.id));
 
+	// Paa Kropsro foelger maalepunkterne forloebet, ikke kundens eget ur, saa
+	// hele holdet udfylder samme dag. Planen sendes kun med naar kunden rent
+	// faktisk staar paa et Kropsro-forloeb lige nu.
+	const kropsroPlan = $derived<KropsroPlan | null>(
+		erKropsro && aktivtForlob
+			? {
+					startMs: aktivtForlob.startDato.toMillis(),
+					antalDage: aktivtForlob.antalDage
+				}
+			: null
+	);
+
 	const skalUdfylde = $derived(
 		skalUdfyldeNu(
 			userDoc?.accessSource,
 			userDoc?.activeProduct,
 			sidsteUdfyldelseAt,
-			erKickstart
+			erKickstart,
+			kropsroPlan
 		)
 	);
 
 	const naesteCheckDato = $derived(
-		sidsteUdfyldelseAt !== null
+		sidsteUdfyldelseAt !== null || kropsroPlan
 			? naesteUdfyldelseDato(
 					userDoc?.accessSource,
 					userDoc?.activeProduct,
 					sidsteUdfyldelseAt,
-					erKickstart
+					erKickstart,
+					kropsroPlan
 				)
 			: null
 	);

@@ -326,17 +326,53 @@ export function getSubskalaFortolkning(
 // ==============================================
 
 /**
+ * Et Kropsro-forloebs egne maalepunkter. Sendes med af kaldere der ved at
+ * kunden staar paa et Kropsro-forloeb lige nu.
+ */
+export interface KropsroPlan {
+	/** Forloebets startdato som unix-ms. */
+	startMs: number;
+	/** Forloebets laengde i dage. Sidste maalepunkt ligger aldrig efter. */
+	antalDage: number;
+}
+
+/**
+ * Faste maalepunkter for et Kropsro-forloeb: startdagen og derefter hver 28.
+ * dag inden for forloebets laengde. Et 84-dages forloeb giver fire punkter.
+ *
+ * Kropsro maaler paa forloebets egne datoer, ikke paa kundens personlige ur,
+ * saa hele holdet udfylder samme dag og kan sammenlignes paa faelles datoer.
+ * Kickstart og app-kunder beholder det personlige ur.
+ *
+ * Regnet i kalenderdage, ikke i millisekunder: sommertiden skifter midt i et
+ * 84-dages forloeb, og ren ms-matematik ville skubbe det sidste maalepunkt.
+ */
+export function kropsroMaalepunkter({ startMs, antalDage }: KropsroPlan): Date[] {
+	const start = new Date(startMs);
+	start.setHours(0, 0, 0, 0);
+	const punkter: Date[] = [];
+	for (let dag = 0; dag <= antalDage; dag += 28) {
+		const d = new Date(start);
+		d.setDate(d.getDate() + dag);
+		punkter.push(d);
+	}
+	return punkter;
+}
+
+/**
  * Beregner næste dato kunden bør udfylde MRS.
  *
  * Regler:
+ * - Forløbskunde på Kropsro: forløbets faste målepunkter, altså startdagen og
+ *   hver 28. dag derefter. Hele holdet udfylder samme dag
  * - Forløbskunde på Kickstart: dag 0 (søndag) som baseline, derefter hver søndag
- * - Forløbskunde på Kropsro: dag 0 (søndag) som baseline, derefter hver 4. søndag
  * - App-kunde der TIDLIGERE har været på forløb: cyklus arves fra sidste udfyldelse
  *   (som typisk allerede ligger på en søndag) → hver 4. søndag
  * - Helt ny app-kunde uden forløbs-historik: udfyld straks (baseline kan tages
  *   på vilkårlig dag), derefter hver 4. søndag
  *
  * @param sidsteUdfyldelseAt unix-ms for sidste udfyldelse, eller null hvis aldrig
+ * @param kropsro forløbets målepunkt-plan, kun sat når kunden står på Kropsro
  * @returns Date — hvornår næste udfyldelse er due. Returnerer 'nu' (Date()) hvis kunden
  *          aldrig har udfyldt.
  */
@@ -344,8 +380,22 @@ export function naesteUdfyldelseDato(
 	accessSource: 'abonnement' | 'forløb' | undefined,
 	activeProduct: string | undefined,
 	sidsteUdfyldelseAt: number | null,
-	erKickstart: boolean = false
+	erKickstart: boolean = false,
+	kropsro: KropsroPlan | null = null
 ): Date {
+	// Kropsro: forloebets faste maalepunkter gaar forud for det personlige ur.
+	// Vi returnerer det foerste maalepunkt kunden endnu ikke har daekket. Det
+	// kan ligge i fortiden, og saa staar skemaet aabent (se skalUdfyldeNu).
+	if (kropsro) {
+		for (const punkt of kropsroMaalepunkter(kropsro)) {
+			if (sidsteUdfyldelseAt === null || sidsteUdfyldelseAt < punkt.getTime()) {
+				return punkt;
+			}
+		}
+		// Alle forloebets maalepunkter er daekket. Falder igennem til det
+		// personlige 4-ugers-ur indtil forloebet slutter.
+	}
+
 	if (sidsteUdfyldelseAt === null) return new Date();
 	const sidste = new Date(sidsteUdfyldelseAt);
 
@@ -403,9 +453,16 @@ export function skalUdfyldeNu(
 	accessSource: 'abonnement' | 'forløb' | undefined,
 	activeProduct: string | undefined,
 	sidsteUdfyldelseAt: number | null,
-	erKickstart: boolean = false
+	erKickstart: boolean = false,
+	kropsro: KropsroPlan | null = null
 ): boolean {
-	const due = naesteUdfyldelseDato(accessSource, activeProduct, sidsteUdfyldelseAt, erKickstart);
+	const due = naesteUdfyldelseDato(
+		accessSource,
+		activeProduct,
+		sidsteUdfyldelseAt,
+		erKickstart,
+		kropsro
+	);
 	// Sammenlign på lokal dato — tæl en dag som "due" når vi rammer den
 	const idag = new Date();
 	idag.setHours(0, 0, 0, 0);
