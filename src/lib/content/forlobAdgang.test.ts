@@ -347,6 +347,26 @@ describe('forlobSlutMs', () => {
 	it('Kropsro (84 dage): slut = start + 85 dage', () => {
 		expect(forlobSlutMs(start, 84)).toBe(start + 85 * MS_PER_DAG);
 	});
+
+	// Nul-dage er pauser kunden selv saetter. De skal forlaenge forloebet
+	// tilsvarende. Uden dette lukkede kontoen paa kalenderdag 85 mens
+	// forloebet reelt koerte videre (12 kunder paa Kropsro 24. maj, 17/8 2026).
+	it('uden nul-dage er svaret praecis som foer (0 og udeladt er ens)', () => {
+		expect(forlobSlutMs(start, 84, 0)).toBe(forlobSlutMs(start, 84));
+	});
+
+	it('16 nul-dage skubber slut 16 dage frem', () => {
+		expect(forlobSlutMs(start, 84, 16)).toBe(start + 101 * MS_PER_DAG);
+	});
+
+	it('nul-dage kan ikke forkorte forloebet', () => {
+		expect(forlobSlutMs(start, 84, -5)).toBe(forlobSlutMs(start, 84));
+	});
+
+	it('nul-dage aendrer ikke et ugyldigt forloeb', () => {
+		expect(forlobSlutMs(0, 84, 16)).toBe(0);
+		expect(forlobSlutMs(start, 0, 16)).toBe(0);
+	});
 });
 
 describe('bibliotekBonusSlutMs', () => {
@@ -364,6 +384,16 @@ describe('bibliotekBonusSlutMs', () => {
 
 	it('Kickstart (21 dage): start + 22 + 90 = start + 112 dage', () => {
 		expect(bibliotekBonusSlutMs(start, 21)).toBe(start + 112 * MS_PER_DAG);
+	});
+
+	it('bonus foelger med naar nul-dage forlaenger forloebet', () => {
+		expect(bibliotekBonusSlutMs(start, 84, 16)).toBe(
+			forlobSlutMs(start, 84, 16) + 90 * MS_PER_DAG
+		);
+	});
+
+	it('uden nul-dage er bonus uaendret', () => {
+		expect(bibliotekBonusSlutMs(start, 84, 0)).toBe(bibliotekBonusSlutMs(start, 84));
 	});
 });
 

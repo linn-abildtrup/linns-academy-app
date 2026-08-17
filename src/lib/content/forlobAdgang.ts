@@ -426,9 +426,18 @@ export function dagDato(startDato: Date, dagNummer: number): Date {
  * start + (N + 1) dage. Bevaret uændret fra den hidtidige login-sync så
  * ingen eksisterende kundes udløbsdato flytter sig.
  */
-export function forlobSlutMs(startMs: number, antalDage: number): number {
+export function forlobSlutMs(
+	startMs: number,
+	antalDage: number,
+	nulDageBrugt: number = 0
+): number {
 	if (startMs <= 0 || antalDage <= 0) return 0;
-	return startMs + (antalDage + 1) * MS_PER_DAG;
+	// Nul-dage er pauser kunden har holdt undervejs. De taeller ikke som
+	// forloebsdage, saa hendes slutdato rykker tilsvarende frem. Udelades
+	// tallet, regnes praecis som foer (0 ekstra dage), saa alle kald der ikke
+	// kender kundens pauser opfoerer sig uaendret.
+	const ekstra = nulDageBrugt > 0 ? nulDageBrugt : 0;
+	return startMs + (antalDage + 1 + ekstra) * MS_PER_DAG;
 }
 
 /**
@@ -436,7 +445,11 @@ export function forlobSlutMs(startMs: number, antalDage: number): number {
  * dage (BONUS_PERIODE_DAGE). Returnerer 0 hvis forløbets slut ikke kan
  * beregnes.
  */
-export function bibliotekBonusSlutMs(startMs: number, antalDage: number): number {
-	const slut = forlobSlutMs(startMs, antalDage);
+export function bibliotekBonusSlutMs(
+	startMs: number,
+	antalDage: number,
+	nulDageBrugt: number = 0
+): number {
+	const slut = forlobSlutMs(startMs, antalDage, nulDageBrugt);
 	return slut > 0 ? slut + BONUS_PERIODE_DAGE * MS_PER_DAG : 0;
 }
