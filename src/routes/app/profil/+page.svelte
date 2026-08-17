@@ -189,7 +189,7 @@
 		if (!u) return;
 		mtIndlaeser = true;
 		try {
-			mtProduktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+			mtProduktType = await hentAktivProduktType(userDoc?.forlobIds ?? [], u.uid);
 			const up = await hentUserProduct(u.uid, mtProduktType);
 			const adminForlobId = userDoc?.adminKlientForlobId ?? null;
 			const forlobId =

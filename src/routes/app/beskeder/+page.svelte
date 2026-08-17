@@ -73,7 +73,7 @@
 		forlobStatus = 'henter';
 		void (async () => {
 			try {
-				const produktType = await hentAktivProduktType(forlobIds);
+				const produktType = await hentAktivProduktType(forlobIds, u.uid);
 				const up = await hentUserProduct(u.uid, produktType);
 				const fId =
 					(up as (UserProduct & { forlobId?: string }) | null)?.forlobId ??

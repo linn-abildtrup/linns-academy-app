@@ -146,7 +146,7 @@
 		}
 
 		try {
-			produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+			produktType = await hentAktivProduktType(userDoc?.forlobIds ?? [], u.uid);
 			const up = await hentUserProduct(u.uid, produktType);
 			// Admin i klient-mode har ikke noedvendigvis et userProduct-doc.
 			// I det tilfaelde bruger vi adminKlientForlobId direkte saa preview

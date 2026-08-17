@@ -720,7 +720,7 @@
 		try {
 			const forlobIds = userDoc?.forlobIds ?? [];
 			if (forlobIds.length === 0) return;
-			const aktivt = await hentAktivtForlob(forlobIds);
+			const aktivt = await hentAktivtForlob(forlobIds, Date.now(), user?.uid);
 			if (!aktivt?.maaltidsFokus || aktivt.maaltidsFokus.length === 0) return;
 			const dag = dageSidenStart(aktivt.startDato.toDate());
 			tilladteMaaltider = tilladteMaaltiderForDag(aktivt.maaltidsFokus, dag);

@@ -67,7 +67,7 @@
 			console.warn('Kunne ikke hente tidligere MRS-scorer:', e);
 		}
 		try {
-			aktivtForlob = await hentAktivtForlob(userDoc?.forlobIds ?? []);
+			aktivtForlob = await hentAktivtForlob(userDoc?.forlobIds ?? [], Date.now(), user.uid);
 		} catch (e) {
 			console.warn('Kunne ikke hente aktivt forløb til kadence:', e);
 		} finally {

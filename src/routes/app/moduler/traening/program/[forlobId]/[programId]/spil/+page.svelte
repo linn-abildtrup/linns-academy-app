@@ -158,7 +158,7 @@
 				const [data, forlob, produktType] = await Promise.all([
 					hentForlobsProgram(forlobId, programId),
 					hentForlob(forlobId),
-					hentAktivProduktType(ud?.forlobIds ?? [forlobId])
+					hentAktivProduktType(ud?.forlobIds ?? [forlobId], u.uid)
 				]);
 				if (!data) {
 					fejl = 'Programmet kunne ikke findes.';

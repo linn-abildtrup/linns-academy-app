@@ -478,7 +478,7 @@
 			// en fokus-periode i dag, begrænses opskrift-listen til de tilladte
 			// kategorier. Fejler dette, forbliver tilladteKategorier null (normal).
 			try {
-				const aktivtNu = await hentAktivtForlob(forlobIds);
+				const aktivtNu = await hentAktivtForlob(forlobIds, Date.now(), u.uid);
 				if (aktivtNu?.maaltidsFokus && aktivtNu.maaltidsFokus.length > 0) {
 					const dag = dageSidenStart(aktivtNu.startDato.toDate());
 					const tilladte = tilladteMaaltiderForDag(aktivtNu.maaltidsFokus, dag);

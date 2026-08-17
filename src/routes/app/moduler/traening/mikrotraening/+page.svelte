@@ -141,7 +141,7 @@
 	});
 
 	async function indlaesForlobsData(uid: string) {
-		const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+		const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? [], uid);
 		const up = await hentUserProduct(uid, produktType);
 		// Admin i klient-mode har ikke noedvendigvis et userProduct-doc og
 		// derfor heller ikke et valgt program. I det tilfaelde bruger vi

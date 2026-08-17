@@ -104,7 +104,7 @@
 		// nedenfor naar vi har programmet og kan se dets faktiske antalDage.
 
 		try {
-			const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+			const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? [], u.uid);
 			const up = await hentUserProduct(u.uid, produktType);
 			// Admin i klient-mode har ikke noedvendigvis et userProduct-doc.
 			// Faldt tilbage til adminKlientForlobId + foerste aktive program.

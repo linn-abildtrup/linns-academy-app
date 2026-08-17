@@ -225,7 +225,7 @@
 	});
 
 	async function indlaesForlobsData(uid: string) {
-		const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+		const produktType = await hentAktivProduktType(userDoc?.forlobIds ?? [], uid);
 		aktivProduktType = produktType;
 		const up = await hentUserProduct(uid, produktType);
 		// Admin i klient-mode har ikke noedvendigvis et userProduct-doc.
