@@ -51,13 +51,23 @@
 		type SymptomKilde
 	} from '$lib/content/symptomer3';
 	import {
-		soejleBredde,
 		traeningOverblik,
 		traeningTal,
 		traeningTekst,
 		type TraeningKilde
 	} from '$lib/content/traeningMaaned3';
+	import { fiberTekst, madOverblik, madTekst, type MaaltidKilde } from '$lib/content/madMaaned3';
+	import {
+		jaPaaDagen,
+		skridtOverblik,
+		skridtTekst,
+		type SkridtDag
+	} from '$lib/content/skridtMaaned3';
+	import { soejleBredde, stoersteMaaned } from '$lib/content/maanedTal3';
+	import { dagligeMalForBruger } from '$lib/content/naering';
 	import { hentAlleMrsScores } from '$lib/firestore/mrs';
+	import { hentMaaltiderIPeriode } from '$lib/firestore/kost';
+	import { hentAboVaneOpsaetning, hentAlleAboVanedage } from '$lib/firestore/aboVaner';
 	import { hentHistorikSidenDato } from '$lib/firestore/traeningHistorik';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 
@@ -73,6 +83,8 @@
 	let maalinger = $state<MaalingKilde[]>([]);
 	let symptomer = $state<SymptomKilde[]>([]);
 	let traeninger = $state<TraeningKilde[]>([]);
+	let maaltider = $state<MaaltidKilde[]>([]);
+	let skridtDage = $state<SkridtDag[]>([]);
 	let henter = $state(true);
 	/** null er den samlede kurve. Ellers ét af de fem spoergsmaal. */
 	let valgt = $state<SliderId | null>(null);
@@ -117,11 +129,21 @@
 			// maalingerne der stadig.
 			const seksMaanederSiden = new Date(nu);
 			seksMaanederSiden.setMonth(seksMaanederSiden.getMonth() - 6);
-			const [scores, historik] = await Promise.all([
+			const fra = isoDag(seksMaanederSiden);
+			const [scores, historik, mad, vaneOpsaetning, vanedage] = await Promise.all([
 				hentAlleMrsScores(uid),
-				hentHistorikSidenDato(uid, isoDag(seksMaanederSiden)).catch((e) => {
+				hentHistorikSidenDato(uid, fra).catch((e) => {
 					console.warn('[ny] kunne ikke hente traeningen', e);
 					return [];
+				}),
+				hentMaaltiderIPeriode(uid, fra, isoDag(new Date(nu))).catch((e) => {
+					console.warn('[ny] kunne ikke hente maden', e);
+					return [];
+				}),
+				hentAboVaneOpsaetning(uid).catch(() => null),
+				hentAlleAboVanedage(uid, fra).catch((e) => {
+					console.warn('[ny] kunne ikke hente de smaa skridt', e);
+					return new Map();
 				})
 			]);
 			if (afbrudt) return;
@@ -132,6 +154,14 @@
 				kunSliders: s.kunSliders
 			}));
 			traeninger = historik.map((h) => ({ dato: h.dato, minutter: h.minutter }));
+			maaltider = mad.map((x) => ({ dato: x.dato, totalP: x.totalP, totalF: x.totalF }));
+
+			// Kun de vaner hun har valgt NU taeller med. Har hun fjernet en,
+			// skal et gammelt ja paa den ikke dukke op igen.
+			const valgte = (vaneOpsaetning?.valgteVaner ?? []).map((v) => v.id);
+			skridtDage = [...vanedage.values()]
+				.filter((d) => d.checks && Object.keys(d.checks).length > 0)
+				.map((d) => ({ dato: d.dato, ja: jaPaaDagen(d.checks, valgte) }));
 			henter = false;
 		})().catch((e) => {
 			console.error('[ny] kunne ikke hente maalingerne', e);
@@ -188,9 +218,15 @@
 
 	// ── Traening ─────────────────────────────────────────────
 	const traening = $derived(traeningOverblik(traeninger, nu));
-	const stoersteMaaned = $derived(
-		traening ? Math.max(...traening.maaneder.map((m) => m.vaerdi), 1) : 1
-	);
+
+	// ── Mad ──────────────────────────────────────────────────
+	// Snittet regnes pr dag hun HAR registreret. En uge uden mad-
+	// registrering betyder ikke at hun ikke spiste.
+	const mad = $derived(madOverblik(maaltider, nu));
+	const proteinMaal = $derived(dagligeMalForBruger(userDoc?.dagligeMaal).protein);
+
+	// ── Smaa skridt ──────────────────────────────────────────
+	const skridt = $derived(skridtOverblik(skridtDage, nu));
 
 	/** Kurven for det hun kigger paa lige nu. Samme tegning begge veje. */
 	const kurve = $derived<Kurve>(
@@ -719,7 +755,7 @@
 								<div class="udv-md" class:nu={m.noegle === traening.denne.noegle}>
 									<span class="udv-md-n">{m.navn.slice(0, 3)}</span>
 									<span class="udv-md-bar" aria-hidden="true">
-										<i style={`width:${soejleBredde(m.vaerdi, stoersteMaaned)}%`}></i>
+										<i style={`width:${soejleBredde(m.vaerdi, stoersteMaaned(traening))}%`}></i>
 									</span>
 									<span class="udv-md-v">{m.vaerdi > 0 ? m.vaerdi : ''}</span>
 								</div>
@@ -732,6 +768,96 @@
 								gange.
 							</p>
 						{/if}
+					</div>
+				{/if}
+			</section>
+		{/if}
+
+		<!-- ── Mad ───────────────────────────────────────────────────
+		     Snittet regnes pr dag hun HAR registreret. Den gamle side
+		     tegner en tom soejle for hver dag uden registrering, og den
+		     laeser som om hun ikke spiste. Hun spiste, hun skrev det bare
+		     ikke ned. -->
+		{#if mad}
+			{@const aabenMad = aabent === 'mad'}
+			<section class="udv-omraade" class:aaben={aabenMad}>
+				<button class="udv-hoved" aria-expanded={aabenMad} onclick={() => fold('mad')}>
+					<span class="udv-venstre">
+						<span class="udv-k">Mad</span>
+						{#if mad.protein.forskel !== null && mad.protein.forskel !== 0}
+							<span class="udv-chip-tal" class:ned={mad.protein.forskel < 0}>
+								{mad.protein.forskel > 0 ? '↑' : '↓'}
+								{formatTal(Math.abs(mad.protein.forskel))} g
+							</span>
+						{/if}
+					</span>
+					<span class="udv-tal">
+						<span class="udv-n">{formatTal(mad.protein.denne.vaerdi)}</span>
+						<span class="udv-af">g protein</span>
+					</span>
+					<span class="udv-fold" aria-hidden="true">{aabenMad ? '⌄' : '›'}</span>
+				</button>
+
+				{#if aabenMad}
+					<div class="udv-krop">
+						<div class="udv-maaneder">
+							{#each mad.protein.maaneder as m (m.noegle)}
+								<div class="udv-md" class:nu={m.noegle === mad.protein.denne.noegle}>
+									<span class="udv-md-n">{m.navn.slice(0, 3)}</span>
+									<span class="udv-md-bar" aria-hidden="true">
+										<i style={`width:${soejleBredde(m.vaerdi, stoersteMaaned(mad.protein))}%`}></i>
+									</span>
+									<span class="udv-md-v">{m.vaerdi > 0 ? formatTal(m.vaerdi) : ''}</span>
+								</div>
+							{/each}
+						</div>
+						<p class="udv-mrk">{madTekst(mad.protein, proteinMaal)}</p>
+						{#if fiberTekst(mad.fiber)}
+							<p class="udv-hint">{fiberTekst(mad.fiber)}</p>
+						{/if}
+					</div>
+				{/if}
+			</section>
+		{/if}
+
+		<!-- ── Smaa skridt ───────────────────────────────────────────
+		     Vi taeller KUN ja'erne, og naevner aldrig hvor mange hun kunne
+		     have sagt ja til. Den gamle side skriver "3 af 5" hver eneste
+		     dag, altsaa to nej dagligt. Det er en karakter, ikke en status. -->
+		{#if skridt}
+			{@const aabenSkridt = aabent === 'skridt'}
+			<section class="udv-omraade" class:aaben={aabenSkridt}>
+				<button class="udv-hoved" aria-expanded={aabenSkridt} onclick={() => fold('skridt')}>
+					<span class="udv-venstre">
+						<span class="udv-k">Små skridt</span>
+						{#if skridt.forskel !== null && skridt.forskel !== 0}
+							<span class="udv-chip-tal" class:ned={skridt.forskel < 0}>
+								{skridt.forskel > 0 ? '↑' : '↓'}
+								{formatTal(Math.abs(skridt.forskel))}
+							</span>
+						{/if}
+					</span>
+					<span class="udv-tal">
+						<span class="udv-n">{formatTal(skridt.denne.vaerdi)}</span>
+						<span class="udv-af">om dagen</span>
+					</span>
+					<span class="udv-fold" aria-hidden="true">{aabenSkridt ? '⌄' : '›'}</span>
+				</button>
+
+				{#if aabenSkridt}
+					<div class="udv-krop">
+						<div class="udv-maaneder">
+							{#each skridt.maaneder as m (m.noegle)}
+								<div class="udv-md" class:nu={m.noegle === skridt.denne.noegle}>
+									<span class="udv-md-n">{m.navn.slice(0, 3)}</span>
+									<span class="udv-md-bar" aria-hidden="true">
+										<i style={`width:${soejleBredde(m.vaerdi, stoersteMaaned(skridt))}%`}></i>
+									</span>
+									<span class="udv-md-v">{m.vaerdi > 0 ? formatTal(m.vaerdi) : ''}</span>
+								</div>
+							{/each}
+						</div>
+						<p class="udv-mrk">{skridtTekst(skridt)}</p>
 					</div>
 				{/if}
 			</section>

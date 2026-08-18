@@ -282,6 +282,11 @@ describe('tegnefladen', () => {
 			expect(flade.baandTop + flade.baandHoejde).toBeLessThanOrEqual(flade.baandStregY);
 			expect(flade.baandStregY + flade.baandStregHoejde).toBeLessThanOrEqual(flade.hoejde);
 			expect(flade.datoY).toBeLessThanOrEqual(flade.hoejde);
+			expect(flade.baandTekstY).toBeLessThanOrEqual(flade.hoejde);
+			// Holdnavnet og datoen maa ALDRIG dele linje. Gjorde de det,
+			// laa "Kickstart" oven i "26. apr". Set paa forsiden 18. august.
+			expect(flade.baandTekstY).not.toBe(flade.datoY);
+			expect(Math.abs(flade.baandTekstY - flade.datoY)).toBeGreaterThanOrEqual(8);
 			expect(flade.xVenstre).toBeLessThan(flade.xHoejre);
 			expect(flade.xHoejre).toBeLessThanOrEqual(flade.bredde);
 			expect(flade.baandKantHoejre).toBeLessThanOrEqual(flade.bredde);

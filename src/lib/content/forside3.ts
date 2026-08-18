@@ -152,7 +152,7 @@ export interface Flade {
 /** Forsidens kort. Lavere end foer 18. august, se HANDOVER 9.25. */
 export const FLADE_FORSIDE: Flade = {
 	bredde: 286,
-	hoejde: 82,
+	hoejde: 88,
 	// Plads til aksens tal til venstre, ligesom paa Udvikling.
 	xVenstre: 22,
 	xHoejre: 278,
@@ -162,8 +162,10 @@ export const FLADE_FORSIDE: Flade = {
 	baandHoejde: 57,
 	baandStregY: 62,
 	baandStregHoejde: 3,
-	datoY: 78,
-	baandTekstY: 78,
+	// Holdnavnet og datoen skal have HVER SIN linje. Stod de paa den
+	// samme, laa "Kickstart" oven i "26. apr". Set 18. august.
+	baandTekstY: 74,
+	datoY: 86,
 	akse: true,
 	akseBredde: 16,
 	baandMinBredde: 12,
@@ -177,7 +179,7 @@ export const FLADE_FORSIDE: Flade = {
  */
 export const FLADE_UDVIKLING: Flade = {
 	bredde: 286,
-	hoejde: 116,
+	hoejde: 122,
 	// Helt ud til kanten. Paa forsiden er kurven et hjoerne af et kort og
 	// skal have luft omkring sig. Her ER den indholdet.
 	xVenstre: 22,
@@ -188,8 +190,8 @@ export const FLADE_UDVIKLING: Flade = {
 	baandHoejde: 89,
 	baandStregY: 94,
 	baandStregHoejde: 3,
-	datoY: 110,
-	baandTekstY: 110,
+	baandTekstY: 106,
+	datoY: 118,
 	akse: true,
 	// Plads til "10" til venstre for kurven.
 	akseBredde: 16,
