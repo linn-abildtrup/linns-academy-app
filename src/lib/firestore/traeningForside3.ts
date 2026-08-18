@@ -124,10 +124,12 @@ export async function hentDagensTraening3(
 			tilstand: 'program',
 			navn: valgt.program.navn,
 			undertekst: dele.join(' · '),
-			href: `/ny/traening/${valgt.program.id}`,
-			videoUrl: traening
-				? await videoForDag(traening.exercises.map((e) => e.exerciseId))
-				: null,
+			// DIREKTE IND PAA TRAENINGEN, og ikke paa listen over dage.
+			// Linns valg 18. august: kunden har allerede valgt sit program,
+			// saa de to mellemled er spildte tryk. Hun lander paa
+			// klar-skaermen med videoen og trykker selv Start.
+			href: `/ny/traening/${valgt.program.id}/${nr}`,
+			videoUrl: traening ? await videoForDag(traening.exercises.map((e) => e.exerciseId)) : null,
 			klaretIDag
 		};
 	} catch (e) {

@@ -3,8 +3,15 @@
 	// Dagens traening paa forsiden. Bid 5, 15. august 2026.
 	//
 	// Flisen laeste hidtil den GAMLE apps programmer. Nu peger den paa
-	// den nye model, og den er blevet et link: et tryk foerer hende ind
-	// i programmet, hvor Start-knappen staar.
+	// den nye model, og den er blevet et link.
+	//
+	// Siden 18. august foerer trykket DIREKTE ind paa selve traeningen og
+	// ikke paa listen over dage. Linns valg: kunden har allerede valgt sit
+	// program, saa de to mellemled var spildte tryk. Hun lander paa
+	// klar-skaermen med videoen og trykker selv Start.
+	//
+	// Staar der "Klaret", betyder det bare at hun HAR traenet i dag. Linket
+	// peger stadig paa den naeste, for der er ingen graense pr dag.
 	//
 	// Dagens foerste oevelse koerer lydloest i loop i et 16:9-felt paa
 	// 140 px, saa hele oevelsen er synlig uden at kortet fylder en

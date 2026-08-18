@@ -73,7 +73,7 @@
 	const programId = $derived(page.params.programId ?? '');
 	const nr = $derived(Number(page.params.nr));
 
-	type Skaerm = 'henter' | 'fejl' | 'fortsaet' | 'spiller' | 'faerdig';
+	type Skaerm = 'henter' | 'fejl' | 'klar' | 'fortsaet' | 'spiller' | 'faerdig';
 
 	let skaerm = $state<Skaerm>('henter');
 	let fejl = $state('');
@@ -82,6 +82,27 @@
 	let oevelseKort = $state<Map<string, Exercise>>(new Map());
 	let videoUrl = $state<Map<string, string>>(new Map());
 	let gemtPlads = $state<GemtPlads3 | null>(null);
+
+	/**
+	 * Hendes fremgang i programmet, gemt saa afslutnings-skaermen kan
+	 * pege paa den naeste traening uden et nyt opslag.
+	 *
+	 * Der er INGEN graense for hvor mange traeninger hun maa tage paa en
+	 * dag. Linns beslutning 18. august, ordret: principielt uendeligt
+	 * mange. Har hun lyst til tre i traek, tager hun tre i traek.
+	 */
+	let minFremgang = $state<Traeningsfremgang3>(tomFremgang3(''));
+
+	/**
+	 * Sat naar traeningen ER skrevet ned.
+	 *
+	 * "Tag traening 8" maa foerst staa der naar 7 er gemt. Naeste side
+	 * laeser fremgangen forfra, og naar hun frem foer gemningen, vil den
+	 * mene at 8 ikke er laast op endnu og sende hende tilbage. Det ville
+	 * kun ske paa en langsom forbindelse, og det er praecis dér det er
+	 * mest irriterende.
+	 */
+	let gemtFaerdig = $state(false);
 
 	let stilling = $state<Stilling3>(startStilling3());
 	let paause = $state(false);
@@ -105,6 +126,37 @@
 	const ringAndel = $derived(laengde > 0 ? stilling.tilbage / laengde : 0);
 
 	const RING = 2 * Math.PI * 52;
+
+	// ── Klar-skaermen ──────────────────────────────────────────
+
+	/** Videoen fra foerste oevelse, saa hun kan se hvad der venter. */
+	const foersteVideo = $derived.by(() => {
+		const foerste = oevelser[0];
+		if (!foerste) return null;
+		const kort = oevelseKort.get(foerste.exerciseId);
+		return kort ? (videoUrl.get(kort.videoPath) ?? null) : null;
+	});
+
+	/** "Træning 7 af 21 · 6 øvelser · ca. 12 min". */
+	const klarMeta = $derived.by(() => {
+		const dele: string[] = [];
+		if (program && program.antalDage > 0) dele.push(`Træning ${nr} af ${program.antalDage}`);
+		const antal = oevelser.length;
+		if (antal > 0) dele.push(antal === 1 ? '1 øvelse' : `${antal} øvelser`);
+		const min = traening ? dagensMinutter(traening) : 0;
+		if (min > 0) dele.push(`ca. ${min} min`);
+		return dele.join(' · ');
+	});
+
+	/**
+	 * Den traening hun kan gaa videre til, naar den her er klaret.
+	 *
+	 * Der er ingen graense pr dag. Har hun lyst til én mere med det
+	 * samme, skal knappen vaere der. Linns beslutning 18. august.
+	 */
+	const naesteEfter = $derived(
+		program ? naesteTraening3(minFremgang, program.antalDage, program.starterForfra) : null
+	);
 
 	onMount(async () => {
 		const uid = user?.uid;
@@ -195,10 +247,17 @@
 			void hentLyd();
 
 			gemtPlads = plads;
+			minFremgang = fremgang;
 			if (pladsPasser3(plads, programId, nr, dag.exercises)) {
 				skaerm = 'fortsaet';
 			} else {
-				begynd(startStilling3());
+				// KLAR-SKAERMEN, og den er med vilje. Foer gik traeningen i
+				// gang i samme sekund siden aabnede. Nu hvor forsiden foerer
+				// direkte herind, ville halvdelen af trykkene vaere
+				// nysgerrighed, og saa stod hun midt i en oevelse i toget.
+				// Hun ser hvad hun siger ja til, og trykker selv. Linns valg
+				// 18. august, model D1.
+				skaerm = 'klar';
 			}
 		} catch (e) {
 			console.error('[ny] kunne ikke starte traeningen', e);
@@ -310,6 +369,11 @@
 		slipWakeLock();
 		musikEl?.pause();
 		skaerm = 'faerdig';
+		// Talt med med det samme, saa "Tag den naeste" peger rigtigt selv
+		// hvis gemningen nedenfor er langsom.
+		if (!minFremgang.gennemfoerte.includes(nr)) {
+			minFremgang = { ...minFremgang, gennemfoerte: [...minFremgang.gennemfoerte, nr] };
+		}
 		const uid = user?.uid;
 		if (!uid || !program) return;
 		const nu = Date.now();
@@ -335,6 +399,11 @@
 			]);
 		} catch (e) {
 			console.error('[ny] kunne ikke gemme traeningen', e);
+		} finally {
+			// Ogsaa naar det gik galt. Kan vi ikke gemme, skal hun stadig
+			// kunne gaa videre, og saa er det vaerste der sker at hun bliver
+			// sendt tilbage til listen.
+			gemtFaerdig = true;
 		}
 	}
 
@@ -426,6 +495,24 @@
 	{:else if skaerm === 'fejl'}
 		<p class="kort rolig">{fejl}</p>
 		<a class="tv-knap af-link" href={`/ny/traening/${programId}`}>Tilbage</a>
+	{:else if skaerm === 'klar'}
+		<!-- Videoen koerer stille i loekke, saa hun kan se hvad der venter,
+		     og saa trykker hun selv. Se kommentaren ved skaerm = 'klar'. -->
+		<div class="kl-kort">
+			<div class="kl-scene">
+				{#if foersteVideo}
+					<video class="kl-video" src={foersteVideo} autoplay muted loop playsinline></video>
+				{:else}
+					<div class="kl-intet" aria-hidden="true">◈</div>
+				{/if}
+			</div>
+			<h1 class="kl-titel">{traening?.titel || `Træning ${nr}`}</h1>
+			{#if klarMeta}<p class="kl-meta">{klarMeta}</p>{/if}
+			<button type="button" class="tv-knap" onclick={() => begynd(startStilling3())}>
+				Start træningen
+			</button>
+			<a class="kl-link" href={`/ny/traening/${programId}`}>Se de andre træninger</a>
+		</div>
 	{:else if skaerm === 'fortsaet'}
 		<div class="af-kort">
 			<h1>Du var i gang</h1>
@@ -435,8 +522,7 @@
 			<button
 				type="button"
 				class="tv-knap"
-				onclick={() =>
-					begynd(stillingFraPlads3(gemtPlads as GemtPlads3, oevelser))}
+				onclick={() => begynd(stillingFraPlads3(gemtPlads as GemtPlads3, oevelser))}
 			>
 				Fortsæt hvor jeg slap
 			</button>
@@ -449,7 +535,14 @@
 			<span class="af-flueben" aria-hidden="true">✓</span>
 			<h1>Flot klaret</h1>
 			<p>Træning {nr} er gennemført.</p>
-			<a class="tv-knap af-link" href="/ny/traening">Tilbage til Mikrotræning</a>
+			<!-- Har hun lyst til én mere med det samme, skal hun kunne det.
+			     Der er ingen graense pr dag. Linns beslutning 18. august. -->
+			{#if gemtFaerdig && naesteEfter !== null && naesteEfter !== nr}
+				<a class="tv-knap af-link" href={`/ny/traening/${programId}/${naesteEfter}`}>
+					Tag træning {naesteEfter}
+				</a>
+			{/if}
+			<a class="tv-knap rolig af-link" href="/ny/traening">Tilbage til Træning</a>
 		</div>
 	{:else}
 		<div class="af-top">

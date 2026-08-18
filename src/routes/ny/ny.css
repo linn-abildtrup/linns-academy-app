@@ -8617,6 +8617,72 @@ button.tm-r-t:focus-visible {
 	cursor: pointer;
 }
 
+/* ── Klar-skaermen paa en traening ────────────────────────── */
+/* Skaermen hun lander paa naar hun trykker Traening paa forsiden.
+   Videoen fra foerste oevelse koerer stille, saa hun kan se hvad der
+   venter, og saa trykker hun selv Start.
+
+   Foer gik traeningen i gang i samme sekund siden aabnede. Det gaar an
+   naar hun aktivt har valgt en dag paa en liste. Det gaar IKKE an naar
+   forsiden foerer direkte herind, for saa staar hun midt i en oevelse i
+   toget, fordi hun var nysgerrig. Linns valg 18. august, model D1. */
+
+.kl-kort {
+	background: var(--paper);
+	border-radius: 20px;
+	padding: 14px 14px 18px;
+	box-shadow: var(--shadow-soft);
+	display: flex;
+	flex-direction: column;
+	gap: 11px;
+	text-align: center;
+}
+
+.kl-scene {
+	border-radius: 16px;
+	overflow: hidden;
+	background: var(--paper-2);
+	aspect-ratio: 4 / 3;
+	display: grid;
+	place-items: center;
+}
+
+.kl-video {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+/* Har oevelsen ingen video, staar der et roligt tegn og ikke et hul. */
+.kl-intet {
+	font-size: calc(40px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.kl-titel {
+	font-family: var(--serif);
+	font-size: calc(23px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 2px 0 0;
+	line-height: 1.15;
+}
+
+.kl-meta {
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin: 0;
+}
+
+.kl-link {
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	color: var(--plum);
+	text-decoration: underline;
+	padding: 6px 0;
+	min-height: 34px;
+}
+
 .af-kort {
 	background: var(--paper);
 	border-radius: 20px;
