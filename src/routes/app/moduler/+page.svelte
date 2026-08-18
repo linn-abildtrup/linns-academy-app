@@ -3,7 +3,7 @@
 	import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type UserDoc } from '$lib/types';
 	import { getModulerForUser, type Modul } from '$lib/content/moduler';
 	import Icon from '$lib/components/Icon.svelte';
-	import { effektivState, harGennemfoertForlob } from '$lib/utils/userAdgang';
+	import { effektivState, erIBonusPeriode, harGennemfoertForlob } from '$lib/utils/userAdgang';
 	import { hentForlob } from '$lib/firestore/forlob';
 	import { produktTypeForForlob } from '$lib/content/forlobAdgang';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
@@ -70,7 +70,8 @@
 		if (!userState) return [];
 		return getModulerForUser(userState, {
 			harGennemfoertForlob: harGennemfoertForlob(userDoc),
-			aktivtForlob
+			aktivtForlob,
+			iBonusPeriode: erIBonusPeriode(userDoc)
 		});
 	});
 

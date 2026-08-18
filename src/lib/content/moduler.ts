@@ -103,6 +103,12 @@ export interface ModulerOptions {
 	 * en hardcoded placeholder. Hvis null vises en generisk besked.
 	 */
 	aktivtForlob?: { navn: string; dagNummer: number; antalDage: number } | null;
+	/**
+	 * True hvis kunden er inden for sine 90 dages bibliotek-bonus efter et
+	 * forloeb (erIBonusPeriode). Holder symptomchecken aaben i vinduet saa hun
+	 * kan naa sin sidste maaling efter forloebet er slut. Se udlobetStatus.
+	 */
+	iBonusPeriode?: boolean;
 }
 
 export function getModulerForUser(state: UserState, options: ModulerOptions = {}): Modul[] {
@@ -113,7 +119,7 @@ export function getModulerForUser(state: UserState, options: ModulerOptions = {}
 		if (state === 'modulbruger') {
 			return modulbrugerStatus(base, options.harGennemfoertForlob ?? false);
 		}
-		return udlobetStatus(base);
+		return udlobetStatus(base, options.iBonusPeriode ?? false);
 	});
 }
 
@@ -222,7 +228,23 @@ function modulbrugerStatus(base: ModulBase, harGennemfoertForlob: boolean): Modu
 	};
 }
 
-function udlobetStatus(base: ModulBase): Modul {
+function udlobetStatus(base: ModulBase, iBonusPeriode: boolean): Modul {
+	// Symptomchecken holdes aaben i de 90 dages bonus-periode efter forloebet,
+	// saa kunden kan naa sin sidste maaling. Uden det laases flisen samme dag
+	// forloebet slutter, og kunden opdager aldrig at hun mangler slutmaalingen.
+	// Kropsro 24. maj: 27 af 30 naaede den ikke. Efter de 90 dage laases den
+	// som alt andet. Selve udfyldelsen virker allerede for udloebne kunder,
+	// det er kun flisen der spaerrer.
+	if (base.id === 'symptomcheck' && iBonusPeriode) {
+		return {
+			...base,
+			status: 'aktiv',
+			progress: null,
+			statusTekst: 'Åbent',
+			subTekst: 'Gør din sidste måling færdig',
+			laasTekst: null
+		};
+	}
 	// Udløbet Kickstart-bruger har KUN adgang til bibliotek (forevigt).
 	// Bibliotek indeholder alt brugerens personlige indhold:
 	//   - FAQ + Links + Lektioner + Træningsøvelser + Opskrifter

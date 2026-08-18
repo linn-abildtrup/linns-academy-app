@@ -170,6 +170,46 @@ describe('getModulerForUser', () => {
 				expect(m.progress).toBeNull();
 			});
 		});
+
+		it('har symptomcheck låst når bonus-perioden er forbi', () => {
+			const sc = moduler.find((m) => m.id === 'symptomcheck');
+			expect(sc?.status).toBe('laast');
+		});
+	});
+
+	describe('udlobet i bibliotek-bonus (90 dage efter forløbet)', () => {
+		const moduler = getModulerForUser('udlobet', { iBonusPeriode: true });
+
+		it('holder symptomcheck åben så kunden kan nå sin sidste måling', () => {
+			const sc = moduler.find((m) => m.id === 'symptomcheck');
+			expect(sc?.status).toBe('aktiv');
+			expect(sc?.statusTekst).toBe('Åbent');
+			expect(sc?.subTekst).toBe('Gør din sidste måling færdig');
+			expect(sc?.laasTekst).toBeNull();
+		});
+
+		it('åbner ikke de øvrige moduler', () => {
+			const traening = moduler.find((m) => m.id === 'traening');
+			const kost = moduler.find((m) => m.id === 'kost');
+			const vaner = moduler.find((m) => m.id === 'vaner');
+			const forlob = moduler.find((m) => m.id === 'forlob');
+			expect(traening?.status).toBe('laast');
+			expect(kost?.status).toBe('laast');
+			expect(vaner?.status).toBe('laast');
+			expect(forlob?.status).toBe('laast');
+		});
+
+		it('lader biblioteket være uændret', () => {
+			const bib = moduler.find((m) => m.id === 'bibliotek');
+			expect(bib?.status).toBe('aktiv');
+		});
+
+		it('ændrer ikke forløbskunde og modulbruger', () => {
+			const forlobskunde = getModulerForUser('forlobskunde', { iBonusPeriode: true });
+			const modulbruger = getModulerForUser('modulbruger', { iBonusPeriode: true });
+			expect(forlobskunde.find((m) => m.id === 'symptomcheck')?.status).toBe('aktiv');
+			expect(modulbruger.find((m) => m.id === 'symptomcheck')?.status).toBe('aktiv');
+		});
 	});
 
 	describe('sortering og struktur', () => {
