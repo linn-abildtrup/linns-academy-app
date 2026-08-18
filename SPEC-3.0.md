@@ -3748,10 +3748,16 @@ for sig selv og altid åbne, ugerne under som kort der foldes ud, og kun én
 linje pr lektion selvom den ligger på syv dage. Hun valgte model V2, hvor
 ugens syv Din 1% ligger inde i ugen med deres dagnummer.
 
-Resultatet på Kropsro: fra 227 linjer til 116, fordelt på 9 Q&A og 13 uger
+Resultatet på Kropsro: fra 227 linjer til 117, fordelt på 5 Q&A og 13 uger
 der fylder én skærm når de er foldet sammen.
 
-**Fire regler styrer det, og de tre af dem kom af de rigtige data.**
+**Ingen thumbnails.** Linns rettelse samme dag. En lektion er ét lille ikon,
+navnet, og et flueben hvis hun har set den. Med ti linjer pr uge fyldte
+videobillederne mere end de fortalte, og en lydfil har alligevel ikke noget
+billede. Q&A er titel til venstre og dagen til højre, uden ikon, så de kan
+skimmes som en liste over datoer.
+
+**Fem regler styrer opdelingen, og de fire af dem kom af de rigtige data.**
 
 **1. Dubletter findes på FILEN, ikke på titlen.** Det her er den vigtigste
 linje i afsnittet. Det oplagte er at samle på titlen, og det ville have
@@ -3760,19 +3766,27 @@ skjult 83 lektioner: "Din 1%" hedder det samme alle 84 dage, men peger på
 Kropsro peger derimod på præcis den samme fil. Peger to dage samme sted, er
 det én lektion. Peger de forskellige steder, er det to.
 
-**2. Et Zoom-link er ikke en fil.** Linn bruger det samme faste mødelokale
-til alle sine live-kald, så url'en er ens hele forløbet igennem. Regel 1
-ville derfor have slået otte forskellige møder sammen til ét. Live-links,
-altså formaterne Zoom, Teams og Meet, samles kun når samme link med samme
-titel ligger på dage lige efter hinanden. Det fanger et replay der er lagt
-op to dage i træk, og lader to møder i hver sin uge stå hver for sig.
+**2. Mødelinks kommer slet ikke med.** Linns beslutning 18. august. Et
+Zoom-link fra maj er værdiløst når man ser tilbage på et forløb, og det er
+den her side til. Mens forløbet kører står linket på dagen på forsiden, så
+der forsvinder ingenting for den kunde der skal med til et kald. Det løste
+samtidig et rod: Linn bruger det samme faste mødelokale til alle sine kald,
+så url'en er ens hele forløbet igennem, og regel 1 ville have slået otte
+forskellige møder sammen til ét. Genkendes både på formatet, altså Zoom,
+Teams og Meet, og på selve adressen, for formatet er et frit felt der står
+tomt på nogle lektioner.
 
 **3. Næste uges lektion udkommer dagen før.** "Uge 3, Blodsukker" ligger
 allerede på dag 14, som hører til uge 2. En lektion placeres derfor i den
 uge hvor den ligger FLEST dage, ikke i den uge hvor den først dukker op.
 Uden den regel stod uge 3 to steder.
 
-**4. Ugens navn kommer fra ugens egen lektion.** Hedder en lektion "Uge 2,
+**4. Ugens eget indhold står før de daglige.** Ligger en lektion hele ugen,
+er den ugens tema. Ligger den én dag, er den dagens lille ting. Uden den
+regel brød "30 planter tracker" ind midt i rækken af Din 1%, fordi de begge
+starter på dag 8.
+
+**5. Ugens navn kommer fra ugens egen lektion.** Hedder en lektion "Uge 2,
 Tarmmikrobiomet", hedder ugen "Uge 2 · Tarmmikrobiomet". Er der ingen,
 hedder den bare "Uge 2". Dag 0 hedder "Opstart".
 

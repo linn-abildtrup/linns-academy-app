@@ -1488,7 +1488,7 @@ Kickstart-hold der skal flyttes først.
 Listen inde på ét forløb var flad, én linje pr lektion pr dag. På Kropsro
 blev det 227 linjer hvor godt hundrede var den samme video gentaget på syv
 dage. Nu ligger live-Q&A øverst for sig selv, og ugerne under står foldet
-sammen. 227 linjer blev til 116.
+sammen. 227 linjer blev til 117.
 
 **Den fælde du skal kende, hvis du nogensinde rører opdelingen igen:**
 
@@ -1498,7 +1498,12 @@ forskellige lydfiler. Vi samler på url'en.
 
 **Og url'en er heller ikke nok alene.** Linns Zoom-rum er det samme link
 hele forløbet igennem, så otte forskellige live-kald ville være blevet til
-ét. Live-formater samles kun på dage lige efter hinanden.
+ét. Det endte med at mødelinks slet ikke kommer med på siden, fordi et link
+til et møde i maj er værdiløst i et tilbageblik. Kunden møder stadig linket
+på dagen på forsiden mens forløbet kører.
+
+**Ingen thumbnails, Linns rettelse samme dag.** Ét lille ikon, navnet, og
+et flueben. Sæt dem ikke tilbage.
 
 Begge fejl blev fanget ved at køre opdelingen mod de rigtige Kropsro-data
 med et engangs-script og tælle efter. **Gør det samme hvis du ændrer
