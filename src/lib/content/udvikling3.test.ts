@@ -6,6 +6,7 @@ import {
 	fraTilListe,
 	kurveFor,
 	overblikFor,
+	holdNavn,
 	samletKurve,
 	SLIDERE,
 	stoersteFremgang,
@@ -239,5 +240,45 @@ describe('formatTal', () => {
 
 	it('afrunder til én decimal', () => {
 		expect(formatTal(5.44)).toBe('5,4');
+	});
+});
+
+describe('holdNavn', () => {
+	it('klipper dato og aar af', () => {
+		expect(holdNavn('Kropsro 24. Maj 2026')).toBe('Kropsro');
+	});
+
+	it('klipper ogsaa naar maaneden staar uden dato', () => {
+		expect(holdNavn('Kickstart maj 2026')).toBe('Kickstart');
+	});
+
+	it('de to slags navne ender ens', () => {
+		expect(holdNavn('Kickstart 1. juni 2026')).toBe(holdNavn('Kickstart juni 2026'));
+	});
+
+	it('et komma klipper ogsaa', () => {
+		expect(holdNavn('Kropsro, maj 2026')).toBe('Kropsro');
+	});
+
+	it('et navn uden dato staar som det er', () => {
+		expect(holdNavn('SommerRo')).toBe('SommerRo');
+	});
+
+	it('et navn med flere ord beholder dem', () => {
+		expect(holdNavn('Kropsro Intensiv 2026')).toBe('Kropsro Intensiv');
+	});
+
+	// Bliver der ingenting tilbage, er det oprindelige navn bedre end
+	// et tomt baand. Et navn der KUN er en dato er ikke et rigtigt
+	// holdnavn, men det maa stadig ikke give en tom streg.
+	it('klipper aldrig det hele vaek', () => {
+		expect(holdNavn('2026')).toBe('2026');
+		expect(holdNavn('  ')).toBe('');
+	});
+
+	it('giver aldrig noget laengere end det den fik', () => {
+		for (const n of ['Kropsro 24. Maj 2026', 'Kickstart maj 2026', 'SommerRo', '2026']) {
+			expect(holdNavn(n).length).toBeLessThanOrEqual(n.length);
+		}
 	});
 });

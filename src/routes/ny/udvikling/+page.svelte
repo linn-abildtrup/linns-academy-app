@@ -34,6 +34,7 @@
 		forskelTekst,
 		formatTal,
 		fraTilListe,
+		holdNavn,
 		kurveFor,
 		overblikFor,
 		samletKurve,
@@ -162,13 +163,6 @@
 	const BAAND_FARVER: Record<string, string> = { kickstart: '#86a188', kropsro: '#d49ab0' };
 	const baandFarve = (produkt: string) => BAAND_FARVER[produkt] ?? '#c9b7d6';
 
-	// Navnene under kurven. Samme forloeb to gange skal kun staa én gang.
-	const forklaring = $derived.by(() => {
-		const m = new Map<string, string>();
-		for (const b of kurve.baand) if (!m.has(b.navn)) m.set(b.navn, b.produkt);
-		return [...m].map(([navn, produkt]) => ({ navn, produkt }));
-	});
-
 	/** Bredden paa stregen i fra-til-listen. 1 til 10 bliver 10 til 100. */
 	function bredde(v: number): number {
 		return Math.max(0, Math.min(100, v * 10));
@@ -241,6 +235,15 @@
 								rx="1.5"
 								fill={baandFarve(b.produkt)}
 							/>
+							<!-- Navnet staar HVOR forloebet laa, i stedet for i en
+							     forklaring under flisen man skal slaa op i. Linns
+							     beslutning 18. august. Er baandet for smalt til navnet,
+							     springes det over, ellers ville to hold stoede sammen. -->
+							{#if b.bredde >= 34}
+								<text class="udv-v-baand" x={b.x} y={kurve.flade.baandTekstY}>
+									{holdNavn(b.navn)}
+								</text>
+							{/if}
 						{/each}
 
 						{#each kurve.pauser as p, i (i)}
@@ -266,6 +269,19 @@
 							/>
 						{/each}
 
+						<!-- Fladen under linjen. En tynd streg i en stor flise ser tom
+						     ud, en flade goer ikke. Toningen doer ud mod bunden, saa
+						     den ikke bliver en klods. -->
+						<defs>
+							<linearGradient id="udv-fyld" x1="0" y1="0" x2="0" y2="1">
+								<stop offset="0%" stop-color="var(--plum)" stop-opacity="0.26" />
+								<stop offset="100%" stop-color="var(--plum)" stop-opacity="0" />
+							</linearGradient>
+						</defs>
+						{#each kurve.fyld as f, i (i)}
+							<path d={f} fill="url(#udv-fyld)" />
+						{/each}
+
 						{#each kurve.stier as st, i (i)}
 							<path
 								d={st}
@@ -288,38 +304,23 @@
 									stroke-width={p.erSidste ? 2 : 0}
 								/>
 							{/if}
-							{#if p.visTal}
-								<text
-									class="udv-v-tal"
-									class:nu={p.erSidste}
-									x={p.x}
-									y={p.y - (p.erSidste ? 9 : 8)}
-									text-anchor={p.erSidste ? 'end' : i === 0 ? 'start' : 'middle'}
-								>
+							<!-- Kun hendes FOERSTE tal staar paa kurven. Det seneste
+							     staar allerede stort oeverst i flisen, og tallene
+							     undervejs kraevede en tom stribe i toppen som kurven
+							     kunne have brugt. -->
+							{#if i === 0}
+								<text class="udv-v-tal" x={p.x} y={p.y - 9} text-anchor="start">
 									{formatTal(p.vaerdi)}
 								</text>
 							{/if}
-							{#if p.visDato}
-								<text
-									class="udv-v-lab"
-									x={p.x}
-									y={kurve.flade.datoY}
-									text-anchor={p.erSidste ? 'end' : i === 0 ? 'start' : 'middle'}
-								>
+							{#if p.erSidste}
+								<text class="udv-v-lab" x={p.x} y={kurve.flade.datoY} text-anchor="end">
 									{formaterKortDato(p.ms, nu)}
 								</text>
 							{/if}
 						{/each}
 					</svg>
 				</div>
-
-				{#if forklaring.length}
-					<div class="udv-legende">
-						{#each forklaring as f (f.navn)}
-							<span><i class="sw" style:background={baandFarve(f.produkt)}></i>{f.navn}</span>
-						{/each}
-					</div>
-				{/if}
 			{:else}
 				<p class="udv-mrk">
 					Det her er din baseline, altså dit udgangspunkt. Den bruger vi til at måle alt det andet

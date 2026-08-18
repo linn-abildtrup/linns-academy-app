@@ -273,3 +273,37 @@ describe('tegnefladen', () => {
 		});
 	}
 });
+
+describe('fyldet under kurven', () => {
+	it('lukker ned mod kurvens bund, saa det kan farves', () => {
+		const k = byggKurve([maaling(90, 4), maaling(0, 8)], [], NU);
+		expect(k.fyld).toHaveLength(1);
+		expect(k.fyld[0]).toContain(`,${FLADE_FORSIDE.yBund}`);
+		expect(k.fyld[0].endsWith('Z')).toBe(true);
+	});
+
+	// En lodret streg under ét punkt ville se ud som en fejl.
+	it('ét punkt giver ingen flade', () => {
+		expect(byggKurve([maaling(0, 6)], [], NU).fyld).toEqual([]);
+	});
+
+	it('ingen maalinger giver ingen flade', () => {
+		expect(byggKurve([], [], NU).fyld).toEqual([]);
+	});
+
+	// Er linjen brudt af en pause, skal fladen brydes samme sted.
+	it('der er lige saa mange stykker flade som linje', () => {
+		const adgange = [abo(NU - 400 * DAG, NU - 200 * DAG), abo(NU - 60 * DAG, null)];
+		const k = byggKurve(
+			[maaling(390, 4.8), maaling(300, 5.2), maaling(50, 6.4), maaling(0, 7)],
+			adgange,
+			NU
+		);
+		expect(k.fyld).toHaveLength(k.stier.length);
+	});
+
+	it('fladen foelger den flade der tegnes paa', () => {
+		const k = byggKurve([maaling(90, 4), maaling(0, 8)], [], NU, new Map(), FLADE_UDVIKLING);
+		expect(k.fyld[0]).toContain(`,${FLADE_UDVIKLING.yBund}`);
+	});
+});

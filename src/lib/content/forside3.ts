@@ -85,6 +85,12 @@ export interface Kurve {
 	stier: string[];
 	/** Stiplede stykker hen over pauserne. */
 	huller: string[];
+	/**
+	 * Fladen under linjen, ét stykke pr sammenhaengende stykke. En tynd
+	 * streg i en stor kasse ser tom ud, og en flade goer ikke. Forsiden
+	 * bruger den ikke, Udvikling goer.
+	 */
+	fyld: string[];
 	baand: Baand[];
 	pauser: PauseBaand[];
 	/** Nyeste maaling, eller null hvis hun aldrig har maalt. */
@@ -125,6 +131,8 @@ export interface Flade {
 	baandStregHoejde: number;
 	/** Datoerne under kurven. */
 	datoY: number;
+	/** Holdets navn under sit eget baand. Se FLADE_UDVIKLING. */
+	baandTekstY: number;
 	/** Et kort forloeb maa ikke blive til en streg. */
 	baandMinBredde: number;
 	baandKantVenstre: number;
@@ -144,6 +152,9 @@ export const FLADE_FORSIDE: Flade = {
 	baandStregY: 52,
 	baandStregHoejde: 3,
 	datoY: 63,
+	// Forsiden har ikke plads til navne paa baandet og bruger sin egen
+	// forklaring under kortet. Feltet er sat for at fladen er hel.
+	baandTekstY: 63,
 	baandMinBredde: 12,
 	baandKantVenstre: 14,
 	baandKantHoejre: 274
@@ -166,7 +177,8 @@ export const FLADE_UDVIKLING: Flade = {
 	baandHoejde: 89,
 	baandStregY: 94,
 	baandStregHoejde: 3,
-	datoY: 109,
+	datoY: 110,
+	baandTekstY: 110,
 	baandMinBredde: 12,
 	baandKantVenstre: 3,
 	baandKantHoejre: 283
@@ -279,6 +291,7 @@ export function byggKurve(
 		punkter: [],
 		stier: [],
 		huller: [],
+		fyld: [],
 		baand: [],
 		pauser: [],
 		seneste: null,
@@ -389,6 +402,7 @@ export function byggKurve(
 	// Linjen brydes hen over en pause, saa hun kan se at der ikke er noget
 	// at vise, i stedet for at tro at hun stod stille.
 	const stier: string[] = [];
+	const fyld: string[] = [];
 	const hullerSti: string[] = [];
 	let stykke: Punkt[] = [];
 
@@ -402,15 +416,20 @@ export function byggKurve(
 		if (!naeste) break;
 		if (iPause(punkter[i].ms, naeste.ms)) {
 			stier.push(tilSti(stykke, flade));
+			fyld.push(tilFyld(stykke, flade));
 			hullerSti.push(`M${punkter[i].x},${punkter[i].y} L${naeste.x},${naeste.y}`);
 			stykke = [];
 		}
 	}
-	if (stykke.length) stier.push(tilSti(stykke, flade));
+	if (stykke.length) {
+		stier.push(tilSti(stykke, flade));
+		fyld.push(tilFyld(stykke, flade));
+	}
 
 	return {
 		punkter,
 		stier: stier.filter((s) => s.length > 0),
+		fyld: fyld.filter((s) => s.length > 0),
 		huller: hullerSti,
 		baand,
 		pauser,
@@ -448,6 +467,19 @@ function tilSti(punkter: Punkt[], flade: Flade): string {
 		return `M${Math.max(flade.xVenstre, p.x - 10)},${p.y} L${p.x},${p.y}`;
 	}
 	return punkter.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+}
+
+/**
+ * Fladen under et stykke af linjen. Lukket ned mod kurvens bund, saa den
+ * kan fyldes med en toning.
+ *
+ * Ét punkt giver ingen flade. En lodret streg ville se ud som en fejl.
+ */
+function tilFyld(punkter: Punkt[], flade: Flade): string {
+	if (punkter.length < 2) return '';
+	const linje = punkter.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+	const sidste = punkter[punkter.length - 1];
+	return `${linje} L${sidste.x},${flade.yBund} L${punkter[0].x},${flade.yBund} Z`;
 }
 
 /**

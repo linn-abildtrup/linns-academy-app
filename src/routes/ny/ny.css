@@ -9845,25 +9845,14 @@ a.ch-knap {
 	fill: var(--ink-3);
 }
 
-.udv-legende {
-	display: flex;
-	gap: 12px;
-	flex-wrap: wrap;
-	font-size: calc(11px * var(--fs-scale, 1));
-	color: var(--ink-3);
-}
-
-.udv-legende span {
-	display: inline-flex;
-	align-items: center;
-	gap: 5px;
-}
-
-.udv-legende .sw {
-	width: 14px;
-	height: 3px;
-	border-radius: 2px;
-	display: inline-block;
+/* Holdets navn staar paa sit eget baand i stedet for i en forklaring
+   under flisen. Saa er der ingenting at slaa op, og en hel linje er
+   sparet til kurven. */
+.udv-v-baand {
+	font-family: var(--sans);
+	font-size: 8.5px;
+	font-weight: 600;
+	fill: var(--ink-2);
 }
 
 .udv-mrk {

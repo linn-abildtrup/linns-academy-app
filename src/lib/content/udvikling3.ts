@@ -214,3 +214,27 @@ export function formatTal(v: number): string {
 	const afrundet = Math.round(v * 10) / 10;
 	return Number.isInteger(afrundet) ? String(afrundet) : String(afrundet).replace('.', ',');
 }
+
+// ── Holdets navn paa baandet ────────────────────────────────
+
+const MAANEDSNAVNE =
+	/\s+(januar|februar|marts|april|maj|juni|juli|august|september|oktober|november|december)\b.*$/i;
+
+/**
+ * Holdets navn, kort nok til at staa paa sit eget baand i kurven.
+ *
+ * Der er plads til selve holdet og ikke til dato og aar, saa
+ * "Kropsro 24. Maj 2026" bliver til "Kropsro". Vi klipper ved det
+ * foerste tal og derefter ved et maanedsnavn, saa baade
+ * "Kickstart maj 2026" og "Kickstart 1. juni 2026" ender ens.
+ *
+ * To hold med samme navn kan derfor komme til at hedde det samme. Det
+ * er med vilje: baandet ligger paa hver sin tid i kurven, og dét er det
+ * der skiller dem ad. Et navn med maaned og aar ville ikke kunne vaere
+ * der alligevel.
+ */
+export function holdNavn(navn: string): string {
+	const udenTal = navn.split(/[,\d]/)[0];
+	const kort = udenTal.replace(MAANEDSNAVNE, '').trim();
+	return kort || navn.trim();
+}
