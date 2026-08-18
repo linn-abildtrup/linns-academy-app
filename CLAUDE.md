@@ -71,7 +71,7 @@ Disse er besluttet og skal ikke genforhandles. Byg videre på dem, medmindre jeg
 - **Den eksisterende app i drift røres ikke.** Alt nyt er additivt. Nye filer må gerne ligge uden for `src/routes/ny/`, for eksempel i `src/lib/`, så længe ingen eksisterende fil ændres.
 - **Backend er Firebase**, altså Firestore, Auth og Storage. `firestore.rules` og `storage.rules` deployes manuelt via Firebase Console.
 - **Hosting er Cloudflare Pages.** Lydfiler ligger i Cloudflare R2. API-endpoints kører i Cloudflares Workers-runtime, hvor `firebase-admin` **ikke** virker. Server-kode mod Firestore skal derfor gå gennem `src/lib/server/firestoreRest.ts`.
-- **Push til `main` deployer automatisk til kunderne via Cloudflare.** Derfor committer og pusher du kun når jeg beder om det.
+- **Push til `main` deployer automatisk til kunderne via Cloudflare.** Arbejde på 3.0 committer og pusher du altid selv, se regel 4. Alt der rører den gamle app eller noget delt kræver et go.
 - **Kunden er i centrum, ikke forløbet.** Adgange er rækker med fra og til, og ingen række overskriver en anden.
 - **Der findes ikke premium i 3.0.** Hverken som kundeskel, felt eller gate.
 - **Ingen datamigrering.** Rækkerne udledes ved læsning i `src/lib/content/adgang3.ts`.
@@ -114,11 +114,19 @@ List altid hvilke ændringer du vil lave, før du laver dem. Hold dig til det du
 
 Separate commits for separate ting.
 
-## 4. Commit og push kun når Linn beder om det
+## 4. Commit og push
 
-Push til `main` udløser automatisk deploy til kunderne på Cloudflare. Derfor committer og pusher du aldrig af dig selv.
+Push til `main` udløser automatisk deploy til kunderne på Cloudflare. Derfor er der to regler, og hvilken der gælder afhænger af hvad du har rørt.
 
-`firestore.rules` og `storage.rules` deployes manuelt via Firebase Console. Siger du at regler er ændret, så sig også at de skal kopieres ind i Console.
+**Arbejde på 3.0: commit og push altid, uden at spørge.** Linns besked 18. august 2026. Hele `/ny` ligger bag `ny-app`-flaget, så ingen kunde i drift kan se det. At vente på et go koster kun tid, og Linn kan alligevel ikke se ændringen før den er deployet. Det gælder nye filer, filer der kun bruges af 3.0, og `SPEC-3.0.md` og `HANDOVER-3.0.md`.
+
+**Reglen falder bort den dag 3.0 går live til rigtige kunder.** Så gælder den nederste regel for alt. Står der et hold på `/ny` uden flag, er 3.0 live.
+
+**Alt andet: vent på et klart go fra Linn.** Det gælder den gamle app under `src/routes/app/`, alle delte moduler, `/login`, roden `/`, PWA-manifestet, `firestore.rules` og `storage.rules`. De rammer 760 kunder i drift med det samme.
+
+**Er du i tvivl om en fil er delt, så spørg.** Kør `git diff --stat` før hver commit og se efter filer du ikke har rørt.
+
+`firestore.rules` og `storage.rules` deployes med Firebase CLI fra repoet, men vis altid Linn den præcise ændring og få et ja først.
 
 ## 5. Sprog
 
