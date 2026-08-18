@@ -28,7 +28,6 @@
 	import {
 		byggLektionsliste,
 		byggNoteliste,
-		bonusTekst,
 		forlobAdgang,
 		gennemfoertTekst,
 		lektionerMedNote,
@@ -315,14 +314,12 @@
 			{/if}
 		</div>
 	{:else}
+		<!-- Ingen nedtaelling her. Skallen viser den ét sted i toppen af
+		     appen i de 90 dage, og to baand lige over hinanden er stoej.
+		     Se SPEC 35. Den lukkede tilstand kan ikke naas laengere: er de
+		     90 dage gaaet, kommer hun slet ikke ind i appen. -->
 		{#if lukket}
-			<p class="ll-baand lukket">
-				Materialet fra det her forløb er lukket, men dine egne noter bliver stående.
-			</p>
-		{:else if forlobsAdgang === 'bonus' && bonusSlutMs !== null}
-			<p class="ll-baand">
-				{bonusTekst(bonusSlutMs, Date.now())}. Derefter står kun dine egne noter tilbage.
-			</p>
+			<p class="ll-baand lukket">Materialet fra det her forløb er lukket.</p>
 		{/if}
 
 		<!-- Fanerne staar kun frem naar der er noget i begge. Har hun ingen

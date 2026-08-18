@@ -3092,6 +3092,19 @@ body:has(.ny-app) {
 	outline-offset: 2px;
 }
 
+/* Samme baand som naaden, men roligere. Naaden er en advarsel om at noget
+   loeber ud i morgen. Det her er en oplysning om at hun har alt
+   materialet i to maaneder endnu, og hun har lige gennemfoert et
+   forloeb. Se SPEC 35. */
+.bonus-baand {
+	background: var(--sage-tint);
+	color: var(--sage-tekst);
+}
+
+.bonus-baand a {
+	color: var(--sage-tekst);
+}
+
 /* ── Admin i 3.0 ───────────────────────────────────────────── */
 
 .adm {

@@ -22,7 +22,7 @@
 	import type { UserDoc } from '$lib/types';
 	import type { ForlobKilde, NulDageKilde } from '$lib/content/adgang3';
 	import { hentNulDage } from '$lib/firestore/nulDage3';
-	import { naadeTekst } from '$lib/content/spaerring3';
+	import { bonusBaandTekst, maaSeIBonus, naadeTekst, BONUS_START } from '$lib/content/spaerring3';
 	import { opstartsBillede, maaAabnePaaKopi3 } from '$lib/content/hurtigStart3';
 	import { hentOpstartFraCache } from '$lib/firestore/hurtigStart3';
 	import { tidsgraense, HURTIG_START_MS } from '$lib/content/hurtigStart';
@@ -62,6 +62,33 @@
 	const maaSeNyApp = $derived(billede.maaSeNyApp);
 	const erSpaerret = $derived(billede.erSpaerret);
 
+	// ── De 90 dage efter et forloeb. Se SPEC 35 ────────────────
+	//
+	// Hun har ikke koebt app-adgang, men hun har krav paa alt materialet i
+	// 90 dage: opskrifter, lektioner, oevelser, FAQ, og sin egen udvikling.
+	// Hun kan ikke registrere noget, for der er ikke noget forloeb at maale
+	// paa, og derfor er baade forsiden, 30-30 og Beskeder lukket.
+	//
+	// Foer det her kendte porten kun abonnement og forloeb. Hun blev lukket
+	// ude paa dag 1 i stedet for dag 91.
+	const erBonus = $derived(billede.tilstand === 'bonus');
+	const bonusSlutMs = $derived(userDoc?.bonusPeriodEndsAt ?? null);
+
+	/**
+	 * Sender hende tilbage til sin egen side hvis hun staar et sted hun
+	 * ikke maa vaere i de 90 dage.
+	 *
+	 * Det sker HER og kun her, saa der er ét sted at kigge og ingen
+	 * underside kan slippe nogen ind ad en bagdoer. Samme princip som
+	 * spaerringen ovenfor. Hvidlisten staar i spaerring3.
+	 */
+	$effect(() => {
+		if (loading || !erBonus) return;
+		const sti = page.url.pathname;
+		if (maaSeIBonus(sti)) return;
+		void goto(BONUS_START, { replaceState: true });
+	});
+
 	// Skriftstoerrelsen. Rod-layoutet laeser den fra browseren ved opstart,
 	// men det valg findes ikke paa en ny telefon. Her sættes den fra hendes
 	// konto, saa den foelger med. Det er BEVIDST det eneste nye i skallen:
@@ -77,6 +104,10 @@
 	setContext('userDoc', () => userDoc);
 	setContext('user', () => user);
 	setContext('adgang', () => adgang);
+	// Hvilken af de tre tilstande hun er i, saa siderne kan skjule det der
+	// ikke virker i de 90 dage. Porten ligger stadig kun i skallen: det
+	// her er til udseendet, ikke til adgangen. Se SPEC 35.
+	setContext('tilstand', () => billede.tilstand);
 	// Forsiden bruger de raa forloebs-dokumenter til at tegne baandene paa
 	// kurven, saa den ikke skal hente dem igen.
 	setContext('forlob', () => forlob);
@@ -200,13 +231,25 @@
 		};
 	});
 
-	const faner = [
-		{ href: '/ny', navn: 'Forside' },
-		{ href: '/ny/30-30', navn: '30-30' },
-		{ href: '/ny/beskeder', navn: 'Beskeder' },
-		{ href: '/ny/udvikling', navn: 'Udvikling' },
-		{ href: '/ny/profil', navn: 'Din side' }
+	// Ikonet vaelges paa ikon-noeglen og IKKE paa navnet. Foer stod der
+	// navnet i hver gren, og saa mistede fanen sit ikon i samme oejeblik
+	// nogen doebte den om. Set da Profil blev til Din side.
+	const ALLE_FANER = [
+		{ href: '/ny', navn: 'Forside', ikon: 'hus' },
+		{ href: '/ny/30-30', navn: '30-30', ikon: 'skaal' },
+		{ href: '/ny/beskeder', navn: 'Beskeder', ikon: 'boble' },
+		{ href: '/ny/udvikling', navn: 'Udvikling', ikon: 'draabe' },
+		{ href: '/ny/profil', navn: 'Din side', ikon: 'person' }
 	];
+
+	/**
+	 * Menuen i de 90 dage. Kun de to der foerer et sted hen.
+	 *
+	 * Fem faner hvor de tre sender hende tilbage med det samme er vaerre
+	 * end to der virker. Hun skal ikke skulle laere hvad der er lukket ved
+	 * at proeve.
+	 */
+	const faner = $derived(erBonus ? ALLE_FANER.filter((f) => maaSeIBonus(f.href)) : ALLE_FANER);
 
 	function erAktiv(href: string): boolean {
 		return href === '/ny' ? page.url.pathname === '/ny' : page.url.pathname.startsWith(href);
@@ -246,7 +289,15 @@
 		</div>
 	{:else}
 		<div class="ny-shell">
-			{#if spaerring.iNaade}
+			{#if erBonus && bonusSlutMs !== null}
+				<!-- De 90 dage. Baandet siger hvad hun HAR og ikke hvad hun
+				     har mistet. Hun har lige gennemfoert et forloeb, og det
+				     foerste hun moeder maa ikke vaere en regning. -->
+				<div class="naade-baand bonus-baand">
+					<span>{bonusBaandTekst(bonusSlutMs, Date.now())}</span>
+					<a href={APP_KOB_URL} target="_blank" rel="noopener">Behold det</a>
+				</div>
+			{:else if spaerring.iNaade}
 				<!-- Hun er inde paa naade. Hun skal vide det, saa hun naar at
 				     forny, men hun skal ikke spaerres midt i det hun laver. -->
 				<div class="naade-baand">
@@ -265,7 +316,7 @@
 						class:active={erAktiv(fane.href)}
 						aria-current={erAktiv(fane.href) ? 'page' : undefined}
 					>
-						{#if fane.navn === 'Forside'}
+						{#if fane.ikon === 'hus'}
 							<svg
 								viewBox="0 0 24 24"
 								fill="none"
@@ -277,7 +328,7 @@
 							>
 								<path d="M3 10.5L12 4l9 6.5" /><path d="M5 9.5V20h14V9.5" />
 							</svg>
-						{:else if fane.navn === '30-30'}
+						{:else if fane.ikon === 'skaal'}
 							<!-- En skaal med damp. 30-30 handler om mad, ikke om moduler,
 							     saa firkanterne fra Moduler passede ikke laengere. -->
 							<svg
@@ -293,7 +344,7 @@
 								<path d="M9 7.5c0-1.2 1.2-1.6 1.2-2.8S9 3 9 3" />
 								<path d="M14.2 7.5c0-1.2 1.2-1.6 1.2-2.8s-1.2-1.7-1.2-1.7" />
 							</svg>
-						{:else if fane.navn === 'Beskeder'}
+						{:else if fane.ikon === 'boble'}
 							<svg
 								viewBox="0 0 24 24"
 								fill="none"
@@ -307,7 +358,7 @@
 									d="M6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4 3v-3h-.5A2.5 2.5 0 0 1 4 13.5v-7A2.5 2.5 0 0 1 6.5 4Z"
 								/>
 							</svg>
-						{:else if fane.navn === 'Udvikling'}
+						{:else if fane.ikon === 'draabe'}
 							<svg
 								viewBox="0 0 24 24"
 								fill="none"

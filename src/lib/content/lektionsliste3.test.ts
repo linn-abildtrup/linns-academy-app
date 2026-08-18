@@ -195,7 +195,10 @@ describe('byggForlobRaekker med adgang', () => {
 	it('et forloeb paa bonus viser nedtaellingen i stedet for datoen', () => {
 		const r = byggForlobRaekker([], [gennemfoert()], vilkaar({ bonusSlutMs: ms(2026, 8, 28) }));
 		expect(r[0].adgang).toBe('bonus');
-		expect(r[0].under).toBe('Åben 10 dage endnu');
+		// Nedtaellingen staar i toppen af appen og ikke paa hver raekke,
+		// se SPEC 35. Raekken siger hvornaar hun gennemfoerte.
+		expect(r[0].under).toMatch(/^Gennemført /);
+		expect(r[0].adgang).toBe('bonus');
 	});
 
 	it('et lukket forloeb siger at kun noterne er tilbage', () => {

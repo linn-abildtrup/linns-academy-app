@@ -148,14 +148,14 @@ export function byggForlobRaekker(
 			forlobId: g.forlobId,
 			navn: g.navn,
 			aktiv: false,
-			// Er der ved at loebe tid ud, er DET det vigtigste hun kan laese
-			// paa raekken. Ellers staar der hvornaar hun gennemfoerte.
-			under:
-				adgang === 'bonus' && vilkaar.bonusSlutMs !== null
-					? bonusTekst(vilkaar.bonusSlutMs, vilkaar.nu)
-					: adgang === 'lukket'
-						? 'Kun dine noter'
-						: gennemfoertTekst(g.slutMs),
+			// Her staar hvornaar hun gennemfoerte, ogsaa i de 90 dage.
+			//
+			// Foer talte raekken ned: "Åben 10 dage endnu". Det gjorde den,
+			// fordi der ikke fandtes noget andet sted at sige det. Nu staar
+			// nedtaellingen ét sted i toppen af appen, se SPEC 35, og saa
+			// ville hver eneste raekke gentage den samme sætning i stedet
+			// for at fortaelle hvad raekken handler om.
+			under: adgang === 'lukket' ? 'Kun dine noter' : gennemfoertTekst(g.slutMs),
 			fremgang: null,
 			adgang
 		});

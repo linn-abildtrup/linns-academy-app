@@ -56,6 +56,11 @@
 	const navn = $derived([userDoc?.firstName, userDoc?.lastName].filter(Boolean).join(' '));
 	const medlemstid = $derived(formatMedlemstid(adgang.medlemstidMs));
 
+	// De 90 dage efter et forloeb. Se SPEC 35. Bruges kun til at skjule det
+	// der ikke virker. Selve porten ligger i skallen.
+	const hentTilstand = getContext<() => 'fuld' | 'bonus' | 'lukket'>('tilstand');
+	const erBonus = $derived(hentTilstand() === 'bonus');
+
 	// Ét forloeb pr raekke. Det der koerer oeverst med en ring om hvor langt
 	// hun er, de gennemfoerte under med deres stjerne. Hele raekken foerer
 	// ind til forloebets lektioner.
@@ -149,19 +154,32 @@
 			<div class="adm-raekke-t"><span>Opskrifter</span></div>
 			<div class="adm-raekke-s">Alle opskrifter, med søgning</div>
 		</a>
+		<!-- Traeningen har sin egen vej ind fra forsiden, men den findes
+		     ikke i de 90 dage. Uden den her linje kunne kunden i sin
+		     bonusperiode slet ikke naa oevelserne, og dem har hun krav paa.
+		     Den staar for alle, saa raekken ikke dukker op og forsvinder
+		     igen naar hun koeber sig ind. Se SPEC 35. -->
+		<a class="adm-raekke tr-raekke" href="/ny/traening">
+			<div class="adm-raekke-t"><span>Træningsøvelser</span></div>
+			<div class="adm-raekke-s">Dine programmer og videoerne</div>
+		</a>
 	</section>
 
-	<section>
-		<div class="lab"><h2>Opstart</h2></div>
-		<a class="adm-raekke tr-raekke" href="/ny/velkommen?kun=gennemgang">
-			<div class="adm-raekke-t"><span>Gennemgå appen</span></div>
-			<div class="adm-raekke-s">Se gennemgangen igen</div>
-		</a>
-		<a class="adm-raekke tr-raekke" href="/ny/velkommen?igen=1">
-			<div class="adm-raekke-t"><span>Kør opstarten igen</span></div>
-			<div class="adm-raekke-s">Både spørgsmål og gennemgang</div>
-		</a>
-	</section>
+	<!-- Opstarten hoerer til en kunde der er i gang. I de 90 dage ville de
+	     to raekker sende hende tilbage hertil med det samme. -->
+	{#if !erBonus}
+		<section>
+			<div class="lab"><h2>Opstart</h2></div>
+			<a class="adm-raekke tr-raekke" href="/ny/velkommen?kun=gennemgang">
+				<div class="adm-raekke-t"><span>Gennemgå appen</span></div>
+				<div class="adm-raekke-s">Se gennemgangen igen</div>
+			</a>
+			<a class="adm-raekke tr-raekke" href="/ny/velkommen?igen=1">
+				<div class="adm-raekke-t"><span>Kør opstarten igen</span></div>
+				<div class="adm-raekke-s">Både spørgsmål og gennemgang</div>
+			</a>
+		</section>
+	{/if}
 
 	<section>
 		<div class="lab"><h2>Træning</h2></div>
@@ -181,7 +199,9 @@
 		</section>
 	{/if}
 
-	<p class="kort rolig">Resten af din profil kommer her. Siden er ikke bygget færdig endnu.</p>
+	{#if !erBonus}
+		<p class="kort rolig">Resten af din profil kommer her. Siden er ikke bygget færdig endnu.</p>
+	{/if}
 
 	<section>
 		<div class="lab"><h2>Konto</h2></div>

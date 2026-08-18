@@ -37,7 +37,12 @@ import {
 	type ForlobKilde,
 	type NulDageKilde
 } from '$lib/content/adgang3';
-import { vurderSpaerring, type SpaerringSvar } from '$lib/content/spaerring3';
+import {
+	vurderSpaerring,
+	vurderTilstand,
+	type SpaerringSvar,
+	type Tilstand
+} from '$lib/content/spaerring3';
 
 /** Flaget der giver adgang til 3.0. Samme noegle som skallen bruger. */
 export const NY_APP_FLAG = 'ny-app';
@@ -56,7 +61,15 @@ export interface OpstartsBillede {
 	spaerring: SpaerringSvar;
 	/** Har hun overhovedet lov til at se 3.0? */
 	maaSeNyApp: boolean;
-	/** Skal hun moede "Din adgang er udloebet"? */
+	/**
+	 * Hvilken af de tre tilstande hun er i. Se SPEC 35 og spaerring3.
+	 *
+	 * fuld, bonus eller lukket. Foer fandtes kun fuld og lukket, og en
+	 * kunde i sine 90 dage blev derfor lukket ude paa dag 1 i stedet for
+	 * dag 91.
+	 */
+	tilstand: Tilstand;
+	/** Skal hun moede "Din adgang er udloebet"? Det samme som lukket. */
 	erSpaerret: boolean;
 }
 
@@ -98,13 +111,27 @@ export function opstartsBillede(kilde: OpstartsKilde, nu: number): OpstartsBille
 		nu
 	);
 
+	// Admin spaerres aldrig og saettes aldrig i bonus. Ellers kunne Linn
+	// laase sig selv ude af sit eget vaerktoej med en forkert dato paa sin
+	// egen konto, eller staa uden adgang til admin-siderne.
+	const tilstand: Tilstand = kilde.erAdmin
+		? 'fuld'
+		: vurderTilstand(
+				{
+					harApp: adgang.harApp,
+					harAktivtForlob: adgang.aktiveForlob.length > 0,
+					aboSlutterAt: d?.aboSlutterAt ?? null,
+					bonusSlutMs: d?.bonusPeriodEndsAt ?? null
+				},
+				nu
+			);
+
 	return {
 		adgang,
 		spaerring,
 		maaSeNyApp: kilde.erAdmin || harTestAdgang(d, NY_APP_FLAG),
-		// Admin spaerres aldrig. Ellers kunne Linn laase sig selv ude af sit
-		// eget vaerktoej med en forkert dato paa sin egen konto.
-		erSpaerret: !kilde.erAdmin && spaerring.spaerret
+		tilstand,
+		erSpaerret: tilstand === 'lukket'
 	};
 }
 
@@ -119,6 +146,8 @@ export function maaAabnePaaKopi3(kilde: OpstartsKilde, nu: number): boolean {
 	if (!kilde.userDoc) return false;
 	const billede = opstartsBillede(kilde, nu);
 	if (!billede.maaSeNyApp) return false;
+	// Bonus er en AABEN doer, bare en mindre. Den maa kopien godt vise med
+	// det samme. Kun de to lukkede skaerme skal bekraeftes af serveren.
 	if (billede.erSpaerret) return false;
 	return true;
 }
