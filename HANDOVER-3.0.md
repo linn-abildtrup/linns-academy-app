@@ -1481,6 +1481,35 @@ nøglet på dato, mens en kunde der er PÅ et forløb får sine skridt gemt
 pr forløbsdag et andet sted. Kortet var derfor tomt for præcis det
 Kickstart-hold der skal flyttes først.
 
+### 9.27 LEKTIONSLISTEN DELT OP I UGER, 18. august
+
+**Læs SPEC afsnit 32.12 før du rører noget her.** Det her er kortversionen.
+
+Listen inde på ét forløb var flad, én linje pr lektion pr dag. På Kropsro
+blev det 227 linjer hvor godt hundrede var den samme video gentaget på syv
+dage. Nu ligger live-Q&A øverst for sig selv, og ugerne under står foldet
+sammen. 227 linjer blev til 116.
+
+**Den fælde du skal kende, hvis du nogensinde rører opdelingen igen:**
+
+**Samle på titlen er forkert.** Det er det oplagte, og det ville have
+skjult 83 lektioner. "Din 1%" hedder det samme alle 84 dage men er 84
+forskellige lydfiler. Vi samler på url'en.
+
+**Og url'en er heller ikke nok alene.** Linns Zoom-rum er det samme link
+hele forløbet igennem, så otte forskellige live-kald ville være blevet til
+ét. Live-formater samles kun på dage lige efter hinanden.
+
+Begge fejl blev fanget ved at køre opdelingen mod de rigtige Kropsro-data
+med et engangs-script og tælle efter. **Gør det samme hvis du ændrer
+reglerne.** Tallet der skal passe er antal viste linjer mod antal unikke
+filer. Testene alene fangede dem ikke, for jeg skrev testene ud fra hvad
+jeg troede dataene var.
+
+**Åben tråd: Q&A kendes kun på titlen.** Der er intet mærke i databasen.
+Skriver Linn en gang "Spørgetime" i stedet, forsvinder den ned i ugerne.
+Den holdbare løsning er et flueben på lektionen i admin.
+
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
 Hele Mad-modulet blev gennemgaaet mod den gamle app 12. august, funktion for

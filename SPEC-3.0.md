@@ -3736,11 +3736,64 @@ Spærringen er **ikke rørt**. Den er den ene lås der beskytter hele fladen, og
 at lukke en ny slags kunde ind er en beslutning og ikke en detalje. Det
 kræver sin egen diagnose og sit eget go fra Linn.
 
-### 32.12 Filerne
+### 32.12 Ugerne, LÅST 18. august. Model V2
+
+Listen inde på ét forløb var en flad liste, én linje pr lektion pr dag. På
+Kickstart var det fint. På Kropsro var det 227 linjer, hvor godt hundrede
+var den samme video igen og igen, fordi ugens lektion ligger på alle syv
+dage. Kunden kunne ikke finde noget.
+
+**Linns beslutning 18. august, efter to runder mockups:** Live Q&A øverst
+for sig selv og altid åbne, ugerne under som kort der foldes ud, og kun én
+linje pr lektion selvom den ligger på syv dage. Hun valgte model V2, hvor
+ugens syv Din 1% ligger inde i ugen med deres dagnummer.
+
+Resultatet på Kropsro: fra 227 linjer til 116, fordelt på 9 Q&A og 13 uger
+der fylder én skærm når de er foldet sammen.
+
+**Fire regler styrer det, og de tre af dem kom af de rigtige data.**
+
+**1. Dubletter findes på FILEN, ikke på titlen.** Det her er den vigtigste
+linje i afsnittet. Det oplagte er at samle på titlen, og det ville have
+skjult 83 lektioner: "Din 1%" hedder det samme alle 84 dage, men peger på
+84 forskellige lydfiler, én ny hver dag. Alle andre gentagne titler i
+Kropsro peger derimod på præcis den samme fil. Peger to dage samme sted, er
+det én lektion. Peger de forskellige steder, er det to.
+
+**2. Et Zoom-link er ikke en fil.** Linn bruger det samme faste mødelokale
+til alle sine live-kald, så url'en er ens hele forløbet igennem. Regel 1
+ville derfor have slået otte forskellige møder sammen til ét. Live-links,
+altså formaterne Zoom, Teams og Meet, samles kun når samme link med samme
+titel ligger på dage lige efter hinanden. Det fanger et replay der er lagt
+op to dage i træk, og lader to møder i hver sin uge stå hver for sig.
+
+**3. Næste uges lektion udkommer dagen før.** "Uge 3, Blodsukker" ligger
+allerede på dag 14, som hører til uge 2. En lektion placeres derfor i den
+uge hvor den ligger FLEST dage, ikke i den uge hvor den først dukker op.
+Uden den regel stod uge 3 to steder.
+
+**4. Ugens navn kommer fra ugens egen lektion.** Hedder en lektion "Uge 2,
+Tarmmikrobiomet", hedder ugen "Uge 2 · Tarmmikrobiomet". Er der ingen,
+hedder den bare "Uge 2". Dag 0 hedder "Opstart".
+
+**Q&A kan kun kendes på titlen.** Der er intet mærke i databasen, så vi
+leder efter "Q&A" i titlen. Det fanger alle i Kropsro i dag, men det holder
+kun så længe titlerne skrives sådan. Den holdbare løsning er et flueben i
+admin, og det er en åben tråd.
+
+**Ugen hun er i står åben fra start** når forløbet kører. Er forløbet slut,
+står alt foldet sammen, så hun møder hele rejsen på én skærm. Kun én uge er
+åben ad gangen.
+
+**Tællingen øverst blev lagt om samtidig.** Den talte rækkerne i databasen
+og ville have sagt 227. Nu tæller den det hun faktisk kan se.
+
+### 32.13 Filerne
 
 | Fil | Hvad | Tests |
 |---|---|---|
 | `content/lektionsliste3.ts` | Rækkerne, låsen, noterne, de 90 dage | 57 |
+| `content/lektionsUger3.ts` | Uge-opdelingen og de fire regler i 32.12 | 30 |
 | `content/hjaelp3.ts` | Hvilke forløb FAQ og links hentes fra, og fletningen | 15 |
 | `firestore/lektionsliste3.ts` | Forløbets dage. Kun læsning | |
 | `components/ny/LektionNote.svelte` | Notefeltet | |
