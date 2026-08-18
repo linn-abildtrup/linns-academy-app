@@ -410,8 +410,9 @@ body:has(.ny-app) {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
-	gap: 6px;
+	gap: 7px;
 	min-width: 0;
+	padding-top: 3px;
 }
 
 .score-hoejre {
@@ -437,12 +438,14 @@ body:has(.ny-app) {
 	fill: rgba(251, 248, 242, 0.72);
 }
 
+/* Overskriften og maerkatet til venstre, det store tal til hoejre, alt
+   sammen paa den samme linje. Tallet stod foer paa sin egen raekke og aad
+   en halv centimeter af kurven. Linns oenske 18. august om aftenen. */
 .score-tal {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
 	gap: 10px;
-	margin-top: 4px;
 }
 
 .score-n {
@@ -480,6 +483,17 @@ body:has(.ny-app) {
 	/* Var 10px. Sat ned 18. august sammen med at selve kurven blev lavere,
 	   fordi kortet fyldte for meget paa forsiden. Linns oenske. */
 	margin-top: 6px;
+}
+
+/* Tegningen skal fylde HELE bredden af flisen.
+   Foer stod der en fast hoejde paa den, og saa lagde browseren tegningen
+   midt i feltet med tom plads i begge sider i stedet for at gøre den
+   stoerre. Med hoejden sat fri vokser den med bredden. Set paa Linns
+   skaermbillede 18. august om aftenen. */
+.kurve svg {
+	display: block;
+	width: 100%;
+	height: auto;
 }
 
 /* Tallene i kurven skalerer IKKE med tekststoerrelsen. Bliver de store,

@@ -28,9 +28,11 @@
 </script>
 
 <section>
+	<!-- Ingen genvej her. "Åbn mad" pegede paa /ny/moduler og stod som en
+	     ekstra vej ind i noget der allerede har sin egen fane forneden.
+	     Fjernet paa Linns oenske 18. august om aftenen. -->
 	<div class="lab">
 		<h2>Dagens tal</h2>
-		<a href="/ny/moduler">Åbn mad</a>
 	</div>
 	<div class="kort">
 		{#each linjer as l (l.navn)}

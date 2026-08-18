@@ -32,14 +32,14 @@
 
 <section class="score">
 	<div class="score-krop">
-		<div class="score-k">Dit overskud</div>
-
 		{#if kurve.seneste}
-			<!-- Samme fordeling som paa Udvikling siden 18. august: overskrift
-			     og plakat til venstre, tallet til hoejre. De to spalter bliver
-			     lige hoeje, og kurven kan komme laengere op. Linns oenske. -->
+			<!-- Overskriften og tallet paa SAMME linje, og maerkatet under
+			     overskriften. Tallet stod foer paa sin egen raekke under
+			     "Dit overskud" og aad en halv centimeter af kurven. Linns
+			     oenske 18. august om aftenen. -->
 			<div class="score-tal">
 				<span class="score-venstre">
+					<span class="score-k">Dit overskud</span>
 					{#if kurve.aendring !== 0}
 						<span class="score-chip">
 							{kurve.aendring > 0 ? '▲' : '▼'}
@@ -59,8 +59,6 @@
 				     fordi kurven fyldte for meget paa siden. Linns oenske. -->
 				<svg
 					viewBox="0 0 {kurve.flade.bredde} {kurve.flade.hoejde}"
-					width="100%"
-					height={kurve.flade.hoejde}
 					role="img"
 					aria-label={`Dit overskud fra ${formaterKortDato(kurve.foerste?.ms ?? nu, nu)} til ${formaterKortDato(kurve.seneste.ms, nu)}, ${kurve.foerste?.vaerdi} til ${kurve.seneste.vaerdi} af 10`}
 				>
@@ -210,6 +208,7 @@
 				</div>
 			{/if}
 		{:else}
+			<div class="score-k">Dit overskud</div>
 			<p class="score-tom">
 				Din første måling viser dig, hvor du står i dag. Derefter kan du følge din udvikling her.
 			</p>

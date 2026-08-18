@@ -149,28 +149,34 @@ export interface Flade {
 	baandKantHoejre: number;
 }
 
-/** Forsidens kort. Lavere end foer 18. august, se HANDOVER 9.25. */
+/**
+ * Forsidens kort.
+ *
+ * Hoejere igen 18. august om aftenen. Tallet "7,6 af 10" flyttede op paa
+ * linje med overskriften, og den plads gav vi til kurven. Linns oenske.
+ * Kortet fylder derfor omtrent det samme paa siden som foer.
+ */
 export const FLADE_FORSIDE: Flade = {
 	bredde: 286,
-	hoejde: 88,
+	hoejde: 98,
 	// Plads til aksens tal til venstre, ligesom paa Udvikling.
 	xVenstre: 22,
-	xHoejre: 278,
+	xHoejre: 280,
 	yTop: 12,
-	yBund: 58,
+	yBund: 68,
 	baandTop: 3,
-	baandHoejde: 57,
-	baandStregY: 62,
+	baandHoejde: 67,
+	baandStregY: 72,
 	baandStregHoejde: 3,
 	// Holdnavnet og datoen skal have HVER SIN linje. Stod de paa den
 	// samme, laa "Kickstart" oven i "26. apr". Set 18. august.
-	baandTekstY: 74,
-	datoY: 86,
+	baandTekstY: 84,
+	datoY: 96,
 	akse: true,
 	akseBredde: 16,
 	baandMinBredde: 12,
 	baandKantVenstre: 18,
-	baandKantHoejre: 283
+	baandKantHoejre: 284
 };
 
 /**
