@@ -3961,15 +3961,12 @@ Konsekvensen har stået i 32.11 hele tiden, men er blevet læst som en åben
 beslutning. Efter Linns præcisering er den en **fejl**, ikke en beslutning.
 Den gamle app gør det rigtigt. Det er kun 3.0 der mangler det.
 
-### 35.3 INTET DATA SLETTES NOGENSINDE
+### 35.3 De 90 dage handler om ADGANG, aldrig om data
 
-Linns beslutning 18. august, ordret: alt data på kunden skal gemmes,
-såfremt kunden bliver kunde igen senere.
-
-De 90 dage handler om **adgang**, aldrig om oprydning. Hendes noter,
-måltider, målinger, vaner, egne opskrifter og fremgang bliver stående i
-databasen for altid. Køber hun sig ind igen om to år, står det hele der,
-som hun forlod det.
+Linns beslutning 18. august: alt data på kunden skal gemmes, såfremt hun
+bliver kunde igen senere. Hendes noter, måltider, målinger, vaner, egne
+opskrifter og fremgang bliver stående. Køber hun sig ind igen om to år,
+står det hele der, som hun forlod det.
 
 Det svarer samtidig på et spørgsmål jeg havde stillet: hvad der sker med
 hendes egne noter efter de 90 dage. **Ingenting.** De bliver bare
@@ -3978,7 +3975,41 @@ uopnåelige, indtil hun har adgang igen.
 **Byg derfor aldrig en oprydning, et udløb eller en sletning oven på
 `bonusPeriodEndsAt`.** Feltet styrer hvad hun må se, ikke hvad vi gemmer.
 
-### 35.4 Det der stadig skal besluttes
+### 35.4 Opbevaring: 5 år, og så slettes det
+
+Linns beslutning 18. august: alt kundedata gemmes i 5 år efter sidste
+login, og derefter slettes det. Det er ikke bygget, og det skal have sin
+egen omgang med sin egen godkendelse, for en sletning kan ikke fortrydes.
+
+**LÆS DET HER FØR DU BYGGER DEN SLETNING.**
+
+**"Sidste login" er et forkert mål for om en kunde er aktiv, og det er
+målt.** Appen holder kunden logget ind, så Firebase registrerer først et
+nyt login, når hun har været logget helt ud. En kvinde der bruger appen
+hver dag kan derfor stå med et login fra for tre måneder siden.
+
+Målt 18. august 2026 på 178 kunder med registreret mad: **28 af dem, altså
+16 %, har et sidste login der er mindst en måned ældre end den mad de
+sidst har registreret.** Flere af dem registrerede mad SAMME DAG, mens
+deres login stod til 62, 79 og 92 dage gammelt. Afstanden bliver kun
+større, jo længere hun bliver logget ind.
+
+En sletning bygget på Firebases login-tidspunkt ville derfor på et
+tidspunkt slette data for kunder der bruger appen. Der findes ingen vej
+tilbage fra det.
+
+**Det skal bygges sådan i stedet:** appen stempler et felt på kunden,
+f.eks. `sidstSetAt`, hver gang hun åbner den. Et felt der findes i dag er
+der ikke, og Firebase-loginnet er ikke et brugbart stand-in. De fem år
+tælles fra det felt.
+
+**Og så en overgangsregel:** feltet begynder først at findes den dag det
+bygges. Kunder der allerede er holdt op med at bruge appen får det aldrig
+sat. For dem må de fem år tælles fra det seneste af det vi kan se: sidste
+login, sidste registrerede måltid, sidste måling, sidste vanedag. Aldrig
+fra login alene.
+
+### 35.5 Det der stadig skal besluttes
 
 - Hvordan bundmenuen ser ud i tilstand 2. Fem faner hvor tre er lukkede er
   værre end de tre der virker
