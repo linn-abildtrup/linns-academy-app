@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 16. august 2026.
+Sidst opdateret 18. august 2026.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -13,7 +13,9 @@ Denne fil er til den næste der skal arbejde videre, uanset om det er et nyt Cla
 Læs den sammen med disse tre:
 
 - `CLAUDE.md` i repo-roden er arbejdsreglerne. De er ikke til forhandling.
-- `SPEC-3.0.md` er hvad der bygges og hvorfor. 31 afsnit, hvor 26 og 29 har en del underafsnit. 13 til 21 er designbeslutningerne fra 5. august, 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning, 28 er opstarten, altså det der sker før den første skærm kommer frem, og **29 er hele træningsmodulet**, **30 er Beskeder** og **31 er onboarding**. **Efter afsnit 27 ligger Ventelisten**, altså alt det der bevidst er sat på pause til appen er designet færdig. Læs afsnit 22 til 27 før du går i gang med noget i Mad, og afsnit 29 før du rører træningen.
+- `SPEC-3.0.md` er hvad der bygges og hvorfor. 32 afsnit, hvor 26 og 29 har en del underafsnit. 13 til 21 er designbeslutningerne fra 5. august, 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning, 28 er opstarten, altså det der sker før den første skærm kommer frem, og **29 er hele træningsmodulet**, **30 er Beskeder**, **31 er onboarding** og **32 er Dine lektioner og Hjælp**. **Efter afsnit 27 ligger Ventelisten**, altså alt det der bevidst er sat på pause til appen er designet færdig. Læs afsnit 22 til 27 før du går i gang med noget i Mad, og afsnit 29 før du rører træningen.
+
+  **Pas på afsnit 22 og 26.5.** De sagde begge at Biblioteket blev et kort nederst på forsiden. Det er omgjort to gange, og afsnit 32 er det gældende. Linjerne er markeret som forældede, men de står der stadig, fordi målingerne omkring dem stadig gælder.
 - `v3 app/linns-academy-design/DESIGN-SPEC.md` og `mockups.html` er hvordan det ser ud.
 
 ---
@@ -61,7 +63,7 @@ gamle app og må kun læses.
 |---|---|
 | `src/routes/ny/+layout.svelte` | Skallen. Adgangs-gate, spærring, bundmenu, contexts for `user`, `userDoc`, `adgang` og `forlob`. **Læg ikke nyt her uden en god grund**, se SPEC 26.5 |
 | `src/routes/ny/ny.css` | Alt design. Scoped under `.ny-app`. Cirka 2.000 linjer |
-| `src/lib/components/ny/` | 29 komponenter, alle kun brugt i 3.0. `VaelgArk.svelte` er ubrugt siden 12. august og skal enten slettes eller have en note |
+| `src/lib/components/ny/` | 30 komponenter, alle kun brugt i 3.0. `VaelgArk.svelte` er ubrugt siden 12. august og skal enten slettes eller have en note |
 | `src/lib/utils/billede3.ts` | Skalering og webp i browseren. `billede.ts` er den gamle og må ikke røres |
 | `src/routes/ny/admin/ingredienser/` | Kobl ingredienser til fødevarer. Se 9.17 |
 | `src/routes/ny/admin/opskrift-makro/` | Regnestykket linje for linje. **Gå her når et tal ser forkert ud** |
@@ -109,6 +111,8 @@ gamle app og må kun læses.
 | `content/afspiller3.ts` | **Afspillerens fase-maskine.** Ren logik | 38 |
 | `content/mineTraeninger3.ts` | Kundens egne programmer. Præfikset `egen_` | 26 |
 | `content/traeningAi3.ts` | **AI-værktøjet.** Validering mod banken, dage-fra-sætning | 44 |
+| `content/lektionsliste3.ts` | **Dine lektioner.** Rækkerne, låsen, noterne, de 90 dage. Se 9.22 | 57 |
+| `content/hjaelp3.ts` | **Hjælp.** Hvilke forløb FAQ og links hentes fra, og fletningen. Se 9.23 | 15 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
 
@@ -138,6 +142,7 @@ gamle app og må kun læses.
 | `firestore/traeningPlads3.ts` | Gemt plads i en træning. Den ottende der **skriver** |
 | `firestore/traeningUdstyr3.ts` | Hendes udstyrsvalg. Den niende der **skriver** |
 | `firestore/traeningKunde3.ts` | Kunderne set fra admin, med adgang og forløbsdag |
+| `firestore/lektionsliste3.ts` | Forløbets dage. Kun læsning, genbruger `hentForlobsdage` |
 | `firestore/traeningForside3.ts` | Træningsflisen på forsiden |
 | `firestore/beskedside3.ts` | Beskeder. Kobler til `linnAiSamtaler` og `klientspoergsmaal`. Den tiende der **skriver** |
 | `firestore/onboarding3.ts` | `onboardet3` og `tekstSkala3`. Den ellevte der **skriver** |
@@ -167,7 +172,9 @@ Alle ruter ligger under `/ny`.
 | `/ny/maaling` | Spørgeskema. Færdig |
 | `/ny/udvikling` | Bygget, men ikke gennemgået mod den gamle app endnu |
 | `/ny/moduler` | Gammel skitse. **Ikke længere i bundmenuen**, erstattet af 30-30 |
-| `/ny/profil`, `/ny/hjaelp`, `/ny/forlob` | Bygget |
+| `/ny/profil`, `/ny/forlob` | Bygget |
+| `/ny/profil` → **Dine lektioner** | Ét forløb pr række. **Afløser diplom-blokken.** Se 9.22 |
+| `/ny/lektioner/[forlobId]` | **Ét forløbs lektioner og hendes noter.** Se 9.22 |
 | `/ny/admin/challenges` | Admin: opret og tildel challenges. Kun admin. Intet menupunkt, skriv adressen |
 | `/ny/admin/opskrift-billeder` | Admin: læg billeder på opskrifter. Kun admin. Intet menupunkt. Se 9.6 |
 | `/ny/admin/ingredienser` | Admin: kobl ingredienser til fødevaredatabasen. Se 9.17 |
@@ -191,7 +198,10 @@ Alle ruter ligger under `/ny`.
 | `/ny/traening/byg-eget/[id]/[nr]` | Kunden: vælg øvelser til én af sine egne træninger |
 | `/ny/profil/traening` | Kunden: Sådan træner jeg, altså udstyrsvalget |
 | `/ny/velkommen` | **Onboarding.** Fire spørgsmål og en rundvisning. Se 9.20 |
-| `/ny/hjaelp` | Spørg om appen. Egen 3.0-videnbase siden 16. august. Se 9.21 |
+| `/ny/hjaelp` | **Navet.** Spørg, FAQ, links, skriv til Linn. Se 9.23 |
+| `/ny/hjaelp/spoerg` | Spørg om appen. Egen 3.0-videnbase, se 9.21. **Flyttet hertil 18. august** |
+| `/ny/hjaelp/faq` | Ofte stillede spørgsmål. Se 9.23 |
+| `/ny/hjaelp/links` | Links og guides. Se 9.23 |
 
 **Bundmenuen:** Forside · 30-30 · Beskeder · Udvikling · Profil.
 
@@ -299,6 +309,10 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 **Firestore-regler driver.** Sammenlign altid de live regler med `firestore.rules` i repoet, inden du udgiver noget. Det er nu ét kald, se afsnit 8.
 
+**`prettier --write` med et bredt mønster ødelægger din diff.** Fundet 18. august. Repoet er ikke prettier-rent i dag, formentlig fordi versionen har flyttet sig siden filerne blev skrevet. Én kørsel på `src/routes/ny/**` omformaterede **25 filer der ellers var urørte**, og i `ny.css` skrev den de indlejrede skrifter om, som er base64 på én linje. Intet af det var forkert, men diffen blev ubrugelig og ingen kunne se hvad der faktisk var ændret. **Formatér kun de filer du selv har rørt, og hold `ny.css` helt udenfor.** Kør `git diff --stat` før hver commit og se efter filer du ikke har rørt.
+
+**Der kan køre en anden session i det samme repo.** 18. august dukkede tre ændrede filer op midt i en opgave, heriblandt én i den GAMLE app. De var ikke fejl, en anden session arbejdede parallelt og committede dem bagefter. **Rul aldrig fremmede ændringer tilbage, og bland dem aldrig ind i din egen commit.** Kør `git status` når du begynder OG når du er færdig, og sammenlign.
+
 ---
 
 ## 8. Sådan tjekker du dit arbejde
@@ -327,39 +341,50 @@ Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx 
 
 ## 9. Hvor vi står, og hvad der er næste skridt
 
-Opdateret 16. august 2026, aften. Alt herunder er kodet, committet og pushet, og `main` er i sync.
+Opdateret 18. august 2026. Alt herunder er kodet. **Arbejdet fra 18. august er
+IKKE committet endnu**, resten er pushet og `main` er i sync.
 
 **Etape 1 til 3 er færdige, og hele den åbne liste fra 6. august er klaret.** Etape 4 er i gang.
 
 ### NÆSTE SKRIDT
 
-**Onboarding er bygget 16. august**, se 9.20. Det eneste der mangler af den er
-indhold og ikke kode: fire videoer og ti skærmbilleder, som Linn skal levere.
+**Biblioteket er klaret 18. august**, se 9.22 og 9.23. Det blev delt i to og
+navnet droppet. Ordet Bibliotek findes ikke længere i kundens sprog.
 
-Derefter står to ting tilbage før et hold kan flyttes:
+Der står nu to ting tilbage før et hold kan flyttes:
 
+- **De fire videoer til onboarding.** Indhold, ikke kode. Skærmbillederne er
+  taget 16. august
 - **`/ny/udvikling` gennemgået mod den gamle app blok for blok.** Den slags
   gennemgang har hver eneste gang afsløret ting der ellers var glemt
-- ~~AI-hjælpen beskriver den GAMLE app~~. **Klaret 16. august**, se 9.21
-
-Og husk **Biblioteket**, som efter Linns beslutning 16. august skal ligge under Profil og ikke på forsiden.
 
 **Og før et hold flyttes til 3.0:** programmerne skal være bygget OG tildelt i
 det nye system. De gamle kopieres ikke, det droppede Linn 16. august. Bliver
 det glemt, starter et helt hold uden træning.
 
-### Det der ellers står åbent, 16. august
+### Det der ellers står åbent, 18. august
 
 Spærrer for 3.0:
 
 - **De fire videoer til onboarding.** Skærmbillederne er taget 16. august
-- **Biblioteket.** Linns beslutning 16. august: det skal ligge under **Profil**, ikke som et kort på forsiden
 - **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app blok
   for blok. Den slags gennemgang plejer at afsløre glemte ting
-- **AI-hjælpen i 3.0 beskriver den GAMLE app.** `/ny/hjaelp` bruger
-  `content/appHjaelp.ts`, som stadig forklarer Moduler-fanen, der ikke findes
-  i 3.0. Spørger en kunde hvor hun finder sine moduler, får hun et forkert
-  svar. Fundet 16. august, ikke rettet
+- ~~Biblioteket~~. **Klaret 18. august**, se 9.22 og 9.23
+- ~~AI-hjælpen beskriver den GAMLE app~~. **Klaret 16. august**, se 9.21
+
+Skal besluttes, fundet 18. august:
+
+- **Kunden i bonus-perioden kan ikke komme ind i 3.0.** Se 9.22. Spærringen
+  kender ikke de 90 dage, så en kunde uden abonnement lukkes helt ude, selvom
+  hun i den gamle app har sit bibliotek i 90 dage. Koden bag de to tilstande
+  er bygget og testet, men uopnåelig indtil spærringen ændres. **Rør den ikke
+  uden et selvstændigt go**, den beskytter hele fladen
+- **"Set"-fluebenet er ikke bundet til forløbet.** Se 9.22. Genbruges en
+  lektion på to hold, viser fluebenet sig begge steder
+- **Repoet er ikke prettier-rent.** Køres `prettier --write` bredt, ændrer den
+  omkring 25 filer i 3.0 der ellers er urørte, formentlig fordi versionen har
+  flyttet sig. **Formatér kun de filer du selv har rørt**, og hold dig fra
+  `ny.css`, hvor prettier omskriver de indlejrede skrifter
 
 Venter på en beslutning fra Linn:
 
@@ -466,8 +491,9 @@ Verificeret mod virkeligheden samme dag: for alle 12 giver den gamle app og 3.0 
 ### 9.4 30-30 beregneren, etape 4's første modul
 
 **Moduler-fanen er udgået.** Den var en menu der førte til en menu, og alt
-andet end Biblioteket kan nås fra forsiden. **30-30 beregneren** har taget
-dens plads i bundmenuen.
+andet end Biblioteket kunne nås fra forsiden. **30-30 beregneren** har taget
+dens plads i bundmenuen. Biblioteket er siden delt i to og navnet droppet,
+se 9.22 og 9.23.
 
 Den er **færdig og i brug** pr 11. august: oversigt med fire måltider og dagens
 tal, måltidsskærm, "det du plejer", søgning, mængde med genveje og plus/minus,
@@ -1204,6 +1230,108 @@ igen, og en der fælder hvis ordet Snak dukker op om fanen.
 **Verificeret mod den kørende app**, ikke kun med tests. Det var dér de fire
 fælder i afsnit 7 blev fundet, og de kostede fire runder.
 
+### 9.22 DINE LEKTIONER, bygget 18. august. Biblioteket delt i to
+
+**Læs SPEC afsnit 32 før du rører noget her.** Det her er kortversionen.
+
+**Spørgsmålet var hvor Biblioteket skulle ligge og hvad det skulle hedde.
+Svaret blev at der ikke skulle være noget der hed Bibliotek.**
+
+Biblioteket i den gamle app har fem faner. Tre af dem havde allerede fået et
+hjem i 3.0 uden at nogen bemærkede det: opskrifterne i 30-30 og
+træningsøvelserne i Træning. Tilbage stod to ting af helt forskellig natur.
+Lektionerne og noterne er **hendes eget**. FAQ og links er **Linns
+hjælpestof**. Ét ord over begge dele måtte nødvendigvis blive vagt, og et
+vagt ord kan ikke placeres. Derfor blev det delt.
+
+**Linns beslutning 18. august:** lektionerne og noterne under Profil, FAQ og
+links under Hjælp, og ordet Bibliotek ud af kundens sprog.
+
+**Navnet blev "Dine lektioner".** Det oplagte var "Dine forløb", men det
+kolliderer med `/ny/forlob`, som allerede hedder "Dit forløb" og viser det
+aktive. To næsten ens navne, hvor det ene er nutid og det andet fortid.
+
+**Det tekniske navn er urørt.** `bibliotekBonusSlutMs`, `harBibliotekAdgang`,
+`bonusPeriodEndsAt` og `harBibliotek` hedder stadig det de hed. Kunden ser dem
+aldrig.
+
+**Sådan ser det ud.** På Profil står ét forløb pr række. Det der kører øverst
+med en ring om hvor langt hun er og mærkatet "I gang", de gennemførte under
+med deres stjerne. Diplom-blokken som selvstændig sektion er **afløst**,
+stjernen lever videre inde i listen. Tryk på et forløb og du er på
+`/ny/lektioner/[forlobId]` med alle lektionerne i rækkefølge.
+
+**Det aktive forløb er med på listen.** Linns beslutning, så hun har overblik
+over alle lektioner ét sted. Det betød at lektioner hun ikke er nået til nu
+**vises uden at kunne åbnes**, i stedet for at være skjult.
+
+**LÆS DEN HER, HVIS DU RØRER LÅSEN.** Datoen på en låst lektion regnes fra I
+DAG og aldrig fra forløbets startdato. `dagNummer` har allerede kundens pauser
+med, se `nulDage3.ts`. Regner du forfra fra startdatoen, får en Kropsro-kunde
+med to pausedage en dato der ligger to dage forkert. Der er en test der holder
+på det.
+
+**Noterne ligger i den samme samling som den gamle app bruger**, altså
+`users/{uid}/lektionNoter` med id `forlobId__lektionId`. Ingen ny datamodel.
+En note skrevet i den gamle apps bibliotek står allerede i 3.0, og omvendt.
+Har hun skrevet noter, dukker fanen "Mine noter" op, og en blyant i listen
+viser hvor der ligger en. **En note overlever sin lektion**: tager Linn
+lektionen ned, står noten stadig nederst med en reservetekst. Det var Linns
+svar på spørgsmålet, og det er hendes egne ord der begrunder det.
+
+**Noten er kun kundens.** Reglerne lukker alle andre ude, også Linn. Derfor
+står der "Kun du kan se den" og ikke "Kun du og Linn", som på dagens
+refleksion. Den forskel er bevidst, lav den ikke om ved et uheld.
+
+**De 90 dage.** Et gennemført forløb er enten `aaben`, `bonus` eller `lukket`,
+se `forlobAdgang()`. Er de 90 dage gået, står kun noterne tilbage, og rækken
+siger "Kun dine noter". Et forløb der KØRER er altid åbent, også hvis
+abonnementet udløber undervejs, samme regel som `spaerring3` punkt 1. Den
+direkte adresse er også spærret: en liste er ikke en lås.
+
+**TO TING DER IKKE ER LØST, OG SOM DU SKAL KENDE:**
+
+**1. Kunden i bonus-perioden kan slet ikke komme ind i 3.0.** Spærringen i
+skallen kender ikke de 90 dage. Har hun hverken abonnement eller et kørende
+forløb, får hun "Din adgang er udløbet" og kommer aldrig ind. I den gamle app
+har hun sit bibliotek i 90 dage. Det betyder at tilstandene `bonus` og
+`lukket` er **korrekt bygget og gennemtestet, men uopnåelige i praksis**. Al
+kode er der og venter. **Spærringen er ikke rørt.** Den er den ene lås der
+beskytter hele fladen, og at lukke en ny slags kunde ind kræver sin egen
+diagnose og sit eget go.
+
+**2. "Set"-fluebenet er ikke bundet til forløbet.** Det gemmes i `nyKlaret` på
+lektionens id alene. Genbruger Linn den samme lektion på to hold, viser
+fluebenet sig begge steder. Det har været sådan i 3.0 hele tiden, men blev
+først synligt da gamle forløb kunne åbnes. Noterne har IKKE problemet, de er
+scopet til forløbet.
+
+### 9.23 HJÆLP, samlet 18. august
+
+`/ny/hjaelp` er nu et nav med tre indgange i en bevidst rækkefølge: **Spørg om
+appen** (AI-en, flyttet til `/ny/hjaelp/spoerg`), **Ofte stillede spørgsmål**
+og **Links og guides**. Nederst vejen til et menneske.
+
+Kortet på forsiden peger direkte på `/ny/hjaelp/spoerg`, så den vej ikke blev
+længere af at der kom et nav.
+
+FAQ og links læser **den samme data som det gamle bibliotek**, med dets egne
+hjælpere til sortering og udgivelse. Retter Linn et svar ét sted, er det
+rettet begge steder.
+
+**FAQ hører til ét forløb i databasen**, men en kunde kan have været på flere.
+Reglen er den samme som på lektionerne: hun ser materialet fra de forløb hun
+stadig har adgang til, flettet sammen, se `content/hjaelp3.ts`. Har hun mere
+end ét forløb, står holdets navn ved siden af kategorien. Har hun kun ét,
+står navnet ingen steder. Er de 90 dage gået for et forløb, forsvinder dets
+FAQ også.
+
+**AI-videnbasen fulgte med.** `content/appHjaelp3.ts` fik tre nye afsnit, og
+`HjaelpKunde3` fik feltet `harGennemfoertForlob` så de kun nævnes for en kunde
+med forløbshistorik. Uden det havde vi genskabt fejlen fra 16. august, hvor
+hjælpen forklarede en app der ikke fandtes. **Reglen står ved magt: ændrer du
+kundefladen i 3.0, opdaterer du `appHjaelp3.ts` i samme ombæring.**
+
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
 Hele Mad-modulet blev gennemgaaet mod den gamle app 12. august, funktion for
@@ -1223,7 +1351,7 @@ opstarts-problemet i 9.7.
 Resten af etape 4:
 
 - ~~**Træning.**~~ **Bygget 15. og 16. august**, hele modulet fra bunden, inklusive at kunden bygger sit eget og AI-værktøjet. Se 9.18
-- **Biblioteket.** Linns beslutning 16. august: det skal ligge under **Profil**, ikke som et kort på forsiden
+- ~~**Biblioteket**~~. **Klaret 18. august.** Delt i to, se 9.22 og 9.23
 - **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app
 - ~~`static/mockup/` slettes~~. **Klaret 11. august.** Se 9.7
 - ~~SPEC mangler et afsnit 26.7~~. **Passede ikke.** Afsnittet står i spec'en
@@ -1282,7 +1410,7 @@ scannede      47 varer    2%   fra Open Food Facts
 
 ### Bevidst udskudt
 
-Biblioteket. Variant-, makker- og Facebook-modalerne på træning og Kropsro. "Mine køb" for udløbne kunder.
+~~Biblioteket~~, klaret 18. august, se 9.22 og 9.23. Variant-, makker- og Facebook-modalerne på træning og Kropsro. "Mine køb" for udløbne kunder.
 
 ---
 

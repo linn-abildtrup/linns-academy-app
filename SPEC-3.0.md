@@ -216,12 +216,12 @@ Nyt rodtræ. Den gamle flade under `src/routes/app/` røres ikke.
 /ny/vaner                  én udgave, med eller uden forløbs-vaner
 /ny/traening               mikrotræning, tildelte og master-programmer
 /ny/udvikling              grafer og historik, på tværs af forløb
-/ny/bibliotek              faner pr gennemført forløb, med kundens noter
+/ny/lektioner/[forlobId]   ét forløbs lektioner og kundens noter (afsnit 32)
 /ny/linn-ai                chat
 /ny/beskeder               kun ved aktiv tilmelding
 /ny/symptomcheck           kadence følger aktivt forløb
 /ny/profil                 konto, mål, tekstskalering, adgange
-/ny/hjaelp                 app-hjælp
+/ny/hjaelp                 nav: spørg, FAQ, links (afsnit 32)
 ```
 
 Den endelige sti afgøres ved implementering. Kunden ser den ikke, fordi hun sendes videre fra `/app` ved login.
@@ -530,8 +530,11 @@ Ny bundmenu: **Forside · 30-30 · Snak · Udvikling · Profil**
   navn var "Mad (30-30-3 beregner)".
 - **Træning** nås fra dagens træning på forsiden, hvor kunden også vælger og
   skifter program.
-- **Biblioteket** bliver et kort nederst på forsiden, kun for dem der har
-  adgang. Ingen grå, låste kasser.
+- ~~**Biblioteket** bliver et kort nederst på forsiden~~. **Omgjort to gange.**
+  16. august flyttede Linn det til Profil, og 18. august blev Biblioteket
+  delt op og navnet droppet helt. Se **afsnit 32**, som er den gældende
+  beskrivelse. Der findes ikke længere noget der hedder Bibliotek i kundens
+  sprog.
 - Vaner, Forløb og Symptomcheck nås fra forsiden som nu.
 
 ## 23. Det Mad indeholder i dag
@@ -659,7 +662,9 @@ supermarkedet som "Bearnaise (Coop)" eller "Kokosmælk (Asian kitchen)". Målt
 median 9 pr kunde, flest 143. Det er halvdelen af kundegrundlaget, ikke et
 hjørnetilfælde.
 
-**Biblioteket ligger nederst på forsiden**, ikke under Profil.
+~~**Biblioteket ligger nederst på forsiden**, ikke under Profil.~~
+**Forældet.** Se afsnit 32. Lektionerne og kundens noter ligger under Profil
+som "Dine lektioner", og FAQ og links ligger under Hjælp.
 
 ## 26.1 Mad, skærm 1: oversigten. LÅST 9. august
 
@@ -3537,4 +3542,215 @@ urørte, for de bruges af de 760 i drift. Videnbasen skæres til efter hvad
 kunden faktisk har, med de samme spørgsmål som onboarding stiller.
 
 **Og en beslutning fra samme dag:** Biblioteket skal ligge under **Profil**,
-ikke som et kort nederst på forsiden.
+ikke som et kort nederst på forsiden. **Den beslutning blev udvidet 18.
+august**, hvor Biblioteket blev delt i to og navnet droppet. Se afsnit 32.
+
+---
+
+## 32. Dine lektioner og Hjælp. LÅST og bygget 18. august
+
+Kom ud af et spørgsmål der lød enkelt: hvor skal Biblioteket ligge, og hvad
+skal det hedde. Svaret viste sig at være at der ikke skulle være noget der
+hed Bibliotek.
+
+### 32.1 Hvorfor ordet var svært
+
+Biblioteket i den gamle app er én side med fem faner: FAQ, links, lektioner
+pr forløb med kundens noter, træningsøvelser og opskrifter.
+
+Da 3.0 blev bygget om kunden i stedet for forløbet, flyttede tre af dem med
+ud i modulerne af sig selv. **Opskrifterne** ligger i 30-30 med søgning,
+favoritter og makro. **Træningsøvelserne** ligger i Træning. Tilbage stod to
+ting, og de er af helt forskellig natur:
+
+- **Lektionerne og hendes noter.** Det er hendes eget. Et tilbageblik på
+  noget hun har været igennem
+- **FAQ og links.** Det er Linns hjælpestof. Noget hun slår op i
+
+Ét ord over begge dele må nødvendigvis være vagt, og et vagt ord kan ikke
+placeres. Det var derfor både navnet og pladsen føltes svær. Det var ikke to
+problemer, det var ét.
+
+### 32.2 Beslutningen, 18. august
+
+Fire modeller blev tegnet op og gennemgået. Linn valgte at **dele det i to**:
+
+- Lektionerne og noterne ligger under **Profil**
+- FAQ og links ligger under **Hjælp**
+- **Ordet Bibliotek udgår af kundens sprog**
+
+Og dermed løste navnet sig selv. Der er ikke længere én ting der skal hedde
+noget. Overskriften på Profil hedder "Dine lektioner", siden hun åbner hedder
+forløbets eget navn, og FAQ og links ligger under deres egne navne.
+
+**Det tekniske navn bliver stående.** `bibliotekBonusSlutMs`,
+`harBibliotekAdgang`, `bonusPeriodEndsAt` og `harBibliotek` i `adgang3.ts`
+hedder stadig det de hed. Kunden ser dem aldrig, og at omdøbe dem ville røre
+den gamle app.
+
+### 32.3 Navnet, og en kollision der blev fundet i tide
+
+Det oplagte navn var "Dine forløb". **Det kan ikke bruges.** Siden
+`/ny/forlob` hedder allerede "Dit forløb" og viser det forløb der kører lige
+nu. To næsten ens navne, hvor det ene er nutid og det andet fortid, er den
+slags der giver support-spørgsmål.
+
+Navnet blev **"Dine lektioner"**. Det siger præcis hvad der ligger bagved,
+det kolliderer ikke, og det er i samme tone som "Det du plejer" og "Sådan
+træner jeg".
+
+### 32.4 Linns tre svar, som formede resten
+
+1. **Bliver noterne efter de 90 dage?** Ja. De er hendes egne ord og følger
+   ikke adgangen til Linns materiale.
+2. **Skal det aktive forløb også stå på listen?** Ja, så hun har overblik
+   over alle lektioner ét sted. **Det her svar ændrede mest**, se nedenfor.
+3. **Hvor skal FAQ ligge?** Under Hjælp.
+
+Svar 2 fik to følger. Overskriften kunne ikke længere hedde "Det du har
+gennemført", når det øverste forløb kører. Og lektioner hun ikke er nået til
+skulle nu kunne **ses uden at kunne åbnes**, hvor de før bare var skjult.
+
+### 32.5 Listen på Profil
+
+Ét forløb pr række, i `content/lektionsliste3.ts`.
+
+- Det forløb der kører står **øverst med en ring** om hvor langt hun er, plus
+  mærkatet "I gang". Underteksten er "Dag 12 af 21"
+- De gennemførte står under **med deres stjerne**. Diplom-følelsen er bevaret
+- Har hun ingen forløb, findes sektionen slet ikke
+
+Diplomerne som selvstændig blok er dermed **afløst**. Stjernen lever videre
+inde i listen.
+
+### 32.6 Låsen, og hvorfor datoen regnes fra i dag
+
+En lektion er låst af to grunde, og de er ikke ens:
+
+- **Dagen er ikke nået endnu.** Den åbner om (dagNummer minus i dag) dage
+- **Linn har sat et synlighedsvindue** på lektionen med `visFra`
+
+Er begge i spil, gælder den der åbner sidst. Er `skjulEfter` passeret, ryger
+lektionen helt af listen: der har Linn aktivt taget den ned.
+
+**Datoen regnes fra i DAG og aldrig fra forløbets startdato.** Det er
+vigtigt. `dagNummer` har allerede kundens pauser med, se `nulDage3.ts`.
+Regnede vi forfra fra startdatoen, ville en Kropsro-kunde med to pausedage få
+en dato der lå to dage forkert. Der er en test der holder på det.
+
+Teksten er "Åbner i dag", "Åbner i morgen" eller "Åbner 20. august", regnet
+på kalenderdage og ikke på timer.
+
+### 32.7 Noterne
+
+Noterne gemmes i **den samme samling som den gamle app bruger**, altså
+`users/{uid}/lektionNoter` med dokument-id `forlobId__lektionId`. Der er
+ikke bygget en ny datamodel. En note skrevet i den gamle apps bibliotek står
+allerede i 3.0, og omvendt.
+
+- Notefeltet ligger på selve lektionen, bygget efter samme mønster som
+  `Refleksion.svelte`
+- Har hun skrevet noter i et forløb, dukker fanen **"Mine noter"** op
+- En **blyant** i lektions-listen viser hvor der ligger en note
+- **En note overlever sin lektion.** Tager Linn lektionen ned, står noten
+  stadig nederst under "Mine noter" med teksten "En lektion der ikke ligger
+  her længere"
+
+**Noten er kun kundens.** Firestore-reglerne lukker alle andre ude, også
+Linn. Derfor står der "Kun du kan se den" og ikke "Kun du og Linn", som der
+gør på dagens refleksion. Den forskel er bevidst.
+
+Til forskel fra noterne er **"Set"-fluebenet ikke bundet til forløbet**. Det
+gemmes i `nyKlaret` på lektionens id alene. Genbruger Linn den samme lektion
+på to hold, viser fluebenet sig begge steder. Det har været sådan i 3.0 hele
+tiden, men det blev først synligt da gamle forløb kunne åbnes. **Ikke rettet,
+afventer Linns beslutning.**
+
+### 32.8 De 90 dage
+
+Et gennemført forløb har tre tilstande, se `forlobAdgang()`:
+
+| Tilstand | Hvornår | Hvad hun ser |
+|---|---|---|
+| `aaben` | Forløbet kører, eller hun har app-adgang | Alt. "Gennemført marts 2026" |
+| `bonus` | Ingen app-adgang, men de 90 dage løber | Alt. "Åben 62 dage endnu" |
+| `lukket` | De 90 dage er gået | Kun noterne. "Kun dine noter" |
+
+Et forløb der **kører** er altid åbent, også hvis abonnementet udløber
+undervejs. Hun har betalt for forløbet. Samme regel som `spaerring3` punkt 1.
+
+Den direkte adresse er også spærret. Listen skjuler en lukket lektion, men en
+liste er ikke en lås, så `/ny/lektion/[dag]/[id]?forlob=` afviser både et
+forløb hun aldrig har været på og et hvor de 90 dage er gået.
+
+### 32.9 Hjælp
+
+`/ny/hjaelp` er nu et nav med tre indgange i en bevidst rækkefølge:
+
+1. **Spørg om appen**, flyttet til `/ny/hjaelp/spoerg`. Den svarer med det
+   samme og dækker det meste
+2. **Ofte stillede spørgsmål** på `/ny/hjaelp/faq`
+3. **Links og guides** på `/ny/hjaelp/links`
+
+Og nederst vejen til et menneske, "Skriv til Linn".
+
+Kortet på forsiden peger direkte på `/ny/hjaelp/spoerg`, så den vej ikke
+blev længere af at der kom et nav.
+
+FAQ og links læser **den samme data som det gamle bibliotek**, med dets egne
+hjælpere til sortering og udgivelse. Retter Linn et svar ét sted, er det
+rettet begge steder.
+
+**FAQ hører til ét forløb i databasen**, men en kunde kan have været på
+flere. Reglen er den samme som på lektionerne: hun ser materialet fra de
+forløb hun stadig har adgang til, flettet sammen. Har hun mere end ét, står
+holdets navn ved siden af kategorien. Har hun kun ét, står navnet ingen
+steder, for så er der ikke noget at skelne mellem. Se `content/hjaelp3.ts`.
+
+Spørgsmålene foldes med browserens eget `<details>`. Ingen JavaScript, og
+tastatur og oplæsning virker uden vi gør noget.
+
+### 32.10 AI-videnbasen fulgte med
+
+`content/appHjaelp3.ts` fik tre nye afsnit: Dine lektioner, Dine noter på
+lektionerne, og Hjælp. `HjaelpKunde3` fik feltet `harGennemfoertForlob`, så
+de to første kun nævnes for en kunde der faktisk har en forløbshistorik.
+
+Uden det havde vi genskabt præcis den fejl der blev fundet 16. august, hvor
+hjælpen forklarede en app der ikke fandtes. **Reglen står ved magt: ændrer du
+kundefladen i 3.0, opdaterer du `appHjaelp3.ts` i samme ombæring.**
+
+### 32.11 EN ÅBEN TRÅD, OG DEN ER VIGTIG
+
+**Kunden i bonus-perioden kan slet ikke komme ind i 3.0.**
+
+Spærringen i skallen, `spaerring3.ts`, kender ikke de 90 dage. Har hun
+hverken abonnement eller et kørende forløb, får hun "Din adgang er udløbet"
+og kommer aldrig ind. I den gamle app har hun sit bibliotek i 90 dage.
+
+Konsekvensen er at tilstanden `bonus` og tilstanden `lukket` i 32.8 er
+**korrekt bygget og gennemtestet, men i praksis uopnåelige i dag**. Al kode
+er der og venter.
+
+Spærringen er **ikke rørt**. Den er den ene lås der beskytter hele fladen, og
+at lukke en ny slags kunde ind er en beslutning og ikke en detalje. Det
+kræver sin egen diagnose og sit eget go fra Linn.
+
+### 32.12 Filerne
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/lektionsliste3.ts` | Rækkerne, låsen, noterne, de 90 dage | 57 |
+| `content/hjaelp3.ts` | Hvilke forløb FAQ og links hentes fra, og fletningen | 15 |
+| `firestore/lektionsliste3.ts` | Forløbets dage. Kun læsning | |
+| `components/ny/LektionNote.svelte` | Notefeltet | |
+| `routes/ny/lektioner/[forlobId]/` | Siden pr forløb, med fanerne | |
+| `routes/ny/hjaelp/` | Navet | |
+| `routes/ny/hjaelp/spoerg/` | AI-en, flyttet hertil | |
+| `routes/ny/hjaelp/faq/` | Ofte stillede spørgsmål | |
+| `routes/ny/hjaelp/links/` | Links og guides | |
+
+Rettet: `routes/ny/profil/`, `routes/ny/lektion/[dag]/[id]/`,
+`routes/ny/+page.svelte`, `content/appHjaelp3.ts`,
+`routes/api/ny-app-hjaelp/+server.ts` og `ny.css`. Alle er 3.0-filer. Ingen
+fil fra den gamle app er ændret, alt genbrug sker via import.
