@@ -2,11 +2,13 @@
 
 Sidst opdateret 16. august 2026.
 
+**Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
+
 **Læs i denne rækkefølge hvis du er ny:** afsnit 2 om den vigtigste regel, afsnit 7 om fælderne, og så afsnit 9 om hvor vi står. Resten kan slås op efter behov.
 
 Denne fil er til den næste der skal arbejde videre, uanset om det er et nyt Claude-vindue, Bo eller en udvikler udefra. Den fortæller hvor vi er, hvordan tingene hænger sammen, og hvor fælderne ligger.
 
-**Der findes én overdragelse, og det er den her.** Gamle overdragelser fra 1.0 og 2.0 ligger i `arkiv/` og gælder ikke. De blev flyttet derned 11. august, fordi tyve filer i roden der alle lignede en overdragelse var en fælde: den med det højeste nummer så nyest ud og var det ikke.
+**Der findes én overdragelse for 3.0, og det er den her.** Gamle overdragelser fra 1.0 og 2.0 ligger i `arkiv/` og gælder ikke. De blev flyttet derned 11. august, fordi tyve filer i roden der alle lignede en overdragelse var en fælde: den med det højeste nummer så nyest ud og var det ikke.
 
 Læs den sammen med disse tre:
 
