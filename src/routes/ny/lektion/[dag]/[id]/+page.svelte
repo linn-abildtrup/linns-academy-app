@@ -15,22 +15,61 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
+	import type { UserDoc } from '$lib/types';
 	import type { Adgangsbillede } from '$lib/content/adgang3';
+	import { forlobAdgang } from '$lib/content/lektionsliste3';
 	import type { LektionItem } from '$lib/content/forlob';
 	import { artFor, indlejretUrl, sekunderFoerKlaret, formaterVarighed } from '$lib/content/lektion3';
 	import { hentDagensLektioner, hentKlaret, saetKlaret } from '$lib/firestore/forside3';
+	import { gemLektionNote, hentLektionNote } from '$lib/firestore/lektionNoter';
 	import Lydafspiller from '$lib/components/ny/Lydafspiller.svelte';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
+	import LektionNote from '$lib/components/ny/LektionNote.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
+	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const user = $derived(hentUser());
 	const adgang = $derived(hentAdgang());
+	const userDoc = $derived(hentUserDoc());
 	const aktivtForlob = $derived(adgang.aktiveForlob[0] ?? null);
 
 	const dagNummer = $derived(Number(page.params.dag));
 	const lektionId = $derived(page.params.id);
+
+	// Kommer hun fra "Dine lektioner", staar forloebet i adressen, fordi
+	// lektionen kan hoere til et hold hun forlaengst er faerdig med. Uden
+	// det ville vi slaa op i det forloeb der koerer lige nu, og saa kunne
+	// en lektion fra et tidligere hold slet ikke findes.
+	//
+	// Vi tager kun imod et forloeb hun rent faktisk har vaeret paa. Ellers
+	// kunne enhver skrive et fremmed forloebs-id i adresselinjen.
+	const oensketForlob = $derived(page.url.searchParams.get('forlob'));
+	// To ting skal passe: hun skal have vaeret paa forloebet, OG de 90 dages
+	// bibliotek-bonus maa ikke vaere loebet ud. Uden det sidste kunne en
+	// kunde hvis materiale er lukket stadig aabne en lektion ved at skrive
+	// adressen selv. Listen skjuler den, men listen er ikke en laas.
+	const maaSes = $derived(
+		oensketForlob
+			? (adgang.aktiveForlob.some((f) => f.forlobId === oensketForlob) ||
+					adgang.gennemfoerte.some((f) => f.forlobId === oensketForlob)) &&
+					forlobAdgang(
+						adgang.aktiveForlob.some((f) => f.forlobId === oensketForlob),
+						{
+							harApp: adgang.harApp,
+							bonusSlutMs: userDoc?.bonusPeriodEndsAt ?? null,
+							nu: Date.now()
+						}
+					) !== 'lukket'
+			: false
+	);
+	// Beder hun om et forloeb hun ikke maa se, falder vi IKKE tilbage til det
+	// aktive. Saa ville hun faa en anden lektion end den hun bad om, med samme
+	// id fra et andet hold. Hellere "findes ikke".
+	const valgtForlobId = $derived(
+		oensketForlob ? (maaSes ? oensketForlob : null) : (aktivtForlob?.forlobId ?? null)
+	);
 
 	let lektion = $state<LektionItem | null>(null);
 	let henter = $state(true);
@@ -38,27 +77,46 @@
 	let erKlaret = $state(false);
 	let gemmer = $state(false);
 
+	// Hendes egen note paa lektionen. Ligger i den samme samling som den
+	// gamle apps bibliotek bruger, saa de to steder viser det samme.
+	let note = $state('');
+	let gemmerNote = $state(false);
+	let noteGemtLige = $state(false);
+
 	const art = $derived(lektion ? artFor(lektion.url) : 'link');
 	const embed = $derived(lektion ? indlejretUrl(lektion.url) : null);
 
 	$effect(() => {
 		const uid = user?.uid;
-		const forlobId = aktivtForlob?.forlobId;
+		const forlobId = valgtForlobId;
 		const dag = dagNummer;
 		const id = lektionId;
-		if (!uid || !forlobId || Number.isNaN(dag) || !id) return;
+		if (!uid || Number.isNaN(dag) || !id) return;
+		if (!forlobId) {
+			// Enten har hun intet forloeb, eller ogsaa er det hun bad om lukket.
+			henter = false;
+			ikkeFundet = true;
+			return;
+		}
 
 		let afbrudt = false;
 		(async () => {
 			henter = true;
-			const [alle, klarede] = await Promise.all([
+			// Noten maa gerne fejle for sig. Kan vi ikke naa den, skal
+			// lektionen stadig kunne ses.
+			const [alle, klarede, gemtNote] = await Promise.all([
 				hentDagensLektioner(forlobId, dag, Date.now()),
-				hentKlaret(uid)
+				hentKlaret(uid),
+				hentLektionNote(uid, forlobId, id).catch((e) => {
+					console.warn('[ny] kunne ikke hente noten', e);
+					return null;
+				})
 			]);
 			if (afbrudt) return;
 			lektion = alle.find((l) => l.id === id) ?? null;
 			ikkeFundet = !lektion;
 			erKlaret = klarede.has(id);
+			note = gemtNote?.tekst ?? '';
 			henter = false;
 		})().catch((e) => {
 			console.error('[ny] kunne ikke hente lektionen', e);
@@ -101,6 +159,25 @@
 			erKlaret = foer;
 		} finally {
 			gemmer = false;
+		}
+	}
+
+	async function gemNote(tekst: string) {
+		const uid = user?.uid;
+		const forlobId = valgtForlobId;
+		if (!uid || !forlobId || !lektionId || gemmerNote) return;
+		gemmerNote = true;
+		const foer = note;
+		try {
+			await gemLektionNote(uid, forlobId, lektionId, tekst);
+			note = tekst;
+			noteGemtLige = true;
+			setTimeout(() => (noteGemtLige = false), 4000);
+		} catch (e) {
+			console.error('[ny] kunne ikke gemme noten', e);
+			note = foer;
+		} finally {
+			gemmerNote = false;
 		}
 	}
 
@@ -161,6 +238,8 @@
 		{#if lektion.beskrivelse}
 			<p class="lektion-beskrivelse">{lektion.beskrivelse}</p>
 		{/if}
+
+		<LektionNote {note} gemmer={gemmerNote} gemtLige={noteGemtLige} ongem={(t) => gemNote(t)} />
 
 		<div class="lektion-fod">
 			{#if erKlaret}

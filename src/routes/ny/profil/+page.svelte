@@ -12,6 +12,7 @@
 	import type { UserDoc } from '$lib/types';
 	import { isAdmin } from '$lib/admin';
 	import { formatMedlemstid, type Adgangsbillede } from '$lib/content/adgang3';
+	import { byggForlobRaekker } from '$lib/content/lektionsliste3';
 	import {
 		rensUdstyr3,
 		udstyrFra,
@@ -52,25 +53,19 @@
 	);
 	const medlemstid = $derived(formatMedlemstid(adgang.medlemstidMs));
 
-	const MAANEDER = [
-		'januar',
-		'februar',
-		'marts',
-		'april',
-		'maj',
-		'juni',
-		'juli',
-		'august',
-		'september',
-		'oktober',
-		'november',
-		'december'
-	];
-
-	function gennemfoertTekst(slutMs: number): string {
-		const d = new Date(slutMs);
-		return `Gennemført ${MAANEDER[d.getMonth()]} ${d.getFullYear()}`;
-	}
+	// Ét forloeb pr raekke. Det der koerer oeverst med en ring om hvor langt
+	// hun er, de gennemfoerte under med deres stjerne. Hele raekken foerer
+	// ind til forloebets lektioner.
+	// Bonussen bor paa kunden selv og ikke paa forloebet, saa den laeses
+	// direkte af userDoc. Se HANDOVER-GAMMEL-APP: bonusPeriodEndsAt er
+	// skriv-én-gang og forlaenges, men forkortes aldrig.
+	const forlobRaekker = $derived(
+		byggForlobRaekker(adgang.aktiveForlob, adgang.gennemfoerte, {
+			harApp: adgang.harApp,
+			bonusSlutMs: userDoc?.bonusPeriodEndsAt ?? null,
+			nu: Date.now()
+		})
+	);
 </script>
 
 <div class="ny-pad profil-side">
@@ -91,20 +86,39 @@
 		</div>
 	</section>
 
-	{#if adgang.gennemfoerte.length}
+	{#if forlobRaekker.length}
 		<section>
-			<div class="lab"><h2>Det du har gennemført</h2></div>
+			<div class="lab"><h2>Dine lektioner</h2></div>
 			<div class="diplom-liste">
-				{#each adgang.gennemfoerte as d (d.forlobId)}
-					<div class="diplom-stor">
-						<svg viewBox="0 0 24 24" aria-hidden="true">
-							<path d="M12 2.6l2.7 5.8 6.3.8-4.6 4.4 1.2 6.2L12 16.7l-5.6 3.1 1.2-6.2L3 9.2l6.3-.8z" />
-						</svg>
-						<div>
-							<div class="t">{d.navn}</div>
-							<div class="s">{gennemfoertTekst(d.slutMs)}</div>
+				{#each forlobRaekker as r (r.forlobId)}
+					<a
+						class="diplom-stor forlob-raekke"
+						class:igang={r.aktiv}
+						class:lukket={r.adgang === 'lukket'}
+						href={`/ny/lektioner/${r.forlobId}`}
+					>
+						{#if r.aktiv}
+							<!-- Ringen viser hvor langt hun er. Den er pynt for oejet,
+							     saa tallet staar i teksten ved siden af. -->
+							<span
+								class="forlob-ring"
+								style={`--andel:${Math.round((r.fremgang ?? 0) * 100)}%`}
+								aria-hidden="true"
+							></span>
+						{:else}
+							<svg viewBox="0 0 24 24" aria-hidden="true">
+								<path
+									d="M12 2.6l2.7 5.8 6.3.8-4.6 4.4 1.2 6.2L12 16.7l-5.6 3.1 1.2-6.2L3 9.2l6.3-.8z"
+								/>
+							</svg>
+						{/if}
+						<div class="forlob-tekst">
+							<div class="t">{r.navn}</div>
+							<div class="s">{r.under}</div>
 						</div>
-					</div>
+						{#if r.aktiv}<span class="forlob-igang">I gang</span>{/if}
+						<span class="forlob-pil" aria-hidden="true">›</span>
+					</a>
 				{/each}
 			</div>
 		</section>

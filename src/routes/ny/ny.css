@@ -9155,3 +9155,387 @@ a.ch-knap {
 	height: auto;
 	display: block;
 }
+
+/* ============================================================
+   "Dine lektioner". Raekkerne paa Profil, siden pr forloeb, noterne
+   og Hjaelp. Bygget 18. august 2026, se SPEC-3.0.md.
+   ============================================================ */
+
+/* ── Raekkerne paa Profil ─────────────────────────────────── */
+/* De laaner diplomets form, saa listen staar som én ting. Et forloeb
+   der koerer faar dog papir og en plomme-kant i stedet for honning,
+   for et diplom er noget man har faaet og ikke noget man er i gang med. */
+
+.forlob-raekke {
+	text-decoration: none;
+	color: inherit;
+}
+
+.forlob-raekke:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.forlob-raekke.igang {
+	background: var(--paper);
+	box-shadow:
+		inset 0 0 0 1px var(--plum-tint),
+		var(--shadow-soft);
+}
+
+/* Teksten skubber selv plakaten og pilen ud til hoejre. Saet ikke ogsaa
+   margin-left paa dem, saa deler de to auto-margener luften mellem sig. */
+.forlob-tekst {
+	min-width: 0;
+	margin-right: auto;
+}
+
+/* Ringen viser hvor langt hun er. Andelen kommer ind som --andel fra
+   markup'en. Rent pynt: tallet staar altid i teksten ved siden af. */
+.forlob-ring {
+	width: 22px;
+	height: 22px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background: conic-gradient(var(--plum) 0 var(--andel, 0%), var(--line) var(--andel, 0%) 100%);
+	display: grid;
+	place-items: center;
+}
+
+.forlob-ring::after {
+	content: '';
+	width: 13px;
+	height: 13px;
+	border-radius: 50%;
+	background: var(--paper);
+}
+
+.forlob-igang {
+	flex-shrink: 0;
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: #fff;
+	background: var(--plum);
+	border-radius: 999px;
+	padding: 3px 9px;
+}
+
+.forlob-pil {
+	color: var(--ink-3);
+	font-size: calc(16px * var(--fs-scale, 1));
+	flex-shrink: 0;
+}
+
+/* Et forloeb hvor de 90 dage er gaaet. Stjernen bliver siddende, for hun
+   HAR gennemfoert det. Kun flader og tekst daempes, saa raekken stadig
+   laeses som en anerkendelse og ikke som en fejl. */
+.forlob-raekke.lukket {
+	background: var(--paper-2);
+	box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.forlob-raekke.lukket svg {
+	fill: var(--ink-3);
+}
+
+.forlob-raekke.lukket .s {
+	color: var(--ink-3);
+}
+
+/* ── Siden pr forloeb ─────────────────────────────────────── */
+
+.lektionsliste-side {
+	padding-top: 4px;
+	padding-bottom: 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.ll-opgoer {
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin: 0;
+}
+
+/* Baandet oeverst paa et forloeb der er ved at loebe ud, eller er lukket. */
+.ll-baand {
+	margin: 0;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	line-height: 1.5;
+	color: var(--honey-deep);
+	background: var(--honey-tint);
+	border-radius: 12px;
+	padding: 10px 13px;
+}
+
+.ll-baand.lukket {
+	color: var(--ink-2);
+	background: var(--paper-2);
+	box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* En lektion hun ikke er naaet til. Den staar med, saa hun kan se hele
+   forloebet, men den er ikke et link og kan derfor hverken klikkes eller
+   tabbes til. Daempningen er let, for teksten skal stadig kunne laeses. */
+.medie-raekke.ll-laast {
+	background: var(--paper-2);
+	box-shadow: none;
+}
+
+.medie-raekke.ll-laast .medie-thumb {
+	background: var(--line);
+	color: var(--ink-3);
+}
+
+.medie-raekke.ll-laast .medie-t {
+	color: var(--ink-2);
+}
+
+.ll-aabner {
+	flex-shrink: 0;
+	text-align: right;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+/* ── Faner og noter paa forloebs-siden ────────────────────── */
+/* Fanerne staar kun frem naar hun HAR skrevet noget. Ellers ville en tom
+   fane love noget der ikke er der. */
+
+.ll-faner {
+	display: flex;
+	gap: 7px;
+	flex-wrap: wrap;
+}
+
+.ll-fane {
+	border: 0;
+	cursor: pointer;
+	font-family: inherit;
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	background: var(--paper);
+	box-shadow: inset 0 0 0 1px var(--line);
+	border-radius: 999px;
+	padding: 7px 15px;
+	min-height: 38px;
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.ll-fane.aktiv {
+	background: var(--plum);
+	box-shadow: none;
+	color: #fff;
+}
+
+.ll-fane:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.ll-antal {
+	font-size: calc(11px * var(--fs-scale, 1));
+	background: rgba(0, 0, 0, 0.12);
+	border-radius: 999px;
+	padding: 1px 7px;
+}
+
+/* Blyanten i lektions-listen. Kun et tegn paa at der ligger en note, saa
+   hun ikke skal ind i hver enkelt lektion for at lede efter dem. */
+.ll-blyant {
+	flex-shrink: 0;
+	color: var(--honey-deep);
+	font-size: calc(14px * var(--fs-scale, 1));
+}
+
+.ll-noter {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.ll-note {
+	background: var(--paper);
+	border-radius: 18px;
+	box-shadow: var(--shadow-soft);
+	padding: 14px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	align-items: flex-start;
+}
+
+.ll-note-top {
+	display: flex;
+	align-items: baseline;
+	gap: 9px;
+	flex-wrap: wrap;
+}
+
+.ll-note-t {
+	font-family: var(--serif);
+	font-size: calc(15px * var(--fs-scale, 1));
+	color: var(--espresso);
+}
+
+.ll-note-dag {
+	font-size: calc(11px * var(--fs-scale, 1));
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: var(--honey-deep);
+	background: var(--honey-tint);
+	border-radius: 999px;
+	padding: 2px 9px;
+}
+
+/* Hendes egne ord. Linjeskift bevares, saa en note med punktopstilling
+   staar som hun skrev den. */
+.ll-note-tekst {
+	margin: 0;
+	font-size: calc(14px * var(--fs-scale, 1));
+	line-height: 1.55;
+	color: var(--ink-2);
+	white-space: pre-wrap;
+}
+
+/* ── Note-feltet paa selve lektionen ──────────────────────── */
+
+.lnote {
+	display: flex;
+	flex-direction: column;
+	gap: 9px;
+}
+
+.lnote-tekst {
+	margin: 0;
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	line-height: 1.55;
+	color: var(--espresso);
+	background: var(--honey-tint);
+	border-radius: 14px;
+	padding: 13px 15px;
+	white-space: pre-wrap;
+}
+
+.lnote-fod {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.lnote-knapper {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.lnote-fejl {
+	margin: 0;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--plum-deep);
+}
+
+/* ── Hjaelp: navet, FAQ og links ──────────────────────────── */
+
+.hjaelp-nav {
+	padding-top: 4px;
+	padding-bottom: 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.hjaelp-nav section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+/* Holdets navn ved siden af kategorien. Staar kun frem naar hun har
+   vaeret paa mere end ét forloeb, se hjaelp3.visKildeNavn. */
+.hj-kilde {
+	margin-left: auto;
+	font-size: calc(11px * var(--fs-scale, 1));
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.hj-liste {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+/* Spoergsmaalene foldes med browserens eget details-element. Ingen
+   JavaScript, og tastatur og oplaesning virker uden vi goer noget. */
+.hj-post {
+	background: var(--paper);
+	border-radius: 16px;
+	box-shadow: var(--shadow-soft);
+	overflow: hidden;
+}
+
+.hj-post summary {
+	cursor: pointer;
+	list-style: none;
+	padding: 14px 42px 14px 16px;
+	position: relative;
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	line-height: 1.4;
+	color: var(--espresso);
+	min-height: 48px;
+	display: flex;
+	align-items: center;
+}
+
+.hj-post summary::-webkit-details-marker {
+	display: none;
+}
+
+.hj-post summary::after {
+	content: '⌄';
+	position: absolute;
+	right: 16px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--ink-3);
+	font-size: calc(15px * var(--fs-scale, 1));
+	transition: transform 0.15s ease;
+}
+
+.hj-post[open] summary::after {
+	transform: translateY(-50%) rotate(180deg);
+}
+
+.hj-post summary:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: -3px;
+}
+
+/* Linns svar. Linjeskift bevares, saa en opstilling staar som hun skrev den. */
+.hj-svar {
+	padding: 0 16px 15px;
+	font-size: calc(14px * var(--fs-scale, 1));
+	line-height: 1.6;
+	color: var(--ink-2);
+	white-space: pre-wrap;
+}
+
+.hj-link .hj-meta {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-top: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hj-post summary::after {
+		transition: none;
+	}
+}
