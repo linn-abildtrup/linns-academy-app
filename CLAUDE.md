@@ -25,6 +25,9 @@ Jeg kan ikke selv kode og har ingen teknisk baggrund. Derfor:
 
 - **Tal i almindeligt dansk**, ikke i teknik-jargon. Bruger du et fagudtryk, så forklar det kort i en parentes.
 - **Hold forklaringer korte og præcise.** Ikke lange afsnit. Kom til pointen.
+- **Fortæl ALDRIG hvordan du kodede det.** Ingen filnavne, ingen funktionsnavne, ingen Svelte- eller SvelteKit-begreber, ingen forkortelser, ingen kodestumper. Linn kan ikke forholde sig til det, og det gør svaret længere uden at gøre det klarere. Linns besked 18. august 2026.
+- **Skriv i stedet to ting:** hvad der overordnet er ændret, set fra kundens side af skærmen, og hvad Linn ellers bør vide, altså beslutninger hun skal tage, risici, eller ting hun selv skal gøre.
+- **Detaljerne hører til i koden og i commit-beskeden**, ikke i chatten. Kommentarer i filerne, begrundelsen i commit'en, og `SPEC-3.0.md` og `HANDOVER-3.0.md` til den næste der skal arbejde videre.
 - Når jeg skal gøre noget selv, fx klikke et sted, indsætte en nøgle eller kopiere regler ind i Firebase Console, så **guide mig trin for trin**, som var det til en person der aldrig har gjort det før.
 - Antag aldrig at jeg forstår noget teknisk uden forklaring. Er du i tvivl, så forklar det simpelt.
 
