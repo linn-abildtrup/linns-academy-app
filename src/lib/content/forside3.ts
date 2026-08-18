@@ -152,24 +152,23 @@ export interface Flade {
 /** Forsidens kort. Lavere end foer 18. august, se HANDOVER 9.25. */
 export const FLADE_FORSIDE: Flade = {
 	bredde: 286,
-	hoejde: 66,
+	hoejde: 82,
+	// Plads til aksens tal til venstre, ligesom paa Udvikling.
 	xVenstre: 22,
-	xHoejre: 264,
-	yTop: 14,
-	yBund: 48,
-	baandTop: 4,
-	baandHoejde: 46,
-	baandStregY: 52,
+	xHoejre: 278,
+	yTop: 12,
+	yBund: 58,
+	baandTop: 3,
+	baandHoejde: 57,
+	baandStregY: 62,
 	baandStregHoejde: 3,
-	datoY: 63,
-	// Forsiden har ikke plads til navne paa baandet og bruger sin egen
-	// forklaring under kortet. Feltet er sat for at fladen er hel.
-	baandTekstY: 63,
-	akse: false,
-	akseBredde: 0,
+	datoY: 78,
+	baandTekstY: 78,
+	akse: true,
+	akseBredde: 16,
 	baandMinBredde: 12,
-	baandKantVenstre: 14,
-	baandKantHoejre: 274
+	baandKantVenstre: 18,
+	baandKantHoejre: 283
 };
 
 /**

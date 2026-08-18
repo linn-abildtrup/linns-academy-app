@@ -10,6 +10,7 @@
 	// ============================================================
 
 	import { formaterKortDato, type Kurve, type MaalingStatus } from '$lib/content/forside3';
+	import { holdNavn } from '$lib/content/udvikling3';
 
 	interface Props {
 		kurve: Kurve;
@@ -26,14 +27,6 @@
 	};
 	const farveFor = (produkt: string) => FARVER[produkt] ?? '#c9b7d6';
 
-	// Navnene under kurven. Samme forloeb to gange (fx to Kickstart-hold)
-	// skal kun staa én gang i forklaringen.
-	const forklaring = $derived.by(() => {
-		const set = new Map<string, string>();
-		for (const b of kurve.baand) if (!set.has(b.navn)) set.set(b.navn, b.produkt);
-		return [...set].map(([navn, produkt]) => ({ navn, produkt }));
-	});
-
 	const harPause = $derived(kurve.pauser.length > 0);
 </script>
 
@@ -42,22 +35,75 @@
 		<div class="score-k">Dit overskud</div>
 
 		{#if kurve.seneste}
+			<!-- Samme fordeling som paa Udvikling siden 18. august: overskrift
+			     og plakat til venstre, tallet til hoejre. De to spalter bliver
+			     lige hoeje, og kurven kan komme laengere op. Linns oenske. -->
 			<div class="score-tal">
-				<span class="score-n">{kurve.seneste.vaerdi.toString().replace('.', ',')}</span>
-				<span class="score-af">af 10</span>
-				{#if kurve.aendring !== 0}
-					<span class="score-chip">
-						{kurve.aendring > 0 ? '▲' : '▼'}
-						{Math.abs(kurve.aendring).toString().replace('.', ',')} siden start
-					</span>
-				{/if}
+				<span class="score-venstre">
+					{#if kurve.aendring !== 0}
+						<span class="score-chip">
+							{kurve.aendring > 0 ? '▲' : '▼'}
+							{Math.abs(kurve.aendring).toString().replace('.', ',')} siden start
+						</span>
+					{/if}
+				</span>
+				<span class="score-hoejre">
+					<span class="score-n">{kurve.seneste.vaerdi.toString().replace('.', ',')}</span>
+					<span class="score-af">af 10</span>
+				</span>
 			</div>
 
 			<div class="kurve">
 				<!-- Maalene kommer fra kurve.flade, se FLADE_FORSIDE i
 				     content/forside3.ts. Kortet blev gjort lavere 18. august,
 				     fordi kurven fyldte for meget paa siden. Linns oenske. -->
-				<svg viewBox="0 0 {kurve.flade.bredde} {kurve.flade.hoejde}" width="100%" height={kurve.flade.hoejde} role="img" aria-label={`Dit overskud fra ${formaterKortDato(kurve.foerste?.ms ?? nu, nu)} til ${formaterKortDato(kurve.seneste.ms, nu)}, ${kurve.foerste?.vaerdi} til ${kurve.seneste.vaerdi} af 10`}>
+				<svg
+					viewBox="0 0 {kurve.flade.bredde} {kurve.flade.hoejde}"
+					width="100%"
+					height={kurve.flade.hoejde}
+					role="img"
+					aria-label={`Dit overskud fra ${formaterKortDato(kurve.foerste?.ms ?? nu, nu)} til ${formaterKortDato(kurve.seneste.ms, nu)}, ${kurve.foerste?.vaerdi} til ${kurve.seneste.vaerdi} af 10`}
+				>
+					<!-- Y-aksen. Den daekker hendes egne tal og runder ud til hele
+					     tal, praecis som paa Udvikling. Se beregnAkse. -->
+					{#if kurve.akse.midt !== null}
+						{@const yMidt = (kurve.flade.yTop + kurve.flade.yBund) / 2}
+						<line
+							x1={kurve.flade.akseBredde}
+							y1={kurve.flade.yTop}
+							x2={kurve.flade.xHoejre}
+							y2={kurve.flade.yTop}
+							stroke="rgba(251,248,242,.16)"
+							stroke-width="1"
+						/>
+						<line
+							x1={kurve.flade.akseBredde}
+							y1={yMidt}
+							x2={kurve.flade.xHoejre}
+							y2={yMidt}
+							stroke="rgba(251,248,242,.12)"
+							stroke-width="1"
+							stroke-dasharray="2 3"
+						/>
+						<line
+							x1={kurve.flade.akseBredde}
+							y1={kurve.flade.yBund}
+							x2={kurve.flade.xHoejre}
+							y2={kurve.flade.yBund}
+							stroke="rgba(251,248,242,.16)"
+							stroke-width="1"
+						/>
+						<text class="v-akse" x={kurve.flade.akseBredde - 5} y={kurve.flade.yTop + 3}
+							>{kurve.akse.hoej}</text
+						>
+						<text class="v-akse" x={kurve.flade.akseBredde - 5} y={yMidt + 3}
+							>{kurve.akse.midt}</text
+						>
+						<text class="v-akse" x={kurve.flade.akseBredde - 5} y={kurve.flade.yBund + 3}
+							>{kurve.akse.lav}</text
+						>
+					{/if}
+
 					{#each kurve.baand as b (b.fraMs + b.navn)}
 						<rect
 							x={b.x}
@@ -75,6 +121,11 @@
 							rx="1.5"
 							fill={farveFor(b.produkt)}
 						/>
+						<!-- Navnet staar HVOR forloebet laa. Forklaringen under kortet
+						     bliver derfor overfloedig, og en linje er sparet. -->
+						{#if b.bredde >= 34}
+							<text class="v-baand" x={b.x} y={kurve.flade.baandTekstY}>{holdNavn(b.navn)}</text>
+						{/if}
 					{/each}
 
 					{#each kurve.pauser as p, i (i)}
@@ -97,6 +148,18 @@
 							stroke-linecap="round"
 							stroke-dasharray="3 5"
 						/>
+					{/each}
+
+					<!-- Fladen under linjen. En tynd streg i et stort kort ser tom
+					     ud, en flade goer ikke. -->
+					<defs>
+						<linearGradient id="score-fyld" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="0%" stop-color="#d6a15e" stop-opacity="0.3" />
+							<stop offset="100%" stop-color="#d6a15e" stop-opacity="0" />
+						</linearGradient>
+					</defs>
+					{#each kurve.fyld as f, i (i)}
+						<path d={f} fill="url(#score-fyld)" />
 					{/each}
 
 					{#each kurve.stier as s, i (i)}
@@ -146,20 +209,17 @@
 				</svg>
 			</div>
 
-			{#if forklaring.length || harPause}
+			<!-- Holdnavnene staar nu paa selve baandet, saa forklaringen er
+			     overfloedig. Kun pausen er tilbage at forklare, for den kan man
+			     ikke gaette sig til. -->
+			{#if harPause}
 				<div class="legende">
-					{#each forklaring as f (f.navn)}
-						<span><i class="sw" style:background={farveFor(f.produkt)}></i>{f.navn}</span>
-					{/each}
-					{#if harPause}
-						<span><i class="sw pause"></i>Pause</span>
-					{/if}
+					<span><i class="sw pause"></i>Pause</span>
 				</div>
 			{/if}
 		{:else}
 			<p class="score-tom">
-				Din første måling viser dig, hvor du står i dag. Derefter kan du følge din udvikling
-				her.
+				Din første måling viser dig, hvor du står i dag. Derefter kan du følge din udvikling her.
 			</p>
 		{/if}
 	</div>

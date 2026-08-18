@@ -100,8 +100,8 @@ describe('byggKurve', () => {
 
 	it('placerer foerste maaling i venstre kant og nyeste i hoejre', () => {
 		const k = byggKurve([maaling(90, 5.1), maaling(30, 6.2), maaling(0, 7.4)], [], NU);
-		expect(k.punkter[0].x).toBe(22);
-		expect(k.punkter[2].x).toBe(264);
+		expect(k.punkter[0].x).toBe(FLADE_FORSIDE.xVenstre);
+		expect(k.punkter[2].x).toBe(FLADE_FORSIDE.xHoejre);
 		expect(k.punkter[2].erSidste).toBe(true);
 	});
 
@@ -139,8 +139,10 @@ describe('byggKurve', () => {
 
 	it('holder baandet inden for tegnefladen', () => {
 		const k = byggKurve([maaling(30, 5), maaling(0, 7)], [forlob(NU - 2 * DAG, NU + 20 * DAG)], NU);
-		expect(k.baand[0].x).toBeGreaterThanOrEqual(14);
-		expect(k.baand[0].x + k.baand[0].bredde).toBeLessThanOrEqual(274.01);
+		expect(k.baand[0].x).toBeGreaterThanOrEqual(FLADE_FORSIDE.baandKantVenstre);
+		expect(k.baand[0].x + k.baand[0].bredde).toBeLessThanOrEqual(
+			FLADE_FORSIDE.baandKantHoejre + 0.01
+		);
 	});
 
 	it('bryder linjen og tegner et hul hen over en pause', () => {
@@ -244,19 +246,21 @@ describe('tegnefladen', () => {
 		);
 	});
 
-	// Venstre kant er IKKE laengere ude paa Udvikling, for dér staar
-	// y-aksens tal. Til gengaeld er selve kurven bredere.
-	it('Udviklings kurve er bredere end forsidens', () => {
-		expect(FLADE_UDVIKLING.xHoejre - FLADE_UDVIKLING.xVenstre).toBeGreaterThan(
-			FLADE_FORSIDE.xHoejre - FLADE_FORSIDE.xVenstre
-		);
-		expect(FLADE_UDVIKLING.xHoejre).toBeGreaterThan(FLADE_FORSIDE.xHoejre);
+	// Siden 18. august har forsiden den samme behandling som Udvikling,
+	// bare paa et lavere kort og paa den moerke plomme-flade. Linns oenske.
+	it('begge har en akse, og der er sat plads af til dens tal', () => {
+		for (const f of [FLADE_FORSIDE, FLADE_UDVIKLING]) {
+			expect(f.akse).toBe(true);
+			expect(f.akseBredde).toBeGreaterThan(0);
+			expect(f.xVenstre).toBeGreaterThanOrEqual(f.akseBredde);
+		}
 	});
 
-	it('kun Udvikling har en akse, og der er sat plads af til den', () => {
-		expect(FLADE_FORSIDE.akse).toBe(false);
-		expect(FLADE_UDVIKLING.akse).toBe(true);
-		expect(FLADE_UDVIKLING.xVenstre).toBeGreaterThanOrEqual(FLADE_UDVIKLING.akseBredde);
+	// Forsiden er et kort blandt mange, Udvikling er hele siden.
+	it('Udviklings kurve er hoejere end forsidens', () => {
+		expect(FLADE_UDVIKLING.yBund - FLADE_UDVIKLING.yTop).toBeGreaterThan(
+			FLADE_FORSIDE.yBund - FLADE_FORSIDE.yTop
+		);
 	});
 
 	it('punkterne laegger sig paa den flade der er bedt om', () => {
@@ -399,8 +403,12 @@ describe('kurven kender sin akse', () => {
 		expect(k.akse).toEqual({ lav: 4, hoej: 8, midt: 6 });
 	});
 
-	it('forsiden faar ingen midte, saa der ikke tegnes en akse', () => {
-		expect(byggKurve([maaling(90, 4.2), maaling(0, 7.6)], [], NU).akse.midt).toBeNull();
+	it('forsiden faar den samme akse som Udvikling', () => {
+		expect(byggKurve([maaling(90, 4.2), maaling(0, 7.6)], [], NU).akse).toEqual({
+			lav: 4,
+			hoej: 8,
+			midt: 6
+		});
 	});
 
 	// Punkterne skal ligge inden for aksen, ellers stikker de ud af flisen.

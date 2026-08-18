@@ -404,11 +404,45 @@ body:has(.ny-app) {
 	color: var(--honey);
 }
 
+/* Overskrift og plakat til venstre, tallet til hoejre. Samme fordeling
+   som paa Udvikling siden 18. august. */
+.score-venstre {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+	min-width: 0;
+}
+
+.score-hoejre {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	flex-shrink: 0;
+}
+
+/* Tallene paa y-aksen og navnet paa baandet. De skalerer IKKE med
+   tekststoerrelsen, ligesom resten inde i kurven. */
+.v-akse {
+	font-family: var(--sans);
+	font-size: 8px;
+	fill: rgba(251, 248, 242, 0.55);
+	text-anchor: end;
+}
+
+.v-baand {
+	font-family: var(--sans);
+	font-size: 8px;
+	font-weight: 600;
+	fill: rgba(251, 248, 242, 0.72);
+}
+
 .score-tal {
 	display: flex;
-	align-items: flex-end;
-	gap: 9px;
-	margin-top: 6px;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 10px;
+	margin-top: 4px;
 }
 
 .score-n {
@@ -9771,7 +9805,10 @@ a.ch-knap {
 	gap: 14px;
 }
 
-.udv-kort {
+/* Ét omraade paa Udvikling. Hovedet er baade overskrift og knap, og
+   tallet staar der ogsaa naar kortet er foldet sammen. Saa kan hun se
+   hele billedet paa én skaerm, og det er dét siden er til. */
+.udv-omraade {
 	background: var(--paper);
 	border-radius: 20px;
 	box-shadow: var(--shadow);
@@ -9781,12 +9818,57 @@ a.ch-knap {
 	gap: 6px;
 }
 
-/* Overskrift til venstre, tal til hoejre, paa samme linje. */
+.udv-krop {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.udv-under {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 8px;
+	padding-top: 12px;
+	border-top: 1px solid var(--line);
+}
+
+/* Listen ligger allerede inde i kortet, saa den skal ikke have sin egen
+   flade og skygge ovenpaa. */
+.udv-under .udv-liste {
+	background: none;
+	box-shadow: none;
+	padding: 0;
+}
+
+/* Overskrift til venstre, tal til hoejre, paa samme linje. Hele hovedet
+   er knappen der folder omraadet ud og sammen. */
 .udv-hoved {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
 	gap: 10px;
+	width: 100%;
+	border: 0;
+	background: none;
+	cursor: pointer;
+	font-family: inherit;
+	text-align: left;
+	padding: 2px 0;
+	min-height: 44px;
+}
+
+.udv-hoved:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 3px;
+	border-radius: 10px;
+}
+
+.udv-fold {
+	color: var(--ink-3);
+	font-size: calc(16px * var(--fs-scale, 1));
+	flex-shrink: 0;
+	align-self: center;
 }
 
 .udv-venstre {
