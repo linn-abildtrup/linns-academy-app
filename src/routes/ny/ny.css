@@ -9881,10 +9881,10 @@ a.ch-knap {
 	background: var(--paper);
 	border-radius: 18px;
 	box-shadow: var(--shadow-soft);
-	padding: 14px 15px;
+	padding: 10px 15px;
 	display: flex;
 	flex-direction: column;
-	gap: 11px;
+	gap: 4px;
 }
 
 .udv-raekke {
@@ -9903,10 +9903,14 @@ a.ch-knap {
 	font-family: inherit;
 	width: 100%;
 	text-align: left;
-	padding: 5px 7px;
+	padding: 3px 7px;
 	margin: 0 -7px;
-	border-radius: 11px;
-	min-height: 44px;
+	border-radius: 10px;
+	/* 40 er lavt, men ikke for lavt. Under det bliver raekken svaer at
+	   ramme for en finger der ikke er helt sikker, og det er praecis den
+	   maalgruppe appen er til. Skal den vaere lavere endnu, skal noget
+	   andet give plads i stedet, fx skriftstoerrelsen. */
+	min-height: 40px;
 }
 
 .udv-vaelg.valgt {
@@ -9917,9 +9921,9 @@ a.ch-knap {
    under skiller den fra listen uden at goere den til en overskrift. */
 .udv-samlet {
 	border-bottom: 1px solid var(--line);
-	border-radius: 11px 11px 0 0;
-	padding-bottom: 8px;
-	margin-bottom: 2px;
+	border-radius: 10px 10px 0 0;
+	padding-bottom: 6px;
+	margin-bottom: 1px;
 }
 
 .udv-samlet .udv-navn {
