@@ -205,7 +205,7 @@
 		{ href: '/ny/30-30', navn: '30-30' },
 		{ href: '/ny/beskeder', navn: 'Beskeder' },
 		{ href: '/ny/udvikling', navn: 'Udvikling' },
-		{ href: '/ny/profil', navn: 'Profil' }
+		{ href: '/ny/profil', navn: 'Din side' }
 	];
 
 	function erAktiv(href: string): boolean {
@@ -223,8 +223,8 @@
 		<div class="ny-besked">
 			<h1>Ikke åben endnu</h1>
 			<p>
-				Den nye app er under opbygning og er kun åben for udvalgte testere. Du finder din
-				sædvanlige app på det vante sted.
+				Den nye app er under opbygning og er kun åben for udvalgte testere. Du finder din sædvanlige
+				app på det vante sted.
 			</p>
 			<a class="btn" href="/app">Gå til appen</a>
 		</div>
@@ -240,8 +240,8 @@
 			</p>
 			<a class="btn" href={APP_KOB_URL} target="_blank" rel="noopener">Forny dit abonnement</a>
 			<p class="spaer-hjaelp">
-				Har du lige fornyet, så giv det et øjeblik og hent siden igen. Passer det ikke, så skriv
-				til Linn, så retter hun det.
+				Har du lige fornyet, så giv det et øjeblik og hent siden igen. Passer det ikke, så skriv til
+				Linn, så retter hun det.
 			</p>
 		</div>
 	{:else}

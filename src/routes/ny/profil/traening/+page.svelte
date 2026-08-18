@@ -53,7 +53,10 @@
 			// Kun de valgbare gemmes. Dem der vises altid gaelder uanset hvad,
 			// og et gemt id ville blive forkert den dag fluebenet flyttes.
 			const gyldige = new Set(valgbareKategorier3(kategorier).map((k) => k.id));
-			await gemUdstyr3(uid, markerede.filter((id) => gyldige.has(id)));
+			await gemUdstyr3(
+				uid,
+				markerede.filter((id) => gyldige.has(id))
+			);
 			await goto('/ny/profil');
 		} catch (e) {
 			console.error('[ny] kunne ikke gemme udstyret', e);
@@ -67,11 +70,9 @@
 
 <div class="ny-pad tv-side">
 	<header class="side-top" style="padding-left:0;padding-right:0">
-		<a class="tr-tilbage" href="/ny/profil">‹ Din konto</a>
+		<a class="tr-tilbage" href="/ny/profil">‹ Din side</a>
 		<h1>Hvad træner du med?</h1>
-		<p class="tv-under">
-			Så viser jeg dig kun de programmer du kan bruge. Du kan altid ændre det.
-		</p>
+		<p class="tv-under">Så viser jeg dig kun de programmer du kan bruge. Du kan altid ændre det.</p>
 	</header>
 
 	{#if henter}

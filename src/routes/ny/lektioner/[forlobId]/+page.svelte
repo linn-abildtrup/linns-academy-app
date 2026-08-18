@@ -289,7 +289,7 @@
 
 <div class="ny-pad lektionsliste-side">
 	<header class="side-top">
-		<a class="tilbage" href="/ny/profil">‹ Din konto</a>
+		<a class="tilbage" href="/ny/profil">‹ Din side</a>
 		<h1>{kendt ? navn : 'Forløbet findes ikke'}</h1>
 		{#if kendt && undertekst}
 			<p>{undertekst}</p>

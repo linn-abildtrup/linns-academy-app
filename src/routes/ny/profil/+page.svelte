@@ -50,9 +50,10 @@
 		}
 	});
 
-	const navn = $derived(
-		[userDoc?.firstName, userDoc?.lastName].filter(Boolean).join(' ') || 'Din konto'
-	);
+	// Uden navn staar der ingenting. Foer stod der "Din konto", men nu hedder
+	// hele siden det samme, og saa ville ordene staa to gange lige under
+	// hinanden. Linjen falder helt vaek i stedet.
+	const navn = $derived([userDoc?.firstName, userDoc?.lastName].filter(Boolean).join(' '));
 	const medlemstid = $derived(formatMedlemstid(adgang.medlemstidMs));
 
 	// Ét forloeb pr raekke. Det der koerer oeverst med en ring om hvor langt
@@ -88,13 +89,13 @@
 
 <div class="ny-pad profil-side">
 	<header class="side-top" style="padding-left:0;padding-right:0">
-		<h1>Din konto</h1>
+		<h1>Din side</h1>
 	</header>
 
 	<section class="profil-hoved">
-		<span class="linn-ava" role="img" aria-label={navn}></span>
+		<span class="linn-ava" role="img" aria-label={navn || 'Din side'}></span>
 		<div>
-			<div class="profil-navn">{navn}</div>
+			{#if navn}<div class="profil-navn">{navn}</div>{/if}
 			{#if medlemstid}
 				<span class="status medlem" style="margin-top:6px">
 					<span class="prik" aria-hidden="true"></span>

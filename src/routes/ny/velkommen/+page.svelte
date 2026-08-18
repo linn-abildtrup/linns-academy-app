@@ -78,7 +78,7 @@
 	let trin = $state(1);
 	let faerdig = $state(false);
 
-	// "Gennemgå appen" under Profil springer de fire spoergsmaal over og
+	// "Gennemgaa appen" under Din side springer de fire spoergsmaal over og
 	// viser kun rundvisningen. Taelleren taeller saa kun kortene, ellers
 	// ville hun lede efter de fire foerste trin.
 	const kunGennemgang = $derived(page.url.searchParams.get('kun') === 'gennemgang');
@@ -179,7 +179,10 @@
 		gemmer = true;
 		try {
 			const gyldige = new Set(valgbareKategorier3(kategorier).map((k) => k.id));
-			await gemUdstyr3(uid, markerede.filter((id) => gyldige.has(id)));
+			await gemUdstyr3(
+				uid,
+				markerede.filter((id) => gyldige.has(id))
+			);
 		} catch (e) {
 			console.error('[ny] kunne ikke gemme udstyret', e);
 			fejl = 'Kunne ikke gemme. Prøv igen.';
@@ -228,7 +231,7 @@
 			<button class="ob-knap" onclick={() => gaaTil('/ny/30-30')}>Registrer dagens mad</button>
 		{/if}
 		<button class="ob-knap rolig" onclick={() => gaaTil('/ny')}>Gå til forsiden</button>
-		<p class="ob-hjaelp">Du kan altid se gennemgangen igen under Profil.</p>
+		<p class="ob-hjaelp">Du kan altid se gennemgangen igen under "Din side".</p>
 	{:else}
 		<div class="ob-trin">
 			<div class="ob-bar"><i style="width:{Math.round(tael.andel * 100)}%"></i></div>
@@ -291,8 +294,12 @@
 				Så åbner du den med ét tryk i stedet for at finde den i browseren hver gang.
 			</p>
 			<div class="ob-valg">
-				<div class="ob-raekke tal"><span><b>1.</b> Tryk på del-knappen nederst i browseren</span></div>
-				<div class="ob-raekke tal"><span><b>2.</b> Rul ned og vælg "Føj til hjemmeskærm"</span></div>
+				<div class="ob-raekke tal">
+					<span><b>1.</b> Tryk på del-knappen nederst i browseren</span>
+				</div>
+				<div class="ob-raekke tal">
+					<span><b>2.</b> Rul ned og vælg "Føj til hjemmeskærm"</span>
+				</div>
 				<div class="ob-raekke tal"><span><b>3.</b> Tryk Tilføj</span></div>
 			</div>
 			<p class="ob-hjaelp">
