@@ -111,7 +111,11 @@
 			if (!u) {
 				userDocUnsubscribe?.();
 				userDocUnsubscribe = null;
-				await goto('/login');
+				// 3.0 har sin egen login-side. Den gamle /login er delt med den
+				// app der er i drift og bliver staaende uroert. Login-siden
+				// ligger BEVIDST uden for det her layout, se filnavnet
+				// ny/login/+page@.svelte, ellers ville den sende sig selv i ring.
+				await goto('/ny/login');
 				return;
 			}
 

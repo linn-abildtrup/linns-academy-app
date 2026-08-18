@@ -8,7 +8,9 @@
 	// ============================================================
 
 	import { getContext, onMount } from 'svelte';
-	import type { User } from 'firebase/auth';
+	import { goto } from '$app/navigation';
+	import { signOut, type User } from 'firebase/auth';
+	import { auth } from '$lib/firebase';
 	import type { UserDoc } from '$lib/types';
 	import { isAdmin } from '$lib/admin';
 	import { formatMedlemstid, type Adgangsbillede } from '$lib/content/adgang3';
@@ -59,6 +61,22 @@
 	// Bonussen bor paa kunden selv og ikke paa forloebet, saa den laeses
 	// direkte af userDoc. Se HANDOVER-GAMMEL-APP: bonusPeriodEndsAt er
 	// skriv-én-gang og forlaenges, men forkortes aldrig.
+	// Log ud. Sender hende til 3.0's egen login-side og ikke til den gamle
+	// apps. Fejler det, staar hun bare hvor hun er, og saa er hun stadig
+	// logget ind. Det er det mindst forvirrende udfald.
+	let logudGaar = $state(false);
+	async function logUd() {
+		if (logudGaar) return;
+		logudGaar = true;
+		try {
+			await signOut(auth);
+			await goto('/ny/login', { replaceState: true });
+		} catch (e) {
+			console.error('[ny] kunne ikke logge ud', e);
+			logudGaar = false;
+		}
+	}
+
 	const forlobRaekker = $derived(
 		byggForlobRaekker(adgang.aktiveForlob, adgang.gennemfoerte, {
 			harApp: adgang.harApp,
@@ -155,4 +173,14 @@
 	{/if}
 
 	<p class="kort rolig">Resten af din profil kommer her. Siden er ikke bygget færdig endnu.</p>
+
+	<section>
+		<div class="lab"><h2>Konto</h2></div>
+		<button class="adm-raekke tr-raekke logud" disabled={logudGaar} onclick={logUd}>
+			<div class="adm-raekke-t"><span>{logudGaar ? 'Logger dig ud …' : 'Log ud'}</span></div>
+			{#if userDoc?.email}
+				<div class="adm-raekke-s">{userDoc.email}</div>
+			{/if}
+		</button>
+	</section>
 </div>

@@ -9539,3 +9539,219 @@ a.ch-knap {
 		transition: none;
 	}
 }
+
+/* ============================================================
+   Login til 3.0. Bygget 18. august 2026, se SPEC-3.0.md afsnit 33.
+   Siden ligger uden for skallen, se ny/login/+page@.svelte, saa den
+   saetter selv .ny-app og henter det her stilark ind.
+   ============================================================ */
+
+.log-side {
+	min-height: 100dvh;
+	max-width: 420px;
+	margin: 0 auto;
+	padding: 32px 22px calc(32px + env(safe-area-inset-bottom));
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	justify-content: center;
+	background:
+		radial-gradient(130% 90% at 15% 0%, var(--honey-tint) 0%, transparent 55%),
+		radial-gradient(120% 100% at 100% 0%, var(--plum-tint) 0%, transparent 50%), var(--oat);
+}
+
+.log-venter {
+	flex: 1;
+	display: grid;
+	place-items: center;
+}
+
+.log-hoved {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+/* Linns eget billede. Samme fil som hilsenen paa forsiden, bare stoerre,
+   saa det foerste hun moeder er et menneske og ikke et logo. */
+.log-linn {
+	width: 96px;
+	height: 96px;
+	border-radius: 50%;
+	background-color: var(--honey);
+	background-image: url('/linn.jpg');
+	background-size: cover;
+	background-position: center 28%;
+	box-shadow:
+		0 0 0 4px var(--paper),
+		0 10px 28px rgba(90, 62, 44, 0.22);
+}
+
+.log-side h1 {
+	font-family: var(--serif);
+	font-weight: 600;
+	font-size: calc(27px * var(--fs-scale, 1));
+	line-height: 1.15;
+	color: var(--espresso);
+	margin: 0;
+}
+
+.log-top {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	margin-bottom: 4px;
+}
+
+.log-mrk {
+	font-size: calc(14px * var(--fs-scale, 1));
+	line-height: 1.55;
+	color: var(--ink-2);
+	margin: 0;
+}
+
+.log-knapper {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+/* Egen knap-bredde i stedet for .btn.bred, som ikke findes som regel i
+   ny.css. Ville vi definere den her, ville lektionssidens "Åbn lektionen"
+   ogsaa skifte udseende, og det hoerer ikke til den her opgave. */
+.log-knap {
+	width: 100%;
+	justify-content: center;
+	border: 0;
+	cursor: pointer;
+	font-family: inherit;
+	font-size: calc(14px * var(--fs-scale, 1));
+	padding: 13px 18px;
+	min-height: 50px;
+}
+
+.log-knap.blank {
+	background: transparent;
+	color: var(--plum);
+	box-shadow: inset 0 0 0 1.5px var(--plum);
+}
+
+.log-knap:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.log-tilbage {
+	align-self: flex-start;
+	margin-bottom: 4px;
+}
+
+.log-felt {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.log-lab {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+/* 16px er ikke pynt. Er feltet mindre, zoomer iOS ind naar hun taster,
+   og saa staar siden skaevt bagefter. */
+.log-felt input {
+	font-family: inherit;
+	font-size: calc(16px * var(--fs-scale, 1));
+	color: var(--espresso);
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	padding: 13px 14px;
+	min-height: 50px;
+	width: 100%;
+}
+
+.log-felt input:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 1px;
+	border-color: transparent;
+}
+
+.log-felt input::placeholder {
+	color: var(--ink-3);
+}
+
+.log-fejl {
+	margin: 0;
+	font-size: calc(13px * var(--fs-scale, 1));
+	line-height: 1.5;
+	color: var(--plum-deep);
+	background: var(--plum-tint);
+	border-radius: 12px;
+	padding: 11px 13px;
+}
+
+.log-kvit {
+	margin: 0;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	line-height: 1.55;
+	color: var(--sage-tekst);
+	background: var(--sage-tint);
+	border-radius: 12px;
+	padding: 12px 14px;
+}
+
+.log-link {
+	background: none;
+	border: 0;
+	cursor: pointer;
+	font-family: inherit;
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--plum);
+	text-align: center;
+	min-height: 44px;
+}
+
+.log-link:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+	border-radius: 8px;
+}
+
+.log-fod {
+	margin: 0;
+	text-align: center;
+	font-size: calc(12px * var(--fs-scale, 1));
+	line-height: 1.55;
+	color: var(--ink-3);
+}
+
+/* Log ud nederst paa Profil. En knap, men den skal se ud som raekkerne
+   over den og ikke raabe. */
+.logud {
+	width: 100%;
+	text-align: left;
+	border: 0;
+	cursor: pointer;
+	font-family: inherit;
+}
+
+.logud .adm-raekke-t {
+	color: var(--plum);
+}
+
+.logud:disabled {
+	opacity: 0.6;
+}
+
+.logud:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
