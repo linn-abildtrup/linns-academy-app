@@ -160,6 +160,31 @@ describe('erTredveTredve', () => {
 		expect(erTredveTredve(dag[0])).toBe(true);
 	});
 
+	it('snackens fiber taeller ogsaa med i dagen', () => {
+		const dag = samlDage([
+			ml('2026-08-01', 'morgenmad', 32, 9),
+			ml('2026-08-01', 'frokost', 34, 9),
+			ml('2026-08-01', 'aftensmad', 28, 9),
+			ml('2026-08-01', 'snack', 2, 5)
+		]);
+		expect(dag[0].fiber).toBe(32);
+		expect(erTredveTredve(dag[0])).toBe(true);
+	});
+
+	// Uden snacken ville BEGGE tal falde under maalet. Den her test
+	// findes for at ingen kommer til at filtrere snacken fra igen, fordi
+	// den ikke har sit eget maaltids-maal i beregneren.
+	it('uden snacken ville den samme dag ikke taelle', () => {
+		const uden = samlDage([
+			ml('2026-08-01', 'morgenmad', 32, 9),
+			ml('2026-08-01', 'frokost', 34, 9),
+			ml('2026-08-01', 'aftensmad', 28, 9)
+		]);
+		expect(uden[0].fiber).toBe(27);
+		expect(uden[0].protein).toBe(94);
+		expect(erTredveTredve(uden[0])).toBe(false);
+	});
+
 	it('mangler proteinet, taeller dagen ikke', () => {
 		const dag = samlDage([ml('2026-08-01', 'morgenmad', 60, 40)]);
 		expect(erTredveTredve(dag[0])).toBe(false);
