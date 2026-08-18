@@ -3799,6 +3799,14 @@ admin, og det er en åben tråd.
 står alt foldet sammen, så hun møder hele rejsen på én skærm. Kun én uge er
 åben ad gangen.
 
+**Går hun tilbage fra en lektion, lander hun præcis hvor hun slap.** Linns
+ønske 18. august. Ugen står åben, fanen er den samme, og siden står samme
+sted. Uden det foldede uge 7 sig sammen bag hende og hun stod øverst på en
+liste med tretten lukkede kort. Det er gemt pr side i historikken og ikke pr
+forløb, så to skridt tilbage giver hver sit rigtige billede. Sidens position
+sætter vi selv tilbage, for browseren gør det mens listen stadig hentes og
+siden derfor er kort.
+
 **Tællingen øverst blev lagt om samtidig.** Den talte rækkerne i databasen
 og ville have sagt 227. Nu tæller den det hun faktisk kan se.
 
