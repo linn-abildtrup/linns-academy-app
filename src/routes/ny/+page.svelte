@@ -793,7 +793,9 @@
 		     aldrig er mere end ét tryk vaek. Linns beslutning. -->
 
 
-		<a class="ai-kort" href="/ny/hjaelp">
+		<!-- Direkte til AI-en. Naven under /ny/hjaelp fik FAQ og links
+		     18. august, og kortet her lover svar med det samme. -->
+		<a class="ai-kort" href="/ny/hjaelp/spoerg">
 			<!-- Talebobbel med spoergsmaalstegn, og en lille glimt der siger at
 			     det er en maskine der svarer. Samme tynde streger som resten
 			     af ikonerne, ingen emoji. -->

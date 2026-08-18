@@ -24,6 +24,9 @@
 export interface HjaelpKunde3 {
 	harAktivtForlob: boolean;
 	forlobNavn?: string;
+	/** Har hun vaeret paa mindst ét forloeb der er slut. Styrer om vi
+	    overhovedet naevner "Dine lektioner" og noterne. */
+	harGennemfoertForlob: boolean;
 	/** Har hun faaet mindst ét traeningsprogram tildelt. */
 	harTraening: boolean;
 	/** Maa hun sende spoergsmaal videre til Linn. */
@@ -184,12 +187,42 @@ Vil du se gennemgangen igen, ligger den under Profil. Der kan du enten tage hele
 	{
 		titel: 'Profil',
 		gaelder: ALLE,
-		indhold: `Under Profil ser du dit navn, hvor længe du har været medlem, og de forløb du har gennemført. Her ligger også dit udstyrsvalg, din skriftstørrelse og de to indgange til opstarten.`
+		indhold: `Under Profil ser du dit navn og hvor længe du har været medlem. Her ligger også "Dine lektioner", dit udstyrsvalg, din skriftstørrelse og de to indgange til opstarten.`
+	},
+	{
+		titel: 'Dine lektioner',
+		gaelder: (k) => k.harAktivtForlob || k.harGennemfoertForlob,
+		indhold: `Under Profil ligger "Dine lektioner". Der står ét forløb pr linje: det du er i gang med øverst med en ring om hvor langt du er, og dem du har gennemført nedenunder med en stjerne.
+
+Tryk på et forløb, og du ser ALLE lektionerne fra det forløb, i rækkefølge. Dem du er nået til kan du åbne. Dem der ligger længere fremme står med og er grå, med den dato de åbner. Du kan altid gå tilbage til dem du har set.
+
+Efter et forløb kan du se materialet i 90 dage. Derefter står kun dine egne noter tilbage.`
+	},
+	{
+		titel: 'Dine noter på lektionerne',
+		gaelder: (k) => k.harAktivtForlob || k.harGennemfoertForlob,
+		indhold: `På hver lektion er der et felt hvor du kan skrive en note til dig selv. Den gemmes på din konto, og kun du kan se den. Heller ikke Linn.
+
+Har du skrevet noter i et forløb, kommer der en fane der hedder "Mine noter" når du åbner forløbet under Profil. Der står de samlet, i forløbets rækkefølge. En lille blyant i lektions-listen viser hvor du har skrevet noget.
+
+Dine noter bliver stående, også når de 90 dage er gået og resten af materialet er lukket.`
 	},
 	{
 		titel: 'Tekststørrelse',
 		gaelder: ALLE,
 		indhold: `Synes du teksten er for lille, kan du vælge en større. Det ligger under Profil, og hele appen følger med. Valget bliver gemt på din konto, så det følger med hvis du skifter telefon.`
+	},
+	{
+		titel: 'Hjælp',
+		gaelder: ALLE,
+		indhold: `Hjælp har tre indgange:
+- Spørg om appen: det er mig. Jeg svarer med det samme på hvordan appen virker
+- Ofte stillede spørgsmål: Linns egne svar, sorteret i emner
+- Links og guides: videoer og materialer fra Linn
+
+Kan du ikke finde det, står der nederst en vej til at skrive til Linn.
+
+De to sidste findes kun hvis Linn har lagt noget ind til dit forløb.`
 	},
 	{
 		titel: 'Hvis appen ikke virker som forventet',

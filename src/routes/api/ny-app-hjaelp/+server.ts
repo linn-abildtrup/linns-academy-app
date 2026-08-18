@@ -86,6 +86,7 @@ function tilMs(v: unknown): number {
  */
 async function hentKunde(uid: string, userDoc: UserDoc | null): Promise<HjaelpKunde3> {
 	let harAktivtForlob = false;
+	let harGennemfoertForlob = false;
 	let forlobNavn: string | undefined;
 	const nu = Date.now();
 
@@ -117,6 +118,10 @@ async function hentKunde(uid: string, userDoc: UserDoc | null): Promise<HjaelpKu
 			if (nu >= startMs && nu < slutMs) {
 				harAktivtForlob = true;
 				forlobNavn = f.navn;
+			} else if (nu >= slutMs) {
+				// Slut betyder gennemfoert, uanset hvor meget hun naaede. Samme
+				// regel som gennemfoerteForlob i adgang3.ts.
+				harGennemfoertForlob = true;
 			}
 		}
 	} catch (e) {
@@ -154,6 +159,7 @@ async function hentKunde(uid: string, userDoc: UserDoc | null): Promise<HjaelpKu
 
 	return {
 		harAktivtForlob,
+		harGennemfoertForlob,
 		forlobNavn,
 		harTraening,
 		// Samme regel som resten af 3.0, se content/beskedside3.ts. Den

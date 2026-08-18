@@ -10,6 +10,7 @@ import {
 
 const FORLOBSKUNDE: HjaelpKunde3 = {
 	harAktivtForlob: true,
+	harGennemfoertForlob: false,
 	forlobNavn: 'Kickstart august',
 	harTraening: true,
 	maaSkriveTilLinn: true,
@@ -19,6 +20,7 @@ const FORLOBSKUNDE: HjaelpKunde3 = {
 
 const MEDLEM: HjaelpKunde3 = {
 	harAktivtForlob: false,
+	harGennemfoertForlob: false,
 	harTraening: true,
 	maaSkriveTilLinn: false,
 	maaSeKalorier: false,
@@ -27,9 +29,7 @@ const MEDLEM: HjaelpKunde3 = {
 
 describe('hjaelpAfsnitFor3', () => {
 	it('giver en forloebskunde flere afsnit end et medlem', () => {
-		expect(hjaelpAfsnitFor3(FORLOBSKUNDE).length).toBeGreaterThan(
-			hjaelpAfsnitFor3(MEDLEM).length
-		);
+		expect(hjaelpAfsnitFor3(FORLOBSKUNDE).length).toBeGreaterThan(hjaelpAfsnitFor3(MEDLEM).length);
 	});
 
 	it('fortaeller aldrig et medlem om forloebet', () => {
@@ -55,9 +55,9 @@ describe('hjaelpAfsnitFor3', () => {
 		expect(hjaelpAfsnitFor3(FORLOBSKUNDE).map((a) => a.titel)).not.toContain(
 			'Byg dit eget træningsprogram'
 		);
-		expect(
-			hjaelpAfsnitFor3({ ...FORLOBSKUNDE, maaByggeEget: true }).map((a) => a.titel)
-		).toContain('Byg dit eget træningsprogram');
+		expect(hjaelpAfsnitFor3({ ...FORLOBSKUNDE, maaByggeEget: true }).map((a) => a.titel)).toContain(
+			'Byg dit eget træningsprogram'
+		);
 	});
 
 	it('springer traening over naar hun ikke har faaet et program', () => {
@@ -130,5 +130,30 @@ describe('videnbasen som helhed', () => {
 		for (const a of HJAELP_AFSNIT_3) {
 			expect(a.indhold).not.toMatch(/fanen Snak|Snak i bundmenuen/);
 		}
+	});
+});
+
+// Tilfoejet 18. august 2026 sammen med "Dine lektioner".
+describe('Dine lektioner og noterne', () => {
+	it('et medlem uden forloebshistorik faar dem ikke naevnt', () => {
+		const titler = hjaelpAfsnitFor3(MEDLEM).map((a) => a.titel);
+		expect(titler).not.toContain('Dine lektioner');
+		expect(titler).not.toContain('Dine noter på lektionerne');
+	});
+
+	it('en der har gennemfoert et forloeb faar dem med', () => {
+		const titler = hjaelpAfsnitFor3({ ...MEDLEM, harGennemfoertForlob: true }).map((a) => a.titel);
+		expect(titler).toContain('Dine lektioner');
+		expect(titler).toContain('Dine noter på lektionerne');
+	});
+
+	it('en paa et forloeb faar dem ogsaa', () => {
+		const titler = hjaelpAfsnitFor3(FORLOBSKUNDE).map((a) => a.titel);
+		expect(titler).toContain('Dine lektioner');
+	});
+
+	// Hjaelp-afsnittet er nyt 18. august og gaelder alle.
+	it('alle faar at vide hvad der ligger under Hjælp', () => {
+		expect(hjaelpAfsnitFor3(MEDLEM).map((a) => a.titel)).toContain('Hjælp');
 	});
 });

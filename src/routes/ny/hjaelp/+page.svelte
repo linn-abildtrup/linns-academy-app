@@ -1,168 +1,123 @@
 <script lang="ts">
 	// ============================================================
-	// AI-hjaelp til appen, i den nye flade.
+	// Hjaelp. Ét sted for alle spoergsmaal.
 	//
-	// Egen videnbase siden 16. august 2026: POST /api/ny-app-hjaelp.
+	// Linns beslutning 18. august 2026, del af model D. Det gamle
+	// Bibliotek bliver delt: lektionerne og hendes noter ligger under
+	// Profil, og FAQ og links flytter herind. Ordet "Bibliotek" findes
+	// ikke laengere i kundens sprog.
 	//
-	// FOER den dato kaldte siden /api/app-hjaelp, som bygger sit svar af
-	// den GAMLE apps videnbase. Spurgte en kunde hvor hun fandt sine
-	// moduler, fik hun forklaret en fane der ikke findes i 3.0. Baade det
-	// gamle endpoint og den gamle videnbase er UROERTE, se
-	// content/appHjaelp3.ts.
+	// Raekkefoelgen er bevidst. AI-en foerst, fordi den svarer med det
+	// samme og daekker det meste. Saa opslaget, som er Linns egne svar.
+	// Og til sidst vejen til et menneske, naar de to foerste ikke slog til.
+	//
+	// Siden henter FAQ og links for at kunne skrive HVOR MANGE der er.
+	// Det koster fire opslag, men et menupunkt der lover "Ofte stillede
+	// spoergsmaal" og aabner en tom side er vaerre.
 	// ============================================================
 
-	import { getContext, tick } from 'svelte';
-	import type { User } from 'firebase/auth';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import { getContext } from 'svelte';
+	import type { UserDoc } from '$lib/types';
+	import type { Adgangsbillede } from '$lib/content/adgang3';
+	import { hjaelpKilder } from '$lib/content/hjaelp3';
+	import { kunUdgivne } from '$lib/content/bibliotek';
+	import { hentFaqItems, hentGuideItems } from '$lib/firestore/bibliotek';
 
-	interface Besked {
-		rolle: 'user' | 'assistant';
-		indhold: string;
-	}
+	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
+	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
+	const adgang = $derived(hentAdgang());
+	const userDoc = $derived(hentUserDoc());
 
-	const hentUser = getContext<() => User | null>('user');
-	const user = $derived(hentUser());
+	const kilder = $derived(
+		hjaelpKilder(adgang.aktiveForlob, adgang.gennemfoerte, {
+			harApp: adgang.harApp,
+			bonusSlutMs: userDoc?.bonusPeriodEndsAt ?? null,
+			nu: Date.now()
+		})
+	);
 
-	let beskeder = $state<Besked[]>([]);
-	let inputBesked = $state('');
-	let sender = $state(false);
-	let fejl = $state('');
-	let brugtIDag = $state<number | null>(null);
-	let maksIDag = $state<number | null>(null);
-	let rulle = $state<HTMLDivElement | null>(null);
+	let antalFaq = $state<number | null>(null);
+	let antalLinks = $state<number | null>(null);
 
-	const FORSLAG = [
-		'Hvordan skifter jeg mine små skridt?',
-		'Hvornår kommer min næste måling?',
-		'Hvordan finder jeg mine opskrifter?'
-	];
-
-	async function rulTilBund() {
-		await tick();
-		rulle?.scrollTo({ top: rulle.scrollHeight, behavior: 'smooth' });
-	}
-
-	async function send(tekst?: string) {
-		const u = user;
-		const besked = (tekst ?? inputBesked).trim();
-		if (!besked || sender || !u) return;
-
-		const historikFoer = [...beskeder];
-		beskeder = [...beskeder, { rolle: 'user', indhold: besked }];
-		inputBesked = '';
-		fejl = '';
-		sender = true;
-		await rulTilBund();
-
-		try {
-			const idToken = await u.getIdToken();
-			const res = await fetch('/api/ny-app-hjaelp', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${idToken}`
-				},
-				body: JSON.stringify({ besked, samtaleHistorik: historikFoer })
-			});
-
-			if (!res.ok) {
-				const raa = await res.text();
-				let melding = 'Noget gik galt. Prøv igen om lidt.';
-				try {
-					const parsed = JSON.parse(raa);
-					if (parsed.message) melding = parsed.message;
-				} catch {
-					if (raa) melding = raa;
-				}
-				fejl = melding;
-				// Rul beskeden tilbage, saa historikken er hel ved naeste forsoeg.
-				beskeder = historikFoer;
-				return;
-			}
-
-			const data = (await res.json()) as {
-				svar: string;
-				brugtIDag: number;
-				maksIDag: number;
-			};
-			beskeder = [...beskeder, { rolle: 'assistant', indhold: data.svar }];
-			brugtIDag = data.brugtIDag;
-			maksIDag = data.maksIDag;
-			await rulTilBund();
-		} catch (e) {
-			console.error('[ny] app-hjaelp fejlede', e);
-			fejl = 'Der er ingen forbindelse lige nu. Prøv igen om lidt.';
-			beskeder = historikFoer;
-		} finally {
-			sender = false;
+	$effect(() => {
+		const ids = kilder.map((k) => k.forlobId);
+		if (ids.length === 0) {
+			antalFaq = 0;
+			antalLinks = 0;
+			return;
 		}
-	}
 
-	function paaTast(e: KeyboardEvent) {
-		if (e.key === 'Enter' && !e.shiftKey) {
-			e.preventDefault();
-			void send();
-		}
+		let afbrudt = false;
+		(async () => {
+			// Taeller vi ikke, staar der bare ingen undertekst. Det maa aldrig
+			// vaelte siden, for de tre indgange skal virke uanset hvad.
+			const [faq, links] = await Promise.all([
+				Promise.all(ids.map((id) => hentFaqItems(id).catch(() => []))),
+				Promise.all(ids.map((id) => hentGuideItems(id).catch(() => [])))
+			]);
+			if (afbrudt) return;
+			antalFaq = kunUdgivne(faq.flat()).length;
+			antalLinks = kunUdgivne(links.flat()).length;
+		})().catch((e) => {
+			console.warn('[ny] kunne ikke taelle hjaelpe-indholdet', e);
+		});
+
+		return () => {
+			afbrudt = true;
+		};
+	});
+
+	function undertekst(antal: number | null, hvad: string, tom: string): string {
+		if (antal === null) return '';
+		if (antal === 0) return tom;
+		return `${antal} ${hvad}`;
 	}
 </script>
 
-<div class="hjaelp-side">
-	<header class="side-top">
-		<a class="tilbage" href="/ny">‹ Tilbage</a>
-		<h1>Spørg om appen</h1>
-		<p>
-			Jeg kan svare på alt om appen. Skal du bruge Linn selv, skriver du til hende under Beskeder.
-		</p>
+<div class="ny-pad hjaelp-nav">
+	<header class="side-top" style="padding-left:0;padding-right:0">
+		<a class="tilbage" href="/ny">‹ Forside</a>
+		<h1>Hjælp</h1>
+		<p>Start med at spørge. Finder du ikke svaret, står Linns egne svar nedenunder.</p>
 	</header>
 
-	<div class="bobler" bind:this={rulle}>
-		{#if beskeder.length === 0}
-			<div class="forslag">
-				<p class="forslag-lab">Prøv for eksempel</p>
-				{#each FORSLAG as f (f)}
-					<button class="forslag-knap" onclick={() => send(f)}>{f}</button>
-				{/each}
-			</div>
-		{/if}
+	<section>
+		<div class="lab"><h2>Spørg</h2></div>
+		<a class="adm-raekke tr-raekke" href="/ny/hjaelp/spoerg">
+			<div class="adm-raekke-t"><span>Spørg om appen</span></div>
+			<div class="adm-raekke-s">Du får svar med det samme</div>
+		</a>
+	</section>
 
-		{#each beskeder as b, i (i)}
-			<div class="boble" class:hende={b.rolle === 'user'} class:svar={b.rolle === 'assistant'}>
-				{b.indhold}
-			</div>
-		{/each}
+	{#if kilder.length > 0 && (antalFaq === null || antalFaq > 0 || antalLinks === null || antalLinks > 0)}
+		<section>
+			<div class="lab"><h2>Slå op</h2></div>
 
-		{#if sender}
-			<div class="boble svar taenker">
-				<Ventetegn variant="lille" />
-				<span>Tænker</span>
-			</div>
-		{/if}
+			{#if antalFaq === null || antalFaq > 0}
+				<a class="adm-raekke tr-raekke" href="/ny/hjaelp/faq">
+					<div class="adm-raekke-t"><span>Ofte stillede spørgsmål</span></div>
+					<div class="adm-raekke-s">
+						{undertekst(antalFaq, 'spørgsmål og svar fra Linn', '')}
+					</div>
+				</a>
+			{/if}
 
-		{#if fejl}
-			<p class="fejl" role="alert">{fejl}</p>
-		{/if}
-	</div>
-
-	<div class="skrivelinje">
-		<textarea
-			class="felt"
-			bind:value={inputBesked}
-			onkeydown={paaTast}
-			placeholder="Skriv dit spørgsmål …"
-			rows="1"
-			disabled={sender}
-		></textarea>
-		<button
-			class="send"
-			onclick={() => send()}
-			disabled={sender || inputBesked.trim().length === 0}
-			aria-label="Send spørgsmål"
-		>
-			↑
-		</button>
-	</div>
-
-	{#if brugtIDag !== null && maksIDag !== null}
-		<p class="kvote">{brugtIDag} af {maksIDag} spørgsmål i dag</p>
+			{#if antalLinks === null || antalLinks > 0}
+				<a class="adm-raekke tr-raekke" href="/ny/hjaelp/links">
+					<div class="adm-raekke-t"><span>Links og guides</span></div>
+					<div class="adm-raekke-s">
+						{undertekst(antalLinks, 'videoer og materialer', '')}
+					</div>
+				</a>
+			{/if}
+		</section>
 	{/if}
+
+	<section>
+		<div class="lab"><h2>Kan du ikke finde det</h2></div>
+		<a class="adm-raekke tr-raekke" href="/ny/beskeder">
+			<div class="adm-raekke-t"><span>Skriv til Linn</span></div>
+			<div class="adm-raekke-s">Hun svarer dig personligt</div>
+		</a>
+	</section>
 </div>
