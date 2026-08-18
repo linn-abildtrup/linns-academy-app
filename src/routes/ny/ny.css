@@ -9336,6 +9336,111 @@ a.ch-knap {
 	color: var(--ink-3);
 }
 
+/* ── Uger paa forloebs-siden ──────────────────────────────── */
+/* Kropsro har tolv uger og over to hundrede raekker, hvor de fleste er
+   den samme video gentaget paa syv dage. Ugerne staar derfor foldet
+   sammen, saa hele forloebet kan ses paa én skaerm, og live-Q&A ligger
+   i sit eget afsnit oeverst. Linns beslutning 18. august. */
+
+.ll-afsnit {
+	display: flex;
+	flex-direction: column;
+	gap: 9px;
+}
+
+.ll-afsnit-t {
+	margin: 0;
+	font-size: calc(12px * var(--fs-scale, 1));
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	font-weight: 600;
+}
+
+.ll-uger {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.ll-uge {
+	background: var(--paper);
+	border-radius: 18px;
+	box-shadow: var(--shadow-soft);
+	overflow: hidden;
+}
+
+/* Hele hovedet er knappen, saa der er noget stort at ramme med fingeren.
+   Pilen peger til hoejre naar ugen er lukket og nedad naar den er aaben. */
+.ll-uge-hoved {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	width: 100%;
+	border: 0;
+	background: none;
+	cursor: pointer;
+	font-family: inherit;
+	text-align: left;
+	padding: 13px 16px;
+	min-height: 56px;
+}
+
+.ll-uge-hoved:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: -3px;
+	border-radius: 18px;
+}
+
+.ll-uge-venstre {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	min-width: 0;
+}
+
+.ll-uge-navn {
+	font-size: calc(15px * var(--fs-scale, 1));
+	color: var(--ink);
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.ll-uge-under {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.ll-uge-fold {
+	flex-shrink: 0;
+	color: var(--ink-3);
+	font-size: calc(17px * var(--fs-scale, 1));
+	line-height: 1;
+}
+
+.ll-uge.aaben .ll-uge-navn {
+	color: var(--plum);
+}
+
+/* Listen ligger inde i ugens kort og skal derfor ikke have sin egen
+   flade og skygge ovenpaa. */
+.ll-uge-liste {
+	padding: 0 10px 12px;
+	border-top: 1px solid var(--line);
+	padding-top: 10px;
+	margin-top: 0;
+}
+
+.ll-uge-liste .medie-raekke {
+	background: none;
+	box-shadow: none;
+}
+
+.ll-uge-liste .medie-raekke:hover {
+	background: var(--paper-2);
+}
+
 /* ── Faner og noter paa forloebs-siden ────────────────────── */
 /* Fanerne staar kun frem naar hun HAR skrevet noget. Ellers ville en tom
    fane love noget der ikke er der. */

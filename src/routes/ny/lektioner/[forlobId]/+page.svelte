@@ -11,6 +11,13 @@
 	// billedet som skallen allerede har hentet. Det koster ingen ekstra
 	// opslag, og et forloeb hun ikke har vaeret paa findes derfor slet
 	// ikke her.
+	//
+	// LISTEN ER DELT OP I UGER. Linns beslutning 18. august, efter at
+	// Kropsro viste sig at vaere 227 linjer hvor over hundrede var den
+	// samme video igen og igen. Ugerne staar foldet sammen, saa hun kan se
+	// alle tolv paa én skaerm, og live-Q&A ligger oeverst for sig selv,
+	// fordi de ellers ville forsvinde nede i uge otte. Selve opdelingen
+	// sker i lektionsUger3, og reglerne staar forklaret der.
 	// ============================================================
 
 	import { getContext } from 'svelte';
@@ -28,6 +35,7 @@
 		opgoerSete,
 		type ListeLektion
 	} from '$lib/content/lektionsliste3';
+	import { byggUger, seteIUge, ugeNavn, type Uge } from '$lib/content/lektionsUger3';
 	import { detekterGuideType, erLydLektion, videoThumbnail } from '$lib/content/bibliotek';
 	import { hentLektionsdage3 } from '$lib/firestore/lektionsliste3';
 	import { hentKlaret } from '$lib/firestore/forside3';
@@ -127,7 +135,46 @@
 		};
 	});
 
-	const tal = $derived(opgoerSete(liste, klaret));
+	const opdeling = $derived(byggUger(liste));
+
+	/**
+	 * Lektionerne som de faktisk staar paa skaermen, altsaa uden de
+	 * gentagelser ugerne har fjernet. Taellingen oeverst skal passe med
+	 * det hun kan se, ikke med hvor mange raekker der ligger i databasen.
+	 */
+	const viste = $derived([
+		...opdeling.qa,
+		...opdeling.uger.flatMap((u) => u.poster.map((p) => p.post))
+	]);
+	const tal = $derived(opgoerSete(viste, klaret));
+
+	/**
+	 * Kun én uge aaben ad gangen. Koerer forloebet, staar den uge hun er i
+	 * aaben fra start. Er forloebet slut, staar alt foldet sammen, saa hun
+	 * moeder hele rejsen paa én skaerm i stedet for en lang liste.
+	 */
+	let valgtUge = $state<number | null>(null);
+	let harValgt = $state(false);
+	const aabenUge = $derived(
+		harValgt ? valgtUge : aktivt ? Math.ceil(Math.max(aktivt.dagNummer, 1) / 7) : null
+	);
+
+	function foldUge(nummer: number) {
+		harValgt = true;
+		valgtUge = aabenUge === nummer ? null : nummer;
+	}
+
+	/** Linjen under ugens navn. Aldrig et regnskab, bare hvad der ligger. */
+	function ugeUnder(u: Uge): string {
+		const antal = u.poster.length;
+		const laaste = u.poster.filter((x) => !x.post.aaben).length;
+		if (laaste === antal) return u.poster[0]?.post.aabnerTekst || 'Åbner senere';
+		const sete = seteIUge(u, klaret);
+		const ord = `${antal} ${antal === 1 ? 'lektion' : 'lektioner'}`;
+		if (sete === 0) return ord;
+		if (sete === antal) return `${ord} · alle set`;
+		return `${ord} · ${sete} set`;
+	}
 	const medNote = $derived(lektionerMedNote(noter));
 	const noteliste = $derived(byggNoteliste(liste, noter));
 
@@ -162,6 +209,52 @@
 		return `/ny/lektion/${p.dagNummer}/${p.lektion.id}?forlob=${encodeURIComponent(forlobId)}`;
 	}
 </script>
+
+<!-- Én lektion i listen. Bruges baade af Q&A oeverst og inde i ugerne.
+     Navnet kommer udefra, fordi ugerne saetter dagen paa naar flere
+     lektioner i samme uge hedder det samme. -->
+{#snippet raekke(p: ListeLektion, navn: string)}
+	{@const erKlaret = klaret.has(p.lektion.id)}
+	{@const billede = p.lektion.thumbnailUrl || videoThumbnail(p.lektion.url)}
+
+	{#if p.aaben}
+		<a class="medie-raekke" class:set={erKlaret} href={lektionsUrl(p)}>
+			<span class="medie-thumb {art(p.lektion.url)}">
+				{#if erKlaret}
+					<span class="rund-fluebe stor" aria-hidden="true"><Fluebe /></span>
+				{:else if billede}
+					<img class="medie-foto" src={billede} alt="" loading="lazy" />
+					<span class="medie-play" aria-hidden="true">{IKON[art(p.lektion.url)]}</span>
+				{:else}
+					<span class="medie-glyph" aria-hidden="true">{IKON[art(p.lektion.url)]}</span>
+				{/if}
+			</span>
+
+			<span class="medie-tekst">
+				<span class="medie-t">{navn}</span>
+				<span class="medie-m">
+					{#if erKlaret}<span class="klar-tekst">Set</span> · se igen{:else}{meta(p)}{/if}
+				</span>
+			</span>
+			{#if medNote.has(p.lektion.id)}
+				<span class="ll-blyant" title="Du har skrevet en note">✎</span>
+			{/if}
+			<span class="medie-pil" aria-hidden="true">›</span>
+		</a>
+	{:else}
+		<!-- Laast. Ingen a, saa hverken mus eller tastatur kan aabne den. -->
+		<div class="medie-raekke ll-laast">
+			<span class="medie-thumb tekst">
+				<span class="medie-glyph" aria-hidden="true">🔒</span>
+			</span>
+			<span class="medie-tekst">
+				<span class="medie-t">{navn}</span>
+				<span class="medie-m">Dag {p.dagNummer}</span>
+			</span>
+			<span class="ll-aabner">{p.aabnerTekst}</span>
+		</div>
+	{/if}
+{/snippet}
 
 <div class="ny-pad lektionsliste-side">
 	<header class="side-top">
@@ -253,50 +346,47 @@
 						tal.aabne} venter forude{/if}.
 			</p>
 
-			<div class="medie-liste">
-				{#each liste as p (`${p.dagNummer}-${p.lektion.id}`)}
-					{@const erKlaret = klaret.has(p.lektion.id)}
-					{@const billede = p.lektion.thumbnailUrl || videoThumbnail(p.lektion.url)}
+			<!-- Live Q&A oeverst og aldrig foldet sammen. Linns beslutning
+			     18. august: med tolv uger ville de ellers ligge spredt ud
+			     over hele listen, og de er noget hun leder efter. -->
+			{#if opdeling.qa.length > 0}
+				<section class="ll-afsnit">
+					<h2 class="ll-afsnit-t">Live Q&amp;A</h2>
+					<div class="medie-liste">
+						{#each opdeling.qa as p (`${p.dagNummer}-${p.lektion.id}`)}
+							{@render raekke(p, p.lektion.titel)}
+						{/each}
+					</div>
+				</section>
+			{/if}
 
-					{#if p.aaben}
-						<a class="medie-raekke" class:set={erKlaret} href={lektionsUrl(p)}>
-							<span class="medie-thumb {art(p.lektion.url)}">
-								{#if erKlaret}
-									<span class="rund-fluebe stor" aria-hidden="true"><Fluebe /></span>
-								{:else if billede}
-									<img class="medie-foto" src={billede} alt="" loading="lazy" />
-									<span class="medie-play" aria-hidden="true">{IKON[art(p.lektion.url)]}</span>
-								{:else}
-									<span class="medie-glyph" aria-hidden="true">{IKON[art(p.lektion.url)]}</span>
-								{/if}
-							</span>
-
-							<span class="medie-tekst">
-								<span class="medie-t">{p.lektion.titel}</span>
-								<span class="medie-m">
-									{#if erKlaret}<span class="klar-tekst">Set</span> · se igen{:else}{meta(p)}{/if}
+			<section class="ll-afsnit">
+				{#if opdeling.qa.length > 0}
+					<h2 class="ll-afsnit-t">Ugerne</h2>
+				{/if}
+				<div class="ll-uger">
+					{#each opdeling.uger as u (u.nummer)}
+						{@const aaben = aabenUge === u.nummer}
+						<section class="ll-uge" class:aaben>
+							<button class="ll-uge-hoved" aria-expanded={aaben} onclick={() => foldUge(u.nummer)}>
+								<span class="ll-uge-venstre">
+									<span class="ll-uge-navn">{ugeNavn(u)}</span>
+									<span class="ll-uge-under">{ugeUnder(u)}</span>
 								</span>
-							</span>
-							{#if medNote.has(p.lektion.id)}
-								<span class="ll-blyant" title="Du har skrevet en note">✎</span>
+								<span class="ll-uge-fold" aria-hidden="true">{aaben ? '▾' : '›'}</span>
+							</button>
+
+							{#if aaben}
+								<div class="medie-liste ll-uge-liste">
+									{#each u.poster as up (`${up.post.dagNummer}-${up.post.lektion.id}`)}
+										{@render raekke(up.post, up.navn)}
+									{/each}
+								</div>
 							{/if}
-							<span class="medie-pil" aria-hidden="true">›</span>
-						</a>
-					{:else}
-						<!-- Laast. Ingen a, saa hverken mus eller tastatur kan aabne den. -->
-						<div class="medie-raekke ll-laast">
-							<span class="medie-thumb tekst">
-								<span class="medie-glyph" aria-hidden="true">🔒</span>
-							</span>
-							<span class="medie-tekst">
-								<span class="medie-t">{p.lektion.titel}</span>
-								<span class="medie-m">Dag {p.dagNummer}</span>
-							</span>
-							<span class="ll-aabner">{p.aabnerTekst}</span>
-						</div>
-					{/if}
-				{/each}
-			</div>
+						</section>
+					{/each}
+				</div>
+			</section>
 
 			{#if tal.ialt > tal.aabne}
 				<p class="kort rolig">
