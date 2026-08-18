@@ -3932,7 +3932,7 @@ jeg tog fejl af undervejs og den åbne tråd om små skridt.
 
 ---
 
-## 35. De tre adgangs-tilstande. LÅST 18. august, IKKE BYGGET
+## 35. De tre adgangs-tilstande. LÅST og bygget 18. august
 
 Linns præcisering 18. august, som kom frem, da vi talte om hvor
 opskrifterne skulle ligge. **Læs det her, før du rører porten ind i 3.0.**
@@ -3950,16 +3950,43 @@ ikke noget forløb at måle på.
 
 **3. Efter de 90 dage.** Ingen adgang til appen.
 
-### 35.2 DET ER IKKE BYGGET, OG DET ER EN FEJL I DAG
+### 35.2 Sådan er det bygget
 
-`spaerring3.ts` kender kun abonnement og aktivt forløb. Den ved **intet om
-`bonusPeriodEndsAt`**. I det øjeblik forløbet slutter, og kunden ikke har
-købt app-adgang, møder hun "Din adgang er udløbet". Hun ser hverken
-opskrifter, lektioner eller øvelser i de 90 dage, hun har krav på dem.
+**Fejlen der blev rettet:** `spaerring3.ts` kendte kun abonnement og aktivt
+forløb og vidste intet om `bonusPeriodEndsAt`. Kunden blev lukket ude på
+dag 1 i stedet for dag 91. Det har stået i 32.11 hele tiden, men er blevet
+læst som en åben beslutning. Efter Linns præcisering var det en fejl.
 
-Konsekvensen har stået i 32.11 hele tiden, men er blevet læst som en åben
-beslutning. Efter Linns præcisering er den en **fejl**, ikke en beslutning.
-Den gamle app gør det rigtigt. Det er kun 3.0 der mangler det.
+**Tilstanden opgøres ét sted**, i `vurderTilstand` i `spaerring3.ts`, bygget
+oven på `vurderSpaerring` og ikke ved siden af, så nåden, de løbende konti
+og reglen om at et forløb altid vinder kun findes ét sted. `hurtigStart3`
+bærer den videre, så den lokale kopi og serveren aldrig kan vise hver sin
+skærm. Admin er altid `fuld`.
+
+**Porten ligger kun i skallen**, `routes/ny/+layout.svelte`, så ingen
+underside kan slippe nogen ind ad en bagdør. Den er en **hvidliste og ikke
+en sortliste**: en ny side der bygges i morgen er lukket indtil nogen
+aktivt åbner den, og ikke åben indtil nogen opdager det. Listen er
+`BONUS_STIER`.
+
+**Hvad hun ser:** et roligt bånd i toppen der siger hvad hun HAR og ikke
+hvad hun har mistet, "Dit forløb er slut. Du har alt materialet 62 dage
+endnu". Menuen er skåret ned til Udvikling og Din side. Fem faner hvor de
+tre sender hende tilbage med det samme er værre end to der virker.
+
+**Træningsøvelser** ligger nu under Materiale på Din side. Uden den kunne
+hun ikke nå øvelserne, for træningen har kun haft en vej ind fra forsiden.
+Rækken står for alle, så den ikke dukker op og forsvinder igen når hun
+køber sig ind.
+
+**Nedtællingen har ét sted at bo.** Lektionssiden viste før sit eget bånd,
+og forløbs-rækkerne på Din side sagde "Åben 62 dage endnu" på hver eneste
+linje. Begge er fjernet, nu hvor skallen siger det.
+
+**Målt før den blev bygget:** af 618 kunder er 0 i de 90 dage i dag, så
+ingen mærker noget med det samme. Men **316 kunder har en bonusperiode der
+stadig løber**, og de falder ind i tilstanden efterhånden som deres adgang
+udløber, i stedet for at møde en lukket dør.
 
 ### 35.3 De 90 dage handler om ADGANG, aldrig om data
 
@@ -4009,9 +4036,11 @@ sat. For dem må de fem år tælles fra det seneste af det vi kan se: sidste
 login, sidste registrerede måltid, sidste måling, sidste vanedag. Aldrig
 fra login alene.
 
-### 35.5 Det der stadig skal besluttes
+### 35.5 Det der stadig står åbent
 
-- Hvordan bundmenuen ser ud i tilstand 2. Fem faner hvor tre er lukkede er
-  værre end de tre der virker
-- Om hun kan købe sig ind fra den skærm, og hvor hårdt det skal sælges
-- Beskeder i tilstand 2. Mit bud er nej, men det er ikke afgjort
+- **Købs-linket i båndet.** Det siger "Behold det" og peger på det
+  almindelige køb. Ingen har taget stilling til hvor hårdt det skal sælges
+- **Beskeder er lukket i tilstand 2.** Det er mit valg og ikke Linns. Hun
+  har ikke sagt nej til det, hun er bare aldrig blevet spurgt
+- **Tilstand 3 er aldrig blevet set af nogen.** Nu hvor bonussen virker,
+  møder en kunde først den lukkede dør 90 dage efter sit forløb
