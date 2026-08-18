@@ -654,6 +654,15 @@
 	<Henter ialt={TRIN.length} {hentet} tekst={trinTekst} />
 {:else}
 	<div class="ny-pad" style="margin-top:16px">
+		<!-- Datostrimlen staar OEVERST og ALTID. Linns oenske 18. august.
+		     Den laa foer inde i "dagens smaa skridt", og det havde to
+		     foelger som ingen havde taenkt over: den forsvandt paa de dage
+		     hvor hun HAVDE taget sine skridt, fordi sektionen saa folder
+		     sig sammen, og den fandtes slet ikke for en kunde der endnu
+		     ikke havde valgt nogen skridt. Altsaa vaek netop naar det gik
+		     godt. Nu hoerer den til dagen og ikke til én sektion. -->
+		<Ugestrimmel aktivDato={iDag} {aktiveDage} {iDag} nulDage={adgang.nulDatoer} />
+
 		<TilDig {beskeder} />
 
 		<!-- Noten fra Linn. Den folder sig ikke sammen som de andre
@@ -705,7 +714,6 @@
 					onfold={() => foldUd('skridt')}
 				/>
 			{:else}
-				<Ugestrimmel aktivDato={iDag} {aktiveDage} {iDag} nulDage={adgang.nulDatoer} />
 				<SmaaSkridt skridt={skridtData.skridt} {gemmer} onskift={skiftSkridt} />
 			{/if}
 		{:else}
