@@ -144,6 +144,14 @@
 	{/if}
 
 	<section>
+		<div class="lab"><h2>Materiale</h2></div>
+		<a class="adm-raekke tr-raekke" href="/ny/profil/opskrifter">
+			<div class="adm-raekke-t"><span>Opskrifter</span></div>
+			<div class="adm-raekke-s">Alle opskrifter, med søgning</div>
+		</a>
+	</section>
+
+	<section>
 		<div class="lab"><h2>Opstart</h2></div>
 		<a class="adm-raekke tr-raekke" href="/ny/velkommen?kun=gennemgang">
 			<div class="adm-raekke-t"><span>Gennemgå appen</span></div>

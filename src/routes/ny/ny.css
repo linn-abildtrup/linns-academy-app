@@ -9336,6 +9336,199 @@ a.ch-knap {
 	color: var(--ink-3);
 }
 
+/* ── Opskrifter under Din side ────────────────────────────── */
+/* Alle opskrifter samlet ét sted, til den der bare vil kigge. Raekker og
+   ikke fliser: Linns valg 18. august, og INGEN billeder i oversigten.
+   Billedet moeder hun foerst inde paa opskriften. Se selve siden for
+   hvorfor. */
+
+.ops-side {
+	padding-top: 4px;
+	padding-bottom: 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 13px;
+}
+
+/* Soegefeltet og filter-knappen paa samme linje. Filtrene ligger bag
+   knappen, saa hovedet ikke aeder den halve skaerm foer den foerste
+   opskrift. Prisen betales af tallet paa knappen og af linjen under, der
+   siger hoejt hvad listen er begraenset til. */
+.ops-hoved {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.ops-soeg {
+	flex: 1;
+	min-width: 0;
+	font-family: inherit;
+	font-size: calc(15px * var(--fs-scale, 1));
+	color: var(--ink);
+	background: var(--paper);
+	border: 0;
+	box-shadow: inset 0 0 0 1px var(--line);
+	border-radius: 999px;
+	padding: 11px 16px;
+	min-height: 46px;
+}
+
+.ops-soeg::placeholder {
+	color: var(--ink-3);
+}
+
+.ops-soeg:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.ops-filterknap {
+	flex-shrink: 0;
+	border: 0;
+	cursor: pointer;
+	font-family: inherit;
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	background: var(--paper);
+	box-shadow: inset 0 0 0 1px var(--line);
+	border-radius: 999px;
+	padding: 11px 16px;
+	min-height: 46px;
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	white-space: nowrap;
+}
+
+.ops-filterknap.har {
+	background: var(--plum);
+	color: #fff;
+	box-shadow: none;
+}
+
+.ops-filterknap:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.ops-filtertal {
+	background: rgba(255, 255, 255, 0.25);
+	border-radius: 999px;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	padding: 1px 7px;
+}
+
+.ops-overskrift {
+	margin: 0;
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+}
+
+.ops-liste {
+	background: var(--paper);
+	border-radius: 18px;
+	box-shadow: var(--shadow-soft);
+	padding: 5px 7px;
+	display: flex;
+	flex-direction: column;
+}
+
+.ops-r {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	width: 100%;
+	border: 0;
+	background: none;
+	cursor: pointer;
+	font-family: inherit;
+	text-align: left;
+	padding: 11px 9px;
+	border-radius: 12px;
+	min-height: 50px;
+}
+
+.ops-r + .ops-r {
+	box-shadow: inset 0 1px 0 var(--line);
+}
+
+.ops-r:hover {
+	background: var(--paper-2);
+}
+
+.ops-r:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: -2px;
+}
+
+/* Maaltidet som en prik. Det er alt hvad der er plads til, og farverne er
+   de samme som fliserne i beregneren, saa de to lister taler samme sprog. */
+.ops-prik {
+	flex-shrink: 0;
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	background: var(--ink-3);
+}
+
+.ops-prik.morgenmad {
+	background: var(--honey);
+}
+
+.ops-prik.frokost {
+	background: var(--sage);
+}
+
+.ops-prik.aftensmad {
+	background: var(--plum);
+}
+
+.ops-prik.snack {
+	background: var(--ler-tekst);
+}
+
+.ops-t {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.ops-navn {
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	line-height: 1.3;
+	color: var(--ink);
+}
+
+.ops-navn mark {
+	background: var(--honey-tint);
+	color: inherit;
+	border-radius: 3px;
+	padding: 0 1px;
+}
+
+.ops-kat {
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+/* Hvorfor opskriften kom med. Staar der noget her, er det vigtigere end
+   maaltidet: uden det ligner en traeffer uden ordet i navnet en fejl. */
+.ops-grund {
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--honey-deep);
+}
+
+.ops-pil {
+	flex-shrink: 0;
+	color: var(--ink-3);
+	font-size: calc(15px * var(--fs-scale, 1));
+	line-height: 1;
+}
+
 /* ── Uger paa forloebs-siden ──────────────────────────────── */
 /* Kropsro har tolv uger og over to hundrede raekker, hvor de fleste er
    den samme video gentaget paa syv dage. Ugerne staar derfor foldet

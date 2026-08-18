@@ -37,14 +37,20 @@
 		maaltidLabel: string;
 		gemmer?: boolean;
 		visUdvidet?: boolean;
-		ongem: (portioner: number) => void;
-		onkategorier: (kategorier: Kategori3[]) => void;
-		onret: () => void;
+		/**
+		 * Laeg retten i et maaltid. Udeladt = ren laesning: ingen gem-knap,
+		 * ingen ret, ingen slet og ingen maaltids-vaelger. Bruges af
+		 * opskrift-siden under Din side. Linns valg 18. august: der kigger
+		 * hun, og hun retter i sine egne inde i 30-30 hvor hun lavede dem.
+		 */
+		ongem?: ((portioner: number) => void) | null;
+		onkategorier?: (kategorier: Kategori3[]) => void;
+		onret?: () => void;
 		/** Hun har valgt et foto af retten til flisen. */
-		onbillede: (fil: File) => void;
+		onbillede?: (fil: File) => void;
 		/** Sat mens billedet laegges op. */
 		lagerBillede?: boolean;
-		onslet: () => void;
+		onslet?: () => void;
 		ontilbage: () => void;
 	}
 
@@ -65,9 +71,13 @@
 
 	let billedeInput: HTMLInputElement | null = $state(null);
 
+	// Ren laesning. Alt hun kan GOERE ved opskriften slaas fra paa én gang,
+	// saa der aldrig staar en knap der ikke virker. Se ongem i Props.
+	const kunLaesning = $derived(!ongem);
+
 	function valgtBillede(e: Event) {
 		const fil = (e.target as HTMLInputElement).files?.[0];
-		if (fil) onbillede(fil);
+		if (fil) onbillede?.(fil);
 	}
 
 	// Kun STARTvaerdien. Arket bygges forfra hver gang hun aabner en
@@ -87,21 +97,27 @@
 	}
 
 	function slaa(k: Kategori3) {
-		const ny = kategorier.includes(k)
-			? kategorier.filter((x) => x !== k)
-			: [...kategorier, k];
+		const ny = kategorier.includes(k) ? kategorier.filter((x) => x !== k) : [...kategorier, k];
 		// Altid i fast raekkefoelge, saa to opskrifter aldrig staar med
 		// maaltiderne i hver sin orden.
-		onkategorier(KATEGORIER3.filter((x) => ny.includes(x)));
+		onkategorier?.(KATEGORIER3.filter((x) => ny.includes(x)));
 	}
 </script>
 
 <!-- ny-tokens: arket flyttes ud af .ny-app, saa farverne skal foelge med. -->
-<div class="ark-lag ny-tokens" use:portal role="dialog" aria-modal="true" aria-labelledby="mo-titel">
+<div
+	class="ark-lag ny-tokens"
+	use:portal
+	role="dialog"
+	aria-modal="true"
+	aria-labelledby="mo-titel"
+>
 	<button type="button" class="ark-luk-flade" onclick={ontilbage} aria-label="Tilbage"></button>
 	<div class="va-ark op-ark">
 		<div class="ma-greb" aria-hidden="true"></div>
-		<button type="button" class="ma-luk" onclick={ontilbage} aria-label="Tilbage til listen">×</button>
+		<button type="button" class="ma-luk" onclick={ontilbage} aria-label="Tilbage til listen"
+			>×</button
+		>
 
 		<div class="op-rul">
 			{#if arkBillede(opskrift)}
@@ -112,27 +128,29 @@
 			     bliver staaende: det er kogebogssiden AI'en laeste, og da
 			     der ikke gemmes nogen fremgangsmaade er det hendes eneste
 			     opskrift paa hvordan retten laves. -->
-			<input
-				class="no-input"
-				type="file"
-				accept="image/*"
-				bind:this={billedeInput}
-				onchange={valgtBillede}
-			/>
-			<button
-				type="button"
-				class="mo-foto"
-				disabled={lagerBillede}
-				onclick={() => billedeInput?.click()}
-			>
-				{#if lagerBillede}
-					Lægger billedet op
-				{:else if opskrift.madBilledeUrl}
-					Skift billedet af retten
-				{:else}
-					Tag et billede af retten
-				{/if}
-			</button>
+			{#if !kunLaesning}
+				<input
+					class="no-input"
+					type="file"
+					accept="image/*"
+					bind:this={billedeInput}
+					onchange={valgtBillede}
+				/>
+				<button
+					type="button"
+					class="mo-foto"
+					disabled={lagerBillede}
+					onclick={() => billedeInput?.click()}
+				>
+					{#if lagerBillede}
+						Lægger billedet op
+					{:else if opskrift.madBilledeUrl}
+						Skift billedet af retten
+					{:else}
+						Tag et billede af retten
+					{/if}
+				</button>
+			{/if}
 
 			<h2 class="op-titel" id="mo-titel">{opskrift.navn}</h2>
 			<p class="mo-egen">Din egen opskrift</p>
@@ -178,7 +196,8 @@
 					<span class="op-st-tal">{formatPortion(portioner)}</span>
 					<span class="ma-st-spring">{portioner === 1 ? 'portion' : 'portioner'}</span>
 				</span>
-				<button type="button" class="ma-st-knap" onclick={() => flyt(1)} aria-label="Mere">+</button>
+				<button type="button" class="ma-st-knap" onclick={() => flyt(1)} aria-label="Mere">+</button
+				>
 			</div>
 
 			{#if opskrift.ingredienser.length > 0}
@@ -201,30 +220,35 @@
 
 			<!-- Maaltiderne. Hun maa vaelge flere: en suppe er tit baade
 			     frokost og aftensmad. -->
-			<div class="op-k">Hvilke måltider passer den til?</div>
-			<div class="ma-chips mo-chips">
-				{#each KATEGORIER3 as k (k)}
-					<button
-						type="button"
-						class="ma-chip"
-						class:valgt={kategorier.includes(k)}
-						aria-pressed={kategorier.includes(k)}
-						onclick={() => slaa(k)}
-					>
-						{KATEGORI_NAVN[k]}
-					</button>
-				{/each}
-			</div>
-			{#if !harKategorier}
-				<p class="mo-hjaelp">
-					Den har ingen endnu, så den vises under alle måltider. Vælg et, så ligger den det rigtige
-					sted næste gang.
-				</p>
+			{#if !kunLaesning}
+				<div class="op-k">Hvilke måltider passer den til?</div>
+				<div class="ma-chips mo-chips">
+					{#each KATEGORIER3 as k (k)}
+						<button
+							type="button"
+							class="ma-chip"
+							class:valgt={kategorier.includes(k)}
+							aria-pressed={kategorier.includes(k)}
+							onclick={() => slaa(k)}
+						>
+							{KATEGORI_NAVN[k]}
+						</button>
+					{/each}
+				</div>
+				{#if !harKategorier}
+					<p class="mo-hjaelp">
+						Den har ingen endnu, så den vises under alle måltider. Vælg et, så ligger den det
+						rigtige sted næste gang.
+					</p>
+				{/if}
 			{/if}
 
 			<!-- Sletning spoerger foerst. Her er der ingen Fortryd at falde
 			     tilbage paa, og hun mister noget hun selv har lavet. -->
-			{#if spoergSlet}
+			{#if kunLaesning}
+				<!-- Ingenting. Hun retter i sine egne inde i 30-30, hvor hun
+				     lavede dem. Se ongem i Props. -->
+			{:else if spoergSlet}
 				<div class="mo-slet-boks">
 					<span class="mo-slet-t">Slet {opskrift.navn}?</span>
 					<span class="mo-slet-n">
@@ -235,12 +259,12 @@
 						<button type="button" class="mo-slet-nej" onclick={() => (spoergSlet = false)}>
 							Behold
 						</button>
-						<button type="button" class="mo-slet-ja" onclick={onslet}>Slet</button>
+						<button type="button" class="mo-slet-ja" onclick={() => onslet?.()}>Slet</button>
 					</div>
 				</div>
 			{:else}
 				<div class="mo-handlinger">
-					<button type="button" class="mo-ret" onclick={onret}>Ret opskriften</button>
+					<button type="button" class="mo-ret" onclick={() => onret?.()}>Ret opskriften</button>
 					<button type="button" class="mo-slet-link" onclick={() => (spoergSlet = true)}>
 						Slet
 					</button>
@@ -248,8 +272,10 @@
 			{/if}
 		</div>
 
-		<button type="button" class="ma-gem" disabled={gemmer} onclick={() => ongem(portioner)}>
-			Læg i {maaltidLabel.toLowerCase()}
-		</button>
+		{#if ongem}
+			<button type="button" class="ma-gem" disabled={gemmer} onclick={() => ongem(portioner)}>
+				Læg i {maaltidLabel.toLowerCase()}
+			</button>
+		{/if}
 	</div>
 </div>

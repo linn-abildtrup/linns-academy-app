@@ -43,7 +43,12 @@
 		 * Linns valg 13. august, se SPEC-3.0.md 26.19.
 		 */
 		beregninger?: Beregninger;
-		ongem: (portioner: number) => void;
+		/**
+		 * Laeg retten i et maaltid. Udeladt = ren laesning, og saa er der
+		 * ingen knap. Bruges af opskrift-siden under Din side, hvor hun
+		 * kigger og ikke registrerer. Linns valg 18. august.
+		 */
+		ongem?: ((portioner: number) => void) | null;
 		/** Slaar bogmaerket til eller fra. Udeladt = intet hjerte. */
 		onfavorit?: (() => void) | null;
 		ontilbage: () => void;
@@ -56,7 +61,7 @@
 		visUdvidet = false,
 		erFavorit = false,
 		beregninger = {},
-		ongem,
+		ongem = null,
 		onfavorit = null,
 		ontilbage
 	}: Props = $props();
@@ -111,11 +116,19 @@
 </script>
 
 <!-- ny-tokens: arket flyttes ud af .ny-app, saa farverne skal foelge med. -->
-<div class="ark-lag ny-tokens" use:portal role="dialog" aria-modal="true" aria-labelledby="op-titel">
+<div
+	class="ark-lag ny-tokens"
+	use:portal
+	role="dialog"
+	aria-modal="true"
+	aria-labelledby="op-titel"
+>
 	<button type="button" class="ark-luk-flade" onclick={ontilbage} aria-label="Tilbage"></button>
 	<div class="va-ark op-ark">
 		<div class="ma-greb" aria-hidden="true"></div>
-		<button type="button" class="ma-luk" onclick={ontilbage} aria-label="Tilbage til listen">×</button>
+		<button type="button" class="ma-luk" onclick={ontilbage} aria-label="Tilbage til listen"
+			>×</button
+		>
 
 		<div class="op-rul">
 			{#if opskrift.billedeUrl}
@@ -186,7 +199,8 @@
 					<span class="op-st-tal">{formatPortion(portioner)}</span>
 					<span class="ma-st-spring">{portioner === 1 ? 'portion' : 'portioner'}</span>
 				</span>
-				<button type="button" class="ma-st-knap" onclick={() => flyt(1)} aria-label="Mere">+</button>
+				<button type="button" class="ma-st-knap" onclick={() => flyt(1)} aria-label="Mere">+</button
+				>
 			</div>
 
 			{#if opskrift.ingredienser?.length}
@@ -227,9 +241,16 @@
 			<!-- Knappen siger antallet naar det ikke er 1. Aabner arket paa 4, fordi
 			     retten er skrevet til fire, skal hun kunne se hvad der bliver lagt i
 			     uden at kigge op paa taelleren. -->
-			<button type="button" class="ma-gem op-gem" disabled={gemmer} onclick={() => ongem(portioner)}>
-				{gemmer ? 'Gemmer' : gemEtiket(maaltidLabel, portioner)}
-			</button>
+			{#if ongem}
+				<button
+					type="button"
+					class="ma-gem op-gem"
+					disabled={gemmer}
+					onclick={() => ongem(portioner)}
+				>
+					{gemmer ? 'Gemmer' : gemEtiket(maaltidLabel, portioner)}
+				</button>
+			{/if}
 			{#if onfavorit}
 				<button
 					type="button"
