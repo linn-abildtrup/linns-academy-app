@@ -104,6 +104,10 @@ Indtil 17. august regnede kontoens adgang uden dem. Tolv kunder på Kropsro 24. 
 
 Skal du afgøre om et forløb kører, så send kundens uid med til `hentAktivtForlob(ids, now, uid)` og `hentAktivProduktType(ids, uid)`. Uden uid regner de uden pauser.
 
+Det er ikke kun kontoens adgang der går galt uden uid. Den 18. august viste det sig at tre træningssider var blevet glemt i den runde. De regnede kunden over på Kickstart-skuffen, dag-beregningen landede på dag 2, og fordi dag-vælgeren kun viser op til dagens dag, kunne ti kunder hverken se eller starte deres træning. Der kom ingen fejlbesked, så det lignede at træningen var væk. Rettet, se afsnit 7.
+
+**Tjek altid alle kaldesteder når en funktion får uid med.** `grep` efter `hentAktivProduktType(` og `hentAktivtForlob(` og se efter dem der mangler det andet argument.
+
 ### 6.3 Dataskuffen skifter under kunden når forløbet regnes som slut
 
 `hentAktivProduktType` falder tilbage til Kickstart-skuffen når intet forløb er aktivt. For en Kropsro-kunde betyder det at små skridt og mikrotræning pludselig viser hendes gamle Kickstart-dage. **Det er stadig ikke rettet.** Det er kendt og bevidst ladt ligge, fordi udløbne kunder normalt ingen adgang har til modulerne. Rører du adgangs-logikken, så tjek at du ikke kommer til at åbne den dør.
@@ -132,7 +136,7 @@ Flytter en kunde fra ét hold til et andet med samme produkt-nøgle, peger den g
 
 ## 7. Rettet 17. og 18. august 2026
 
-To akutte rettelser, begge under ventilen i regel 2, begge udrullet.
+Tre akutte rettelser, alle under ventilen i regel 2, alle udrullet.
 
 **Symptomchecken måler nu på Kropsro-forløbets egne datoer.** Commit `caeadd4`. Målepunkterne er startdagen og hver 28. dag, for KropsRo 16. aug altså 16/8, 13/9, 11/10 og 8/11, så hele holdet udfylder samme dag. Kickstart, abonnenter og byggede forløb er uændrede og kører videre på kundens eget ur. Fejlen var at fem kunder startede et 84-dages forløb uden startmåling, fordi 28-dages-uret fra deres forrige forløb stadig løb. Se `kropsroMaalepunkter` i `src/lib/content/mrs.ts`.
 
@@ -140,13 +144,15 @@ To akutte rettelser, begge under ventilen i regel 2, begge udrullet.
 
 Sussi og Ann-Brigitt fik deres slettede træningsprogram skrevet tilbage manuelt bagefter.
 
+**De sidste tre træningssider sender nu også kundens uid med.** Commit `6dcdac3`. Runden dagen før ramte ti sider, men tre blev glemt: programsiden `traening/program/[forlobId]/[programId]`, som er den forsidens Træning-knap peger på, afspilleren `traening/mikrotraening/[dag]/spil` og valgsiden `traening/mikrotraening/onboarding`. Ti kunder på Kropsro 24. maj fik dag 2 i stedet for deres rigtige dag mellem 65 og 81, og fremgang blev gemt i Kickstart-skuffen. Verificeret mod live før og efter. Ingen øvrige kunder ændrede sig. Linn valgte ikke at give de ti besked.
+
 ---
 
 ## 8. Åbne tråde i den gamle app
 
 - **Tilbagefalds-reglen i `hentAktivProduktType`** sender udløbne kunder til Kickstart-skuffen. Kendt, ikke rettet. Se 6.3.
-- **Ann og Lone** på Kropsro 24. maj har kun én nul-dag hver, så deres forlængelse er kort. Linn skulle tage stilling til om de skal have mere tid.
-- **Berit (berit@adg-fysioterapi.dk) og Lene (leneskud@gmail.com)** står på KropsRo 16. aug men har ikke åbnet appen siden holdstart, så deres konto står stadig på SommerRo. Det retter sig selv når de logger ind, men de ved det ikke selv.
+- **Ann og Lone** på Kropsro 24. maj havde kun én nul-dag hver, så deres forlængelse rakte kun til 18. august. Deres forløb er slut nu. Linn nåede ikke at tage stilling til om de skulle have mere tid.
+- **`programValg` er tomt på KropsRo 16. aug.** 16 af holdets 17 kunder har en tom `programValg` i deres skuffe `kropsro_aug_26`. På maj-holdet var den udfyldt hos alle. Det blokerer intet i dag, fordi både forsiden og Moduler til Træning sender kunden til `traening/program/...`, som ikke bruger feltet. Kun den gamle mikrotrænings-side læser det, og går kunden derind via et gammelt bogmærke, bliver hun bedt om at vælge kettlebell en ekstra gang. Årsagen er ikke fundet endnu, og den bør findes før næste hold bygges.
 - **Merete (transam78mp@icloud.com)** har et ubesvaret dublet-spørgsmål i `klientspoergsmaal`. Hun sendte det samme spørgsmål to gange, og kun det første blev besvaret.
 - **Baseline-dagen i vaner-modulet** siger "vi starter med et baseline-tjek" og viser så ét fritekstfelt uden at nævne symptomchecken. Det var teksten der satte Meretes spørgsmål i gang. Ikke rettet.
 - **Forløbskøb sker manuelt.** Der er ingen Simplero-webhook for forløb endnu, kun for abonnementer.
