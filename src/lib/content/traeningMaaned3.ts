@@ -95,13 +95,15 @@ export function traeningTekst(o: TraeningOverblik | null): string {
 		return `Det er den bedste måned indtil nu. Du har ${traeningTal(o.denne.vaerdi, o.enhed)} i ${o.denne.navn}.`;
 	}
 
-	if (o.forskel === null || o.forskel === 0 || !o.forrige) {
+	if (o.forskel === null || o.forskel === 0 || !o.forrigeSammeTid) {
 		return `Du har ${traeningTal(o.denne.vaerdi, o.enhed)} i ${o.denne.navn}.`;
 	}
 
+	// Der sammenlignes med SAMME TID i maaneden foer, ikke med hele
+	// maaneden. Ellers ville en halv maaned altid tabe til en hel.
 	if (o.forskel > 0) {
 		const mere = o.enhed === 'minutter' ? 'minutter mere' : 'gange mere';
-		return `Du har trænet ${o.forskel} ${mere} end i ${o.forrige.navn}.`;
+		return `Du har trænet ${o.forskel} ${mere} end på samme tid i ${o.forrigeSammeTid.navn}.`;
 	}
 
 	// Ingen anklage. Hvor hun er, og at maaneden ikke er forbi.

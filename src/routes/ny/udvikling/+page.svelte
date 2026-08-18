@@ -57,7 +57,7 @@
 		traeningTekst,
 		type TraeningKilde
 	} from '$lib/content/traeningMaaned3';
-	import { fiberTekst, madOverblik, madTekst, type MaaltidKilde } from '$lib/content/madMaaned3';
+	import { dagOrd, madOverblik, madTekst, type MaaltidKilde } from '$lib/content/madMaaned3';
 	import {
 		jaPaaDagen,
 		skridtOverblik,
@@ -65,7 +65,6 @@
 		type SkridtDag
 	} from '$lib/content/skridtMaaned3';
 	import { soejleBredde, stoersteMaaned } from '$lib/content/maanedTal3';
-	import { dagligeMalForBruger } from '$lib/content/naering';
 	import { hentAlleMrsScores } from '$lib/firestore/mrs';
 	import { hentMaaltiderIPeriode } from '$lib/firestore/kost';
 	import { hentAboVaneOpsaetning, hentAlleAboVanedage } from '$lib/firestore/aboVaner';
@@ -155,7 +154,12 @@
 				kunSliders: s.kunSliders
 			}));
 			traeninger = historik.map((h) => ({ dato: h.dato, minutter: h.minutter }));
-			maaltider = mad.map((x) => ({ dato: x.dato, totalP: x.totalP, totalF: x.totalF }));
+			maaltider = mad.map((x) => ({
+				dato: x.dato,
+				type: x.type,
+				totalP: x.totalP,
+				totalF: x.totalF
+			}));
 
 			// Kun de vaner hun har valgt NU taeller med. Har hun fjernet en,
 			// skal et gammelt ja paa den ikke dukke op igen.
@@ -225,10 +229,8 @@
 	const traening = $derived(traeningOverblik(traeninger, nu));
 
 	// ── Mad ──────────────────────────────────────────────────
-	// Snittet regnes pr dag hun HAR registreret. En uge uden mad-
-	// registrering betyder ikke at hun ikke spiste.
+	// Vi taeller DAGE hvor hun spiste efter 30-30, ikke et gennemsnit.
 	const mad = $derived(madOverblik(maaltider, nu));
-	const proteinMaal = $derived(dagligeMalForBruger(userDoc?.dagligeMaal).protein);
 
 	// ── Smaa skridt ──────────────────────────────────────────
 	const skridt = $derived(skridtOverblik(skridtDage, nu));
@@ -779,26 +781,24 @@
 		{/if}
 
 		<!-- ── Mad ───────────────────────────────────────────────────
-		     Snittet regnes pr dag hun HAR registreret. Den gamle side
-		     tegner en tom soejle for hver dag uden registrering, og den
-		     laeser som om hun ikke spiste. Hun spiste, hun skrev det bare
-		     ikke ned. -->
+		     Vi taeller DAGE hvor hun spiste efter 30-30, ikke et
+		     gennemsnit. Linns valg 18. august: "86,6 g i snit" er et tal
+		     ingen kunde taenker i. Metoden er det hun goer noget ved. -->
 		{#if mad}
 			{@const aabenMad = aabent === 'mad'}
 			<section class="udv-omraade" class:aaben={aabenMad}>
 				<button class="udv-hoved" aria-expanded={aabenMad} onclick={() => fold('mad')}>
 					<span class="udv-venstre">
-						<span class="udv-k">Mad</span>
-						{#if mad.protein.forskel !== null && mad.protein.forskel !== 0}
-							<span class="udv-chip-tal" class:ned={mad.protein.forskel < 0}>
-								{mad.protein.forskel > 0 ? '↑' : '↓'}
-								{formatTal(Math.abs(mad.protein.forskel))} g
+						<span class="udv-k">Mad efter 30-30</span>
+						{#if mad.forskel !== null && mad.forskel > 0 && mad.forrigeSammeTid}
+							<span class="udv-chip-tal">
+								↑ {mad.forskel} mere end samme tid i {mad.forrigeSammeTid.navn}
 							</span>
 						{/if}
 					</span>
 					<span class="udv-tal">
-						<span class="udv-n">{formatTal(mad.protein.denne.vaerdi)}</span>
-						<span class="udv-af">g protein</span>
+						<span class="udv-n">{mad.denne.vaerdi}</span>
+						<span class="udv-af">{mad.denne.vaerdi === 1 ? 'dag' : 'dage'}</span>
 					</span>
 					<span class="udv-fold" aria-hidden="true">{aabenMad ? '⌄' : '›'}</span>
 				</button>
@@ -806,19 +806,25 @@
 				{#if aabenMad}
 					<div class="udv-krop">
 						<div class="udv-maaneder">
-							{#each mad.protein.maaneder as m (m.noegle)}
-								<div class="udv-md" class:nu={m.noegle === mad.protein.denne.noegle}>
+							{#each mad.maaneder as m (m.noegle)}
+								<div class="udv-md" class:nu={m.noegle === mad.denne.noegle}>
 									<span class="udv-md-n">{m.navn.slice(0, 3)}</span>
 									<span class="udv-md-bar" aria-hidden="true">
-										<i style={`width:${soejleBredde(m.vaerdi, stoersteMaaned(mad.protein))}%`}></i>
+										<i style={`width:${soejleBredde(m.vaerdi, stoersteMaaned(mad))}%`}></i>
 									</span>
-									<span class="udv-md-v">{m.vaerdi > 0 ? formatTal(m.vaerdi) : ''}</span>
+									<span class="udv-md-v">{m.vaerdi > 0 ? m.vaerdi : ''}</span>
 								</div>
 							{/each}
 						</div>
-						<p class="udv-mrk">{madTekst(mad.protein, proteinMaal)}</p>
-						{#if fiberTekst(mad.fiber)}
-							<p class="udv-hint">{fiberTekst(mad.fiber)}</p>
+						<p class="udv-mrk">{madTekst(mad)}</p>
+						<p class="udv-hint">
+							En 30-30-dag er 30 g protein til morgenmad, frokost og aftensmad, og 30 g fiber over
+							dagen. Snacken tæller med i fiberen.
+						</p>
+						{#if mad.registrerede > 0}
+							<p class="udv-hint">
+								Du har registreret mad {dagOrd(mad.registrerede)} i {mad.denne.navn}.
+							</p>
 						{/if}
 					</div>
 				{/if}

@@ -81,11 +81,12 @@ export function skridtTekst(o: MaanedOverblik | null): string {
 		return `Det er dit bedste snit indtil nu, ${skridtTal(o.denne.vaerdi)} om dagen.`;
 	}
 
-	if (o.forskel !== null && o.forskel > 0 && o.forrige) {
+	// Der sammenlignes med SAMME TID i maaneden foer. Se maanedTal3.
+	if (o.forskel !== null && o.forskel > 0 && o.forrigeSammeTid) {
 		const mere = Number.isInteger(o.forskel)
 			? String(o.forskel)
 			: String(o.forskel).replace('.', ',');
-		return `Du tager ${mere} flere om dagen end i ${o.forrige.navn}.`;
+		return `Du tager ${mere} flere om dagen end på samme tid i ${o.forrigeSammeTid.navn}.`;
 	}
 
 	// Ingen anklage, og intet "af fem". Hvad hun tog, over hvor mange dage.

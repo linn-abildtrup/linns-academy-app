@@ -42,12 +42,24 @@ export interface Maaned {
 }
 
 export interface MaanedOverblik {
-	/** Den maaned hun er i gang med. */
+	/** Den maaned hun er i gang med. Kun til og med i dag. */
 	denne: Maaned;
-	/** Maaneden foer. null naar hun ikke har noget den maaned. */
+	/** HELE maaneden foer. Det er den soejlerne viser. null uden data. */
 	forrige: Maaned | null;
-	/** denne minus forrige. null naar der ikke er en forrige. */
+	/**
+	 * Maaneden foer, men KUN til og med den samme dato.
+	 *
+	 * Det er den der sammenlignes med, og det er hele pointen. Er det den
+	 * 18., er august en halv maaned og juli en hel. Sammenlignede vi dem,
+	 * ville kortet den 1. i hver maaned altid sige at det var gaaet
+	 * katastrofalt tilbage, uanset hvor godt hun goer det. Set 18. august,
+	 * hvor traeningen sagde "ned 126 min" paa en helt normal maaned.
+	 */
+	forrigeSammeTid: Maaned | null;
+	/** denne minus forrigeSammeTid. null naar der ikke er noget at maale mod. */
 	forskel: number | null;
+	/** Hvilken dato i maaneden vi er naaet til. Til teksten "1.-18. juli". */
+	dagIMaaned: number;
 	/** Er det den bedste maaned hun har haft. */
 	bedste: boolean;
 	/** De seneste maaneder, aeldst foerst. Til soejlerne. */
@@ -122,9 +134,32 @@ export function maanedOverblik(
 	}
 
 	const d = new Date(nu);
+	const dagIMaaned = d.getDate();
 	const denne = maanedFor(noegleFor(d));
 	const forrigeNoegle = noegleFor(new Date(d.getFullYear(), d.getMonth() - 1, 1));
 	const forrige = dage.has(forrigeNoegle) ? maanedFor(forrigeNoegle) : null;
+
+	// Samme antal dage ind i maaneden foer. Se forrigeSammeTid ovenfor.
+	const tilSammenligning = new Map<string, number>();
+	const dageSammen = new Map<string, number>();
+	for (const [dato, vaerdi] of prDag) {
+		if (dato.slice(0, 7) !== forrigeNoegle) continue;
+		if (Number(dato.slice(8, 10)) > dagIMaaned) continue;
+		tilSammenligning.set(forrigeNoegle, (tilSammenligning.get(forrigeNoegle) ?? 0) + vaerdi);
+		dageSammen.set(forrigeNoegle, (dageSammen.get(forrigeNoegle) ?? 0) + 1);
+	}
+	const antalSammen = dageSammen.get(forrigeNoegle) ?? 0;
+	const totalSammen = tilSammenligning.get(forrigeNoegle) ?? 0;
+	const forrigeSammeTid: Maaned | null =
+		antalSammen > 0
+			? {
+					noegle: forrigeNoegle,
+					navn: maanedsNavn(forrigeNoegle),
+					vaerdi:
+						metode === 'sum' ? totalSammen : Math.round((totalSammen / antalSammen) * 10) / 10,
+					dage: antalSammen
+				}
+			: null;
 
 	// Soejlerne. Maaneder uden data staar med nul, saa raekken ikke hopper
 	// i tid, men de faar ingen tekst der peger paa dem.
@@ -139,7 +174,9 @@ export function maanedOverblik(
 	return {
 		denne,
 		forrige,
-		forskel: forrige ? Math.round((denne.vaerdi - forrige.vaerdi) * 10) / 10 : null,
+		forrigeSammeTid,
+		forskel: forrigeSammeTid ? Math.round((denne.vaerdi - forrigeSammeTid.vaerdi) * 10) / 10 : null,
+		dagIMaaned,
 		bedste,
 		maaneder
 	};

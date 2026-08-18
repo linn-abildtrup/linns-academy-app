@@ -8,7 +8,14 @@ import {
 	stortNavn,
 	type DagPunkt
 } from './maanedTal3';
-import { madOverblik, madTekst, fiberTekst, type MaaltidKilde } from './madMaaned3';
+import {
+	erTredveTredve,
+	hvadManglede,
+	madOverblik,
+	madTekst,
+	samlDage,
+	type MaaltidKilde
+} from './madMaaned3';
 import { jaPaaDagen, skridtOverblik, skridtTal, skridtTekst } from './skridtMaaned3';
 
 /** 18. august 2026. Det ur alle testene regner ud fra. */
@@ -108,74 +115,154 @@ describe('soejleBredde og stoersteMaaned', () => {
 });
 
 // ============================================================
-// Mad
+// Mad: 30-30-dage
+//
+// En 30-30-dag er 30 g protein til morgenmad, frokost OG aftensmad,
+// plus 30 g fiber over hele dagen. Snacken har intet maal, men taeller
+// med i fiberen. Linns valg M1, 18. august.
 // ============================================================
 
-function m(dato: string, p2: number, f: number): MaaltidKilde {
-	return { dato, totalP: p2, totalF: f };
+function ml(dato: string, type: string, p2: number, f = 0): MaaltidKilde {
+	return { dato, type, totalP: p2, totalF: f };
 }
 
-describe('madOverblik', () => {
-	it('lægger dagens maaltider sammen og tager snittet pr dag', () => {
-		const o = madOverblik([m('2026-08-01', 40, 10), m('2026-08-01', 60, 15)], NU);
-		expect(o?.protein.denne.vaerdi).toBe(100);
-		expect(o?.protein.denne.dage).toBe(1);
-		expect(o?.fiber?.denne.vaerdi).toBe(25);
+/** En hel dag der rammer metoden. */
+function godDag(dato: string): MaaltidKilde[] {
+	return [ml(dato, 'morgenmad', 32, 10), ml(dato, 'frokost', 34, 12), ml(dato, 'aftensmad', 36, 9)];
+}
+
+describe('erTredveTredve', () => {
+	it('alle tre maaltider i maal og fiber i maal taeller', () => {
+		expect(samlDage(godDag('2026-08-01')).every(erTredveTredve)).toBe(true);
 	});
 
-	it('ingen maaltider giver intet overblik', () => {
+	it('mangler frokosten sine 30 g, taeller dagen ikke', () => {
+		const dag = samlDage([
+			ml('2026-08-01', 'morgenmad', 32, 10),
+			ml('2026-08-01', 'frokost', 18, 12),
+			ml('2026-08-01', 'aftensmad', 36, 9)
+		]);
+		expect(erTredveTredve(dag[0])).toBe(false);
+		expect(hvadManglede(dag[0])).toEqual(['frokost']);
+	});
+
+	it('mangler fiberen, taeller dagen ikke', () => {
+		const dag = samlDage([
+			ml('2026-08-01', 'morgenmad', 32, 3),
+			ml('2026-08-01', 'frokost', 34, 4),
+			ml('2026-08-01', 'aftensmad', 36, 5)
+		]);
+		expect(erTredveTredve(dag[0])).toBe(false);
+		expect(hvadManglede(dag[0])).toEqual(['fiber']);
+	});
+
+	// Snacken har med vilje intet maal, se maaltider3 punkt 1.
+	it('snacken skal ikke selv ramme 30 g', () => {
+		const dag = samlDage([...godDag('2026-08-01'), ml('2026-08-01', 'snack', 4, 2)]);
+		expect(erTredveTredve(dag[0])).toBe(true);
+	});
+
+	it('men snackens fiber taeller med i dagen', () => {
+		const dag = samlDage([
+			ml('2026-08-01', 'morgenmad', 32, 9),
+			ml('2026-08-01', 'frokost', 34, 9),
+			ml('2026-08-01', 'aftensmad', 36, 9),
+			ml('2026-08-01', 'snack', 2, 5)
+		]);
+		expect(dag[0].fiber).toBe(32);
+		expect(erTredveTredve(dag[0])).toBe(true);
+	});
+
+	// En dag uden registreret frokost ER ikke en dokumenteret 30-30-dag.
+	it('et maaltid hun slet ikke har registreret taeller som nul', () => {
+		const dag = samlDage([ml('2026-08-01', 'morgenmad', 40, 40)]);
+		expect(erTredveTredve(dag[0])).toBe(false);
+	});
+
+	it('praecis 30 er nok, det er et maal og ikke en graense', () => {
+		const dag = samlDage([
+			ml('2026-08-01', 'morgenmad', 30, 10),
+			ml('2026-08-01', 'frokost', 30, 10),
+			ml('2026-08-01', 'aftensmad', 30, 10)
+		]);
+		expect(erTredveTredve(dag[0])).toBe(true);
+	});
+});
+
+describe('samlDage', () => {
+	it('laegger flere poster paa samme maaltid sammen', () => {
+		const d = samlDage([
+			ml('2026-08-01', 'morgenmad', 20, 5),
+			ml('2026-08-01', 'morgenmad', 14, 6)
+		]);
+		expect(d[0].protein.morgenmad).toBe(34);
+		expect(d[0].fiber).toBe(11);
+	});
+
+	it('sorterer dagene i tid', () => {
+		const d = samlDage([ml('2026-08-05', 'morgenmad', 30), ml('2026-08-01', 'morgenmad', 30)]);
+		expect(d.map((x) => x.dato)).toEqual(['2026-08-01', '2026-08-05']);
+	});
+});
+
+describe('madOverblik', () => {
+	it('taeller 30-30-dage pr maaned', () => {
+		const o = madOverblik([...godDag('2026-08-01'), ...godDag('2026-08-05')], NU);
+		expect(o?.denne.vaerdi).toBe(2);
+	});
+
+	it('dage der ikke naaede metoden taelles ikke med', () => {
+		const o = madOverblik([...godDag('2026-08-01'), ml('2026-08-05', 'morgenmad', 10, 2)], NU);
+		expect(o?.denne.vaerdi).toBe(1);
+		expect(o?.registrerede).toBe(2);
+	});
+
+	// Kortet skal staa der og sige det roligt, ikke forsvinde.
+	it('har hun registreret mad men ingen 30-30-dage, er der stadig et overblik', () => {
+		const o = madOverblik([ml('2026-08-01', 'morgenmad', 10, 2)], NU);
+		expect(o).not.toBeNull();
+		expect(o?.denne.vaerdi).toBe(0);
+		expect(o?.registrerede).toBe(1);
+	});
+
+	it('ingen mad giver intet overblik', () => {
 		expect(madOverblik([], NU)).toBeNull();
 	});
 });
 
 describe('madTekst', () => {
-	it('roser det bedste snit', () => {
-		const o = madOverblik([m('2026-08-01', 110, 30), m('2026-07-01', 80, 20)], NU);
-		const t = madTekst(o!.protein, 105);
-		expect(t).toContain('bedste snit');
-		tjekVenlig(t);
-	});
-
-	it('siger hvor meget mere protein hun faar', () => {
+	it('roser den bedste maaned', () => {
 		const o = madOverblik(
-			[m('2026-08-01', 95, 20), m('2026-07-01', 80, 20), m('2026-06-01', 130, 20)],
+			[...godDag('2026-08-01'), ...godDag('2026-08-05'), ...godDag('2026-07-01')],
 			NU
 		);
-		const t = madTekst(o!.protein, 105);
-		expect(t).toContain('15 g mere protein');
+		const t = madTekst(o);
+		expect(t).toContain('fleste 30-30-dage');
 		tjekVenlig(t);
 	});
 
-	// Maalet maa naevnes, men aldrig som en dom. Ligger hun UNDER, staar
-	// der ingenting om maalet overhovedet.
-	it('naevner aldrig at hun ligger under sit maal', () => {
-		const o = madOverblik([m('2026-08-01', 70, 20), m('2026-07-01', 130, 20)], NU);
-		const t = madTekst(o!.protein, 105);
-		expect(t).not.toContain('105');
-		expect(t).toContain('i snit 70 g');
+	// Ingen anklage naar det ikke er lykkedes endnu.
+	it('nul 30-30-dage bebrejder hende ingenting', () => {
+		const t = madTekst(madOverblik([ml('2026-08-01', 'morgenmad', 10, 2)], NU));
+		expect(t).toContain('et stykke arbejde');
 		tjekVenlig(t);
 	});
 
-	it('roser hende naar hun er over sit maal', () => {
-		const o = madOverblik([m('2026-08-01', 120, 20), m('2026-07-01', 130, 20)], NU);
-		expect(madTekst(o!.protein, 105)).toContain('over dine 105 g');
+	it('naevner ALDRIG en naevner som "9 af 18"', () => {
+		const alle = [
+			madTekst(madOverblik([...godDag('2026-08-01')], NU)),
+			madTekst(madOverblik([...godDag('2026-08-01'), ...godDag('2026-07-01')], NU)),
+			madTekst(madOverblik([ml('2026-08-01', 'morgenmad', 10, 2)], NU)),
+			madTekst(null)
+		];
+		for (const t of alle) {
+			expect(t).not.toMatch(/\baf \d+\b/);
+			tjekVenlig(t);
+		}
 	});
 
 	it('ingen mad inviterer i stedet for at bebrejde', () => {
-		const t = madTekst(null, 105);
-		expect(t).toContain('Når du har registreret');
-		tjekVenlig(t);
-	});
-});
-
-describe('fiberTekst', () => {
-	it('siger fremgangen', () => {
-		const o = madOverblik([m('2026-08-01', 100, 30), m('2026-07-01', 100, 22)], NU);
-		expect(fiberTekst(o!.fiber)).toContain('8 g mere');
-	});
-
-	it('ingen fiber giver ingen linje', () => {
-		expect(fiberTekst(null)).toBe('');
+		expect(madTekst(null)).toContain('Når du har registreret');
 	});
 });
 
@@ -269,5 +356,62 @@ describe('skridtTekst', () => {
 
 	it('ingen svar inviterer i stedet for at bebrejde', () => {
 		expect(skridtTekst(null)).toContain('Når du har svaret');
+	});
+});
+
+// ============================================================
+// Samme tid i maaneden foer.
+//
+// Fejlen 18. august: traeningskortet sagde "ned 126 min" den 18., fordi
+// en halv august blev sammenlignet med en hel juli. Den 1. i hver maaned
+// ville det altid se ud som en katastrofe.
+// ============================================================
+
+describe('sammenligning med samme tid', () => {
+	it('kun maaneden foers foerste dage taeller med', () => {
+		// Vi er den 18. Juli har baade tidlige og sene traeninger.
+		const o = maanedOverblik(
+			[p('2026-08-05', 40), p('2026-07-05', 30), p('2026-07-28', 200)],
+			NU,
+			'sum'
+		);
+		// Hele juli er 230, men kun de 30 fra den 5. taeller i forskellen.
+		expect(o?.forrige?.vaerdi).toBe(230);
+		expect(o?.forrigeSammeTid?.vaerdi).toBe(30);
+		expect(o?.forskel).toBe(10);
+	});
+
+	it('en halv maaned taber ikke laengere til en hel', () => {
+		const o = maanedOverblik(
+			[p('2026-08-10', 73), p('2026-07-10', 52), p('2026-07-25', 147)],
+			NU,
+			'sum'
+		);
+		// Hele juli er 199 mod august 73. Men paa samme tid stod juli i 52.
+		expect(o!.forskel!).toBeGreaterThan(0);
+	});
+
+	it('dagen i maaneden foelger med ud, saa teksten kan sige 1.-18.', () => {
+		expect(maanedOverblik([p('2026-08-01', 10)], NU, 'sum')?.dagIMaaned).toBe(18);
+	});
+
+	it('har hun intet i maaneden foer, er der ikke noget at maale mod', () => {
+		const o = maanedOverblik([p('2026-08-01', 40)], NU, 'sum');
+		expect(o?.forrigeSammeTid).toBeNull();
+		expect(o?.forskel).toBeNull();
+	});
+
+	// Traente hun kun sent i juli, er der intet at sammenligne med den
+	// 18. august. Vi opfinder ikke et nul, for det ville laese som en sejr
+	// hun ikke har vundet.
+	it('kun sene dage i maaneden foer giver ingen sammenligning', () => {
+		const o = maanedOverblik([p('2026-08-01', 40), p('2026-07-28', 200)], NU, 'sum');
+		expect(o?.forrigeSammeTid).toBeNull();
+		expect(o?.forskel).toBeNull();
+	});
+
+	it('soejlerne viser stadig HELE maaneden foer', () => {
+		const o = maanedOverblik([p('2026-08-01', 40), p('2026-07-28', 200)], NU, 'sum');
+		expect(o?.maaneder.find((m) => m.noegle === '2026-07')?.vaerdi).toBe(200);
 	});
 });
