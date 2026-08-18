@@ -93,16 +93,82 @@ export interface Kurve {
 	foerste: Maaling | null;
 	/** Forskellen mellem foerste og nyeste. Positiv er fremgang. */
 	aendring: number;
+	/** Maalene der er tegnet efter. Komponenten laeser viewBox og y'er her. */
+	flade: Flade;
 }
 
-// Tegnefladen. Samme maal som i mockup'en, saa designet passer 1:1.
-const X_VENSTRE = 22;
-const X_HOEJRE = 264;
-const Y_TOP = 18;
-const Y_BUND = 56;
-const BAAND_MIN_BREDDE = 12;
-const BAAND_KANT_VENSTRE = 14;
-const BAAND_KANT_HOEJRE = 274;
+// ── Tegnefladen ─────────────────────────────────────────────
+// Maalene laa foer som faste tal her i filen, fordi kurven kun fandtes
+// paa forsiden. Siden 18. august tegnes den samme kurve ogsaa paa
+// Udvikling, hvor den har en hel side at brede sig paa i stedet for et
+// kort. Derfor er maalene nu et argument.
+//
+// FLADE_FORSIDE er de PRAECIS samme tal som foer, saa forsiden ikke
+// flytter sig af sig selv. Vil du aendre forsidens hoejde, saa gør det
+// her ét sted, og saa foelger baand, pauser og datoer med.
+
+export interface Flade {
+	/** viewBox'ens bredde og hoejde. */
+	bredde: number;
+	hoejde: number;
+	/** Hvor linjen begynder og slutter vandret. */
+	xVenstre: number;
+	xHoejre: number;
+	/** Toppen og bunden af selve kurven. Over og under er der plads til tal. */
+	yTop: number;
+	yBund: number;
+	/** Det lyse felt bag et forloeb. */
+	baandTop: number;
+	baandHoejde: number;
+	/** Den farvede streg under feltet, som ogsaa bruges til pauser. */
+	baandStregY: number;
+	baandStregHoejde: number;
+	/** Datoerne under kurven. */
+	datoY: number;
+	/** Et kort forloeb maa ikke blive til en streg. */
+	baandMinBredde: number;
+	baandKantVenstre: number;
+	baandKantHoejre: number;
+}
+
+/** Forsidens kort. Lavere end foer 18. august, se HANDOVER 9.25. */
+export const FLADE_FORSIDE: Flade = {
+	bredde: 286,
+	hoejde: 66,
+	xVenstre: 22,
+	xHoejre: 264,
+	yTop: 14,
+	yBund: 48,
+	baandTop: 4,
+	baandHoejde: 46,
+	baandStregY: 52,
+	baandStregHoejde: 3,
+	datoY: 63,
+	baandMinBredde: 12,
+	baandKantVenstre: 14,
+	baandKantHoejre: 274
+};
+
+/**
+ * Udvikling. Kurven er sidens hovedperson og ikke et hjoerne af et kort,
+ * saa den faar mere hoejde og gaar taettere paa kanterne.
+ */
+export const FLADE_UDVIKLING: Flade = {
+	bredde: 286,
+	hoejde: 108,
+	xVenstre: 16,
+	xHoejre: 270,
+	yTop: 18,
+	yBund: 78,
+	baandTop: 6,
+	baandHoejde: 76,
+	baandStregY: 84,
+	baandStregHoejde: 3,
+	datoY: 100,
+	baandMinBredde: 12,
+	baandKantVenstre: 8,
+	baandKantHoejre: 278
+};
 
 /**
  * Traekker maalingerne af Dit overskud ud af MRS-udfyldelserne.
@@ -187,10 +253,10 @@ export function taethedsregler(antal: number): {
 }
 
 /** Laegger et tal ind i tegnefladens x-akse. */
-function xFor(ms: number, fra: number, til: number): number {
-	if (til <= fra) return X_HOEJRE;
+function xFor(ms: number, fra: number, til: number, flade: Flade): number {
+	if (til <= fra) return flade.xHoejre;
 	const andel = (ms - fra) / (til - fra);
-	return X_VENSTRE + andel * (X_HOEJRE - X_VENSTRE);
+	return flade.xVenstre + andel * (flade.xHoejre - flade.xVenstre);
 }
 
 /**
@@ -204,7 +270,8 @@ export function byggKurve(
 	maalinger: Maaling[],
 	adgange: Adgang[],
 	nu: number,
-	navnePrForlobId: Map<string, string> = new Map()
+	navnePrForlobId: Map<string, string> = new Map(),
+	flade: Flade = FLADE_FORSIDE
 ): Kurve {
 	const tom: Kurve = {
 		punkter: [],
@@ -214,7 +281,8 @@ export function byggKurve(
 		pauser: [],
 		seneste: null,
 		foerste: null,
-		aendring: 0
+		aendring: 0,
+		flade
 	};
 	if (maalinger.length === 0) return tom;
 
@@ -246,10 +314,11 @@ export function byggKurve(
 	const punkter: Punkt[] = sorteret.map((m, i) => ({
 		ms: m.ms,
 		vaerdi: m.vaerdi,
-		x: Math.round(xFor(m.ms, vindueFra, vindueTil) * 10) / 10,
+		x: Math.round(xFor(m.ms, vindueFra, vindueTil, flade) * 10) / 10,
 		y:
-			Math.round((Y_BUND - ((m.vaerdi - lav) / (hoej - lav)) * (Y_BUND - Y_TOP)) * 10) /
-			10,
+			Math.round(
+				(flade.yBund - ((m.vaerdi - lav) / (hoej - lav)) * (flade.yBund - flade.yTop)) * 10
+			) / 10,
 		visPrik: regler.prik(i),
 		visTal: regler.tal(i),
 		visDato: regler.dato(i),
@@ -263,16 +332,16 @@ export function byggKurve(
 		const fra = Math.max(a.fra, vindueFra);
 		const til = Math.min(a.til ?? nu, vindueTil);
 		if (til <= fra) continue;
-		let x = xFor(fra, vindueFra, vindueTil);
-		let bredde = xFor(til, vindueFra, vindueTil) - x;
+		let x = xFor(fra, vindueFra, vindueTil, flade);
+		let bredde = xFor(til, vindueFra, vindueTil, flade) - x;
 		// Et forloeb paa tre uger maa ikke forsvinde til en streg, naar man
 		// kigger paa to aar. Derfor en mindstebredde.
-		if (bredde < BAAND_MIN_BREDDE) {
-			x -= (BAAND_MIN_BREDDE - bredde) / 2;
-			bredde = BAAND_MIN_BREDDE;
+		if (bredde < flade.baandMinBredde) {
+			x -= (flade.baandMinBredde - bredde) / 2;
+			bredde = flade.baandMinBredde;
 		}
-		x = Math.max(BAAND_KANT_VENSTRE, x);
-		if (x + bredde > BAAND_KANT_HOEJRE) x = BAAND_KANT_HOEJRE - bredde;
+		x = Math.max(flade.baandKantVenstre, x);
+		if (x + bredde > flade.baandKantHoejre) x = flade.baandKantHoejre - bredde;
 		baand.push({
 			navn: navnePrForlobId.get(a.forlobId ?? '') ?? a.produkt,
 			produkt: a.produkt,
@@ -306,10 +375,10 @@ export function byggKurve(
 
 	const pauser: PauseBaand[] = huller
 		.map((h) => {
-			const x = xFor(h.fra, vindueFra, vindueTil);
+			const x = xFor(h.fra, vindueFra, vindueTil, flade);
 			return {
 				x: Math.round(x * 10) / 10,
-				bredde: Math.round((xFor(h.til, vindueFra, vindueTil) - x) * 10) / 10
+				bredde: Math.round((xFor(h.til, vindueFra, vindueTil, flade) - x) * 10) / 10
 			};
 		})
 		.filter((p) => p.bredde >= 4);
@@ -330,12 +399,12 @@ export function byggKurve(
 		const naeste = punkter[i + 1];
 		if (!naeste) break;
 		if (iPause(punkter[i].ms, naeste.ms)) {
-			stier.push(tilSti(stykke));
+			stier.push(tilSti(stykke, flade));
 			hullerSti.push(`M${punkter[i].x},${punkter[i].y} L${naeste.x},${naeste.y}`);
 			stykke = [];
 		}
 	}
-	if (stykke.length) stier.push(tilSti(stykke));
+	if (stykke.length) stier.push(tilSti(stykke, flade));
 
 	return {
 		punkter,
@@ -345,7 +414,8 @@ export function byggKurve(
 		pauser,
 		seneste,
 		foerste,
-		aendring: Math.round((seneste.vaerdi - foerste.vaerdi) * 10) / 10
+		aendring: Math.round((seneste.vaerdi - foerste.vaerdi) * 10) / 10,
+		flade
 	};
 }
 
@@ -367,13 +437,13 @@ function flet(
 }
 
 /** Et sammenhaengende linjestykke som svg-sti. */
-function tilSti(punkter: Punkt[]): string {
+function tilSti(punkter: Punkt[], flade: Flade): string {
 	if (punkter.length === 0) return '';
 	if (punkter.length === 1) {
 		// Ét punkt kan ikke tegne en linje. En kort vandret streg giver
 		// stadig noget at se paa, saa kortet ikke ser tomt ud.
 		const p = punkter[0];
-		return `M${Math.max(X_VENSTRE, p.x - 10)},${p.y} L${p.x},${p.y}`;
+		return `M${Math.max(flade.xVenstre, p.x - 10)},${p.y} L${p.x},${p.y}`;
 	}
 	return punkter.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
 }

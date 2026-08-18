@@ -443,7 +443,9 @@ body:has(.ny-app) {
 }
 
 .kurve {
-	margin-top: 10px;
+	/* Var 10px. Sat ned 18. august sammen med at selve kurven blev lavere,
+	   fordi kortet fyldte for meget paa forsiden. Linns oenske. */
+	margin-top: 6px;
 }
 
 /* Tallene i kurven skalerer IKKE med tekststoerrelsen. Bliver de store,
@@ -9854,10 +9856,6 @@ a.ch-knap {
 	box-shadow: inset 0 0 0 1px var(--line);
 }
 
-.udv-kurve {
-	margin: 2px -2px 0;
-}
-
 .udv-v-tal {
 	font-family: var(--sans);
 	font-size: 9px;
@@ -9902,6 +9900,12 @@ a.ch-knap {
 	font-size: calc(13px * var(--fs-scale, 1));
 	line-height: 1.55;
 	color: var(--ink-2);
+}
+
+/* Kurven skal fylde flisen ud. Kortets egen luft i siderne trykker den
+   ind, saa vi traekker den ud til kanten igen. */
+.udv-kurve {
+	margin: 2px -8px 0;
 }
 
 /* ── Siden du startede ────────────────────────────────────── */

@@ -54,14 +54,38 @@
 			</div>
 
 			<div class="kurve">
-				<svg viewBox="0 0 286 80" width="100%" height="80" role="img" aria-label={`Dit overskud fra ${formaterKortDato(kurve.foerste?.ms ?? nu, nu)} til ${formaterKortDato(kurve.seneste.ms, nu)}, ${kurve.foerste?.vaerdi} til ${kurve.seneste.vaerdi} af 10`}>
+				<!-- Maalene kommer fra kurve.flade, se FLADE_FORSIDE i
+				     content/forside3.ts. Kortet blev gjort lavere 18. august,
+				     fordi kurven fyldte for meget paa siden. Linns oenske. -->
+				<svg viewBox="0 0 {kurve.flade.bredde} {kurve.flade.hoejde}" width="100%" height={kurve.flade.hoejde} role="img" aria-label={`Dit overskud fra ${formaterKortDato(kurve.foerste?.ms ?? nu, nu)} til ${formaterKortDato(kurve.seneste.ms, nu)}, ${kurve.foerste?.vaerdi} til ${kurve.seneste.vaerdi} af 10`}>
 					{#each kurve.baand as b (b.fraMs + b.navn)}
-						<rect x={b.x} y="6" width={b.bredde} height="52" rx="5" fill="rgba(251,248,242,.09)" />
-						<rect x={b.x} y="62" width={b.bredde} height="3" rx="1.5" fill={farveFor(b.produkt)} />
+						<rect
+							x={b.x}
+							y={kurve.flade.baandTop}
+							width={b.bredde}
+							height={kurve.flade.baandHoejde}
+							rx="5"
+							fill="rgba(251,248,242,.09)"
+						/>
+						<rect
+							x={b.x}
+							y={kurve.flade.baandStregY}
+							width={b.bredde}
+							height={kurve.flade.baandStregHoejde}
+							rx="1.5"
+							fill={farveFor(b.produkt)}
+						/>
 					{/each}
 
 					{#each kurve.pauser as p, i (i)}
-						<rect x={p.x} y="62" width={p.bredde} height="3" rx="1.5" fill="rgba(251,248,242,.22)" />
+						<rect
+							x={p.x}
+							y={kurve.flade.baandStregY}
+							width={p.bredde}
+							height={kurve.flade.baandStregHoejde}
+							rx="1.5"
+							fill="rgba(251,248,242,.22)"
+						/>
 					{/each}
 
 					{#each kurve.huller as h, i (i)}
@@ -112,7 +136,7 @@
 							<text
 								class="v-lab"
 								x={p.x}
-								y="76"
+								y={kurve.flade.datoY}
 								text-anchor={p.erSidste ? 'end' : i === 0 ? 'start' : 'middle'}
 							>
 								{formaterKortDato(p.ms, nu)}

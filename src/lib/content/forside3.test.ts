@@ -6,7 +6,9 @@ import {
 	byggKurve,
 	kadenceDage,
 	maalingStatus,
-	type Maaling
+	type Maaling,
+	FLADE_FORSIDE,
+	FLADE_UDVIKLING
 } from './forside3';
 import type { Adgang } from './adgang3';
 
@@ -135,11 +137,7 @@ describe('byggKurve', () => {
 	});
 
 	it('holder baandet inden for tegnefladen', () => {
-		const k = byggKurve(
-			[maaling(30, 5), maaling(0, 7)],
-			[forlob(NU - 2 * DAG, NU + 20 * DAG)],
-			NU
-		);
+		const k = byggKurve([maaling(30, 5), maaling(0, 7)], [forlob(NU - 2 * DAG, NU + 20 * DAG)], NU);
 		expect(k.baand[0].x).toBeGreaterThanOrEqual(14);
 		expect(k.baand[0].x + k.baand[0].bredde).toBeLessThanOrEqual(274.01);
 	});
@@ -147,14 +145,22 @@ describe('byggKurve', () => {
 	it('bryder linjen og tegner et hul hen over en pause', () => {
 		// Hun havde adgang, meldte sig ud i fire maaneder og kom med igen.
 		const adgange = [abo(NU - 400 * DAG, NU - 280 * DAG), abo(NU - 150 * DAG, null)];
-		const k = byggKurve([maaling(400, 4.8), maaling(300, 5.2), maaling(30, 6.4), maaling(0, 6.6)], adgange, NU);
+		const k = byggKurve(
+			[maaling(400, 4.8), maaling(300, 5.2), maaling(30, 6.4), maaling(0, 6.6)],
+			adgange,
+			NU
+		);
 		expect(k.pauser.length).toBe(1);
 		expect(k.huller.length).toBe(1);
 		expect(k.stier.length).toBe(2);
 	});
 
 	it('tegner én sammenhaengende linje naar der ingen pause er', () => {
-		const k = byggKurve([maaling(90, 5), maaling(45, 6), maaling(0, 7)], [abo(NU - 200 * DAG, null)], NU);
+		const k = byggKurve(
+			[maaling(90, 5), maaling(45, 6), maaling(0, 7)],
+			[abo(NU - 200 * DAG, null)],
+			NU
+		);
 		expect(k.pauser).toEqual([]);
 		expect(k.stier).toHaveLength(1);
 		expect(k.huller).toEqual([]);
@@ -203,6 +209,67 @@ describe('maalingStatus', () => {
 
 	it('skriver ugedag naar maalingen er inden for en uge', () => {
 		const s = maalingStatus(NU - 5 * DAG, 'kickstart', NU);
-		expect(s.tekst).toMatch(/på (mandag|tirsdag|onsdag|torsdag|fredag|lørdag|søndag)|i morgen|i dag/);
+		expect(s.tekst).toMatch(
+			/på (mandag|tirsdag|onsdag|torsdag|fredag|lørdag|søndag)|i morgen|i dag/
+		);
 	});
+});
+
+// ============================================================
+// Tegnefladen. Tilfoejet 18. august 2026, da kurven ogsaa kom paa
+// Udvikling og de to steder skal have hver sin hoejde.
+// ============================================================
+
+describe('tegnefladen', () => {
+	it('uden et femte argument tegnes der paa forsidens flade', () => {
+		const k = byggKurve([maaling(90, 5.1), maaling(0, 7.4)], [], NU);
+		expect(k.flade).toBe(FLADE_FORSIDE);
+	});
+
+	it('fladen foelger med ud, saa komponenten kan laese viewBox af den', () => {
+		const k = byggKurve([maaling(0, 6)], [], NU, new Map(), FLADE_UDVIKLING);
+		expect(k.flade.hoejde).toBe(FLADE_UDVIKLING.hoejde);
+	});
+
+	// Uden det ville en tom kurve ikke kunne tegne en viewBox.
+	it('ogsaa naar der slet ikke er maalinger', () => {
+		expect(byggKurve([], [], NU, new Map(), FLADE_UDVIKLING).flade).toBe(FLADE_UDVIKLING);
+	});
+
+	it('Udviklings flade er hoejere end forsidens', () => {
+		expect(FLADE_UDVIKLING.hoejde).toBeGreaterThan(FLADE_FORSIDE.hoejde);
+		expect(FLADE_UDVIKLING.yBund - FLADE_UDVIKLING.yTop).toBeGreaterThan(
+			FLADE_FORSIDE.yBund - FLADE_FORSIDE.yTop
+		);
+	});
+
+	it('Udviklings kurve gaar taettere paa kanterne', () => {
+		expect(FLADE_UDVIKLING.xVenstre).toBeLessThan(FLADE_FORSIDE.xVenstre);
+		expect(FLADE_UDVIKLING.xHoejre).toBeGreaterThan(FLADE_FORSIDE.xHoejre);
+	});
+
+	it('punkterne laegger sig paa den flade der er bedt om', () => {
+		const k = byggKurve([maaling(90, 4), maaling(0, 8)], [], NU, new Map(), FLADE_UDVIKLING);
+		expect(k.punkter[0].x).toBe(FLADE_UDVIKLING.xVenstre);
+		expect(k.punkter[1].x).toBe(FLADE_UDVIKLING.xHoejre);
+		// Hoejeste vaerdi ligger oeverst, altsaa lavest y.
+		expect(k.punkter[1].y).toBeLessThan(k.punkter[0].y);
+	});
+
+	// Alt skal kunne vaere inden for viewBox'en, ellers klipper browseren.
+	for (const [navn, flade] of [
+		['forsiden', FLADE_FORSIDE],
+		['Udvikling', FLADE_UDVIKLING]
+	] as const) {
+		it(`${navn}s maal haenger sammen`, () => {
+			expect(flade.yTop).toBeLessThan(flade.yBund);
+			expect(flade.yBund).toBeLessThanOrEqual(flade.hoejde);
+			expect(flade.baandTop + flade.baandHoejde).toBeLessThanOrEqual(flade.baandStregY);
+			expect(flade.baandStregY + flade.baandStregHoejde).toBeLessThanOrEqual(flade.hoejde);
+			expect(flade.datoY).toBeLessThanOrEqual(flade.hoejde);
+			expect(flade.xVenstre).toBeLessThan(flade.xHoejre);
+			expect(flade.xHoejre).toBeLessThanOrEqual(flade.bredde);
+			expect(flade.baandKantHoejre).toBeLessThanOrEqual(flade.bredde);
+		});
+	}
 });

@@ -23,7 +23,13 @@
 	import type { UserDoc } from '$lib/types';
 	import type { ForlobKilde } from '$lib/content/adgang3';
 	import { udledAdgange, type Adgangsbillede } from '$lib/content/adgang3';
-	import { byggKurve, formaterKortDato, maalingStatus, type Kurve } from '$lib/content/forside3';
+	import {
+		byggKurve,
+		FLADE_UDVIKLING,
+		formaterKortDato,
+		maalingStatus,
+		type Kurve
+	} from '$lib/content/forside3';
 	import {
 		forskelTekst,
 		formatTal,
@@ -116,7 +122,15 @@
 
 	/** Kurven for det hun kigger paa lige nu. Samme tegning begge veje. */
 	const kurve = $derived<Kurve>(
-		byggKurve(valgt ? kurveFor(maalinger, valgt) : samletKurve(maalinger), adgange, nu, navne)
+		byggKurve(
+			valgt ? kurveFor(maalinger, valgt) : samletKurve(maalinger),
+			adgange,
+			nu,
+			navne,
+			// Her er kurven sidens hovedperson og ikke et hjoerne af et kort,
+			// saa den faar mere hoejde og gaar taettere paa kanterne.
+			FLADE_UDVIKLING
+		)
 	);
 
 	const status = $derived(
@@ -227,26 +241,40 @@
 				     og forsiden er den mest brugte skaerm i appen. -->
 				<div class="udv-kurve">
 					<svg
-						viewBox="0 0 286 80"
+						viewBox="0 0 {kurve.flade.bredde} {kurve.flade.hoejde}"
 						width="100%"
-						height="80"
+						height={kurve.flade.hoejde}
 						role="img"
 						aria-label={`${kurveTitel}, fra ${formatTal(kurve.foerste?.vaerdi ?? 0)} til ${formatTal(kurve.seneste?.vaerdi ?? 0)} af 10`}
 					>
 						{#each kurve.baand as b (b.fraMs + b.navn)}
-							<rect x={b.x} y="6" width={b.bredde} height="52" rx="5" fill="var(--plum-tint)" />
 							<rect
 								x={b.x}
-								y="62"
+								y={kurve.flade.baandTop}
 								width={b.bredde}
-								height="3"
+								height={kurve.flade.baandHoejde}
+								rx="5"
+								fill="var(--plum-tint)"
+							/>
+							<rect
+								x={b.x}
+								y={kurve.flade.baandStregY}
+								width={b.bredde}
+								height={kurve.flade.baandStregHoejde}
 								rx="1.5"
 								fill={baandFarve(b.produkt)}
 							/>
 						{/each}
 
 						{#each kurve.pauser as p, i (i)}
-							<rect x={p.x} y="62" width={p.bredde} height="3" rx="1.5" fill="var(--line)" />
+							<rect
+								x={p.x}
+								y={kurve.flade.baandStregY}
+								width={p.bredde}
+								height={kurve.flade.baandStregHoejde}
+								rx="1.5"
+								fill="var(--line)"
+							/>
 						{/each}
 
 						{#each kurve.huller as h, i (i)}
@@ -298,7 +326,7 @@
 								<text
 									class="udv-v-lab"
 									x={p.x}
-									y="76"
+									y={kurve.flade.datoY}
 									text-anchor={p.erSidste ? 'end' : i === 0 ? 'start' : 'middle'}
 								>
 									{formaterKortDato(p.ms, nu)}
