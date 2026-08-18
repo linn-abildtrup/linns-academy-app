@@ -197,13 +197,19 @@ describe('tilstandFor', () => {
 });
 
 describe('overblikFor', () => {
-	it('viser seneste og hvor meget det har rykket sig', () => {
+	it('viser foerste, seneste og hvor meget det har rykket sig', () => {
 		const o = overblikFor([alle(ms(2026, 1, 1), 4.8), alle(ms(2026, 8, 1), 7.4)]);
-		expect(o).toEqual({ nu: 7.4, forskel: 2.6 });
+		expect(o).toEqual({ foer: 4.8, nu: 7.4, forskel: 2.6 });
 	});
 
-	it('med én maaling er der ingen forskel at vise', () => {
-		expect(overblikFor([alle(ms(2026, 1, 1), 4.8)])).toEqual({ nu: 4.8, forskel: null });
+	// Det foerste tal skal ogsaa vaere der, for raekken "Samlet" i listen
+	// viser fra-til paa samme maade som de fem andre.
+	it('med én maaling staar foer og nu ens, og der er ingen forskel', () => {
+		expect(overblikFor([alle(ms(2026, 1, 1), 4.8)])).toEqual({
+			foer: 4.8,
+			nu: 4.8,
+			forskel: null
+		});
 	});
 
 	it('uden maalinger er der intet overblik', () => {

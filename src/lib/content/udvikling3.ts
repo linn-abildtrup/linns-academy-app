@@ -189,6 +189,8 @@ export function tilstandFor(scores: MaalingKilde[]): UdviklingTilstand {
 
 /** Overskuddet ved seneste maaling, og hvor meget det har rykket sig. */
 export interface Overblik {
+	/** Hendes allerfoerste overskud. Samme tal som nu naar hun kun har maalt én gang. */
+	foer: number;
 	nu: number;
 	/** null naar der kun er én maaling. */
 	forskel: number | null;
@@ -197,9 +199,10 @@ export interface Overblik {
 export function overblikFor(scores: MaalingKilde[]): Overblik | null {
 	const kurve = samletKurve(scores);
 	if (kurve.length === 0) return null;
+	const foer = kurve[0].vaerdi;
 	const nu = kurve[kurve.length - 1].vaerdi;
-	if (kurve.length === 1) return { nu, forskel: null };
-	return { nu, forskel: Math.round((nu - kurve[0].vaerdi) * 10) / 10 };
+	if (kurve.length === 1) return { foer, nu, forskel: null };
+	return { foer, nu, forskel: Math.round((nu - foer) * 10) / 10 };
 }
 
 /** "↑ 2,6 siden start". Tom naar der ikke er noget at sige. */

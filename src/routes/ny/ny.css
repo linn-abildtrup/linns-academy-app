@@ -9913,6 +9913,19 @@ a.ch-knap {
 	background: var(--plum-tint);
 }
 
+/* "Samlet" er ikke ét af de fem, den er summen af dem. En tynd streg
+   under skiller den fra listen uden at goere den til en overskrift. */
+.udv-samlet {
+	border-bottom: 1px solid var(--line);
+	border-radius: 11px 11px 0 0;
+	padding-bottom: 8px;
+	margin-bottom: 2px;
+}
+
+.udv-samlet .udv-navn {
+	font-weight: 600;
+}
+
 .udv-vaelg.valgt .udv-navn {
 	font-weight: 700;
 }

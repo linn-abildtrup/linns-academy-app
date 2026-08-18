@@ -340,9 +340,32 @@
 			<section>
 				<div class="lab"><h2>Siden du startede</h2></div>
 				{#if kanVaelge}
-					<p class="udv-hint">Tryk på en linje for at se den alene.</p>
+					<p class="udv-hint">Tryk på en linje for at se den i kurven ovenfor.</p>
 				{/if}
 				<div class="udv-liste">
+					<!-- "Samlet" staar oeverst som en raekke paa lige fod med de
+					     fem. Uden den var eneste vej tilbage til det samlede at
+					     trykke paa den valgte raekke igen, og det er der ingen der
+					     gaetter. Linns oenske 18. august. -->
+					{#if kanVaelge && overblik}
+						<button
+							class="udv-raekke udv-vaelg udv-samlet"
+							class:valgt={valgt === null}
+							aria-pressed={valgt === null}
+							onclick={() => (valgt = null)}
+						>
+							<span class="udv-navn">Samlet</span>
+							<span class="udv-bar" aria-hidden="true">
+								<i class="foer" style={`width:${bredde(overblik.foer)}%`}></i>
+								<i class="nu" style={`width:${bredde(overblik.nu)}%`}></i>
+							</span>
+							<span class="udv-ft">
+								{formatTal(overblik.foer)} → <b>{formatTal(overblik.nu)}</b>
+							</span>
+							<span class="udv-pil" aria-hidden="true">{valgt === null ? '⌄' : '›'}</span>
+						</button>
+					{/if}
+
 					{#each liste as f (f.id)}
 						{#if kanVaelge}
 							<!-- Linjen ER knappen. Der var foer en raekke runde knapper
