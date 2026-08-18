@@ -17,7 +17,15 @@
 // Blokken hedder "Symptomer". Linns valg 18. august.
 // ============================================================
 
+import type { Graenser } from './forside3';
 import { formatTal } from './udvikling3';
+
+/**
+ * MRS-skalaen. Elleve spoergsmaal a 0 til 4, altsaa 0 til 44 i alt, hvor
+ * 0 er bedst. Den staar HER og ikke i forside3, fordi det er symptomernes
+ * skala og ikke tegnefladens.
+ */
+export const GRAENSER_SYMPTOMER: Graenser = { min: 0, max: 44 };
 
 /** Kun det Symptomer skal bruge om én maaling. */
 export interface SymptomKilde {

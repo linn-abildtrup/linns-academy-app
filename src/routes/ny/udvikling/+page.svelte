@@ -45,6 +45,7 @@
 		type SliderId
 	} from '$lib/content/udvikling3';
 	import {
+		GRAENSER_SYMPTOMER,
 		symptomKurve,
 		symptomOverblik,
 		symptomTekst,
@@ -214,7 +215,11 @@
 	// FAERRE gener er fremgang. Det er omvendt af alt andet paa siden.
 	const symptomKurven = $derived(symptomKurve(symptomer));
 	const symptom = $derived(symptomOverblik(symptomer));
-	const symptomGraf = $derived(byggKurve(symptomKurven, adgange, nu, navne, FLADE_UDVIKLING));
+	// Symptomerne gaar fra 0 til 44, ikke fra 1 til 10 som overskuddet.
+	// Uden det klipper aksen kurven vaek. Set 18. august.
+	const symptomGraf = $derived(
+		byggKurve(symptomKurven, adgange, nu, navne, FLADE_UDVIKLING, GRAENSER_SYMPTOMER)
+	);
 
 	// ── Traening ─────────────────────────────────────────────
 	const traening = $derived(traeningOverblik(traeninger, nu));

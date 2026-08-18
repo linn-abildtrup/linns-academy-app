@@ -290,6 +290,20 @@ export interface Akse {
 }
 
 /**
+ * Skalaens yderpunkter. Overskuddet er 1 til 10, symptomerne 0 til 44.
+ *
+ * Stod de fast paa 1 og 10, ville symptom-kurven blive klippet vaek: en
+ * total paa 24 ligger uden for feltet, og saa tegnes der ingenting. Det
+ * skete 18. august, og der er nu tests for begge skalaer.
+ */
+export interface Graenser {
+	min: number;
+	max: number;
+}
+
+export const GRAENSER_OVERSKUD: Graenser = { min: 1, max: 10 };
+
+/**
  * Skalaen paa y-aksen.
  *
  * Uden hele tal, altsaa paa forsiden: som det altid har vaeret. Aksen
@@ -305,8 +319,12 @@ export interface Akse {
  * Linns valg. Hun vil hellere se bevaegelsen tydeligt end se hvor langt
  * der er til ti.
  */
-export function beregnAkse(vaerdier: number[], heleTal: boolean): Akse {
-	if (vaerdier.length === 0) return { lav: 1, hoej: 10, midt: null };
+export function beregnAkse(
+	vaerdier: number[],
+	heleTal: boolean,
+	graenser: Graenser = GRAENSER_OVERSKUD
+): Akse {
+	if (vaerdier.length === 0) return { lav: graenser.min, hoej: graenser.max, midt: null };
 
 	const mindst = Math.min(...vaerdier);
 	const stoerst = Math.max(...vaerdier);
@@ -319,26 +337,26 @@ export function beregnAkse(vaerdier: number[], heleTal: boolean): Akse {
 			lav = midte - 0.75;
 			hoej = midte + 0.75;
 		}
-		lav = Math.max(1, lav);
-		hoej = Math.min(10, hoej);
+		lav = Math.max(graenser.min, lav);
+		hoej = Math.min(graenser.max, hoej);
 		if (hoej <= lav) hoej = lav + 1;
 		return { lav, hoej, midt: null };
 	}
 
-	let lav = Math.max(1, Math.floor(mindst));
-	let hoej = Math.min(10, Math.ceil(stoerst));
+	let lav = Math.max(graenser.min, Math.floor(mindst));
+	let hoej = Math.min(graenser.max, Math.ceil(stoerst));
 
 	// En flad kurve ville ellers faa hoejde nul og forsvinde.
 	while (hoej - lav < 2) {
-		if (hoej < 10) hoej += 1;
-		else if (lav > 1) lav -= 1;
+		if (hoej < graenser.max) hoej += 1;
+		else if (lav > graenser.min) lav -= 1;
 		else break;
 	}
 
 	// Midten skal ogsaa vaere et helt tal, ellers staar der 5,5 paa aksen.
 	if ((hoej - lav) % 2 !== 0) {
-		if (hoej < 10) hoej += 1;
-		else if (lav > 1) lav -= 1;
+		if (hoej < graenser.max) hoej += 1;
+		else if (lav > graenser.min) lav -= 1;
 	}
 
 	const spaend = hoej - lav;
@@ -364,7 +382,8 @@ export function byggKurve(
 	adgange: Adgang[],
 	nu: number,
 	navnePrForlobId: Map<string, string> = new Map(),
-	flade: Flade = FLADE_FORSIDE
+	flade: Flade = FLADE_FORSIDE,
+	graenser: Graenser = GRAENSER_OVERSKUD
 ): Kurve {
 	const tom: Kurve = {
 		punkter: [],
@@ -377,7 +396,7 @@ export function byggKurve(
 		foerste: null,
 		aendring: 0,
 		flade,
-		akse: beregnAkse([], flade.akse)
+		akse: beregnAkse([], flade.akse, graenser)
 	};
 	if (maalinger.length === 0) return tom;
 
@@ -394,7 +413,8 @@ export function byggKurve(
 	// Y-aksen skalerer efter hendes egne tal, ikke efter 1-10. Se beregnAkse.
 	const akse = beregnAkse(
 		sorteret.map((m) => m.vaerdi),
-		flade.akse
+		flade.akse,
+		graenser
 	);
 	const lav = akse.lav;
 	const hoej = akse.hoej;
@@ -516,9 +536,7 @@ export function byggKurve(
 }
 
 /** Slaar overlappende perioder sammen og sorterer dem. */
-function flet(
-	perioder: Array<{ fra: number; til: number }>
-): Array<{ fra: number; til: number }> {
+function flet(perioder: Array<{ fra: number; til: number }>): Array<{ fra: number; til: number }> {
 	const sorteret = [...perioder].sort((a, b) => a.fra - b.fra);
 	const ud: Array<{ fra: number; til: number }> = [];
 	for (const p of sorteret) {

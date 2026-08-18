@@ -8,6 +8,7 @@ import {
 	maalingStatus,
 	type Maaling,
 	beregnAkse,
+	GRAENSER_OVERSKUD,
 	FLADE_FORSIDE,
 	FLADE_UDVIKLING
 } from './forside3';
@@ -429,5 +430,89 @@ describe('kurven kender sin akse', () => {
 			expect(p.y).toBeGreaterThanOrEqual(FLADE_UDVIKLING.yTop);
 			expect(p.y).toBeLessThanOrEqual(FLADE_UDVIKLING.yBund);
 		}
+	});
+});
+
+// ============================================================
+// Aksen paa ANDRE skalaer end 1 til 10.
+//
+// Fejlen 18. august: beregnAkse laaste til 1 og 10, fordi den var
+// skrevet til overskuddet. Symptomerne gaar 0 til 44, saa en total paa
+// 24 blev klippet vaek og kurven blev tegnet uden for feltet. Aksen
+// stod paa 8, 9, 10 og kortet var tomt.
+// ============================================================
+
+const SYMPTOM = { min: 0, max: 44 };
+
+describe('beregnAkse paa symptom-skalaen', () => {
+	it('rummer tal langt over ti', () => {
+		const a = beregnAkse([11, 12, 15, 20, 24], true, SYMPTOM);
+		expect(a.lav).toBeLessThanOrEqual(11);
+		expect(a.hoej).toBeGreaterThanOrEqual(24);
+	});
+
+	it('midten er stadig et helt tal', () => {
+		const a = beregnAkse([11, 24], true, SYMPTOM);
+		expect(Number.isInteger(a.midt)).toBe(true);
+		expect((a.hoej - a.lav) % 2).toBe(0);
+	});
+
+	it('nul gener er gyldigt og maa ikke skubbes op til 1', () => {
+		expect(beregnAkse([0, 4], true, SYMPTOM).lav).toBe(0);
+	});
+
+	it('gaar aldrig over 44', () => {
+		expect(beregnAkse([42, 44], true, SYMPTOM).hoej).toBeLessThanOrEqual(44);
+	});
+
+	it('uden graenser opfoerer den sig som foer, altsaa 1 til 10', () => {
+		const a = beregnAkse([4.2, 7.6], true);
+		expect(a).toEqual({ lav: 4, hoej: 8, midt: 6 });
+		expect(GRAENSER_OVERSKUD).toEqual({ min: 1, max: 10 });
+	});
+});
+
+describe('kurven paa symptom-skalaen', () => {
+	// Det her er selve fejlen: punkterne laa uden for feltet og blev
+	// klippet vaek af browseren, saa der stod en tom flise.
+	it('alle punkter ligger inden for kurvens top og bund', () => {
+		const k = byggKurve(
+			[maaling(120, 24), maaling(80, 20), maaling(40, 15), maaling(0, 11)],
+			[],
+			NU,
+			new Map(),
+			FLADE_UDVIKLING,
+			SYMPTOM
+		);
+		for (const p of k.punkter) {
+			expect(p.y).toBeGreaterThanOrEqual(FLADE_UDVIKLING.yTop);
+			expect(p.y).toBeLessThanOrEqual(FLADE_UDVIKLING.yBund);
+		}
+	});
+
+	it('aksen daekker hendes tal og ikke 8 til 10', () => {
+		const k = byggKurve(
+			[maaling(120, 24), maaling(0, 11)],
+			[],
+			NU,
+			new Map(),
+			FLADE_UDVIKLING,
+			SYMPTOM
+		);
+		expect(k.akse.hoej).toBeGreaterThanOrEqual(24);
+	});
+
+	// En faldende kurve er sejren for symptomer. Foerste maaling er
+	// hoejest, altsaa oeverst, altsaa lavest y.
+	it('en faldende symptom-kurve peger nedad paa skaermen', () => {
+		const k = byggKurve(
+			[maaling(120, 24), maaling(0, 11)],
+			[],
+			NU,
+			new Map(),
+			FLADE_UDVIKLING,
+			SYMPTOM
+		);
+		expect(k.punkter[1].y).toBeGreaterThan(k.punkter[0].y);
 	});
 });
