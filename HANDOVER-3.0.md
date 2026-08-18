@@ -367,10 +367,8 @@ det glemt, starter et helt hold uden træning.
 Spærrer for 3.0:
 
 - **De fire videoer til onboarding.** Skærmbillederne er taget 16. august
-- **Små skridt på `/ny/udvikling` er tomt for en kunde der er PÅ et forløb.**
-  Kortet læser abo-sporet, som er nøglet på dato. Forløbs-vaner gemmes pr
-  forløbsdag et andet sted. Det rammer præcis det Kickstart-hold der skal
-  flyttes først, så det skal lukkes inden da. Se 9.26
+- ~~Små skridt på `/ny/udvikling`~~. **Fjernet igen 18. august**, Linns
+  beslutning. Se 9.26 for hvad der gjorde det svært, hvis det skal tilbage
 - ~~Biblioteket~~. **Klaret 18. august**, se 9.22 og 9.23
 - ~~AI-hjælpen beskriver den GAMLE app~~. **Klaret 16. august**, se 9.21
 
@@ -1476,11 +1474,12 @@ kunne have sagt ja til. Kun de vaner hun har valgt NU tæller med.
 sammen (træning) og tage snit (mad, små skridt). Uden den ville reglen
 ligge tre steder og drive fra hinanden.
 
-**ÅBEN TRÅD, SKAL LUKKES FØR DET FØRSTE HOLD FLYTTES:** små skridt
-læses fra abo-sporet, som er nøglet på dato. En kunde der er PÅ et
-forløb får sine skridt gemt pr forløbsdag et andet sted, og kortet er
-tomt for hende. Det rammer præcis det Kickstart-hold der skal flyttes
-først.
+**Små skridt er FJERNET fra Udvikling igen, 18. august.** Linns
+beslutning. Kortet blev bygget og pillet ned samme dag. Bygger du det
+igen, så husk hvorfor det var svært: kortet læste abo-sporet, som er
+nøglet på dato, mens en kunde der er PÅ et forløb får sine skridt gemt
+pr forløbsdag et andet sted. Kortet var derfor tomt for præcis det
+Kickstart-hold der skal flyttes først.
 
 ### Mad er nu bygget faerdig paa naer to beslutninger
 

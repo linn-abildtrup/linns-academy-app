@@ -13,9 +13,10 @@
 	// content/forside3.ts. Saa faar vi forloebs-baandene og pauserne med
 	// gratis, og de to sider kan ikke drive fra hinanden.
 	//
-	// Naering, traening og smaa skridt hoerer ogsaa til Udvikling i den
-	// gamle app, men de er BEVIDST ikke bygget her. Linns beslutning: tag
-	// den her blok alene foerst. Se HANDOVER 9.24.
+	// Smaa skridt hoerer ogsaa til Udvikling i den gamle app. Kortet blev
+	// bygget 18. august og pillet ned samme dag efter Linns beslutning.
+	// Se HANDOVER 9.26 for hvad der gjorde det svaert, hvis det skal
+	// tilbage.
 	// ============================================================
 
 	import { getContext } from 'svelte';
@@ -58,16 +59,9 @@
 		type TraeningKilde
 	} from '$lib/content/traeningMaaned3';
 	import { dagOrd, madOverblik, madTekst, type MaaltidKilde } from '$lib/content/madMaaned3';
-	import {
-		jaPaaDagen,
-		skridtOverblik,
-		skridtTekst,
-		type SkridtDag
-	} from '$lib/content/skridtMaaned3';
 	import { soejleBredde, stoersteMaaned } from '$lib/content/maanedTal3';
 	import { hentAlleMrsScores } from '$lib/firestore/mrs';
 	import { hentMaaltiderIPeriode } from '$lib/firestore/kost';
-	import { hentAboVaneOpsaetning, hentAlleAboVanedage } from '$lib/firestore/aboVaner';
 	import { hentHistorikSidenDato } from '$lib/firestore/traeningHistorik';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 
@@ -84,7 +78,6 @@
 	let symptomer = $state<SymptomKilde[]>([]);
 	let traeninger = $state<TraeningKilde[]>([]);
 	let maaltider = $state<MaaltidKilde[]>([]);
-	let skridtDage = $state<SkridtDag[]>([]);
 	let henter = $state(true);
 	/** null er den samlede kurve. Ellers ét af de fem spoergsmaal. */
 	let valgt = $state<SliderId | null>(null);
@@ -92,15 +85,14 @@
 	/**
 	 * Hvilket omraade der er foldet ud. Ét ad gangen.
 	 *
-	 * Udvikling faar fem omraader: overskuddet, hvordan hun har det,
-	 * traening, mad og smaa skridt. Hvert af dem er et kort hvor tallet og
-	 * retningen ALTID staar fremme, mens grafen er foldet sammen. Saa kan
-	 * hun se hele billedet paa én skaerm, og det er dét siden er til.
-	 * Linns valg 18. august, se HANDOVER 9.25.
+	 * Udvikling har fire omraader: overskuddet, symptomerne, traeningen og
+	 * maden. Hvert af dem er et kort hvor tallet og retningen ALTID staar
+	 * fremme, mens grafen er foldet sammen. Saa kan hun se hele billedet
+	 * paa én skaerm, og det er dét siden er til. Linns valg 18. august, se
+	 * HANDOVER 9.25.
 	 *
-	 * De fire andre er ikke bygget endnu. Et kort der ikke findes, er der
-	 * bare ikke, og det var netop grunden til at vaelge den her form: siden
-	 * ser ikke halvfaerdig ud undervejs.
+	 * Formen blev valgt fordi et omraade kan bygges eller fjernes uden at
+	 * siden ser halvfaerdig ud. Et kort der ikke findes, er der bare ikke.
 	 */
 	let aabent = $state<string>('overskud');
 
@@ -130,7 +122,7 @@
 			const seksMaanederSiden = new Date(nu);
 			seksMaanederSiden.setMonth(seksMaanederSiden.getMonth() - 6);
 			const fra = isoDag(seksMaanederSiden);
-			const [scores, historik, mad, vaneOpsaetning, vanedage] = await Promise.all([
+			const [scores, historik, mad] = await Promise.all([
 				hentAlleMrsScores(uid),
 				hentHistorikSidenDato(uid, fra).catch((e) => {
 					console.warn('[ny] kunne ikke hente traeningen', e);
@@ -139,11 +131,6 @@
 				hentMaaltiderIPeriode(uid, fra, isoDag(new Date(nu))).catch((e) => {
 					console.warn('[ny] kunne ikke hente maden', e);
 					return [];
-				}),
-				hentAboVaneOpsaetning(uid).catch(() => null),
-				hentAlleAboVanedage(uid, fra).catch((e) => {
-					console.warn('[ny] kunne ikke hente de smaa skridt', e);
-					return new Map();
 				})
 			]);
 			if (afbrudt) return;
@@ -161,12 +148,6 @@
 				totalF: x.totalF
 			}));
 
-			// Kun de vaner hun har valgt NU taeller med. Har hun fjernet en,
-			// skal et gammelt ja paa den ikke dukke op igen.
-			const valgte = (vaneOpsaetning?.valgteVaner ?? []).map((v) => v.id);
-			skridtDage = [...vanedage.values()]
-				.filter((d) => d.checks && Object.keys(d.checks).length > 0)
-				.map((d) => ({ dato: d.dato, ja: jaPaaDagen(d.checks, valgte) }));
 			henter = false;
 		})().catch((e) => {
 			console.error('[ny] kunne ikke hente maalingerne', e);
@@ -231,9 +212,6 @@
 	// ── Mad ──────────────────────────────────────────────────
 	// Vi taeller DAGE hvor hun spiste efter 30-30, ikke et gennemsnit.
 	const mad = $derived(madOverblik(maaltider, nu));
-
-	// ── Smaa skridt ──────────────────────────────────────────
-	const skridt = $derived(skridtOverblik(skridtDage, nu));
 
 	/** Kurven for det hun kigger paa lige nu. Samme tegning begge veje. */
 	const kurve = $derived<Kurve>(
@@ -739,7 +717,7 @@
 			<section class="udv-omraade" class:aaben={aabenTr}>
 				<button class="udv-hoved" aria-expanded={aabenTr} onclick={() => fold('traening')}>
 					<span class="udv-venstre">
-						<span class="udv-k">Træning</span>
+						<span class="udv-k">Mikrotræning</span>
 						{#if traening.forskel !== null && traening.forskel !== 0}
 							<span class="udv-chip-tal" class:ned={traening.forskel < 0}>
 								{traening.forskel > 0 ? '↑' : '↓'}
@@ -789,7 +767,7 @@
 			<section class="udv-omraade" class:aaben={aabenMad}>
 				<button class="udv-hoved" aria-expanded={aabenMad} onclick={() => fold('mad')}>
 					<span class="udv-venstre">
-						<span class="udv-k">Mad efter 30-30</span>
+						<span class="udv-k">30-30 dage</span>
 						{#if mad.forskel !== null && mad.forskel > 0 && mad.forrigeSammeTid}
 							<span class="udv-chip-tal">
 								↑ {mad.forskel} mere end samme tid i {mad.forrigeSammeTid.navn}
@@ -826,49 +804,6 @@
 								Du har registreret mad {dagOrd(mad.registrerede)} i {mad.denne.navn}.
 							</p>
 						{/if}
-					</div>
-				{/if}
-			</section>
-		{/if}
-
-		<!-- ── Smaa skridt ───────────────────────────────────────────
-		     Vi taeller KUN ja'erne, og naevner aldrig hvor mange hun kunne
-		     have sagt ja til. Den gamle side skriver "3 af 5" hver eneste
-		     dag, altsaa to nej dagligt. Det er en karakter, ikke en status. -->
-		{#if skridt}
-			{@const aabenSkridt = aabent === 'skridt'}
-			<section class="udv-omraade" class:aaben={aabenSkridt}>
-				<button class="udv-hoved" aria-expanded={aabenSkridt} onclick={() => fold('skridt')}>
-					<span class="udv-venstre">
-						<span class="udv-k">Små skridt</span>
-						{#if skridt.forskel !== null && skridt.forskel !== 0}
-							<span class="udv-chip-tal" class:ned={skridt.forskel < 0}>
-								{skridt.forskel > 0 ? '↑' : '↓'}
-								{formatTal(Math.abs(skridt.forskel))}
-							</span>
-						{/if}
-					</span>
-					<span class="udv-tal">
-						<span class="udv-n">{formatTal(skridt.denne.vaerdi)}</span>
-						<span class="udv-af">om dagen</span>
-					</span>
-					<span class="udv-fold" aria-hidden="true">{aabenSkridt ? '⌄' : '›'}</span>
-				</button>
-
-				{#if aabenSkridt}
-					<div class="udv-krop">
-						<div class="udv-maaneder">
-							{#each skridt.maaneder as m (m.noegle)}
-								<div class="udv-md" class:nu={m.noegle === skridt.denne.noegle}>
-									<span class="udv-md-n">{m.navn.slice(0, 3)}</span>
-									<span class="udv-md-bar" aria-hidden="true">
-										<i style={`width:${soejleBredde(m.vaerdi, stoersteMaaned(skridt))}%`}></i>
-									</span>
-									<span class="udv-md-v">{m.vaerdi > 0 ? formatTal(m.vaerdi) : ''}</span>
-								</div>
-							{/each}
-						</div>
-						<p class="udv-mrk">{skridtTekst(skridt)}</p>
 					</div>
 				{/if}
 			</section>

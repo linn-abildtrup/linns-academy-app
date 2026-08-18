@@ -16,7 +16,6 @@ import {
 	samlDage,
 	type MaaltidKilde
 } from './madMaaned3';
-import { jaPaaDagen, skridtOverblik, skridtTal, skridtTekst } from './skridtMaaned3';
 
 /** 18. august 2026. Det ur alle testene regner ud fra. */
 const NU = new Date(2026, 7, 18, 12, 0, 0).getTime();
@@ -248,6 +247,13 @@ describe('madTekst', () => {
 		tjekVenlig(t);
 	});
 
+	// Antallet af registrerede dage staar i sin egen linje under kortet.
+	// Staar det ogsaa her, siger skaermen det samme to gange.
+	it('naevner ikke hvor mange dage hun har registreret', () => {
+		const t = madTekst(madOverblik([ml('2026-08-01', 'morgenmad', 10, 2)], NU));
+		expect(t).not.toContain('registreret');
+	});
+
 	it('naevner ALDRIG en naevner som "9 af 18"', () => {
 		const alle = [
 			madTekst(madOverblik([...godDag('2026-08-01')], NU)),
@@ -263,99 +269,6 @@ describe('madTekst', () => {
 
 	it('ingen mad inviterer i stedet for at bebrejde', () => {
 		expect(madTekst(null)).toContain('Når du har registreret');
-	});
-});
-
-// ============================================================
-// Smaa skridt
-// ============================================================
-
-describe('jaPaaDagen', () => {
-	it('taeller kun ja', () => {
-		expect(jaPaaDagen({ a: 'ja', b: 'nej', c: 'ja' }, ['a', 'b', 'c'])).toBe(2);
-	});
-
-	// Har hun fjernet en vane, skal et gammelt ja ikke dukke op igen.
-	it('taeller kun de vaner hun har valgt nu', () => {
-		expect(jaPaaDagen({ a: 'ja', gammel: 'ja' }, ['a'])).toBe(1);
-	});
-
-	it('en dag uden svar er nul', () => {
-		expect(jaPaaDagen(undefined, ['a', 'b'])).toBe(0);
-	});
-});
-
-describe('skridtTal', () => {
-	it('bruger dansk komma', () => {
-		expect(skridtTal(3.4)).toBe('3,4 små skridt');
-	});
-
-	it('ental hedder lille skridt', () => {
-		expect(skridtTal(1)).toBe('1 lille skridt');
-	});
-});
-
-describe('skridtTekst', () => {
-	// Det vigtigste af alt: der maa ALDRIG staa "af 5". Det er en
-	// karakter, og den gamle side gav den hver eneste dag.
-	it('naevner aldrig hvor mange hun kunne have taget', () => {
-		const alle = [
-			skridtTekst(skridtOverblik([{ dato: '2026-08-01', ja: 3 }], NU)),
-			skridtTekst(
-				skridtOverblik(
-					[
-						{ dato: '2026-08-01', ja: 4 },
-						{ dato: '2026-07-01', ja: 2 }
-					],
-					NU
-				)
-			),
-			skridtTekst(
-				skridtOverblik(
-					[
-						{ dato: '2026-08-01', ja: 1 },
-						{ dato: '2026-07-01', ja: 5 }
-					],
-					NU
-				)
-			),
-			skridtTekst(null)
-		];
-		for (const t of alle) {
-			expect(t).not.toMatch(/\baf \d+\b/);
-			tjekVenlig(t);
-		}
-	});
-
-	it('roser det bedste snit', () => {
-		const t = skridtTekst(
-			skridtOverblik(
-				[
-					{ dato: '2026-08-01', ja: 5 },
-					{ dato: '2026-07-01', ja: 2 }
-				],
-				NU
-			)
-		);
-		expect(t).toContain('bedste snit');
-	});
-
-	it('siger hvor mange flere hun tager', () => {
-		const t = skridtTekst(
-			skridtOverblik(
-				[
-					{ dato: '2026-08-01', ja: 4 },
-					{ dato: '2026-07-01', ja: 2 },
-					{ dato: '2026-06-01', ja: 5 }
-				],
-				NU
-			)
-		);
-		expect(t).toContain('2 flere om dagen');
-	});
-
-	it('ingen svar inviterer i stedet for at bebrejde', () => {
-		expect(skridtTekst(null)).toContain('Når du har svaret');
 	});
 });
 

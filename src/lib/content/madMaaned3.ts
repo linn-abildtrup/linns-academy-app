@@ -130,8 +130,11 @@ export function madTekst(o: MadOverblik | null): string {
 			: `${stortNavn(o.denne.navn)} er lige begyndt for dig.`;
 	}
 
+	// Hvor mange dage hun har registreret staar i sin egen linje under
+	// kortet. Den maa ikke ogsaa staa her, ellers staar det samme to
+	// gange lige efter hinanden. Set 18. august.
 	if (o.denne.vaerdi === 0) {
-		return `Du har registreret mad ${dagOrd(o.registrerede)} i ${o.denne.navn}. 30 g protein til hvert måltid og 30 g fiber er et stykke arbejde, og det kommer.`;
+		return '30 g protein til hvert måltid og 30 g fiber er et stykke arbejde. Det kommer.';
 	}
 
 	if (o.bedste) {
