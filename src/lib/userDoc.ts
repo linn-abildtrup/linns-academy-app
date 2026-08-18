@@ -430,7 +430,16 @@ export async function synkroniserForlobskundeStatus(
 		if (allowed.activeSubscription !== undefined) {
 			opdateringer.activeSubscription = allowed.activeSubscription;
 		}
-		if (allowed.expiresAt !== undefined) opdateringer.expiresAt = allowed.expiresAt;
+		// Kun en RIGTIG dato kopieres ned. Whitelisten kan have expiresAt=null
+		// (saadan saetter scriptet der giver basis-adgang udenom Simplero det,
+		// fordi et loebende abo ikke udloeber). Blev null kopieret ned, slettede
+		// den den udloebsdato der lige var regnet ud ovenfor. Saa laenge
+		// forloebet koerte, skrev resolveren nedenfor datoen tilbage, men naar
+		// forloebet var slut roerer resolveren ikke felterne, og kunden stod
+		// tilbage som forloebskunde uden udloebsdato = udloeb aldrig, mens
+		// forsiden ikke kunne finde et forloeb og viste hende ingenting.
+		// Fundet 18/8 2026 (Anne Olsen, Kropsro 24. maj, ni kunder mere paa vej).
+		if (allowed.expiresAt != null) opdateringer.expiresAt = allowed.expiresAt;
 		opdateringer.updatedAt = Date.now();
 		// (state-feltet holdes ikke laengere i sync - A2 etape B.)
 	}
