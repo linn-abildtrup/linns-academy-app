@@ -101,6 +101,8 @@ export interface Kurve {
 	aendring: number;
 	/** Maalene der er tegnet efter. Komponenten laeser viewBox og y'er her. */
 	flade: Flade;
+	/** Y-aksens tal. Tegnes kun naar fladen har bedt om en akse. */
+	akse: Akse;
 }
 
 // ── Tegnefladen ─────────────────────────────────────────────
@@ -133,6 +135,14 @@ export interface Flade {
 	datoY: number;
 	/** Holdets navn under sit eget baand. Se FLADE_UDVIKLING. */
 	baandTekstY: number;
+	/**
+	 * Skal der staa tal paa y-aksen, og skal skalaen saa rundes ud til
+	 * hele tal. Forsidens kort er for lille til en akse, saa den er falsk
+	 * der og sand paa Udvikling.
+	 */
+	akse: boolean;
+	/** Hvor langt inde linjen begynder, saa aksens tal kan staa udenfor. */
+	akseBredde: number;
 	/** Et kort forloeb maa ikke blive til en streg. */
 	baandMinBredde: number;
 	baandKantVenstre: number;
@@ -155,6 +165,8 @@ export const FLADE_FORSIDE: Flade = {
 	// Forsiden har ikke plads til navne paa baandet og bruger sin egen
 	// forklaring under kortet. Feltet er sat for at fladen er hel.
 	baandTekstY: 63,
+	akse: false,
+	akseBredde: 0,
 	baandMinBredde: 12,
 	baandKantVenstre: 14,
 	baandKantHoejre: 274
@@ -169,8 +181,8 @@ export const FLADE_UDVIKLING: Flade = {
 	hoejde: 116,
 	// Helt ud til kanten. Paa forsiden er kurven et hjoerne af et kort og
 	// skal have luft omkring sig. Her ER den indholdet.
-	xVenstre: 10,
-	xHoejre: 276,
+	xVenstre: 22,
+	xHoejre: 278,
 	yTop: 14,
 	yBund: 90,
 	baandTop: 3,
@@ -179,8 +191,11 @@ export const FLADE_UDVIKLING: Flade = {
 	baandStregHoejde: 3,
 	datoY: 110,
 	baandTekstY: 110,
+	akse: true,
+	// Plads til "10" til venstre for kurven.
+	akseBredde: 16,
 	baandMinBredde: 12,
-	baandKantVenstre: 3,
+	baandKantVenstre: 18,
 	baandKantHoejre: 283
 };
 
@@ -266,6 +281,69 @@ export function taethedsregler(antal: number): {
 	};
 }
 
+/** Y-aksens tre tal. midt er null naar den ikke ville blive et helt tal. */
+export interface Akse {
+	lav: number;
+	hoej: number;
+	midt: number | null;
+}
+
+/**
+ * Skalaen paa y-aksen.
+ *
+ * Uden hele tal, altsaa paa forsiden: som det altid har vaeret. Aksen
+ * laegger sig taet om hendes tal, saa en fremgang fra 5,1 til 6,0 ikke
+ * ser ud som ingenting. Der staar ingen tal paa den.
+ *
+ * Med hele tal, altsaa paa Udvikling: Linns beslutning 18. august. Der
+ * skal STAA tal paa aksen, og saa maa der aldrig staa 3,8 eller 8,0.
+ * Vi runder derfor ud til hele tal og soerger for at midten ogsaa
+ * bliver et. Hannes 4,2 til 7,6 giver 4, 6 og 8.
+ *
+ * Aksen daekker altid hendes egne tal og ikke hele skalaen fra 1 til 10.
+ * Linns valg. Hun vil hellere se bevaegelsen tydeligt end se hvor langt
+ * der er til ti.
+ */
+export function beregnAkse(vaerdier: number[], heleTal: boolean): Akse {
+	if (vaerdier.length === 0) return { lav: 1, hoej: 10, midt: null };
+
+	const mindst = Math.min(...vaerdier);
+	const stoerst = Math.max(...vaerdier);
+
+	if (!heleTal) {
+		let lav = mindst - 0.4;
+		let hoej = stoerst + 0.4;
+		if (hoej - lav < 1.5) {
+			const midte = (hoej + lav) / 2;
+			lav = midte - 0.75;
+			hoej = midte + 0.75;
+		}
+		lav = Math.max(1, lav);
+		hoej = Math.min(10, hoej);
+		if (hoej <= lav) hoej = lav + 1;
+		return { lav, hoej, midt: null };
+	}
+
+	let lav = Math.max(1, Math.floor(mindst));
+	let hoej = Math.min(10, Math.ceil(stoerst));
+
+	// En flad kurve ville ellers faa hoejde nul og forsvinde.
+	while (hoej - lav < 2) {
+		if (hoej < 10) hoej += 1;
+		else if (lav > 1) lav -= 1;
+		else break;
+	}
+
+	// Midten skal ogsaa vaere et helt tal, ellers staar der 5,5 paa aksen.
+	if ((hoej - lav) % 2 !== 0) {
+		if (hoej < 10) hoej += 1;
+		else if (lav > 1) lav -= 1;
+	}
+
+	const spaend = hoej - lav;
+	return { lav, hoej, midt: spaend > 0 && spaend % 2 === 0 ? lav + spaend / 2 : null };
+}
+
 /** Laegger et tal ind i tegnefladens x-akse. */
 function xFor(ms: number, fra: number, til: number, flade: Flade): number {
 	if (til <= fra) return flade.xHoejre;
@@ -297,7 +375,8 @@ export function byggKurve(
 		seneste: null,
 		foerste: null,
 		aendring: 0,
-		flade
+		flade,
+		akse: beregnAkse([], flade.akse)
 	};
 	if (maalinger.length === 0) return tom;
 
@@ -311,19 +390,13 @@ export function byggKurve(
 	const vindueFra = foerste.ms;
 	const vindueTil = seneste.ms > foerste.ms ? seneste.ms : foerste.ms + 7 * 86400000;
 
-	// Y-aksen skalerer efter hendes egne tal, ikke efter 1-10. Ellers ville
-	// en fremgang fra 5,1 til 6,0 se ud som ingenting.
-	const vaerdier = sorteret.map((m) => m.vaerdi);
-	let lav = Math.min(...vaerdier) - 0.4;
-	let hoej = Math.max(...vaerdier) + 0.4;
-	if (hoej - lav < 1.5) {
-		const midte = (hoej + lav) / 2;
-		lav = midte - 0.75;
-		hoej = midte + 0.75;
-	}
-	lav = Math.max(1, lav);
-	hoej = Math.min(10, hoej);
-	if (hoej <= lav) hoej = lav + 1;
+	// Y-aksen skalerer efter hendes egne tal, ikke efter 1-10. Se beregnAkse.
+	const akse = beregnAkse(
+		sorteret.map((m) => m.vaerdi),
+		flade.akse
+	);
+	const lav = akse.lav;
+	const hoej = akse.hoej;
 
 	const regler = taethedsregler(sorteret.length);
 	const punkter: Punkt[] = sorteret.map((m, i) => ({
@@ -436,7 +509,8 @@ export function byggKurve(
 		seneste,
 		foerste,
 		aendring: Math.round((seneste.vaerdi - foerste.vaerdi) * 10) / 10,
-		flade
+		flade,
+		akse
 	};
 }
 

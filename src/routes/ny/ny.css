@@ -9775,10 +9775,27 @@ a.ch-knap {
 	background: var(--paper);
 	border-radius: 20px;
 	box-shadow: var(--shadow);
-	padding: 16px 16px 14px;
+	padding: 14px 16px 12px;
 	display: flex;
 	flex-direction: column;
+	gap: 6px;
+}
+
+/* Overskrift til venstre, tal til hoejre, paa samme linje. */
+.udv-hoved {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
 	gap: 10px;
+}
+
+.udv-venstre {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+	min-width: 0;
+	padding-top: 2px;
 }
 
 .udv-k {
@@ -9791,8 +9808,8 @@ a.ch-knap {
 .udv-tal {
 	display: flex;
 	align-items: baseline;
-	gap: 8px;
-	flex-wrap: wrap;
+	gap: 6px;
+	flex-shrink: 0;
 }
 
 .udv-n {
@@ -9845,6 +9862,15 @@ a.ch-knap {
 	fill: var(--ink-3);
 }
 
+/* Tallene paa y-aksen. De skalerer IKKE med tekststoerrelsen, ligesom
+   resten inde i kurven. Blev de store, ville de skubbe kurven vaek. */
+.udv-v-akse {
+	font-family: var(--sans);
+	font-size: 8.5px;
+	fill: var(--ink-3);
+	text-anchor: end;
+}
+
 /* Holdets navn staar paa sit eget baand i stedet for i en forklaring
    under flisen. Saa er der ingenting at slaa op, og en hel linje er
    sparet til kurven. */
@@ -9865,7 +9891,7 @@ a.ch-knap {
 /* Kurven skal fylde flisen ud. Kortet har 16 px luft i siderne, og den
    traekker vi helt vaek her, saa kurven gaar fra kant til kant. */
 .udv-kurve {
-	margin: 4px -16px 0;
+	margin: 0 -16px;
 }
 
 .udv-kurve svg {

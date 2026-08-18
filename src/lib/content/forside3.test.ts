@@ -7,6 +7,7 @@ import {
 	kadenceDage,
 	maalingStatus,
 	type Maaling,
+	beregnAkse,
 	FLADE_FORSIDE,
 	FLADE_UDVIKLING
 } from './forside3';
@@ -243,9 +244,19 @@ describe('tegnefladen', () => {
 		);
 	});
 
-	it('Udviklings kurve gaar taettere paa kanterne', () => {
-		expect(FLADE_UDVIKLING.xVenstre).toBeLessThan(FLADE_FORSIDE.xVenstre);
+	// Venstre kant er IKKE laengere ude paa Udvikling, for dér staar
+	// y-aksens tal. Til gengaeld er selve kurven bredere.
+	it('Udviklings kurve er bredere end forsidens', () => {
+		expect(FLADE_UDVIKLING.xHoejre - FLADE_UDVIKLING.xVenstre).toBeGreaterThan(
+			FLADE_FORSIDE.xHoejre - FLADE_FORSIDE.xVenstre
+		);
 		expect(FLADE_UDVIKLING.xHoejre).toBeGreaterThan(FLADE_FORSIDE.xHoejre);
+	});
+
+	it('kun Udvikling har en akse, og der er sat plads af til den', () => {
+		expect(FLADE_FORSIDE.akse).toBe(false);
+		expect(FLADE_UDVIKLING.akse).toBe(true);
+		expect(FLADE_UDVIKLING.xVenstre).toBeGreaterThanOrEqual(FLADE_UDVIKLING.akseBredde);
 	});
 
 	it('punkterne laegger sig paa den flade der er bedt om', () => {
@@ -305,5 +316,105 @@ describe('fyldet under kurven', () => {
 	it('fladen foelger den flade der tegnes paa', () => {
 		const k = byggKurve([maaling(90, 4), maaling(0, 8)], [], NU, new Map(), FLADE_UDVIKLING);
 		expect(k.fyld[0]).toContain(`,${FLADE_UDVIKLING.yBund}`);
+	});
+});
+
+// ============================================================
+// Y-aksen. Linns beslutning 18. august: den skal daekke hendes EGNE
+// tal og ikke hele skalaen fra 1 til 10, og der skal staa tal paa den.
+// ============================================================
+
+describe('beregnAkse', () => {
+	it('runder ud til hele tal, og midten bliver ogsaa et', () => {
+		// Hannes rigtige tal.
+		expect(beregnAkse([4.2, 4.8, 6.2, 7.2, 7.6], true)).toEqual({ lav: 4, hoej: 8, midt: 6 });
+	});
+
+	it('hele tal ind giver hele tal ud', () => {
+		expect(beregnAkse([3, 6, 9], true)).toEqual({ lav: 3, hoej: 9, midt: 6 });
+	});
+
+	// Et ulige spaend ville give en midte paa 5,5, og det maa der ikke staa.
+	it('et ulige spaend udvides saa midten bliver hel', () => {
+		const a = beregnAkse([4, 7], true);
+		expect((a.hoej - a.lav) % 2).toBe(0);
+		expect(Number.isInteger(a.midt)).toBe(true);
+	});
+
+	// En helt flad kurve ville ellers faa hoejde nul og forsvinde.
+	it('en flad kurve faar stadig en hoejde', () => {
+		const a = beregnAkse([5, 5, 5], true);
+		expect(a.hoej - a.lav).toBeGreaterThanOrEqual(2);
+		expect(a.lav).toBeLessThanOrEqual(5);
+		expect(a.hoej).toBeGreaterThanOrEqual(5);
+	});
+
+	it('gaar aldrig under 1 eller over 10', () => {
+		for (const v of [
+			[1, 1],
+			[10, 10],
+			[1, 10],
+			[1.2, 9.8]
+		]) {
+			const a = beregnAkse(v, true);
+			expect(a.lav).toBeGreaterThanOrEqual(1);
+			expect(a.hoej).toBeLessThanOrEqual(10);
+		}
+	});
+
+	it('rummer altid de tal den fik', () => {
+		for (const v of [
+			[4.2, 7.6],
+			[2, 3],
+			[8.9, 9.1],
+			[1, 4]
+		]) {
+			const a = beregnAkse(v, true);
+			expect(a.lav).toBeLessThanOrEqual(Math.min(...v));
+			expect(a.hoej).toBeGreaterThanOrEqual(Math.max(...v));
+		}
+	});
+
+	// Forsiden har ingen akse og skal opfoere sig som den altid har.
+	it('uden hele tal er der ingen midte at skrive', () => {
+		expect(beregnAkse([5.1, 6.0], false).midt).toBeNull();
+	});
+
+	it('uden hele tal laegger aksen sig taet om tallene', () => {
+		const a = beregnAkse([5.1, 6.0], false);
+		expect(a.lav).toBeLessThan(5.1);
+		expect(a.hoej).toBeGreaterThan(6.0);
+		expect(a.hoej - a.lav).toBeLessThan(3);
+	});
+
+	it('ingen tal giver en akse man kan tegne paa alligevel', () => {
+		const a = beregnAkse([], true);
+		expect(a.hoej).toBeGreaterThan(a.lav);
+	});
+});
+
+describe('kurven kender sin akse', () => {
+	it('Udvikling faar hele tal', () => {
+		const k = byggKurve([maaling(90, 4.2), maaling(0, 7.6)], [], NU, new Map(), FLADE_UDVIKLING);
+		expect(k.akse).toEqual({ lav: 4, hoej: 8, midt: 6 });
+	});
+
+	it('forsiden faar ingen midte, saa der ikke tegnes en akse', () => {
+		expect(byggKurve([maaling(90, 4.2), maaling(0, 7.6)], [], NU).akse.midt).toBeNull();
+	});
+
+	// Punkterne skal ligge inden for aksen, ellers stikker de ud af flisen.
+	it('punkterne holder sig inden for kurvens top og bund', () => {
+		const k = byggKurve(
+			[maaling(90, 4.2), maaling(45, 6.2), maaling(0, 7.6)],
+			[],
+			NU,
+			new Map(),
+			FLADE_UDVIKLING
+		);
+		for (const p of k.punkter) {
+			expect(p.y).toBeGreaterThanOrEqual(FLADE_UDVIKLING.yTop);
+			expect(p.y).toBeLessThanOrEqual(FLADE_UDVIKLING.yBund);
+		}
 	});
 });

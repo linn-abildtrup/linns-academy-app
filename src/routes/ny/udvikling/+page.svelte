@@ -190,19 +190,29 @@
 		</a>
 	{:else}
 		<section class="udv-kort">
-			<div class="udv-k">{kurveTitel}</div>
-
-			{#if stortTal !== null}
-				<div class="udv-tal">
-					<span class="udv-n">{formatTal(stortTal)}</span>
-					<span class="udv-af">af 10</span>
+			<!-- Overskriften til venstre og tallet til hoejre, paa SAMME linje.
+			     De stod foer over hinanden og tog to linjer af flisen. Den
+			     plads er nu grafens. Linns oenske 18. august. -->
+			<div class="udv-hoved">
+				<!-- Overskriften og den lille plakat staar til VENSTRE, tallet
+				     til hoejre. Saa bliver de to spalter lige hoeje, og flisen
+				     bliver lavere end da plakaten sad under tallet. Linns
+				     oenske 18. august: grafen skal laengere op. -->
+				<span class="udv-venstre">
+					<span class="udv-k">{kurveTitel}</span>
 					{#if forskelTekst(stortForskel)}
 						<span class="udv-chip-tal" class:ned={(stortForskel ?? 0) < 0}>
 							{forskelTekst(stortForskel)}
 						</span>
 					{/if}
-				</div>
-			{/if}
+				</span>
+				{#if stortTal !== null}
+					<span class="udv-tal">
+						<span class="udv-n">{formatTal(stortTal)}</span>
+						<span class="udv-af">af 10</span>
+					</span>
+				{/if}
+			</div>
 
 			{#if tilstand === 'flere'}
 				<!-- Samme geometri som forsiden, men tegnet til en LYS flade.
@@ -217,6 +227,48 @@
 						role="img"
 						aria-label={`${kurveTitel}, fra ${formatTal(kurve.foerste?.vaerdi ?? 0)} til ${formatTal(kurve.seneste?.vaerdi ?? 0)} af 10`}
 					>
+						<!-- Y-aksen. Den daekker hendes EGNE tal og ikke hele skalaen
+						     fra 1 til 10. Linns valg: hun vil hellere se bevaegelsen
+						     tydeligt end se hvor langt der er til ti. Tallene runder
+						     ud til hele, saa der aldrig staar 3,8. Se beregnAkse. -->
+						{#if kurve.akse.midt !== null}
+							{@const yMidt = (kurve.flade.yTop + kurve.flade.yBund) / 2}
+							<line
+								x1={kurve.flade.akseBredde}
+								y1={kurve.flade.yTop}
+								x2={kurve.flade.xHoejre}
+								y2={kurve.flade.yTop}
+								stroke="var(--line)"
+								stroke-width="1"
+							/>
+							<line
+								x1={kurve.flade.akseBredde}
+								y1={yMidt}
+								x2={kurve.flade.xHoejre}
+								y2={yMidt}
+								stroke="var(--line)"
+								stroke-width="1"
+								stroke-dasharray="2 3"
+							/>
+							<line
+								x1={kurve.flade.akseBredde}
+								y1={kurve.flade.yBund}
+								x2={kurve.flade.xHoejre}
+								y2={kurve.flade.yBund}
+								stroke="var(--line)"
+								stroke-width="1"
+							/>
+							<text class="udv-v-akse" x={kurve.flade.akseBredde - 5} y={kurve.flade.yTop + 3}>
+								{kurve.akse.hoej}
+							</text>
+							<text class="udv-v-akse" x={kurve.flade.akseBredde - 5} y={yMidt + 3}>
+								{kurve.akse.midt}
+							</text>
+							<text class="udv-v-akse" x={kurve.flade.akseBredde - 5} y={kurve.flade.yBund + 3}>
+								{kurve.akse.lav}
+							</text>
+						{/if}
+
 						{#each kurve.baand as b (b.fraMs + b.navn)}
 							<rect
 								x={b.x}
