@@ -13,7 +13,7 @@ Denne fil er til den næste der skal arbejde videre, uanset om det er et nyt Cla
 Læs den sammen med disse tre:
 
 - `CLAUDE.md` i repo-roden er arbejdsreglerne. De er ikke til forhandling.
-- `SPEC-3.0.md` er hvad der bygges og hvorfor. 32 afsnit, hvor 26 og 29 har en del underafsnit. 13 til 21 er designbeslutningerne fra 5. august, 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning, 28 er opstarten, altså det der sker før den første skærm kommer frem, og **29 er hele træningsmodulet**, **30 er Beskeder**, **31 er onboarding** og **32 er Dine lektioner og Hjælp**. **Efter afsnit 27 ligger Ventelisten**, altså alt det der bevidst er sat på pause til appen er designet færdig. Læs afsnit 22 til 27 før du går i gang med noget i Mad, og afsnit 29 før du rører træningen.
+- `SPEC-3.0.md` er hvad der bygges og hvorfor. 34 afsnit, hvor 26 og 29 har en del underafsnit. 13 til 21 er designbeslutningerne fra 5. august, 22 til 27 er hele 30-30 beregneren med målingerne bag hver beslutning, 28 er opstarten, altså det der sker før den første skærm kommer frem, og **29 er hele træningsmodulet**, **30 er Beskeder**, **31 er onboarding**, **32 er Dine lektioner og Hjælp**, **33 er login** og **34 er Udvikling**. **Efter afsnit 27 ligger Ventelisten**, altså alt det der bevidst er sat på pause til appen er designet færdig. Læs afsnit 22 til 27 før du går i gang med noget i Mad, og afsnit 29 før du rører træningen.
 
   **Pas på afsnit 22 og 26.5.** De sagde begge at Biblioteket blev et kort nederst på forsiden. Det er omgjort to gange, og afsnit 32 er det gældende. Linjerne er markeret som forældede, men de står der stadig, fordi målingerne omkring dem stadig gælder.
 - `v3 app/linns-academy-design/DESIGN-SPEC.md` og `mockups.html` er hvordan det ser ud.
@@ -170,7 +170,7 @@ Alle ruter ligger under `/ny`.
 | `/ny/beskeder` | **Beskeder.** Linn AI og Linn i to faner. Færdig, se 9.19 |
 | `/ny/snak` | Nedlagt 16. august. Sender videre til `/ny/beskeder` |
 | `/ny/maaling` | Spørgeskema. Færdig |
-| `/ny/udvikling` | Bygget, men ikke gennemgået mod den gamle app endnu |
+| `/ny/udvikling` | **Baseline og check-ins bygget 18. august**, se 9.24. Næring, træning og små skridt mangler stadig |
 | `/ny/moduler` | Gammel skitse. **Ikke længere i bundmenuen**, erstattet af 30-30 |
 | `/ny/profil`, `/ny/forlob` | Bygget |
 | `/ny/profil` → **Dine lektioner** | Ét forløb pr række. **Afløser diplom-blokken.** Se 9.22 |
@@ -355,8 +355,8 @@ Der står nu to ting tilbage før et hold kan flyttes:
 
 - **De fire videoer til onboarding.** Indhold, ikke kode. Skærmbillederne er
   taget 16. august
-- **`/ny/udvikling` gennemgået mod den gamle app blok for blok.** Den slags
-  gennemgang har hver eneste gang afsløret ting der ellers var glemt
+- **De tre sidste blokke på `/ny/udvikling`**, altså næring, træning og små
+  skridt. Første blok, baseline og check-ins, er bygget 18. august, se 9.24
 
 **Og før et hold flyttes til 3.0:** programmerne skal være bygget OG tildelt i
 det nye system. De gamle kopieres ikke, det droppede Linn 16. august. Bliver
@@ -367,8 +367,9 @@ det glemt, starter et helt hold uden træning.
 Spærrer for 3.0:
 
 - **De fire videoer til onboarding.** Skærmbillederne er taget 16. august
-- **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app blok
-  for blok. Den slags gennemgang plejer at afsløre glemte ting
+- **`/ny/udvikling` mangler tre af sine fire blokke.** Baseline og check-ins
+  er bygget 18. august, se 9.24. Næring, træning og små skridt er ikke
+  påbegyndt. **Sig ikke at siden er "bygget"**, den er en fjerdedel bygget
 - ~~Biblioteket~~. **Klaret 18. august**, se 9.22 og 9.23
 - ~~AI-hjælpen beskriver den GAMLE app~~. **Klaret 16. august**, se 9.21
 
@@ -1332,6 +1333,55 @@ med forløbshistorik. Uden det havde vi genskabt fejlen fra 16. august, hvor
 hjælpen forklarede en app der ikke fandtes. **Reglen står ved magt: ændrer du
 kundefladen i 3.0, opdaterer du `appHjaelp3.ts` i samme ombæring.**
 
+### 9.24 UDVIKLING, første blok bygget 18. august
+
+**Siden var IKKE bygget.** Tidligere udgaver af det her dokument sagde at
+`/ny/udvikling` var bygget og bare manglede en gennemgang mod den gamle app.
+Det passede ikke. Den var en tom side med teksten "Siden er ikke bygget
+endnu". Vær varsom med den slags formuleringer, de koster den næste en
+fejlvurdering.
+
+**Den gamle Udvikling har fire blokke:** næring, træning, små skridt, og
+baseline plus check-ins. Linns beslutning 18. august: tag den sidste alene
+først. **De tre andre er ikke påbegyndt.**
+
+**Den gamle side tegner fem farvede streger oven i hinanden** i ét lille felt
+med en farveforklaring under. Den viser alt og svarer på ingenting.
+Målgruppen er kvinder i 40erne på en telefon. Linn sagde ja til at vende det
+om: én kurve over hendes overskud samlet, og under den en liste med fra-til
+pr spørgsmål, som er det der svarer på om det har hjulpet. Vil hun grave,
+vælger hun ét spørgsmål og får dets egen kurve.
+
+**Der måles mod hendes ALLERFØRSTE måling**, ikke mod det nuværende forløbs
+start. Linns beslutning: har hun været med i to år, er det den historie der
+er den rigtige.
+
+**To ting jeg tog fejl af undervejs, og som er rettet:**
+
+- **Cravings tæller ikke omvendt.** 1 betyder mange og 10 betyder ingen, så
+  et højt tal er godt på alle fem. Der er ingen undtagelse at kode. Der er en
+  test der holder på det, netop fordi det er nemt at læse forkert
+- **Målingerne kommer kun ét sted fra.** Den gamle side fletter to kilder,
+  men de gamle svar fra vaner-modulet blev flyttet over i sommeren 2026 og
+  ligger nu sammen med resten, mærket så de ikke tæller i symptom-scoren men
+  stadig har deres fem tal. Der er intet at flette, og kurven kan ikke få et
+  hul
+
+**Kurven er den samme geometri som forsidens**, altså `byggKurve` i
+`content/forside3.ts`, så forløbs-bånd og pauser følger med gratis og de to
+sider ikke kan drive fra hinanden. Den er tegnet inline med lyse farver i
+stedet for at trække forsidens komponent ud i en fælles. Forsidens kurve står
+på en mørk plomme-flade, og forsiden er den mest brugte skærm i appen. Mindst
+risikable løsning frem for den pæneste.
+
+**Tre tilstande.** Aldrig målt giver en invitation. Én måling står som hendes
+udgangspunkt og ikke som en fremgang på nul, som ville læse som en fiasko. Fra
+to målinger er der en historie. Går det den forkerte vej, siges det roligt og
+ikke i rødt.
+
+**Gennemsnittet divideres med ANTAL SVAR og ikke med fem**, så et oversprunget
+spørgsmål ikke trækker hendes overskud ned.
+
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
 Hele Mad-modulet blev gennemgaaet mod den gamle app 12. august, funktion for
@@ -1352,7 +1402,7 @@ Resten af etape 4:
 
 - ~~**Træning.**~~ **Bygget 15. og 16. august**, hele modulet fra bunden, inklusive at kunden bygger sit eget og AI-værktøjet. Se 9.18
 - ~~**Biblioteket**~~. **Klaret 18. august.** Delt i to, se 9.22 og 9.23
-- **`/ny/udvikling`** er bygget, men aldrig gennemgået mod den gamle app
+- **`/ny/udvikling`** mangler næring, træning og små skridt. Første blok bygget 18. august, se 9.24
 - ~~`static/mockup/` slettes~~. **Klaret 11. august.** Se 9.7
 - ~~SPEC mangler et afsnit 26.7~~. **Passede ikke.** Afsnittet står i spec'en
   og er fyldigt. Tidligere udgaver af det her dokument sagde at det manglede,

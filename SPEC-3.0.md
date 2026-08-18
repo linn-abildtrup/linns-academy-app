@@ -3754,3 +3754,76 @@ Rettet: `routes/ny/profil/`, `routes/ny/lektion/[dag]/[id]/`,
 `routes/ny/+page.svelte`, `content/appHjaelp3.ts`,
 `routes/api/ny-app-hjaelp/+server.ts` og `ny.css`. Alle er 3.0-filer. Ingen
 fil fra den gamle app er ændret, alt genbrug sker via import.
+
+---
+
+## 33. Login til 3.0. LÅST og bygget 18. august
+
+`/ny` sendte kunden til `/login`, som er den gamle apps side med det gamle
+design. Efter login gik den til `/` og derfra til `/app`, så hun skulle skrive
+`/ny` i hånden bagefter. Den gamle side er delt mellem begge apper og bruges
+af de 760 i drift, så den bliver stående urørt. 3.0 har nu sin egen på
+`/ny/login`.
+
+Siden kan det hele: log ind, opret konto med købstjek, og glemt kode. Linns
+billede står øverst, og **der nævnes ikke hvor købet er sket**, kun at hun
+skal bruge den samme email som da hun købte. Linns beslutning.
+
+**Forkert kode og ukendt email giver præcis samme besked**, ellers kunne siden
+bruges til at gætte hvem der er kunde. Det samme gælder glemt kode:
+kvitteringen er ens uanset om emailen findes, og en fejl derfra når aldrig
+skærmen.
+
+**Log ud** er samtidig kommet på Profil, nederst under "Konto". Der var ingen
+i 3.0 overhovedet før, så man kunne ikke logge ud uden at gå ind i den gamle
+app og gøre det derfra.
+
+### 33.1 Filen hedder `+page@.svelte`, og det er ikke en tastefejl
+
+Snabel-a'et bryder ud af `/ny`'s skal. Uden det ville skallen se en kunde der
+ikke er logget ind, sende hende til `/ny/login`, og så forfra i en uendelig
+ring. Verificeret i det byggede rutetræ: `/ny/login` står uden layout, hvor
+alle andre `/ny`-ruter har skallen. **Døb den aldrig om.**
+
+### 33.2 Der er tre veje ind i appen. Vi har lukket den ene
+
+1. **`/ny` uden at være logget ind.** Lukket 18. august, se ovenfor
+2. **Roden `/`** sender stadig alle logget ind til `/app`, uanset flag
+3. **PWA-manifestet** har stadig `start_url: "/app"`, så ikonet på
+   hjemmeskærmen går uden om det hele
+
+Nummer 2 og 3 er **delte** og rammer alle 760 kunder på én gang. Manifestet
+ligger desuden allerede installeret på hundredvis af telefoner, hvor man ikke
+kan forudsige hvornår en ændring slår igennem. Begge skal laves, men **den dag
+et hold faktisk flyttes**, ikke for at gøre en test nemmere. Til det rækker et
+bogmærke.
+
+---
+
+## 34. Udvikling. Første blok bygget 18. august
+
+**Siden var ikke bygget**, selvom HANDOVER sagde det. Den var en tom side. Se
+HANDOVER 9.24 for hele gennemgangen, inklusive de to ting der viste sig at
+være forkerte undervejs.
+
+Den gamle Udvikling har fire blokke: næring, træning, små skridt, og baseline
+plus check-ins. **Linns beslutning 18. august: tag den sidste alene først.**
+De tre andre er ikke påbegyndt.
+
+**Beslutningen om formen.** Den gamle side tegner fem farvede streger oven i
+hinanden med en farveforklaring under. Den viser alt og svarer på ingenting.
+I stedet: én kurve over overskuddet samlet, og under den en liste med fra-til
+pr spørgsmål. Vil hun grave, vælger hun ét spørgsmål ad gangen.
+
+**Der måles mod den allerførste måling**, ikke mod det nuværende forløbs start.
+
+**Alle fem spørgsmål tæller samme vej.** Ti er bedst, også på cravings hvor 1
+betyder mange og 10 betyder ingen. Det er nemt at læse forkert, og der er en
+test der holder på det.
+
+| Fil | Hvad | Tests |
+|---|---|---|
+| `content/login3.ts` | Login: fejltekster, felttjek, skærmteksterne | 32 |
+| `content/udvikling3.ts` | Kurver, fra-til, tilstande | 36 |
+| `routes/ny/login/+page@.svelte` | Login-siden. **Snabel-a'et skal blive** | |
+| `routes/ny/udvikling/+page.svelte` | Udvikling, første blok | |
