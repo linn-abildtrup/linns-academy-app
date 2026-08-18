@@ -3821,9 +3821,36 @@ pr spørgsmål. Vil hun grave, vælger hun ét spørgsmål ad gangen.
 betyder mange og 10 betyder ingen. Det er nemt at læse forkert, og der er en
 test der holder på det.
 
+### 34.1 Alle fem områder, bygget samme dag
+
+Udvikling rummer **Dit overskud, Symptomer, Træning, Mad og Små skridt**,
+alle som **foldede kort** hvor tallet og retningen altid står fremme.
+Linns valg af form, fordi siden skal svare på om det hjælper, og det svar
+er helheden.
+
+**Reglen der styrer indholdet:** en side der gør status må aldrig kunne
+læses som en anklage. Der findes derfor intet mål at ramme ved siden af.
+Alt sammenlignes med hende selv, måned mod måned.
+
+**Symptomer tæller omvendt af alt andet.** 0 til 44 hvor 0 er bedst. Se
+HANDOVER 9.26 for hele begrundelsen og for de fælder der ligger i det.
+
+**Y-aksen dækker hendes egne tal**, ikke hele skalaen, og runder ud til
+hele tal så der aldrig står 3,8.
+
+**Forsiden fik samme kurve**, men beholdt sin mørke plomme-flade.
+
+Hele gennemgangen står i HANDOVER 9.24, 9.25 og 9.26, inklusive to ting
+jeg tog fejl af undervejs og den åbne tråd om små skridt.
+
 | Fil | Hvad | Tests |
 |---|---|---|
 | `content/login3.ts` | Login: fejltekster, felttjek, skærmteksterne | 32 |
-| `content/udvikling3.ts` | Kurver, fra-til, tilstande | 36 |
+| `content/udvikling3.ts` | Kurver, fra-til, tilstande, holdnavn | 44 |
+| `content/symptomer3.ts` | Symptomer. **Omvendt retning**, se 9.26 | 14 |
+| `content/maanedTal3.ts` | Måned mod måned. Delt af de tre nedenfor | 32 |
+| `content/traeningMaaned3.ts` | Træning i minutter | 27 |
+| `content/madMaaned3.ts` | Protein og fiber pr registreret dag | |
+| `content/skridtMaaned3.ts` | Små skridt. Tæller kun ja | |
 | `routes/ny/login/+page@.svelte` | Login-siden. **Snabel-a'et skal blive** | |
-| `routes/ny/udvikling/+page.svelte` | Udvikling, første blok | |
+| `routes/ny/udvikling/+page.svelte` | Udvikling, alle fem kort | |

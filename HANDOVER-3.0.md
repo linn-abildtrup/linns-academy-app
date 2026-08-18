@@ -170,7 +170,7 @@ Alle ruter ligger under `/ny`.
 | `/ny/beskeder` | **Beskeder.** Linn AI og Linn i to faner. Færdig, se 9.19 |
 | `/ny/snak` | Nedlagt 16. august. Sender videre til `/ny/beskeder` |
 | `/ny/maaling` | Spørgeskema. Færdig |
-| `/ny/udvikling` | **Baseline og check-ins bygget 18. august**, se 9.24. Næring, træning og små skridt mangler stadig |
+| `/ny/udvikling` | **Alle fem områder bygget 18. august** som foldede kort. Se 9.24, 9.25 og 9.26 |
 | `/ny/moduler` | Gammel skitse. **Ikke længere i bundmenuen**, erstattet af 30-30 |
 | `/ny/profil`, `/ny/forlob` | Bygget |
 | `/ny/profil` → **Dine lektioner** | Ét forløb pr række. **Afløser diplom-blokken.** Se 9.22 |
@@ -355,8 +355,8 @@ Der står nu to ting tilbage før et hold kan flyttes:
 
 - **De fire videoer til onboarding.** Indhold, ikke kode. Skærmbillederne er
   taget 16. august
-- **De tre sidste blokke på `/ny/udvikling`**, altså næring, træning og små
-  skridt. Første blok, baseline og check-ins, er bygget 18. august, se 9.24
+- ~~De tre sidste blokke på `/ny/udvikling`~~. **Alle fem områder er bygget
+  18. august**, se 9.25 og 9.26. Men se den åbne tråd nedenfor om små skridt
 
 **Og før et hold flyttes til 3.0:** programmerne skal være bygget OG tildelt i
 det nye system. De gamle kopieres ikke, det droppede Linn 16. august. Bliver
@@ -367,9 +367,10 @@ det glemt, starter et helt hold uden træning.
 Spærrer for 3.0:
 
 - **De fire videoer til onboarding.** Skærmbillederne er taget 16. august
-- **`/ny/udvikling` mangler tre af sine fire blokke.** Baseline og check-ins
-  er bygget 18. august, se 9.24. Næring, træning og små skridt er ikke
-  påbegyndt. **Sig ikke at siden er "bygget"**, den er en fjerdedel bygget
+- **Små skridt på `/ny/udvikling` er tomt for en kunde der er PÅ et forløb.**
+  Kortet læser abo-sporet, som er nøglet på dato. Forløbs-vaner gemmes pr
+  forløbsdag et andet sted. Det rammer præcis det Kickstart-hold der skal
+  flyttes først, så det skal lukkes inden da. Se 9.26
 - ~~Biblioteket~~. **Klaret 18. august**, se 9.22 og 9.23
 - ~~AI-hjælpen beskriver den GAMLE app~~. **Klaret 16. august**, se 9.21
 
@@ -1381,6 +1382,105 @@ ikke i rødt.
 
 **Gennemsnittet divideres med ANTAL SVAR og ikke med fem**, så et oversprunget
 spørgsmål ikke trækker hendes overskud ned.
+
+### 9.25 UDVIKLING: fem foldede kort, og forsiden fulgte med
+
+Bygget 18. august, oven på 9.24.
+
+**Formen.** Udvikling rummer fem områder: Dit overskud, Symptomer,
+Træning, Mad og Små skridt. Fem måder at bladre mellem dem blev tegnet
+op, og Linn valgte **foldede kort**. Hvert område er et kort hvor tallet
+og retningen altid står fremme, mens grafen er foldet sammen. Ét kort er
+åbent ad gangen.
+
+Grunden er hvad siden er til: hun kommer ikke for at studere sin
+proteinindtagelse, hun kommer for at få svar på om det hjælper. Det svar
+er helheden, altså at flere ting peger samme vej, og det kræver at hun
+kan se dem alle på én skærm.
+
+Og en praktisk grund: **med den form kan et område bygges ad gangen uden
+at siden ser halvfærdig ud.** Et kort der ikke findes, er der bare ikke.
+
+**Knapperne øverst udgik.** Der lå seks runde knapper til at vælge
+mellem det samlede og de fem spørgsmål. De brækkede over på to linjer og
+skubbede hendes tal ned under folden. Nu er listen "Siden du startede"
+selv styringen: tryk på en linje, og kurven ovenover skifter. "Samlet"
+står øverst i listen som vejen tilbage.
+
+**Y-aksen.** Linns valg: den dækker hendes EGNE tal og ikke hele skalaen
+fra 1 til 10. På hele skalaen ville en fremgang fra 4,2 til 7,6 kun
+bruge den midterste tredjedel og se næsten flad ud. Men når der STÅR tal
+på aksen, må der ikke stå 3,8, så `beregnAkse` runder ud til hele tal og
+sørger for at midten også bliver et. Elleve tests på den alene.
+
+**Forsiden fik den samme kurve**, men beholdt sin mørke plomme-flade.
+Linns valg. Der er ingen tal på selve kurven, kun aksen og holdnavnene.
+
+**FÆLDE, fundet på et skærmbillede:** holdnavnet og datoen stod på samme
+linje, så "Kickstart" lå oven i "26. apr". Der er nu en test der forbyder
+at `baandTekstY` og `datoY` får samme værdi igen.
+
+**Tegnefladen er ét objekt.** Målene lå før som faste tal spredt over to
+filer. `FLADE_FORSIDE` og `FLADE_UDVIKLING` i `content/forside3.ts`
+følger med ud på kurven, så komponenten læser sin viewBox af den. Vil du
+ændre en højde, er det ét tal, og bånd, pauser og datoer følger med.
+
+### 9.26 UDVIKLING: de fire andre kort, og reglen bag dem
+
+Bygget 18. august.
+
+**LINNS REGEL, og den vigtigste linje i hele afsnittet:** en side der gør
+status må ALDRIG kunne læses som en anklage. Den gamle side gør det fire
+steder, uden at det er ondt ment:
+
+- Træning "12 af 30 dage". Hun læser 18 dage hvor hun ikke gjorde det
+- Næring: tomme søjler de dage hun ikke fik tastet. Hun spiste jo
+- Små skridt "3 af 5" hver dag, altså to nej dagligt
+- Symptomtjek: en stigende linje efter en hård måned
+
+**Symptomer.** Linns navn og hendes valg af model. Tallet står som det
+er, 0 til 44 hvor 0 er bedst, altså det samme tal hun ser når hun
+udfylder. Vi vender det IKKE om til et "ro"-tal, for så ville de to
+sider vise forskellige tal for det samme.
+
+**DET TÆLLER OMVENDT AF ALT ANDET PÅ SIDEN.** En faldende kurve er
+sejren her. Derfor er kurven grøn, og linjen under siger det med rene
+ord. Går det den forkerte vej, står der at kroppen har haft en hårdere
+periode, og at det ikke siger noget om hvor godt hun gør det.
+
+Udfyldelser der kun har de fem skydere springes over. De blev flyttet
+over fra vaner-modulet og har ingen symptom-score, så de ville ligge som
+nuller i bunden og ligne en kunde der pludselig var rask.
+
+**Træning.** Måned mod måned i MINUTTER, seks måneder som søjler, og
+intet mål. Den længste måned fylder søjlen ud, og alt andet måles mod
+den, så en måned kan aldrig se ud som en fiasko, kun som kortere.
+
+**MINUTTERNE ER NYE, OG DE KAN IKKE LAVES BAGUDRETTET.** Historikken
+gemte før kun AT hun havde trænet, og entry'en gemmer ikke hvilken dag i
+programmet hun tog, så længden kan ikke regnes ud. Afspilleren gemmer
+dem fra 18. august. Mangler bare én træning i perioden sine minutter,
+tælles der træninger i stedet, og det står med en linje på skærmen. De
+blandes ALDRIG: en måned med minutter mod en uden ville se ud som en
+kæmpe fremgang der ikke findes.
+
+**Mad.** Snittet regnes pr dag hun HAR registreret, ikke pr dag i
+måneden. En uge uden madregistrering trækker hende ikke ned. Målet på
+105 g nævnes KUN når hun er over det. Ligger hun under, står der
+ingenting om målet.
+
+**Små skridt.** Vi tæller kun ja'erne og nævner aldrig hvor mange hun
+kunne have sagt ja til. Kun de vaner hun har valgt NU tæller med.
+
+**Måned mod måned bor ét sted.** `content/maanedTal3.ts` kan både lægge
+sammen (træning) og tage snit (mad, små skridt). Uden den ville reglen
+ligge tre steder og drive fra hinanden.
+
+**ÅBEN TRÅD, SKAL LUKKES FØR DET FØRSTE HOLD FLYTTES:** små skridt
+læses fra abo-sporet, som er nøglet på dato. En kunde der er PÅ et
+forløb får sine skridt gemt pr forløbsdag et andet sted, og kortet er
+tomt for hende. Det rammer præcis det Kickstart-hold der skal flyttes
+først.
 
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
