@@ -25,7 +25,7 @@
 	import { hentExercises } from '$lib/firestore/mikrotraening';
 	import { getAudioUrl, getVideoUrl } from '$lib/utils/storage';
 	import { rensUdstyr3, udstyrFra } from '$lib/content/traeningKategori3';
-	import type { Traeningsprogram3 } from '$lib/content/traeningsprogram3';
+	import { dagensMinutter, type Traeningsprogram3 } from '$lib/content/traeningsprogram3';
 	import {
 		maaByggeEget3,
 		programmerForKunde3,
@@ -321,11 +321,16 @@
 				// uanset hvilken app hun har traenet i. Kilden er sat til
 				// mikrotraening, fordi den gamle app kun kender sine egne
 				// program-typer og ellers ville bygge et link til ingenting.
+				// Minutterne gemmes med, saa Udvikling kan taelle tid og ikke
+				// bare dage. Se HANDOVER 9.26. Traeninger logget FOER 18. august
+				// har ikke feltet, og det kan ikke laves bagudrettet, fordi
+				// entry'en ikke gemmer hvilken dag i programmet hun tog.
 				logTraening(uid, {
 					dato: formaterHistorikDato(new Date(nu)),
 					kilde: 'mikrotraening',
 					programNavn: program.navn,
-					gennemfoertAt: nu
+					gennemfoertAt: nu,
+					...(traening ? { minutter: dagensMinutter(traening) } : {})
 				})
 			]);
 		} catch (e) {
@@ -353,6 +358,7 @@
 						dato: formaterHistorikDato(new Date(nu)),
 						kilde: 'mikrotraening',
 						programNavn: program.navn,
+						...(traening ? { minutter: dagensMinutter(traening) } : {}),
 						gennemfoertAt: nu
 					})
 				]);

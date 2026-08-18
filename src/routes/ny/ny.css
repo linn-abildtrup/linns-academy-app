@@ -10109,6 +10109,73 @@ a.ch-knap {
 	color: var(--espresso);
 }
 
+/* ── Traening: maaned mod maaned ──────────────────────────── */
+/* Der er INTET maal at ramme ved siden af. Den laengste maaned fylder
+   soejlen ud, og alt andet maales mod den. Saa kan en maaned aldrig se
+   ud som en fiasko, kun som kortere end en anden. */
+
+.udv-maaneder {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	margin-top: 2px;
+}
+
+.udv-md {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+}
+
+.udv-md-n {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	width: 30px;
+	flex-shrink: 0;
+}
+
+.udv-md-bar {
+	flex: 1;
+	height: 9px;
+	background: var(--paper-2);
+	border-radius: 99px;
+	overflow: hidden;
+	min-width: 0;
+}
+
+.udv-md-bar i {
+	display: block;
+	height: 100%;
+	border-radius: 99px;
+	background: var(--ink-3);
+	opacity: 0.5;
+}
+
+/* Den maaned hun er i gang med staar frem. De andre er baggrund. */
+.udv-md.nu .udv-md-n {
+	color: var(--espresso);
+	font-weight: 600;
+}
+
+.udv-md.nu .udv-md-bar i {
+	background: var(--plum);
+	opacity: 1;
+}
+
+.udv-md-v {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	width: 30px;
+	text-align: right;
+	flex-shrink: 0;
+	font-variant-numeric: tabular-nums;
+}
+
+.udv-md.nu .udv-md-v {
+	color: var(--espresso);
+	font-weight: 700;
+}
+
 /* ── Har aldrig maalt ─────────────────────────────────────── */
 
 .udv-kom-igang {

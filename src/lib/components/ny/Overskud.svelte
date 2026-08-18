@@ -184,17 +184,9 @@
 								stroke-width={p.erSidste ? 2 : 0}
 							/>
 						{/if}
-						{#if p.visTal}
-							<text
-								class="v-tal"
-								class:nu={p.erSidste}
-								x={p.x}
-								y={p.y - (p.erSidste ? 9 : 8)}
-								text-anchor={p.erSidste ? 'end' : i === 0 ? 'start' : 'middle'}
-							>
-								{p.vaerdi.toString().replace('.', ',')}
-							</text>
-						{/if}
+						<!-- Ingen tal paa selve kurven. Det seneste staar stort
+						     oeverst paa kortet, og tallene undervejs stjal den plads
+						     kurven skulle bruge. Linns oenske 18. august. -->
 						{#if p.visDato}
 							<text
 								class="v-lab"

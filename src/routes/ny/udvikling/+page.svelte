@@ -44,7 +44,21 @@
 		type MaalingKilde,
 		type SliderId
 	} from '$lib/content/udvikling3';
+	import {
+		symptomKurve,
+		symptomOverblik,
+		symptomTekst,
+		type SymptomKilde
+	} from '$lib/content/symptomer3';
+	import {
+		soejleBredde,
+		traeningOverblik,
+		traeningTal,
+		traeningTekst,
+		type TraeningKilde
+	} from '$lib/content/traeningMaaned3';
 	import { hentAlleMrsScores } from '$lib/firestore/mrs';
+	import { hentHistorikSidenDato } from '$lib/firestore/traeningHistorik';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
@@ -57,6 +71,8 @@
 	const adgang = $derived(hentAdgang());
 
 	let maalinger = $state<MaalingKilde[]>([]);
+	let symptomer = $state<SymptomKilde[]>([]);
+	let traeninger = $state<TraeningKilde[]>([]);
 	let henter = $state(true);
 	/** null er den samlede kurve. Ellers ét af de fem spoergsmaal. */
 	let valgt = $state<SliderId | null>(null);
@@ -82,6 +98,11 @@
 
 	const nu = Date.now();
 
+	/** YYYY-MM-DD i lokal tid. Samme form som historikken bruger. */
+	function isoDag(d: Date): string {
+		return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+	}
+
 	$effect(() => {
 		const uid = user?.uid;
 		if (!uid) {
@@ -92,9 +113,25 @@
 		let afbrudt = false;
 		(async () => {
 			henter = true;
-			const scores = await hentAlleMrsScores(uid);
+			// Traeningen maa gerne fejle for sig. Kan vi ikke naa den, staar
+			// maalingerne der stadig.
+			const seksMaanederSiden = new Date(nu);
+			seksMaanederSiden.setMonth(seksMaanederSiden.getMonth() - 6);
+			const [scores, historik] = await Promise.all([
+				hentAlleMrsScores(uid),
+				hentHistorikSidenDato(uid, isoDag(seksMaanederSiden)).catch((e) => {
+					console.warn('[ny] kunne ikke hente traeningen', e);
+					return [];
+				})
+			]);
 			if (afbrudt) return;
 			maalinger = scores.map((s) => ({ timestamp: s.timestamp, sliders: s.sliders }));
+			symptomer = scores.map((s) => ({
+				timestamp: s.timestamp,
+				total: s.total,
+				kunSliders: s.kunSliders
+			}));
+			traeninger = historik.map((h) => ({ dato: h.dato, minutter: h.minutter }));
 			henter = false;
 		})().catch((e) => {
 			console.error('[ny] kunne ikke hente maalingerne', e);
@@ -142,6 +179,18 @@
 		for (const f of adgang.aktiveForlob) m.set(f.forlobId, f.navn);
 		return m;
 	});
+
+	// ── Symptomer ────────────────────────────────────────────
+	// FAERRE gener er fremgang. Det er omvendt af alt andet paa siden.
+	const symptomKurven = $derived(symptomKurve(symptomer));
+	const symptom = $derived(symptomOverblik(symptomer));
+	const symptomGraf = $derived(byggKurve(symptomKurven, adgange, nu, navne, FLADE_UDVIKLING));
+
+	// ── Traening ─────────────────────────────────────────────
+	const traening = $derived(traeningOverblik(traeninger, nu));
+	const stoersteMaaned = $derived(
+		traening ? Math.max(...traening.maaneder.map((m) => m.vaerdi), 1) : 1
+	);
 
 	/** Kurven for det hun kigger paa lige nu. Samme tegning begge veje. */
 	const kurve = $derived<Kurve>(
@@ -483,5 +532,209 @@
 				</div>
 			{/if}
 		</section>
+
+		<!-- ── Symptomer ─────────────────────────────────────────────
+		     Linns valg: tallet staar som det er, 0 til 44, hvor 0 er bedst.
+		     Vi vender det IKKE om, for saa ville de to sider vise
+		     forskellige tal for det samme. En FALDENDE kurve er sejren
+		     her, og det modsatte alle andre steder paa siden. Derfor
+		     graennen og linjen der siger det med rene ord. -->
+		{#if symptom}
+			{@const aabenSym = aabent === 'symptomer'}
+			<section class="udv-omraade" class:aaben={aabenSym}>
+				<button class="udv-hoved" aria-expanded={aabenSym} onclick={() => fold('symptomer')}>
+					<span class="udv-venstre">
+						<span class="udv-k">Symptomer</span>
+						{#if symptom.faerre !== null && symptom.faerre !== 0}
+							<span class="udv-chip-tal" class:ned={symptom.faerre < 0}>
+								{symptom.faerre > 0 ? '↓' : '↑'}
+								{formatTal(Math.abs(symptom.faerre))}
+								{symptom.faerre > 0 ? 'færre' : 'flere'}
+							</span>
+						{/if}
+					</span>
+					<span class="udv-tal">
+						<span class="udv-n">{formatTal(symptom.nu)}</span>
+						<span class="udv-af">af 44</span>
+					</span>
+					<span class="udv-fold" aria-hidden="true">{aabenSym ? '⌄' : '›'}</span>
+				</button>
+
+				{#if aabenSym}
+					<div class="udv-krop">
+						{#if symptomKurven.length > 1}
+							<div class="udv-kurve">
+								<svg
+									viewBox="0 0 {symptomGraf.flade.bredde} {symptomGraf.flade.hoejde}"
+									width="100%"
+									height={symptomGraf.flade.hoejde}
+									role="img"
+									aria-label={`Dine gener, fra ${formatTal(symptom.foer)} til ${formatTal(symptom.nu)} af 44`}
+								>
+									{#if symptomGraf.akse.midt !== null}
+										{@const yM = (symptomGraf.flade.yTop + symptomGraf.flade.yBund) / 2}
+										<line
+											x1={symptomGraf.flade.akseBredde}
+											y1={symptomGraf.flade.yTop}
+											x2={symptomGraf.flade.xHoejre}
+											y2={symptomGraf.flade.yTop}
+											stroke="var(--line)"
+											stroke-width="1"
+										/>
+										<line
+											x1={symptomGraf.flade.akseBredde}
+											y1={yM}
+											x2={symptomGraf.flade.xHoejre}
+											y2={yM}
+											stroke="var(--line)"
+											stroke-width="1"
+											stroke-dasharray="2 3"
+										/>
+										<line
+											x1={symptomGraf.flade.akseBredde}
+											y1={symptomGraf.flade.yBund}
+											x2={symptomGraf.flade.xHoejre}
+											y2={symptomGraf.flade.yBund}
+											stroke="var(--line)"
+											stroke-width="1"
+										/>
+										<text
+											class="udv-v-akse"
+											x={symptomGraf.flade.akseBredde - 5}
+											y={symptomGraf.flade.yTop + 3}>{symptomGraf.akse.hoej}</text
+										>
+										<text class="udv-v-akse" x={symptomGraf.flade.akseBredde - 5} y={yM + 3}
+											>{symptomGraf.akse.midt}</text
+										>
+										<text
+											class="udv-v-akse"
+											x={symptomGraf.flade.akseBredde - 5}
+											y={symptomGraf.flade.yBund + 3}>{symptomGraf.akse.lav}</text
+										>
+									{/if}
+
+									{#each symptomGraf.baand as b (b.fraMs + b.navn)}
+										<rect
+											x={b.x}
+											y={symptomGraf.flade.baandTop}
+											width={b.bredde}
+											height={symptomGraf.flade.baandHoejde}
+											rx="6"
+											fill="var(--sage-tint)"
+											opacity="0.5"
+										/>
+										<rect
+											x={b.x}
+											y={symptomGraf.flade.baandStregY}
+											width={b.bredde}
+											height={symptomGraf.flade.baandStregHoejde}
+											rx="1.5"
+											fill={baandFarve(b.produkt)}
+										/>
+										{#if b.bredde >= 34}
+											<text class="udv-v-baand" x={b.x} y={symptomGraf.flade.baandTekstY}
+												>{holdNavn(b.navn)}</text
+											>
+										{/if}
+									{/each}
+
+									<defs>
+										<linearGradient id="sym-fyld" x1="0" y1="0" x2="0" y2="1">
+											<stop offset="0%" stop-color="var(--sage-tekst)" stop-opacity="0.24" />
+											<stop offset="100%" stop-color="var(--sage-tekst)" stop-opacity="0" />
+										</linearGradient>
+									</defs>
+									{#each symptomGraf.fyld as f, i (i)}
+										<path d={f} fill="url(#sym-fyld)" />
+									{/each}
+									{#each symptomGraf.stier as st, i (i)}
+										<path
+											d={st}
+											fill="none"
+											stroke="var(--sage-tekst)"
+											stroke-width="2.5"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										/>
+									{/each}
+									{#each symptomGraf.punkter as p, i (p.ms)}
+										{#if p.visPrik}
+											<circle
+												cx={p.x}
+												cy={p.y}
+												r={p.erSidste ? 5.2 : 3.4}
+												fill={p.erSidste ? 'var(--sage-tekst)' : 'var(--ink-3)'}
+												stroke={p.erSidste ? 'var(--paper)' : 'none'}
+												stroke-width={p.erSidste ? 2 : 0}
+											/>
+										{/if}
+										{#if i === 0}
+											<text class="udv-v-tal" x={p.x} y={p.y - 9} text-anchor="start"
+												>{formatTal(p.vaerdi)}</text
+											>
+										{/if}
+										{#if p.erSidste}
+											<text class="udv-v-lab" x={p.x} y={symptomGraf.flade.datoY} text-anchor="end"
+												>{formaterKortDato(p.ms, nu)}</text
+											>
+										{/if}
+									{/each}
+								</svg>
+							</div>
+						{/if}
+						<p class="udv-mrk">{symptomTekst(symptom)}</p>
+					</div>
+				{/if}
+			</section>
+		{/if}
+
+		<!-- ── Traening ──────────────────────────────────────────────
+		     Linns valg: maaned mod maaned, i minutter. Der er INTET maal
+		     at ramme ved siden af. Hun sammenlignes kun med sig selv. -->
+		{#if traening}
+			{@const aabenTr = aabent === 'traening'}
+			<section class="udv-omraade" class:aaben={aabenTr}>
+				<button class="udv-hoved" aria-expanded={aabenTr} onclick={() => fold('traening')}>
+					<span class="udv-venstre">
+						<span class="udv-k">Træning</span>
+						{#if traening.forskel !== null && traening.forskel !== 0}
+							<span class="udv-chip-tal" class:ned={traening.forskel < 0}>
+								{traening.forskel > 0 ? '↑' : '↓'}
+								{Math.abs(traening.forskel)}
+								{traening.enhed === 'minutter' ? 'min' : 'gange'}
+							</span>
+						{/if}
+					</span>
+					<span class="udv-tal">
+						<span class="udv-n">{traening.denne.vaerdi}</span>
+						<span class="udv-af">{traening.enhed === 'minutter' ? 'min' : 'gange'}</span>
+					</span>
+					<span class="udv-fold" aria-hidden="true">{aabenTr ? '⌄' : '›'}</span>
+				</button>
+
+				{#if aabenTr}
+					<div class="udv-krop">
+						<div class="udv-maaneder">
+							{#each traening.maaneder as m (m.noegle)}
+								<div class="udv-md" class:nu={m.noegle === traening.denne.noegle}>
+									<span class="udv-md-n">{m.navn.slice(0, 3)}</span>
+									<span class="udv-md-bar" aria-hidden="true">
+										<i style={`width:${soejleBredde(m.vaerdi, stoersteMaaned)}%`}></i>
+									</span>
+									<span class="udv-md-v">{m.vaerdi > 0 ? m.vaerdi : ''}</span>
+								</div>
+							{/each}
+						</div>
+						<p class="udv-mrk">{traeningTekst(traening)}</p>
+						{#if traening.enhed === 'traeninger'}
+							<p class="udv-hint">
+								Vi begyndte at gemme hvor længe du træner 18. august, så indtil videre tæller vi
+								gange.
+							</p>
+						{/if}
+					</div>
+				{/if}
+			</section>
+		{/if}
 	{/if}
 </div>

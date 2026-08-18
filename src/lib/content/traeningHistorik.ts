@@ -25,6 +25,16 @@ export interface TraeningHistorikEntry {
 	forlobId?: string;
 	/** Unix-ms da træningen blev gennemført. */
 	gennemfoertAt: number;
+	/**
+	 * Hvor lang træningen var, i hele minutter.
+	 *
+	 * Tilføjet 18. august 2026, fordi Udvikling skal tælle minutter og
+	 * ikke bare dage. Feltet er VALGFRIT og vil mangle på alt der er
+	 * logget før den dato: entry'en gemmer ikke hvilken dag i programmet
+	 * hun tog, så længden kan ikke regnes ud bagudrettet. Kode der læser
+	 * det skal kunne håndtere at det ikke er der.
+	 */
+	minutter?: number;
 }
 
 /** Bygger en YYYY-MM-DD streng fra en Date. */
