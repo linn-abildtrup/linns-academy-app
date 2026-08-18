@@ -156,7 +156,7 @@
 		// oevelser ind for denne dag endnu' der haandterer det elegant.
 
 		try {
-			produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+			produktType = await hentAktivProduktType(userDoc?.forlobIds ?? [], u.uid);
 			const up = await hentUserProduct(u.uid, produktType);
 			// Admin i klient-mode har ikke noedvendigvis et userProduct.
 			// Faldt tilbage til adminKlientForlobId + foerste aktive program.

@@ -122,7 +122,7 @@
 				hentForlobsProgram(forlobId, programId),
 				hentAlleExercises(),
 				hentForlob(forlobId),
-				hentAktivProduktType(ud?.forlobIds ?? [forlobId])
+				hentAktivProduktType(ud?.forlobIds ?? [forlobId], user.uid)
 			]);
 			if (!data) {
 				fejl = 'Programmet findes ikke.';

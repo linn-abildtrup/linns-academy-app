@@ -40,7 +40,7 @@
 			return;
 		}
 		try {
-			produktType = await hentAktivProduktType(userDoc?.forlobIds ?? []);
+			produktType = await hentAktivProduktType(userDoc?.forlobIds ?? [], u.uid);
 			const up = await hentUserProduct(u.uid, produktType);
 			if (!up) {
 				fejl = 'Du har ikke adgang til mikrotræning endnu.';
