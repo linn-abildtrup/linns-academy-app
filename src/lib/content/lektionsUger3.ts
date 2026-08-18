@@ -26,11 +26,15 @@
 //    en lektion i den uge hvor den ligger FLEST dage, ikke i den uge
 //    hvor den foerst dukker op.
 //
-// 2. ET ZOOM-LINK ER IKKE EN FIL. Linn bruger det samme faste Zoom-rum
-//    til alle sine live-kald, saa url'en er ens hele forloebet igennem.
-//    Reglen ovenfor ville derfor have slaaet otte forskellige moeder
-//    sammen til ét. Live-links faar deres egen regel: samme link paa to
-//    dage lige efter hinanden er ét moede, ellers er de forskellige.
+// 2. ZOOM-LINKS KOMMER SLET IKKE MED. Linns beslutning 18. august.
+//    Et link til et moede der laa i maj er vaerdiloest naar man ser
+//    tilbage paa forloebet, og det er den her side til. Mens forloebet
+//    koerer staar linket paa dagen paa forsiden, saa der forsvinder
+//    ingenting for den kunde der skal med til et kald.
+//
+//    Det loeste samtidig et rod: Linn bruger det samme faste Zoom-rum
+//    til alle sine kald, saa url'en er ens hele forloebet igennem, og
+//    regel 1 ville have slaaet otte forskellige moeder sammen til ét.
 //
 // 3. Q&A har intet maerke i databasen. Vi kan kun kende dem paa at der
 //    staar "Q&A" i titlen. Det fanger alle 16 i Kropsro i dag, men det
@@ -41,12 +45,18 @@
 import { ugeForDag } from './forlob';
 import type { ListeLektion } from './lektionsliste3';
 
-/** Formater der er et moede og ikke en fil. Se punkt 2 i toppen. */
+/** Formater og adresser der er et moede og ikke indhold. Se punkt 2. */
 const LIVE_FORMATER = /zoom|teams|meet/i;
+const LIVE_ADRESSER = /zoom\.us|teams\.microsoft|meet\.google|whereby\.com/i;
 
-/** Er lektionen et link til et live-moede. */
-export function erLive(format: string | undefined): boolean {
-	return LIVE_FORMATER.test(format ?? '');
+/**
+ * Er lektionen et link til et live-moede.
+ *
+ * Vi ser baade paa formatet og paa selve adressen, for formatet er et
+ * frit felt Linn selv skriver og staar tomt paa nogle lektioner.
+ */
+export function erLive(format: string | undefined, url: string | undefined): boolean {
+	return LIVE_FORMATER.test(format ?? '') || LIVE_ADRESSER.test(url ?? '');
 }
 
 /** Kender en Q&A paa titlen. Se punkt 3 i toppen. */
@@ -90,41 +100,13 @@ export interface UgeOpdeling {
 }
 
 /**
- * Giver hver lektion den noegle der afgoer om to dage viser det SAMME.
+ * Noeglen der afgoer om to dage viser det SAMME. Se toppen.
  *
- * Filer samles paa url'en. Live-moeder kan ikke, for de deler rum, saa de
- * samles kun naar samme link med samme titel ligger paa dage lige efter
- * hinanden. Uden url kan vi ikke sammenligne, og saa staar hver for sig.
+ * Uden en url kan vi ikke sammenligne, og saa staar hver for sig.
  */
-function noeglerFor(liste: ListeLektion[]): Map<ListeLektion, string> {
-	const ud = new Map<ListeLektion, string>();
-	const liveRaekker = new Map<string, ListeLektion[]>();
-
-	for (const p of liste) {
-		const url = (p.lektion.url ?? '').trim();
-		if (!url) {
-			ud.set(p, `id:${p.lektion.id}:${p.dagNummer}`);
-		} else if (erLive(p.lektion.format)) {
-			const n = `${url}|${p.lektion.titel}`;
-			liveRaekker.set(n, [...(liveRaekker.get(n) ?? []), p]);
-		} else {
-			ud.set(p, `url:${url}`);
-		}
-	}
-
-	for (const [n, poster] of liveRaekker) {
-		poster.sort((a, b) => a.dagNummer - b.dagNummer);
-		let start = poster[0].dagNummer;
-		let sidste = start;
-		for (const p of poster) {
-			// Hul i dagene betyder et nyt moede, ikke det samme igen.
-			if (p.dagNummer > sidste + 1) start = p.dagNummer;
-			sidste = p.dagNummer;
-			ud.set(p, `live:${n}|${start}`);
-		}
-	}
-
-	return ud;
+function noegleFor(p: ListeLektion): string {
+	const url = (p.lektion.url ?? '').trim();
+	return url ? `url:${url}` : `id:${p.lektion.id}:${p.dagNummer}`;
 }
 
 /**
@@ -134,12 +116,14 @@ function noeglerFor(liste: ListeLektion[]): Map<ListeLektion, string> {
  * og derefter som Linn har lagt dem ind paa dagen.
  */
 export function byggUger(liste: ListeLektion[]): UgeOpdeling {
-	const noegler = noeglerFor(liste);
 	const qaGrupper = new Map<string, ListeLektion>();
 	const grupper = new Map<string, { post: ListeLektion; dage: number[] }>();
 
 	for (const p of liste) {
-		const noegle = noegler.get(p) ?? `id:${p.lektion.id}:${p.dagNummer}`;
+		// Moedelinks hoerer til paa dagen, ikke i tilbageblikket. Punkt 2.
+		if (erLive(p.lektion.format, p.lektion.url)) continue;
+
+		const noegle = noegleFor(p);
 		if (erQa(p.lektion.titel)) {
 			// Et replay ligger tit paa to dage i traek. Foerste dag vinder.
 			const haves = qaGrupper.get(noegle);
@@ -178,7 +162,14 @@ export function byggUger(liste: ListeLektion[]): UgeOpdeling {
 
 	const uger: Uge[] = [];
 	for (const [nummer, poster] of [...prUge].sort((a, b) => a[0] - b[0])) {
-		poster.sort((a, b) => a.dage[0] - b.dage[0]);
+		// Ugens eget indhold foerst, saa de daglige. En lektion der ligger
+		// hele ugen er ugens tema, mens en der kun ligger én dag er dagens
+		// lille ting. Uden det brød "30 planter tracker" ind midt i raekken
+		// af Din 1%, fordi de begge starter paa dag 8.
+		poster.sort((a, b) => {
+			if (a.dage[0] !== b.dage[0]) return a.dage[0] - b.dage[0];
+			return (a.dage.length > 1 ? 0 : 1) - (b.dage.length > 1 ? 0 : 1);
+		});
 
 		// Ugens tema kommer fra en lektion der hedder "Uge N, noget".
 		let tema = '';

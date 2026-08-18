@@ -169,6 +169,22 @@ describe('byggUger, navne', () => {
 		expect(ugeNavn(uger[0])).toBe('Opstart');
 	});
 
+	it('laegger ugens eget indhold foer de daglige paa samme dag', () => {
+		const liste = [
+			...ugeVideo(8, 'Uge 2, Tarmmikrobiomet', 'https://v/2'),
+			post(8, 'p1', 'Din 1%', 'https://lyd/8'),
+			post(9, 'p2', 'Din 1%', 'https://lyd/9'),
+			...ugeVideo(8, '30 planter tracker', 'https://v/pl')
+		];
+		const { uger } = byggUger(liste);
+		expect(uger[0].poster.map((p) => p.navn)).toEqual([
+			'Uge 2, Tarmmikrobiomet',
+			'30 planter tracker',
+			'Din 1%, dag 8',
+			'Din 1%, dag 9'
+		]);
+	});
+
 	it('sorterer posterne inde i ugen efter foerste dag', () => {
 		const liste = [
 			post(5, 'sen', 'Sidst', 'https://v/s'),
@@ -230,39 +246,43 @@ describe('byggUger, Q&A-dubletter', () => {
 describe('byggUger, live-links', () => {
 	const ZOOM = 'https://zoom.us/j/fast-rum';
 
-	function live(dag: number, id: string, titel: string): ListeLektion {
+	function live(dag: number, id: string, titel: string, format = 'Zoom'): ListeLektion {
 		const p = post(dag, id, titel, ZOOM);
-		p.lektion.format = 'Zoom';
+		p.lektion.format = format;
 		return p;
 	}
 
-	// Linn bruger det samme Zoom-rum hele forloebet igennem.
-	it('slaar ikke to moeder i forskellige uger sammen', () => {
+	// Linns beslutning: et moedelink hoerer til paa dagen, ikke i
+	// tilbageblikket. Det loeste samtidig at hun bruger det samme faste
+	// Zoom-rum hele forloebet igennem.
+	it('tager ikke Zoom-links med i Q&A', () => {
 		const { qa } = byggUger([live(12, 'a', 'Live Q&A kl. 9'), live(64, 'b', 'Live Q&A kl. 19')]);
-		expect(qa).toHaveLength(2);
+		expect(qa).toEqual([]);
 	});
 
-	it('slaar dem ikke sammen selvom de hedder det samme', () => {
-		const { qa } = byggUger([
-			live(31, 'a', 'Live Q&A kl. 19-20'),
-			live(64, 'b', 'Live Q&A kl. 19-20')
-		]);
-		expect(qa).toHaveLength(2);
+	it('tager heller ikke Zoom-links med i ugerne', () => {
+		const { uger } = byggUger([live(10, 'a', 'Fælles træning')]);
+		expect(uger).toEqual([]);
 	});
 
-	it('samler ét moede der ligger paa to dage i traek', () => {
-		const { qa } = byggUger([
-			live(42, 'a', 'Live Q&A fra den 24/6'),
-			live(43, 'b', 'Live Q&A fra den 24/6')
-		]);
+	it('kender et moedelink paa adressen selvom formatet staar tomt', () => {
+		const { qa } = byggUger([live(12, 'a', 'Live Q&A', '')]);
+		expect(qa).toEqual([]);
+	});
+
+	it('kender Teams og Google Meet', () => {
+		const a = post(3, 'a', 'Live Q&A', 'https://teams.microsoft.com/l/meetup');
+		const b = post(4, 'b', 'Live Q&A', 'https://meet.google.com/abc-defg');
+		expect(byggUger([a, b]).qa).toEqual([]);
+	});
+
+	it('lader replay-videoen af det samme kald staa', () => {
+		const liste = [
+			live(72, 'z', 'Replay Q&A #5'),
+			post(73, 'v', 'Replay Q&A #5', 'https://vimeo.com/123')
+		];
+		const { qa } = byggUger(liste);
 		expect(qa).toHaveLength(1);
-		expect(qa[0].dagNummer).toBe(42);
-	});
-
-	it('gaelder ogsaa live-links der ikke er Q&A', () => {
-		const a = live(10, 'a', 'Fælles træning');
-		const b = live(40, 'b', 'Fælles træning');
-		const { uger } = byggUger([a, b]);
-		expect(uger.flatMap((u) => u.poster)).toHaveLength(2);
+		expect(qa[0].lektion.id).toBe('v');
 	});
 });

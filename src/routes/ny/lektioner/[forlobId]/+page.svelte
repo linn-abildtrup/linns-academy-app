@@ -36,7 +36,7 @@
 		type ListeLektion
 	} from '$lib/content/lektionsliste3';
 	import { byggUger, seteIUge, ugeNavn, type Uge } from '$lib/content/lektionsUger3';
-	import { detekterGuideType, erLydLektion, videoThumbnail } from '$lib/content/bibliotek';
+	import { detekterGuideType, erLydLektion } from '$lib/content/bibliotek';
 	import { hentLektionsdage3 } from '$lib/firestore/lektionsliste3';
 	import { hentKlaret } from '$lib/firestore/forside3';
 	import { hentNoterForForlob } from '$lib/firestore/lektionNoter';
@@ -193,13 +193,6 @@
 
 	const IKON: Record<string, string> = { lyd: '♪', video: '▶', tekst: '✦' };
 
-	function meta(p: ListeLektion): string {
-		const a = art(p.lektion.url);
-		const dele = [`Dag ${p.dagNummer}`, a === 'lyd' ? 'Lyd' : a === 'video' ? 'Video' : 'Læsning'];
-		if (p.lektion.varighedMin) dele.push(`${p.lektion.varighedMin} min`);
-		return dele.join(' · ');
-	}
-
 	/**
 	 * Adressen paa lektionen. Forloebet sendes med, fordi afspilleren ellers
 	 * slaar op i det forloeb der koerer lige nu, og saa kan en lektion fra et
@@ -210,47 +203,34 @@
 	}
 </script>
 
-<!-- Én lektion i listen. Bruges baade af Q&A oeverst og inde i ugerne.
-     Navnet kommer udefra, fordi ugerne saetter dagen paa naar flere
-     lektioner i samme uge hedder det samme. -->
+<!-- Én lektion inde i en uge. Ét lille ikon, navnet, og et flueben hvis
+     hun har set den. Ingen thumbnails: Linns beslutning 18. august. Med
+     ti linjer pr uge fyldte videobillederne mere end de fortalte, og en
+     lydfil har alligevel ikke noget billede. Navnet kommer udefra, fordi
+     ugerne saetter dagen paa naar flere lektioner hedder det samme. -->
 {#snippet raekke(p: ListeLektion, navn: string)}
 	{@const erKlaret = klaret.has(p.lektion.id)}
-	{@const billede = p.lektion.thumbnailUrl || videoThumbnail(p.lektion.url)}
 
 	{#if p.aaben}
-		<a class="medie-raekke" class:set={erKlaret} href={lektionsUrl(p)}>
-			<span class="medie-thumb {art(p.lektion.url)}">
-				{#if erKlaret}
-					<span class="rund-fluebe stor" aria-hidden="true"><Fluebe /></span>
-				{:else if billede}
-					<img class="medie-foto" src={billede} alt="" loading="lazy" />
-					<span class="medie-play" aria-hidden="true">{IKON[art(p.lektion.url)]}</span>
-				{:else}
-					<span class="medie-glyph" aria-hidden="true">{IKON[art(p.lektion.url)]}</span>
-				{/if}
-			</span>
-
-			<span class="medie-tekst">
-				<span class="medie-t">{navn}</span>
-				<span class="medie-m">
-					{#if erKlaret}<span class="klar-tekst">Set</span> · se igen{:else}{meta(p)}{/if}
-				</span>
-			</span>
+		<a class="ll-lek" class:set={erKlaret} href={lektionsUrl(p)}>
+			<span class="ll-lek-i {art(p.lektion.url)}" aria-hidden="true"
+				>{IKON[art(p.lektion.url)]}</span
+			>
+			<span class="ll-lek-t">{navn}</span>
 			{#if medNote.has(p.lektion.id)}
 				<span class="ll-blyant" title="Du har skrevet en note">✎</span>
 			{/if}
-			<span class="medie-pil" aria-hidden="true">›</span>
+			{#if erKlaret}
+				<span class="ll-lek-fl" title="Set"><Fluebe /></span>
+			{:else}
+				<span class="ll-lek-p" aria-hidden="true">›</span>
+			{/if}
 		</a>
 	{:else}
 		<!-- Laast. Ingen a, saa hverken mus eller tastatur kan aabne den. -->
-		<div class="medie-raekke ll-laast">
-			<span class="medie-thumb tekst">
-				<span class="medie-glyph" aria-hidden="true">🔒</span>
-			</span>
-			<span class="medie-tekst">
-				<span class="medie-t">{navn}</span>
-				<span class="medie-m">Dag {p.dagNummer}</span>
-			</span>
+		<div class="ll-lek laast">
+			<span class="ll-lek-i" aria-hidden="true">🔒</span>
+			<span class="ll-lek-t">{navn}</span>
 			<span class="ll-aabner">{p.aabnerTekst}</span>
 		</div>
 	{/if}
@@ -352,9 +332,24 @@
 			{#if opdeling.qa.length > 0}
 				<section class="ll-afsnit">
 					<h2 class="ll-afsnit-t">Live Q&amp;A</h2>
-					<div class="medie-liste">
+					<div class="ll-qa">
 						{#each opdeling.qa as p (`${p.dagNummer}-${p.lektion.id}`)}
-							{@render raekke(p, p.lektion.titel)}
+							{#if p.aaben}
+								<a class="ll-qa-r" class:set={klaret.has(p.lektion.id)} href={lektionsUrl(p)}>
+									<span class="ll-qa-t">{p.lektion.titel}</span>
+									<span class="ll-qa-d">dag {p.dagNummer}</span>
+									{#if klaret.has(p.lektion.id)}
+										<span class="ll-lek-fl" title="Set"><Fluebe /></span>
+									{:else}
+										<span class="ll-lek-p" aria-hidden="true">›</span>
+									{/if}
+								</a>
+							{:else}
+								<div class="ll-qa-r laast">
+									<span class="ll-qa-t">{p.lektion.titel}</span>
+									<span class="ll-aabner">{p.aabnerTekst}</span>
+								</div>
+							{/if}
 						{/each}
 					</div>
 				</section>
@@ -377,7 +372,7 @@
 							</button>
 
 							{#if aaben}
-								<div class="medie-liste ll-uge-liste">
+								<div class="ll-uge-liste">
 									{#each u.poster as up (`${up.post.dagNummer}-${up.post.lektion.id}`)}
 										{@render raekke(up.post, up.navn)}
 									{/each}
