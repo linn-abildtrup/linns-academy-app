@@ -13,6 +13,7 @@ import {
 	hvadManglede,
 	madOverblik,
 	madTekst,
+	METODE_PROTEIN_DAG,
 	samlDage,
 	type MaaltidKilde
 } from './madMaaned3';
@@ -131,71 +132,65 @@ function godDag(dato: string): MaaltidKilde[] {
 }
 
 describe('erTredveTredve', () => {
-	it('alle tre maaltider i maal og fiber i maal taeller', () => {
+	it('90 g protein og 30 g fiber over dagen taeller', () => {
 		expect(samlDage(godDag('2026-08-01')).every(erTredveTredve)).toBe(true);
 	});
 
-	it('mangler frokosten sine 30 g, taeller dagen ikke', () => {
-		const dag = samlDage([
-			ml('2026-08-01', 'morgenmad', 32, 10),
-			ml('2026-08-01', 'frokost', 18, 12),
-			ml('2026-08-01', 'aftensmad', 36, 9)
+	// Linns aendring 18. august. Foer skulle hvert maaltid ramme sine 30,
+	// og det gjorde naesten ingen dage.
+	it('det er ligegyldigt hvordan proteinet var fordelt', () => {
+		const skaevDag = samlDage([
+			ml('2026-08-01', 'morgenmad', 5, 10),
+			ml('2026-08-01', 'frokost', 10, 12),
+			ml('2026-08-01', 'aftensmad', 80, 9)
 		]);
+		expect(skaevDag[0].protein).toBe(95);
+		expect(erTredveTredve(skaevDag[0])).toBe(true);
+	});
+
+	// Snacken har intet eget maal, men den taeller nu med i BEGGE tal.
+	it('snackens protein taeller med i dagen', () => {
+		const dag = samlDage([
+			ml('2026-08-01', 'morgenmad', 30, 12),
+			ml('2026-08-01', 'frokost', 30, 12),
+			ml('2026-08-01', 'aftensmad', 22, 8),
+			ml('2026-08-01', 'snack', 12, 2)
+		]);
+		expect(dag[0].protein).toBe(94);
+		expect(erTredveTredve(dag[0])).toBe(true);
+	});
+
+	it('mangler proteinet, taeller dagen ikke', () => {
+		const dag = samlDage([ml('2026-08-01', 'morgenmad', 60, 40)]);
 		expect(erTredveTredve(dag[0])).toBe(false);
-		expect(hvadManglede(dag[0])).toEqual(['frokost']);
+		expect(hvadManglede(dag[0])).toEqual(['protein']);
 	});
 
 	it('mangler fiberen, taeller dagen ikke', () => {
-		const dag = samlDage([
-			ml('2026-08-01', 'morgenmad', 32, 3),
-			ml('2026-08-01', 'frokost', 34, 4),
-			ml('2026-08-01', 'aftensmad', 36, 5)
-		]);
+		const dag = samlDage([ml('2026-08-01', 'morgenmad', 120, 12)]);
 		expect(erTredveTredve(dag[0])).toBe(false);
 		expect(hvadManglede(dag[0])).toEqual(['fiber']);
 	});
 
-	// Snacken har med vilje intet maal, se maaltider3 punkt 1.
-	it('snacken skal ikke selv ramme 30 g', () => {
-		const dag = samlDage([...godDag('2026-08-01'), ml('2026-08-01', 'snack', 4, 2)]);
+	it('praecis 90 og 30 er nok, det er maal og ikke graenser', () => {
+		const dag = samlDage([ml('2026-08-01', 'morgenmad', 90, 30)]);
 		expect(erTredveTredve(dag[0])).toBe(true);
 	});
 
-	it('men snackens fiber taeller med i dagen', () => {
-		const dag = samlDage([
-			ml('2026-08-01', 'morgenmad', 32, 9),
-			ml('2026-08-01', 'frokost', 34, 9),
-			ml('2026-08-01', 'aftensmad', 36, 9),
-			ml('2026-08-01', 'snack', 2, 5)
-		]);
-		expect(dag[0].fiber).toBe(32);
-		expect(erTredveTredve(dag[0])).toBe(true);
-	});
-
-	// En dag uden registreret frokost ER ikke en dokumenteret 30-30-dag.
-	it('et maaltid hun slet ikke har registreret taeller som nul', () => {
-		const dag = samlDage([ml('2026-08-01', 'morgenmad', 40, 40)]);
-		expect(erTredveTredve(dag[0])).toBe(false);
-	});
-
-	it('praecis 30 er nok, det er et maal og ikke en graense', () => {
-		const dag = samlDage([
-			ml('2026-08-01', 'morgenmad', 30, 10),
-			ml('2026-08-01', 'frokost', 30, 10),
-			ml('2026-08-01', 'aftensmad', 30, 10)
-		]);
-		expect(erTredveTredve(dag[0])).toBe(true);
+	it('de 90 er tre gange metodens 30', () => {
+		expect(METODE_PROTEIN_DAG).toBe(90);
 	});
 });
 
 describe('samlDage', () => {
-	it('laegger flere poster paa samme maaltid sammen', () => {
+	it('laegger hele dagen sammen, uanset maaltid', () => {
 		const d = samlDage([
 			ml('2026-08-01', 'morgenmad', 20, 5),
-			ml('2026-08-01', 'morgenmad', 14, 6)
+			ml('2026-08-01', 'frokost', 14, 6),
+			ml('2026-08-01', 'snack', 6, 3)
 		]);
-		expect(d[0].protein.morgenmad).toBe(34);
-		expect(d[0].fiber).toBe(11);
+		expect(d[0].protein).toBe(40);
+		expect(d[0].fiber).toBe(14);
 	});
 
 	it('sorterer dagene i tid', () => {

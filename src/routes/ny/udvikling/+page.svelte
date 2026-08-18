@@ -796,8 +796,8 @@
 						</div>
 						<p class="udv-mrk">{madTekst(mad)}</p>
 						<p class="udv-hint">
-							En 30-30-dag er 30 g protein til morgenmad, frokost og aftensmad, og 30 g fiber over
-							dagen. Snacken tæller med i fiberen.
+							En 30-30-dag er 90 g protein og 30 g fiber over hele dagen. Det er ligegyldigt hvordan
+							det er fordelt, og snacken tæller med.
 						</p>
 						{#if mad.registrerede > 0}
 							<p class="udv-hint">

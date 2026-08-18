@@ -7,12 +7,18 @@
 // 30 g protein pr maaltid og 30 g fiber over dagen, og DET er det hun
 // goer noget ved.
 //
-// EN 30-30-DAG ER (Linns valg M1, metoden som den er):
-//   morgenmad, frokost OG aftensmad har hver mindst 30 g protein
-//   OG dagen har mindst 30 g fiber i alt
+// EN 30-30-DAG ER:
+//   mindst 90 g protein over hele dagen
+//   OG mindst 30 g fiber over hele dagen
 //
-// Snacken har med vilje INTET maal, se maaltider3.ts punkt 1. Den
-// taeller med i dagens fiber, men den skal ikke selv ramme noget.
+// De 90 er tre gange de 30 fra metoden, men vi maaler dem SAMLET og
+// ikke pr maaltid. Linns aendring 18. august, og den var rigtig: vi
+// maalte foer om hvert enkelt maaltid ramte sine 30, og det gjorde
+// naesten ingen dage. Nu taeller det ogsaa hvis hun tog det meste til
+// aftensmad, eller hentede det sidste i en snack.
+//
+// Snacken taeller derfor med i BEGGE tal nu. Foer taalte den kun i
+// fiberen, fordi den ikke har sit eget protein-maal.
 //
 // DEN REGEL DER STYRER DET HELE, og som Linn satte 18. august:
 // en side der goer status maa ALDRIG kunne laeses som en anklage.
@@ -26,8 +32,13 @@ import { maanedOverblik, stortNavn, type DagPunkt, type MaanedOverblik } from '.
 export type { Maaned, MaanedOverblik } from './maanedTal3';
 export { ANTAL_MAANEDER, soejleBredde, stoersteMaaned } from './maanedTal3';
 
-/** De tre maaltider der har et protein-maal. Snack er ikke med. */
-export const MAALTIDER_MED_MAAL = ['morgenmad', 'frokost', 'aftensmad'] as const;
+/**
+ * Dagens protein-maal i metoden: tre maaltider a 30 g.
+ *
+ * Det er skrevet som et regnestykke og ikke som 90, saa det er tydeligt
+ * hvor tallet kommer fra. Aendrer de 30 sig, foelger det her med.
+ */
+export const METODE_PROTEIN_DAG = 3 * PROTEIN_MAALTIDS_MAAL;
 
 /** Kun det Mad skal bruge om ét gemt maaltid. */
 export interface MaaltidKilde {
@@ -44,18 +55,18 @@ export interface MaaltidKilde {
 /** Én dags samlede tal, som metoden maales paa. */
 export interface Dagstal {
 	dato: string;
-	/** Protein pr maaltidstype. */
-	protein: Record<string, number>;
-	/** Fiber for hele dagen, snacken taeller med. */
+	/** Protein for hele dagen. Snacken taeller med. */
+	protein: number;
+	/** Fiber for hele dagen. Snacken taeller med. */
 	fiber: number;
 }
 
-/** Laegger dagens maaltider sammen pr type. */
+/** Laegger dagens maaltider sammen. Alle typer taeller, ogsaa snack. */
 export function samlDage(maaltider: MaaltidKilde[]): Dagstal[] {
 	const prDag = new Map<string, Dagstal>();
 	for (const m of maaltider) {
-		const d = prDag.get(m.dato) ?? { dato: m.dato, protein: {}, fiber: 0 };
-		d.protein[m.type] = (d.protein[m.type] ?? 0) + (m.totalP ?? 0);
+		const d = prDag.get(m.dato) ?? { dato: m.dato, protein: 0, fiber: 0 };
+		d.protein += m.totalP ?? 0;
 		d.fiber += m.totalF ?? 0;
 		prDag.set(m.dato, d);
 	}
@@ -65,22 +76,17 @@ export function samlDage(maaltider: MaaltidKilde[]): Dagstal[] {
 /**
  * Spiste hun efter 30-30 den dag.
  *
- * Alle tre maaltider skal have sine 30 g protein, og dagen skal have
- * sine 30 g fiber. Har hun slet ikke registreret et af maaltiderne, er
- * det nul, og dagen taeller ikke med. Det er rigtigt: en dag uden
- * registreret frokost ER ikke en dokumenteret 30-30-dag.
+ * 90 g protein og 30 g fiber over HELE dagen. Det er ligegyldigt hvordan
+ * det var fordelt. Linns aendring 18. august.
  */
 export function erTredveTredve(dag: Dagstal): boolean {
-	if (dag.fiber < FIBER_DAGS_MAAL) return false;
-	return MAALTIDER_MED_MAAL.every((t) => (dag.protein[t] ?? 0) >= PROTEIN_MAALTIDS_MAAL);
+	return dag.protein >= METODE_PROTEIN_DAG && dag.fiber >= FIBER_DAGS_MAAL;
 }
 
 /** Hvad der manglede den dag. Tom naar dagen var i maal. */
 export function hvadManglede(dag: Dagstal): string[] {
 	const ud: string[] = [];
-	for (const t of MAALTIDER_MED_MAAL) {
-		if ((dag.protein[t] ?? 0) < PROTEIN_MAALTIDS_MAAL) ud.push(t);
-	}
+	if (dag.protein < METODE_PROTEIN_DAG) ud.push('protein');
 	if (dag.fiber < FIBER_DAGS_MAAL) ud.push('fiber');
 	return ud;
 }
@@ -134,7 +140,7 @@ export function madTekst(o: MadOverblik | null): string {
 	// kortet. Den maa ikke ogsaa staa her, ellers staar det samme to
 	// gange lige efter hinanden. Set 18. august.
 	if (o.denne.vaerdi === 0) {
-		return '30 g protein til hvert måltid og 30 g fiber er et stykke arbejde. Det kommer.';
+		return `${METODE_PROTEIN_DAG} g protein og ${FIBER_DAGS_MAAL} g fiber på en dag er et stykke arbejde. Det kommer.`;
 	}
 
 	if (o.bedste) {
