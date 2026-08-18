@@ -3929,3 +3929,58 @@ jeg tog fejl af undervejs og den åbne tråd om små skridt.
 | `content/skridtMaaned3.ts` | Små skridt. Tæller kun ja | |
 | `routes/ny/login/+page@.svelte` | Login-siden. **Snabel-a'et skal blive** | |
 | `routes/ny/udvikling/+page.svelte` | Udvikling, alle fem kort | |
+
+---
+
+## 35. De tre adgangs-tilstande. LÅST 18. august, IKKE BYGGET
+
+Linns præcisering 18. august, som kom frem, da vi talte om hvor
+opskrifterne skulle ligge. **Læs det her, før du rører porten ind i 3.0.**
+
+### 35.1 De tre tilstande
+
+**1. Abonnement eller forløb i gang.** Hele appen. Bygget og virker.
+
+**2. De 90 dage efter et forløb, uden købt app-adgang.** Kunden har adgang
+til sin side og til **alt materialet**: opskrifter, lektioner,
+træningsøvelser, FAQ og links. Plus **sin egen udvikling**, Linns svar 18.
+august: kurverne er hendes egne tal, ikke Linns materiale, og de må hun
+gerne se. Hun kan ikke registrere mad, vaner eller træning, for der er
+ikke noget forløb at måle på.
+
+**3. Efter de 90 dage.** Ingen adgang til appen.
+
+### 35.2 DET ER IKKE BYGGET, OG DET ER EN FEJL I DAG
+
+`spaerring3.ts` kender kun abonnement og aktivt forløb. Den ved **intet om
+`bonusPeriodEndsAt`**. I det øjeblik forløbet slutter, og kunden ikke har
+købt app-adgang, møder hun "Din adgang er udløbet". Hun ser hverken
+opskrifter, lektioner eller øvelser i de 90 dage, hun har krav på dem.
+
+Konsekvensen har stået i 32.11 hele tiden, men er blevet læst som en åben
+beslutning. Efter Linns præcisering er den en **fejl**, ikke en beslutning.
+Den gamle app gør det rigtigt. Det er kun 3.0 der mangler det.
+
+### 35.3 INTET DATA SLETTES NOGENSINDE
+
+Linns beslutning 18. august, ordret: alt data på kunden skal gemmes,
+såfremt kunden bliver kunde igen senere.
+
+De 90 dage handler om **adgang**, aldrig om oprydning. Hendes noter,
+måltider, målinger, vaner, egne opskrifter og fremgang bliver stående i
+databasen for altid. Køber hun sig ind igen om to år, står det hele der,
+som hun forlod det.
+
+Det svarer samtidig på et spørgsmål jeg havde stillet: hvad der sker med
+hendes egne noter efter de 90 dage. **Ingenting.** De bliver bare
+uopnåelige, indtil hun har adgang igen.
+
+**Byg derfor aldrig en oprydning, et udløb eller en sletning oven på
+`bonusPeriodEndsAt`.** Feltet styrer hvad hun må se, ikke hvad vi gemmer.
+
+### 35.4 Det der stadig skal besluttes
+
+- Hvordan bundmenuen ser ud i tilstand 2. Fem faner hvor tre er lukkede er
+  værre end de tre der virker
+- Om hun kan købe sig ind fra den skærm, og hvor hårdt det skal sælges
+- Beskeder i tilstand 2. Mit bud er nej, men det er ikke afgjort
