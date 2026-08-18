@@ -567,10 +567,12 @@
 					<span class="udv-venstre">
 						<span class="udv-k">Symptomer</span>
 						{#if symptom.faerre !== null && symptom.faerre !== 0}
+							<!-- Faerre gener er fremgang. "siden start" skal med, ellers
+							     er det ikke til at se hvad de 13 er. -->
 							<span class="udv-chip-tal" class:ned={symptom.faerre < 0}>
 								{symptom.faerre > 0 ? '↓' : '↑'}
 								{formatTal(Math.abs(symptom.faerre))}
-								{symptom.faerre > 0 ? 'færre' : 'flere'}
+								{symptom.faerre > 0 ? 'færre' : 'flere'} siden start
 							</span>
 						{/if}
 					</span>
@@ -718,11 +720,16 @@
 				<button class="udv-hoved" aria-expanded={aabenTr} onclick={() => fold('traening')}>
 					<span class="udv-venstre">
 						<span class="udv-k">Mikrotræning</span>
-						{#if traening.forskel !== null && traening.forskel !== 0}
-							<span class="udv-chip-tal" class:ned={traening.forskel < 0}>
-								{traening.forskel > 0 ? '↑' : '↓'}
-								{Math.abs(traening.forskel)}
-								{traening.enhed === 'minutter' ? 'min' : 'gange'}
+						<!-- Plakaten staar KUN naar det er gaaet frem, og den siger
+						     hvad der sammenlignes med. Foer stod der bare "↓ 46 min",
+						     og Linn kunne ikke se hvad de 46 var. Det var ogsaa i
+						     modstrid med teksten under, som bevidst ikke naevner et
+						     fald. Samme regel som paa 30-30 dage. -->
+						{#if traening.forskel !== null && traening.forskel > 0 && traening.forrigeSammeTid}
+							<span class="udv-chip-tal">
+								↑ {traening.forskel}
+								{traening.enhed === 'minutter' ? 'min' : 'gange'} mere end samme tid i {traening
+									.forrigeSammeTid.navn}
 							</span>
 						{/if}
 					</span>
