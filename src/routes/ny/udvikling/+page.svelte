@@ -91,6 +91,9 @@
 	const liste = $derived(fraTilListe(maalinger));
 	const bedst = $derived(stoersteFremgang(liste));
 	const valgtInfo = $derived(SLIDERE.find((s) => s.id === valgt) ?? null);
+	// Der er kun noget at vaelge imellem naar der er mere end én maaling.
+	// Med kun en baseline er der ingen kurve at skifte til.
+	const kanVaelge = $derived(tilstand === 'flere');
 
 	/** Det ene spoergsmaals egen fra-til, naar hun har valgt et. */
 	const valgtFraTil = $derived(valgt ? (liste.find((f) => f.id === valgt) ?? null) : null);
@@ -192,33 +195,6 @@
 			<span class="udv-kom-s">Fem spørgsmål, to minutter. Den bliver dit udgangspunkt.</span>
 		</a>
 	{:else}
-		<!-- Knapperne staar kun frem naar der ER en historie at grave i.
-		     Med én maaling er der ingenting at kigge paa pr spoergsmaal. -->
-		{#if tilstand === 'flere'}
-			<div class="udv-chips" role="tablist" aria-label="Vælg hvad du vil se">
-				<button
-					class="udv-chip"
-					class:aktiv={valgt === null}
-					role="tab"
-					aria-selected={valgt === null}
-					onclick={() => (valgt = null)}
-				>
-					Samlet
-				</button>
-				{#each SLIDERE as s (s.id)}
-					<button
-						class="udv-chip"
-						class:aktiv={valgt === s.id}
-						role="tab"
-						aria-selected={valgt === s.id}
-						onclick={() => (valgt = s.id)}
-					>
-						{s.kort.replace(/^(Min|Mit|Mine) /, '')}
-					</button>
-				{/each}
-			</div>
-		{/if}
-
 		<section class="udv-kort">
 			<div class="udv-k">{kurveTitel}</div>
 
@@ -253,8 +229,9 @@
 								y={kurve.flade.baandTop}
 								width={b.bredde}
 								height={kurve.flade.baandHoejde}
-								rx="5"
+								rx="6"
 								fill="var(--plum-tint)"
+								opacity="0.55"
 							/>
 							<rect
 								x={b.x}
@@ -358,23 +335,44 @@
 			</div>
 		{/if}
 
-		{#if valgt === null && liste.length > 0}
+		{#if liste.length > 0}
 			<section>
 				<div class="lab"><h2>Siden du startede</h2></div>
+				{#if kanVaelge}
+					<p class="udv-hint">Tryk på en linje for at se den alene.</p>
+				{/if}
 				<div class="udv-liste">
 					{#each liste as f (f.id)}
-						<div class="udv-raekke">
-							<span class="udv-navn">{f.kort}</span>
-							<span class="udv-bar" aria-hidden="true">
-								<i class="foer" style={`width:${bredde(f.foer)}%`}></i>
-								<i class="nu" style={`width:${bredde(f.nu)}%`}></i>
-							</span>
-							{#if f.kanSammenlignes}
+						{#if kanVaelge}
+							<!-- Linjen ER knappen. Der var foer en raekke runde knapper
+							     oeverst paa siden, men de fyldte to linjer og skubbede
+							     hendes tal ned. Linns beslutning 18. august: navnene
+							     staar her i forvejen, saa hun trykker paa det hun
+							     undrer sig over. Et tryk mere foerer tilbage. -->
+							<button
+								class="udv-raekke udv-vaelg"
+								class:valgt={valgt === f.id}
+								aria-pressed={valgt === f.id}
+								onclick={() => (valgt = valgt === f.id ? null : f.id)}
+							>
+								<span class="udv-navn">{f.kort}</span>
+								<span class="udv-bar" aria-hidden="true">
+									<i class="foer" style={`width:${bredde(f.foer)}%`}></i>
+									<i class="nu" style={`width:${bredde(f.nu)}%`}></i>
+								</span>
 								<span class="udv-ft">{formatTal(f.foer)} → <b>{formatTal(f.nu)}</b></span>
-							{:else}
+								<span class="udv-pil" aria-hidden="true">{valgt === f.id ? '⌄' : '›'}</span>
+							</button>
+						{:else}
+							<div class="udv-raekke">
+								<span class="udv-navn">{f.kort}</span>
+								<span class="udv-bar" aria-hidden="true">
+									<i class="foer" style={`width:${bredde(f.foer)}%`}></i>
+									<i class="nu" style={`width:${bredde(f.nu)}%`}></i>
+								</span>
 								<span class="udv-ft"><b>{formatTal(f.nu)}</b></span>
-							{/if}
-						</div>
+							</div>
+						{/if}
 					{/each}
 				</div>
 

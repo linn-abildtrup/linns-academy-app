@@ -155,19 +155,21 @@ export const FLADE_FORSIDE: Flade = {
  */
 export const FLADE_UDVIKLING: Flade = {
 	bredde: 286,
-	hoejde: 108,
-	xVenstre: 16,
-	xHoejre: 270,
-	yTop: 18,
-	yBund: 78,
-	baandTop: 6,
-	baandHoejde: 76,
-	baandStregY: 84,
+	hoejde: 116,
+	// Helt ud til kanten. Paa forsiden er kurven et hjoerne af et kort og
+	// skal have luft omkring sig. Her ER den indholdet.
+	xVenstre: 10,
+	xHoejre: 276,
+	yTop: 14,
+	yBund: 90,
+	baandTop: 3,
+	baandHoejde: 89,
+	baandStregY: 94,
 	baandStregHoejde: 3,
-	datoY: 100,
+	datoY: 109,
 	baandMinBredde: 12,
-	baandKantVenstre: 8,
-	baandKantHoejre: 278
+	baandKantVenstre: 3,
+	baandKantHoejre: 283
 };
 
 /**
