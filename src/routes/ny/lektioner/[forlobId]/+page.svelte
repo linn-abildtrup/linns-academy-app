@@ -20,7 +20,7 @@
 	// sker i lektionsUger3, og reglerne staar forklaret der.
 	// ============================================================
 
-	import { getContext } from 'svelte';
+	import { getContext, tick } from 'svelte';
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
@@ -163,6 +163,57 @@
 		harValgt = true;
 		valgtUge = aabenUge === nummer ? null : nummer;
 	}
+
+	/**
+	 * Gaar hun ind i en lektion og trykker tilbage, skal hun lande praecis
+	 * hvor hun slap. Ugen skal staa aaben, fanen skal vaere den samme, og
+	 * siden skal staa samme sted. Linns oenske 18. august.
+	 *
+	 * SvelteKits snapshot gemmer det pr side i historikken, saa den uge
+	 * hun aabnede paa dag 47 ikke folder sig sammen bag hende. Den kan kun
+	 * gemme almindelige vaerdier, ikke Set og Map, saa her ligger kun tal
+	 * og tekst.
+	 *
+	 * Sidens position skal vi selv sætte tilbage. Browseren goer det for
+	 * tidligt, mens listen stadig hentes og siden derfor er kort, saa den
+	 * lander oeverst uanset hvad.
+	 */
+	// Med vilje IKKE reaktiv. Effekten nedenfor koerer alligevel naar
+	// listen er inde, og en tilstand der baade laeses og nulstilles i samme
+	// effekt ville koere rundt om sig selv.
+	let gendanY: number | null = null;
+
+	export const snapshot = {
+		capture: () => ({
+			uge: valgtUge,
+			harValgt,
+			fane,
+			y: typeof window === 'undefined' ? 0 : window.scrollY
+		}),
+		restore: (v: {
+			uge: number | null;
+			harValgt: boolean;
+			fane: 'lektioner' | 'noter';
+			y: number;
+		}) => {
+			valgtUge = v.uge;
+			harValgt = v.harValgt;
+			fane = v.fane;
+			gendanY = v.y;
+		}
+	};
+
+	// Naar listen er inde og ugen er foldet ud igen, er siden lige saa hoej
+	// som da hun forlod den, og saa kan vi rulle tilbage. tick() venter til
+	// ugen faktisk staar der.
+	$effect(() => {
+		// Laeses her, saa effekten koerer igen naar listen lander.
+		const klar = !henter && liste.length > 0;
+		const y = gendanY;
+		if (!klar || y === null) return;
+		gendanY = null;
+		void tick().then(() => window.scrollTo(0, y));
+	});
 
 	/** Linjen under ugens navn. Aldrig et regnskab, bare hvad der ligger. */
 	function ugeUnder(u: Uge): string {
