@@ -144,6 +144,14 @@
 			titel: 'Ratings & feedback',
 			omraader: [
 				{
+					id: 'refleksioner',
+					navn: 'Refleksioner',
+					beskrivelse: 'Læs klienternes svar på dagens refleksion, og hent dem som CSV',
+					rute: '/app/admin/refleksioner',
+					accent: '#8C7A9D',
+					icon: 'doc' as const
+				},
+				{
 					id: 'opskrift-ratings',
 					navn: 'Opskrift-ratings',
 					beskrivelse: 'Se hvilke opskrifter klienterne giver lavest og hoejest gennemsnit',

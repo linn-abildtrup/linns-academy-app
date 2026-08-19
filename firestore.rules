@@ -42,9 +42,14 @@ service cloud.firestore {
 					&& (!('egneVaner' in request.resource.data)
 						|| request.resource.data.egneVaner.size() <= 3);
 
-				// Vanedage på et produkt: kun egen bruger
+				// Vanedage på et produkt: kun egen bruger må skrive.
+				// Admin må LÆSE dem — klientens refleksionssvar står i note-
+				// feltet, og admin-siden /admin/refleksioner samler dem pr
+				// forløb så Linn kan læse og eksportere dem. Læsning kun,
+				// aldrig skrivning: admin må ikke kunne ændre en klients svar.
 				match /vanedage/{dagId} {
-					allow read, write: if request.auth != null && request.auth.uid == uid;
+					allow read: if request.auth != null && (isAdmin() || request.auth.uid == uid);
+					allow write: if request.auth != null && request.auth.uid == uid;
 				}
 			}
 
