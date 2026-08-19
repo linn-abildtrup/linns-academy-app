@@ -795,7 +795,13 @@
 		     en oevelse og er foldet sammen derefter. Linns valg 19. august. -->
 		{#if hjaelpetekst}
 			<details class="af-saadan" bind:open={saadanAaben}>
-				<summary>Sådan gør du</summary>
+				<!-- Samme tegn som paa Udvikling: ⌄ naar den er aaben, › naar
+				     den er lukket. Uden det kunne man ikke se AT den kunne
+				     foldes ud. Linns bemaerkning 19. august. -->
+				<summary>
+					Sådan gør du
+					<span class="af-fold" aria-hidden="true">{saadanAaben ? '⌄' : '›'}</span>
+				</summary>
 				<p>{hjaelpetekst}</p>
 				{#if hjaelpetrin.length > 0}
 					<ol>

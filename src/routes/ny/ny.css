@@ -8909,6 +8909,26 @@ button.tm-r-t:focus-visible {
 	min-height: 44px;
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+/* Browserens egen trekant forsvinder naar summary er en flex-boks, og
+   saa var der ingenting der viste at raekken kunne aabnes. Vi saetter
+   vores eget tegn paa, det samme som Udvikling bruger. */
+.af-saadan summary::-webkit-details-marker {
+	display: none;
+}
+
+.af-saadan summary::marker {
+	content: '';
+}
+
+.af-fold {
+	color: var(--ink-3);
+	font-size: calc(16px * var(--fs-scale, 1));
+	line-height: 1;
+	flex-shrink: 0;
 }
 
 .af-saadan summary:focus-visible {
