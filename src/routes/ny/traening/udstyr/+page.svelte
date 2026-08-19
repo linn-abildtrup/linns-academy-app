@@ -57,7 +57,10 @@
 				uid,
 				markerede.filter((id) => gyldige.has(id))
 			);
-			await goto('/ny/profil');
+			// Tilbage til Traening og ikke til Din side. Siden laa under Din
+			// side indtil 19. august, og linjen her fulgte ikke med da den
+			// flyttede. Linns bemaerkning samme dag.
+			await goto('/ny/traening');
 		} catch (e) {
 			console.error('[ny] kunne ikke gemme udstyret', e);
 			fejl = 'Kunne ikke gemme. Prøv igen.';
