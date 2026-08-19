@@ -108,6 +108,54 @@
 	let paause = $state(false);
 	/** Selve video-elementet, saa pause ogsaa kan fryse billedet. */
 	let videoEl = $state<HTMLVideoElement | null>(null);
+
+	// ── Fuld skaerm ────────────────────────────────────────────
+	//
+	// Naar telefonen laegges ned, skal videoen fylde HELE telefonen og
+	// ikke bare browserens vindue. Linns oenske 19. august.
+	//
+	// Det kan ikke goeres af sig selv naar hun drejer: browsere kraever et
+	// tryk fra hende, ellers afviser de det. Derfor er der en lille knap,
+	// og den er samtidig svaret til dem der har laast skaermretningen paa
+	// deres telefon.
+	//
+	// PAA IPHONE I SAFARI FINDES DET IKKE. Apple tillader kun fuld skaerm
+	// paa selve videoen, ikke paa en side. Har hun lagt appen paa
+	// hjemmeskaermen, er der til gengaeld slet ingen browser-kant, og saa
+	// ER den allerede fuld. Knappen goer i det tilfaelde ingenting, og det
+	// er derfor den siger "drej" og ikke "tryk".
+	let spillerEl = $state<HTMLDivElement | null>(null);
+	let erFuldskaerm = $state(false);
+
+	function fuldskaermFindes(): boolean {
+		if (typeof document === 'undefined') return false;
+		const e = spillerEl as unknown as { requestFullscreen?: unknown };
+		return typeof e?.requestFullscreen === 'function';
+	}
+
+	async function slaaFuldskaermTil() {
+		try {
+			await spillerEl?.requestFullscreen?.();
+		} catch {
+			// Afvist af browseren. Den liggende visning virker alligevel,
+			// bare med browserens kant omkring.
+		}
+	}
+
+	async function slaaFuldskaermFra() {
+		try {
+			if (document.fullscreenElement) await document.exitFullscreen();
+		} catch {
+			// ligegyldigt
+		}
+	}
+
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+		const lyt = () => (erFuldskaerm = Boolean(document.fullscreenElement));
+		document.addEventListener('fullscreenchange', lyt);
+		return () => document.removeEventListener('fullscreenchange', lyt);
+	});
 	let viserAfslut = $state(false);
 	let gemmer = $state(false);
 	let lydTil = $state(true);
@@ -298,6 +346,7 @@
 	onDestroy(() => {
 		stopUr();
 		slipWakeLock();
+		void slaaFuldskaermFra();
 		for (const el of [musikEl, goEl, pauseEl]) {
 			try {
 				el?.pause();
@@ -422,6 +471,7 @@
 		slipWakeLock();
 		musikEl?.pause();
 		skaerm = 'faerdig';
+		void slaaFuldskaermFra();
 		// Talt med med det samme, saa "Tag den naeste" peger rigtigt selv
 		// hvis gemningen nedenfor er langsom.
 		if (!minFremgang.gennemfoerte.includes(nr)) {
@@ -545,7 +595,7 @@
 
 <!-- I liggende format bliver hele afspilleren til én stor video. Klassen
      styrer det, og resten sker i ny.css. -->
-<div class="ny-pad af-side" class:af-spiller={skaerm === 'spiller'}>
+<div class="ny-pad af-side" class:af-spiller={skaerm === 'spiller'} bind:this={spillerEl}>
 	{#if skaerm === 'henter'}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Gør træningen klar</span></div>
 	{:else if skaerm === 'fejl'}
@@ -672,13 +722,29 @@
 				<span class="af-tal">{stilling.tilbage}</span>
 			</span>
 			<span class="af-tekst">
-				<span class="af-fase">{faseTekst3(stilling.fase)}</span>
+				<!-- Fasen staar KUN paa videoen. Den stod baade der og her, og
+				     to gange "Arbejd" paa den samme skaerm er stoej. Linns
+				     bemaerkning 19. august. -->
 				<span class="af-navn">{navnPaa(denne)}</span>
 				{#if denne && stilling.fase !== 'skift'}
 					<span class="af-saet">Sæt {stilling.saet} af {denne.sets}</span>
 				{/if}
 			</span>
 		</div>
+
+		<!-- Figuren der fortaeller hende at videoen kan blive stor. Den
+		     ligger UDEN FOR videoen, fordi videoen selv er en pause-knap og
+		     en knap inde i en knap ikke er lovligt.
+
+		     Trykker hun paa den, beder vi om fuld skaerm. Drejer hun bare
+		     telefonen, faar hun den liggende visning alligevel, bare med
+		     browserens kant omkring. -->
+		{#if fuldskaermFindes() && !erFuldskaerm}
+			<button type="button" class="af-drej" onclick={slaaFuldskaermTil}>
+				<span class="af-drej-i" aria-hidden="true">⟳</span>
+				Drej for fuld skærm
+			</button>
+		{/if}
 
 		<!-- Hvor langt der er igen, uden at hun skal regne. -->
 		{#if oevelser.length > 1}
@@ -719,6 +785,11 @@
 				{lydTil ? 'Lyd fra' : 'Lyd til'}
 			</button>
 			<button type="button" class="af-knap" onclick={bedOmSvar}>Afslut</button>
+			{#if erFuldskaerm}
+				<button type="button" class="af-knap af-luk-fs" onclick={slaaFuldskaermFra}>
+					Luk fuld skærm
+				</button>
+			{/if}
 		</div>
 
 		{#if viserAfslut}
