@@ -8469,7 +8469,13 @@ button.tm-r-t:focus-visible {
 	color: var(--ink-3);
 }
 
-/* Videoen fylder feltet, og nedtaellingen ligger ovenpaa. */
+/* VIDEOEN ER REN. Uret laa foer ovenpaa og daekkede en femtedel af den.
+   Videoen er 16:9 og ligger ned, saa den er i forvejen lav, og paa en
+   squat forsvandt underkroppen bag uret. Nu staar uret under. Linns valg
+   19. august, model L2.
+
+   Hele feltet er en knap: et tryk holder pause, et tryk mere
+   fortsaetter. Linns oenske samme dag. */
 .af-scene {
 	position: relative;
 	width: 100%;
@@ -8479,10 +8485,73 @@ button.tm-r-t:focus-visible {
 	background: #cdbba9;
 	display: grid;
 	place-items: center;
+	border: 0;
+	padding: 0;
+	cursor: pointer;
+	/* Ingen graa flade naar hun rammer den paa en telefon. */
+	-webkit-tap-highlight-color: transparent;
+}
+
+.af-scene:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 3px;
 }
 
 .af-scene.arbejd {
 	box-shadow: 0 0 0 3px var(--sage);
+}
+
+/* Hvil skal kunne ses paa en halv meters afstand, uden at laese. */
+.af-scene.hvil::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: rgba(134, 161, 136, 0.28);
+	pointer-events: none;
+}
+
+/* Fasen, eller bonus-maerkatet, oppe i venstre hjoerne. */
+.af-mrk,
+.af-bonus {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	font-size: calc(10px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: rgba(0, 0, 0, 0.45);
+	color: #fff;
+}
+
+/* Bonus er en gave og ikke en advarsel, saa den er gul og ikke sort. */
+.af-bonus {
+	background: var(--honey);
+	color: #3a2a16;
+}
+
+/* Paa pause. Skal vaere tydeligt, for hun har lige rammet skaermen med
+   en sved-vaad finger og skal kunne se AT det virkede. */
+.af-pauselag {
+	position: absolute;
+	inset: 0;
+	background: rgba(30, 24, 22, 0.62);
+	display: grid;
+	place-items: center;
+	align-content: center;
+	gap: 7px;
+	color: #fff;
+}
+
+.af-pausetegn {
+	font-size: calc(30px * var(--fs-scale, 1));
+	letter-spacing: 0.1em;
+}
+
+.af-pausetekst {
+	font-size: calc(12.5px * var(--fs-scale, 1));
 }
 
 .af-video {
@@ -8500,10 +8569,9 @@ button.tm-r-t:focus-visible {
 
 .af-ring {
 	position: absolute;
-	right: 10px;
-	bottom: 10px;
-	width: 82px;
-	height: 82px;
+	inset: 0;
+	width: 100%;
+	height: 100%;
 	transform: rotate(-90deg);
 }
 
@@ -8523,20 +8591,36 @@ button.tm-r-t:focus-visible {
 
 .af-tal {
 	position: absolute;
-	right: 10px;
-	bottom: 10px;
-	width: 82px;
-	height: 82px;
+	inset: 0;
 	display: grid;
 	place-items: center;
 	font-family: var(--serif);
-	font-size: calc(28px * var(--fs-scale, 1));
+	font-size: calc(25px * var(--fs-scale, 1));
 	font-weight: 600;
 	color: var(--espresso);
 }
 
+/* Uret til venstre, oevelsen til hoejre, paa samme linje under videoen.
+   Saa skal oejnene kun ét sted efter de har forladt billedet. */
+.af-ur-rk {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.af-ur {
+	position: relative;
+	width: 74px;
+	height: 74px;
+	flex-shrink: 0;
+}
+
 .af-tekst {
-	text-align: center;
+	min-width: 0;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
 }
 
 .af-fase {
@@ -8549,17 +8633,94 @@ button.tm-r-t:focus-visible {
 
 .af-navn {
 	font-family: var(--serif);
-	font-size: calc(23px * var(--fs-scale, 1));
+	font-size: calc(21px * var(--fs-scale, 1));
 	font-weight: 600;
 	color: var(--espresso);
-	margin-top: 3px;
-	line-height: 1.2;
+	line-height: 1.15;
 }
 
 .af-saet {
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+}
+
+/* Hvor langt der er igen, uden at hun skal regne. Prikkerne er
+   nummererede, saa "øvelse 3 af 6" ogsaa kan SES og ikke kun laeses. */
+.af-stribe {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.af-prik {
+	width: 30px;
+	height: 30px;
+	border-radius: 9px;
+	display: grid;
+	place-items: center;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	background: var(--paper-2);
+	box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.af-prik.klaret {
+	background: var(--sage);
+	color: #fff;
+	box-shadow: none;
+}
+
+.af-prik.nu {
+	background: var(--honey);
+	color: #3a2a16;
+	box-shadow: none;
+	font-weight: 700;
+}
+
+/* SAADAN GOER DU. Beskrivelsen stod i den gamle app og manglede helt i
+   den nye. Den folder sig ud foerste gang hun moeder oevelsen og er
+   foldet sammen derefter. Linns valg 19. august. */
+.af-saadan {
+	background: var(--paper);
+	border-radius: 14px;
+	padding: 4px 14px;
+	box-shadow: var(--shadow-soft);
+}
+
+.af-saadan summary {
+	cursor: pointer;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--espresso);
+	padding: 11px 0;
+	min-height: 44px;
+	display: flex;
+	align-items: center;
+}
+
+.af-saadan summary:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+	border-radius: 8px;
+}
+
+.af-saadan p {
+	margin: 0 0 8px;
 	font-size: calc(13.5px * var(--fs-scale, 1));
 	color: var(--ink-2);
-	margin-top: 4px;
+	line-height: 1.55;
+}
+
+.af-saadan ol {
+	margin: 0 0 12px;
+	padding-left: 20px;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	line-height: 1.55;
+}
+
+.af-saadan li {
+	margin-bottom: 4px;
 }
 
 .af-knapper {
@@ -10720,4 +10881,152 @@ a.ll-qa-r:focus-visible {
 .udv-kom-igang:focus-visible {
 	outline: 3px solid var(--plum);
 	outline-offset: 2px;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   AFSPILLEREN NAAR TELEFONEN LIGGER NED
+
+   Videoen er 16:9. Paa en staaende telefon kan den ikke fylde mere end
+   en stribe, uanset hvad vi goer ved layoutet. Drejer hun telefonen,
+   passer den derimod praecis til skaermen og bliver fire til fem gange
+   saa stor. Det er dét den her blok er til, og det var Linns oenske
+   19. august: naar telefonen laegges ned, skal videoen fylde det hele.
+
+   Alt andet flyttes ud i kanterne, saa midten af billedet er frit.
+   Striben og "sådan gør du" forsvinder: tre linjer tekst oven paa en
+   levende video ville daekke bevaegelsen. Vil hun laese den, drejer hun
+   tilbage.
+
+   Den ligger over bundmenuen med vilje. En traening der koerer er en
+   afbrydelse paa linje med et ark, og menuen kan alligevel ikke bruges.
+   Se reglen ved .ny-nav.
+   ══════════════════════════════════════════════════════════ */
+
+@media (orientation: landscape) {
+	.af-side.af-spiller {
+		position: fixed;
+		inset: 0;
+		z-index: 115;
+		padding: 0;
+		gap: 0;
+		background: #1c1614;
+	}
+
+	.af-spiller .af-scene {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		aspect-ratio: auto;
+		border-radius: 0;
+		box-shadow: none;
+	}
+
+	/* Den groenne ramme om arbejd giver ingen mening i fuld skaerm. */
+	.af-spiller .af-scene.arbejd {
+		box-shadow: none;
+	}
+
+	.af-spiller .af-mrk,
+	.af-spiller .af-bonus {
+		top: 12px;
+		left: 14px;
+		z-index: 3;
+	}
+
+	/* Fremgangen bliver til en tynd bjaelke i bunden. */
+	.af-spiller .af-top {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 3;
+		gap: 0;
+	}
+
+	.af-spiller .af-bar {
+		height: 3px;
+		border-radius: 0;
+		background: rgba(255, 255, 255, 0.22);
+	}
+
+	.af-spiller .af-info {
+		display: none;
+	}
+
+	/* Uret og navnet nede i venstre hjoerne, oven paa en moerk sky saa
+	   teksten kan laeses paa et lyst billede. */
+	.af-spiller .af-ur-rk {
+		position: absolute;
+		left: 14px;
+		bottom: 16px;
+		z-index: 3;
+		gap: 12px;
+		padding: 8px 14px 8px 8px;
+		border-radius: 99px;
+		background: rgba(20, 15, 14, 0.55);
+		backdrop-filter: blur(6px);
+	}
+
+	.af-spiller .af-ur {
+		width: 58px;
+		height: 58px;
+	}
+
+	.af-spiller .af-ring-bund {
+		fill: rgba(20, 15, 14, 0.5);
+		stroke: rgba(255, 255, 255, 0.35);
+	}
+
+	.af-spiller .af-tal,
+	.af-spiller .af-navn,
+	.af-spiller .af-saet {
+		color: #fff;
+	}
+
+	.af-spiller .af-fase {
+		color: var(--honey);
+	}
+
+	.af-spiller .af-navn {
+		font-size: calc(18px * var(--fs-scale, 1));
+	}
+
+	/* Striben og hjaelpeteksten hoerer til i staaende. */
+	.af-spiller .af-stribe,
+	.af-spiller .af-saadan {
+		display: none;
+	}
+
+	/* Knapperne oppe i hoejre hjoerne, som ikoner i stedet for en raekke. */
+	.af-spiller .af-knapper {
+		position: absolute;
+		top: 10px;
+		right: 12px;
+		z-index: 3;
+		display: flex;
+		gap: 8px;
+	}
+
+	.af-spiller .af-knap {
+		min-height: 40px;
+		padding: 8px 14px;
+		border-radius: 99px;
+		background: rgba(20, 15, 14, 0.55);
+		border-color: rgba(255, 255, 255, 0.25);
+		color: #fff;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		backdrop-filter: blur(6px);
+	}
+
+	/* Spoergsmaalet om traeningen skal taelle ligger oven paa det hele. */
+	.af-spiller .af-spoerg {
+		position: absolute;
+		inset: 0;
+		z-index: 4;
+		margin: 0;
+		border-radius: 0;
+		overflow-y: auto;
+	}
 }

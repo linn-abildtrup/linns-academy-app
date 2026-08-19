@@ -127,6 +127,33 @@
 
 	const RING = 2 * Math.PI * 52;
 
+	// ── Sådan gør du ───────────────────────────────────────────
+	//
+	// Teksten kommer fra oevelsen selv, den samme som den gamle app
+	// viser. Den folder sig ud FOERSTE gang hun moeder oevelsen og er
+	// foldet sammen alle gange derefter. Linns valg 19. august.
+	//
+	// "Foerste gang" er pr traening og ikke pr kunde. Vi gemmer ikke
+	// noget: koerer hun den samme traening igen i morgen, folder den sig
+	// ud igen. Det er en bevidst forenkling, for et gemt felt pr oevelse
+	// pr kunde er meget maskineri for en lille ting.
+	const hjaelpetekst = $derived(oevelseData?.desc?.trim() ?? '');
+	const hjaelpetrin = $derived((oevelseData?.how ?? []).filter((t) => t.trim().length > 0));
+
+	let setteOevelser = $state<Set<string>>(new Set());
+	let saadanAaben = $state(false);
+
+	$effect(() => {
+		const id = denne?.exerciseId;
+		if (!id || !hjaelpetekst) return;
+		if (setteOevelser.has(id)) {
+			saadanAaben = false;
+			return;
+		}
+		setteOevelser = new Set([...setteOevelser, id]);
+		saadanAaben = true;
+	});
+
 	// ── Klar-skaermen ──────────────────────────────────────────
 
 	/** Videoen fra foerste oevelse, saa hun kan se hvad der venter. */
@@ -489,7 +516,9 @@
 
 <svelte:head><title>Træning {nr}</title></svelte:head>
 
-<div class="ny-pad af-side">
+<!-- I liggende format bliver hele afspilleren til én stor video. Klassen
+     styrer det, og resten sker i ny.css. -->
+<div class="ny-pad af-side" class:af-spiller={skaerm === 'spiller'}>
 	{#if skaerm === 'henter'}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Gør træningen klar</span></div>
 	{:else if skaerm === 'fejl'}
@@ -553,34 +582,98 @@
 			</div>
 		</div>
 
-		<div class="af-scene" class:arbejd={stilling.fase === 'arbejd'}>
+		<!-- VIDEOEN ER REN. Uret laa foer oven paa den og daekkede en
+		     femtedel. Videoen ligger ned, 16:9, saa den er i forvejen lav,
+		     og paa en squat var det underkroppen der forsvandt. Uret staar
+		     nu under. Linns valg 19. august, model L2.
+
+		     Hele feltet er en knap: et tryk paa videoen holder pause, og
+		     et tryk mere fortsaetter. -->
+		<button
+			type="button"
+			class="af-scene"
+			class:arbejd={stilling.fase === 'arbejd'}
+			class:hvil={stilling.fase === 'hvil'}
+			class:paa-pause={paause}
+			aria-label={paause ? 'Fortsæt træningen' : 'Hold pause'}
+			onclick={() => (paause = !paause)}
+		>
 			{#if video}
 				<video class="af-video" src={video} autoplay muted loop playsinline preload="auto"></video>
 			{:else}
 				<div class="af-intet" aria-hidden="true">◈</div>
 			{/if}
 
-			<svg class="af-ring" viewBox="0 0 120 120" aria-hidden="true">
-				<circle class="af-ring-bund" cx="60" cy="60" r="52" />
-				<circle
-					class="af-ring-top"
-					cx="60"
-					cy="60"
-					r="52"
-					stroke-dasharray={RING}
-					stroke-dashoffset={RING * (1 - ringAndel)}
-				/>
-			</svg>
-			<div class="af-tal">{stilling.tilbage}</div>
+			{#if denne?.bonus}
+				<span class="af-bonus">Bonus</span>
+			{:else}
+				<span class="af-mrk">{faseTekst3(stilling.fase)}</span>
+			{/if}
+
+			{#if paause}
+				<span class="af-pauselag">
+					<span class="af-pausetegn" aria-hidden="true">❙❙</span>
+					<span class="af-pausetekst">På pause · tryk for at fortsætte</span>
+				</span>
+			{/if}
+		</button>
+
+		<!-- Uret og oevelsen staar samlet, saa oejnene kun skal ét sted
+		     efter videoen. -->
+		<div class="af-ur-rk">
+			<span class="af-ur">
+				<svg class="af-ring" viewBox="0 0 120 120" aria-hidden="true">
+					<circle class="af-ring-bund" cx="60" cy="60" r="52" />
+					<circle
+						class="af-ring-top"
+						cx="60"
+						cy="60"
+						r="52"
+						stroke-dasharray={RING}
+						stroke-dashoffset={RING * (1 - ringAndel)}
+					/>
+				</svg>
+				<span class="af-tal">{stilling.tilbage}</span>
+			</span>
+			<span class="af-tekst">
+				<span class="af-fase">{faseTekst3(stilling.fase)}</span>
+				<span class="af-navn">{navnPaa(denne)}</span>
+				{#if denne && stilling.fase !== 'skift'}
+					<span class="af-saet">Sæt {stilling.saet} af {denne.sets}</span>
+				{/if}
+			</span>
 		</div>
 
-		<div class="af-tekst">
-			<div class="af-fase">{faseTekst3(stilling.fase)}</div>
-			<div class="af-navn">{navnPaa(denne)}</div>
-			{#if denne && stilling.fase !== 'skift'}
-				<div class="af-saet">Sæt {stilling.saet} af {denne.sets}</div>
-			{/if}
-		</div>
+		<!-- Hvor langt der er igen, uden at hun skal regne. -->
+		{#if oevelser.length > 1}
+			<div class="af-stribe">
+				{#each oevelser as _, i (i)}
+					<span
+						class="af-prik"
+						class:klaret={i < stilling.oevelse}
+						class:nu={i === stilling.oevelse}>{i + 1}</span
+					>
+				{/each}
+			</div>
+		{/if}
+
+		<!-- SAADAN GOER DU. Beskrivelsen stod i den gamle app, men ingen
+		     steder i den nye, saa var hun i tvivl midt i en oevelse kunne
+		     hun ikke slaa den op. Den folder sig ud FOERSTE gang hun moeder
+		     en oevelse og er foldet sammen derefter. Linns valg 19. august. -->
+		{#if hjaelpetekst}
+			<details class="af-saadan" bind:open={saadanAaben}>
+				<summary>Sådan gør du</summary>
+				<p>{hjaelpetekst}</p>
+				{#if hjaelpetrin.length > 0}
+					<ol>
+						{#each hjaelpetrin as trin, i (i)}
+							<li>{trin}</li>
+						{/each}
+					</ol>
+				{/if}
+			</details>
+		{/if}
 
 		<div class="af-knapper">
 			<button type="button" class="af-knap" onclick={() => (paause = !paause)}>
