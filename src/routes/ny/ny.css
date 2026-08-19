@@ -7202,7 +7202,6 @@ button.tm-r-t:focus-visible {
 }
 
 
-
 /* ============================================================
    Admin: kobl ingredienser til foedevaredatabasen.
    Etape 3 af regnemaskinen, se SPEC-3.0.md 26.19.
@@ -8825,37 +8824,6 @@ button.tm-r-t:focus-visible {
 	color: var(--ink-2);
 }
 
-/* "Drej for fuld skærm". Ligger under videoen, ikke paa den, fordi
-   videoen selv er en pause-knap. Den er lille og rolig med vilje: den
-   skal fortaelle hende at muligheden findes, ikke bede om noget. */
-.af-drej {
-	align-self: flex-end;
-	display: inline-flex;
-	align-items: center;
-	gap: 7px;
-	border: 0;
-	cursor: pointer;
-	font-family: inherit;
-	font-size: calc(12px * var(--fs-scale, 1));
-	color: var(--ink-2);
-	background: var(--paper);
-	box-shadow: inset 0 0 0 1px var(--line);
-	border-radius: 999px;
-	padding: 7px 14px;
-	min-height: 38px;
-	margin-top: -6px;
-}
-
-.af-drej-i {
-	font-size: calc(14px * var(--fs-scale, 1));
-	line-height: 1;
-	color: var(--plum);
-}
-
-.af-drej:focus-visible {
-	outline: 3px solid var(--plum);
-	outline-offset: 2px;
-}
 
 /* Hvor langt der er igen, uden at hun skal regne. Prikkerne er
    nummererede, saa "øvelse 3 af 6" ogsaa kan SES og ikke kun laeses. */
@@ -8962,24 +8930,6 @@ button.tm-r-t:focus-visible {
 	gap: 8px;
 }
 
-.af-knap {
-	font-family: var(--sans);
-	font-size: calc(13.5px * var(--fs-scale, 1));
-	font-weight: 600;
-	color: var(--espresso);
-	background: var(--paper);
-	border: 1px solid var(--line);
-	border-radius: 14px;
-	/* Hun staar op og er forpustet. Knapperne skal vaere store. */
-	min-height: 52px;
-	padding: 10px 8px;
-	cursor: pointer;
-}
-
-.af-knap:focus-visible {
-	outline: 3px solid var(--plum);
-	outline-offset: 2px;
-}
 
 /* Spoergsmaalet naar hun gaar vaek. Ligger paa siden og ikke i et ark,
    saa der ikke skal portalles noget midt i en traening. */
@@ -11267,8 +11217,7 @@ a.ll-qa-r:focus-visible {
 
 /* Striben, hjaelpeteksten og knappen hoerer til i den lille visning. */
 .af-stor .af-stribe,
-.af-stor .af-saadan,
-.af-stor .af-drej {
+.af-stor .af-saadan {
 	display: none;
 }
 
@@ -11290,17 +11239,6 @@ a.ll-qa-r:focus-visible {
 	gap: 8px;
 }
 
-.af-stor .af-knap {
-	min-height: 40px;
-	padding: 8px 14px;
-	border-radius: 99px;
-	background: rgba(20, 15, 14, 0.55);
-	border-color: rgba(255, 255, 255, 0.25);
-	color: #fff;
-	font-size: calc(12.5px * var(--fs-scale, 1));
-	backdrop-filter: blur(6px);
-	-webkit-backdrop-filter: blur(6px);
-}
 
 /* Spoergsmaalet om traeningen skal taelle ligger oven paa det hele. */
 .af-stor .af-spoerg {
@@ -11374,4 +11312,194 @@ body.traening-stor .ny-nav {
 .fold-ind:focus-visible {
 	outline: 3px solid var(--plum);
 	outline-offset: 2px;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   TRAENING ER EN MOERK TILSTAND
+
+   Linns valg 19. august, model B1. Foer var hele skaermen sandfarvet
+   paa sandfarvet: videoen var det eneste med farve, og Pause saa
+   praecis ud som Afslut. Der var ingenting der foerte oejet.
+
+   Nu bliver hele fladen moerk mens hun traener. Videoen springer frem,
+   uret er guld og stort, og Pause er den eneste rigtige knap. Appen
+   taler sproget i forvejen med kortet "Dit overskud" paa forsiden.
+
+   Bundmenuen bliver lys. Det er med vilje: den hoerer til appen udenom
+   og ikke til traeningen, og saa er der en tydelig kant mellem det hun
+   er i gang med og vejen ud.
+   ══════════════════════════════════════════════════════════ */
+
+body.traening-moerk .ny-scroll {
+	background: #2a2120;
+}
+
+.af-side.af-spiller {
+	color: #f2e9df;
+}
+
+.af-spiller .af-info {
+	color: rgba(242, 233, 223, 0.5);
+}
+
+.af-spiller .af-bar {
+	background: rgba(255, 255, 255, 0.14);
+}
+
+/* Videoen har ikke laengere en groen ramme. Paa moerk bund staar den
+   selv frem, og rammen stjal opmaerksomhed fra bevaegelsen. */
+.af-spiller .af-scene {
+	background: #1c1614;
+}
+
+.af-spiller .af-scene.arbejd {
+	box-shadow: none;
+}
+
+/* Uret er stoerre og guld. Det er det vigtigste tal paa skaermen efter
+   videoen, og det var blegt plommefarvet paa creme. */
+.af-spiller .af-ur {
+	width: 82px;
+	height: 82px;
+}
+
+.af-spiller .af-ring-bund {
+	fill: rgba(255, 255, 255, 0.05);
+	stroke: rgba(255, 255, 255, 0.16);
+}
+
+.af-spiller .af-ring-top {
+	stroke: var(--honey);
+}
+
+.af-spiller .af-tal {
+	color: #f6ece2;
+	font-size: calc(30px * var(--fs-scale, 1));
+}
+
+.af-spiller .af-navn {
+	color: #f6ece2;
+	font-size: calc(23px * var(--fs-scale, 1));
+}
+
+.af-spiller .af-saet {
+	color: rgba(242, 233, 223, 0.62);
+}
+
+/* Striben. Taget er groen, den hun er paa er guld, resten er en anelse
+   lysere end bunden. */
+.af-spiller .af-prik {
+	background: rgba(255, 255, 255, 0.08);
+	color: rgba(242, 233, 223, 0.5);
+	box-shadow: none;
+}
+
+/* "Sådan gør du" er en tynd linje og ikke en hvid kasse. Den fylder som
+   det hun sjaeldent bruger. */
+.af-spiller .af-saadan {
+	background: none;
+	box-shadow: none;
+	border-top: 1px solid rgba(255, 255, 255, 0.14);
+	border-radius: 0;
+	padding: 0;
+}
+
+.af-spiller .af-saadan summary {
+	color: #f2e9df;
+	font-weight: 600;
+}
+
+.af-spiller .af-fold {
+	color: rgba(242, 233, 223, 0.55);
+}
+
+.af-spiller .af-saadan p,
+.af-spiller .af-saadan ol {
+	color: rgba(242, 233, 223, 0.75);
+}
+
+/* ── Knapperne ────────────────────────────────────────────── */
+/* Pause fylder linjen, resten er runde ikoner. Tre lige store kasser
+   gjorde det umuligt at se hvad man skulle trykke paa. */
+
+.af-spiller .af-knapper {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+}
+
+.af-hovedknap {
+	flex: 1;
+	font-family: var(--sans);
+	font-size: calc(15px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: #3a2a16;
+	background: var(--honey);
+	border: 0;
+	border-radius: 999px;
+	min-height: 54px;
+	padding: 12px;
+	cursor: pointer;
+}
+
+.af-hovedknap:focus-visible {
+	outline: 3px solid #f6ece2;
+	outline-offset: 3px;
+}
+
+.af-rund {
+	flex: 0 0 auto;
+	width: 50px;
+	height: 50px;
+	border-radius: 50%;
+	border: 0;
+	cursor: pointer;
+	background: rgba(255, 255, 255, 0.11);
+	color: #f2e9df;
+	font-size: calc(17px * var(--fs-scale, 1));
+	line-height: 1;
+	display: grid;
+	place-items: center;
+	font-family: var(--sans);
+}
+
+.af-rund[aria-pressed='false'] {
+	color: rgba(242, 233, 223, 0.45);
+}
+
+.af-rund:focus-visible {
+	outline: 3px solid #f6ece2;
+	outline-offset: 3px;
+}
+
+/* Spoergsmaalet om traeningen skal taelle, paa moerk bund. */
+.af-spiller .af-spoerg {
+	background: #3a2e2b;
+	color: #f2e9df;
+}
+
+.af-spiller .af-spoerg-t {
+	color: #f6ece2;
+}
+
+.af-spiller .af-fortryd {
+	color: rgba(242, 233, 223, 0.7);
+}
+
+/* I stor visning ligger knapperne i kanten, og der skal hovedknappen
+   ikke fylde hele linjen. */
+.af-stor .af-hovedknap {
+	flex: 0 0 auto;
+	min-height: 44px;
+	padding: 10px 22px;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+}
+
+.af-stor .af-rund {
+	width: 44px;
+	height: 44px;
+	background: rgba(20, 15, 14, 0.55);
+	backdrop-filter: blur(6px);
+	-webkit-backdrop-filter: blur(6px);
 }

@@ -148,7 +148,12 @@
 		return () => mq.removeEventListener('change', lyt);
 	});
 
-	// Bundmenuen skal VAEK mens videoen er stor. Den laa hen over bunden af
+	// TRAENING ER EN MOERK TILSTAND. Linns valg 19. august, model B1.
+	// Hele fladen bliver moerk mens hun traener, saa videoen springer frem
+	// og der er ét sted at kigge. Appen taler sproget i forvejen med det
+	// moerke kort paa forsiden.
+	//
+	// Bundmenuen skal desuden VAEK mens videoen er stor. Den laa hen over bunden af
 	// billedet og skjulte baade uret og oevelsens navn. Set paa Linns
 	// skaermbillede 19. august.
 	//
@@ -158,9 +163,13 @@
 	// den daekker noget andet en dag.
 	$effect(() => {
 		if (typeof document === 'undefined') return;
-		const paa = skaerm === 'spiller' && stor;
-		document.body.classList.toggle('traening-stor', paa);
-		return () => document.body.classList.remove('traening-stor');
+		const koerer = skaerm === 'spiller';
+		document.body.classList.toggle('traening-moerk', koerer);
+		document.body.classList.toggle('traening-stor', koerer && stor);
+		return () => {
+			document.body.classList.remove('traening-moerk');
+			document.body.classList.remove('traening-stor');
+		};
 	});
 
 	function slaaStorTil() {
@@ -769,13 +778,6 @@
 		     Trykker hun paa den, beder vi om fuld skaerm. Drejer hun bare
 		     telefonen, faar hun den liggende visning alligevel, bare med
 		     browserens kant omkring. -->
-		{#if !stor}
-			<button type="button" class="af-drej" onclick={slaaStorTil}>
-				<span class="af-drej-i" aria-hidden="true">⤢</span>
-				Stor video · eller drej telefonen
-			</button>
-		{/if}
-
 		<!-- Hvor langt der er igen, uden at hun skal regne. -->
 		{#if oevelser.length > 1}
 			<div class="af-stribe">
@@ -813,20 +815,35 @@
 			</details>
 		{/if}
 
+		<!-- Pause er den eneste rigtige knap. Den bruger hun hver gang.
+		     Lyd, stor video og afslut er runde ikoner, ligesom i den gamle
+		     app: tre lige store kasser gjorde det umuligt at se hvad man
+		     skulle trykke paa. Linns valg 19. august, model B1. -->
 		<div class="af-knapper">
-			<button type="button" class="af-knap" onclick={() => saetPause(!paause)}>
+			<button type="button" class="af-hovedknap" onclick={() => saetPause(!paause)}>
 				{paause ? 'Fortsæt' : 'Pause'}
 			</button>
-			<button type="button" class="af-knap" onclick={skiftLyd}>
-				{lydTil ? 'Lyd fra' : 'Lyd til'}
+			<button
+				type="button"
+				class="af-rund"
+				aria-label={lydTil ? 'Slå lyden fra' : 'Slå lyden til'}
+				aria-pressed={lydTil}
+				onclick={skiftLyd}
+			>
+				{lydTil ? '♪' : '♪̸'}
 			</button>
-			<button type="button" class="af-knap" onclick={bedOmSvar}>Afslut</button>
-			<!-- Ligger telefonen ned, er stor visning ikke noget hun har
-			     valgt, og saa er der ikke noget at lukke. Saa vender hun den
-			     bare tilbage. -->
-			{#if stor && !erLiggende}
-				<button type="button" class="af-knap" onclick={slaaStorFra}>Mindre</button>
+			{#if !stor}
+				<button type="button" class="af-rund" aria-label="Vis videoen stort" onclick={slaaStorTil}>
+					⤢
+				</button>
+			{:else if !erLiggende}
+				<button type="button" class="af-rund" aria-label="Vis videoen mindre" onclick={slaaStorFra}>
+					⤡
+				</button>
 			{/if}
+			<button type="button" class="af-rund" aria-label="Afslut træningen" onclick={bedOmSvar}>
+				✕
+			</button>
 		</div>
 
 		{#if viserAfslut}
