@@ -109,53 +109,56 @@
 	/** Selve video-elementet, saa pause ogsaa kan fryse billedet. */
 	let videoEl = $state<HTMLVideoElement | null>(null);
 
-	// ── Fuld skaerm ────────────────────────────────────────────
+	// ── Stor visning ───────────────────────────────────────────
 	//
-	// Naar telefonen laegges ned, skal videoen fylde HELE telefonen og
-	// ikke bare browserens vindue. Linns oenske 19. august.
+	// Videoen er 16:9. Paa en staaende telefon fylder den en femtedel af
+	// skaermen, og det er for lidt naar telefonen staar paa gulvet.
 	//
-	// Det kan ikke goeres af sig selv naar hun drejer: browsere kraever et
-	// tryk fra hende, ellers afviser de det. Derfor er der en lille knap,
-	// og den er samtidig svaret til dem der har laast skaermretningen paa
-	// deres telefon.
+	// DER ER TO TING I SPIL, og de maa ikke forveksles:
 	//
-	// PAA IPHONE I SAFARI FINDES DET IKKE. Apple tillader kun fuld skaerm
-	// paa selve videoen, ikke paa en side. Har hun lagt appen paa
-	// hjemmeskaermen, er der til gengaeld slet ingen browser-kant, og saa
-	// ER den allerede fuld. Knappen goer i det tilfaelde ingenting, og det
-	// er derfor den siger "drej" og ikke "tryk".
+	//  1. STOR VISNING. Vores egen. Afspilleren laegger sig hen over hele
+	//     vinduet med CSS. Det virker paa ALLE telefoner, ogsaa iPhone, og
+	//     det er praecis det den gamle app goer. Browserens kant bliver
+	//     staaende, men videoen bliver stor.
+	//
+	//  2. BROWSERENS FULDE SKAERM. Den fjerner ogsaa browserens kant, men
+	//     findes ikke paa iPhone i Safari, hvor Apple kun tillader det paa
+	//     selve videofilen.
+	//
+	// Knappen goer BEGGE dele paa én gang, saa hun faar det bedste hendes
+	// telefon kan. Gaar nummer 2 ikke, sker der ingenting, og nummer 1
+	// virker alligevel. Det var derfor den gamle app kun havde nummer 1.
+	//
+	// Ligger telefonen ned, taender stor visning af sig selv. Linns oenske
+	// 19. august.
 	let spillerEl = $state<HTMLDivElement | null>(null);
-	let erFuldskaerm = $state(false);
+	let storManuelt = $state(false);
+	let erLiggende = $state(false);
 
-	function fuldskaermFindes(): boolean {
-		if (typeof document === 'undefined') return false;
-		const e = spillerEl as unknown as { requestFullscreen?: unknown };
-		return typeof e?.requestFullscreen === 'function';
-	}
-
-	async function slaaFuldskaermTil() {
-		try {
-			await spillerEl?.requestFullscreen?.();
-		} catch {
-			// Afvist af browseren. Den liggende visning virker alligevel,
-			// bare med browserens kant omkring.
-		}
-	}
-
-	async function slaaFuldskaermFra() {
-		try {
-			if (document.fullscreenElement) await document.exitFullscreen();
-		} catch {
-			// ligegyldigt
-		}
-	}
+	/** Stor visning er taendt, enten fordi hun bad om det eller fordi
+	    telefonen ligger ned. */
+	const stor = $derived(storManuelt || erLiggende);
 
 	$effect(() => {
-		if (typeof document === 'undefined') return;
-		const lyt = () => (erFuldskaerm = Boolean(document.fullscreenElement));
-		document.addEventListener('fullscreenchange', lyt);
-		return () => document.removeEventListener('fullscreenchange', lyt);
+		if (typeof window === 'undefined' || !window.matchMedia) return;
+		const mq = window.matchMedia('(orientation: landscape)');
+		erLiggende = mq.matches;
+		const lyt = (e: MediaQueryListEvent) => (erLiggende = e.matches);
+		mq.addEventListener('change', lyt);
+		return () => mq.removeEventListener('change', lyt);
 	});
+
+	function slaaStorTil() {
+		storManuelt = true;
+		void spillerEl?.requestFullscreen?.().catch(() => undefined);
+	}
+
+	function slaaStorFra() {
+		storManuelt = false;
+		if (typeof document !== 'undefined' && document.fullscreenElement) {
+			void document.exitFullscreen().catch(() => undefined);
+		}
+	}
 	let viserAfslut = $state(false);
 	let gemmer = $state(false);
 	let lydTil = $state(true);
@@ -346,7 +349,7 @@
 	onDestroy(() => {
 		stopUr();
 		slipWakeLock();
-		void slaaFuldskaermFra();
+		slaaStorFra();
 		for (const el of [musikEl, goEl, pauseEl]) {
 			try {
 				el?.pause();
@@ -471,7 +474,7 @@
 		slipWakeLock();
 		musikEl?.pause();
 		skaerm = 'faerdig';
-		void slaaFuldskaermFra();
+		slaaStorFra();
 		// Talt med med det samme, saa "Tag den naeste" peger rigtigt selv
 		// hvis gemningen nedenfor er langsom.
 		if (!minFremgang.gennemfoerte.includes(nr)) {
@@ -739,10 +742,10 @@
 		     Trykker hun paa den, beder vi om fuld skaerm. Drejer hun bare
 		     telefonen, faar hun den liggende visning alligevel, bare med
 		     browserens kant omkring. -->
-		{#if fuldskaermFindes() && !erFuldskaerm}
-			<button type="button" class="af-drej" onclick={slaaFuldskaermTil}>
-				<span class="af-drej-i" aria-hidden="true">⟳</span>
-				Drej for fuld skærm
+		{#if !stor}
+			<button type="button" class="af-drej" onclick={slaaStorTil}>
+				<span class="af-drej-i" aria-hidden="true">⤢</span>
+				Stor video · eller drej telefonen
 			</button>
 		{/if}
 
@@ -785,10 +788,11 @@
 				{lydTil ? 'Lyd fra' : 'Lyd til'}
 			</button>
 			<button type="button" class="af-knap" onclick={bedOmSvar}>Afslut</button>
-			{#if erFuldskaerm}
-				<button type="button" class="af-knap af-luk-fs" onclick={slaaFuldskaermFra}>
-					Luk fuld skærm
-				</button>
+			<!-- Ligger telefonen ned, er stor visning ikke noget hun har
+			     valgt, og saa er der ikke noget at lukke. Saa vender hun den
+			     bare tilbage. -->
+			{#if stor && !erLiggende}
+				<button type="button" class="af-knap" onclick={slaaStorFra}>Mindre</button>
 			{/if}
 		</div>
 
