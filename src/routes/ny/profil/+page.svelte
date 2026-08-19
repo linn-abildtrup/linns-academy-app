@@ -32,23 +32,9 @@
 	// Vejen ind i 3.0's admin. Kun for admin, saa ingen kunde ser den.
 	const visAdmin = $derived(isAdmin(hentUser()));
 
-	// Kategorierne hentes for at kunne skrive hendes valg med ord. Fejler
-	// det, staar der bare ingenting paa linjen. Profilen skal ikke gaa i
-	// staa fordi en undertekst ikke kunne hentes.
-	let kategorier = $state<TraeningKategori3[]>([]);
-	const udstyrTekst = $derived(
-		kategorier.length === 0
-			? 'Vælg det udstyr du har'
-			: udstyrTekst3(rensUdstyr3(udstyrFra(userDoc), kategorier), kategorier)
-	);
-
-	onMount(async () => {
-		try {
-			kategorier = await hentKategorier3();
-		} catch (e) {
-			console.warn('[ny] kunne ikke hente traeningskategorier', e);
-		}
-	});
+	// "Sådan træner jeg" laa her indtil 19. august og flyttede til
+	// Traening, hvor den hoerer hjemme. Derfor hentes traenings-
+	// kategorierne ikke laengere paa den her side.
 
 	// Uden navn staar der ingenting. Foer stod der "Din konto", men nu hedder
 	// hele siden det samme, og saa ville ordene staa to gange lige under
@@ -180,14 +166,6 @@
 			</a>
 		</section>
 	{/if}
-
-	<section>
-		<div class="lab"><h2>Træning</h2></div>
-		<a class="adm-raekke tr-raekke" href="/ny/profil/traening">
-			<div class="adm-raekke-t"><span>Sådan træner jeg</span></div>
-			<div class="adm-raekke-s">{udstyrTekst}</div>
-		</a>
-	</section>
 
 	{#if visAdmin}
 		<section>

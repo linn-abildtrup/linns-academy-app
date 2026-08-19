@@ -70,7 +70,7 @@
 
 <div class="ny-pad tv-side">
 	<header class="side-top" style="padding-left:0;padding-right:0">
-		<a class="tr-tilbage" href="/ny/profil">‹ Din side</a>
+		<a class="tr-tilbage" href="/ny/traening">‹ Træning</a>
 		<h1>Hvad træner du med?</h1>
 		<p class="tv-under">Så viser jeg dig kun de programmer du kan bruge. Du kan altid ændre det.</p>
 	</header>

@@ -36,6 +36,7 @@
 		kategoriNavn3,
 		rensUdstyr3,
 		udstyrFra,
+		udstyrTekst3,
 		type TraeningKategori3
 	} from '$lib/content/traeningKategori3';
 	import type { Traeningsprogram3 } from '$lib/content/traeningsprogram3';
@@ -134,6 +135,17 @@
 		).length
 	);
 
+	/**
+	 * Hendes udstyr skrevet med ord, til raekken "Sådan træner jeg".
+	 *
+	 * Raekken laa under Din side indtil 19. august og flyttede hertil paa
+	 * Linns oenske: det er en traenings-indstilling og ikke noget om
+	 * hendes konto.
+	 */
+	const udstyrTekst = $derived(
+		kategorier.length === 0 ? 'Vælg det udstyr du har' : udstyrTekst3(kontekst.udstyr, kategorier)
+	);
+
 	const udstyrNavne = $derived(
 		kontekst.udstyr
 			.map((id) => kategoriNavn3(id, kategorier))
@@ -202,7 +214,7 @@
 					Du har valgt det under "Sådan træner jeg". Vælger du mere udstyr, eller slår det hele fra,
 					kommer der {skjultAfUdstyr === 1 ? 'et program' : `${skjultAfUdstyr} programmer`} frem.
 				</p>
-				<a class="mt-byg" href="/ny/profil/traening">Skift dit udstyr</a>
+				<a class="mt-byg" href="/ny/traening/udstyr">Skift dit udstyr</a>
 			{:else}
 				<strong>Din træning er på vej.</strong>
 				<p>Linn lægger den ind når den er klar til dig.</p>
@@ -254,9 +266,22 @@
 			<p class="mt-udstyr">
 				{skjultAfUdstyr === 1 ? 'Ét program mere' : `${skjultAfUdstyr} programmer mere`} passer ikke til
 				det udstyr du har valgt.
-				<a href="/ny/profil/traening">Skift dit udstyr</a>
+				<a href="/ny/traening/udstyr">Skift dit udstyr</a>
 			</p>
 		{/if}
+
+		<section>
+			<div class="lab"><h2>Sådan træner du</h2></div>
+			<div class="mt-liste">
+				<a class="mt-r" href="/ny/traening/udstyr">
+					<span class="mt-r-t">
+						<span class="mt-r-navn">Sådan træner jeg</span>
+						<span class="mt-r-s">{udstyrTekst}</span>
+					</span>
+					<span class="mt-r-pil" aria-hidden="true">›</span>
+				</a>
+			</div>
+		</section>
 
 		{#if maaBygge}
 			<a class="mt-byg" href="/ny/traening/byg-eget">+ Byg dit eget program</a>

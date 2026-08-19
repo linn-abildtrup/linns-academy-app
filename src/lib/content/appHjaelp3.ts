@@ -56,7 +56,7 @@ export const HJAELP_AFSNIT_3: HjaelpAfsnit3[] = [
 - Træning: dine programmer og dagens træning
 - Beskeder: her snakker du med Linn AI
 - Udvikling: dine tal over tid
-- Din side: dine lektioner, opskrifter, udstyr og din konto
+- Din side: dine lektioner, opskrifter og din konto
 
 Undersider har en tilbage-pil øverst til venstre.`
 	},
@@ -175,9 +175,9 @@ Er du i tvivl om en øvelse, kan du trykke på "Sådan gør du" under videoen. F
 	{
 		titel: 'Sådan træner jeg',
 		gaelder: ALLE,
-		indhold: `Under "Din side", "Sådan træner jeg", vælger du hvilket udstyr du har. Så viser appen dig kun de programmer du kan bruge. Du må sætte flere flueben, og du kan ændre det når som helst.
+		indhold: `Under Træning, "Sådan træner jeg", vælger du hvilket udstyr du har. Så viser appen dig kun de programmer du kan bruge. Du må sætte flere flueben, og du kan ændre det når som helst.
 
-Skjuler dit valg nogle programmer, står der en linje om det nederst på Træning, så du kan se det og rette det.
+Skjuler dit valg nogle programmer, står der en linje om det på Træning, så du kan se det og rette det.
 
 Uden redskaber er altid med og kan ikke slås fra. Du har altid din egen krop.`
 	},
@@ -205,7 +205,7 @@ Vil du se gennemgangen igen, ligger den under "Din side". Der kan du enten tage 
 	{
 		titel: 'Din side',
 		gaelder: ALLE,
-		indhold: `Under "Din side" ser du dit navn og hvor længe du har været medlem. Her ligger også "Dine lektioner", dit udstyrsvalg, din skriftstørrelse og de to indgange til opstarten.`
+		indhold: `Under "Din side" ser du dit navn og hvor længe du har været medlem. Her ligger også "Dine lektioner", alle opskrifter, din skriftstørrelse og de to indgange til opstarten. Dit udstyrsvalg ligger under Træning.`
 	},
 	{
 		titel: 'Dine lektioner',
