@@ -53,6 +53,7 @@ export const HJAELP_AFSNIT_3: HjaelpAfsnit3[] = [
 		indhold: `Nederst er der fem knapper, og de er de samme hele vejen igennem:
 - Forside: din dag i dag. Alt du skal, står her
 - 30-30: maden. Her registrerer du hvad du spiser
+- Træning: dine programmer og dagens træning
 - Beskeder: her snakker du med Linn AI
 - Udvikling: dine tal over tid
 - Din side: dine lektioner, opskrifter, udstyr og din konto
@@ -141,15 +142,30 @@ Du sætter selv hvilket måltid opskriften hører til, og du må vælge flere. D
 	{
 		titel: 'Træning',
 		gaelder: (k) => k.harTraening,
-		indhold: `Din træning ligger på forsiden, og du finder alle dine programmer under Mikrotræning.
+		indhold: `Der er to veje til din træning. Trykker du på Dagens træning på forsiden, kommer du direkte ind på den træning du skal nu. Trykker du på Træning i bundmenuen, kommer du til en side hvor du kan se dine programmer og vælge en anden træning.
 
-Det du sidst trænede står øverst under "Du er i gang med". Tryk på et program, og så ser du træningerne og hvor langt du er.
+Du lander altid på en skærm hvor videoen kører, og hvor der står hvor mange øvelser og hvor lang tid det tager. Træningen går først i gang når du trykker Start.
 
 Du rykker først videre når du har trænet, ikke når kalenderen skifter. Springer du en uge over, står du stadig samme sted, og du er ikke bagud.
 
-Du er ikke låst til ét program og kan skifte frit. Hvert program husker sin egen plads.
+Der er ingen grænse for hvor mange træninger du må tage på en dag. Når du er færdig, kan du tage den næste med det samme.
+
+Du er ikke låst til ét program og kan skifte frit. Du vælger et program ved at begynde på det, og en prik ud for det viser hvad du følger nu. Hvert program husker sin egen plads.
 
 Går du væk midt i en træning, bliver du spurgt om du er færdig, om du vil gemme hvor du kom til, eller om du fortryder.`
+	},
+	{
+		titel: 'Sådan ser en træning ud',
+		gaelder: (k) => k.harTraening,
+		indhold: `Øverst er videoen af øvelsen. Den kører i ring, så du kan se bevægelsen mens du laver den.
+
+Under videoen står nedtællingen som et ur, og ved siden af den øvelsens navn og hvilket sæt du er på. Nederst er en række numre, så du kan se hvor mange øvelser der er tilbage.
+
+Tryk på videoen for at holde pause. Tryk igen for at fortsætte.
+
+Lægger du telefonen ned, fylder videoen hele skærmen. Det er rart hvis den står på gulvet. Sker der ingenting når du drejer, er skærmretningen låst på din telefon, og det kan du slå fra i telefonens indstillinger.
+
+Er du i tvivl om en øvelse, kan du trykke på "Sådan gør du" under videoen. Første gang du møder en øvelse, folder den sig ud af sig selv.`
 	},
 	{
 		titel: 'Byg dit eget træningsprogram',
@@ -160,6 +176,8 @@ Går du væk midt i en træning, bliver du spurgt om du er færdig, om du vil ge
 		titel: 'Sådan træner jeg',
 		gaelder: ALLE,
 		indhold: `Under "Din side", "Sådan træner jeg", vælger du hvilket udstyr du har. Så viser appen dig kun de programmer du kan bruge. Du må sætte flere flueben, og du kan ændre det når som helst.
+
+Skjuler dit valg nogle programmer, står der en linje om det nederst på Træning, så du kan se det og rette det.
 
 Uden redskaber er altid med og kan ikke slås fra. Du har altid din egen krop.`
 	},

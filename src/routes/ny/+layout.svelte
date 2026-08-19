@@ -237,6 +237,7 @@
 	const ALLE_FANER = [
 		{ href: '/ny', navn: 'Forside', ikon: 'hus' },
 		{ href: '/ny/30-30', navn: '30-30', ikon: 'skaal' },
+		{ href: '/ny/traening', navn: 'Træning', ikon: 'vaegt' },
 		{ href: '/ny/beskeder', navn: 'Beskeder', ikon: 'boble' },
 		{ href: '/ny/udvikling', navn: 'Udvikling', ikon: 'draabe' },
 		{ href: '/ny/profil', navn: 'Din side', ikon: 'person' }
@@ -343,6 +344,22 @@
 								<path d="M3.5 11.5h17a8.5 8.5 0 0 1-8.5 8.5 8.5 8.5 0 0 1-8.5-8.5Z" />
 								<path d="M9 7.5c0-1.2 1.2-1.6 1.2-2.8S9 3 9 3" />
 								<path d="M14.2 7.5c0-1.2 1.2-1.6 1.2-2.8s-1.2-1.7-1.2-1.7" />
+							</svg>
+						{:else if fane.ikon === 'vaegt'}
+							<!-- En kettlebell: kuglen med haandtaget paa. -->
+							<svg
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.9"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M8.5 8.4a3.5 3.5 0 1 1 7 0" />
+								<path
+									d="M9.6 8.2C6.9 9.4 5.2 12 5.2 15c0 1.9.6 3.4 1.2 4.3h11.2c.6-.9 1.2-2.4 1.2-4.3 0-3-1.7-5.6-4.4-6.8z"
+								/>
 							</svg>
 						{:else if fane.ikon === 'boble'}
 							<svg

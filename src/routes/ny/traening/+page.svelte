@@ -13,7 +13,18 @@
 	// ville drive fra hinanden, og saa ville admin sige noget andet end
 	// kunden oplever.
 	//
-	// Hun kan endnu ikke starte en traening. Afspilleren er bid 4.
+	// TRAENINGENS FORSIDE, 19. august. Siden har faaet sin egen fane
+	// forneden, og saa er den ikke laengere bare en liste over
+	// programmer. Den er der hvor hun starter.
+	//
+	// Oeverst staar det hun skal goere nu, som ét moerkt kort med en
+	// Start-knap der foerer direkte ind i traeningen. Under staar
+	// programmerne som rolige raekker, med en prik ved det hun foelger.
+	//
+	// TO DOERE, TO FORMAAL. Flisen paa forsiden foerer LIGE ind i
+	// traeningen, uden om den her side. Fanen forneden foerer hertil, hvor
+	// hun kan se paa det, skifte program og vaelge en anden dag. Den ene
+	// er "kom i gang", den anden er "lad mig se".
 	// ============================================================
 
 	import { getContext, onMount } from 'svelte';
@@ -88,11 +99,47 @@
 	const maaBygge = $derived(maaByggeEget3(tildelinger, kontekst));
 	const egne = $derived(maaBygge ? mine3.map(tilProgram3) : []);
 
-	const liste = $derived<KundeProgram3[]>(
-		kundeProgrammer3([...fraLinn, ...egne], fremgang)
-	);
+	const liste = $derived<KundeProgram3[]>(kundeProgrammer3([...fraLinn, ...egne], fremgang));
 	const iGang = $derived(liste.filter((k) => k.iGang));
 	const oevrige = $derived(liste.filter((k) => !k.iGang));
+
+	/**
+	 * Det program hun foelger.
+	 *
+	 * Der findes ikke noget gemt valg, og det er med vilje: hun VAELGER et
+	 * program ved at begynde paa det. Har hun kun ét, er det hendes. Har
+	 * hun flere og er ikke begyndt paa nogen, er der ikke noget at
+	 * fortsaette, og saa staar kortet oeverst ikke.
+	 *
+	 * Samme regel som forsiden bruger, se traeningForside3.
+	 */
+	const valgt = $derived<KundeProgram3 | null>(iGang[0] ?? (liste.length === 1 ? liste[0] : null));
+
+	/** "Træning 7 af 21 · ca. 12 min", altsaa det hun skal nu. */
+	const naesteTekst = $derived.by(() => {
+		if (!valgt || valgt.naeste === null) return '';
+		const antal = antalTraeninger3(valgt.program);
+		return antal > 0 ? `Træning ${valgt.naeste} af ${antal}` : `Træning ${valgt.naeste}`;
+	});
+
+	/**
+	 * Har hendes eget udstyrsvalg skjult noget.
+	 *
+	 * Uden det her bliver siden bare tom, og hun faar ingen anelse om at
+	 * det er hendes eget flueben der goer det. Set 18. august.
+	 */
+	const skjultAfUdstyr = $derived(
+		programmerForKunde3(programmer, tildelinger, kategorier, kontekst).filter(
+			(x) => x.afvisning === 'udstyr'
+		).length
+	);
+
+	const udstyrNavne = $derived(
+		kontekst.udstyr
+			.map((id) => kategoriNavn3(id, kategorier))
+			.filter(Boolean)
+			.join(' og ')
+	);
 
 	onMount(async () => {
 		const uid = user?.uid;
@@ -134,12 +181,11 @@
 	}
 </script>
 
-<svelte:head><title>Mikrotræning</title></svelte:head>
+<svelte:head><title>Træning</title></svelte:head>
 
 <div class="ny-pad mt-side">
 	<header class="side-top" style="padding-left:0;padding-right:0">
-		<a class="tr-tilbage" href="/ny">‹ Forside</a>
-		<h1>Mikrotræning</h1>
+		<h1>Træning</h1>
 	</header>
 
 	{#if henter}
@@ -147,45 +193,69 @@
 	{:else if fejl}
 		<p class="kort rolig">{fejl}</p>
 	{:else if liste.length === 0}
+		<!-- Ingenting at vise. Der er to helt forskellige grunde, og hun
+		     skal vide hvilken, for den ene kan hun selv rette. -->
 		<div class="mt-tom">
-			<strong>Du har ikke fået nogen træning endnu.</strong>
-			<p>Linn lægger den ind når den er klar til dig.</p>
+			{#if skjultAfUdstyr > 0}
+				<strong>Der er ikke noget til {udstyrNavne || 'det udstyr du har valgt'} endnu.</strong>
+				<p>
+					Du har valgt det under "Sådan træner jeg". Vælger du mere udstyr, eller slår det hele fra,
+					kommer der {skjultAfUdstyr === 1 ? 'et program' : `${skjultAfUdstyr} programmer`} frem.
+				</p>
+				<a class="mt-byg" href="/ny/profil/traening">Skift dit udstyr</a>
+			{:else}
+				<strong>Din træning er på vej.</strong>
+				<p>Linn lægger den ind når den er klar til dig.</p>
+			{/if}
 		</div>
 		{#if maaBygge}
 			<a class="mt-byg" href="/ny/traening/byg-eget">+ Byg dit eget program</a>
 		{/if}
 	{:else}
-		<p class="mt-under">Vælg det program du har lyst til. Du kan skifte når du vil.</p>
-
-		{#if iGang.length > 0}
-			<div class="lab"><h2>Du er i gang med</h2></div>
-			{#each iGang as k (k.program.id)}
-				<a class="mt-prog igang" href={`/ny/traening/${k.program.id}`}>
-					<div class="mt-navn">
-						{k.program.navn}{#if k.program.egen}<span class="mt-egen">Din egen</span>{/if}
-					</div>
-					<div class="mt-meta">{undertekst(k)}</div>
-					<div class="mt-bar"><i style={`width:${k.procent}%`}></i></div>
-					<div class="mt-fremgang">{fremgangTekst3(k)}</div>
-					<span class="mt-knap">Fortsæt</span>
-				</a>
-			{/each}
+		<!-- Det hun skal goere nu, som ét kort. Knappen foerer direkte ind
+		     paa selve traeningen og ikke paa en liste over dage. -->
+		{#if valgt && valgt.naeste !== null}
+			<a class="mt-naeste" href={`/ny/traening/${valgt.program.id}/${valgt.naeste}`}>
+				<span class="mt-n-k">Din næste træning</span>
+				<span class="mt-n-navn">{valgt.program.navn}</span>
+				{#if naesteTekst}<span class="mt-n-s">{naesteTekst}</span>{/if}
+				{#if valgt.klaret > 0}
+					<span class="mt-n-bar"><i style={`width:${valgt.procent}%`}></i></span>
+					<span class="mt-n-f">{fremgangTekst3(valgt)}</span>
+				{/if}
+				<span class="mt-n-knap">{valgt.klaret > 0 ? 'Fortsæt' : 'Start'}</span>
+			</a>
+		{:else if liste.length > 1}
+			<p class="mt-under">Vælg det program du har lyst til. Du kan skifte når du vil.</p>
 		{/if}
 
-		{#if oevrige.length > 0}
-			{#if iGang.length > 0}
-				<div class="lab"><h2>Dine andre programmer</h2></div>
-			{/if}
-			{#each oevrige as k (k.program.id)}
-				<a class="mt-prog" href={`/ny/traening/${k.program.id}`}>
-					<div class="mt-navn">
-						{k.program.navn}{#if k.program.egen}<span class="mt-egen">Din egen</span>{/if}
-					</div>
-					<div class="mt-meta">{undertekst(k)}</div>
-					<div class="mt-fremgang">{fremgangTekst3(k)}</div>
-					<span class="mt-knap">{k.faerdig ? 'Tag den igen' : 'Start'}</span>
-				</a>
-			{/each}
+		<section>
+			<div class="lab"><h2>Dine programmer</h2></div>
+			<div class="mt-liste">
+				{#each liste as k (k.program.id)}
+					{@const erValgt = valgt?.program.id === k.program.id}
+					<a class="mt-r" class:valgt={erValgt} href={`/ny/traening/${k.program.id}`}>
+						<!-- Prikken viser hvad hun foelger. Der er ikke noget gemt
+						     valg: hun vaelger ved at begynde. -->
+						<span class="mt-r-prik" class:fyldt={erValgt} aria-hidden="true"></span>
+						<span class="mt-r-t">
+							<span class="mt-r-navn">
+								{k.program.navn}{#if k.program.egen}<span class="mt-egen">Din egen</span>{/if}
+							</span>
+							<span class="mt-r-s">{undertekst(k)} · {fremgangTekst3(k)}</span>
+						</span>
+						<span class="mt-r-pil" aria-hidden="true">›</span>
+					</a>
+				{/each}
+			</div>
+		</section>
+
+		{#if skjultAfUdstyr > 0}
+			<p class="mt-udstyr">
+				{skjultAfUdstyr === 1 ? 'Ét program mere' : `${skjultAfUdstyr} programmer mere`} passer ikke til
+				det udstyr du har valgt.
+				<a href="/ny/profil/traening">Skift dit udstyr</a>
+			</p>
 		{/if}
 
 		{#if maaBygge}
