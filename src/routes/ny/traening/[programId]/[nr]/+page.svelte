@@ -106,6 +106,8 @@
 
 	let stilling = $state<Stilling3>(startStilling3());
 	let paause = $state(false);
+	/** Selve video-elementet, saa pause ogsaa kan fryse billedet. */
+	let videoEl = $state<HTMLVideoElement | null>(null);
 	let viserAfslut = $state(false);
 	let gemmer = $state(false);
 	let lydTil = $state(true);
@@ -386,8 +388,32 @@
 	function skiftLyd() {
 		lydTil = !lydTil;
 		if (!musikEl) return;
-		if (lydTil) void musikEl.play().catch(() => undefined);
+		// Slaar hun lyden til MENS hun holder pause, skal der ikke pludselig
+		// komme musik. Den venter til hun fortsaetter.
+		if (lydTil && !paause) void musikEl.play().catch(() => undefined);
 		else musikEl.pause();
+	}
+
+	/**
+	 * Hold pause, eller fortsaet.
+	 *
+	 * ALT skal staa stille, ikke bare uret. Linns oenske 19. august:
+	 * musikken stopper OG videoen fryser. Foer koerte oevelsen videre i
+	 * ring bag pause-skyen, og det ligner at appen ikke hoerte efter.
+	 *
+	 * Baade knappen og et tryk paa selve videoen gaar gennem den her.
+	 */
+	function saetPause(vaerdi: boolean) {
+		paause = vaerdi;
+		if (vaerdi) {
+			musikEl?.pause();
+			videoEl?.pause();
+			return;
+		}
+		if (lydTil && musikEl) void musikEl.play().catch(() => undefined);
+		// Kan billedet ikke starte igen, er det ikke vaerd at vaelte
+		// traeningen over. Uret koerer videre uanset hvad.
+		void videoEl?.play().catch(() => undefined);
 	}
 
 	/** Traeningen er koert helt igennem. Saa spoerger vi ikke om noget. */
@@ -435,7 +461,8 @@
 	}
 
 	function bedOmSvar() {
-		paause = true;
+		// Ogsaa her skal alt staa stille mens hun svarer.
+		saetPause(true);
 		viserAfslut = true;
 	}
 
@@ -596,10 +623,19 @@
 			class:hvil={stilling.fase === 'hvil'}
 			class:paa-pause={paause}
 			aria-label={paause ? 'Fortsæt træningen' : 'Hold pause'}
-			onclick={() => (paause = !paause)}
+			onclick={() => saetPause(!paause)}
 		>
 			{#if video}
-				<video class="af-video" src={video} autoplay muted loop playsinline preload="auto"></video>
+				<video
+					class="af-video"
+					bind:this={videoEl}
+					src={video}
+					autoplay
+					muted
+					loop
+					playsinline
+					preload="auto"
+				></video>
 			{:else}
 				<div class="af-intet" aria-hidden="true">◈</div>
 			{/if}
@@ -676,7 +712,7 @@
 		{/if}
 
 		<div class="af-knapper">
-			<button type="button" class="af-knap" onclick={() => (paause = !paause)}>
+			<button type="button" class="af-knap" onclick={() => saetPause(!paause)}>
 				{paause ? 'Fortsæt' : 'Pause'}
 			</button>
 			<button type="button" class="af-knap" onclick={skiftLyd}>
@@ -700,7 +736,7 @@
 					class="af-fortryd"
 					onclick={() => {
 						viserAfslut = false;
-						paause = false;
+						saetPause(false);
 					}}
 				>
 					Jeg vil træne videre
