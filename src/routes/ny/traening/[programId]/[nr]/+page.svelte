@@ -598,7 +598,12 @@
 
 <!-- I liggende format bliver hele afspilleren til én stor video. Klassen
      styrer det, og resten sker i ny.css. -->
-<div class="ny-pad af-side" class:af-spiller={skaerm === 'spiller'} bind:this={spillerEl}>
+<div
+	class="ny-pad af-side"
+	class:af-spiller={skaerm === 'spiller'}
+	class:af-stor={skaerm === 'spiller' && stor}
+	bind:this={spillerEl}
+>
 	{#if skaerm === 'henter'}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Gør træningen klar</span></div>
 	{:else if skaerm === 'fejl'}
