@@ -78,6 +78,19 @@ describe('afgraensning paa forloebsdag', () => {
 		const med0 = [svar({ dagNummer: 0 }), ...alle];
 		expect(afgraensSvar(med0, 'dag', '0', '1')).toHaveLength(2);
 	});
+
+	// Tal-felterne i UI'et giver rigtige TAL tilbage, ikke tekst. Foer 19/8
+	// 2026 kaldte vi .trim() direkte, og saa braendte hele siden sammen i det
+	// oejeblik admin skrev et dag-nummer. Der skete bare ingenting.
+	it('taaler at felterne giver tal i stedet for tekst', () => {
+		const r = afgraensSvar(alle, 'dag', 1 as unknown as string, 40 as unknown as string);
+		expect(r.map((s) => s.dagNummer)).toEqual([1, 40]);
+	});
+
+	it('taaler at et felt er tomt eller slet ikke sat', () => {
+		expect(afgraensSvar(alle, 'dag', null, undefined)).toHaveLength(3);
+		expect(afgraensSvar(alle, 'dato', null, undefined)).toHaveLength(3);
+	});
 });
 
 describe('afgraensning paa dato', () => {

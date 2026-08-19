@@ -94,20 +94,25 @@ export function tidspunktTekst(ms: number | null): string {
 export function afgraensSvar(
 	svar: Refleksionssvar[],
 	afgraensning: Afgraensning,
-	fra: string,
-	til: string
+	fra: string | number | null | undefined,
+	til: string | number | null | undefined
 ): Refleksionssvar[] {
+	// Felterne kan give BAADE tekst og tal: et dato-felt giver "2026-08-16",
+	// men et tal-felt giver 5 som rigtigt tal. Vi normaliserer derfor til
+	// tekst foerst. Uden det braendte siden sammen i det oejeblik admin
+	// skrev et tal i dag-feltet, og saa skete der bare ingenting.
+	const tekst = (v: string | number | null | undefined) => (v == null ? '' : String(v)).trim();
 	if (afgraensning === 'dag') {
-		const fraDag = fra.trim() === '' ? null : Number(fra);
-		const tilDag = til.trim() === '' ? null : Number(til);
+		const fraDag = tekst(fra) === '' ? null : Number(tekst(fra));
+		const tilDag = tekst(til) === '' ? null : Number(tekst(til));
 		return svar.filter((s) => {
 			if (fraDag !== null && Number.isFinite(fraDag) && s.dagNummer < fraDag) return false;
 			if (tilDag !== null && Number.isFinite(tilDag) && s.dagNummer > tilDag) return false;
 			return true;
 		});
 	}
-	const fraIso = fra.trim();
-	const tilIso = til.trim();
+	const fraIso = tekst(fra);
+	const tilIso = tekst(til);
 	return svar.filter((s) => {
 		// Svar uden tidsstempel kan ikke placeres paa en dato. De falder ud af
 		// dato-afgraensningen, men er stadig med naar man afgraenser paa dag.
