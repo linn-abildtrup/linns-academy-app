@@ -11342,3 +11342,36 @@ body.traening-stor .ny-nav {
 	color: rgba(255, 255, 255, 0.62);
 	pointer-events: none;
 }
+
+
+/* Linjen der folder en klaret sektion sammen igen.
+
+   Foer gik foldningen kun én vej: hun kunne aabne en sektion hun havde
+   klaret, men ikke lukke den, saa den laa og fyldte resten af dagen.
+   Linns bemaerkning 19. august.
+
+   Den er lille og stille med vilje. Den skal kunne findes af den der
+   leder efter den, og ikke traekke i den der bare ruller forbi. */
+.fold-ind {
+	align-self: center;
+	border: 0;
+	background: none;
+	cursor: pointer;
+	font-family: inherit;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	padding: 8px 16px;
+	min-height: 40px;
+	border-radius: 999px;
+	margin-top: -8px;
+}
+
+.fold-ind:hover {
+	color: var(--ink-2);
+	background: var(--paper-2);
+}
+
+.fold-ind:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}

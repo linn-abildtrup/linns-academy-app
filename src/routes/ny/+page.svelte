@@ -61,10 +61,7 @@
 	import SmaaSkridt from '$lib/components/ny/SmaaSkridt.svelte';
 	import Lektioner from '$lib/components/ny/Lektioner.svelte';
 	import Traening from '$lib/components/ny/Traening.svelte';
-	import {
-		hentDagensTraening3,
-		type DagensTraening3
-	} from '$lib/firestore/traeningForside3';
+	import { hentDagensTraening3, type DagensTraening3 } from '$lib/firestore/traeningForside3';
 	import DagensTalKort from '$lib/components/ny/DagensTal.svelte';
 	import NaesteHoldKort from '$lib/components/ny/NaesteHold.svelte';
 	import Refleksion from '$lib/components/ny/Refleksion.svelte';
@@ -232,14 +229,9 @@
 					datoNoegle(ugeStart)
 				).then((r) => (tael(), r)),
 				hentKlaret(uid).then((r) => (tael(), r)),
-				hentDagensTraening3(
-					uid,
-					userDoc,
-					forlobKilder(),
-					adgang.aktiveForlob,
-					nuMs,
-					iDag
-				).then((r) => (tael(), r)),
+				hentDagensTraening3(uid, userDoc, forlobKilder(), adgang.aktiveForlob, nuMs, iDag).then(
+					(r) => (tael(), r)
+				),
 				hentDagensTal(uid, iDag, userDoc).then((r) => (tael(), r))
 			]);
 			if (afbrudt) return;
@@ -349,9 +341,7 @@
 				planter: diff.valgte,
 				score: new Set(diff.valgte).size,
 				senesteJournal:
-					diff.tilfoej.length > 0
-						? diff.tilfoej[diff.tilfoej.length - 1]
-						: challenge.senesteJournal
+					diff.tilfoej.length > 0 ? diff.tilfoej[diff.tilfoej.length - 1] : challenge.senesteJournal
 			};
 			visChallengeDialog = false;
 			await aabnChallengeStilling();
@@ -393,9 +383,7 @@
 				const nyt = liste.find(
 					(q) => q.svar && q.besvaretAt && q.besvaretAt.toDate().getTime() > senest
 				);
-				nyestSvar = nyt
-					? { id: nyt.id, spoergsmaal: nyt.spoergsmaal, svar: nyt.svar ?? '' }
-					: null;
+				nyestSvar = nyt ? { id: nyt.id, spoergsmaal: nyt.spoergsmaal, svar: nyt.svar ?? '' } : null;
 			})
 			.catch((e) => console.error('[ny] kunne ikke hente svar fra Linn', e));
 
@@ -437,10 +425,14 @@
 		);
 	}
 
-
 	// ── Foldning ────────────────────────────────────────────────
 	// En sektion er foldet, naar den er klaret OG hun ikke selv har
 	// foldet den ud igen. Udfoldninger huskes for resten af dagen.
+	//
+	// Det GAAR BEGGE VEJE siden 19. august. Foer kunne hun folde ud, men
+	// ikke ind igen, saa en sektion hun havde aabnet for at se paa laa og
+	// fyldte resten af dagen. Linns bemaerkning. Under en udfoldet, klaret
+	// sektion staar der nu en lille linje der folder den sammen igen.
 	let udfoldet = $state<Set<string>>(new Set());
 
 	onMount(() => {
@@ -452,19 +444,25 @@
 		}
 	});
 
-	function foldUd(id: string) {
-		udfoldet = new Set([...udfoldet, id]);
+	/** Folder en klaret sektion ud, eller sammen igen. */
+	function skiftFold(id: string) {
+		const ny = new Set(udfoldet);
+		if (ny.has(id)) ny.delete(id);
+		else ny.add(id);
+		udfoldet = ny;
 		try {
-			sessionStorage.setItem(`ny-udfoldet-${iDag}`, JSON.stringify([...udfoldet]));
+			sessionStorage.setItem(`ny-udfoldet-${iDag}`, JSON.stringify([...ny]));
 		} catch {
-			// Ligegyldigt. Sektionen er foldet ud i denne omgang uanset hvad.
+			// Ligegyldigt. Sektionen staar rigtigt i denne omgang uanset hvad.
 		}
 	}
 
 	const skridtKlaret = $derived(
 		!!skridtData && skridtData.skridt.length > 0 && skridtData.skridt.every((s) => s.svar === 'ja')
 	);
-	const lektionerKlaret = $derived(lektioner.length > 0 && lektioner.every((l) => klaret.has(l.id)));
+	const lektionerKlaret = $derived(
+		lektioner.length > 0 && lektioner.every((l) => klaret.has(l.id))
+	);
 	const refleksionSkrevet = $derived((skridtData?.note ?? '').trim().length > 0);
 	// Dagens tal folder foerst naar BEGGE maal er naaet. Ellers ville den
 	// forsvinde, netop som hun skulle bruge den.
@@ -606,7 +604,6 @@
 		}
 	}
 
-
 	async function gemNote(tekst: string) {
 		const uid = user?.uid;
 		if (!uid || !skridtData?.produktId || skridtData.dagNummer === undefined) return;
@@ -711,10 +708,13 @@
 				<FoldetRaekke
 					titel="Dagens små skridt"
 					detalje="{skridtData.skridt.length} af {skridtData.skridt.length}"
-					onfold={() => foldUd('skridt')}
+					onfold={() => skiftFold('skridt')}
 				/>
 			{:else}
 				<SmaaSkridt skridt={skridtData.skridt} {gemmer} onskift={skiftSkridt} />
+				{#if skridtKlaret}
+					<button class="fold-ind" onclick={() => skiftFold('skridt')}>⌃ Fold sammen</button>
+				{/if}
 			{/if}
 		{:else}
 			<a class="kort rolig cta" href="/ny/moduler">
@@ -728,7 +728,7 @@
 				<FoldetRaekke
 					titel="Dag {aktivtForlob.dagNummer} på {aktivtForlob.navn}"
 					detalje="{lektioner.length} af {lektioner.length} taget"
-					onfold={() => foldUd('lektioner')}
+					onfold={() => skiftFold('lektioner')}
 				/>
 			{:else}
 				<Lektioner
@@ -737,6 +737,9 @@
 					{lektioner}
 					{klaret}
 				/>
+				{#if lektionerKlaret}
+					<button class="fold-ind" onclick={() => skiftFold('lektioner')}>⌃ Fold sammen</button>
+				{/if}
 			{/if}
 		{/if}
 
@@ -745,10 +748,13 @@
 				<FoldetRaekke
 					titel="Dagens træning"
 					detalje="{traening.navn} · klaret"
-					onfold={() => foldUd('traening')}
+					onfold={() => skiftFold('traening')}
 				/>
 			{:else}
 				<Traening {traening} />
+				{#if traening.klaretIDag}
+					<button class="fold-ind" onclick={() => skiftFold('traening')}>⌃ Fold sammen</button>
+				{/if}
 			{/if}
 		{/if}
 
@@ -757,7 +763,7 @@
 				<FoldetRaekke
 					titel="Dagens refleksion"
 					detalje="Du har skrevet i dag"
-					onfold={() => foldUd('refleksion')}
+					onfold={() => skiftFold('refleksion')}
 				/>
 			{:else}
 				<Refleksion
@@ -767,6 +773,9 @@
 					gemtLige={noteGemtLige}
 					ongem={gemNote}
 				/>
+				{#if refleksionSkrevet}
+					<button class="fold-ind" onclick={() => skiftFold('refleksion')}>⌃ Fold sammen</button>
+				{/if}
 			{/if}
 		{/if}
 
@@ -775,10 +784,13 @@
 				<FoldetRaekke
 					titel="Dagens tal"
 					detalje="{tal.protein} g protein · {tal.fiber} g fiber"
-					onfold={() => foldUd('tal')}
+					onfold={() => skiftFold('tal')}
 				/>
 			{:else}
 				<DagensTalKort {tal} />
+				{#if talKlaret}
+					<button class="fold-ind" onclick={() => skiftFold('tal')}>⌃ Fold sammen</button>
+				{/if}
 			{/if}
 		{/if}
 
@@ -800,7 +812,6 @@
 		     bundmenuen hele tiden, saa kortet var en genvej til noget der
 		     aldrig er mere end ét tryk vaek. Linns beslutning. -->
 
-
 		<!-- Direkte til AI-en. Naven under /ny/hjaelp fik FAQ og links
 		     18. august, og kortet her lover svar med det samme. -->
 		<a class="ai-kort" href="/ny/hjaelp/spoerg">
@@ -815,7 +826,10 @@
 					/>
 					<path class="streg" d="M9.9 8.5a2.2 2.2 0 0 1 4.2.8c0 1.5-2.1 1.7-2.1 3" />
 					<path class="prik" d="M12 14.4h.01" />
-					<path class="glimt" d="M20.4 1.6l.55 1.45 1.45.55-1.45.55-.55 1.45-.55-1.45L18.4 3.6l1.45-.55z" />
+					<path
+						class="glimt"
+						d="M20.4 1.6l.55 1.45 1.45.55-1.45.55-.55 1.45-.55-1.45L18.4 3.6l1.45-.55z"
+					/>
 				</svg>
 			</span>
 			<span class="ai-tekst">
