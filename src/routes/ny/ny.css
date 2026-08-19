@@ -11160,6 +11160,10 @@ a.ll-qa-r:focus-visible {
 	aspect-ratio: auto;
 	border-radius: 0;
 	box-shadow: none;
+	/* Moerk og ikke sand. Videoen vises hel, saa der ER en kant omkring
+	   den naar skaermen ikke er 16:9, og den kant skal forsvinde i stedet
+	   for at lyse. Set paa Linns skaermbillede 19. august. */
+	background: #1c1614;
 }
 
 /* Hele videoen skal kunne ses, ogsaa naar vinduet ikke er 16:9. Derfor
@@ -11201,13 +11205,18 @@ a.ll-qa-r:focus-visible {
 	display: none;
 }
 
-/* Uret og navnet nede i venstre hjoerne, oven paa en moerk sky saa
-   teksten kan laeses ogsaa paa et lyst billede. */
+/* Uret og navnet nede i venstre, oven paa en moerk sky saa teksten kan
+   laeses ogsaa paa et lyst billede. Den ligger OVER knapperne og ikke ved
+   siden af: fire knapper og en urskive kan ikke vaere paa den samme linje
+   paa en telefon i staaende format. */
 .af-stor .af-ur-rk {
 	position: absolute;
-	left: 14px;
-	bottom: 16px;
+	left: 12px;
+	right: 12px;
+	bottom: 66px;
 	z-index: 3;
+	width: fit-content;
+	max-width: calc(100% - 24px);
 	gap: 12px;
 	padding: 8px 16px 8px 8px;
 	border-radius: 99px;
@@ -11243,13 +11252,21 @@ a.ll-qa-r:focus-visible {
 	display: none;
 }
 
-/* Knapperne oppe i hoejre hjoerne, som pillebokse i stedet for en raekke. */
+/* Knapperne nede langs bunden, hoejrestillet.
+
+   De laa foer oppe i hoejre hjoerne, men der stod fase-maerkatet i
+   venstre side, og paa en telefon i staaende format loeb de to ind i
+   hinanden. Set paa Linns skaermbillede 19. august. Nu har toppen kun
+   maerkatet, og bunden har uret og knapperne i hver sin linje. */
 .af-stor .af-knapper {
 	position: absolute;
-	top: 10px;
+	left: 12px;
 	right: 12px;
+	bottom: 14px;
 	z-index: 3;
 	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
 	gap: 8px;
 }
 
@@ -11273,4 +11290,35 @@ a.ll-qa-r:focus-visible {
 	margin: 0;
 	border-radius: 0;
 	overflow-y: auto;
+}
+
+
+/* Bundmenuen mens en traening koerer i stor visning.
+
+   Menuen ligger forrest med vilje, se reglen ved .ny-nav, og et ark er
+   den bevidste undtagelse. En traening i stor visning er praecis sadan
+   en afbrydelse: hun kan alligevel ikke bruge menuen midt i en oevelse,
+   og den laa hen over bunden af videoen og skjulte baade uret og
+   oevelsens navn.
+
+   Vi skjuler den i stedet for at skrue op for lagene. At kaempe med
+   menuen om lagene ender med at den daekker noget andet en dag. Det er
+   ogsaa sadan den gamle app goer det. */
+body.traening-stor .ny-nav {
+	display: none;
+}
+
+/* Linjen der siger hvorfor der er moerkt over og under. Vises kun i stor
+   visning paa en staaende telefon, hvor videoen ikke kan blive bredere
+   end skaermen. Den staar midt paa den moerke flade under videoen og er
+   dermed det eneste der er at se der. */
+.af-vend {
+	position: absolute;
+	left: 50%;
+	bottom: 22%;
+	transform: translateX(-50%);
+	white-space: nowrap;
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: rgba(255, 255, 255, 0.62);
+	pointer-events: none;
 }

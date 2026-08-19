@@ -148,6 +148,21 @@
 		return () => mq.removeEventListener('change', lyt);
 	});
 
+	// Bundmenuen skal VAEK mens videoen er stor. Den laa hen over bunden af
+	// billedet og skjulte baade uret og oevelsens navn. Set paa Linns
+	// skaermbillede 19. august.
+	//
+	// Vi saetter en klasse paa body i stedet for at skrue op for lagene.
+	// Det er ogsaa den gamle app's loesning, og den er den sikre: menuen
+	// ligger forrest med vilje, og at kaempe med den om lagene ender med at
+	// den daekker noget andet en dag.
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+		const paa = skaerm === 'spiller' && stor;
+		document.body.classList.toggle('traening-stor', paa);
+		return () => document.body.classList.remove('traening-stor');
+	});
+
 	function slaaStorTil() {
 		storManuelt = true;
 		void spillerEl?.requestFullscreen?.().catch(() => undefined);
@@ -702,6 +717,13 @@
 				<span class="af-bonus">Bonus</span>
 			{:else}
 				<span class="af-mrk">{faseTekst3(stilling.fase)}</span>
+			{/if}
+
+			<!-- I stor visning paa en STAAENDE telefon kan videoen ikke blive
+			     bredere end skaermen, saa der bliver moerkt over og under.
+			     Her siger vi hvad hun kan goere ved det. -->
+			{#if stor && !erLiggende && !paause}
+				<span class="af-vend">Drej telefonen, så fylder videoen det hele</span>
 			{/if}
 
 			{#if paause}
