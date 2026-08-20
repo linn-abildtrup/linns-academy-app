@@ -11241,15 +11241,6 @@ a.ll-qa-r:focus-visible {
 
 
 /* Spoergsmaalet om traeningen skal taelle ligger oven paa det hele. */
-.af-stor .af-spoerg {
-	position: absolute;
-	inset: 0;
-	z-index: 4;
-	margin: 0;
-	border-radius: 0;
-	overflow-y: auto;
-}
-
 
 /* Bundmenuen mens en traening koerer i stor visning.
 
@@ -11499,6 +11490,83 @@ body.traening-moerk .ny-scroll {
 .af-stor .af-rund {
 	width: 44px;
 	height: 44px;
+	background: rgba(20, 15, 14, 0.55);
+	backdrop-filter: blur(6px);
+	-webkit-backdrop-filter: blur(6px);
+}
+
+
+/* ── Spoergsmaalet naar hun afslutter foer tid ─────────────── */
+/* Det laa foer nederst PAA siden, saa naar hun trykkede Afslut skete
+   der tilsyneladende ingenting: spoergsmaalet stod uden for skaermen.
+   Nu ligger det ovenpaa. Linns bemaerkning 20. august.
+
+   Laget ligger over baade bundmenuen og den store visning. Det er en
+   afbrydelse paa linje med et ark, og hun skal svare foer hun kan
+   fortsaette. Se reglen ved .ny-nav. */
+.af-lag {
+	position: fixed;
+	inset: 0;
+	z-index: 120;
+	display: grid;
+	place-items: center;
+	padding: 20px;
+	background: rgba(28, 22, 20, 0.72);
+	backdrop-filter: blur(3px);
+	-webkit-backdrop-filter: blur(3px);
+	overflow-y: auto;
+}
+
+.af-lag .af-spoerg {
+	width: 100%;
+	max-width: 380px;
+	margin: auto;
+}
+
+/* Kortet er LYST, ogsaa selvom traeningsskaermen bagved er moerk. Det er
+   en beslutning hun skal traeffe, og den skal traede frem fra det hun
+   var i gang med. */
+.af-spiller .af-lag .af-spoerg {
+	background: var(--paper);
+}
+
+.af-spiller .af-lag .af-spoerg-t {
+	color: var(--espresso);
+}
+
+.af-spiller .af-lag .af-fortryd {
+	color: var(--ink-2);
+}
+
+/* ── Afslut ───────────────────────────────────────────────── */
+/* Med ord og ikke som et kryds. Et kryds kunne betyde luk vinduet,
+   slet, fortryd eller gaa tilbage, og det er den ene knap hvor hun ikke
+   maa gaette. Lyd og stor video er ufarlige og kan trykkes om igen, og
+   dér er ikoner fine. Linns bemaerkning 20. august. */
+.af-slut {
+	flex: 0 0 auto;
+	border: 0;
+	cursor: pointer;
+	font-family: var(--sans);
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: #f2e9df;
+	background: rgba(255, 255, 255, 0.11);
+	border-radius: 999px;
+	min-height: 50px;
+	padding: 12px 20px;
+}
+
+.af-slut:focus-visible {
+	outline: 3px solid #f6ece2;
+	outline-offset: 3px;
+}
+
+/* I stor visning ligger den i kanten sammen med de runde. */
+.af-stor .af-slut {
+	min-height: 44px;
+	padding: 10px 18px;
+	font-size: calc(12.5px * var(--fs-scale, 1));
 	background: rgba(20, 15, 14, 0.55);
 	backdrop-filter: blur(6px);
 	-webkit-backdrop-filter: blur(6px);

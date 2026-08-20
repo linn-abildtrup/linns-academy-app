@@ -841,31 +841,42 @@
 					⤡
 				</button>
 			{/if}
-			<button type="button" class="af-rund" aria-label="Afslut træningen" onclick={bedOmSvar}>
-				✕
-			</button>
+			<!-- Den her staar med ORD og ikke som et ikon. Et kryds kunne
+			     betyde luk vinduet, slet, fortryd eller gaa tilbage, og det
+			     er den ene knap hvor hun ikke maa gaette. Lyd og stor video
+			     er ufarlige og kan trykkes om igen, og dér er ikoner fine.
+			     Linns bemaerkning 20. august. -->
+			<button type="button" class="af-slut" onclick={bedOmSvar}>Afslut</button>
 		</div>
 
+		<!-- SPOERGSMAALET LIGGER OVEN PAA SKAERMEN og ikke under den. Det
+		     stod foer nederst paa siden, saa naar hun trykkede Afslut,
+		     skete der tilsyneladende ingenting: spoergsmaalet laa uden for
+		     skaermen. Linns bemaerkning 20. august. -->
 		{#if viserAfslut}
-			<div class="af-spoerg">
-				<div class="af-spoerg-t">Skal træningen tælle som gennemført?</div>
-				<button type="button" class="tv-knap" onclick={svarJa} disabled={gemmer}>Ja</button>
-				{#if vaerdAtGemme3(stilling)}
-					<button type="button" class="tv-knap rolig" onclick={svarGem} disabled={gemmer}>
-						Gem hvor jeg er kommet til
+			<div class="af-lag" role="dialog" aria-modal="true" aria-labelledby="af-spoerg-t">
+				<div class="af-spoerg">
+					<div class="af-spoerg-t" id="af-spoerg-t">Skal træningen tælle som gennemført?</div>
+					<button type="button" class="tv-knap" onclick={svarJa} disabled={gemmer}>Ja</button>
+					{#if vaerdAtGemme3(stilling)}
+						<button type="button" class="tv-knap rolig" onclick={svarGem} disabled={gemmer}>
+							Gem hvor jeg er kommet til
+						</button>
+					{/if}
+					<button type="button" class="tv-knap rolig" onclick={svarNej} disabled={gemmer}
+						>Nej</button
+					>
+					<button
+						type="button"
+						class="af-fortryd"
+						onclick={() => {
+							viserAfslut = false;
+							saetPause(false);
+						}}
+					>
+						Jeg vil træne videre
 					</button>
-				{/if}
-				<button type="button" class="tv-knap rolig" onclick={svarNej} disabled={gemmer}>Nej</button>
-				<button
-					type="button"
-					class="af-fortryd"
-					onclick={() => {
-						viserAfslut = false;
-						saetPause(false);
-					}}
-				>
-					Jeg vil træne videre
-				</button>
+				</div>
 			</div>
 		{/if}
 	{/if}
