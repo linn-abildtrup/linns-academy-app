@@ -313,8 +313,6 @@
 						<div class="udv-kurve">
 							<svg
 								viewBox="0 0 {kurve.flade.bredde} {kurve.flade.hoejde}"
-								width="100%"
-								height={kurve.flade.hoejde}
 								role="img"
 								aria-label={`${kurveTitel}, fra ${formatTal(kurve.foerste?.vaerdi ?? 0)} til ${formatTal(kurve.seneste?.vaerdi ?? 0)} af 10`}
 							>

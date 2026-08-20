@@ -391,8 +391,12 @@ body:has(.ny-app) {
 	pointer-events: none;
 }
 
+/* Bunden er skaaret fra 14 til 4 pixler 20. august. Datoerne under
+   kurven er en del af tegningen og har deres egen luft i forvejen, saa
+   de 14 laa oven i og gav et tomt baelte mellem kurven og stregen over
+   "Næste måling". Linns bemaerkning. */
 .score-krop {
-	padding: 18px 19px 14px;
+	padding: 18px 19px 4px;
 	position: relative;
 }
 
@@ -481,8 +485,12 @@ body:has(.ny-app) {
 
 .kurve {
 	/* Var 10px. Sat ned 18. august sammen med at selve kurven blev lavere,
-	   fordi kortet fyldte for meget paa forsiden. Linns oenske. */
-	margin-top: 6px;
+	   fordi kortet fyldte for meget paa forsiden. Linns oenske.
+
+	   De negative sider traekker tegningen UD over kortets polstring, saa
+	   kurven naar helt ud i siderne af flisen. Teksten ovenover beholder
+	   sin luft. Linns bemaerkning 20. august. */
+	margin: 4px -7px 0;
 }
 
 /* Tegningen skal fylde HELE bredden af flisen.
@@ -10684,11 +10692,15 @@ a.ll-qa-r:focus-visible {
 	gap: 6px;
 }
 
+/* Luften over stregen er skaaret fra 8+12 til 2+12 pixler 20. august.
+   Datoerne under kurven er en del af tegningen og har deres egen luft,
+   saa de otte laa oven i og gav et tomt baelte mellem kurven og det der
+   staar under. Linns bemaerkning. */
 .udv-under {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	margin-top: 8px;
+	margin-top: 2px;
 	padding-top: 12px;
 	border-top: 1px solid var(--line);
 }
@@ -10836,8 +10848,16 @@ a.ll-qa-r:focus-visible {
 	margin: 0 -16px;
 }
 
+/* Hoejden er sat fri 20. august, praecis som paa forsiden.
+
+   Foer stod der en fast hoejde sammen med bredde 100 procent, og saa
+   loeser browseren det ved at laegge tegningen midt i feltet med tom
+   plads i begge sider i stedet for at goere den stoerre. Kurven stod
+   derfor smal midt i et bredt kort. Set paa Linns skaermbillede. */
 .udv-kurve svg {
 	display: block;
+	width: 100%;
+	height: auto;
 }
 
 /* ── Siden du startede ────────────────────────────────────── */

@@ -159,9 +159,12 @@ export interface Flade {
 export const FLADE_FORSIDE: Flade = {
 	bredde: 286,
 	hoejde: 98,
-	// Plads til aksens tal til venstre, ligesom paa Udvikling.
-	xVenstre: 22,
-	xHoejre: 280,
+	// Plads til aksens tal til venstre, ligesom paa Udvikling. Skaaret
+	// ned 20. august: kurven naaede ikke ud i siderne af flisen, og det
+	// meste af luften laa i den her kolonne. Tallene er ét ciffer, saa
+	// 13 er rigeligt.
+	xVenstre: 17,
+	xHoejre: 283,
 	yTop: 12,
 	yBund: 68,
 	baandTop: 3,
@@ -173,10 +176,10 @@ export const FLADE_FORSIDE: Flade = {
 	baandTekstY: 84,
 	datoY: 96,
 	akse: true,
-	akseBredde: 16,
+	akseBredde: 13,
 	baandMinBredde: 12,
-	baandKantVenstre: 18,
-	baandKantHoejre: 284
+	baandKantVenstre: 13,
+	baandKantHoejre: 285
 };
 
 /**
@@ -187,9 +190,10 @@ export const FLADE_UDVIKLING: Flade = {
 	bredde: 286,
 	hoejde: 122,
 	// Helt ud til kanten. Paa forsiden er kurven et hjoerne af et kort og
-	// skal have luft omkring sig. Her ER den indholdet.
-	xVenstre: 22,
-	xHoejre: 278,
+	// skal have luft omkring sig. Her ER den indholdet. Skaaret ind 20.
+	// august, saa kurven naar ud i siderne af kortet.
+	xVenstre: 17,
+	xHoejre: 283,
 	yTop: 14,
 	yBund: 90,
 	baandTop: 3,
@@ -200,10 +204,10 @@ export const FLADE_UDVIKLING: Flade = {
 	datoY: 118,
 	akse: true,
 	// Plads til "10" til venstre for kurven.
-	akseBredde: 16,
+	akseBredde: 13,
 	baandMinBredde: 12,
-	baandKantVenstre: 18,
-	baandKantHoejre: 283
+	baandKantVenstre: 13,
+	baandKantHoejre: 285
 };
 
 /**
