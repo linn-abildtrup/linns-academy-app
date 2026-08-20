@@ -134,21 +134,30 @@
 		</section>
 	{/if}
 
+	<!-- TO KORT OG IKKE TO TEKSTRAEKKER. Linns valg 20. august, model M1.
+	     Raekkerne saa ud som indstillinger, og det her er indhold hun kan
+	     gaa paa opdagelse i. Tallet staar med, fordi "130 opskrifter" er
+	     en grund til at trykke og "med søgning" ikke er.
+
+	     Farverne er appens egne: sand hoerer til mad, groen til traening.
+
+	     Oevelserne skal vaere her og ikke kun under Traening. I de 90 dage
+	     efter et forloeb har hun ikke traeningen, og saa er det her det
+	     eneste sted hun kan slaa en oevelse op. Se SPEC 35. -->
 	<section>
 		<div class="lab"><h2>Materiale</h2></div>
-		<a class="adm-raekke tr-raekke" href="/ny/profil/opskrifter">
-			<div class="adm-raekke-t"><span>Opskrifter</span></div>
-			<div class="adm-raekke-s">Alle opskrifter, med søgning</div>
-		</a>
-		<!-- Traeningen har sin egen vej ind fra forsiden, men den findes
-		     ikke i de 90 dage. Uden den her linje kunne kunden i sin
-		     bonusperiode slet ikke naa oevelserne, og dem har hun krav paa.
-		     Den staar for alle, saa raekken ikke dukker op og forsvinder
-		     igen naar hun koeber sig ind. Se SPEC 35. -->
-		<a class="adm-raekke tr-raekke" href="/ny/traening">
-			<div class="adm-raekke-t"><span>Træningsøvelser</span></div>
-			<div class="adm-raekke-s">Dine programmer og videoerne</div>
-		</a>
+		<div class="mat-par">
+			<a class="mat-kort mad" href="/ny/profil/opskrifter">
+				<span class="mat-i" aria-hidden="true">◠</span>
+				<span class="mat-t">Opskrifter</span>
+				<span class="mat-s">Søg blandt dem alle</span>
+			</a>
+			<a class="mat-kort trae" href="/ny/profil/oevelser">
+				<span class="mat-i" aria-hidden="true">◈</span>
+				<span class="mat-t">Øvelser</span>
+				<span class="mat-s">Se hvordan de laves</span>
+			</a>
+		</div>
 	</section>
 
 	<!-- Opstarten hoerer til en kunde der er i gang. I de 90 dage ville de

@@ -56,7 +56,7 @@ export const HJAELP_AFSNIT_3: HjaelpAfsnit3[] = [
 - Træning: dine programmer og dagens træning
 - Beskeder: her snakker du med Linn AI
 - Udvikling: dine tal over tid
-- Din side: dine lektioner, opskrifter og din konto
+- Din side: dine lektioner, opskrifter, øvelser og din konto
 
 Undersider har en tilbage-pil øverst til venstre.`
 	},
@@ -166,6 +166,17 @@ Tryk på videoen for at holde pause. Tryk igen for at fortsætte.
 Lægger du telefonen ned, fylder videoen hele skærmen. Det er rart hvis den står på gulvet. Sker der ingenting når du drejer, er skærmretningen låst på din telefon, og det kan du slå fra i telefonens indstillinger.
 
 Er du i tvivl om en øvelse, kan du trykke på "Sådan gør du" under videoen. Første gang du møder en øvelse, folder den sig ud af sig selv.`
+	},
+	{
+		titel: 'Alle øvelser',
+		gaelder: () => true,
+		indhold: `Under "Din side" ligger "Øvelser". Der står alle øvelser, og du kan slå enhver af dem op uden at starte en træning.
+
+Du kan søge, og søgningen leder også i beskrivelsen. Skriver du "ryg", får du de øvelser der træner ryggen, selvom ingen af dem hedder det. Du kan også filtrere på kropsdel og på hvilket udstyr der skal bruges.
+
+Trykker du på en øvelse, glider den op nedefra med en video der kører i ring, en kort forklaring og en trin-for-trin-vejledning. Du lukker den igen og er tilbage i listen.
+
+Der er også en vej ind fra Træning, hvis du står midt i et program og vil slå en øvelse op.`
 	},
 	{
 		titel: 'Byg dit eget træningsprogram',

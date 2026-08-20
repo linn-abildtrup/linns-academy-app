@@ -11778,3 +11778,249 @@ a.tr-felt:focus-visible {
 	padding-left: 0;
 	padding-right: 0;
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   MATERIALE PAA DIN SIDE
+
+   To farvede kort side om side i stedet for to tekstraekker. Linns valg
+   20. august, model M1: raekkerne saa ud som indstillinger, og det her
+   er indhold hun kan gaa paa opdagelse i.
+
+   Farverne er appens egne. Sand hoerer til mad overalt i appen, groen
+   til traening, saa hun kan kende dem uden at laese.
+   ══════════════════════════════════════════════════════════ */
+
+.mat-par {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
+}
+
+.mat-kort {
+	border-radius: 18px;
+	padding: 14px 14px 15px;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	justify-content: flex-end;
+	min-height: 116px;
+	text-decoration: none;
+	position: relative;
+	overflow: hidden;
+	box-shadow: var(--shadow-soft);
+}
+
+.mat-kort.mad {
+	background: var(--honey-tint);
+	color: var(--ler-tekst);
+}
+
+.mat-kort.trae {
+	background: var(--sage-tint);
+	color: var(--sage-tekst);
+}
+
+.mat-kort:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 3px;
+}
+
+.mat-i {
+	position: absolute;
+	top: 12px;
+	left: 14px;
+	font-size: calc(21px * var(--fs-scale, 1));
+	line-height: 1;
+	opacity: 0.55;
+}
+
+.mat-t {
+	font-family: var(--serif);
+	font-size: calc(19px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1.1;
+}
+
+.mat-s {
+	font-size: calc(12px * var(--fs-scale, 1));
+	opacity: 0.82;
+	line-height: 1.35;
+}
+
+/* ══════════════════════════════════════════════════════════
+   OEVELSES-BIBLIOTEKET
+
+   Bygget som opskriftssiden: soegefelt, filtre og en liste med en
+   farvet prik. Linns valg, model Ø1. Raekkerne og soegefeltet genbruger
+   opskrifternes stilarter, saa de to sider ikke kan drive fra hinanden.
+   ══════════════════════════════════════════════════════════ */
+
+.oev-side {
+	padding-top: 4px;
+	padding-bottom: 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+/* Kategorierne staar fremme og ikke bag en knap. Der er syv, og de
+   fylder to linjer. Paa opskrifterne er der flere slags filtre og
+   derfor et ark, her er der plads. */
+.oev-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 7px;
+}
+
+.oev-chip {
+	border: 0;
+	cursor: pointer;
+	font-family: inherit;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	background: var(--paper);
+	box-shadow: inset 0 0 0 1px var(--line);
+	border-radius: 999px;
+	padding: 7px 13px;
+	min-height: 38px;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.oev-chip.lille {
+	font-size: calc(12px * var(--fs-scale, 1));
+	padding: 6px 12px;
+	min-height: 34px;
+}
+
+.oev-chip.valgt {
+	background: var(--plum);
+	color: #fff;
+	box-shadow: none;
+	font-weight: 600;
+}
+
+.oev-chip:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.oev-tal {
+	font-size: calc(11px * var(--fs-scale, 1));
+	opacity: 0.65;
+}
+
+.oev-chip.valgt .oev-tal {
+	opacity: 0.8;
+}
+
+/* Prikkens farve efter kropsdel, saa listen kan skimmes uden at laese
+   kategorien paa hver linje. */
+.ops-prik.ben {
+	background: var(--plum);
+}
+
+.ops-prik.core {
+	background: var(--honey);
+}
+
+.ops-prik.balance {
+	background: var(--sage);
+}
+
+.ops-prik.stabilitet {
+	background: var(--sage-tekst);
+}
+
+.ops-prik.overkrop {
+	background: var(--ler-tekst);
+}
+
+.ops-prik.andet {
+	background: var(--ink-3);
+}
+
+.oev-play {
+	flex-shrink: 0;
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	background: var(--plum);
+	color: #fff;
+	display: grid;
+	place-items: center;
+	font-size: calc(11px * var(--fs-scale, 1));
+}
+
+/* ── Arket med én oevelse ─────────────────────────────────── */
+
+.oev-ark {
+	max-height: 88vh;
+}
+
+.oev-scene {
+	border-radius: 16px;
+	overflow: hidden;
+	background: var(--paper-2);
+	aspect-ratio: 16 / 9;
+	display: grid;
+	place-items: center;
+	margin-bottom: 12px;
+}
+
+.oev-video {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.oev-ingen {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.oev-titel {
+	font-family: var(--serif);
+	font-size: calc(23px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin: 0;
+	line-height: 1.15;
+}
+
+.oev-meta {
+	margin: 3px 0 0;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.oev-desc {
+	margin: 12px 0 0;
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	line-height: 1.55;
+}
+
+.oev-h {
+	margin-top: 18px;
+	font-size: calc(11px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.oev-trin {
+	margin: 8px 0 4px;
+	padding-left: 21px;
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	line-height: 1.55;
+}
+
+.oev-trin li {
+	margin-bottom: 7px;
+}

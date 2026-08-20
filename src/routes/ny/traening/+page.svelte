@@ -273,6 +273,17 @@
 		<section>
 			<div class="lab"><h2>Sådan træner du</h2></div>
 			<div class="mt-liste">
+				<!-- Oevelserne bor under Din side, fordi de ogsaa skal kunne
+				     naas i de 90 dage hvor traeningen ikke findes. Men en
+				     kunde midt i et program vil ogsaa slaa en oevelse op, saa
+				     der er en vej ind herfra til den samme side. -->
+				<a class="mt-r" href="/ny/profil/oevelser">
+					<span class="mt-r-t">
+						<span class="mt-r-navn">Alle øvelser</span>
+						<span class="mt-r-s">Se hvordan hver øvelse laves</span>
+					</span>
+					<span class="mt-r-pil" aria-hidden="true">›</span>
+				</a>
 				<a class="mt-r" href="/ny/traening/udstyr">
 					<span class="mt-r-t">
 						<span class="mt-r-navn">Sådan træner jeg</span>
