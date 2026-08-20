@@ -11293,30 +11293,35 @@ body.traening-stor .ny-nav {
 }
 
 
-/* Linjen der folder en klaret sektion sammen igen.
+/* Knappen der folder en klaret sektion sammen igen.
 
    Foer gik foldningen kun én vej: hun kunne aabne en sektion hun havde
    klaret, men ikke lukke den, saa den laa og fyldte resten af dagen.
    Linns bemaerkning 19. august.
 
-   Den er lille og stille med vilje. Den skal kunne findes af den der
-   leder efter den, og ikke traekke i den der bare ruller forbi. */
+   Foerste udgave var en bar tekstlinje i den lyseste graa. Den var saa
+   diskret at Linn bad om den igen dagen efter uden at have set den.
+   Nu ser den ud som en knap: egen flade, kant og moerkere tekst.
+   Laeren er at "stille" og "usynlig" ligger taettere paa hinanden end
+   man tror. */
 .fold-ind {
 	align-self: center;
 	border: 0;
-	background: none;
 	cursor: pointer;
 	font-family: inherit;
-	font-size: calc(12.5px * var(--fs-scale, 1));
-	color: var(--ink-3);
-	padding: 8px 16px;
-	min-height: 40px;
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-2);
+	background: var(--paper);
+	box-shadow: inset 0 0 0 1px var(--line);
+	padding: 9px 18px;
+	min-height: 42px;
 	border-radius: 999px;
-	margin-top: -8px;
+	margin-top: 2px;
 }
 
 .fold-ind:hover {
-	color: var(--ink-2);
+	color: var(--espresso);
 	background: var(--paper-2);
 }
 
