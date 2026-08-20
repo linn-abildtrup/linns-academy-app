@@ -19,7 +19,7 @@
 	import type { User } from 'firebase/auth';
 	import { isAdmin } from '$lib/admin';
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
-	import { hentAlleFodevarer } from '$lib/firestore/kost';
+	import { hentFodevarer3 } from '$lib/firestore/fodevarer3';
 	import { parseOpskriftMakro, type Opskrift } from '$lib/content/opskrifter';
 	import type { Fodevare } from '$lib/content/kost';
 	import {
@@ -50,7 +50,7 @@
 			try {
 				const [opskrifter, varerListe, kort] = await Promise.all([
 					hentAlleOpskrifter(false),
-					hentAlleFodevarer(),
+					hentFodevarer3(),
 					hentKoblinger()
 				]);
 				const varer = new Map<string, Fodevare>(varerListe.map((v) => [v.id, v]));

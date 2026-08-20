@@ -23,7 +23,7 @@
 	import type { User } from 'firebase/auth';
 	import { isAdmin } from '$lib/admin';
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
-	import { hentAlleFodevarer } from '$lib/firestore/kost';
+	import { hentFodevarer3 } from '$lib/firestore/fodevarer3';
 	import type { Fodevare } from '$lib/content/kost';
 	import { kerneNavn, tilstand, type Tilstand } from '$lib/content/ingrediensNavn3';
 	import { foreslaaKobling, taleneErUmulige, type Kandidat } from '$lib/content/ingrediensKobling3';
@@ -77,7 +77,7 @@
 			try {
 				const [opskrifter, alleVarer, gemte] = await Promise.all([
 					hentAlleOpskrifter(false),
-					hentAlleFodevarer(),
+					hentFodevarer3(),
 					hentKoblinger()
 				]);
 				varer = alleVarer;

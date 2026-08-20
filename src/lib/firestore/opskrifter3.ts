@@ -10,7 +10,8 @@
 // billeder boer flyttes ud i Storage, se SPEC-3.0.md. Indtil da betaler
 // listen for dem hver gang cachen er kold.
 
-import { collection, getDocs } from 'firebase/firestore';
+import type { DocumentData, QuerySnapshot } from 'firebase/firestore';
+import { hentSamlingHurtigt3 } from './lokalKopi3';
 import { db } from '$lib/firebase';
 import { parseOpskriftMakro, type DietTag, type Opskrift } from '$lib/content/opskrifter';
 import { visMakro } from '$lib/content/opskriftMakro3';
@@ -77,20 +78,40 @@ function fraDoc(
 let cache: Opskrift3[] | null = null;
 let iGang: Promise<Opskrift3[]> | null = null;
 
-/** Alle aktive opskrifter, sorteret alfabetisk efter titel. */
-export async function hentOpskrifter3(): Promise<Opskrift3[]> {
+/** Sat naar en side vil vide besked hvis serveren har noget nyere. */
+let lytter: ((liste: Opskrift3[]) => void) | null = null;
+
+/**
+ * Alle aktive opskrifter, sorteret alfabetisk efter titel.
+ *
+ * KOPIEN FOERST. Foer ventede vi altid paa serveren, ogsaa naar alle 133
+ * laa paa telefonen i forvejen, og saa stod skaermen og hentede noget vi
+ * havde. Nu vises kopien med det samme og serveren spoerges stille
+ * bagefter. Se firestore/lokalKopi3.
+ *
+ * `onFriske` kaldes kun hvis serveren har en anden liste end den du fik.
+ * Retter Linn en opskrift mens kunden kigger, ser kunden den gamle i et
+ * oejeblik. Det er en bevidst pris, se content/lokalKopi3.
+ */
+export async function hentOpskrifter3(
+	onFriske?: (liste: Opskrift3[]) => void
+): Promise<Opskrift3[]> {
+	lytter = onFriske ?? lytter;
 	if (cache) return cache;
 	if (iGang) return iGang;
 	iGang = (async () => {
 		try {
-			const [snap, beregninger] = await Promise.all([
-				getDocs(collection(db, 'opskrifter')),
-				hentBeregninger()
-			]);
-			const liste = snap.docs
-				.map((d) => fraDoc(d.id, d.data(), beregninger))
-				.filter((o) => (o.raa as { aktiv?: boolean }).aktiv !== false)
-				.sort((a, b) => a.titel.localeCompare(b.titel, 'da'));
+			const beregninger = await hentBeregninger();
+			const omdan = (snap: QuerySnapshot<DocumentData>) =>
+				snap.docs
+					.map((d) => fraDoc(d.id, d.data(), beregninger))
+					.filter((o) => (o.raa as { aktiv?: boolean }).aktiv !== false)
+					.sort((a, b) => a.titel.localeCompare(b.titel, 'da'));
+
+			const { liste } = await hentSamlingHurtigt3('opskrifter', omdan, (friske) => {
+				cache = friske;
+				lytter?.(friske);
+			});
 			cache = liste;
 			return liste;
 		} finally {
@@ -104,4 +125,5 @@ export async function hentOpskrifter3(): Promise<Opskrift3[]> {
 export function ryOpskrifter3Cache(): void {
 	cache = null;
 	iGang = null;
+	lytter = null;
 }

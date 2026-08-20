@@ -15,11 +15,7 @@
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { Fodevare, GemtMaaltid, Maaltidstype } from '$lib/content/kost';
-	import {
-		MAALTIDSTYPER,
-		MAALTIDSTYPE_LABELS,
-		PROTEIN_MAALTIDS_MAAL
-	} from '$lib/content/kost';
+	import { MAALTIDSTYPER, MAALTIDSTYPE_LABELS, PROTEIN_MAALTIDS_MAAL } from '$lib/content/kost';
 	import { soegFodevarer } from '$lib/content/fodevareSoeg3';
 	import { LABELS, harProteinMaal } from '$lib/content/maaltider3';
 	import { formatPortion, naeringFor } from '$lib/content/maengde3';
@@ -33,7 +29,7 @@
 		gendanMadvare,
 		opdaterMadvare
 	} from '$lib/firestore/plejer3';
-	import { hentAlleFodevarer } from '$lib/firestore/kost';
+	import { hentFodevarer3 } from '$lib/firestore/fodevarer3';
 	import { hentAdgangsskema, maaSeUdvidetNaering } from '$lib/firestore/featureAdgang3';
 	import { datoNoegle } from '$lib/firestore/forside3';
 	import MaengdeArk from '$lib/components/ny/MaengdeArk.svelte';
@@ -275,17 +271,25 @@
 	const favoritOpskrifter = $derived(favoritRettet ?? favoritterFra(userDoc));
 	const hjerter = $derived(hjerteRettet ?? hjerterFra(userDoc));
 	/** Hendes hjertede varer, UDEN hendes egne. De staar under Mine egne. */
-	const hjertede = $derived(
-		hjertedeFodevarer(hjerter, foods, new Set(egne.map((f) => f.id)))
-	);
+	const hjertede = $derived(hjertedeFodevarer(hjerter, foods, new Set(egne.map((f) => f.id))));
 
 	const erIDag = $derived(dato === iDag);
 	const kanFrem = $derived(dato < iDag);
 
 	const UGEDAGE = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'];
 	const MAANEDER = [
-		'januar', 'februar', 'marts', 'april', 'maj', 'juni',
-		'juli', 'august', 'september', 'oktober', 'november', 'december'
+		'januar',
+		'februar',
+		'marts',
+		'april',
+		'maj',
+		'juni',
+		'juli',
+		'august',
+		'september',
+		'oktober',
+		'november',
+		'december'
 	];
 
 	const datoTekst = $derived.by(() => {
@@ -353,7 +357,12 @@
 		baandLukket = false;
 
 		(async () => {
-			const alle = await hentAlleFodevarer();
+			// Kopien foerst. Listen er 2.268 raekker, og foer stod skaermen
+			// tom mens den blev hentet, ogsaa naar den laa paa telefonen.
+			// Har serveren noget nyere, skiftes den stille ud under hende.
+			const alle = await hentFodevarer3((friske) => {
+				if (!afbrudt) foods = new Map(friske.map((f) => [f.id, f]));
+			});
 			const kort = new Map(alle.map((f) => [f.id, f]));
 			if (afbrudt) return;
 			foods = kort;
@@ -518,9 +527,7 @@
 			await saetKategorier3(uid, o.id, kategorier);
 		} catch (e) {
 			console.warn('[ny] kunne ikke gemme maaltiderne paa opskriften', e);
-			mineOpskrifter = mineOpskrifter.map((m) =>
-				m.id === o.id ? { ...m, kategorier3: foer } : m
-			);
+			mineOpskrifter = mineOpskrifter.map((m) => (m.id === o.id ? { ...m, kategorier3: foer } : m));
 			aabenEgen = { ...o, kategorier3: foer };
 		}
 	}
@@ -690,11 +697,7 @@
 			// Maaltidet hun staar i er et godt foerste gaet, og hun kan
 			// altid rette det i arket bagefter.
 			const start = kategoriForMaaltid(type);
-			await opretMinOpskrift3(
-				uid,
-				{ ...data, kategorier3: start ? [start] : [] },
-				n.billede
-			);
+			await opretMinOpskrift3(uid, { ...data, kategorier3: start ? [start] : [] }, n.billede);
 			nytUdkast = null;
 			mineOpskrifter = await hentMineOpskrifter3(uid);
 			visKvittering({ slags: 'besked', tekst: `${data.navn} er gemt` });
@@ -1172,7 +1175,9 @@
 	<div class="tt-dato">
 		<button type="button" onclick={() => flytDag(-1)} aria-label="Dagen før">‹</button>
 		<span>{datoTekst}</span>
-		<button type="button" onclick={() => flytDag(1)} disabled={!kanFrem} aria-label="Dagen efter">›</button>
+		<button type="button" onclick={() => flytDag(1)} disabled={!kanFrem} aria-label="Dagen efter"
+			>›</button
+		>
 	</div>
 
 	<div class="tm-tal">
@@ -1269,7 +1274,13 @@
 	     handler om. -->
 	{#if kanGemmeSomFast}
 		<button type="button" class="fm-gem-knap" onclick={() => (gemArk = true)}>
-			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+			<svg
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.8"
+				aria-hidden="true"
+			>
 				<circle cx="12" cy="12" r="8.5" />
 				<circle cx="12" cy="12" r="3.8" />
 			</svg>
@@ -1467,8 +1478,7 @@
 {#if visBaand && ilagt}
 	<div class="fm-baand">
 		<div class="fm-b-tekst">
-			Du har ændret <strong>{ilagt.fast.navn}</strong> i dag. Skal det faste måltid gemmes sådan
-			fremover?
+			Du har ændret <strong>{ilagt.fast.navn}</strong> i dag. Skal det faste måltid gemmes sådan fremover?
 		</div>
 		<div class="fm-b-knapper">
 			<button type="button" class="fm-b-nej" onclick={beholdFast}>Nej, kun i dag</button>
