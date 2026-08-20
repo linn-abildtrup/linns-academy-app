@@ -416,7 +416,10 @@
 									<span class="ll-uge-navn">{ugeNavn(u)}</span>
 									<span class="ll-uge-under">{ugeUnder(u)}</span>
 								</span>
-								<span class="ll-uge-fold" aria-hidden="true">{aaben ? '▾' : '›'}</span>
+								<!-- Samme tegn som alle andre steder i appen. Her stod der ▾, en
+								     lille sort trekant, og det var det eneste sted. Rettet
+								     20. august, se SPEC 36. -->
+								<span class="ll-uge-fold" aria-hidden="true">{aaben ? '⌄' : '›'}</span>
 							</button>
 
 							{#if aaben}

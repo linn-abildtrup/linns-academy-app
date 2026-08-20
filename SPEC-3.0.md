@@ -4044,3 +4044,65 @@ fra login alene.
   har ikke sagt nej til det, hun er bare aldrig blevet spurgt
 - **Tilstand 3 er aldrig blevet set af nogen.** Nu hvor bonussen virker,
   møder en kunde først den lukkede dør 90 dage efter sit forløb
+
+---
+
+## 36. Foldning. Ét mønster i hele 3.0. LÅST 20. august
+
+Linns beslutning, ordret: "det design der er brugt under Udvikling er det
+rigtige" og "det skal du gennemgående bruge". **Byg aldrig en ny måde at
+folde noget ud på.**
+
+### 36.1 Mønsteret
+
+**Overskriften er selv kontakten.** Hele hovedet er knappen. Der er ikke
+en separat knap ved siden af, under eller inde i sektionen.
+
+**Indholdet folder ud i det samme kort.** Hovedet mister sin runde bund og
+sin skygge, når sektionen er åben, så hoved og indhold læses som ét kort
+og ikke som to der ligger oven på hinanden.
+
+**Tegnet står i højre side og er altid det samme:**
+
+- `›` når sektionen er **lukket**
+- `⌄` når sektionen er **åben**
+
+Ikke `▾`, ikke `⌃`, ikke en trekant, ikke et plus. Ét tegn i hele appen.
+
+**Tallet bliver stående på hovedet, også når kortet er foldet sammen.** Det
+er hele grunden til at man kan folde: hun skal kunne se hele billedet på én
+skærm og selv vælge hvad hun går ind i.
+
+**`aria-expanded`** sættes på knappen, så en skærmlæser siger det samme som
+tegnet.
+
+### 36.2 Hvor det bruges i dag
+
+| Sted | Hvad folder |
+|---|---|
+| `routes/ny/udvikling/` | De fire områder. **Referencen** |
+| `routes/ny/+page.svelte` | De fem klarede sektioner på forsiden |
+| `routes/ny/lektioner/[forlobId]/` | Ugerne |
+| `routes/ny/traening/[programId]/[nr]/` | "Sådan gør du" |
+| `components/ny/FoldetRaekke.svelte` | Hovedet på en klaret sektion |
+
+### 36.3 To fejl der blev lavet på vejen hertil
+
+**En "Fold sammen"-knap under sektionen.** Bygget 19. august, forkastet 20.
+Den lå uden for kortet og lignede ikke noget der hørte til, og første
+udgave var så diskret at Linn bad om funktionen igen dagen efter uden at
+have set den. **Lære: "stille" og "usynlig" ligger tættere på hinanden end
+man tror.**
+
+**Foldning der kun gik én vej.** Hun kunne åbne en klaret sektion, men ikke
+lukke den igen, så den lå og fyldte resten af dagen. Et fold skal altid
+kunne gå begge veje.
+
+### 36.4 Standardtilstanden
+
+**Alt foldet sammen når hun kommer ind.** Linns ønske 20. august for
+Udvikling, og det er reglen. En side der åbner med noget foldet ud har
+allerede valgt for hende.
+
+Undtagelsen er en sektion hun **ikke** har klaret: den er ikke foldet, for
+den er noget hun skal gøre, ikke noget hun kan se tilbage på.
