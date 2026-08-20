@@ -76,15 +76,15 @@
 
 	const antal = $derived(program ? antalTraeninger3(program) : 0);
 	const klaret = $derived(antalKlaret3(fremgang, antal));
-	const naeste = $derived(
-		program ? naesteTraening3(fremgang, antal, program.starterForfra) : null
-	);
+	const naeste = $derived(program ? naesteTraening3(fremgang, antal, program.starterForfra) : null);
 	const procent = $derived(procentKlaret3(fremgang, antal));
 	const faerdig = $derived(erFaerdig3(fremgang, antal));
 
 	const undertekst = $derived.by(() => {
 		if (!program) return '';
-		const kategori = program.egen ? 'Dit eget program' : kategoriNavn3(program.kategoriId, kategorier);
+		const kategori = program.egen
+			? 'Dit eget program'
+			: kategoriNavn3(program.kategoriId, kategorier);
 		const minutter = dage.length > 0 ? dagensMinutter(dage[0]) : 0;
 		return [
 			kategori,
@@ -143,6 +143,11 @@
 		}
 	});
 
+	/** Den traening hun skal nu, til kortet oeverst. */
+	const naesteDag = $derived(
+		naeste === null ? null : (dage.find((d) => d.dagNummer === naeste) ?? null)
+	);
+
 	function oevelsesTekst(dag: TrainingDay): string {
 		const antalOevelser = dag.exercises.length;
 		if (antalOevelser === 0) return 'Ingen øvelser';
@@ -156,7 +161,7 @@
 
 <div class="ny-pad mt-side">
 	<header class="side-top" style="padding-left:0;padding-right:0">
-		<a class="tr-tilbage" href="/ny/traening">‹ Mikrotræning</a>
+		<a class="tr-tilbage" href="/ny/traening">‹ Træning</a>
 		<h1>{program?.navn ?? 'Træning'}</h1>
 		{#if program && maaSeDen}
 			<p class="mt-under">{undertekst}</p>
@@ -168,62 +173,72 @@
 	{:else if fejl}
 		<p class="kort rolig">{fejl}</p>
 	{:else if !program || !maaSeDen}
-		<p class="kort rolig">Du har ikke det her program. Gå tilbage til Mikrotræning.</p>
+		<p class="kort rolig">Du har ikke det her program. Gå tilbage til Træning.</p>
 	{:else}
-		<div class="mt-prog igang">
-			<div class="mt-fremgang">
-				{#if faerdig && naeste === null}
-					Alle {antal} træninger er klaret
-				{:else if faerdig}
-					Alle {antal} træninger er klaret
-				{:else}
-					Træning {naeste ?? 1} af {antal}
-				{/if}
-			</div>
-			<div class="mt-bar"><i style={`width:${procent}%`}></i></div>
-			<div class="mt-meta">
-				{#if faerdig && naeste === null}
-					Programmet er færdigt
-				{:else if faerdig}
-					Programmet starter forfra
-				{:else}
-					{klaret === 1 ? '1 træning klaret' : `${klaret} træninger klaret`}
-				{/if}
-			</div>
-			{#if naeste !== null}
-				<a class="mt-knap" href={`/ny/traening/${programId}/${naeste}`}>
-					Start træning {naeste}
-				</a>
-			{/if}
-		</div>
-
-		<div class="lab"><h2>Træningerne</h2></div>
-		{#each dage as dag (dag.dagNummer)}
-			{@const tilstand = traeningstilstand3(dag.dagNummer, fremgang, naeste)}
-			{@const aaben = maaAabnes3(dag.dagNummer, fremgang, naeste)}
-			<svelte:element
-				this={aaben ? 'a' : 'div'}
-				class="mt-traening"
-				class:venter={!aaben}
-				href={aaben ? `/ny/traening/${programId}/${dag.dagNummer}` : undefined}
-			>
-				<span class="mt-cirkel" class:naeste={tilstand === 'naeste'} class:vent={tilstand === 'venter'}>
-					{tilstand === 'klaret' ? '✓' : dag.dagNummer}
+		<!-- Det hun skal goere nu, som ét moerkt kort med én knap. Det er
+		     det samme kort som "Dit overskud" paa forsiden, og det er broen
+		     til traeningsskaermen, der ogsaa er moerk. Linns valg 20.
+		     august, model S1. -->
+		{#if naeste !== null}
+			<a class="mt-naeste" href={`/ny/traening/${programId}/${naeste}`}>
+				<span class="mt-n-k">{klaret > 0 ? 'Din næste træning' : 'Din første træning'}</span>
+				<span class="mt-n-navn">{naesteDag?.titel || `Træning ${naeste}`}</span>
+				<span class="mt-n-s">
+					Træning {naeste} af {antal}{#if naesteDag}
+						· {oevelsesTekst(naesteDag)}{/if}
 				</span>
-				<span class="mt-tt">
-					Træning {dag.dagNummer}
-					{#if dag.titel}<span class="mt-titel">{dag.titel}</span>{/if}
-					<span class="mt-ts">
-						{oevelsesTekst(dag)}{tilstand === 'klaret' ? ' · klaret' : ''}
+				{#if klaret > 0}
+					<span class="mt-n-bar"><i style={`width:${procent}%`}></i></span>
+					<span class="mt-n-f">
+						{klaret === 1 ? '1 træning klaret' : `${klaret} træninger klaret`}
 					</span>
-				</span>
-			</svelte:element>
-		{/each}
+				{/if}
+				<span class="mt-n-knap">{klaret > 0 ? 'Fortsæt' : 'Start'}</span>
+			</a>
+		{:else}
+			<div class="mt-naeste faerdigt">
+				<span class="mt-n-k">Færdig</span>
+				<span class="mt-n-navn">Alle {antal} træninger er klaret</span>
+				<span class="mt-n-s">Du kan tage en af dem om nedenfor, når du har lyst.</span>
+			</div>
+		{/if}
+
+		<!-- ALLE TRAENINGER SOM FELTER og ikke som raekker. Programmet "Test
+		     håndvægte" har 88 traeninger, og som raekker var det en meget
+		     lang rulletur uden noget at orientere sig efter. Syv i bredden
+		     bliver 88 til tretten linjer, altsaa ét blik.
+
+		     Groen er taget, gul er den hun skal nu, bleg er ikke laast op
+		     endnu. Det er den samme stribe som nede i selve traeningen,
+		     hvor hun ser hvor langt hun er i dagens oevelser. -->
+		<section>
+			<div class="lab"><h2>Alle træninger</h2></div>
+			<div class="tr-gitter">
+				{#each dage as dag (dag.dagNummer)}
+					{@const tilstand = traeningstilstand3(dag.dagNummer, fremgang, naeste)}
+					{@const aaben = maaAabnes3(dag.dagNummer, fremgang, naeste)}
+					<svelte:element
+						this={aaben ? 'a' : 'span'}
+						class="tr-felt"
+						class:klaret={tilstand === 'klaret'}
+						class:nu={tilstand === 'naeste'}
+						class:laast={!aaben}
+						href={aaben ? `/ny/traening/${programId}/${dag.dagNummer}` : undefined}
+						aria-label={`Træning ${dag.dagNummer}${dag.titel ? ', ' + dag.titel : ''}${tilstand === 'klaret' ? ', klaret' : !aaben ? ', ikke åbnet endnu' : ''}`}
+					>
+						{dag.dagNummer}
+					</svelte:element>
+				{/each}
+			</div>
+			<p class="tr-noegle">
+				<span class="tr-prik klaret" aria-hidden="true"></span> Taget
+				<span class="tr-prik nu" aria-hidden="true"></span> Din næste
+				<span class="tr-prik laast" aria-hidden="true"></span> Ikke åbnet endnu
+			</p>
+		</section>
 
 		{#if program.egen}
-			<a class="ch-knap sekundaer" href={`/ny/traening/byg-eget/${programId}`}>
-				Ret programmet
-			</a>
+			<a class="ch-knap sekundaer" href={`/ny/traening/byg-eget/${programId}`}> Ret programmet </a>
 		{/if}
 	{/if}
 </div>

@@ -11618,3 +11618,116 @@ body.traening-moerk .ny-scroll {
 	backdrop-filter: blur(6px);
 	-webkit-backdrop-filter: blur(6px);
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   ALLE TRAENINGER I ET PROGRAM
+
+   Linns valg 20. august, model S1. Foer stod hver traening som en
+   raekke, og programmet "Test håndvægte" har 88 af dem. Det var en
+   meget lang rulletur uden noget at orientere sig efter, og den hun
+   skulle tage nu stod som nummer syv med samme vaegt som de 81 andre.
+
+   Syv i bredden goer 88 traeninger til tretten linjer, altsaa ét blik.
+   Det er den samme stribe som nede i selve traeningen, hvor hun ser
+   hvor langt hun er i dagens oevelser.
+
+   Titlen paa hver traening staar ikke her. Den staar paa kortet oeverst
+   og inde paa traeningen. Skulle den med her, ville de 88 blive til 88
+   raekker igen, og saa var vi tilbage hvor vi startede.
+   ══════════════════════════════════════════════════════════ */
+
+.tr-gitter {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 7px;
+}
+
+.tr-felt {
+	aspect-ratio: 1;
+	border-radius: 11px;
+	display: grid;
+	place-items: center;
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-family: var(--sans);
+	text-decoration: none;
+	background: var(--paper);
+	color: var(--ink-2);
+	box-shadow: inset 0 0 0 1px var(--line);
+	/* Fingeren skal kunne ramme. Paa en smal telefon bliver feltet
+	   omkring 42 pixler, og saa er 40 gulvet. */
+	min-height: 40px;
+}
+
+a.tr-felt:hover {
+	box-shadow: inset 0 0 0 2px var(--plum);
+}
+
+a.tr-felt:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+.tr-felt.klaret {
+	background: var(--sage);
+	color: #fff;
+	box-shadow: none;
+}
+
+.tr-felt.nu {
+	background: var(--honey);
+	color: #3a2a16;
+	box-shadow: 0 0 0 3px var(--honey-tint);
+	font-weight: 700;
+}
+
+/* Ikke laast op endnu. Bleg, men stadig laesbar: hun skal kunne se hvor
+   mange der er tilbage, og ikke bare at der er noget graat. */
+.tr-felt.laast {
+	background: var(--paper-2);
+	color: var(--ink-3);
+	box-shadow: none;
+}
+
+/* Hvad farverne betyder. Uden den her linje skal hun regne det ud, og
+   det er den slags man aldrig faar gjort. */
+.tr-noegle {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+	margin: 10px 0 0;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.tr-prik {
+	width: 10px;
+	height: 10px;
+	border-radius: 3px;
+	flex-shrink: 0;
+	margin-left: 6px;
+}
+
+.tr-noegle .tr-prik:first-child {
+	margin-left: 0;
+}
+
+.tr-prik.klaret {
+	background: var(--sage);
+}
+
+.tr-prik.nu {
+	background: var(--honey);
+}
+
+.tr-prik.laast {
+	background: var(--paper-2);
+	box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* Programmet er koert helt igennem. Saa er der ingen knap, for der er
+   ikke noget naeste, men kortet skal stadig staa der og sige det. */
+.mt-naeste.faerdigt {
+	background: linear-gradient(150deg, #6d7f6c, #3c4a3c);
+}
