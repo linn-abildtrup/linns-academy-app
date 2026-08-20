@@ -18,8 +18,6 @@
 	// laegge 17 til. Det er praecis det den gamle haandrettelse gjorde.
 	// ============================================================
 
-	import Maerke from './Maerke.svelte';
-
 	interface Props {
 		titel: string;
 		/** Adressen bagud. Uden den tegnes ingen tilbage-raekke. */
@@ -33,14 +31,9 @@
 		 * Saa skal hovedet ikke laegge sin egen oveni.
 		 */
 		kant?: boolean;
-		/**
-		 * Maerket ude i hoejre side. Slaa det fra hvor der staar noget
-		 * andet i hjoernet, fx en knap.
-		 */
-		visMaerke?: boolean;
 	}
 
-	let { titel, tilbage, tilbageTekst, under, kant = true, visMaerke = true }: Props = $props();
+	let { titel, tilbage, tilbageTekst, under, kant = true }: Props = $props();
 </script>
 
 <header class="sh" class:sh-kant={kant}>
@@ -52,8 +45,5 @@
 			<h1>{titel}</h1>
 			{#if under}<p>{under}</p>{/if}
 		</div>
-		{#if visMaerke}
-			<Maerke variant="stille" />
-		{/if}
 	</div>
 </header>

@@ -55,7 +55,6 @@
 	import DagensTalKort from '$lib/components/ny/DagensTal.svelte';
 	import NaesteHoldKort from '$lib/components/ny/NaesteHold.svelte';
 	import Refleksion from '$lib/components/ny/Refleksion.svelte';
-	import Maerke from '$lib/components/ny/Maerke.svelte';
 	import FoldetRaekke from '$lib/components/ny/FoldetRaekke.svelte';
 	import Henter from '$lib/components/ny/Henter.svelte';
 	import Ugestrimmel from '$lib/components/ny/Ugestrimmel.svelte';
@@ -122,13 +121,6 @@
 
 	const fornavn = $derived(userDoc?.firstName ?? '');
 	const hilsen = $derived(getGreetingWithName(fornavn, nu));
-	const datoTekst = $derived(
-		new Intl.DateTimeFormat('da-DK', { weekday: 'long', day: 'numeric', month: 'long' })
-			.format(nu)
-			.replace(' den ', ' · ')
-			.replace(/^(\w)/, (c) => c.toUpperCase())
-	);
-
 	const aktivtForlob = $derived(adgang.aktiveForlob[0] ?? null);
 	const medlemstid = $derived(formatMedlemstid(adgang.medlemstidMs));
 
@@ -524,12 +516,6 @@
 </script>
 
 <header class="dawn">
-	<!-- Brand-laasen staar kun her paa forsiden. Datoen er flyttet op ved
-	     siden af, saa toppen ikke bliver en linje hoejere end foer. -->
-	<div class="dawn-brand">
-		<Maerke variant="fuld" link={false} />
-		<div class="date">{datoTekst}</div>
-	</div>
 	<div class="dawn-top">
 		<h1 class="hello">{hilsen}</h1>
 		<div class="linn-ava" role="img" aria-label="Linn"></div>

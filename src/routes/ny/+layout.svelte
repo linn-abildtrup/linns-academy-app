@@ -22,6 +22,7 @@
 	import type { UserDoc } from '$lib/types';
 	import type { ForlobKilde, NulDageKilde } from '$lib/content/adgang3';
 	import { hentNulDage } from '$lib/firestore/nulDage3';
+	import Maerke from '$lib/components/ny/Maerke.svelte';
 	import { bonusBaandTekst, maaSeIBonus, naadeTekst, BONUS_START } from '$lib/content/spaerring3';
 	import { opstartsBillede, maaAabnePaaKopi3 } from '$lib/content/hurtigStart3';
 	import { hentOpstartFraCache } from '$lib/firestore/hurtigStart3';
@@ -231,6 +232,31 @@
 		};
 	});
 
+	// ── Datoen i toppen ─────────────────────────────────────────
+	// Appen staar aaben i dagevis paa en telefon. Laeses tidspunktet kun
+	// én gang ved indlaesning, viser toppen gaarsdagens dato naeste
+	// morgen. Samme problem og samme loesning som paa forsiden.
+	let nu = $state(new Date());
+
+	onMount(() => {
+		const opdater = () => {
+			if (document.visibilityState === 'visible') nu = new Date();
+		};
+		document.addEventListener('visibilitychange', opdater);
+		window.addEventListener('focus', opdater);
+		return () => {
+			document.removeEventListener('visibilitychange', opdater);
+			window.removeEventListener('focus', opdater);
+		};
+	});
+
+	const datoTekst = $derived(
+		new Intl.DateTimeFormat('da-DK', { weekday: 'long', day: 'numeric', month: 'long' })
+			.format(nu)
+			.replace(' den ', ' · ')
+			.replace(/^(\w)/, (c) => c.toUpperCase())
+	);
+
 	// Ikonet vaelges paa ikon-noeglen og IKKE paa navnet. Foer stod der
 	// navnet i hver gren, og saa mistede fanen sit ikon i samme oejeblik
 	// nogen doebte den om. Set da Profil blev til Din side.
@@ -306,6 +332,18 @@
 					<a href={APP_KOB_URL} target="_blank" rel="noopener">Forny</a>
 				</div>
 			{/if}
+			<!-- TOPPEN LIGGER UDEN FOR DET DER RULLER, praecis som
+			     bundmenuen. Derfor kan den slet ikke gynge, og vi behoever
+			     hverken position: fixed eller at skubbe indholdet ned.
+			     Linns oenske 20. august: den skal sidde fast som menuen.
+
+			     Der staar KUN navnet og datoen. Sidens egen titel bliver
+			     staaende nede i indholdet og ruller med. -->
+			<header class="ny-top">
+				<Maerke variant="fuld" link={true} />
+				<span class="ny-top-dato">{datoTekst}</span>
+			</header>
+
 			<div class="ny-scroll">
 				{@render children()}
 			</div>

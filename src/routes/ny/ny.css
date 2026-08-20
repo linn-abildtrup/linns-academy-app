@@ -97,7 +97,11 @@
 	   regne den ud i stedet for at gaette. Foer stod 76 skrevet tre
 	   forskellige steder, og saa driver de fra hinanden den dag hoejden
 	   aendrer sig. Set 20. august. */
-	--nav-h: 58px;
+	--nav-h: 50px;
+
+	/* Toppens hoejde, UDEN telefonens sikkerhedszone foroven. Samme regel
+	   som --nav-h: den staar her og kun her. */
+	--top-h: 46px;
 	background: var(--oat);
 	color: var(--espresso);
 	font-family: var(--sans);
@@ -134,6 +138,61 @@
 	flex-direction: column;
 	background: var(--oat);
 	overflow: hidden;
+}
+
+/* ── Toppen ────────────────────────────────────────────────── */
+/*
+   LAAST FAST SOM BUNDMENUEN. Linns oenske 20. august 2026.
+
+   Den er IKKE position: fixed. Den er soester til bundmenuen i den samme
+   lodrette flex, altsaa uden for .ny-scroll. Derfor kan den hverken
+   gynge eller daekke noget, og indholdet behoever ikke skubbes ned.
+   Fixed ville have kraevet en polstring der skulle holdes i sync med
+   hoejden, og den slags driver fra hinanden.
+
+   Der staar KUN navnet og datoen. Sidens egen titel ruller med indholdet.
+
+   Hoejden staar som --top-h ligesom --nav-h, saa ting der en dag skal
+   svaeve under den kan regne den ud i stedet for at gaette.
+*/
+.ny-top {
+	flex: 0 0 auto;
+	/* Samme lag som bundmenuen: foran alt almindeligt, bag ark og
+	   modaler. Se kommentaren over .ny-nav. */
+	z-index: 100;
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	min-height: var(--top-h);
+	padding: 0 17px;
+	/* Telefonens egen zone foroven. Nul i en browser, men paa en iPhone
+	   hvor appen ligger paa hjemmeskaermen skal der vaere plads til uret
+	   og hakket. */
+	padding-top: env(safe-area-inset-top, 0px);
+	background: rgba(251, 248, 242, 0.92);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	border-bottom: 1px solid var(--line);
+}
+
+.ny-top-dato {
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	letter-spacing: 0.13em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	font-weight: 600;
+	text-align: right;
+	line-height: 1.25;
+	/* Datoen viger foer navnet gaar i stykker paa en smal telefon. */
+	min-width: 0;
+}
+
+/* I stor visning skal toppen vaek af samme grund som bundmenuen: hun
+   kan ikke bruge den midt i en oevelse, og den aad af videoen. */
+body.traening-stor .ny-top {
+	display: none;
 }
 
 .ny-scroll {
@@ -175,14 +234,10 @@ body:has(.ny-app) {
 		radial-gradient(130% 90% at 15% 0%, var(--honey-tint) 0%, transparent 55%),
 		radial-gradient(120% 100% at 100% 0%, var(--plum-tint) 0%, transparent 50%), var(--oat);
 }
-
-/* Brand-laasen og datoen deler den oeverste linje, saa forsiden ikke
-   bliver hoejere end foer maerket kom til. */
-.dawn-brand {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
+/* Hilsenen er foerste element paa forsiden nu, hvor maerket er flyttet
+   op i den faste top. Paa dag-siden staar datoen stadig over. */
+.dawn-top:first-child {
+	margin-top: 0;
 }
 
 /* Billedet staar i lodret midte af hilsenen, ikke oppe i hjoernet. */
@@ -1212,7 +1267,8 @@ body:has(.ny-app) {
 	*/
 	position: relative;
 	z-index: 100;
-	/* Sat ned fra 76 til 58 den 20. august paa Linns oenske: menuen fyldte
+	/* Sat ned fra 76 til 58 og videre til 50 den 20. august paa Linns
+	   oenske, i to omgange samme dag: menuen fyldte
 	   for meget i hoejden, og ikonerne sad for hoejt oppe i baandet.
 
 	   De 12 pixlers luft forneden er skiftet ud med telefonens EGEN
@@ -1250,10 +1306,13 @@ body:has(.ny-app) {
 	font-size: calc(9px * var(--fs-scale, 1));
 	font-weight: 600;
 	position: relative;
+	/* Traefladen er stadig 44 px hoej, altsaa den mindste en finger kan
+	   ramme sikkert. Menuen er kun blevet lavere ved at luften omkring
+	   fanerne er skaaret, ikke selve knappen. */
 	min-height: 44px;
 	letter-spacing: -0.02em;
 	text-align: center;
-	padding: 5px 1px 3px;
+	padding: 3px 1px 2px;
 }
 .ny-nav a.active {
 	color: var(--plum);
@@ -2004,12 +2063,6 @@ body:has(.ny-app) {
 	margin: 7px 0 0;
 	line-height: 1.5;
 }
-
-/* Maerket staar i lodret midte af en enkeltlinjet titel. */
-.sh-raek .mk-stille {
-	margin-top: 2px;
-}
-
 /* Lektionens minimale top. Kun en vej ud, ingen titel og intet maerke.
    Se kommentaren i lektions-siden for hvorfor den ikke bruger Sidehoved. */
 .medie-top {
