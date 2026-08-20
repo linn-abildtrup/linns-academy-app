@@ -86,6 +86,12 @@
 }
 
 .ny-app {
+	/* Bundmenuens hoejde, UDEN telefonens sikkerhedszone forneden.
+	   Den staar her og kun her, saa de ting der svaever over menuen kan
+	   regne den ud i stedet for at gaette. Foer stod 76 skrevet tre
+	   forskellige steder, og saa driver de fra hinanden den dag hoejden
+	   aendrer sig. Set 20. august. */
+	--nav-h: 58px;
 	background: var(--oat);
 	color: var(--espresso);
 	font-family: var(--sans);
@@ -1191,7 +1197,15 @@ body:has(.ny-app) {
 	*/
 	position: relative;
 	z-index: 100;
-	height: 76px;
+	/* Sat ned fra 76 til 58 den 20. august paa Linns oenske: menuen fyldte
+	   for meget i hoejden, og ikonerne sad for hoejt oppe i baandet.
+
+	   De 12 pixlers luft forneden er skiftet ud med telefonens EGEN
+	   sikkerhedszone. Paa en iPhone hvor appen ligger paa hjemmeskaermen
+	   er den omkring 34 pixler og skal respekteres, ellers ligger fanerne
+	   under den lille streg. I en browser er den nul, og der var de 12
+	   bare tom plads. */
+	min-height: var(--nav-h);
 	background: rgba(251, 248, 242, 0.92);
 	backdrop-filter: blur(16px);
 	-webkit-backdrop-filter: blur(16px);
@@ -1206,7 +1220,7 @@ body:has(.ny-app) {
 	display: grid;
 	grid-auto-flow: column;
 	grid-auto-columns: 1fr;
-	padding-bottom: 12px;
+	padding-bottom: max(4px, env(safe-area-inset-bottom, 4px));
 }
 .ny-nav a {
 	display: flex;
@@ -1224,15 +1238,17 @@ body:has(.ny-app) {
 	min-height: 44px;
 	letter-spacing: -0.02em;
 	text-align: center;
-	padding: 0 1px;
+	padding: 5px 1px 3px;
 }
 .ny-nav a.active {
 	color: var(--plum);
 }
+/* Prikken under den aktive fane. Rykket ind fra 7 til 1 pixel, saa den
+   foelger med naar baandet blev lavere. */
 .ny-nav a.active::after {
 	content: '';
 	position: absolute;
-	bottom: 7px;
+	bottom: 1px;
 	width: 5px;
 	height: 5px;
 	border-radius: 50%;
@@ -4490,7 +4506,7 @@ button.tm-ikon:active > span {
 	position: fixed;
 	left: 14px;
 	right: 14px;
-	bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+	bottom: calc(var(--nav-h) + 10px + env(safe-area-inset-bottom, 0px));
 	z-index: 90;
 	background: var(--espresso);
 	color: #fff;
@@ -6370,7 +6386,7 @@ button.tm-ikon:active > span {
 	left: 12px;
 	right: 12px;
 	/* Over bundmenuen, og over kvitteringen naar de staar samtidig. */
-	bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+	bottom: calc(var(--nav-h) + 74px + env(safe-area-inset-bottom, 0px));
 	z-index: 90;
 	background: var(--honey-tint);
 	border-radius: 14px;
