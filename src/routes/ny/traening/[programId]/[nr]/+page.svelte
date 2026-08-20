@@ -154,6 +154,30 @@
 	    telefonen ligger ned. */
 	const stor = $derived(storManuelt || erLiggende);
 
+	/**
+	 * Stor visning paa en telefon der STAAR OP. Saa drejer vi selve
+	 * billedet en kvart omgang, saa videoen fylder hele skaermen.
+	 *
+	 * Linns valg 20. august, model B fra mockups-traeningsvideo-stor.html.
+	 *
+	 * HVORFOR VI DREJER SELV OG IKKE BEDER TELEFONEN OM DET:
+	 *
+	 *  - Ægte fuldskaerm paa iPhone kan KUN gives til selve videofilen, og
+	 *    saa overtager Apples egen afspiller hele skaermen. Uret, oevelsens
+	 *    navn og pausen forsvinder. I en traening er uret det vigtigste,
+	 *    saa det bytte kan vi ikke lave. Det gaelder ogsaa hvis videoerne
+	 *    en dag flytter til Vimeo: problemet er ikke afspilleren, det er at
+	 *    den der gaar i fuldskaerm ejer skaermen.
+	 *  - Mange har rotationslaas slaaet til. Saa sker der ingenting naar de
+	 *    drejer telefonen, og den liggende visning kan ikke naas.
+	 *
+	 * Hele den store flade drejes som ÉN ting. Uret og knapperne ligger i
+	 * forvejen placeret i forhold til den, saa de foelger med af sig selv.
+	 * Drejede vi kun videoen, ville halvdelen af skaermen vende én vej og
+	 * halvdelen den anden.
+	 */
+	const drejet = $derived(stor && !erLiggende);
+
 	$effect(() => {
 		if (typeof window === 'undefined' || !window.matchMedia) return;
 		const mq = window.matchMedia('(orientation: landscape)');
@@ -641,6 +665,7 @@
 	class="ny-pad af-side"
 	class:af-spiller={skaerm === 'spiller'}
 	class:af-stor={skaerm === 'spiller' && stor}
+	class:af-drejet={skaerm === 'spiller' && drejet}
 	bind:this={spillerEl}
 >
 	{#if skaerm === 'henter'}
@@ -743,11 +768,12 @@
 				<span class="af-mrk">{faseTekst3(stilling.fase)}</span>
 			{/if}
 
-			<!-- I stor visning paa en STAAENDE telefon kan videoen ikke blive
-			     bredere end skaermen, saa der bliver moerkt over og under.
-			     Her siger vi hvad hun kan goere ved det. -->
-			{#if stor && !erLiggende && !paause}
-				<span class="af-vend">Drej telefonen, så fylder videoen det hele</span>
+			<!-- Billedet er nu drejet, saa videoen fylder skaermen. Linjen
+			     siger hvordan hun skal holde telefonen for at se det.
+			     Den staar kun mens uret koerer, saa den ikke staar og
+			     stoejer naar hun holder pause. -->
+			{#if drejet && !paause}
+				<span class="af-vend">Læg telefonen om på siden</span>
 			{/if}
 
 			{#if paause}

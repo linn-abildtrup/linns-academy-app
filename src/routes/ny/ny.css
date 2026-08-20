@@ -11218,6 +11218,40 @@ a.ll-qa-r:focus-visible {
 	background: #1c1614;
 }
 
+/* ── Drejet stor visning ───────────────────────────────────── */
+/*
+   Videoen er 16:9 og en telefon er meget hoejere end bred, saa i stor
+   visning paa en STAAENDE telefon kunne videoen kun blive en stribe med
+   moerkt over og under. Nu drejer vi hele fladen en kvart omgang, saa
+   billedet fylder skaermen. Linns valg 20. august, model B.
+
+   VI DREJER HELE OVERLEJRINGEN OG IKKE KUN VIDEOEN. Uret, maerkatet og
+   knapperne er placeret i forhold til .af-stor, saa de foelger med af sig
+   selv og vender samme vej som billedet. Drejede vi kun videoen, ville
+   halvdelen af skaermen vende forkert.
+
+   Maalene er BYTTET OM med vilje: bredden er skaermens hoejde og
+   omvendt. Foerst derefter giver drejningen et billede der passer.
+
+   Drejer hun telefonen om paa siden, slaar drejningen fra af sig selv,
+   for saa er skaermen allerede liggende. Se `drejet` i afspilleren.
+*/
+.af-side.af-stor.af-drejet {
+	inset: auto;
+	top: 50%;
+	left: 50%;
+	width: 100dvh;
+	height: 100dvw;
+	transform: translate(-50%, -50%) rotate(90deg);
+	transform-origin: center;
+}
+
+/* Linjen der siger hvordan telefonen skal holdes. Den staar nederst i
+   det DREJEDE billede, altsaa langs telefonens ene lange kant. */
+.af-drejet .af-vend {
+	bottom: 12%;
+}
+
 .af-stor .af-scene {
 	position: absolute;
 	inset: 0;
