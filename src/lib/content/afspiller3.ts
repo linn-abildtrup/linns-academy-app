@@ -125,8 +125,14 @@ export function samletSekunder3(oevelser: DayExercise[]): number {
 }
 
 /**
- * Hvor langt hun er i traeningen, 0 til 100. Bruges til baandet i toppen.
- * Klar og skift taeller ikke med, saa baandet ikke hopper mellem oevelser.
+ * Hvor langt hun er i traeningen, 0 til 100.
+ *
+ * INGEN BRUGER DEN LIGE NU. Baandet i toppen af afspilleren blev fjernet
+ * 20. august paa Linns oenske. Funktionen og dens tests bliver staaende,
+ * fordi den er ren logik og let at tage i brug igen hvis fremdriften skal
+ * vises et andet sted, fx i stor visning hvor striben er skjult.
+ *
+ * Klar og skift taeller ikke med, saa tallet ikke hopper mellem oevelser.
  */
 export function procentAfTraening3(stilling: Stilling3, oevelser: DayExercise[]): number {
 	const ialt = samletSekunder3(oevelser);

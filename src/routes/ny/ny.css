@@ -8692,47 +8692,6 @@ button.tm-r-t:focus-visible {
 	margin: 0;
 	line-height: 1.45;
 }
-
-/* ── Afspilleren (bid 4) ───────────────────────────────────── */
-/*
-   Én afspiller til alt. Den gamle app har fire naesten ens.
-   Tilstands-maskinen ligger i content/afspiller3 og er testet, saa der
-   er ingen logik i CSS'en her, kun tegning.
-*/
-
-.af-side {
-	padding-bottom: 30px;
-	gap: 16px;
-}
-
-.af-top {
-	display: flex;
-	flex-direction: column;
-	gap: 7px;
-}
-
-.af-bar {
-	height: 6px;
-	border-radius: 99px;
-	background: var(--paper-2);
-	overflow: hidden;
-}
-
-.af-bar i {
-	display: block;
-	height: 100%;
-	border-radius: 99px;
-	background: var(--terra);
-	transition: width 0.9s linear;
-}
-
-.af-info {
-	display: flex;
-	justify-content: space-between;
-	font-size: calc(12.5px * var(--fs-scale, 1));
-	color: var(--ink-3);
-}
-
 /* VIDEOEN ER REN. Uret laa foer ovenpaa og daekkede en femtedel af den.
    Videoen er 16:9 og ligger ned, saa den er i forvejen lav, og paa en
    squat forsvandt underkroppen bag uret. Nu staar uret under. Linns valg
@@ -11408,34 +11367,6 @@ a.ll-qa-r:focus-visible {
 .af-stor .af-scene.arbejd {
 	box-shadow: none;
 }
-
-.af-stor .af-mrk,
-.af-stor .af-bonus {
-	top: 12px;
-	left: 14px;
-	z-index: 3;
-}
-
-/* Fremgangen bliver til en tynd bjaelke i bunden. */
-.af-stor .af-top {
-	position: absolute;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	z-index: 3;
-	gap: 0;
-}
-
-.af-stor .af-bar {
-	height: 3px;
-	border-radius: 0;
-	background: rgba(255, 255, 255, 0.22);
-}
-
-.af-stor .af-info {
-	display: none;
-}
-
 /* Uret og navnet nede i venstre, oven paa en moerk sky saa teksten kan
    laeses ogsaa paa et lyst billede. Den ligger OVER knapperne og ikke ved
    siden af: fire knapper og en urskive kan ikke vaere paa den samme linje
@@ -11566,19 +11497,6 @@ body.traening-stor .ny-nav {
 body.traening-moerk .ny-scroll {
 	background: #2a2120;
 }
-
-.af-side.af-spiller {
-	color: #f2e9df;
-}
-
-.af-spiller .af-info {
-	color: rgba(242, 233, 223, 0.5);
-}
-
-.af-spiller .af-bar {
-	background: rgba(255, 255, 255, 0.14);
-}
-
 /* Videoen har ikke laengere en groen ramme. Paa moerk bund staar den
    selv frem, og rammen stjal opmaerksomhed fra bevaegelsen. */
 .af-spiller .af-scene {

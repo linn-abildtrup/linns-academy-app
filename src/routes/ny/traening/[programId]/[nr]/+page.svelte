@@ -43,7 +43,6 @@
 		faseLaengde3,
 		faseTekst3,
 		pladsPasser3,
-		procentAfTraening3,
 		startStilling3,
 		stillingFraPlads3,
 		tik3,
@@ -214,7 +213,6 @@
 	const denne = $derived(visesOevelse3(stilling, oevelser));
 	const oevelseData = $derived(denne ? (oevelseKort.get(denne.exerciseId) ?? null) : null);
 	const video = $derived(oevelseData ? (videoUrl.get(oevelseData.videoPath) ?? null) : null);
-	const procent = $derived(procentAfTraening3(stilling, oevelser));
 	const laengde = $derived(faseLaengde3(stilling.fase, oevelser[stilling.oevelse]));
 	const ringAndel = $derived(laengde > 0 ? stilling.tilbage / laengde : 0);
 
@@ -788,15 +786,14 @@
 			<a class="tv-knap rolig af-link" href={udgang}>{udgangTekst}</a>
 		</div>
 	{:else}
-		<div class="af-top">
-			<div class="af-bar"><i style={`width:${procent}%`}></i></div>
-			<!-- "Øvelse 3 af 6" stod her og er fjernet 20. august paa Linns
-			     oenske. Det samme stod i forvejen i den nummererede stribe
-			     lige under uret, hvor hun ogsaa kan se HVILKE der er taget. -->
-			<div class="af-info">
-				<span>Træning {nr}</span>
-			</div>
-		</div>
+		<!-- HELE TOPPEN ER FJERNET 20. august paa Linns oenske: foerst
+		     "Øvelse 3 af 6", saa "Træning 8", og til sidst
+		     fremdriftslinjen. Skaermen begynder nu direkte med videoen.
+
+		     Fremdriften kan stadig ses i den nummererede stribe under
+		     uret, som ovenikoebet viser HVILKE oevelser der er taget.
+		     BEMAERK at striben er skjult i stor visning, saa dér er der
+		     ikke laengere noget der viser hvor langt hun er. -->
 
 		<!-- VIDEOEN ER REN. Uret laa foer oven paa den og daekkede en
 		     femtedel. Videoen ligger ned, 16:9, saa den er i forvejen lav,
