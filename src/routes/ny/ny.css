@@ -11318,6 +11318,20 @@ body.traening-stor .ny-nav {
 	min-height: 42px;
 	border-radius: 999px;
 	margin-top: 2px;
+	display: inline-flex;
+	align-items: center;
+	gap: 9px;
+}
+
+/* Samme tegn som paa Udvikling, paa lektionernes uger og paa "Sådan gør
+   du": ⌄ betyder at sektionen er aaben. Linns bemaerkning 20. august.
+   Foer stod der et ⌃, og selvom det peger den rigtige vej, var det det
+   eneste sted i appen med det tegn. Ét tegn til foldning er bedre end
+   to der peger rigtigt. */
+.fold-ind-v {
+	font-size: calc(16px * var(--fs-scale, 1));
+	line-height: 1;
+	color: var(--ink-3);
 }
 
 .fold-ind:hover {

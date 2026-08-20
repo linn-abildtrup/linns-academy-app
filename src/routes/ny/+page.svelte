@@ -713,7 +713,10 @@
 			{:else}
 				<SmaaSkridt skridt={skridtData.skridt} {gemmer} onskift={skiftSkridt} />
 				{#if skridtKlaret}
-					<button class="fold-ind" onclick={() => skiftFold('skridt')}>⌃ Fold sammen</button>
+					<button class="fold-ind" onclick={() => skiftFold('skridt')}>
+						Fold sammen
+						<span class="fold-ind-v" aria-hidden="true">⌄</span>
+					</button>
 				{/if}
 			{/if}
 		{:else}
@@ -738,7 +741,10 @@
 					{klaret}
 				/>
 				{#if lektionerKlaret}
-					<button class="fold-ind" onclick={() => skiftFold('lektioner')}>⌃ Fold sammen</button>
+					<button class="fold-ind" onclick={() => skiftFold('lektioner')}>
+						Fold sammen
+						<span class="fold-ind-v" aria-hidden="true">⌄</span>
+					</button>
 				{/if}
 			{/if}
 		{/if}
@@ -753,7 +759,10 @@
 			{:else}
 				<Traening {traening} />
 				{#if traening.klaretIDag}
-					<button class="fold-ind" onclick={() => skiftFold('traening')}>⌃ Fold sammen</button>
+					<button class="fold-ind" onclick={() => skiftFold('traening')}>
+						Fold sammen
+						<span class="fold-ind-v" aria-hidden="true">⌄</span>
+					</button>
 				{/if}
 			{/if}
 		{/if}
@@ -774,7 +783,10 @@
 					ongem={gemNote}
 				/>
 				{#if refleksionSkrevet}
-					<button class="fold-ind" onclick={() => skiftFold('refleksion')}>⌃ Fold sammen</button>
+					<button class="fold-ind" onclick={() => skiftFold('refleksion')}>
+						Fold sammen
+						<span class="fold-ind-v" aria-hidden="true">⌄</span>
+					</button>
 				{/if}
 			{/if}
 		{/if}
@@ -789,7 +801,10 @@
 			{:else}
 				<DagensTalKort {tal} />
 				{#if talKlaret}
-					<button class="fold-ind" onclick={() => skiftFold('tal')}>⌃ Fold sammen</button>
+					<button class="fold-ind" onclick={() => skiftFold('tal')}>
+						Fold sammen
+						<span class="fold-ind-v" aria-hidden="true">⌄</span>
+					</button>
 				{/if}
 			{/if}
 		{/if}
