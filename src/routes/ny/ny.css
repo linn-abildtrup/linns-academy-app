@@ -9111,6 +9111,171 @@ button.tm-r-t:focus-visible {
 	min-height: 34px;
 }
 
+/* ── Se oevelserne foer du starter ─────────────────────────── */
+/*
+   Model A fra mockups-se-oevelserne-foerst.html, Linns valg 20. august.
+
+   Listen er FOLDET SAMMEN som udgangspunkt. Hun aabner skaermen for at
+   traene og ikke for at laese, saa Start-knappen skal blive oeverst.
+   Samme foldnings-moenster som resten af appen, se SPEC 36: overskriften
+   er kontakten, › lukket og ⌄ aaben.
+
+   Kortet er centreret tekst, men listen skal staa venstrestillet. Derfor
+   text-align paa raekkerne. Uden den staar navnene midt i deres felt og
+   bliver umulige at loebe ned ad med oejnene.
+*/
+.kl-folder {
+	text-align: left;
+}
+
+.kl-fold {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	width: 100%;
+	background: var(--paper-2);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	padding: 12px 14px;
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--espresso);
+	text-align: left;
+	min-height: 46px;
+}
+
+.kl-fold.aaben {
+	border-radius: 14px 14px 0 0;
+	border-bottom-color: transparent;
+}
+
+.kl-antal {
+	font-weight: 600;
+	color: var(--ink-3);
+}
+
+.kl-tegn {
+	color: var(--ink-3);
+	font-size: calc(16px * var(--fs-scale, 1));
+	line-height: 1;
+}
+
+.kl-liste {
+	background: var(--paper-2);
+	border: 1px solid var(--line);
+	border-top: none;
+	border-radius: 0 0 14px 14px;
+	padding: 2px 10px 8px;
+}
+
+.kl-ov {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 9px 4px;
+	border-bottom: 1px solid var(--line);
+	text-align: left;
+	min-height: 52px;
+}
+
+.kl-ov:last-child {
+	border-bottom: none;
+}
+
+.kl-nr {
+	width: 22px;
+	height: 22px;
+	flex-shrink: 0;
+	border-radius: 7px;
+	background: var(--paper);
+	color: var(--ink-3);
+	font-size: calc(11px * var(--fs-scale, 1));
+	font-weight: 700;
+	display: grid;
+	place-items: center;
+}
+
+/* Bonus-oevelsen kan ses SOM bonus foer hun naar frem til den. Foer var
+   det en overraskelse midt i traeningen. */
+.kl-ov.bonus .kl-nr {
+	background: var(--honey-tint);
+	color: var(--honey-deep);
+}
+
+.kl-th {
+	width: 46px;
+	height: 31px;
+	flex-shrink: 0;
+	border-radius: 8px;
+	overflow: hidden;
+	background: var(--oat);
+}
+
+.kl-th video {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.kl-ot {
+	flex: 1;
+	min-width: 0;
+}
+
+.kl-onavn {
+	display: block;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1.25;
+	color: var(--espresso);
+}
+
+.kl-ometa {
+	display: block;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-top: 1px;
+}
+
+.kl-pil {
+	color: var(--ink-3);
+	font-size: calc(15px * var(--fs-scale, 1));
+	flex-shrink: 0;
+}
+
+/* Bladringen nederst i arket. */
+.oev-bladr {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin-top: 16px;
+	padding-top: 13px;
+	border-top: 1px solid var(--line);
+}
+
+.oev-bl {
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--plum);
+	padding: 8px 4px;
+	min-height: 44px;
+}
+
+.oev-bl:disabled {
+	color: var(--ink-3);
+	opacity: 0.45;
+}
+
+.oev-taeller {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--ink-3);
+}
+
 .af-kort {
 	background: var(--paper);
 	border-radius: 20px;

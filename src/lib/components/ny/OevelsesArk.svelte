@@ -23,9 +23,31 @@
 		video: string | null;
 		henterVideo?: boolean;
 		onluk: () => void;
+		/**
+		 * Ekstra linje under kategorien, fx "3 saet · 40 sek". Kommer fra
+		 * traeningen, hvor den samme oevelse kan koere med forskellige tal.
+		 * Biblioteket sender den ikke, for dér findes tallene ikke.
+		 */
+		undertekst?: string;
+		/**
+		 * Hvor hun er i en raekke, fx { nu: 1, ialt: 6 }. Er den sat, tegnes
+		 * bladre-linjen nederst. Uden den er arket som foer.
+		 */
+		plads?: { nu: number; ialt: number };
+		onforrige?: () => void;
+		onnaeste?: () => void;
 	}
 
-	let { oevelse, video, henterVideo = false, onluk }: Props = $props();
+	let {
+		oevelse,
+		video,
+		henterVideo = false,
+		onluk,
+		undertekst,
+		plads,
+		onforrige,
+		onnaeste
+	}: Props = $props();
 
 	const trin = $derived((oevelse.how ?? []).filter((t) => t.trim().length > 0));
 	const udstyr = $derived(udstyrTekst(oevelse.udstyr ?? []));
@@ -61,7 +83,8 @@
 			<h2 class="oev-titel" id="oev-titel">{oevelse.name}</h2>
 			<p class="oev-meta">
 				{oevelse.catLabel}{#if udstyr}
-					· {udstyr}{/if}
+					· {udstyr}{/if}{#if undertekst}
+					· {undertekst}{/if}
 			</p>
 
 			{#if oevelse.desc}
@@ -75,6 +98,29 @@
 						<li>{t}</li>
 					{/each}
 				</ol>
+			{/if}
+
+			<!-- Bladring. Uden den skulle hun lukke arket og trykke paa den
+			     naeste raekke for hver eneste oevelse, og saa kigger man ikke
+			     traeningen igennem, saa slaar man én oevelse op. -->
+			{#if plads && plads.ialt > 1}
+				<div class="oev-bladr">
+					<button
+						type="button"
+						class="oev-bl"
+						onclick={onforrige}
+						disabled={plads.nu <= 1}
+						aria-label="Forrige øvelse">‹ Forrige</button
+					>
+					<span class="oev-taeller">{plads.nu} af {plads.ialt}</span>
+					<button
+						type="button"
+						class="oev-bl"
+						onclick={onnaeste}
+						disabled={plads.nu >= plads.ialt}
+						aria-label="Næste øvelse">Næste ›</button
+					>
+				</div>
 			{/if}
 		</div>
 	</div>

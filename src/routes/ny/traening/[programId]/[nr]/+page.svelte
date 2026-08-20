@@ -20,6 +20,7 @@
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import OevelsesArk from '$lib/components/ny/OevelsesArk.svelte';
 	import type { Adgangsbillede, ForlobKilde } from '$lib/content/adgang3';
 	import type { DayExercise, Exercise, TrainingDay } from '$lib/content/mikrotraening';
 	import { hentExercises } from '$lib/firestore/mikrotraening';
@@ -255,6 +256,43 @@
 		const kort = oevelseKort.get(foerste.exerciseId);
 		return kort ? (videoUrl.get(kort.videoPath) ?? null) : null;
 	});
+
+	// ── Se oevelserne foer du starter ───────────────────────────
+	//
+	// Model A fra mockups-se-oevelserne-foerst.html, Linns valg 20. august.
+	//
+	// Listen er FOLDET SAMMEN som udgangspunkt, og det er med vilje. Hun
+	// aabner den her skaerm for at traene og ikke for at laese, saa
+	// Start-knappen skal blive staaende oeverst og vaere det foerste
+	// oejet falder paa. Samme foldnings-moenster som resten af appen, se
+	// SPEC 36: overskriften er kontakten, › naar den er lukket og ⌄ naar
+	// den er aaben.
+	//
+	// Alt indholdet er hentet i forvejen, fordi traeningen skal bruge det
+	// et oejeblik senere. Listen koster derfor ingen ekstra hentning.
+	let visOevelser = $state(false);
+
+	/** Hvilken oevelse arket staar paa. Null = arket er lukket. */
+	let aabenIndex = $state<number | null>(null);
+
+	const aabenOevelse = $derived(
+		aabenIndex === null ? null : (oevelseKort.get(oevelser[aabenIndex]?.exerciseId ?? '') ?? null)
+	);
+	const aabenVideo = $derived(aabenOevelse ? (videoUrl.get(aabenOevelse.videoPath) ?? null) : null);
+
+	/** "3 sæt · 40 sek", eller "Bonus · 1 sæt · 60 sek". */
+	function oevelseMeta(o: DayExercise): string {
+		const dele: string[] = [];
+		if (o.bonus) dele.push('Bonus');
+		dele.push(o.sets === 1 ? '1 sæt' : `${o.sets} sæt`);
+		if (o.workSec > 0) dele.push(`${o.workSec} sek`);
+		return dele.join(' · ');
+	}
+
+	function videoFor(o: DayExercise): string | null {
+		const kort = oevelseKort.get(o.exerciseId);
+		return kort ? (videoUrl.get(kort.videoPath) ?? null) : null;
+	}
 
 	/** "Træning 7 af 21 · 6 øvelser · ca. 12 min". */
 	const klarMeta = $derived.by(() => {
@@ -664,6 +702,58 @@
 			<button type="button" class="tv-knap" onclick={() => begynd(startStilling3())}>
 				Start træningen
 			</button>
+
+			<!-- Foldet liste over dagens oevelser. Se kommentaren ved
+			     visOevelser for hvorfor den er foldet sammen. Overskriften
+			     er selve kontakten, som paa Udvikling. -->
+			{#if oevelser.length > 0}
+				<!-- Overskrift og liste ligger i ÉN kasse. Kortet omkring har
+				     11 px luft mellem sine elementer, og saa ville listen
+				     haenge loest under overskriften i stedet for at sidde
+				     fast paa den. -->
+				<div class="kl-folder">
+					<button
+						type="button"
+						class="kl-fold"
+						class:aaben={visOevelser}
+						aria-expanded={visOevelser}
+						onclick={() => (visOevelser = !visOevelser)}
+					>
+						<span>Se øvelserne <span class="kl-antal">· {oevelser.length}</span></span>
+						<span class="kl-tegn" aria-hidden="true">{visOevelser ? '⌄' : '›'}</span>
+					</button>
+
+					{#if visOevelser}
+						<div class="kl-liste">
+							{#each oevelser as o, i (i)}
+								{@const kort = oevelseKort.get(o.exerciseId)}
+								{@const forhaandsvis = videoFor(o)}
+								<button
+									type="button"
+									class="kl-ov"
+									class:bonus={o.bonus}
+									onclick={() => (aabenIndex = i)}
+								>
+									<span class="kl-nr">{o.bonus ? '★' : i + 1}</span>
+									<span class="kl-th">
+										{#if forhaandsvis}
+											<!-- Uden lyd og uden knapper, som i selve traeningen.
+										     Hun skal se bevaegelsen, ikke styre en film. -->
+											<video src={forhaandsvis} autoplay muted loop playsinline></video>
+										{/if}
+									</span>
+									<span class="kl-ot">
+										<span class="kl-onavn">{kort?.name ?? 'Øvelse'}</span>
+										<span class="kl-ometa">{oevelseMeta(o)}</span>
+									</span>
+									<span class="kl-pil" aria-hidden="true">›</span>
+								</button>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
+
 			<a class="kl-link" href={`/ny/traening/${programId}`}>Se de andre træninger</a>
 		</div>
 	{:else if skaerm === 'fortsaet'}
@@ -919,3 +1009,18 @@
 		{/if}
 	{/if}
 </div>
+
+<!-- Arket ligger YDERST, uden for siden, saa det kan portalles ud af det
+     omraade der ruller. Det er det samme ark oevelsesbiblioteket bruger,
+     her bare med saet og sekunder paa og med bladring. -->
+{#if aabenOevelse && aabenIndex !== null}
+	<OevelsesArk
+		oevelse={aabenOevelse}
+		video={aabenVideo}
+		undertekst={oevelseMeta(oevelser[aabenIndex])}
+		plads={{ nu: aabenIndex + 1, ialt: oevelser.length }}
+		onforrige={() => (aabenIndex = Math.max(0, (aabenIndex ?? 0) - 1))}
+		onnaeste={() => (aabenIndex = Math.min(oevelser.length - 1, (aabenIndex ?? 0) + 1))}
+		onluk={() => (aabenIndex = null)}
+	/>
+{/if}
