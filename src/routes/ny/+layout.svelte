@@ -440,7 +440,10 @@
 								<circle cx="12" cy="8" r="4" /><path d="M5 21c0-3.87 3.13-7 7-7s7 3.13 7 7" />
 							</svg>
 						{/if}
-						{fane.navn}
+						<!-- Navnet skal vaere sit eget element, saa det kan lagres
+						     OVEN paa markerings-pillen. Som bar tekst ville pillen
+						     tegne sig hen over det. -->
+						<span class="nav-navn">{fane.navn}</span>
 					</a>
 				{/each}
 			</nav>

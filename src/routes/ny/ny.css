@@ -1317,16 +1317,37 @@ body:has(.ny-app) {
 .ny-nav a.active {
 	color: var(--plum);
 }
-/* Prikken under den aktive fane. Rykket ind fra 7 til 1 pixel, saa den
-   foelger med naar baandet blev lavere. */
-.ny-nav a.active::after {
+/* Markeringen af den valgte fane. Model 2 fra mockups-bundmenu-markering,
+   Linns valg 20. august: en bloed pille BAG ikonet.
+
+   Foer var det en 5 px prik forneden. Den sad én pixel fra kanten, og da
+   menuen samme dag gik fra 76 til 58 til 50 px, blev der ikke luft nok
+   omkring den. Den lignede en fejl i stedet for en markering.
+
+   LAEG ALDRIG MARKERINGEN I LUFTEN FORNEDEN IGEN. Den luft er telefonens
+   sikkerhedszone: nul i en browser og omkring 34 px i den installerede
+   app. Alt der maales fra bunden opfoerer sig derfor forskelligt de to
+   steder. Pillen her ligger bag noget der er der i forvejen og kan
+   hverken klemmes eller flytte sig. */
+.ny-nav a.active::before {
 	content: '';
 	position: absolute;
-	bottom: 1px;
-	width: 5px;
-	height: 5px;
-	border-radius: 50%;
-	background: var(--honey);
+	top: 2px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 46px;
+	height: 27px;
+	border-radius: 999px;
+	background: var(--plum-tint);
+}
+
+/* Ikonet og ordet skal ligge OVEN paa pillen. Uden det tegner pillen sig
+   hen over dem, fordi et absolut placeret ::before males oven paa
+   almindeligt indhold. Derfor er navnet ogsaa pakket i et element. */
+.ny-nav a > svg,
+.ny-nav a > .nav-navn {
+	position: relative;
+	z-index: 1;
 }
 .ny-nav svg {
 	width: 22px;
