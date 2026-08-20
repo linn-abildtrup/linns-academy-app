@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 18. august 2026.
+Sidst opdateret 20. august 2026.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -315,6 +315,29 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ---
 
+### Fælder tilføjet 20. august
+
+**En søg-og-erstat der ikke rammer, siger ingenting.** Skriver du en ændring
+mod en linje som formateringen siden har klappet sammen, gled den lydløst
+igennem. Gør en ændring i en Svelte-fil **ingenting som helst**, så se først
+efter om mønstret overhovedet fandtes i filen, før du leder efter fejlen
+andre steder. Det kostede en runde med Linn hvor hun testede noget der
+aldrig var blevet skrevet.
+
+**`:global()` findes ikke i `ny.css`.** Det er Svelte-syntaks og virker kun
+inde i en komponent. I et almindeligt stylesheet gør det hele reglen ugyldig,
+og browseren smider den væk uden at sige noget.
+
+**En SVG med `width: 100%` OG en fast `height` bliver ikke større.** Den
+bliver lagt midt i feltet med tom plads i begge sider. Det ramte både
+forsidens og Udviklings kurve, og det tog to omgange at opdage, fordi det
+ligner et layout-problem. Sæt højden fri.
+
+**Cloudflare er op til en halv time om at lægge en ændring ud.** Og appen
+gemmer sine egne filer, så en PWA skal lukkes helt ned og åbnes igen. Det har
+tre gange i træk lignet en fejl i koden. **Sig det til Linn i stedet for at
+lede**, men tjek altid først at rettelsen faktisk står i den byggede fil.
+
 ## 8. Sådan tjekker du dit arbejde
 
 ```
@@ -348,72 +371,78 @@ IKKE committet endnu**, resten er pushet og `main` er i sync.
 
 ### NÆSTE SKRIDT
 
-**Biblioteket er klaret 18. august**, se 9.22 og 9.23. Det blev delt i to og
-navnet droppet. Ordet Bibliotek findes ikke længere i kundens sprog.
+Opdateret 20. august. Det her afsnit er skrevet om fra bunden, fordi
+halvdelen af den gamle liste var klaret.
 
-Der står nu to ting tilbage før et hold kan flyttes:
+#### Spærrer for at flytte et hold
 
-- **De fire videoer til onboarding.** Indhold, ikke kode. Skærmbillederne er
-  taget 16. august
-- ~~De tre sidste blokke på `/ny/udvikling`~~. **Alle fem områder er bygget
-  18. august**, se 9.25 og 9.26. Men se den åbne tråd nedenfor om små skridt
+**1. De fire velkomstvideoer.** Indhold fra Linn, ikke kode. Skærmbillederne
+blev taget 16. august. Den her har stået øverst siden.
 
-**Og før et hold flyttes til 3.0:** programmerne skal være bygget OG tildelt i
-det nye system. De gamle kopieres ikke, det droppede Linn 16. august. Bliver
-det glemt, starter et helt hold uden træning.
+**2. Programmerne skal bygges færdige OG tildeles.** Den farligste, fordi
+den er usynlig indtil den rammer. Der lå **nul tildelinger** i hele den nye
+app indtil 19. august, hvor de to testkonti fik ét program. Et rigtigt hold
+har stadig ingenting, og af de fire programmer i `traeningsprogrammer3` er
+kun to sat til `klar`. Bliver det glemt, starter et helt hold uden træning
+og ser "Din træning er på vej".
 
-### Det der ellers står åbent, 18. august
+**3. Kalender eller selvbetjening.** Ikke besvaret. I den gamle app følger
+Kickstart-træningen kalenderen: dag 5 er dag 5, og springes den over, er den
+væk. Den nye app venter på hende: næste træning er den laveste hun ikke har
+taget. **Første hold i 3.0 er et Kickstart-hold**, så reglen skifter under
+netop de kunder. Alt det byggede virker med begge, men overskriften skal
+skrives forskelligt: "I dag, tirsdag" kræver kalenderen, "Din næste træning"
+er sandt uanset.
 
-Spærrer for 3.0:
+**4. "Vælg dine små skridt" er en død vej.** Fundet 20. august. Har kunden
+ingen små skridt, står der et kort på forsiden der fører til
+`/ny/moduler`, som er en tom plads der siger "Siden er ikke bygget endnu".
+Der findes **intet sted i 3.0 hvor små skridt vælges**. Rammer nok mest
+abonnementskunder, for en forløbskunde får sine fra planen, men linket
+står der for alle.
 
-- **De fire videoer til onboarding.** Skærmbillederne er taget 16. august
-- ~~Små skridt på `/ny/udvikling`~~. **Fjernet igen 18. august**, Linns
-  beslutning. Se 9.26 for hvad der gjorde det svært, hvis det skal tilbage
-- ~~Biblioteket~~. **Klaret 18. august**, se 9.22 og 9.23
-- ~~AI-hjælpen beskriver den GAMLE app~~. **Klaret 16. august**, se 9.21
+Der står også stadig "Resten af din profil kommer her" nederst på Din side.
 
-Skal besluttes, fundet 18. august:
+#### Beslutninger der venter på Linn
 
-- **Kunden i bonus-perioden kan ikke komme ind i 3.0.** Se 9.22. Spærringen
-  kender ikke de 90 dage, så en kunde uden abonnement lukkes helt ude, selvom
-  hun i den gamle app har sit bibliotek i 90 dage. Koden bag de to tilstande
-  er bygget og testet, men uopnåelig indtil spærringen ændres. **Rør den ikke
-  uden et selvstændigt go**, den beskytter hele fladen
-- **"Set"-fluebenet er ikke bundet til forløbet.** Se 9.22. Genbruges en
-  lektion på to hold, viser fluebenet sig begge steder
-- **Repoet er ikke prettier-rent.** Køres `prettier --write` bredt, ændrer den
-  omkring 25 filer i 3.0 der ellers er urørte, formentlig fordi versionen har
-  flyttet sig. **Formatér kun de filer du selv har rørt**, og hold dig fra
-  `ny.css`, hvor prettier omskriver de indlejrede skrifter
+- **Q&A kendes kun på titlen.** Der er intet mærke i databasen, så vi leder
+  efter "Q&A" i overskriften. Skriver hun en gang "Spørgetime", forsvinder
+  den ned i ugerne. Den holdbare løsning er et flueben i admin
+- **"Set"-fluebenet er ikke bundet til forløbet.** Genbruges en lektion på
+  to hold, viser fluebenet sig begge steder. Noterne har ikke problemet
+- **Beskeder er lukket i de 90 dage.** Det er mit valg og ikke hendes. Hun
+  er aldrig blevet spurgt
+- **Skærmretning låst på telefonen.** Så sker der ingenting når hun drejer.
+  Knappen "Stor video" er svaret, men en løsning der drejer selve billedet er
+  mulig og større
+- **De 5 års opbevaring.** Se SPEC 35.4. Kræver et felt der stemples når hun
+  åbner appen. Feltet findes ikke, og sletningen er ikke bygget. **Byg den
+  aldrig på Firebases login-tidspunkt**, det er målt forkert for 16 % af
+  kunderne
+- **Indkøbslisten** og **madplanen**. Begge parkeret
 
-Venter på en beslutning fra Linn:
+#### Ideer der er tegnet, men ikke bygget
 
-- **Indkøbslisten.** Anbefaling: vent til billederne er på opskrifterne
-- **Madplanen.** Parkeret 11. august, mangler et endeligt ja eller nej
+- **"Hvad du har lavet"** under Træning, altså en historik med måneder og
+  minutter. Tallene ligger i forvejen, Udvikling bruger dem allerede
+- **Titlerne på hver træning i programgitteret.** Fravalgt, fordi de 88 så
+  bliver til 88 rækker igen
 
-Kendt, ikke rettet:
+#### Ældre tråde, ikke statustjekket
+
+Forløb-webhooken til Simplero, feature-adgangs-matricen,
+forløb-byggeværktøjet, Linn AI under Beskeder, og rettelsen af otte kunders
+købsdatoer. **Verificér dem mod koden før nogen regner med dem.**
+
+#### Kendt, ikke rettet
 
 - **Skærmen ser tom ud mens fødevare-databasen hentes.** 2.268 dokumenter
-  tager tid på en telefon. Samme klasse som opstarts-problemet i 9.7
-- **Makrotallene skrives ikke ud til den gamle app.** Scriptet var klar og
-  kørte tørløb, men blev aldrig kørt. Synlig ændring for 760 kunder på én
-  gang, hvor nogle tal fordobles, så det skal times. Se afsnittet om åbne
-  tråde på regnemaskinen
-- **AI-samtalerne slettes ikke automatisk** efter en måned. Se 9.18
-
-Ældre tråde der ikke er statustjekket 16. august, og som skal verificeres mod
-koden før nogen regner med dem: forløb-webhooken til Simplero,
-feature-adgang-matricen, forløb-byggeværktøjet, Linn AI under Beskeder, og
-rettelsen af otte kunders købsdatoer.
-
-**30-30 beregneren** er bygget og i brug, se 9.4, og regnemaskinen bag opskrifternes makro er færdig, se 9.17.
-
-**Beskeder er lagt sammen til én side 16. august**, altså Linn AI og Linn i
-to faner, og ordet Snak er droppet. Se 9.19.
-
-**Træningen er bygget om fra bunden 15. og 16. august**, hele modulet, fra Linns værktøj og AI-hjælperen til kundens afspiller og til at kunden bygger sit eget. Se 9.18, og læs SPEC afsnit 29 før du rører noget der.
-
-**Sidst på aftenen 11. august blev hele opstarten rettet**, efter at Linns telefon stod over ét minut på "Et øjeblik". Fem flaskehalse, fire af dem i den app der er i drift. Se 9.7, og SPEC afsnit 28 for hele gennemgangen.
+  tager tid på en telefon
+- **Makrotallene skrives ikke ud til den gamle app.** Scriptet er klar og har
+  kørt tørløb. Synlig ændring for 760 kunder på én gang, så det skal times
+- **AI-samtalerne slettes ikke automatisk** efter en måned
+- **Repoet er ikke prettier-rent.** Formatér kun de filer du selv har rørt,
+  og hold dig fra `ny.css`, hvor prettier omskriver de indlejrede skrifter
 
 ### Åben liste, aftalt 6. august
 
@@ -1514,6 +1543,128 @@ jeg troede dataene var.
 **Åben tråd: Q&A kendes kun på titlen.** Der er intet mærke i databasen.
 Skriver Linn en gang "Spørgetime" i stedet, forsvinder den ned i ugerne.
 Den holdbare løsning er et flueben på lektionen i admin.
+
+### 9.28 TRAENINGEN BYGGET FORFRA, 19. og 20. august
+
+**Læs SPEC afsnit 36 om foldning før du rører noget her.** Det her er
+kortversionen af to lange dage.
+
+Træningen var en liste over programnavne. Nu er den et modul med en fane,
+en forside, en programside, en afspiller og et øvelsesbibliotek. Rækkefølgen
+her er den Linn valgte.
+
+**TRÆNING HAR SIN EGEN FANE.** Ved siden af 30-30, hvor den hører hjemme.
+Prisen er seks faner, og fem er den behagelige grænse på en telefon.
+Teksten er sat ned fra 9,5 til 9 px, så "Udvikling" ikke brækker om.
+Kolonnerne står **ikke** som et fast tal: i de 90 dage er der kun to faner,
+og med `repeat(6)` ville de ligge klemt i venstre side.
+
+**TO DØRE, TO FORMÅL.** Flisen på forsiden fører **direkte** ind på dagens
+træning, uden om alt. Fanen fører til træningens forside, hvor hun kigger,
+skifter program og vælger en anden dag. Bland dem ikke sammen.
+
+**KLAR-SKÆRMEN.** Træningen gik før i gang i samme sekund siden åbnede. Det
+går an når hun aktivt har valgt en dag på en liste. Det går **ikke** an når
+forsiden fører direkte ind: en god del af trykkene fra en forside er
+nysgerrighed, og så står hun midt i en øvelse i toget. Nu ser hun videoen
+køre og trykker selv Start.
+
+**UENDELIGT MANGE TRÆNINGER PR DAG.** Linns beslutning, ordret. Efter en
+træning står der "Tag træning 8". Knappen dukker først op når træningen ER
+gemt: næste side læser fremgangen forfra, og nåede hun frem før gemningen,
+ville den mene at 8 ikke var låst op og sende hende tilbage.
+
+**AFSPILLEREN ER MØRK.** Model B1. Hele fladen bliver mørk mens uret kører.
+Appen taler sproget i forvejen med kortet på forsiden, og en træning er en
+tilstand man går ind i. De tre andre skærme på ruten er lyse som før.
+Bundmenuen forbliver lys, så der er en kant mellem det hun er i gang med og
+vejen ud.
+
+**URET LIGGER UNDER VIDEOEN OG IKKE PÅ DEN.** Model L2. Videoen er 16:9 og
+altså lav, og uret dækkede en femtedel af den. På en squat var det
+underkroppen der forsvandt.
+
+**ÉN STOR KNAP, RESTEN RUNDE IKONER.** Pause er den eneste rigtige knap.
+Lyd og stor video er runde ikoner. **Afslut står med ORD**, for et kryds kan
+betyde luk vinduet, slet, fortryd eller gå tilbage, og det er den ene knap
+hvor hun ikke må gætte.
+
+**TRYK PÅ VIDEOEN HOLDER PAUSE.** Og pause fryser ALT: uret, musikken og
+billedet. Før kørte øvelsen videre bag pause-skyen.
+
+**STOR VISNING.** Videoen er 16:9, så på en stående telefon kan den ikke
+fylde mere end en stribe, uanset layout. Den bliver stor på to måder: hun
+trykker på knappen, eller hun lægger telefonen ned.
+
+Det er **vores egen** visning med CSS og ikke browserens fulde skærm.
+Netop derfor virker den på iPhone, hvor Apple kun tillader fuld skærm på
+selve videofilen. Vi beder om browserens ovenpå, så kanten også forsvinder
+hvor det kan, men intet afhænger af det. Sådan gør den gamle app også.
+
+**PROGRAMSIDEN ER ET GITTER.** Model S1. 88 træninger stod som 88 rækker.
+Nu er de nummererede felter, syv i bredden, altså tretten linjer. Grøn er
+taget, gul er den næste, bleg er ikke låst op. Titlen på hver træning står
+ikke i gitteret: skulle den med, ville de 88 blive til 88 rækker igen.
+
+**ØVELSESBIBLIOTEKET.** Alle 62 øvelser, med video, beskrivelse og trin.
+Talt før det blev bygget: **alle 62 har alle tre dele**, ikke én mangler
+noget. Bygget som opskriftssiden, så mad og træning opfører sig ens.
+Søgningen leder i fire felter, og æ, ø og å kan findes uden at hun skriver
+dem.
+
+Siden ligger under **Din side** og ikke under Træning. Det er med vilje: i
+de 90 dage har hun ikke træningen, og så er det her det eneste sted hun kan
+slå en øvelse op. Der er en vej ind fra træningens forside til den samme
+side.
+
+**"Sådan træner jeg" flyttede fra Din side til Træning.** Det er en
+trænings-indstilling og ikke noget om hendes konto.
+
+### 9.29 SMÅ TING FRA 19. og 20. august, som er lette at overse
+
+**Siden hedder "Din side" alle steder.** Fanen sagde Profil, overskriften
+sagde Din konto. Hun trykkede ét sted og landede et andet. Adressen er
+stadig `/ny/profil`, den ser kunden aldrig.
+
+**Alle opskrifter ligger under Din side.** Listen fandtes kun inde i 30-30
+som et ark der åbner når hun registrerer et måltid. Ren læsning: ingen
+"læg i måltid", ingen ret og slet.
+
+**Materiale er to farvede kort** og ikke to tekstrækker. Sand til mad, grøn
+til træning, appens egne farver.
+
+**Bundmenuen er 76 → 58 px.** De 12 pixlers faste luft forneden er skiftet
+ud med telefonens egen sikkerhedszone: nul i en browser, ~34 px i en PWA
+hvor den SKAL respekteres. Højden står nu ét sted som `--nav-h`, for 76 stod
+skrevet tre steder og driver fra hinanden.
+
+**Kurverne fyldte ikke deres kort.** Både forsiden og Udvikling havde en
+fast højde sammen med bredde 100 %, og så lægger browseren tegningen midt i
+feltet med tom plads i siderne i stedet for at gøre den større. **Den fælde
+gælder enhver SVG i appen.** Sæt højden fri.
+
+**Udvikling åbner med alt foldet sammen.**
+
+**Testkontiene har fået et træningsprogram.** Mette og Hanne har begge
+"Kettle". Der lå nul tildelinger i hele den nye app før det.
+
+### 9.30 TRE FEJL JEG SELV LAVEDE, OG HVAD DE LÆRTE OS
+
+**En søg-og-erstat der ikke ramte noget.** Jeg skrev en ændring mod en linje
+der stod over fire linjer, men formateringen havde klappet den sammen til
+én. Ændringen gled lydløst igennem, og stor visning kunne ikke tændes. Alt
+CSS'en lå og ventede på en klasse der aldrig kom. **Gør en ændring i en
+Svelte-fil ingenting som helst, så se først efter om mønstret overhovedet
+fandtes i filen.**
+
+**`:global()` i ny.css.** Det er Svelte-syntaks og virker kun inde i en
+komponent. `ny.css` er et almindeligt stylesheet, og en `:global()` heri
+gør hele reglen ugyldig, så browseren smider den væk uden at sige noget.
+
+**"Stille" og "usynlig" ligger tættere på hinanden end man tror.** En
+"Fold sammen"-knap blev bygget som en grå tekstlinje uden flade. Linn bad om
+funktionen igen dagen efter uden at have set den. Er en kontrol den eneste
+vej til noget, skal den kunne ses, også når den ikke er hovedhandlingen.
 
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
