@@ -61,9 +61,11 @@
 
 <section>
 	{#if visTitel}
+		<!-- "Alle dage" er fjernet 20. august paa Linns oenske. Datostrimlen
+		     lige over foerer allerede til hver enkelt dag, saa linket var en
+		     anden vej til det samme sted. -->
 		<div class="lab">
 			<h2>{titel}</h2>
-			<a href="/ny/forlob">Alle dage</a>
 		</div>
 	{/if}
 
