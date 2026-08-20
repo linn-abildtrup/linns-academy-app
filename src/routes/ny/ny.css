@@ -11293,46 +11293,7 @@ body.traening-stor .ny-nav {
 }
 
 
-/* Knappen der folder en klaret sektion sammen igen.
 
-   Foer gik foldningen kun én vej: hun kunne aabne en sektion hun havde
-   klaret, men ikke lukke den, saa den laa og fyldte resten af dagen.
-   Linns bemaerkning 19. august.
-
-   Foerste udgave var en bar tekstlinje i den lyseste graa. Den var saa
-   diskret at Linn bad om den igen dagen efter uden at have set den.
-   Nu ser den ud som en knap: egen flade, kant og moerkere tekst.
-   Laeren er at "stille" og "usynlig" ligger taettere paa hinanden end
-   man tror. */
-.fold-ind {
-	align-self: center;
-	border: 0;
-	cursor: pointer;
-	font-family: inherit;
-	font-size: calc(13px * var(--fs-scale, 1));
-	font-weight: 600;
-	color: var(--ink-2);
-	background: var(--paper);
-	box-shadow: inset 0 0 0 1px var(--line);
-	padding: 9px 18px;
-	min-height: 42px;
-	border-radius: 999px;
-	margin-top: 2px;
-	display: inline-flex;
-	align-items: center;
-	gap: 9px;
-}
-
-/* Samme tegn som paa Udvikling, paa lektionernes uger og paa "Sådan gør
-   du": ⌄ betyder at sektionen er aaben. Linns bemaerkning 20. august.
-   Foer stod der et ⌃, og selvom det peger den rigtige vej, var det det
-   eneste sted i appen med det tegn. Ét tegn til foldning er bedre end
-   to der peger rigtigt. */
-.fold-ind-v {
-	font-size: calc(16px * var(--fs-scale, 1));
-	line-height: 1;
-	color: var(--ink-3);
-}
 
 .fold-ind:hover {
 	color: var(--espresso);
@@ -11749,4 +11710,55 @@ a.tr-felt:focus-visible {
    ikke noget naeste, men kortet skal stadig staa der og sige det. */
 .mt-naeste.faerdigt {
 	background: linear-gradient(150deg, #6d7f6c, #3c4a3c);
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   EN KLARET SEKTION PAA FORSIDEN
+
+   Overskriften er SELV kontakten, og indholdet folder ud i det samme
+   kort. Praecis som paa Udvikling. Linns valg 20. august.
+
+   Foer gik foldningen kun én vej, og et forsoeg med en "Fold
+   sammen"-knap under sektionen var forkert: den laa uden for kortet og
+   lignede ikke noget der hoerte til. Naar appen allerede har et
+   moenster for det her, skal det bruges.
+   ══════════════════════════════════════════════════════════ */
+
+.fold-omr {
+	display: flex;
+	flex-direction: column;
+}
+
+/* Aaben: hovedet og kroppen er ét kort. Hovedet mister sin runde bund og
+   sin skygge, saa de to dele ikke ligner to kort oven paa hinanden. */
+.fold-omr.aaben .foldet {
+	border-radius: 16px 16px 0 0;
+	box-shadow: none;
+	background: var(--paper);
+}
+
+.fold-krop {
+	background: var(--paper);
+	border-radius: 0 0 16px 16px;
+	box-shadow: var(--shadow-soft);
+	padding: 2px 14px 14px;
+	border-top: 1px solid var(--line);
+}
+
+/* Indholdet ligger allerede i kortet og skal ikke have sin egen flade og
+   skygge ovenpaa. Det samme greb som paa Udvikling.
+
+   BEMAERK at der IKKE staar :global() her. Det er Svelte-syntaks og
+   virker kun inde i en komponent. ny.css er et almindeligt stylesheet,
+   og en :global() heri ville goere hele reglen ugyldig, saa browseren
+   smider den vaek uden at sige noget. */
+.fold-krop .kort,
+.fold-krop .medie-liste,
+.fold-krop .tr-flise,
+.fold-krop .tal-kort {
+	background: none;
+	box-shadow: none;
+	padding-left: 0;
+	padding-right: 0;
 }

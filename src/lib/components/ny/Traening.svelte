@@ -24,15 +24,25 @@
 
 	interface Props {
 		traening: DagensTraening3;
+		/**
+		 * Skal komponenten skrive sin egen overskrift.
+		 *
+		 * Falsk naar den ligger inde i en foldet sektion, hvor overskriften
+		 * allerede staar i raekken der folder. Ellers stod "Dagens træning"
+		 * to gange lige under hinanden.
+		 */
+		visTitel?: boolean;
 	}
 
-	let { traening }: Props = $props();
+	let { traening, visTitel = true }: Props = $props();
 </script>
 
 <section>
-	<div class="lab">
-		<h2>Dagens træning</h2>
-	</div>
+	{#if visTitel}
+		<div class="lab">
+			<h2>Dagens træning</h2>
+		</div>
+	{/if}
 
 	<a class="medie-raekke tr-flise" href={traening.href}>
 		<div class="medie-thumb traening">

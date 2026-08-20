@@ -474,7 +474,10 @@
 			tal.fiber >= tal.fiberMaal
 	);
 
-	const fold = (id: string, klar: boolean) => klar && !udfoldet.has(id);
+	// fold() er vaek 20. august. Sektionerne spoerger nu direkte paa
+	// udfoldet, fordi den klarede tilstand allerede afgoer HVILKEN af de
+	// to udgaver der bygges. En hjaelper der blandede de to spoergsmaal
+	// gjorde det svaerere at laese, ikke lettere.
 
 	const harMaal = $derived((tal?.proteinMaal ?? 0) > 0 || (tal?.fiberMaal ?? 0) > 0);
 
@@ -704,20 +707,26 @@
 		{/if}
 
 		{#if skridtData && skridtData.skridt.length > 0}
-			{#if fold('skridt', skridtKlaret)}
-				<FoldetRaekke
-					titel="Dagens små skridt"
-					detalje="{skridtData.skridt.length} af {skridtData.skridt.length}"
-					onfold={() => skiftFold('skridt')}
-				/>
+			{#if skridtKlaret}
+				<!-- Klaret. Overskriften er SELV kontakten, og indholdet folder
+				     ud i det samme kort. Samme moenster som Udvikling. Linns
+				     valg 20. august. -->
+				{@const aaben = udfoldet.has('skridt')}
+				<section class="fold-omr" class:aaben>
+					<FoldetRaekke
+						titel="Dagens små skridt"
+						detalje="{skridtData.skridt.length} af {skridtData.skridt.length}"
+						{aaben}
+						onfold={() => skiftFold('skridt')}
+					/>
+					{#if aaben}
+						<div class="fold-krop">
+							<SmaaSkridt skridt={skridtData.skridt} {gemmer} onskift={skiftSkridt} />
+						</div>
+					{/if}
+				</section>
 			{:else}
 				<SmaaSkridt skridt={skridtData.skridt} {gemmer} onskift={skiftSkridt} />
-				{#if skridtKlaret}
-					<button class="fold-ind" onclick={() => skiftFold('skridt')}>
-						Fold sammen
-						<span class="fold-ind-v" aria-hidden="true">⌄</span>
-					</button>
-				{/if}
 			{/if}
 		{:else}
 			<a class="kort rolig cta" href="/ny/moduler">
@@ -727,12 +736,27 @@
 		{/if}
 
 		{#if aktivtForlob && lektioner.length > 0}
-			{#if fold('lektioner', lektionerKlaret)}
-				<FoldetRaekke
-					titel="Dag {aktivtForlob.dagNummer} på {aktivtForlob.navn}"
-					detalje="{lektioner.length} af {lektioner.length} taget"
-					onfold={() => skiftFold('lektioner')}
-				/>
+			{#if lektionerKlaret}
+				{@const aaben = udfoldet.has('lektioner')}
+				<section class="fold-omr" class:aaben>
+					<FoldetRaekke
+						titel="Dag {aktivtForlob.dagNummer} på {aktivtForlob.navn}"
+						detalje="{lektioner.length} af {lektioner.length} taget"
+						{aaben}
+						onfold={() => skiftFold('lektioner')}
+					/>
+					{#if aaben}
+						<div class="fold-krop">
+							<Lektioner
+								titel={`Dag ${aktivtForlob.dagNummer} på ${aktivtForlob.navn}`}
+								dagNummer={aktivtForlob.dagNummer}
+								{lektioner}
+								{klaret}
+								visTitel={false}
+							/>
+						</div>
+					{/if}
+				</section>
 			{:else}
 				<Lektioner
 					titel={`Dag ${aktivtForlob.dagNummer} på ${aktivtForlob.navn}`}
@@ -740,40 +764,50 @@
 					{lektioner}
 					{klaret}
 				/>
-				{#if lektionerKlaret}
-					<button class="fold-ind" onclick={() => skiftFold('lektioner')}>
-						Fold sammen
-						<span class="fold-ind-v" aria-hidden="true">⌄</span>
-					</button>
-				{/if}
 			{/if}
 		{/if}
 
 		{#if traening && traening.tilstand !== 'ingen'}
-			{#if fold('traening', traening.klaretIDag)}
-				<FoldetRaekke
-					titel="Dagens træning"
-					detalje="{traening.navn} · klaret"
-					onfold={() => skiftFold('traening')}
-				/>
+			{#if traening.klaretIDag}
+				{@const aaben = udfoldet.has('traening')}
+				<section class="fold-omr" class:aaben>
+					<FoldetRaekke
+						titel="Dagens træning"
+						detalje="{traening.navn} · klaret"
+						{aaben}
+						onfold={() => skiftFold('traening')}
+					/>
+					{#if aaben}
+						<div class="fold-krop"><Traening {traening} visTitel={false} /></div>
+					{/if}
+				</section>
 			{:else}
 				<Traening {traening} />
-				{#if traening.klaretIDag}
-					<button class="fold-ind" onclick={() => skiftFold('traening')}>
-						Fold sammen
-						<span class="fold-ind-v" aria-hidden="true">⌄</span>
-					</button>
-				{/if}
 			{/if}
 		{/if}
 
 		{#if harRefleksion}
-			{#if fold('refleksion', refleksionSkrevet)}
-				<FoldetRaekke
-					titel="Dagens refleksion"
-					detalje="Du har skrevet i dag"
-					onfold={() => skiftFold('refleksion')}
-				/>
+			{#if refleksionSkrevet}
+				{@const aaben = udfoldet.has('refleksion')}
+				<section class="fold-omr" class:aaben>
+					<FoldetRaekke
+						titel="Dagens refleksion"
+						detalje="Du har skrevet i dag"
+						{aaben}
+						onfold={() => skiftFold('refleksion')}
+					/>
+					{#if aaben}
+						<div class="fold-krop">
+							<Refleksion
+								spoergsmaal={skridtData?.refleksion ?? ''}
+								note={skridtData?.note ?? ''}
+								gemmer={gemmerNote}
+								gemtLige={noteGemtLige}
+								ongem={gemNote}
+							/>
+						</div>
+					{/if}
+				</section>
 			{:else}
 				<Refleksion
 					spoergsmaal={skridtData?.refleksion ?? ''}
@@ -782,30 +816,25 @@
 					gemtLige={noteGemtLige}
 					ongem={gemNote}
 				/>
-				{#if refleksionSkrevet}
-					<button class="fold-ind" onclick={() => skiftFold('refleksion')}>
-						Fold sammen
-						<span class="fold-ind-v" aria-hidden="true">⌄</span>
-					</button>
-				{/if}
 			{/if}
 		{/if}
 
 		{#if tal && harMaal}
-			{#if fold('tal', talKlaret)}
-				<FoldetRaekke
-					titel="Dagens tal"
-					detalje="{tal.protein} g protein · {tal.fiber} g fiber"
-					onfold={() => skiftFold('tal')}
-				/>
+			{#if talKlaret}
+				{@const aaben = udfoldet.has('tal')}
+				<section class="fold-omr" class:aaben>
+					<FoldetRaekke
+						titel="Dagens tal"
+						detalje="{tal.protein} g protein · {tal.fiber} g fiber"
+						{aaben}
+						onfold={() => skiftFold('tal')}
+					/>
+					{#if aaben}
+						<div class="fold-krop"><DagensTalKort {tal} /></div>
+					{/if}
+				</section>
 			{:else}
 				<DagensTalKort {tal} />
-				{#if talKlaret}
-					<button class="fold-ind" onclick={() => skiftFold('tal')}>
-						Fold sammen
-						<span class="fold-ind-v" aria-hidden="true">⌄</span>
-					</button>
-				{/if}
 			{/if}
 		{/if}
 

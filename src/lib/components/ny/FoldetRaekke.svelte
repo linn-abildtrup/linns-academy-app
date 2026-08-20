@@ -10,6 +10,13 @@
 	// Der staar altid hvad der er sket ("klaret kl. 7.40"), saa det er
 	// tydeligt at det er hende der har gjort noget, ikke appen der har
 	// fjernet noget.
+	//
+	// SIDEN 20. AUGUST ER RAEKKEN OGSAA OVERSKRIFT NAAR SEKTIONEN ER
+	// AABEN. Foer kunne hun folde ud, men ikke ind igen, og et forsoeg med
+	// en "Fold sammen"-knap nedenunder var forkert. Linns valg: det samme
+	// moenster som paa Udvikling, hvor overskriften SELV er kontakten og
+	// indholdet folder ud i det samme kort. Tegnet er › naar den er
+	// lukket og ⌄ naar den er aaben, ligesom der.
 	// ============================================================
 
 	import Fluebe from './Fluebe.svelte';
@@ -17,17 +24,19 @@
 	interface Props {
 		titel: string;
 		detalje: string;
+		/** Staar sektionen aaben. Styrer tegnet og laeses af skaermlaesere. */
+		aaben?: boolean;
 		onfold: () => void;
 	}
 
-	let { titel, detalje, onfold }: Props = $props();
+	let { titel, detalje, aaben = false, onfold }: Props = $props();
 </script>
 
-<button class="foldet" onclick={onfold} aria-expanded="false">
+<button class="foldet" class:aaben onclick={onfold} aria-expanded={aaben}>
 	<span class="rund-fluebe" aria-hidden="true"><Fluebe /></span>
 	<span class="foldet-tekst">
 		<span class="t">{titel}</span>
 		<span class="s">{detalje}</span>
 	</span>
-	<span class="chev" aria-hidden="true">⌄</span>
+	<span class="chev" aria-hidden="true">{aaben ? '⌄' : '›'}</span>
 </button>

@@ -18,9 +18,16 @@
 		dagNummer: number;
 		lektioner: LektionItem[];
 		klaret: Set<string>;
+		/**
+		 * Skal komponenten skrive sin egen overskrift.
+		 *
+		 * Falsk naar den ligger inde i en foldet sektion, hvor overskriften
+		 * allerede staar i raekken der folder.
+		 */
+		visTitel?: boolean;
 	}
 
-	let { titel, dagNummer, lektioner, klaret }: Props = $props();
+	let { titel, dagNummer, lektioner, klaret, visTitel = true }: Props = $props();
 
 	const alleKlaret = $derived(lektioner.length > 0 && lektioner.every((l) => klaret.has(l.id)));
 
@@ -53,10 +60,12 @@
 </script>
 
 <section>
-	<div class="lab">
-		<h2>{titel}</h2>
-		<a href="/ny/forlob">Alle dage</a>
-	</div>
+	{#if visTitel}
+		<div class="lab">
+			<h2>{titel}</h2>
+			<a href="/ny/forlob">Alle dage</a>
+		</div>
+	{/if}
 
 	{#if lektioner.length === 0}
 		<div class="kort rolig">Der er ikke lagt noget op til i dag.</div>
