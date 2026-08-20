@@ -248,22 +248,25 @@ describe('byggLektionsliste', () => {
 	});
 
 	// Linns beslutning 18. august: de skal SES, ikke skjules.
-	it('lektioner laengere fremme staar med paa listen, men laast', () => {
+	// Linns beslutning 20. august, som vender hendes egen fra 18. august.
+	// Foer stod fremtiden med paa listen med en laas og en aabner-dato.
+	it('paa et forloeb der koerer er dagene efter i dag slet ikke med', () => {
 		const liste = byggLektionsliste([dag(14, lektion('a'))], { aktivDagNummer: 12, nu });
-		expect(liste).toHaveLength(1);
-		expect(liste[0].aaben).toBe(false);
+		expect(liste).toEqual([]);
 	});
 
-	// Vi regner fra i dag og ikke fra startdatoen, fordi dagNummer allerede
-	// har kundens pauser med.
-	it('den laaste dato regnes fra i dag plus de dage der mangler', () => {
-		const liste = byggLektionsliste([dag(14, lektion('a'))], { aktivDagNummer: 12, nu });
-		expect(liste[0].aabnerTekst).toBe('Åbner 15. maj');
-	});
-
-	it('naeste dag hedder i morgen', () => {
+	it('heller ikke dagen lige efter i dag', () => {
 		const liste = byggLektionsliste([dag(13, lektion('a'))], { aktivDagNummer: 12, nu });
-		expect(liste[0].aabnerTekst).toBe('Åbner i morgen');
+		expect(liste).toEqual([]);
+	});
+
+	it('i dag og bagud er med, fremtiden er skaaret fra', () => {
+		const liste = byggLektionsliste(
+			[dag(1, lektion('a')), dag(12, lektion('b')), dag(13, lektion('c'))],
+			{ aktivDagNummer: 12, nu }
+		);
+		expect(liste.map((p) => p.dagNummer)).toEqual([1, 12]);
+		expect(liste.every((p) => p.aaben)).toBe(true);
 	});
 
 	it('et gennemfoert forloeb har alle dage aabne', () => {
@@ -281,13 +284,15 @@ describe('byggLektionsliste', () => {
 
 	// ── Linns eget synlighedsvindue ───────────────────────────
 
-	it('en lektion med visFra i fremtiden er laast, selvom dagen er aaben', () => {
+	// Et vindue frem i tiden skal heller ikke staa og friste paa et
+	// forloeb der koerer. Paa et gennemfoert bliver raekken staaende, se
+	// testen lige nedenfor.
+	it('en lektion med visFra i fremtiden er slet ikke med mens forloebet koerer', () => {
 		const liste = byggLektionsliste([dag(2, lektion('a', { visFra: iso(2026, 5, 20) }))], {
 			aktivDagNummer: 12,
 			nu
 		});
-		expect(liste[0].aaben).toBe(false);
-		expect(liste[0].aabnerTekst).toBe('Åbner 20. maj');
+		expect(liste).toEqual([]);
 	});
 
 	it('en lektion med visFra i fortiden er aaben', () => {
@@ -307,20 +312,23 @@ describe('byggLektionsliste', () => {
 	});
 
 	// Er baade dagen og vinduet i vejen, er det den sidste af dem der gaelder.
-	it('er begge laase i spil, vinder den der aabner sidst', () => {
+	// Begge laase paa én gang kan ikke laengere ses paa et forloeb der
+	// koerer, for saa er raekken vaek uanset hvilken der vinder.
+	it('begge laase paa et koerende forloeb giver ingen raekke', () => {
 		const liste = byggLektionsliste([dag(14, lektion('a', { visFra: iso(2026, 5, 25) }))], {
 			aktivDagNummer: 12,
 			nu
 		});
-		expect(liste[0].aabnerTekst).toBe('Åbner 25. maj');
+		expect(liste).toEqual([]);
 	});
 
-	it('og omvendt naar dagen ligger senest', () => {
-		const liste = byggLektionsliste([dag(20, lektion('a', { visFra: iso(2026, 5, 14) }))], {
-			aktivDagNummer: 12,
+	it('et gennemfoert forloeb viser stadig vinduets aabner-dato', () => {
+		const liste = byggLektionsliste([dag(20, lektion('a', { visFra: iso(2026, 6, 14) }))], {
+			aktivDagNummer: null,
 			nu
 		});
-		expect(liste[0].aabnerTekst).toBe('Åbner 21. maj');
+		expect(liste[0].aaben).toBe(false);
+		expect(liste[0].aabnerTekst).toBe('Åbner 14. juni');
 	});
 
 	// ── Taget ned af Linn ─────────────────────────────────────

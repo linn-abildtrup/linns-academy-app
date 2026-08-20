@@ -6,12 +6,20 @@
 //  1. Raekkerne paa Profil. Ét forloeb pr raekke, det der koerer lige nu
 //     oeverst med en ring, de gennemfoerte nedenunder med stjerne.
 //
-//  2. Listen inde paa ét forloeb. Alle lektioner fra alle dage, i
-//     raekkefoelge. Dem hun ikke er naaet til endnu staar med paa listen,
-//     men kan ikke aabnes. Det var Linns beslutning 18. august: hun skal
-//     kunne se hele forloebet, ikke kun det hun har laast op.
+//  2. Listen inde paa ét forloeb.
 //
-// Om laasen. En lektion er laast af to grunde, og de er ikke ens:
+// PAA ET FORLOEB DER KOERER SER HUN KUN I DAG OG BAGUD. Linns beslutning
+// 20. august 2026, og den VENDER hendes egen beslutning fra 18. august om
+// at hun skulle kunne se hele forloebet med laas paa. Skriv den ikke om
+// igen uden at spoerge: begge udgaver har vaeret proevet, og det her er
+// den nyeste.
+//
+// Paa et GENNEMFOERT forloeb ser hun alt. Der er ingen fremtid tilbage,
+// og hele forloebet er hendes historik.
+//
+// Om laasen. Den gaelder stadig, for der findes stadig laaste raekker paa
+// gennemfoerte forloeb via Linns eget synlighedsvindue. En lektion er
+// laast af to grunde, og de er ikke ens:
 //
 //  - Dagen er ikke naaet endnu. Saa aabner den om (dagNummer - idag) dage,
 //    regnet fra i dag. Vi regner den IKKE fra forloebets startdato, fordi
@@ -193,8 +201,11 @@ export interface ListeVilkaar {
 }
 
 /**
- * Alle lektioner i forloebet, i dagsraekkefoelge, med laas paa dem hun
- * ikke er naaet til. Dage uden lektioner falder ud af sig selv.
+ * Lektionerne i forloebet, i dagsraekkefoelge. Dage uden lektioner falder
+ * ud af sig selv.
+ *
+ * Koerer forloebet, tages dagene EFTER i dag helt af listen. Se toppen af
+ * filen. Er forloebet gennemfoert, kommer alt med.
  */
 export function byggLektionsliste(dage: DagKilde[], vilkaar: ListeVilkaar): ListeLektion[] {
 	const { aktivDagNummer, nu } = vilkaar;
@@ -206,27 +217,30 @@ export function byggLektionsliste(dage: DagKilde[], vilkaar: ListeVilkaar): List
 			// Taget ned af Linn. Skal ikke staa paa listen overhovedet.
 			if (erSkjult(l, nu)) continue;
 
+			// Koerer forloebet, findes fremtiden slet ikke paa listen. Den
+			// stod her foer med en laas og en "Aabner om tre dage"-linje.
 			const dagLaast = aktivDagNummer !== null && dag.dagNummer > aktivDagNummer;
+			if (dagLaast) continue;
+
 			const visFraMs = tilMs(l.visFra);
 			const vinduLaast = visFraMs !== null && nu < visFraMs;
+
+			// Har Linn sat et synlighedsvindue frem i tiden, skal raekken
+			// heller ikke staa og friste paa et forloeb der koerer. Paa et
+			// gennemfoert forloeb bliver den staaende med sin aabner-tekst.
+			if (vinduLaast && aktivDagNummer !== null) continue;
 
 			if (!dagLaast && !vinduLaast) {
 				ud.push({ dagNummer: dag.dagNummer, lektion: l, aaben: true, aabnerTekst: '' });
 				continue;
 			}
 
-			// Er begge laase i spil, gaelder den der aabner sidst.
-			const fraDag = dagLaast ? nu + (dag.dagNummer - (aktivDagNummer ?? 0)) * DAG_MS : null;
-			const kandidater = [fraDag, vinduLaast ? visFraMs : null].filter(
-				(v): v is number => v !== null
-			);
-			const aabnerMs = Math.max(...kandidater);
-
+			// Kun vinduet er tilbage, og kun paa et gennemfoert forloeb.
 			ud.push({
 				dagNummer: dag.dagNummer,
 				lektion: l,
 				aaben: false,
-				aabnerTekst: formaterAabner(aabnerMs, nu)
+				aabnerTekst: formaterAabner(visFraMs as number, nu)
 			});
 		}
 	}
