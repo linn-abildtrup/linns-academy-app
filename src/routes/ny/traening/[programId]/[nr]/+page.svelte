@@ -790,9 +790,11 @@
 	{:else}
 		<div class="af-top">
 			<div class="af-bar"><i style={`width:${procent}%`}></i></div>
+			<!-- "Øvelse 3 af 6" stod her og er fjernet 20. august paa Linns
+			     oenske. Det samme stod i forvejen i den nummererede stribe
+			     lige under uret, hvor hun ogsaa kan se HVILKE der er taget. -->
 			<div class="af-info">
 				<span>Træning {nr}</span>
-				<span>Øvelse {stilling.oevelse + 1} af {oevelser.length}</span>
 			</div>
 		</div>
 
