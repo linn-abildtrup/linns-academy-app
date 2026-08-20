@@ -35,6 +35,7 @@
 		type Koblingskort
 	} from '$lib/firestore/ingrediensKobling3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -253,14 +254,14 @@
 	{:else if henter}
 		<Ventetegn />
 	{:else}
-		<header class="ing-top">
-			<a class="tr-tilbage" href="/ny/admin">‹ Admin</a>
-			<h1>Ingredienser</h1>
-			<p class="ing-under">
-				Hver ingrediens skal pege på en fødevare, før makroen kan regnes ud af mængderne. Vælger
-				du én gang, gælder det alle steder ingrediensen bruges.
-			</p>
-
+		<Sidehoved
+			titel="Ingredienser"
+			tilbage="/ny/admin"
+			tilbageTekst="Admin"
+			under="Hver ingrediens skal pege på en fødevare, før makroen kan regnes ud af mængderne. Vælger du én gang, gælder det alle steder ingrediensen bruges."
+			kant={false}
+		/>
+		<div class="ing-top">
 			<div class="ing-tal">
 				<div class="ing-tal-boks">
 					<strong>{antalKlar}</strong> af {opgaver.length} ingredienser
@@ -277,7 +278,7 @@
 				Kun fødevarer hvor navnet passer helt, tilstanden stemmer og tallene hænger sammen. Er der
 				den mindste tvivl, bliver ingrediensen liggende til dig.
 			</p>
-		</header>
+		</div>
 
 		{#if besked}
 			<p class="ing-besked">{besked}</p>
@@ -319,7 +320,8 @@
 						<div>
 							<h2>{op.visNavn}</h2>
 							<p class="ing-k-under">
-								{op.antal} {op.antal === 1 ? 'linje' : 'linjer'}
+								{op.antal}
+								{op.antal === 1 ? 'linje' : 'linjer'}
 								{#if op.tilstand === 'toer'}<span class="ing-tilstand">tørre</span>
 								{:else if op.tilstand === 'afdryppet'}<span class="ing-tilstand">afdryppede</span>
 								{:else if op.tilstand === 'kogt'}<span class="ing-tilstand">kogte</span>{/if}
@@ -353,7 +355,11 @@
 								{valgt.p} g protein, {valgt.kcal ?? '?'} kcal pr 100 g
 							</span>
 							{#if !kort[op.kerne].bekraeftet}
-								<button type="button" class="ing-bekraeft" onclick={() => vaelg(op.kerne, valgt.id)}>
+								<button
+									type="button"
+									class="ing-bekraeft"
+									onclick={() => vaelg(op.kerne, valgt.id)}
+								>
 									Bekræft
 								</button>
 							{/if}
@@ -372,14 +378,14 @@
 									<span class="ing-b-makro">
 										{b.vare.p} g protein, {b.vare.kcal ?? '?'} kcal
 										{#if b.vare.kilde !== 'frida'}<span class="ing-b-kilde">uden kilde</span>{/if}
-										{#if taleneErUmulige(b.vare)}<span class="ing-b-advarsel">tallene hænger ikke sammen</span>{/if}
+										{#if taleneErUmulige(b.vare)}<span class="ing-b-advarsel"
+												>tallene hænger ikke sammen</span
+											>{/if}
 									</span>
 									<span class="ing-b-hvorfor">{b.hvorfor}</span>
 								</button>
 							{:else}
-								<p class="ing-intet">
-									Ingen fødevare ligner. Den skal oprettes i databasen først.
-								</p>
+								<p class="ing-intet">Ingen fødevare ligner. Den skal oprettes i databasen først.</p>
 							{/each}
 						</div>
 					{/if}

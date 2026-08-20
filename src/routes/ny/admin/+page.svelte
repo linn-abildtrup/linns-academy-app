@@ -15,6 +15,7 @@
 	import { getContext } from 'svelte';
 	import type { User } from 'firebase/auth';
 	import { isAdmin } from '$lib/admin';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -87,10 +88,13 @@
 	{#if !maaVaereHer}
 		<div class="adm-kort">Siden er kun for admin.</div>
 	{:else}
-		<header class="adm-top">
-			<h1>Admin</h1>
-			<p>Værktøjerne i den nye app. Resten ligger stadig i den gamle.</p>
-		</header>
+		<Sidehoved
+			titel="Admin"
+			tilbage="/ny/profil"
+			tilbageTekst="Din side"
+			under="Værktøjerne i den nye app. Resten ligger stadig i den gamle."
+			kant={false}
+		/>
 
 		<h2 class="adm-gruppe">Træning</h2>
 		<div class="adm-liste">

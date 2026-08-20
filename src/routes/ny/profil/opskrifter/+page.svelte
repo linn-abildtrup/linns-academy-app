@@ -68,6 +68,7 @@
 	import MinOpskriftArk from '$lib/components/ny/MinOpskriftArk.svelte';
 	import OpskriftFiltre from '$lib/components/ny/OpskriftFiltre.svelte';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -207,10 +208,7 @@
 </script>
 
 <div class="ny-pad ops-side">
-	<header class="side-top">
-		<a class="tilbage" href="/ny/profil">‹ Din side</a>
-		<h1>Opskrifter</h1>
-	</header>
+	<Sidehoved titel="Opskrifter" tilbage="/ny/profil" tilbageTekst="Din side" />
 
 	{#if harEgne}
 		<div class="ll-faner" role="tablist">

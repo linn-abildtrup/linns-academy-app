@@ -14,6 +14,7 @@
 	import { getContext, tick } from 'svelte';
 	import type { User } from 'firebase/auth';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	interface Besked {
 		rolle: 'user' | 'assistant';
@@ -107,13 +108,12 @@
 </script>
 
 <div class="hjaelp-side">
-	<header class="side-top">
-		<a class="tilbage" href="/ny/hjaelp">‹ Hjælp</a>
-		<h1>Spørg om appen</h1>
-		<p>
-			Jeg kan svare på alt om appen. Skal du bruge Linn selv, skriver du til hende under Beskeder.
-		</p>
-	</header>
+	<Sidehoved
+		titel="Spørg om appen"
+		tilbage="/ny/hjaelp"
+		tilbageTekst="Hjælp"
+		under="Jeg kan svare på alt om appen. Skal du bruge Linn selv, skriver du til hende under Beskeder."
+	/>
 
 	<div class="bobler" bind:this={rulle}>
 		{#if beskeder.length === 0}

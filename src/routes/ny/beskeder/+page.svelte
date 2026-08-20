@@ -52,6 +52,7 @@
 	} from '$lib/content/beskedside3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -331,17 +332,12 @@
 <svelte:head><title>Beskeder</title></svelte:head>
 
 <div class="hjaelp-side">
-	<header class="side-top">
-		<h1>Beskeder</h1>
-		<p>
-			{#if fane === 'linn'}
-				Det du har sendt videre til Linn, og hendes svar.
-			{:else}
-				Her kan du spørge om det der fylder. Jeg svarer ud fra Linns materialer, og jeg er ikke
-				læge.
-			{/if}
-		</p>
-	</header>
+	<Sidehoved
+		titel="Beskeder"
+		under={fane === 'linn'
+			? 'Det du har sendt videre til Linn, og hendes svar.'
+			: 'Her kan du spørge om det der fylder. Jeg svarer ud fra Linns materialer, og jeg er ikke læge.'}
+	/>
 
 	{#if visFaner}
 		<div class="besk-faner" role="tablist">
@@ -378,8 +374,8 @@
 				<div class="kort rolig">
 					Du har ikke sendt noget til mig endnu.
 					<br /><br />
-					Start med at spørge Linn AI. Er du ikke tilfreds med svaret, sender du det videre herind,
-					og så kigger jeg selv på det.
+					Start med at spørge Linn AI. Er du ikke tilfreds med svaret, sender du det videre herind, og
+					så kigger jeg selv på det.
 				</div>
 			{:else}
 				<div class="traade">
@@ -407,8 +403,8 @@
 					{/each}
 				</div>
 				<p class="besk-fod">
-					Vil du spørge om noget nyt, så start i Linn AI. Kan hun ikke hjælpe, sender du
-					spørgsmålet videre herind.
+					Vil du spørge om noget nyt, så start i Linn AI. Kan hun ikke hjælpe, sender du spørgsmålet
+					videre herind.
 				</p>
 			{/if}
 		</div>
@@ -466,11 +462,7 @@
 								Sendt til Linn. Du får svar inden for et døgn
 							</span>
 						{:else if visSend(i) && !laesteSamtaleId}
-							<button
-								class="besk-videre"
-								disabled={senderTilLinn === i}
-								onclick={() => tilLinn(i)}
-							>
+							<button class="besk-videre" disabled={senderTilLinn === i} onclick={() => tilLinn(i)}>
 								{senderTilLinn === i ? 'Sender …' : 'Ikke tilfreds? Send til Linn ›'}
 							</button>
 						{/if}

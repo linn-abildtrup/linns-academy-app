@@ -48,6 +48,7 @@
 	} from '$lib/content/traeningAi3';
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 	import { gemUdvalgteDage3, hentProgram3 } from '$lib/firestore/traeningsprogram3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -236,18 +237,20 @@
 	{:else if !program}
 		<p class="adm-fejl">{fejl || 'Programmet findes ikke.'}</p>
 	{:else}
-		<header class="adm-top">
-			<a class="tr-tilbage" href={`/ny/admin/traening/${programId}`}>‹ {program.navn}</a>
-			<h1>Ret med AI</h1>
-			<p>{kategori?.navn ?? ''} · {alleDage.length} træninger</p>
-		</header>
+		<Sidehoved
+			titel="Ret med AI"
+			tilbage={`/ny/admin/traening/${programId}`}
+			tilbageTekst={program.navn}
+			under={`${kategori?.navn ?? ''} · ${alleDage.length} træninger`}
+			kant={false}
+		/>
 
 		{#if besked}<p class="adm-besked">{besked}</p>{/if}
 		{#if fejl}<p class="adm-fejl">{fejl}</p>{/if}
 
 		<p class="adm-hjaelp">
-			Skriv hvad der skal laves om, fx "uge 3 er for hård". Jeg henter kun de dage det
-			handler om, og du ser præcis hvad der bliver ændret før der gemmes noget.
+			Skriv hvad der skal laves om, fx "uge 3 er for hård". Jeg henter kun de dage det handler om,
+			og du ser præcis hvad der bliver ændret før der gemmes noget.
 		</p>
 
 		<div class="ai-samtale">

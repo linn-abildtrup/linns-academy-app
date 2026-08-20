@@ -31,6 +31,7 @@
 	} from '$lib/content/opskriftMakro3';
 	import { hentKoblinger, type Koblingskort } from '$lib/firestore/ingrediensKobling3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -82,7 +83,9 @@
 
 	const antalGod = $derived(raekker.filter((r) => tilliden(r.b.daekning) === 'god').length);
 	const antalDelvis = $derived(raekker.filter((r) => tilliden(r.b.daekning) === 'delvis').length);
-	const antalForLidt = $derived(raekker.filter((r) => tilliden(r.b.daekning) === 'for lidt').length);
+	const antalForLidt = $derived(
+		raekker.filter((r) => tilliden(r.b.daekning) === 'for lidt').length
+	);
 
 	function tal(x: number): string {
 		return String(Math.round(x * 10) / 10);
@@ -97,14 +100,14 @@
 	{:else if henter}
 		<Ventetegn />
 	{:else}
-		<header class="rm-top">
-			<a class="tr-tilbage" href="/ny/admin">‹ Admin</a>
-			<h1>Regnemaskinen</h1>
-			<p class="rm-under">
-				Hvad ingredienserne regner sig frem til, ved siden af det tal der står i opskriften i dag.
-				Siden skriver ingenting. Den viser kun.
-			</p>
-
+		<Sidehoved
+			titel="Regnemaskinen"
+			tilbage="/ny/admin"
+			tilbageTekst="Admin"
+			under="Hvad ingredienserne regner sig frem til, ved siden af det tal der står i opskriften i dag. Siden skriver ingenting. Den viser kun."
+			kant={false}
+		/>
+		<div class="rm-top">
 			<div class="rm-tal">
 				<div class="rm-tal-boks"><strong>{antalGod}</strong> god dækning</div>
 				<div class="rm-tal-boks"><strong>{antalDelvis}</strong> delvis</div>
@@ -115,7 +118,7 @@
 				Dækning er hvor stor en del af rettens vægt vi kan gøre rede for. Under 70 procent siger
 				tallet mere om manglende koblinger end om opskriften.
 			</p>
-		</header>
+		</div>
 
 		{#if besked}<p class="rm-besked">{besked}</p>{/if}
 
@@ -156,20 +159,26 @@
 							<div class="rm-s-kol">
 								<span class="rm-s-mrk">Protein</span>
 								<span class="rm-s-vaerdi">
-									{r.staar.protein ?? '?'} <span class="rm-pil">→</span> {p.protein}
+									{r.staar.protein ?? '?'} <span class="rm-pil">→</span>
+									{p.protein}
 								</span>
 								{#if aP !== null}
-									<span class="rm-afvig" class:stor={Math.abs(aP) > 25}>{aP > 0 ? '+' : ''}{aP}%</span>
+									<span class="rm-afvig" class:stor={Math.abs(aP) > 25}
+										>{aP > 0 ? '+' : ''}{aP}%</span
+									>
 								{/if}
 							</div>
 							<div class="rm-s-kol">
 								<span class="rm-s-mrk">Kalorier</span>
 								{#if r.b.kalorierPaalidelige}
 									<span class="rm-s-vaerdi">
-										{r.staar.kalorier ?? '?'} <span class="rm-pil">→</span> {p.kalorier}
+										{r.staar.kalorier ?? '?'} <span class="rm-pil">→</span>
+										{p.kalorier}
 									</span>
 									{#if aK !== null}
-										<span class="rm-afvig" class:stor={Math.abs(aK) > 25}>{aK > 0 ? '+' : ''}{aK}%</span>
+										<span class="rm-afvig" class:stor={Math.abs(aK) > 25}
+											>{aK > 0 ? '+' : ''}{aK}%</span
+										>
 									{/if}
 								{:else}
 									<span class="rm-s-vaerdi kanikke">kan ikke regnes</span>

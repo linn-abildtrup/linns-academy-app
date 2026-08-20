@@ -32,6 +32,7 @@
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 	import { hentProgrammer3 } from '$lib/firestore/traeningsprogram3';
 	import { hentTildelinger3 } from '$lib/firestore/traeningTildeling3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -84,7 +85,12 @@
 			.filter((f) => f.aktiv !== false)
 			.map((f) => byggRaekke(f.id, f.navn, under(f), 'hold'));
 		const oevrige = [
-			byggRaekke('medlemmer', 'Alle med et abonnement', 'Alle med et aktivt abonnement', 'medlemmer'),
+			byggRaekke(
+				'medlemmer',
+				'Alle med et abonnement',
+				'Alle med et aktivt abonnement',
+				'medlemmer'
+			),
 			byggRaekke('alle', 'Alle med appen', 'Både forløb og abonnement', 'alle')
 		];
 		return [...hold, ...oevrige].sort(
@@ -134,11 +140,13 @@
 	{:else if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
 	{:else}
-		<header class="adm-top">
-			<a class="tr-tilbage" href="/ny/admin/traening">‹ Træning</a>
-			<h1>Hold og dækning</h1>
-			<p>Har hvert hold programmer til alle slags udstyr?</p>
-		</header>
+		<Sidehoved
+			titel="Hold og dækning"
+			tilbage="/ny/admin/traening"
+			tilbageTekst="Træning"
+			under="Har hvert hold programmer til alle slags udstyr?"
+			kant={false}
+		/>
 
 		{#if fejl}<p class="adm-fejl">{fejl}</p>{/if}
 
@@ -154,7 +162,11 @@
 
 			<div class="adm-liste">
 				{#each raekker as r (r.id)}
-					<a class="adm-raekke tr-raekke" class:tom={r.vaegt === 0} href={`/ny/admin/traening/hold/${r.id}`}>
+					<a
+						class="adm-raekke tr-raekke"
+						class:tom={r.vaegt === 0}
+						href={`/ny/admin/traening/hold/${r.id}`}
+					>
 						<div class="adm-raekke-t">
 							<span>{r.navn}</span>
 							<span class="adm-mrk" class:klar={r.vaegt === 2}>

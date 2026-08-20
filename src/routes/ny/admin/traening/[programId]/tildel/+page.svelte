@@ -41,6 +41,7 @@
 		sletTildeling3
 	} from '$lib/firestore/traeningTildeling3';
 	import { isoDato3 } from '$lib/firestore/traeningKunde3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -83,7 +84,9 @@
 			.map((f) => ({ id: f.id, navn: f.navn, dag: holdDag(f.id), antalKunder: null }))
 	);
 
-	const mangler = $derived(program ? manglerTekstFor(tommeDageFor(program), program.antalDage) : null);
+	const mangler = $derived(
+		program ? manglerTekstFor(tommeDageFor(program), program.antalDage) : null
+	);
 
 	onMount(async () => {
 		if (!isAdmin(user)) {
@@ -151,14 +154,13 @@
 	{:else if !program}
 		<p class="adm-fejl">{fejl || 'Programmet findes ikke.'}</p>
 	{:else}
-		<header class="adm-top">
-			<a class="tr-tilbage" href={`/ny/admin/traening/${programId}`}>‹ {program.navn}</a>
-			<h1>Tildel</h1>
-			<p>
-				{program.navn} · {kategoriNavn3(program.kategoriId, kategorier) || 'uden kategori'} · {program.antalDage}
-				træninger
-			</p>
-		</header>
+		<Sidehoved
+			titel="Tildel"
+			tilbage={`/ny/admin/traening/${programId}`}
+			tilbageTekst={program.navn}
+			under={`${program.navn} · ${kategoriNavn3(program.kategoriId, kategorier) || 'uden kategori'} · ${program.antalDage} træninger`}
+			kant={false}
+		/>
 
 		{#if besked}<p class="adm-besked">{besked}</p>{/if}
 		{#if fejl}<p class="adm-fejl">{fejl}</p>{/if}

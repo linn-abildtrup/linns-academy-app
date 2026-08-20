@@ -16,6 +16,7 @@
 	import { hentForlobsdage } from '$lib/firestore/forlob';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
@@ -62,7 +63,20 @@
 		};
 	});
 
-	const MAANEDER = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+	const MAANEDER = [
+		'jan',
+		'feb',
+		'mar',
+		'apr',
+		'maj',
+		'jun',
+		'jul',
+		'aug',
+		'sep',
+		'okt',
+		'nov',
+		'dec'
+	];
 
 	const dage = $derived.by(() => {
 		const f = forlob;
@@ -84,15 +98,15 @@
 </script>
 
 <div class="ny-pad forlob-side">
-	<header class="side-top" style="padding-left:0;padding-right:0">
-		<a class="tilbage" href="/ny">‹ Forside</a>
-		{#if forlob}
-			<h1>{forlob.navn}</h1>
-			<p>Dag {forlob.dagNummer} af {forlob.antalDage}. Du kan altid gå tilbage og se en dag igen.</p>
-		{:else}
-			<h1>Dit forløb</h1>
-		{/if}
-	</header>
+	<Sidehoved
+		titel={forlob ? forlob.navn : 'Dit forløb'}
+		tilbage="/ny"
+		tilbageTekst="Forside"
+		under={forlob
+			? `Dag ${forlob.dagNummer} af ${forlob.antalDage}. Du kan altid gå tilbage og se en dag igen.`
+			: undefined}
+		kant={false}
+	/>
 
 	{#if !forlob}
 		<div class="kort rolig">Du er ikke på et forløb lige nu.</div>
@@ -121,7 +135,9 @@
 						<span class="dag-tekst">
 							<span class="dag-t">{d.dag === 0 ? 'Baseline' : `Dag ${d.dag}`}</span>
 							<span class="dag-s">
-								{d.dato}{d.antal > 0 ? ` · ${d.antal} ${d.antal === 1 ? 'lektion' : 'lektioner'}` : ''}
+								{d.dato}{d.antal > 0
+									? ` · ${d.antal} ${d.antal === 1 ? 'lektion' : 'lektioner'}`
+									: ''}
 							</span>
 						</span>
 						{#if d.erIDag}<span class="dag-idag">I dag</span>{/if}

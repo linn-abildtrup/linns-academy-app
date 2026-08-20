@@ -22,6 +22,7 @@
 	} from '$lib/firestore/challengeAdmin3';
 	import { STANDARD_MAAL, type MasterChallenge, type Modtager } from '$lib/content/challenge3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -170,14 +171,13 @@
 	{:else if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
 	{:else}
-		<header class="adm-top">
-			<a class="tr-tilbage" href="/ny/admin">‹ Admin</a>
-			<h1>Challenges</h1>
-			<p>
-				En challenge ligger for sig selv og bliver tildelt. Du kan give den til et hold, til alle
-				der har appen, eller til flere ting på én gang.
-			</p>
-		</header>
+		<Sidehoved
+			titel="Challenges"
+			tilbage="/ny/admin"
+			tilbageTekst="Admin"
+			under="En challenge ligger for sig selv og bliver tildelt. Du kan give den til et hold, til alle der har appen, eller til flere ting på én gang."
+			kant={false}
+		/>
 
 		{#if besked}
 			<p class="adm-besked">{besked}</p>
@@ -244,7 +244,12 @@
 			</label>
 
 			<div class="adm-knapper">
-				<button type="button" class="ch-knap primaer" disabled={!kanGemme || !!datoFejl} onclick={gem}>
+				<button
+					type="button"
+					class="ch-knap primaer"
+					disabled={!kanGemme || !!datoFejl}
+					onclick={gem}
+				>
 					{gemmer ? 'Gemmer' : redigererId ? 'Gem rettelsen' : 'Opret challenge'}
 				</button>
 				{#if redigererId}
@@ -270,7 +275,8 @@
 						</div>
 						<div class="adm-raekke-s">{modtagerTekst(c)}</div>
 						<div class="adm-knapper">
-							<button type="button" class="ch-knap sekundaer" onclick={() => redigér(c)}>Ret</button>
+							<button type="button" class="ch-knap sekundaer" onclick={() => redigér(c)}>Ret</button
+							>
 							<button type="button" class="ch-knap sekundaer" onclick={() => slet(c)}>Slet</button>
 						</div>
 					</article>

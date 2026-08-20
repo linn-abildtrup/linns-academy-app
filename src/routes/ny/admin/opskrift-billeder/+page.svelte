@@ -32,6 +32,7 @@
 	import { filtrerOpskrifter3, soegetermer } from '$lib/content/opskriftSoeg3';
 	import { KATEGORI_NAVN, farveKategori } from '$lib/content/opskriftKategori3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -156,7 +157,13 @@
 			});
 			opskrifter = opskrifter.map((x) =>
 				x.id === o.id
-					? { ...x, billedeUrl: null, billedeUrlLille: null, billedeSti: null, billedeStiLille: null }
+					? {
+							...x,
+							billedeUrl: null,
+							billedeUrlLille: null,
+							billedeSti: null,
+							billedeStiLille: null
+						}
 					: x
 			);
 			kvittering = `Billedet er fjernet fra ${o.titel}`;
@@ -178,15 +185,14 @@
 {#if !maaVaereHer}
 	<p class="ob-nej">Siden er kun for admin.</p>
 {:else}
-	<header class="ob-hoved">
-		<a class="tr-tilbage" href="/ny/admin">‹ Admin</a>
-		<h1 class="ob-h1">Opskrift-billeder</h1>
+	<Sidehoved titel="Opskrift-billeder" tilbage="/ny/admin" tilbageTekst="Admin" />
+	<div class="ob-hoved">
 		<div class="ob-tael">
 			<span class="ob-tal">{tal.medBillede} af {tal.ialt}</span>
 			<span class="ob-bar"><span style="width:{tal.procent}%"></span></span>
 			<span class="ob-tekst">har billede</span>
 		</div>
-	</header>
+	</div>
 
 	{#if henter}
 		<Ventetegn />
@@ -212,7 +218,8 @@
 				type="button"
 				class="ob-chip"
 				class:valgt={udsnit === 'har'}
-				onclick={() => (udsnit = 'har')}>Har billede <span class="ob-n">{tal.medBillede}</span></button
+				onclick={() => (udsnit = 'har')}
+				>Har billede <span class="ob-n">{tal.medBillede}</span></button
 			>
 			<button
 				type="button"
@@ -304,11 +311,15 @@
 						</div>
 						<div>
 							<dt>Lille, {STOERRELSER.lille.bruges}</dt>
-							<dd>{saet.lille.bredde} px · {vaegtTekst(saet.lille.blob.size)} · {saet.lille.endelse}</dd>
+							<dd>
+								{saet.lille.bredde} px · {vaegtTekst(saet.lille.blob.size)} · {saet.lille.endelse}
+							</dd>
 						</div>
 						<div>
 							<dt>Stor, {STOERRELSER.stor.bruges}</dt>
-							<dd>{saet.stor.bredde} px · {vaegtTekst(saet.stor.blob.size)} · {saet.stor.endelse}</dd>
+							<dd>
+								{saet.stor.bredde} px · {vaegtTekst(saet.stor.blob.size)} · {saet.stor.endelse}
+							</dd>
 						</div>
 						<div>
 							<dt>Sparet</dt>

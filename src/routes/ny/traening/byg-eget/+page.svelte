@@ -42,6 +42,7 @@
 	import { hentAlleExercises } from '$lib/firestore/mikrotraening';
 	import { gemMinTraening3, opretMinTraening3 } from '$lib/firestore/mineTraeninger3';
 	import { harAbonnement3, isoDato3 } from '$lib/firestore/traeningKunde3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -137,10 +138,12 @@
 <svelte:head><title>Byg dit eget program</title></svelte:head>
 
 <div class="ny-pad mt-side">
-	<header class="side-top" style="padding-left:0;padding-right:0">
-		<a class="tr-tilbage" href="/ny/traening">‹ Mikrotræning</a>
-		<h1>Byg dit eget program</h1>
-	</header>
+	<Sidehoved
+		titel="Byg dit eget program"
+		tilbage="/ny/traening"
+		tilbageTekst="Mikrotræning"
+		kant={false}
+	/>
 
 	{#if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
@@ -148,8 +151,8 @@
 		<p class="kort rolig">Du kan ikke bygge dine egne programmer lige nu.</p>
 	{:else}
 		<p class="mt-under">
-			Giv programmet et navn og vælg hvor mange træninger det skal have. Du kan altid
-			tilføje flere bagefter.
+			Giv programmet et navn og vælg hvor mange træninger det skal have. Du kan altid tilføje flere
+			bagefter.
 		</p>
 
 		{#if fejl}<p class="adm-fejl">{fejl}</p>{/if}

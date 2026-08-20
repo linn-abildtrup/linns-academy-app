@@ -36,6 +36,7 @@
 	} from '$lib/content/traeningsprogram3';
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 	import { gemDag3, hentProgram3 } from '$lib/firestore/traeningsprogram3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -77,7 +78,9 @@
 	}
 
 	const kanVaelges = $derived.by(() => {
-		const passer = visAlle ? bank.filter((e) => e.aktiv) : filtrerOevelserTilKategori(bank, kategori?.udstyrTag ?? null);
+		const passer = visAlle
+			? bank.filter((e) => e.aktiv)
+			: filtrerOevelserTilKategori(bank, kategori?.udstyrTag ?? null);
 		const ord = soegeord.trim().toLowerCase();
 		if (!ord) return passer;
 		return passer.filter((e) => e.name.toLowerCase().includes(ord));
@@ -197,17 +200,15 @@
 	{:else if !program || fejl === 'Træningen findes ikke i programmet.'}
 		<p class="adm-fejl">{fejl || 'Træningen findes ikke.'}</p>
 	{:else}
-		<header class="adm-top">
-			<a class="tr-tilbage" href={`/ny/admin/traening/${programId}`}>‹ {program.navn}</a>
-			<h1>Træning {dagNummer}</h1>
-			<p>
-				{#if oevelser.length === 0}
-					Ingen øvelser endnu
-				{:else}
-					{oevelser.length === 1 ? '1 øvelse' : `${oevelser.length} øvelser`} · ca. {minutter} min
-				{/if}
-			</p>
-		</header>
+		<Sidehoved
+			titel="Træning {dagNummer}"
+			tilbage={`/ny/admin/traening/${programId}`}
+			tilbageTekst={program.navn}
+			under={oevelser.length === 0
+				? 'Ingen øvelser endnu'
+				: `${oevelser.length === 1 ? '1 øvelse' : `${oevelser.length} øvelser`} · ca. ${minutter} min`}
+			kant={false}
+		/>
 
 		{#if besked}<p class="adm-besked">{besked}</p>{/if}
 		{#if fejl}<p class="adm-fejl">{fejl}</p>{/if}
@@ -318,10 +319,20 @@
 				</label>
 
 				<div class="tr-chips">
-					<button type="button" class="tr-chip" class:valgt={!visAlle} onclick={() => (visAlle = false)}>
+					<button
+						type="button"
+						class="tr-chip"
+						class:valgt={!visAlle}
+						onclick={() => (visAlle = false)}
+					>
 						Passer til kategorien
 					</button>
-					<button type="button" class="tr-chip" class:valgt={visAlle} onclick={() => (visAlle = true)}>
+					<button
+						type="button"
+						class="tr-chip"
+						class:valgt={visAlle}
+						onclick={() => (visAlle = true)}
+					>
 						Alle øvelser
 					</button>
 				</div>
@@ -356,7 +367,9 @@
 		{#if kopiKandidater.length > 0}
 			<section class="adm-kort">
 				<h2>Kopiér fra en anden træning</h2>
-				<p class="adm-hjaelp">Erstatter øvelserne på træning {dagNummer} med dem fra den du vælger.</p>
+				<p class="adm-hjaelp">
+					Erstatter øvelserne på træning {dagNummer} med dem fra den du vælger.
+				</p>
 				<label class="adm-felt">
 					<span>Træning</span>
 					<select bind:value={kopierFra}>

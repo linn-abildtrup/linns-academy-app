@@ -31,6 +31,7 @@
 		sletKategori3
 	} from '$lib/firestore/traeningKategori3';
 	import { hentProgrammer3 } from '$lib/firestore/traeningsprogram3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -164,11 +165,13 @@
 	{:else if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
 	{:else}
-		<header class="adm-top">
-			<a class="tr-tilbage" href="/ny/admin/traening">‹ Træning</a>
-			<h1>Kategorier</h1>
-			<p>Det udstyr kunden kan vælge imellem.</p>
-		</header>
+		<Sidehoved
+			titel="Kategorier"
+			tilbage="/ny/admin/traening"
+			tilbageTekst="Træning"
+			under="Det udstyr kunden kan vælge imellem."
+			kant={false}
+		/>
 
 		{#if besked}<p class="adm-besked">{besked}</p>{/if}
 		{#if fejl}<p class="adm-fejl">{fejl}</p>{/if}
@@ -201,9 +204,9 @@
 					</select>
 				</label>
 				<p class="adm-hjaelp">
-					Bruges kun når du vælger øvelser eller beder om et udkast. Så foreslår den kun øvelser
-					der passer. Et nyt redskab som sjippetov findes ikke i banken endnu, og så vælger du
-					selv fra hele listen.
+					Bruges kun når du vælger øvelser eller beder om et udkast. Så foreslår den kun øvelser der
+					passer. Et nyt redskab som sjippetov findes ikke i banken endnu, og så vælger du selv fra
+					hele listen.
 				</p>
 
 				<div class="adm-knapper">

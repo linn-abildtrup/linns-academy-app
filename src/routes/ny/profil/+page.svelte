@@ -22,6 +22,7 @@
 		type TraeningKategori3
 	} from '$lib/content/traeningKategori3';
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
@@ -79,9 +80,7 @@
 </script>
 
 <div class="ny-pad profil-side">
-	<header class="side-top" style="padding-left:0;padding-right:0">
-		<h1>Din side</h1>
-	</header>
+	<Sidehoved titel="Din side" kant={false} />
 
 	<section class="profil-hoved">
 		<span class="linn-ava" role="img" aria-label={navn || 'Din side'}></span>

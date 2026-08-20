@@ -33,6 +33,7 @@
 	import { hentProgrammer3, opretProgram3 } from '$lib/firestore/traeningsprogram3';
 	import { hentAlleForlob } from '$lib/firestore/forlob';
 	import { hentTildelinger3 } from '$lib/firestore/traeningTildeling3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 	import {
 		daekning3,
 		huller3,
@@ -158,11 +159,13 @@
 	{:else if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
 	{:else}
-		<header class="adm-top">
-			<a class="tr-tilbage" href="/ny/admin">‹ Admin</a>
-			<h1>Træning</h1>
-			<p>Alle træningsprogrammer. Byg dem her, tildel dem bagefter.</p>
-		</header>
+		<Sidehoved
+			titel="Træning"
+			tilbage="/ny/admin"
+			tilbageTekst="Admin"
+			under="Alle træningsprogrammer. Byg dem her, tildel dem bagefter."
+			kant={false}
+		/>
 
 		{#if fejl}
 			<p class="adm-fejl">{fejl}</p>
@@ -175,17 +178,15 @@
 			<a class="ch-knap sekundaer tr-knap-link" href="/ny/admin/traening/kategorier">Kategorier</a>
 		</div>
 
-		<a class="ch-knap sekundaer tr-knap-link" href="/ny/admin/traening/ai">
-			Byg med AI
-		</a>
+		<a class="ch-knap sekundaer tr-knap-link" href="/ny/admin/traening/ai"> Byg med AI </a>
 		<p class="adm-hjaelp">Beskriv hvad du vil have, og få et udkast bygget af dine egne øvelser.</p>
 
 		{#if kategorier.length === 0}
 			<div class="adm-kort">
 				<h2>Start med en kategori</h2>
 				<p class="adm-hjaelp">
-					Et program skal have en kategori, altså det udstyr der trænes med. Opret dem først, så
-					kan du bygge programmer bagefter.
+					Et program skal have en kategori, altså det udstyr der trænes med. Opret dem først, så kan
+					du bygge programmer bagefter.
 				</p>
 				<a class="ch-knap primaer tr-knap-link" href="/ny/admin/traening/kategorier">
 					Opret din første kategori
@@ -242,7 +243,9 @@
 						Fortryd
 					</button>
 				</div>
-				<p class="adm-hjaelp">Programmet oprettes som kladde. Du sætter det selv til klar bagefter.</p>
+				<p class="adm-hjaelp">
+					Programmet oprettes som kladde. Du sætter det selv til klar bagefter.
+				</p>
 			</section>
 		{/if}
 

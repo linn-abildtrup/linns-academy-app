@@ -41,6 +41,7 @@
 	import { hentNoterForForlob } from '$lib/firestore/lektionNoter';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
@@ -287,13 +288,12 @@
 {/snippet}
 
 <div class="ny-pad lektionsliste-side">
-	<header class="side-top">
-		<a class="tilbage" href="/ny/profil">‹ Din side</a>
-		<h1>{kendt ? navn : 'Forløbet findes ikke'}</h1>
-		{#if kendt && undertekst}
-			<p>{undertekst}</p>
-		{/if}
-	</header>
+	<Sidehoved
+		titel={kendt ? navn : 'Forløbet findes ikke'}
+		tilbage="/ny/profil"
+		tilbageTekst="Din side"
+		under={kendt && undertekst ? undertekst : undefined}
+	/>
 
 	{#if !kendt}
 		<div class="kort rolig">

@@ -20,6 +20,7 @@
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 	import { dagensMinutter } from '$lib/content/traeningsprogram3';
 	import {
 		MAX_EGET_NAVN,
@@ -131,10 +132,12 @@
 <svelte:head><title>{mit?.navn ?? 'Dit program'}</title></svelte:head>
 
 <div class="ny-pad mt-side">
-	<header class="side-top" style="padding-left:0;padding-right:0">
-		<a class="tr-tilbage" href="/ny/traening">‹ Mikrotræning</a>
-		<h1>{mit?.navn ?? 'Dit program'}</h1>
-	</header>
+	<Sidehoved
+		titel={mit?.navn ?? 'Dit program'}
+		tilbage="/ny/traening"
+		tilbageTekst="Mikrotræning"
+		kant={false}
+	/>
 
 	{#if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
@@ -164,9 +167,9 @@
 							{#if dag.exercises.length === 0}
 								Ingen øvelser endnu
 							{:else}
-								{dag.exercises.length === 1
-									? '1 øvelse'
-									: `${dag.exercises.length} øvelser`} · ca. {dagensMinutter(dag)} min
+								{dag.exercises.length === 1 ? '1 øvelse' : `${dag.exercises.length} øvelser`} · ca. {dagensMinutter(
+									dag
+								)} min
 							{/if}
 						</span>
 					</span>

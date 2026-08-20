@@ -21,6 +21,7 @@
 	import { fletHjaelp, hjaelpKilder, visKildeNavn, type HjaelpGruppe } from '$lib/content/hjaelp3';
 	import { hentFaqItems, hentFaqKategorier } from '$lib/firestore/bibliotek';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -78,10 +79,12 @@
 </script>
 
 <div class="ny-pad hjaelp-nav">
-	<header class="side-top" style="padding-left:0;padding-right:0">
-		<a class="tilbage" href="/ny/hjaelp">‹ Hjælp</a>
-		<h1>Ofte stillede spørgsmål</h1>
-	</header>
+	<Sidehoved
+		titel="Ofte stillede spørgsmål"
+		tilbage="/ny/hjaelp"
+		tilbageTekst="Hjælp"
+		kant={false}
+	/>
 
 	{#if henter}
 		<div class="lektion-venter">

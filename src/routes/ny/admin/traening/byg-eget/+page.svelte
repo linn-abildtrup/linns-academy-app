@@ -32,6 +32,7 @@
 		sletTildeling3
 	} from '$lib/firestore/traeningTildeling3';
 	import { isoDato3 } from '$lib/firestore/traeningKunde3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -119,11 +120,13 @@
 	{:else if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
 	{:else}
-		<header class="adm-top">
-			<a class="tr-tilbage" href="/ny/admin/traening">‹ Træning</a>
-			<h1>Byg eget program</h1>
-			<p>Hvem må sætte deres egen træning sammen af dine øvelser.</p>
-		</header>
+		<Sidehoved
+			titel="Byg eget program"
+			tilbage="/ny/admin/traening"
+			tilbageTekst="Træning"
+			under="Hvem må sætte deres egen træning sammen af dine øvelser."
+			kant={false}
+		/>
 
 		{#if besked}<p class="adm-besked">{besked}</p>{/if}
 		{#if fejl}<p class="adm-fejl">{fejl}</p>{/if}

@@ -18,6 +18,7 @@
 	import { hentDagen } from '$lib/firestore/maaltider3';
 	import { pladsTal, TOM_TEKST, type DagsOpgoerelse } from '$lib/content/maaltider3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const hentUser = getContext<() => User | null>('user');
@@ -41,8 +42,18 @@
 
 	const UGEDAGE = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'];
 	const MAANEDER = [
-		'januar', 'februar', 'marts', 'april', 'maj', 'juni',
-		'juli', 'august', 'september', 'oktober', 'november', 'december'
+		'januar',
+		'februar',
+		'marts',
+		'april',
+		'maj',
+		'juni',
+		'juli',
+		'august',
+		'september',
+		'oktober',
+		'november',
+		'december'
 	];
 
 	const datoTekst = $derived.by(() => {
@@ -99,16 +110,13 @@
 <svelte:head><title>30-30 beregner</title></svelte:head>
 
 <div class="ny-pad tt-side">
-	<h1 class="tt-titel">30-30 beregner</h1>
+	<Sidehoved titel="30-30 beregner" kant={false} />
 
 	<div class="tt-dato">
 		<button type="button" onclick={() => flytDag(-1)} aria-label="Dagen før">‹</button>
 		<span>{datoTekst}</span>
-		<button
-			type="button"
-			onclick={() => flytDag(1)}
-			disabled={!kanFrem}
-			aria-label="Dagen efter">›</button
+		<button type="button" onclick={() => flytDag(1)} disabled={!kanFrem} aria-label="Dagen efter"
+			>›</button
 		>
 	</div>
 
@@ -130,7 +138,11 @@
 					{/if}
 				</span>
 				<span class="tt-hoejre">
-					<span class="tt-tal" class:mangler={plads.mangler !== null} class:fri={plads.maal === null}>
+					<span
+						class="tt-tal"
+						class:mangler={plads.mangler !== null}
+						class:fri={plads.maal === null}
+					>
 						{pladsTal(plads)}
 						<small>PROTEIN</small>
 					</span>
@@ -144,7 +156,8 @@
 				<div class="tt-dk-navn">Protein i dag</div>
 				<div class="tt-dk-tal">{dag.proteinIAlt} <small>/ {dag.proteinMaal} g</small></div>
 				<div class="tt-dk-bar">
-					<i style="width:{Math.min(100, Math.round((dag.proteinIAlt / dag.proteinMaal) * 100))}%"></i>
+					<i style="width:{Math.min(100, Math.round((dag.proteinIAlt / dag.proteinMaal) * 100))}%"
+					></i>
 				</div>
 			</div>
 			<div class="tt-dk fiber">

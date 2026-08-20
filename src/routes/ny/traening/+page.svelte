@@ -60,6 +60,7 @@
 	import { hentMineTraeninger3 } from '$lib/firestore/mineTraeninger3';
 	import { harAbonnement3, isoDato3 } from '$lib/firestore/traeningKunde3';
 	import type { Traeningstildeling3 } from '$lib/content/traeningTildeling3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -196,9 +197,7 @@
 <svelte:head><title>Træning</title></svelte:head>
 
 <div class="ny-pad mt-side">
-	<header class="side-top" style="padding-left:0;padding-right:0">
-		<h1>Træning</h1>
-	</header>
+	<Sidehoved titel="Træning" kant={false} />
 
 	{#if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter din træning</span></div>

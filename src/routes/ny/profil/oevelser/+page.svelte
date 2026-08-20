@@ -35,6 +35,7 @@
 	import { getVideoUrl } from '$lib/utils/storage';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import OevelsesArk from '$lib/components/ny/OevelsesArk.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -145,10 +146,7 @@
 <svelte:head><title>Øvelser</title></svelte:head>
 
 <div class="ny-pad oev-side">
-	<header class="side-top">
-		<a class="tilbage" href="/ny/profil">‹ Din side</a>
-		<h1>Øvelser</h1>
-	</header>
+	<Sidehoved titel="Øvelser" tilbage="/ny/profil" tilbageTekst="Din side" />
 
 	<input
 		class="ops-soeg"

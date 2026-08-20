@@ -34,6 +34,7 @@
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 	import { hentProgrammer3 } from '$lib/firestore/traeningsprogram3';
 	import { hentTildelinger3 } from '$lib/firestore/traeningTildeling3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 	import {
 		aktiveForlobNavne3,
 		forlobKilder3,
@@ -132,11 +133,13 @@
 	{:else if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter kunderne</span></div>
 	{:else}
-		<header class="adm-top">
-			<a class="tr-tilbage" href="/ny/admin/traening">‹ Træning</a>
-			<h1>Slå en kunde op</h1>
-			<p>Se hvilke programmer hun har, og hvorfor.</p>
-		</header>
+		<Sidehoved
+			titel="Slå en kunde op"
+			tilbage="/ny/admin/traening"
+			tilbageTekst="Træning"
+			under="Se hvilke programmer hun har, og hvorfor."
+			kant={false}
+		/>
 
 		{#if fejl}<p class="adm-fejl">{fejl}</p>{/if}
 
@@ -185,8 +188,8 @@
 					</div>
 					{#if kontekst.udstyr.length === 0}
 						<p class="adm-hjaelp">
-							Spørgsmålet stilles i onboarding, som ikke er bygget endnu. Indtil hun vælger, ser
-							hun alle de programmer hun har fået.
+							Spørgsmålet stilles i onboarding, som ikke er bygget endnu. Indtil hun vælger, ser hun
+							alle de programmer hun har fået.
 						</p>
 					{/if}
 				</div>
@@ -213,9 +216,7 @@
 			{/if}
 
 			<p class="adm-hjaelp">
-				{maaBygge
-					? 'Hun må bygge sit eget program.'
-					: 'Hun må ikke bygge sit eget program.'}
+				{maaBygge ? 'Hun må bygge sit eget program.' : 'Hun må ikke bygge sit eget program.'}
 			</p>
 
 			<h2 class="tr-overskrift">Hendes egne programmer</h2>

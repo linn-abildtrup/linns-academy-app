@@ -39,6 +39,7 @@
 	import { kopiKandidater3, type MinTraening3 } from '$lib/content/mineTraeninger3';
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 	import { gemMinTraening3, hentMinTraening3 } from '$lib/firestore/mineTraeninger3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -71,6 +72,14 @@
 		exercises: oevelser
 	});
 	const minutter = $derived(dagensMinutter(nuvaerende));
+
+	// Linjen under titlen. Stod foer som markup inde i hovedet, men det
+	// faelles sidehoved tager en faerdig tekst.
+	const undertekst = $derived(
+		oevelser.length === 0
+			? 'Ingen øvelser endnu'
+			: `${oevelser.length === 1 ? '1 øvelse' : `${oevelser.length} øvelser`} · ca. ${minutter} min`
+	);
 
 	const mineOevelser = $derived(
 		oevelserTilKunde3(bank, kategorier, rensUdstyr3(udstyrFra(userDoc), kategorier))
@@ -208,21 +217,13 @@
 <svelte:head><title>Træning {nr}</title></svelte:head>
 
 <div class="ny-pad mt-side">
-	<header class="side-top" style="padding-left:0;padding-right:0">
-		<a class="tr-tilbage" href={`/ny/traening/byg-eget/${programId}`}>
-			‹ {mit?.navn ?? 'Dit program'}
-		</a>
-		<h1>Træning {nr}</h1>
-		{#if mit}
-			<p class="mt-under">
-				{#if oevelser.length === 0}
-					Ingen øvelser endnu
-				{:else}
-					{oevelser.length === 1 ? '1 øvelse' : `${oevelser.length} øvelser`} · ca. {minutter} min
-				{/if}
-			</p>
-		{/if}
-	</header>
+	<Sidehoved
+		titel="Træning {nr}"
+		tilbage={`/ny/traening/byg-eget/${programId}`}
+		tilbageTekst={mit?.navn ?? 'Dit program'}
+		under={mit ? undertekst : undefined}
+		kant={false}
+	/>
 
 	{#if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>

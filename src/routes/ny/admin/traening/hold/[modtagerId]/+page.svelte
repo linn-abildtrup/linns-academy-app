@@ -34,6 +34,7 @@
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 	import { hentProgrammer3 } from '$lib/firestore/traeningsprogram3';
 	import { hentTildelinger3, opretTildelinger3 } from '$lib/firestore/traeningTildeling3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -145,7 +146,9 @@
 			await opretTildelinger3(nye);
 			tildelinger = await hentTildelinger3();
 			besked =
-				nye.length === 1 ? '1 tildeling kopieret over.' : `${nye.length} tildelinger kopieret over.`;
+				nye.length === 1
+					? '1 tildeling kopieret over.'
+					: `${nye.length} tildelinger kopieret over.`;
 		} catch (e) {
 			console.error('[admin] kunne ikke kopiere', e);
 			fejl = 'Kunne ikke kopiere.';
@@ -167,14 +170,15 @@
 	{:else if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
 	{:else}
-		<header class="adm-top">
-			<a class="tr-tilbage" href="/ny/admin/traening/hold">‹ Hold og dækning</a>
-			<h1>{navn}</h1>
-			<p>
-				{mine.length === 1 ? '1 program' : `${mine.length} programmer`}{#if erHold}
-					· {dag === null ? 'ikke startet endnu' : `dag ${dag}`}{/if}
-			</p>
-		</header>
+		<Sidehoved
+			titel={navn}
+			tilbage="/ny/admin/traening/hold"
+			tilbageTekst="Hold og dækning"
+			under={`${mine.length === 1 ? '1 program' : `${mine.length} programmer`}${
+				erHold ? ` · ${dag === null ? 'ikke startet endnu' : `dag ${dag}`}` : ''
+			}`}
+			kant={false}
+		/>
 
 		{#if besked}<p class="adm-besked">{besked}</p>{/if}
 		{#if fejl}<p class="adm-fejl">{fejl}</p>{/if}
@@ -189,8 +193,8 @@
 			<section class="adm-kort">
 				<h2>Hurtig vej</h2>
 				<p class="adm-hjaelp">
-					Kopiér et andet holds programmer over med de samme dage. Det holdet allerede har,
-					springes over, så du kan trykke uden at få dubletter.
+					Kopiér et andet holds programmer over med de samme dage. Det holdet allerede har, springes
+					over, så du kan trykke uden at få dubletter.
 				</p>
 				<label class="adm-felt">
 					<span>Kopiér fra</span>
@@ -248,6 +252,8 @@
 			</div>
 		{/if}
 
-		<a class="ch-knap sekundaer tr-knap-link" href="/ny/admin/traening">Find et program at tildele</a>
+		<a class="ch-knap sekundaer tr-knap-link" href="/ny/admin/traening"
+			>Find et program at tildele</a
+		>
 	{/if}
 </div>

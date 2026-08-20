@@ -25,12 +25,7 @@
 		type Adgangsbillede,
 		type ForlobKilde
 	} from '$lib/content/adgang3';
-	import {
-		byggKurve,
-		maalingStatus,
-		type Kurve,
-		type MaalingStatus
-	} from '$lib/content/forside3';
+	import { byggKurve, maalingStatus, type Kurve, type MaalingStatus } from '$lib/content/forside3';
 	import { byggBeskeder, type NyestSvar } from '$lib/content/beskeder3';
 	import { aboVisning, APP_KOB_URL } from '$lib/content/abonnement';
 	import { hentMineSpoergsmaal } from '$lib/firestore/spoergsmaal';
@@ -60,6 +55,7 @@
 	import DagensTalKort from '$lib/components/ny/DagensTal.svelte';
 	import NaesteHoldKort from '$lib/components/ny/NaesteHold.svelte';
 	import Refleksion from '$lib/components/ny/Refleksion.svelte';
+	import Maerke from '$lib/components/ny/Maerke.svelte';
 	import FoldetRaekke from '$lib/components/ny/FoldetRaekke.svelte';
 	import Henter from '$lib/components/ny/Henter.svelte';
 	import Ugestrimmel from '$lib/components/ny/Ugestrimmel.svelte';
@@ -528,7 +524,12 @@
 </script>
 
 <header class="dawn">
-	<div class="date">{datoTekst}</div>
+	<!-- Brand-laasen staar kun her paa forsiden. Datoen er flyttet op ved
+	     siden af, saa toppen ikke bliver en linje hoejere end foer. -->
+	<div class="dawn-brand">
+		<Maerke variant="fuld" link={false} />
+		<div class="date">{datoTekst}</div>
+	</div>
 	<div class="dawn-top">
 		<h1 class="hello">{hilsen}</h1>
 		<div class="linn-ava" role="img" aria-label="Linn"></div>

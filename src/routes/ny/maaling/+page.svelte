@@ -24,6 +24,7 @@
 		type MrsSliders
 	} from '$lib/content/mrs';
 	import { gemMrsScore, hentAlleMrsScores } from '$lib/firestore/mrs';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -157,18 +158,30 @@
 			<a class="btn" href="/ny">Tilbage til forsiden</a>
 		</section>
 	{:else}
-		<header class="maaling-top">
-			<a class="tilbage" href="/ny" aria-label="Tilbage til forsiden">‹ Tilbage</a>
-			<h1>Din måling</h1>
-			<p>
-				Seksten korte spørgsmål, cirka to minutter. Du kan lukke undervejs, dine svar bliver
-				stående. {erPaaForlob ? 'Du måler hver uge på dit forløb.' : 'Du måler hver fjerde uge.'}
-			</p>
-			<div class="fremdrift" role="progressbar" aria-valuenow={besvaret} aria-valuemin="0" aria-valuemax={antalSpoergsmaal}>
+		<Sidehoved
+			titel="Din måling"
+			tilbage="/ny"
+			tilbageTekst="Tilbage"
+			under="Seksten korte spørgsmål, cirka to minutter. Du kan lukke undervejs, dine svar bliver stående. {erPaaForlob
+				? 'Du måler hver uge på dit forløb.'
+				: 'Du måler hver fjerde uge.'}"
+			kant={false}
+		/>
+
+		<!-- Fremdriften hoerer til maalingen og ikke til sidehovedet, saa den
+		     staar for sig selv nu. -->
+		<div class="maaling-fremdrift">
+			<div
+				class="fremdrift"
+				role="progressbar"
+				aria-valuenow={besvaret}
+				aria-valuemin="0"
+				aria-valuemax={antalSpoergsmaal}
+			>
 				<div class="fremdrift-fyld" style:width="{procent}%"></div>
 			</div>
 			<div class="fremdrift-tekst">{besvaret} af {antalSpoergsmaal} besvaret</div>
-		</header>
+		</div>
 
 		<section>
 			<div class="lab"><h2>Hvordan har du det</h2></div>
@@ -232,8 +245,8 @@
 
 		{#if !kanSende && !gemmer}
 			<p class="kort rolig">
-				Du mangler {antalSpoergsmaal - besvaret} svar. Tag dem i det tempo du har lyst til, målingen
-				venter på dig.
+				Du mangler {antalSpoergsmaal - besvaret} svar. Tag dem i det tempo du har lyst til, målingen venter
+				på dig.
 			</p>
 		{/if}
 	{/if}

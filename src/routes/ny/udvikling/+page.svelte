@@ -64,6 +64,7 @@
 	import { hentMaaltiderIPeriode } from '$lib/firestore/kost';
 	import { hentHistorikSidenDato } from '$lib/firestore/traeningHistorik';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -267,9 +268,7 @@
 </script>
 
 <div class="ny-pad udv-side">
-	<header class="side-top" style="padding-left:0;padding-right:0">
-		<h1>Min udvikling</h1>
-	</header>
+	<Sidehoved titel="Min udvikling" kant={false} />
 
 	{#if henter}
 		<div class="lektion-venter">

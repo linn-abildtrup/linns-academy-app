@@ -22,6 +22,7 @@
 	import { hjaelpKilder } from '$lib/content/hjaelp3';
 	import { kunUdgivne } from '$lib/content/bibliotek';
 	import { hentFaqItems, hentGuideItems } from '$lib/firestore/bibliotek';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -75,11 +76,13 @@
 </script>
 
 <div class="ny-pad hjaelp-nav">
-	<header class="side-top" style="padding-left:0;padding-right:0">
-		<a class="tilbage" href="/ny">‹ Forside</a>
-		<h1>Hjælp</h1>
-		<p>Start med at spørge. Finder du ikke svaret, står Linns egne svar nedenunder.</p>
-	</header>
+	<Sidehoved
+		titel="Hjælp"
+		tilbage="/ny"
+		tilbageTekst="Forside"
+		under="Start med at spørge. Finder du ikke svaret, står Linns egne svar nedenunder."
+		kant={false}
+	/>
 
 	<section>
 		<div class="lab"><h2>Spørg</h2></div>

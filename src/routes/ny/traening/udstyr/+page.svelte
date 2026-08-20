@@ -20,6 +20,7 @@
 	} from '$lib/content/traeningKategori3';
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 	import { gemUdstyr3 } from '$lib/firestore/traeningUdstyr3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -72,11 +73,13 @@
 <svelte:head><title>Sådan træner jeg</title></svelte:head>
 
 <div class="ny-pad tv-side">
-	<header class="side-top" style="padding-left:0;padding-right:0">
-		<a class="tr-tilbage" href="/ny/traening">‹ Træning</a>
-		<h1>Hvad træner du med?</h1>
-		<p class="tv-under">Så viser jeg dig kun de programmer du kan bruge. Du kan altid ændre det.</p>
-	</header>
+	<Sidehoved
+		titel="Hvad træner du med?"
+		tilbage="/ny/traening"
+		tilbageTekst="Træning"
+		under="Så viser jeg dig kun de programmer du kan bruge. Du kan altid ændre det."
+		kant={false}
+	/>
 
 	{#if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>

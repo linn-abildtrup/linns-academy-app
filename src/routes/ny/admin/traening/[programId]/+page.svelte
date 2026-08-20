@@ -46,6 +46,7 @@
 		sletProgram3
 	} from '$lib/firestore/traeningsprogram3';
 	import { sletTildelingerForProgram3 } from '$lib/firestore/traeningTildeling3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -239,14 +240,13 @@
 	{:else if !program}
 		<p class="adm-fejl">{fejl || 'Programmet findes ikke.'}</p>
 	{:else}
-		<header class="adm-top">
-			<a class="tr-tilbage" href="/ny/admin/traening">‹ Træning</a>
-			<h1>{program.navn}</h1>
-			<p>
-				{kategoriNavn3(program.kategoriId, kategorier) || 'Uden kategori'} · {program.antalDage} træninger
-				· {program.klar ? 'Klar' : 'Kladde'}
-			</p>
-		</header>
+		<Sidehoved
+			titel={program.navn}
+			tilbage="/ny/admin/traening"
+			tilbageTekst="Træning"
+			under={`${kategoriNavn3(program.kategoriId, kategorier) || 'Uden kategori'} · ${program.antalDage} træninger · ${program.klar ? 'Klar' : 'Kladde'}`}
+			kant={false}
+		/>
 
 		{#if besked}<p class="adm-besked">{besked}</p>{/if}
 		{#if fejl}<p class="adm-fejl">{fejl}</p>{/if}
@@ -332,9 +332,9 @@
 			<section class="adm-kort">
 				<h2>Fyld træninger ud</h2>
 				<p class="adm-hjaelp">
-					Laver et udkast til hele programmet. Øvelserne fordeles jævnt på ben, overkrop og core,
-					og der bruges kun øvelser der passer til kategorien. Du retter bagefter i de dage du vil
-					have anderledes.
+					Laver et udkast til hele programmet. Øvelserne fordeles jævnt på ben, overkrop og core, og
+					der bruges kun øvelser der passer til kategorien. Du retter bagefter i de dage du vil have
+					anderledes.
 				</p>
 
 				{#if henterOevelser}

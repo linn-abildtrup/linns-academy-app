@@ -67,6 +67,12 @@
 	--ler-tint: #f4e6de;
 	--ler-tekst: #8a5439;
 
+	/* Logoets terracotta. Taget direkte fra static/icon.svg og skal blive
+	   ved med at vaere den samme som i ikonet, ellers har appen og
+	   hjemmeskaermen to forskellige logoer. Bemaerk at --terra IKKE er
+	   den her farve, den peger paa plum. */
+	--maerke: #b87b6e;
+
 	--shadow: 0 1px 2px rgba(80, 55, 40, 0.05), 0 12px 28px rgba(90, 62, 44, 0.08);
 	--shadow-soft: 0 1px 2px rgba(80, 55, 40, 0.04), 0 6px 16px rgba(90, 62, 44, 0.06);
 
@@ -168,6 +174,15 @@ body:has(.ny-app) {
 	background:
 		radial-gradient(130% 90% at 15% 0%, var(--honey-tint) 0%, transparent 55%),
 		radial-gradient(120% 100% at 100% 0%, var(--plum-tint) 0%, transparent 50%), var(--oat);
+}
+
+/* Brand-laasen og datoen deler den oeverste linje, saa forsiden ikke
+   bliver hoejere end foer maerket kom til. */
+.dawn-brand {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
 }
 
 /* Billedet staar i lodret midte af hilsenen, ikke oppe i hjoernet. */
@@ -1347,29 +1362,10 @@ body:has(.ny-app) {
 	padding-bottom: 32px;
 }
 
-.maaling-top .tilbage {
-	font-size: calc(13px * var(--fs-scale, 1));
-	font-weight: 600;
-	color: var(--plum);
-	text-decoration: none;
-	display: inline-block;
-	min-height: 44px;
-	line-height: 44px;
-}
-
-.maaling-top h1 {
-	font-family: var(--serif);
-	font-size: calc(27px * var(--fs-scale, 1));
-	font-weight: 500;
-	margin: 0;
-	color: var(--espresso);
-}
-
-.maaling-top p {
-	font-size: calc(13.5px * var(--fs-scale, 1));
-	color: var(--ink-2);
-	line-height: 1.5;
-	margin: 8px 0 14px;
+/* Fremdriftslinjen stod foer inde i maalingens eget hoved. Nu staar den
+   for sig selv under det faelles sidehoved. */
+.maaling-fremdrift {
+	padding-bottom: 4px;
 }
 
 .fremdrift {
@@ -1911,11 +1907,66 @@ body:has(.ny-app) {
 	min-height: 0;
 }
 
-.side-top {
-	padding: 16px 17px 12px;
+/* ── Maerket og sidehovedet ────────────────────────────────── */
+/* Ét hoved i hele appen. Se Sidehoved.svelte for hvorfor. Foer 20.
+   august 2026 fandtes den her top i syv udgaver. */
+
+.mk {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	text-decoration: none;
+	color: var(--maerke);
+	flex-shrink: 0;
 }
 
-.side-top .tilbage {
+/* Tegnet arver farven, saa det kan staa paa moerk bund en dag. */
+.mk-tegn {
+	display: block;
+	height: auto;
+}
+
+.mk-fuld .mk-tegn {
+	width: 26px;
+}
+
+.mk-stille .mk-tegn {
+	width: 30px;
+	opacity: 0.72;
+}
+
+/* Maerket er en genvej til forsiden, men det maa ikke tigge om et tryk.
+   Traefladen er stor nok til en finger uden at tegnet vokser. */
+.mk-stille {
+	padding: 8px 0 8px 10px;
+	margin: -8px 0;
+	min-height: 40px;
+}
+
+.mk-navn {
+	font-family: var(--serif);
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1;
+	color: var(--espresso);
+	letter-spacing: 0.005em;
+	white-space: nowrap;
+}
+
+.mk-navn i {
+	font-style: italic;
+}
+
+.sh {
+	padding: 14px 0 12px;
+}
+
+.sh-kant {
+	padding-left: 17px;
+	padding-right: 17px;
+}
+
+.sh-tilbage {
 	font-size: calc(13px * var(--fs-scale, 1));
 	font-weight: 600;
 	color: var(--plum);
@@ -1925,19 +1976,54 @@ body:has(.ny-app) {
 	line-height: 44px;
 }
 
-.side-top h1 {
+/* Titlen til venstre, maerket ude i hoejre. Toppen af de to flugter,
+   saa maerket ikke sejler naar titlen brakker om paa to linjer. */
+.sh-raek {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.sh-tekst {
+	min-width: 0;
+}
+
+.sh h1 {
 	font-family: var(--serif);
 	font-size: calc(26px * var(--fs-scale, 1));
 	font-weight: 500;
 	margin: 0;
 	color: var(--espresso);
+	line-height: 1.15;
 }
 
-.side-top p {
+.sh p {
 	font-size: calc(13px * var(--fs-scale, 1));
 	color: var(--ink-2);
 	margin: 7px 0 0;
 	line-height: 1.5;
+}
+
+/* Maerket staar i lodret midte af en enkeltlinjet titel. */
+.sh-raek .mk-stille {
+	margin-top: 2px;
+}
+
+/* Lektionens minimale top. Kun en vej ud, ingen titel og intet maerke.
+   Se kommentaren i lektions-siden for hvorfor den ikke bruger Sidehoved. */
+.medie-top {
+	padding: 16px 17px 12px;
+}
+
+.medie-top .tilbage {
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--plum);
+	text-decoration: none;
+	display: inline-block;
+	min-height: 44px;
+	line-height: 44px;
 }
 
 .bobler {
@@ -3079,21 +3165,6 @@ body:has(.ny-app) {
 .adm {
 	padding-top: 22px;
 	padding-bottom: 40px;
-}
-
-.adm-top h1 {
-	font-family: var(--serif);
-	font-size: calc(26px * var(--fs-scale, 1));
-	font-weight: 600;
-	color: var(--espresso);
-	margin: 0;
-}
-
-.adm-top p {
-	font-size: calc(14px * var(--fs-scale, 1));
-	color: var(--ink-2);
-	margin: 6px 0 0;
-	line-height: 1.5;
 }
 
 .adm-venter {
@@ -5631,14 +5702,6 @@ button.tm-ikon:active > span {
 	margin-bottom: 13px;
 }
 
-.ob-h1 {
-	font-family: var(--serif);
-	font-size: calc(24px * var(--fs-scale, 1));
-	font-weight: 600;
-	color: var(--espresso);
-	margin: 0;
-}
-
 .ob-tael {
 	display: flex;
 	align-items: center;
@@ -7191,13 +7254,6 @@ button.tm-r-t:focus-visible {
 	overflow-wrap: anywhere;
 }
 
-.ing-top h1 {
-	font-size: calc(26px * var(--fs-scale, 1));
-	font-weight: 700;
-	margin: 0 0 6px;
-	color: var(--text);
-}
-
 .ing-under {
 	font-size: calc(14px * var(--fs-scale, 1));
 	line-height: 1.5;
@@ -7507,13 +7563,6 @@ button.tm-r-t:focus-visible {
 .rm-side h2,
 .rm-side span {
 	overflow-wrap: anywhere;
-}
-
-.rm-top h1 {
-	font-size: calc(26px * var(--fs-scale, 1));
-	font-weight: 700;
-	margin: 0 0 6px;
-	color: var(--text);
 }
 
 .rm-under,

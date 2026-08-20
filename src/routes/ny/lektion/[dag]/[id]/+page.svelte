@@ -19,7 +19,12 @@
 	import type { Adgangsbillede } from '$lib/content/adgang3';
 	import { forlobAdgang } from '$lib/content/lektionsliste3';
 	import type { LektionItem } from '$lib/content/forlob';
-	import { artFor, indlejretUrl, sekunderFoerKlaret, formaterVarighed } from '$lib/content/lektion3';
+	import {
+		artFor,
+		indlejretUrl,
+		sekunderFoerKlaret,
+		formaterVarighed
+	} from '$lib/content/lektion3';
 	import { hentDagensLektioner, hentKlaret, saetKlaret } from '$lib/firestore/forside3';
 	import { gemLektionNote, hentLektionNote } from '$lib/firestore/lektionNoter';
 	import Lydafspiller from '$lib/components/ny/Lydafspiller.svelte';
@@ -193,7 +198,10 @@
 </script>
 
 <div class="lektion-side">
-	<header class="side-top">
+	<!-- Lektionen er en medie-side uden titel, saa den bruger IKKE det
+	     faelles sidehoved. Der er kun én vej ud, og et maerke ville vaere
+	     stoej oven paa en video. Samme valg som i traeningens afspiller. -->
+	<header class="medie-top">
 		<button class="tilbage" onclick={tilbage}>‹ Tilbage</button>
 	</header>
 

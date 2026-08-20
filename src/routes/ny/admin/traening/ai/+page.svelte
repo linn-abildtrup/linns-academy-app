@@ -40,6 +40,7 @@
 	} from '$lib/content/traeningAi3';
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 	import { gemDage3, opretProgram3 } from '$lib/firestore/traeningsprogram3';
+	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -190,11 +191,13 @@
 	{:else if henter}
 		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter øvelserne</span></div>
 	{:else}
-		<header class="adm-top">
-			<a class="tr-tilbage" href="/ny/admin/traening">‹ Træning</a>
-			<h1>Byg med AI</h1>
-			<p>Beskriv hvad programmet skal kunne. Jeg foreslår øvelser fra din egen bank.</p>
-		</header>
+		<Sidehoved
+			titel="Byg med AI"
+			tilbage="/ny/admin/traening"
+			tilbageTekst="Træning"
+			under="Beskriv hvad programmet skal kunne. Jeg foreslår øvelser fra din egen bank."
+			kant={false}
+		/>
 
 		{#if fejl}<p class="adm-fejl">{fejl}</p>{/if}
 
