@@ -830,15 +830,38 @@
 				aria-pressed={lydTil}
 				onclick={skiftLyd}
 			>
-				{lydTil ? '♪' : '♪̸'}
+				<!-- Hoejttaleren er tegnet og ikke skrevet. Selve hornet er
+				     det samme uanset om lyden er slaaet til eller fra, saa
+				     ikonet ikke hopper i stoerrelse naar hun trykker. Det er
+				     kun boelgerne der bliver til et kryds. Linns bemaerkning
+				     20. august. -->
+				<svg viewBox="0 0 24 24" aria-hidden="true">
+					<path d="M11 5 6 9H2v6h4l5 4z" />
+					{#if lydTil}
+						<path d="M15.5 8.5a5 5 0 0 1 0 7" />
+						<path d="M18.5 5.5a9 9 0 0 1 0 13" />
+					{:else}
+						<path d="M22 9l-5 6" />
+						<path d="M17 9l5 6" />
+					{/if}
+				</svg>
 			</button>
+			<!-- Pilene er ogsaa tegnet. Tegnene ⤢ og ⤡ findes kun i én lille
+			     stoerrelse i de fleste skrifter, og i en cirkel paa 50 pixler
+			     forsvandt de. Linns bemaerkning 20. august. -->
 			{#if !stor}
 				<button type="button" class="af-rund" aria-label="Vis videoen stort" onclick={slaaStorTil}>
-					⤢
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<path d="M9 3H3v6" /><path d="M15 21h6v-6" />
+						<path d="M3 3l7 7" /><path d="M21 21l-7-7" />
+					</svg>
 				</button>
 			{:else if !erLiggende}
 				<button type="button" class="af-rund" aria-label="Vis videoen mindre" onclick={slaaStorFra}>
-					⤡
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<path d="M4 10h6V4" /><path d="M20 14h-6v6" />
+						<path d="M10 10L3 3" /><path d="M14 14l7 7" />
+					</svg>
 				</button>
 			{/if}
 			<!-- Den her staar med ORD og ikke som et ikon. Et kryds kunne

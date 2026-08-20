@@ -11448,15 +11448,42 @@ body.traening-moerk .ny-scroll {
 	cursor: pointer;
 	background: rgba(255, 255, 255, 0.11);
 	color: #f2e9df;
-	font-size: calc(17px * var(--fs-scale, 1));
 	line-height: 1;
 	display: grid;
 	place-items: center;
 	font-family: var(--sans);
 }
 
+/* Tegnene skal fylde cirklen.
+
+   De var skrifttegn foer, og skrifttegn findes kun i den stoerrelse
+   skriften har tegnet dem i. ♪ og ⤢ er smaa i naesten alle skrifter, og
+   hvor smaa afhang af hvilken telefon hun sad med. Nu er de tegnet, saa
+   vi bestemmer selv: 23 pixler i en cirkel paa 50, altsaa 13 pixlers
+   luft hele vejen rundt.
+
+   Hoejttaleren beholder sin stoerrelse naar lyden slaas fra. Kun
+   boelgerne bliver til et kryds, selve hornet er det samme, saa ikonet
+   ikke hopper naar hun trykker. Linns bemaerkning 20. august. */
+.af-rund svg {
+	width: 23px;
+	height: 23px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.af-stor .af-rund svg {
+	width: 20px;
+	height: 20px;
+}
+
+/* Lyden slaaet fra. Kun en anelse roligere, ikke gemt vaek: hun skal
+   stadig kunne se knappen for at kunne slaa lyden til igen. */
 .af-rund[aria-pressed='false'] {
-	color: rgba(242, 233, 223, 0.45);
+	color: rgba(242, 233, 223, 0.68);
 }
 
 .af-rund:focus-visible {
