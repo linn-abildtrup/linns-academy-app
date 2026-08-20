@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 20. august 2026.
+Sidst opdateret 20. august 2026, sent på dagen. Der skete meget den dag, se 9.31.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -63,7 +63,9 @@ gamle app og må kun læses.
 |---|---|
 | `src/routes/ny/+layout.svelte` | Skallen. Adgangs-gate, spærring, bundmenu, contexts for `user`, `userDoc`, `adgang` og `forlob`. **Læg ikke nyt her uden en god grund**, se SPEC 26.5 |
 | `src/routes/ny/ny.css` | Alt design. Scoped under `.ny-app`. Cirka 2.000 linjer |
-| `src/lib/components/ny/` | 30 komponenter, alle kun brugt i 3.0. `VaelgArk.svelte` er ubrugt siden 12. august og skal enten slettes eller have en note |
+| `src/lib/components/ny/` | 31 komponenter, alle kun brugt i 3.0. `VaelgArk.svelte` er ubrugt siden 12. august og skal enten slettes eller have en note |
+| `components/ny/Sidehoved.svelte` | **Toppen af hver side.** Afløser syv varianter, se 9.31 |
+| `components/ny/Maerke.svelte` | **Logoet.** Ét sted, to udgaver. Skrivemåden er `Linn's` MED apostrof |
 | `src/lib/utils/billede3.ts` | Skalering og webp i browseren. `billede.ts` er den gamle og må ikke røres |
 | `src/routes/ny/admin/ingredienser/` | Kobl ingredienser til fødevarer. Se 9.17 |
 | `src/routes/ny/admin/opskrift-makro/` | Regnestykket linje for linje. **Gå her når et tal ser forkert ud** |
@@ -84,7 +86,6 @@ gamle app og må kun læses.
 | `content/nulDage3.ts` | Pause-dage. Se 9.2 | 24 |
 | `content/spaerring3.ts` | Spærring ved abo-udløb. Se 9.3 | 12 |
 | `content/opskriftKategori3.ts` | Opskrift-kategorier, hvor snack er sin egen | 23 |
-| `content/inspirator3.ts` | Hvornår AI-inspiratoren dukker op | 12 |
 | `content/plejer3.ts` | "Det du plejer". Modulets vigtigste fil, læs toppen | 12 |
 | `content/enhedsvaegt3.ts` | **Regnemaskinen etape 1.** Husholdningsmål til gram. Se 9.17 | 38 |
 | `content/ingrediensNavn3.ts` | **Etape 2.** 402 navne til 291 kernenavne. Tilstand står på navnet | 23 |
@@ -203,12 +204,18 @@ Alle ruter ligger under `/ny`.
 | `/ny/hjaelp/faq` | Ofte stillede spørgsmål. Se 9.23 |
 | `/ny/hjaelp/links` | Links og guides. Se 9.23 |
 
-**Bundmenuen:** Forside · 30-30 · Beskeder · Udvikling · Profil.
+**Bundmenuen:** Forside · 30-30 · Træning · Beskeder · Udvikling · Din side. Seks faner siden 19. august.
+
+**Højden er 50 px** siden 20. august, hvor den gik fra 76 til 58 til 50 samme dag. Den står ét sted som `--nav-h`. Den valgte fane markeres med en **pille bag ikonet**, ikke med en prik forneden. Se 9.31.
+
+**Toppen er låst** siden 20. august og står på alle sider med Linn's Academy og datoen. Højden er `--top-h`. Se 9.31.
 
 **Ordet Snak er droppet 16. august.** Fanen hedder Beskeder, og siden rummer
 både Linn AI og Linn. Ser du ordet et sted, hører det til før den dato.
 
-Forsiden består af, i rækkefølge: hilsen med Linns ansigt, Til dig lige nu, noten fra Linn, Dit overskud med kurven, AI-inspiratoren, datostrimlen, dagens små skridt, dagens lektioner, dagens træning, dagens refleksion, dagens tal, challenge og næste hold.
+Forsiden består af, i rækkefølge: hilsen med Linns ansigt, Til dig lige nu, noten fra Linn, Dit overskud med kurven, datostrimlen, dagens små skridt, dagens lektioner, dagens træning, dagens refleksion, dagens tal, challenge og næste hold.
+
+**AI-inspiratoren er fjernet 20. august** og kommer ikke igen, se 9.31.
 
 **Foldning:** en sektion hun har klaret folder sig sammen til én linje med flueben, og den bliver liggende præcis hvor den stod. Et tryk folder den ud igen, og så står den åben resten af dagen. Det huskes i `sessionStorage` pr dato.
 
@@ -222,8 +229,14 @@ To konti har flaget `ny-app` og kan se hele fladen.
 
 | Email | Hvem | Type |
 |---|---|---|
-| `test-forlob@linnsacademy.dk` | Mette Testkonto | Forløbskunde på `kropsro_maj_2026` |
-| `test-medlem@linnsacademy.dk` | Hanne Testkonto | Medlem uden forløb, abo til 6. juni 2027 |
+| `test-forlob@linnsacademy.dk` | Mette Testkonto | Forløbskunde på `kropsro_16_augu` |
+| `test-medlem@linnsacademy.dk` | Hanne Testkonto | Medlem uden aktivt forløb, abo til 6. juni 2027 |
+
+**Mette blev flyttet 20. august.** Hendes gamle hold, `kropsro_maj_2026`, udløb 17. august, og hun havde intet abonnement. Hun var derfor **spærret helt ude af 3.0** og ubrugelig som testkonto. Hun ligger nu på KropsRo 16. august og har `kropsro_maj_2026` i historikken. Sikkerhedskopi af hendes dokument før ændringen ligger i `backup/mette-testkonto-2026-08-20.json`.
+
+**Hold øje med det her igen.** Testkonti udløber lige så stille som rigtige kunder, og en udløbet testkonto ligner en fejl i koden. Tjek `forlobIds` mod forløbets slutdato før du fejlsøger noget der handler om adgang.
+
+**Hanne har to udløbne forløb i `forlobIds`.** Hun er medlem uden AKTIVT forløb, ikke uden forløb overhovedet. Det betyder blandt andet at hun har bibliotek og Dine lektioner.
 
 Adgang til `/ny` gives til admin og til kunder hvor `harTestAdgang(userDoc, 'ny-app')` er sand. Flaget kan sættes både pr person og pr hold. Der er bevidst ingen omdirigering fra `/app` til `/ny`.
 
@@ -315,7 +328,7 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 ---
 
-### Fælder tilføjet 20. august
+### Fælder tilføjet 20. august, først på dagen
 
 **En søg-og-erstat der ikke rammer, siger ingenting.** Skriver du en ændring
 mod en linje som formateringen siden har klappet sammen, gled den lydløst
@@ -338,11 +351,37 @@ gemmer sine egne filer, så en PWA skal lukkes helt ned og åbnes igen. Det har
 tre gange i træk lignet en fejl i koden. **Sig det til Linn i stedet for at
 lede**, men tjek altid først at rettelsen faktisk står i den byggede fil.
 
+### Fælder tilføjet 20. august, sent på dagen
+
+**Vores egen "fuld skærm" er kun så stor som browserens vindue.** En drejet
+eller udspændt overlejring dækker det område browseren giver appen, og ikke
+telefonens skærm. Drejer kunden telefonen, kommer browserens eget vindue til
+syne udenom. Det slog en ellers færdig løsning ihjel og blev rullet tilbage,
+se 9.31. **Tegn aldrig en løsning der forudsætter at appen ejer skærmen.**
+
+**Et absolut placeret `::before` males oven på almindeligt indhold.** Bar
+tekst inde i et link har ingen vej til at komme foran. Skal noget ligge over
+en pseudo-flade, skal det pakkes i sit eget element og have `z-index`. Fanens
+navn i bundmenuen manglede det.
+
+**Mål aldrig en markering fra bunden af bundmenuen.** Den luft er telefonens
+sikkerhedszone: nul i en browser og omkring 34 px i den installerede app.
+Prikken under den aktive fane sad én pixel fra kanten og så forkert ud i det
+øjeblik menuen blev lavere. Der står en advarsel i `ny.css`.
+
+**En automatisk indsat import kan lande midt i en flerlinjet import.** Et
+script der lagde en ny import efter "den sidste import-linje" ramte inde i en
+`import {` over fem linjer og brækkede filen. `svelte-check` fandt det, men
+kun fordi navnene forsvandt. **Læg kun noget efter en import der slutter på
+semikolon.**
+
+---
+
 ## 8. Sådan tjekker du dit arbejde
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 1754 tests lige nu, alle grønne
+npm test                               # 2140 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -399,9 +438,13 @@ ingen små skridt, står der et kort på forsiden der fører til
 `/ny/moduler`, som er en tom plads der siger "Siden er ikke bygget endnu".
 Der findes **intet sted i 3.0 hvor små skridt vælges**. Rammer nok mest
 abonnementskunder, for en forløbskunde får sine fra planen, men linket
-står der for alle.
+står der for alle. **Stadig ikke løst 20. august sent på dagen.**
 
 Der står også stadig "Resten af din profil kommer her" nederst på Din side.
+
+**5. `/ny/forlob` er forældreløs.** Siden 20. august, hvor "Alle dage" blev
+fjernet, linker ingen side til den. Den virker hvis man skriver adressen.
+Enten en vej ind eller sløjfes.
 
 #### Beslutninger der venter på Linn
 
@@ -412,9 +455,14 @@ Der står også stadig "Resten af din profil kommer her" nederst på Din side.
   to hold, viser fluebenet sig begge steder. Noterne har ikke problemet
 - **Beskeder er lukket i de 90 dage.** Det er mit valg og ikke hendes. Hun
   er aldrig blevet spurgt
-- **Skærmretning låst på telefonen.** Så sker der ingenting når hun drejer.
-  Knappen "Stor video" er svaret, men en løsning der drejer selve billedet er
-  mulig og større
+- **Træningsvideoen fylder ikke skærmen på en stående telefon.** Prøvet og
+  rullet tilbage 20. august, se 9.31: vores overlejring dækker kun browserens
+  vindue, ikke telefonens skærm. De fire muligheder er tegnet i
+  `mockups-traeningsvideo-stor.html`. **Den eneste der virkelig virker er at
+  filme øvelserne på højkant**, og den kræver ikke kode. Vimeo løser det ikke
+- **Vimeo til træningsvideoerne.** Egen sag, ikke besluttet. Løser IKKE
+  fuldskærm, men giver video der tilpasser sig forbindelsen og flytter en
+  regning væk fra Firebase, hvor video er det dyreste. Se 9.31
 - **De 5 års opbevaring.** Se SPEC 35.4. Kræver et felt der stemples når hun
   åbner appen. Feltet findes ikke, og sletningen er ikke bygget. **Byg den
   aldrig på Firebases login-tidspunkt**, det er målt forkert for 16 % af
@@ -1665,6 +1713,122 @@ gør hele reglen ugyldig, så browseren smider den væk uden at sige noget.
 "Fold sammen"-knap blev bygget som en grå tekstlinje uden flade. Linn bad om
 funktionen igen dagen efter uden at have set den. Er en kontrol den eneste
 vej til noget, skal den kunne ses, også når den ikke er hovedhandlingen.
+
+### 9.31 HELE DAGEN DEN 20. AUGUST, SENT PÅ DAGEN
+
+Syv ting gik ud til testerne på én dag. De står her i den rækkefølge de blev
+lavet, fordi flere af dem hænger sammen.
+
+**1. AI-INSPIRATOREN ER FJERNET HELT.** Kortet "En hilsen fra Linn AI" under
+Dit overskud er væk. Linns ord: det kommer vi ikke til at bruge. Komponenten,
+reglerne, de 12 tests, grenen i `/api/ny-ai`, de to gem-funktioner,
+`dageSidenAktiv` og CSS'en er slettet. 552 linjer.
+
+To ting står tilbage med vilje. **Felterne `nyInspirator` og
+`nyInspiratorAfvist` bliver liggende på kunderne**, de gør ingenting og en
+oprydning ville koste et script hen over alle kunder for ingen gevinst. Og
+**`inspirator` står stadig i `NyAiLinje`-typen**, fordi de gamle log-linjer
+findes og admin-siden i den GAMLE app filtrerer på dem. Sletter du det,
+brækker den side. Der står en advarsel i filen.
+
+Forsiden henter stadig to måneders aktivitet ved hver indlæsning. Kun de
+seneste syv dage bruges nu. **Vinduet kan sættes ned og ville gøre forsiden
+hurtigere.** Ikke gjort, for det var en anden opgave.
+
+**2. ÉT SIDEHOVED I HELE APPEN.** Toppen fandtes i SYV udgaver: `side-top`,
+`adm-top`, `ing-top`, `ob-hoved`, `rm-top`, `maaling-top` og forsidens egen.
+Tolv sider bar desuden den samme håndrettelse i markup for at få luften til
+at passe. Alt det er nu `Sidehoved.svelte` med en `kant`-parameter.
+
+**Sidder hovedet inde i `.ny-pad`, skal `kant={false}` med.** Den ramme har
+allerede 17 px i siderne. Det er den ene ting du skal tænke over når du bruger
+komponenten.
+
+**To sider bruger den med vilje ikke:** lektionen og træningens afspiller.
+Begge er medie-sider uden titel, hvor et mærke ville være støj oven på en
+video. Lektionen har sin egen `medie-top`.
+
+**3. TOPPEN ER LÅST OG STÅR PÅ ALLE SIDER.** Linns anden runde samme dag. Den
+viser KUN "Linn's Academy" og datoen. Sidernes egne titler ruller med.
+
+**Den er IKKE `position: fixed`.** Den er søster til bundmenuen i den samme
+lodrette flex, altså uden for `.ny-scroll`. Derfor kan den hverken gynge eller
+dække noget, og indholdet skal ikke skubbes ned med en polstring der bagefter
+skal holdes i sync. **Gør det på samme måde hvis der skal noget mere fast
+ind.** Højden står som `--top-h` ved siden af `--nav-h`.
+
+**Skrivemåden er `Linn's` MED apostrof.** Logoet har altid haft den, resten af
+appen skrev den uden, og de to stod side om side uden at nogen havde valgt.
+Nu er det besluttet.
+
+**Logoets terracotta har sit eget token, `--maerke`.** Der ligger en fælde:
+`--terra` findes allerede og peger på PLUM. Griber du efter den, bliver
+logoet lilla uden at nogen opdager det.
+
+**4. BUNDMENUEN NED TIL 50 PX MED PILLE I STEDET FOR PRIK.** Højden gik fra
+76 til 58 til 50 samme dag. Trykfladen er stadig 44 px, det er luften omkring
+der er skåret. Markeringen af den valgte fane er nu en blød pille bag ikonet,
+model 2 fra `mockups-bundmenu-markering.html`. Se fælden ovenfor om aldrig at
+måle en markering fra bunden.
+
+**5. TRÆNINGEN SENDER HENDE TILBAGE HVOR HUN KOM FRA.** Der er to døre ind,
+flisen på forsiden og fanen Træning, og afspilleren vidste ikke hvilken. Alle
+udgange pegede på træningens forside, så kom hun fra forsiden, blev hun sat af
+et sted hun aldrig havde bedt om. Flisen mærker nu sin vej med `fra=forside`,
+og alle tre udgange læser den. "Tag træning 8" tager mærket med.
+
+Fejl-skærmens Tilbage-knap peger stadig fast på programsiden. Anden situation,
+ikke rørt.
+
+**6. ET FORLØB DER KØRER VISER KUN I DAG OG BAGUD.** Dagene fremad er helt
+væk fra listen, ikke bare låst. **Det VENDER Linns egen beslutning fra 18.
+august** om at hun skulle kunne se hele forløbet med en lås på. Begge udgaver
+har nu været prøvet, så skriv den ikke om igen uden at spørge.
+
+En lektion med et synlighedsvindue frem i tiden forsvinder også mens forløbet
+kører. Et GENNEMFØRT forløb viser alt, også rækker der stadig er låst af et
+vindue. Ugerne bygges ud fra listen, så tomme fremtidsuger falder ud af sig
+selv.
+
+**7. "ALLE DAGE" ER FJERNET** ved dagens lektioner på forsiden. Datostrimlen
+fører allerede til hver enkelt dag. **Bemærk at `/ny/forlob` dermed ikke
+linkes til fra nogen side.** Siden virker hvis man skriver adressen, men den
+er forældreløs. Skal enten have en vej ind eller sløjfes.
+
+### Det der blev prøvet og rullet tilbage samme dag
+
+**Træningsvideoen drejet 90 grader.** Model B fra
+`mockups-traeningsvideo-stor.html`. Videoen er 16:9 og en telefon er meget
+højere end bred, så i stor visning kunne den kun blive en stribe. Løsningen
+drejede hele den store flade, så uret og knapperne fulgte med.
+
+**Den virkede ikke, og grunden er værd at huske.** Vores overlejring dækker
+kun det område BROWSEREN giver appen, ikke telefonens skærm. Drejede Linn
+telefonen, kom browserens eget vindue til syne udenom. Rullet tilbage samme
+dag.
+
+**Det er stadig et åbent ønske.** De fire muligheder er tegnet i mockup-filen.
+A er som i dag og virker kun når telefonen ligger ned. C skærer det halve af
+billedet væk og duer ikke på en squat. **D, altså at filme øvelserne på
+højkant, er den eneste der giver et rigtigt resultat uden at bytte noget væk**,
+og den kræver ikke kode. Film på højkant næste gang der optages.
+
+**Og nej, Vimeo løser det ikke.** Spurgt og undersøgt 20. august. Problemet er
+ikke hvilken afspiller det er, det er at den der går i ægte fuldskærm på en
+iPhone ejer hele skærmen, og så forsvinder uret. Vimeo ville til gengæld give
+video der tilpasser sig forbindelsen og flytte en regning væk fra Firebase.
+**Det er en selvstændig sag med sin egen pris**, ikke et svar på fuldskærm.
+
+### Nye mockup-filer fra 20. august
+
+- `mockups-sidehoved.html` — fire modeller for toppen. A plus C valgt, og
+  siden overhalet af den låste top i punkt 3
+- `mockups-bundmenu-markering.html` — seks markeringer af den valgte fane.
+  Nummer 2 valgt
+- `mockups-traeningsvideo-stor.html` — fire veje til at fylde skærmen, plus
+  hele svaret på Vimeo-spørgsmålet. B valgt, prøvet og rullet tilbage
+
+---
 
 ### Mad er nu bygget faerdig paa naer to beslutninger
 
