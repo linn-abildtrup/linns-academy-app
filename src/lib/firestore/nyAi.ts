@@ -20,6 +20,12 @@ import { db } from '$lib/firebase';
 export interface NyAiLinje {
 	id: string;
 	uid: string;
+	/**
+	 * 'inspirator' bliver ikke skrevet mere. Kortet blev fjernet fra
+	 * forsiden 20. august 2026, men de gamle linjer ligger stadig i
+	 * nyAiLog, og admin-siden i den gamle app filtrerer paa dem.
+	 * SLET DEN IKKE fra typen, saa braekker den side.
+	 */
 	tilstand: 'samtale' | 'inspirator';
 	tidspunkt: number;
 	/** Kun samtale. */

@@ -29,10 +29,8 @@
 		byggKurve,
 		maalingStatus,
 		type Kurve,
-		type MaalingStatus,
-		type NyeKundeFelter
+		type MaalingStatus
 	} from '$lib/content/forside3';
-	import { vurderInspirator, type Fakta } from '$lib/content/inspirator3';
 	import { byggBeskeder, type NyestSvar } from '$lib/content/beskeder3';
 	import { aboVisning, APP_KOB_URL } from '$lib/content/abonnement';
 	import { hentMineSpoergsmaal } from '$lib/firestore/spoergsmaal';
@@ -48,9 +46,6 @@
 		saetKlaret,
 		hentDagensTal,
 		hentNaesteHold,
-		dageSidenAktiv,
-		gemInspiratorAfvist,
-		gemInspiratorTekst,
 		datoNoegle,
 		type SmaaSkridtIDag,
 		type DagensTal,
@@ -68,7 +63,6 @@
 	import FoldetRaekke from '$lib/components/ny/FoldetRaekke.svelte';
 	import Henter from '$lib/components/ny/Henter.svelte';
 	import Ugestrimmel from '$lib/components/ny/Ugestrimmel.svelte';
-	import Inspirator from '$lib/components/ny/Inspirator.svelte';
 	import TilDig from '$lib/components/ny/TilDig.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 	import Challenge from '$lib/components/ny/Challenge.svelte';
@@ -98,9 +92,6 @@
 	const forlobKilder = getContext<() => ForlobKilde[]>('forlob');
 
 	const userDoc = $derived(hentUserDoc());
-	// 3.0's egne felter paa kunde-dokumentet. Den gamle types.ts kender dem
-	// ikke, og den maa ikke aendres, saa de laeses gennem en egen type.
-	const nyeFelter = $derived((userDoc ?? {}) as NyeKundeFelter);
 	const user = $derived(hentUser());
 	const adgang = $derived(hentAdgang());
 
@@ -215,8 +206,9 @@
 					}
 				: null;
 			// Vi henter to maaneder tilbage, ikke kun en uge. Uge-strimlen
-			// bruger de seneste syv dage, inspiratoren bruger resten til at
-			// se hvor laenge hun har vaeret vaek.
+			// bruger de seneste syv dage. Resten blev hentet til inspirator-
+			// kortet, som er fjernet 20. august, og vinduet er ikke sat ned
+			// endnu, se overdragelsen.
 			const ugeStart = new Date(nu);
 			ugeStart.setDate(ugeStart.getDate() - 60);
 
@@ -481,95 +473,6 @@
 
 	const harMaal = $derived((tal?.proteinMaal ?? 0) > 0 || (tal?.fiberMaal ?? 0) > 0);
 
-	// ── Inspiratoren ────────────────────────────────────────────
-	// Kortet under Dit overskud. Melder sig kun naar hun har vaeret vaek,
-	// eller naar overskuddet falder mens hun er aktiv.
-	let inspiratorTekst = $state('');
-	let henterInspirator = $state(false);
-	let afvistIDag = $state<string | null>(null);
-
-	// Har hun gjort noget I DAG. Ikke "nogensinde". Det skal vaere dagens
-	// lektioner der er klaret, ikke bare at hun engang har markeret én.
-	const gjortNogetIDag = $derived(
-		(skridtData?.skridt ?? []).some((s) => s.svar === 'ja') ||
-			lektioner.some((l) => klaret.has(l.id)) ||
-			(traening?.klaretIDag ?? false) ||
-			refleksionSkrevet
-	);
-
-	const fakta = $derived.by<Fakta | null>(() => {
-		if (henter || !kurve) return null;
-		return vurderInspirator({
-			dageSidenAktiv: dageSidenAktiv(aktiveDage, nu),
-			maalinger: kurve.punkter.map((p) => ({ ms: p.ms, vaerdi: p.vaerdi })),
-			smaaSkridt: (skridtData?.skridt ?? []).map((s) => s.label),
-			forlobNavn: aktivtForlob?.navn ?? null,
-			dagNummer: aktivtForlob?.dagNummer ?? null,
-			harGjortNogetIDag: gjortNogetIDag,
-			afvistDato: afvistIDag ?? nyeFelter.nyInspiratorAfvist ?? null,
-			iDag
-		});
-	});
-
-	// Er dagens tekst allerede skrevet, viser vi den, uanset hvad hun har
-	// naaet siden. Kortet skal blive staaende til hun selv goer noget ved
-	// det. Indhold der forsvinder under haenderne paa hende er forvirrende.
-	$effect(() => {
-		const gemt = nyeFelter.nyInspirator;
-		if (gemt?.dato === iDag && gemt.tekst && !inspiratorTekst) {
-			inspiratorTekst = gemt.tekst;
-		}
-	});
-
-	// Henter teksten én gang om dagen.
-	$effect(() => {
-		const f = fakta;
-		const uid = user?.uid;
-		if (!f || !uid || inspiratorTekst || henterInspirator) return;
-
-		henterInspirator = true;
-		(async () => {
-			try {
-				const idToken = await user!.getIdToken();
-				const res = await fetch('/api/ny-ai', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
-					body: JSON.stringify({ tilstand: 'inspirator', fakta: f })
-				});
-				if (!res.ok) return;
-				const data = (await res.json()) as { svar: string };
-				inspiratorTekst = data.svar;
-				await gemInspiratorTekst(uid, iDag, data.svar);
-			} catch (e) {
-				// Kan vi ikke hente en tekst, viser vi ingenting. Et tomt kort
-				// er bedre end et kort der undskylder for sig selv.
-				console.warn('[ny] kunne ikke hente inspirator', e);
-			} finally {
-				henterInspirator = false;
-			}
-		})();
-	});
-
-	// Naar teksten foerst er hentet, staar kortet der resten af dagen.
-	// Kun hun kan faa det vaek: ved at sige "ikke nu", eller ved at
-	// tage imod og snakke med AI'en om det.
-	const visInspirator = $derived(
-		(inspiratorTekst.length > 0 || henterInspirator) &&
-			afvistIDag !== iDag &&
-			(nyeFelter.nyInspiratorAfvist ?? '') !== iDag
-	);
-
-	async function afvisInspirator() {
-		const uid = user?.uid;
-		afvistIDag = iDag;
-		inspiratorTekst = '';
-		if (!uid) return;
-		try {
-			await gemInspiratorAfvist(uid, iDag);
-		} catch (e) {
-			console.warn('[ny] kunne ikke gemme afvisning', e);
-		}
-	}
 	const harRefleksion = $derived(!!aktivtForlob && (skridtData?.refleksion ?? '').length > 0);
 
 	// Alt klaret: hvor mange opgaver dagen havde, og hvor mange der er taget.
@@ -691,15 +594,6 @@
 
 		{#if kurve && status}
 			<Overskud {kurve} {status} nu={nuMs} />
-		{/if}
-
-		{#if visInspirator}
-			<Inspirator
-				tekst={inspiratorTekst}
-				henter={henterInspirator}
-				onafvis={afvisInspirator}
-				ontagimod={afvisInspirator}
-			/>
 		{/if}
 
 		{#if altKlaret}
