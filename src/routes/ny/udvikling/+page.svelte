@@ -94,7 +94,15 @@
 	 * Formen blev valgt fordi et omraade kan bygges eller fjernes uden at
 	 * siden ser halvfaerdig ud. Et kort der ikke findes, er der bare ikke.
 	 */
-	let aabent = $state<string>('overskud');
+	/**
+	 * Hvilket omraade der staar aabent. Tom betyder alle foldet sammen, og
+	 * det er hvad hun moeder.
+	 *
+	 * "Dit overskud" stod aaben fra start indtil 20. august. Linns oenske:
+	 * alle fliser foldet sammen som standard, saa hun moeder hele billedet
+	 * paa én skaerm og selv vaelger hvad hun vil ind i.
+	 */
+	let aabent = $state<string>('');
 
 	function fold(omraade: string) {
 		aabent = aabent === omraade ? '' : omraade;
