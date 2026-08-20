@@ -73,6 +73,21 @@
 	const programId = $derived(page.params.programId ?? '');
 	const nr = $derived(Number(page.params.nr));
 
+	// ── Hvilken doer kom hun ind ad ─────────────────────────────
+	// Der er TO veje herind, og de skal foere to forskellige steder hen
+	// bagefter. Flisen paa forsiden gaar direkte paa dagens traening, og
+	// saa vil hun tilbage til forsiden. Fanen Traening gaar via listen,
+	// og saa vil hun tilbage til listen for at vaelge noget andet.
+	//
+	// Foer 20. august pegede begge udgange paa /ny/traening, saa kom hun
+	// fra forsiden, blev hun sat af et sted hun aldrig havde bedt om.
+	const fraForsiden = $derived(page.url.searchParams.get('fra') === 'forside');
+	const udgang = $derived(fraForsiden ? '/ny' : '/ny/traening');
+	const udgangTekst = $derived(fraForsiden ? 'Tilbage til forsiden' : 'Tilbage til Træning');
+
+	/** Maerket skal med videre, ellers taber naeste traening doeren. */
+	const videre = $derived(fraForsiden ? '?fra=forside' : '');
+
 	type Skaerm = 'henter' | 'fejl' | 'klar' | 'fortsaet' | 'spiller' | 'faerdig';
 
 	let skaerm = $state<Skaerm>('henter');
@@ -609,7 +624,7 @@
 		stopUr();
 		slipWakeLock();
 		musikEl?.pause();
-		void goto('/ny/traening');
+		void goto(udgang);
 	}
 
 	function navnPaa(o: DayExercise | null): string {
@@ -676,11 +691,11 @@
 			<!-- Har hun lyst til én mere med det samme, skal hun kunne det.
 			     Der er ingen graense pr dag. Linns beslutning 18. august. -->
 			{#if gemtFaerdig && naesteEfter !== null && naesteEfter !== nr}
-				<a class="tv-knap af-link" href={`/ny/traening/${programId}/${naesteEfter}`}>
+				<a class="tv-knap af-link" href={`/ny/traening/${programId}/${naesteEfter}${videre}`}>
 					Tag træning {naesteEfter}
 				</a>
 			{/if}
-			<a class="tv-knap rolig af-link" href="/ny/traening">Tilbage til Træning</a>
+			<a class="tv-knap rolig af-link" href={udgang}>{udgangTekst}</a>
 		</div>
 	{:else}
 		<div class="af-top">

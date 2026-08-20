@@ -128,7 +128,13 @@ export async function hentDagensTraening3(
 			// Linns valg 18. august: kunden har allerede valgt sit program,
 			// saa de to mellemled er spildte tryk. Hun lander paa
 			// klar-skaermen med videoen og trykker selv Start.
-			href: `/ny/traening/${valgt.program.id}/${nr}`,
+			//
+			// fra=forside maerker hvilken DOER hun kom ind ad. Der er to,
+			// den her og fanen Traening, og afspilleren vidste det ikke.
+			// Uden maerket sendte den hende ud paa traeningens forside
+			// bagefter, altsaa et sted hun aldrig havde bedt om at komme.
+			// Se kommentaren over udgang() i afspilleren.
+			href: `/ny/traening/${valgt.program.id}/${nr}?fra=forside`,
 			videoUrl: traening ? await videoForDag(traening.exercises.map((e) => e.exerciseId)) : null,
 			klaretIDag
 		};
