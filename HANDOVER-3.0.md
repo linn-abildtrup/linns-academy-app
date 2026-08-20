@@ -1716,7 +1716,7 @@ vej til noget, skal den kunne ses, også når den ikke er hovedhandlingen.
 
 ### 9.31 HELE DAGEN DEN 20. AUGUST, SENT PÅ DAGEN
 
-Syv ting gik ud til testerne på én dag. De står her i den rækkefølge de blev
+Otte ting gik ud til testerne på én dag. De står her i den rækkefølge de blev
 lavet, fordi flere af dem hænger sammen.
 
 **1. AI-INSPIRATOREN ER FJERNET HELT.** Kortet "En hilsen fra Linn AI" under
@@ -1795,6 +1795,26 @@ fører allerede til hver enkelt dag. **Bemærk at `/ny/forlob` dermed ikke
 linkes til fra nogen side.** Siden virker hvis man skriver adressen, men den
 er forældreløs. Skal enten have en vej ind eller sløjfes.
 
+**8. HUN KAN SE ØVELSERNE FØR HUN STARTER.** Klar-skærmen viste kun den
+FØRSTE øvelses video. De øvrige var usynlige, og kendte hun ikke en øvelse,
+kunne hun ikke slå den op uden at starte træningen først. Nu ligger der en
+foldet række, "Se øvelserne · 6", under Start-knappen.
+
+**Listen er foldet sammen og ligger UNDER knappen.** Hun åbner skærmen for at
+træne og ikke for at læse. Hold fast i det hvis der skal mere på skærmen.
+
+**Arket er det SAMME som øvelsesbiblioteket bruger**, `OevelsesArk.svelte`,
+udvidet med to valgfrie ting: en ekstra meta-linje med sæt og sekunder, og
+bladring mellem øvelserne. Biblioteket sender ingen af dem og er uændret.
+**Retter du noget i arket, rammer det begge steder.**
+
+Bonus-øvelsen står med i listen og er mærket som bonus. Udstyret står i arket
+og ikke på hver række, for rækkerne blev for tætpakkede med både sæt, sekunder
+og udstyr.
+
+Der kan køre op til seks små videoer på én gang i den udfoldede liste. Det
+virkede på Linns telefon 20. august. **Hold øje med det på en ældre telefon.**
+
 ### Det der blev prøvet og rullet tilbage samme dag
 
 **Træningsvideoen drejet 90 grader.** Model B fra
@@ -1827,6 +1847,8 @@ video der tilpasser sig forbindelsen og flytte en regning væk fra Firebase.
   Nummer 2 valgt
 - `mockups-traeningsvideo-stor.html` — fire veje til at fylde skærmen, plus
   hele svaret på Vimeo-spørgsmålet. B valgt, prøvet og rullet tilbage
+- `mockups-se-oevelserne-foerst.html` — fire måder at kigge øvelserne igennem
+  før start. A valgt og bygget
 
 ---
 
