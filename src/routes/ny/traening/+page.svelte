@@ -49,6 +49,7 @@
 	import {
 		antalTraeninger3,
 		fremgangTekst3,
+		klaretTekst3,
 		kundeProgrammer3,
 		type KundeProgram3,
 		type Traeningsfremgang3
@@ -158,6 +159,16 @@
 			skifter = false;
 		}
 	}
+
+	/**
+	 * Skal "Alle øvelser" staa her.
+	 *
+	 * Kun for medlemmer UDEN aktivt forloeb. Linns beslutning 21. august.
+	 * En forloebskunde moeder oevelserne inde i selve traeningen, saa
+	 * raekken ville vaere en dublet. Hun mister ikke adgangen: kortet
+	 * under Materiale paa Din side foerer samme sted hen.
+	 */
+	const visOevelser = $derived(adgang.aktiveForlob.length === 0);
 
 	/** "Træning 7 af 21 · ca. 12 min", altsaa det hun skal nu. */
 	const naesteTekst = $derived.by(() => {
@@ -274,9 +285,16 @@
 				{#if naesteTekst}<span class="mt-n-s">{naesteTekst}</span>{/if}
 				{#if valgt.klaret > 0}
 					<span class="mt-n-bar"><i style={`width:${valgt.procent}%`}></i></span>
-					<span class="mt-n-f">{fremgangTekst3(valgt)}</span>
 				{/if}
-				<span class="mt-n-knap">{valgt.klaret > 0 ? 'Fortsæt' : 'Start'}</span>
+				<!-- Knappen er en PILLE i hoejre side og ikke en bjaelke over
+				     hele bredden. Den fyldte foer hele kortet og var appens
+				     stoerste knap, paa en side hvor intet haster. Linns
+				     bemaerkning 21. august. Fremgangen staar ved siden af, saa
+				     kortet bliver lavere og ikke hoejere. -->
+				<span class="mt-n-rk">
+					<span class="mt-n-f">{valgt.klaret > 0 ? klaretTekst3(valgt) : ''}</span>
+					<span class="mt-n-knap">{valgt.klaret > 0 ? 'Fortsæt' : 'Start'} ›</span>
+				</span>
 			</a>
 		{:else if liste.length > 1}
 			<p class="mt-under">Vælg det program du har lyst til. Du kan skifte når du vil.</p>
@@ -327,19 +345,25 @@
 		{/if}
 
 		<section>
-			<div class="lab"><h2>Sådan træner du</h2></div>
+			<div class="lab">
+				<h2>{visOevelser ? 'Øvelser og indstillinger' : 'Indstillinger'}</h2>
+			</div>
 			<div class="mt-liste">
-				<!-- Oevelserne bor under Din side, fordi de ogsaa skal kunne
-				     naas i de 90 dage hvor traeningen ikke findes. Men en
-				     kunde midt i et program vil ogsaa slaa en oevelse op, saa
-				     der er en vej ind herfra til den samme side. -->
-				<a class="mt-r" href="/ny/profil/oevelser">
-					<span class="mt-r-t">
-						<span class="mt-r-navn">Alle øvelser</span>
-						<span class="mt-r-s">Se hvordan hver øvelse laves</span>
-					</span>
-					<span class="mt-r-pil" aria-hidden="true">›</span>
-				</a>
+				<!-- KUN MEDLEMMER UDEN FORLOEB. Linns beslutning 21. august.
+				     En forloebskunde har oevelserne inde i selve traeningen,
+				     baade som listen foer start og som "Sådan gør du"
+				     undervejs, saa raekken er en dublet for hende.
+				     Hun mister ikke adgangen: kortet under Materiale paa Din
+				     side foerer samme sted hen og roeres ikke. -->
+				{#if visOevelser}
+					<a class="mt-r" href="/ny/profil/oevelser">
+						<span class="mt-r-t">
+							<span class="mt-r-navn">Alle øvelser</span>
+							<span class="mt-r-s">Se hvordan hver øvelse laves</span>
+						</span>
+						<span class="mt-r-pil" aria-hidden="true">›</span>
+					</a>
+				{/if}
 				<a class="mt-r" href="/ny/traening/udstyr">
 					<span class="mt-r-t">
 						<span class="mt-r-navn">Sådan træner jeg</span>

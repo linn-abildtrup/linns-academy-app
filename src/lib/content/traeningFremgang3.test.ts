@@ -6,6 +6,7 @@ import {
 	erFaerdig3,
 	erIGang3,
 	fremgangTekst3,
+	klaretTekst3,
 	iGangMed3,
 	kundeProgrammer3,
 	maaAabnes3,
@@ -274,15 +275,37 @@ describe('iGangMed3', () => {
 describe('fremgangTekst3', () => {
 	const a = program({ id: 'a', antalDage: 21 });
 
-	it('siger ikke begyndt', () => {
-		expect(fremgangTekst3(kundeProgrammer3([a], new Map())[0])).toBe('21 træninger · ikke begyndt');
+	// Skriver IKKE antallet: raekken saetter den sammen med kategorien og
+	// antallet foran, og saa stod der "42 træninger · 42 træninger".
+	it('siger ikke begyndt, uden at gentage antallet', () => {
+		expect(fremgangTekst3(kundeProgrammer3([a], new Map())[0])).toBe('ikke begyndt');
+	});
+
+	it('bruger lille begyndelsesbogstav, for den staar altid efter noget', () => {
+		const kort = new Map([['a', { programId: 'a', gennemfoerte: [1], senestAt: 1, runde: 1 }]]);
+		expect(fremgangTekst3(kundeProgrammer3([a], kort)[0])).toBe('træning 2 af 21');
+	});
+
+	it('siger du er igennem naar alt er taget', () => {
+		const kort = new Map([
+			[
+				'a',
+				{
+					programId: 'a',
+					gennemfoerte: Array.from({ length: 21 }, (_, i) => i + 1),
+					senestAt: 1,
+					runde: 1
+				}
+			]
+		]);
+		expect(fremgangTekst3(kundeProgrammer3([a], kort)[0])).toBe('du er igennem');
 	});
 
 	it('siger hvor langt hun er', () => {
 		const kort = new Map([
 			['a', { programId: 'a', gennemfoerte: [1, 2, 3, 4], senestAt: 1, runde: 1 }]
 		]);
-		expect(fremgangTekst3(kundeProgrammer3([a], kort)[0])).toBe('Træning 5 af 21');
+		expect(fremgangTekst3(kundeProgrammer3([a], kort)[0])).toBe('træning 5 af 21');
 	});
 
 	it('siger det naar alt er klaret', () => {
@@ -297,7 +320,7 @@ describe('fremgangTekst3', () => {
 				}
 			]
 		]);
-		expect(fremgangTekst3(kundeProgrammer3([a], kort)[0])).toBe('Du er igennem alle 21 træninger');
+		expect(fremgangTekst3(kundeProgrammer3([a], kort)[0])).toBe('du er igennem');
 	});
 
 	it('bruger aldrig ordet dag', () => {

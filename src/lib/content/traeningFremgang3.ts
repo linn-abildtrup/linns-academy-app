@@ -216,10 +216,31 @@ export function iGangMed3(liste: KundeProgram3[]): KundeProgram3 | null {
 	return liste.find((k) => k.iGang) ?? null;
 }
 
-/** Linjen under programmets navn paa hendes liste. */
+/**
+ * Linjen under programmets navn paa hendes liste.
+ *
+ * SKRIVER IKKE ANTALLET NAAR HUN IKKE ER BEGYNDT. Raekken saetter den
+ * sammen med kategorien og antallet foran, og saa stod der
+ * "Uden redskaber · 42 træninger · 42 træninger · ikke begyndt".
+ * Set paa Linns skaermbillede 21. august. Den kunne ikke ses foer, fordi
+ * den kun rammer et program hun ikke er begyndt paa, og ingen havde to
+ * programmer at vaelge imellem.
+ *
+ * Lille begyndelsesbogstav, fordi den ALTID staar efter noget andet.
+ */
 export function fremgangTekst3(k: KundeProgram3): string {
 	const i_alt = k.program.antalDage;
-	if (k.faerdig && k.klaret >= i_alt) return `Du er igennem alle ${i_alt} træninger`;
-	if (k.klaret === 0) return `${i_alt} træninger · ikke begyndt`;
-	return `Træning ${k.naeste ?? i_alt} af ${i_alt}`;
+	if (k.faerdig && k.klaret >= i_alt) return 'du er igennem';
+	if (k.klaret === 0) return 'ikke begyndt';
+	return `træning ${k.naeste ?? i_alt} af ${i_alt}`;
+}
+
+/**
+ * "11 træninger klaret". Staar paa det moerke kort ved siden af knappen.
+ *
+ * Kortet siger i forvejen "Træning 12 af 42" ovenover, saa den her skal
+ * sige noget ANDET, nemlig hvor meget hun har lagt bag sig.
+ */
+export function klaretTekst3(k: KundeProgram3): string {
+	return k.klaret === 1 ? '1 træning klaret' : `${k.klaret} træninger klaret`;
 }

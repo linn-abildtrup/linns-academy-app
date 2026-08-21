@@ -8299,23 +8299,39 @@ button.tm-r-t:focus-visible {
 	background: var(--honey);
 }
 
+/* Fremgangen og knappen deler den samme linje. Foer laa knappen som en
+   bjaelke over hele bredden under det hele, og saa blev kortet hoejt uden
+   at sige mere. Linns bemaerkning 21. august. */
+.mt-n-rk {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-top: 10px;
+}
+
 .mt-n-f {
+	flex: 1;
+	min-width: 0;
 	font-size: calc(12px * var(--fs-scale, 1));
 	opacity: 0.72;
 }
 
+/* PILLE, ikke bjaelke. Den fyldte foer hele kortets bredde og var appens
+   stoerste knap, paa en side hvor intet haster. Traefladen er stadig
+   42 px hoej, altsaa rigeligt til en finger. */
 .mt-n-knap {
-	margin-top: 6px;
 	background: var(--honey);
 	color: #3a2a16;
 	border-radius: 999px;
-	padding: 12px 0;
+	padding: 9px 22px;
 	text-align: center;
 	font-weight: 700;
-	font-size: calc(14.5px * var(--fs-scale, 1));
-	min-height: 48px;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	min-height: 42px;
 	display: grid;
 	place-items: center;
+	flex-shrink: 0;
 }
 
 .mt-liste {
