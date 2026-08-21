@@ -40,6 +40,16 @@
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 	import { gemMinTraening3, hentMinTraening3 } from '$lib/firestore/mineTraeninger3';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
+	import OevelsesArk from '$lib/components/ny/OevelsesArk.svelte';
+	import {
+		TEMPOER3,
+		nuvaerendeTempo3,
+		saetTempo3,
+		tempoTal3,
+		type Tempo3
+	} from '$lib/content/traeningTempo3';
+	import { filtrerOevelser, kategoriAntal, udstyrTekst } from '$lib/content/oevelsesSoeg3';
+	import { getVideoUrl } from '$lib/utils/storage';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -65,6 +75,41 @@
 	let soegeord = $state('');
 	let kopierFra = $state<number | null>(null);
 
+	// ── Vaelgeren ───────────────────────────────────────────────
+	//
+	// Den brugte foer sin EGEN soegning, som kun kiggede paa navnet og
+	// ikke kunne finde æ, ø og å hvis hun skrev ae, oe, aa. Og der var
+	// hverken filtre eller video, saa hun valgte i blinde: "Bird dog"
+	// siger ingenting til en der ikke traener i forvejen.
+	//
+	// Nu bruger den PRAECIS det samme som oevelsesbiblioteket under Din
+	// side. Linns beslutning 21. august. Der er ét sted at rette hvis
+	// soegningen skal blive bedre, og de to lister opfoerer sig ens.
+	let valgtKategori = $state<string | null>(null);
+
+	/** Den oevelse arket staar paa. Null = arket er lukket. */
+	let seOevelse = $state<Exercise | null>(null);
+	let seVideo = $state<string | null>(null);
+	let henterVideo = $state(false);
+
+	/** Videoen der koerer paa selve raekken i listen. */
+	let raekkeVideo = $state<Map<string, string>>(new Map());
+
+	async function seDenneOevelse(oevelse: Exercise) {
+		seOevelse = oevelse;
+		seVideo = null;
+		if (!oevelse.videoPath) return;
+		henterVideo = true;
+		try {
+			seVideo = await getVideoUrl(oevelse.videoPath);
+		} catch (e) {
+			// Uden video kan hun stadig laese hvordan oevelsen laves.
+			console.warn('[ny] kunne ikke hente oevelsens video', e);
+		} finally {
+			henterVideo = false;
+		}
+	}
+
 	const nuvaerende = $derived<TrainingDay>({
 		dagNummer: nr,
 		titel: '',
@@ -85,10 +130,67 @@
 		oevelserTilKunde3(bank, kategorier, rensUdstyr3(udstyrFra(userDoc), kategorier))
 	);
 
-	const kanVaelges = $derived.by(() => {
-		const ord = soegeord.trim().toLowerCase();
-		if (!ord) return mineOevelser;
-		return mineOevelser.filter((e) => e.name.toLowerCase().includes(ord));
+	/** Kategorierne med antal. Talt PAA soegningen, ikke paa hele banken. */
+	const kategoriValg = $derived(kategoriAntal(filtrerOevelser(mineOevelser, { soegeord })));
+
+	const kanVaelges = $derived(
+		filtrerOevelser(mineOevelser, {
+			soegeord,
+			kategorier: valgtKategori ? [valgtKategori] : []
+		})
+	);
+
+	/** Er oevelsen allerede paa traeningen. Saa staar der flueben. */
+	function erMed(exerciseId: string): boolean {
+		return oevelser.some((o) => o.exerciseId === exerciseId);
+	}
+
+	/**
+	 * Hvor mange raekker der maa vise levende video paa én gang.
+	 *
+	 * 36 videoer der koerer samtidig faar en aeldre telefon til at hakke,
+	 * og det er praecis den slags der ikke kan ses paa en ny. Filtrerer
+	 * hun ned til en kategori, er der typisk faerre end 12 tilbage, og
+	 * saa faar hun dem alle. Ellers staar der et afspilnings-tegn, og hun
+	 * kan aabne arket for at se den.
+	 */
+	const MAX_LEVENDE = 12;
+
+	// ── Tempo ───────────────────────────────────────────────────
+	// Ét valg for hele traeningen i stedet for tre talfelter pr oevelse.
+	// Hun kan stadig rette en enkelt, men hun behoever ikke. Se
+	// content/traeningTempo3.
+	const tempo = $derived(nuvaerendeTempo3(oevelser));
+
+	function saetTempo(t: Tempo3) {
+		oevelser = saetTempo3(oevelser, t);
+		urort = false;
+	}
+
+	$effect(() => {
+		const liste = kanVaelges;
+		if (liste.length === 0 || liste.length > MAX_LEVENDE) {
+			if (raekkeVideo.size > 0) raekkeVideo = new Map();
+			return;
+		}
+		let afbrudt = false;
+		(async () => {
+			const par = await Promise.all(
+				liste.map(async (e) => {
+					if (!e.videoPath) return null;
+					try {
+						return [e.id, await getVideoUrl(e.videoPath)] as const;
+					} catch {
+						return null;
+					}
+				})
+			);
+			if (afbrudt) return;
+			raekkeVideo = new Map(par.filter((x): x is readonly [string, string] => x !== null));
+		})();
+		return () => {
+			afbrudt = true;
+		};
 	});
 
 	const kandidater = $derived(mit ? kopiKandidater3(mit.dage, nr) : []);
@@ -233,6 +335,36 @@
 		{#if besked}<p class="adm-besked">{besked}</p>{/if}
 		{#if fejl}<p class="adm-fejl">{fejl}</p>{/if}
 
+		<!-- TEMPO FOR HELE TRAENINGEN. Foer skulle hun saette saet,
+		     sekunder og pause for HVER oevelse, altsaa seks talfelter for
+		     to oevelser, uden hjaelp til hvad der er fornuftigt.
+		     Har hun rettet en enkelt oevelse, staar ingen af knapperne
+		     valgt, se nuvaerendeTempo3. -->
+		{#if oevelser.length > 0}
+			<section>
+				<div class="lab"><h2>Tempo</h2></div>
+				<div class="oev-chips" role="group" aria-label="Vælg tempo">
+					{#each TEMPOER3 as t (t.id)}
+						<button
+							type="button"
+							class="oev-chip"
+							class:valgt={tempo?.id === t.id}
+							onclick={() => saetTempo(t)}
+						>
+							{t.navn} <span class="oev-tal">{tempoTal3(t)}</span>
+						</button>
+					{/each}
+				</div>
+				<p class="bv-hjaelp">
+					{#if tempo}
+						Gælder alle øvelser. Du kan stadig rette en enkelt nedenfor.
+					{:else}
+						Øvelserne kører ikke det samme tempo lige nu. Tryk på en knap for at sætte dem ens.
+					{/if}
+				</p>
+			</section>
+		{/if}
+
 		{#if oevelser.length === 0}
 			<p class="adm-tom">Der er ingen øvelser i træningen endnu.</p>
 			<button type="button" class="ch-knap sekundaer" onclick={foreslaa}>
@@ -311,22 +443,88 @@
 		{/if}
 
 		{#if viserTilfoej}
-			<section class="adm-kort">
+			<section class="adm-kort bv-vaelger">
 				<h2>Tilføj øvelse</h2>
-				<label class="adm-felt">
-					<span>Søg</span>
-					<input type="text" bind:value={soegeord} placeholder="Søg i øvelser" />
-				</label>
+
+				<input
+					class="ops-soeg"
+					type="search"
+					bind:value={soegeord}
+					placeholder="Søg efter øvelse"
+					aria-label="Søg efter øvelse"
+				/>
+
+				<!-- Samme filtre som oevelsesbiblioteket. Tallet siger hvad hun
+				     FAAR hvis hun trykker, og ikke hvad hun allerede har. -->
+				{#if kategoriValg.length > 1}
+					<div class="oev-chips" role="group" aria-label="Filtrér på kategori">
+						<button
+							type="button"
+							class="oev-chip"
+							class:valgt={valgtKategori === null}
+							onclick={() => (valgtKategori = null)}
+						>
+							Alle <span class="oev-tal">{kategoriValg.reduce((n, k) => n + k.antal, 0)}</span>
+						</button>
+						{#each kategoriValg as k (k.navn)}
+							<button
+								type="button"
+								class="oev-chip"
+								class:valgt={valgtKategori === k.navn}
+								onclick={() => (valgtKategori = valgtKategori === k.navn ? null : k.navn)}
+							>
+								{k.navn} <span class="oev-tal">{k.antal}</span>
+							</button>
+						{/each}
+					</div>
+				{/if}
 
 				{#if kanVaelges.length === 0}
-					<p class="adm-tom">Ingen øvelser matcher det du søgte efter.</p>
+					<p class="adm-tom">Der er ingen der passer. Prøv et andet ord, eller slå filteret fra.</p>
 				{:else}
-					<div class="adm-liste">
+					<div class="bv-liste">
 						{#each kanVaelges as e (e.id)}
-							<button type="button" class="adm-raekke tr-vaelg" onclick={() => tilfoej(e.id)}>
-								<div class="adm-raekke-t"><span>{e.name}</span></div>
-								<div class="adm-raekke-s">{e.catLabel}</div>
-							</button>
+							{@const med = erMed(e.id)}
+							<!-- TO KNAPPER PR RAEKKE, og det er med vilje. Pilen aabner
+							     arket, hvis hun ikke ved hvad oevelsen er. Plusset
+							     laegger den paa. Foer lagde ét tryk den paa med det
+							     samme, og ville hun fortryde, skulle hun finde den igen
+							     laengere nede paa siden. -->
+							<div class="bv-r">
+								<button
+									type="button"
+									class="bv-se"
+									onclick={() => seDenneOevelse(e)}
+									aria-label="Se {e.name}"
+								>
+									<span class="bv-th">
+										{#if raekkeVideo.get(e.id)}
+											<video src={raekkeVideo.get(e.id)} autoplay muted loop playsinline></video>
+										{:else}
+											<span class="bv-play" aria-hidden="true">▶</span>
+										{/if}
+									</span>
+									<span class="bv-tx">
+										<span class="bv-navn">{e.name}</span>
+										<span class="bv-meta">
+											{e.catLabel}{#if udstyrTekst(e.udstyr ?? [])}
+												· {udstyrTekst(e.udstyr ?? [])}{/if}
+										</span>
+									</span>
+									<span class="bv-pil" aria-hidden="true">›</span>
+								</button>
+								<button
+									type="button"
+									class="bv-plus"
+									class:med
+									onclick={() => tilfoej(e.id)}
+									aria-label={med
+										? `${e.name} er allerede med. Tilføj en gang til`
+										: `Tilføj ${e.name}`}
+								>
+									{med ? '✓' : '+'}
+								</button>
+							</div>
 						{/each}
 					</div>
 				{/if}
@@ -381,3 +579,17 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Det SAMME ark som oevelsesbiblioteket og som "Se øvelserne" foer en
+     traening. Ét sted at rette, og de tre lister opfoerer sig ens. -->
+{#if seOevelse}
+	<OevelsesArk
+		oevelse={seOevelse}
+		video={seVideo}
+		{henterVideo}
+		onluk={() => {
+			seOevelse = null;
+			seVideo = null;
+		}}
+	/>
+{/if}

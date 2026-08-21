@@ -63,6 +63,24 @@
 
 	let navn = $state('');
 	let antal = $state(3);
+
+	/** De faste valg. 7 er en uge, 14 to, 21 tre. */
+	const FORSLAG_ANTAL = [3, 7, 14, 21];
+
+	/** Sand naar hun har trykket Andet og selv taster et tal. */
+	let eget = $state(false);
+
+	const antalHjaelp = $derived(
+		antal === 3
+			? '3 træninger er en kort uge, hvis du træner hver anden dag'
+			: antal === 7
+				? '7 træninger er en uge, hvis du træner hver dag'
+				: antal === 14
+					? '14 træninger er to uger, hvis du træner hver dag'
+					: antal === 21
+						? '21 træninger er tre uger, hvis du træner hver dag'
+						: ''
+	);
 	let medForslag = $state(true);
 
 	const nu = Date.now();
@@ -150,15 +168,12 @@
 	{:else if !maaBygge}
 		<p class="kort rolig">Du kan ikke bygge dine egne programmer lige nu.</p>
 	{:else}
-		<p class="mt-under">
-			Giv programmet et navn og vælg hvor mange træninger det skal have. Du kan altid tilføje flere
-			bagefter.
-		</p>
+		<p class="mt-under">Du kan altid tilføje flere træninger og rette i dem bagefter.</p>
 
 		{#if fejl}<p class="adm-fejl">{fejl}</p>{/if}
 
 		<label class="adm-felt">
-			<span>Navn</span>
+			<span>Hvad skal det hedde</span>
 			<input
 				type="text"
 				bind:value={navn}
@@ -167,19 +182,43 @@
 			/>
 		</label>
 
-		<label class="adm-felt">
-			<span>Antal træninger</span>
-			<input type="number" min="1" max="100" bind:value={antal} />
-		</label>
+		<!-- FASTE VALG i stedet for et tomt talfelt. Foer skulle hun gaette
+		     et tal mellem 1 og 100, foer hun havde set en eneste oevelse.
+		     Linns beslutning 21. august. Andet giver stadig feltet, hvis
+		     hun vil noget bestemt. -->
+		<div class="lab"><h2>Hvor mange træninger</h2></div>
+		<div class="oev-chips" role="group" aria-label="Vælg antal træninger">
+			{#each FORSLAG_ANTAL as n (n)}
+				<button
+					type="button"
+					class="oev-chip"
+					class:valgt={!eget && antal === n}
+					onclick={() => {
+						eget = false;
+						antal = n;
+					}}>{n}</button
+				>
+			{/each}
+			<button type="button" class="oev-chip" class:valgt={eget} onclick={() => (eget = true)}>
+				Andet
+			</button>
+		</div>
 
-		<label class="adm-tjek">
+		{#if eget}
+			<label class="adm-felt" style="margin-top:9px">
+				<span>Antal træninger</span>
+				<input type="number" min="1" max="100" bind:value={antal} />
+			</label>
+		{:else}
+			<p class="bv-hjaelp">{antalHjaelp}</p>
+		{/if}
+
+		<label class="adm-tjek" style="margin-top:14px">
 			<input type="checkbox" bind:checked={medForslag} />
-			<span>Lav et forslag til mig, så jeg har noget at rette i</span>
+			<span>Lav et forslag jeg kan rette i</span>
 		</label>
 
-		<p class="adm-hjaelp">
-			Forslaget bruger kun øvelser der passer til det udstyr du har valgt i din profil.
-		</p>
+		<p class="adm-hjaelp">Bruger kun øvelser der passer til det udstyr du har valgt.</p>
 
 		<button type="button" class="ch-knap primaer" onclick={opret} disabled={gemmer}>
 			{gemmer ? 'Opretter' : 'Opret programmet'}

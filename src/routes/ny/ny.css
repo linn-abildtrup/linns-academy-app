@@ -8343,6 +8343,132 @@ button.tm-r-t:focus-visible {
 	flex-direction: column;
 }
 
+/* ── Byg dit eget: oevelses-vaelgeren ──────────────────────── */
+/*
+   Vaelgeren brugte foer sin EGEN soegning uden filtre og uden video, saa
+   kunden valgte i blinde: "Bird dog" siger ingenting til en der ikke
+   traener i forvejen. Nu bruger den det samme som oevelsesbiblioteket.
+   Linns beslutning 21. august.
+
+   Chips og soegefelt genbruger bibliotekets klasser, .oev-chips og
+   .ops-soeg, saa de to lister ser ens ud. Kun raekken er ny, fordi den
+   har TO knapper hvor bibliotekets har én.
+*/
+.bv-liste {
+	background: var(--paper-2);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	padding: 2px 8px;
+	margin-top: 11px;
+}
+
+.bv-r {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 7px 2px;
+}
+
+.bv-r + .bv-r {
+	box-shadow: inset 0 1px 0 var(--line);
+}
+
+/* Pilen aabner arket. Plusset laegger oevelsen paa. To knapper, fordi
+   hun skal kunne kigge uden at vaelge: foer lagde ét tryk den paa med
+   det samme, og ville hun fortryde, skulle hun finde den igen. */
+.bv-se {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex: 1;
+	min-width: 0;
+	text-align: left;
+	color: inherit;
+	min-height: 52px;
+	padding: 0;
+}
+
+.bv-th {
+	width: 46px;
+	height: 31px;
+	flex-shrink: 0;
+	border-radius: 8px;
+	overflow: hidden;
+	background: var(--oat);
+	display: grid;
+	place-items: center;
+	color: var(--ink-3);
+	font-size: calc(11px * var(--fs-scale, 1));
+}
+
+.bv-th video {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.bv-tx {
+	flex: 1;
+	min-width: 0;
+}
+
+.bv-navn {
+	display: block;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1.25;
+	color: var(--espresso);
+}
+
+.bv-meta {
+	display: block;
+	font-size: calc(11px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-top: 1px;
+}
+
+.bv-pil {
+	color: var(--ink-3);
+	font-size: calc(15px * var(--fs-scale, 1));
+	flex-shrink: 0;
+	padding-right: 2px;
+}
+
+.bv-plus {
+	width: 40px;
+	height: 40px;
+	min-height: 40px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background: var(--plum-tint);
+	color: var(--plum);
+	font-size: calc(17px * var(--fs-scale, 1));
+	font-weight: 700;
+	display: grid;
+	place-items: center;
+}
+
+/* Allerede paa traeningen. Hun maa gerne laegge den paa igen, fx hvis
+   den skal koeres to gange, saa knappen er ikke slaaet fra. */
+.bv-plus.med {
+	background: var(--sage);
+	color: #fff;
+}
+
+/* Den rolige linje under chips. */
+.bv-hjaelp {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin: 7px 0 0;
+	line-height: 1.45;
+}
+
+/* Vaelgeren staar i et kort, og soegefeltet skal fylde bredden. */
+.bv-vaelger .ops-soeg {
+	width: 100%;
+}
+
 /* ── Vaelg og aabn er to forskellige ting ──────────────────── */
 /*
    Raekken VAELGER programmet. Pilen til hoejre AABNER det. Foer var hele
