@@ -322,6 +322,10 @@
 							: `Åbent for ${antalBygEget} modtagere`}
 				</div>
 			</a>
+			<a class="adm-raekke tr-raekke" href="/ny/admin/traening/hensyn">
+				<div class="adm-raekke-t"><span>Hensyn</span></div>
+				<div class="adm-raekke-s">Hvad belaster hver øvelse. Bruges når kunden vil skåne noget</div>
+			</a>
 		</div>
 	{/if}
 </div>

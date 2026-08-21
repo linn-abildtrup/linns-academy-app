@@ -219,6 +219,13 @@ service cloud.firestore {
 			allow write: if isAdmin();
 		}
 
+		// Hvad hver oevelse belaster. Kunden laeser det naar hun beder om
+		// hensyn i sit eget program. Kun Linn saetter maerkerne.
+		match /oevelseHensyn3/{docId} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
 		match /traeningsprogrammer3/{programId} {
 			allow read: if request.auth != null;
 			allow write: if isAdmin();

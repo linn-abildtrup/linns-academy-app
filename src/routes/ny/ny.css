@@ -8343,6 +8343,104 @@ button.tm-r-t:focus-visible {
 	flex-direction: column;
 }
 
+/* ── Admin: hensyn paa oevelserne ──────────────────────────── */
+/* Tallene oeverst er det vigtigste paa siden: de siger hvor mange
+   oevelser kunden har tilbage naar hun beder om et hensyn. Er der for
+   faa, staar linjen roed, saa det ikke kan overses. */
+.hs-tal h2 {
+	margin-bottom: 4px;
+}
+
+.hs-linje {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 8px 0;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+}
+
+.hs-linje + .hs-linje {
+	box-shadow: inset 0 1px 0 var(--line);
+}
+
+.hs-alle {
+	font-weight: 700;
+}
+
+.hs-antal {
+	font-weight: 700;
+	color: var(--ink-2);
+	white-space: nowrap;
+}
+
+.hs-linje.faa .hs-antal {
+	color: var(--ler-tekst);
+}
+
+.hs-knapper {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 9px;
+	margin: 12px 0;
+}
+
+.hs-liste {
+	margin-top: 11px;
+}
+
+.hs-r {
+	background: var(--paper);
+	border-radius: 14px;
+	box-shadow: var(--shadow-soft);
+	padding: 11px 13px 12px;
+	margin-bottom: 8px;
+}
+
+.hs-navn {
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1.25;
+}
+
+.hs-kat {
+	display: block;
+	font-size: calc(11px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	font-weight: 500;
+	margin-top: 1px;
+}
+
+/* Fire knapper der kan staa til og fra. De brakker om paa to linjer paa
+   en smal telefon, og det er fint: de er en liste og ikke en raekke. */
+.hs-m {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 9px;
+}
+
+.hs-chip {
+	border-radius: 999px;
+	padding: 7px 12px;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	background: var(--paper-2);
+	color: var(--ink-2);
+	box-shadow: inset 0 0 0 1px var(--line);
+	min-height: 36px;
+}
+
+.hs-chip.paa {
+	background: var(--ler-tint);
+	color: var(--ler-tekst);
+	box-shadow: inset 0 0 0 1.5px #e0c3b4;
+}
+
+.hs-bund {
+	margin-top: 14px;
+}
+
 /* ── Byg dit eget: oevelses-vaelgeren ──────────────────────── */
 /*
    Vaelgeren brugte foer sin EGEN soegning uden filtre og uden video, saa
