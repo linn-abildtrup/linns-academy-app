@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 20. august 2026, sent på dagen. Der skete meget den dag, se 9.31.
+Sidst opdateret 21. august 2026. Se 9.31 og 9.32 for de to seneste dage, hvor der skete meget.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -322,6 +322,8 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 **Firestore-regler driver.** Sammenlign altid de live regler med `firestore.rules` i repoet, inden du udgiver noget. Det er nu ét kald, se afsnit 8.
 
+**`prettier --write` PAA ny.css OMSKRIVER SKRIFTERNE. Jeg gik selv i den 21. august, selv om advarslen stod her.** De indlejrede skrifter er base64 på én linje, og prettier brækker dem op. Diffen bliver 165 linjer i stedet for de 126 du skrev. Redningen er at rulle filen tilbage med `git checkout` og lægge sine egne regler på i hånden. **Hold `ny.css` helt uden for prettier.**
+
 **`prettier --write` med et bredt mønster ødelægger din diff.** Fundet 18. august. Repoet er ikke prettier-rent i dag, formentlig fordi versionen har flyttet sig siden filerne blev skrevet. Én kørsel på `src/routes/ny/**` omformaterede **25 filer der ellers var urørte**, og i `ny.css` skrev den de indlejrede skrifter om, som er base64 på én linje. Intet af det var forkert, men diffen blev ubrugelig og ingen kunne se hvad der faktisk var ændret. **Formatér kun de filer du selv har rørt, og hold `ny.css` helt udenfor.** Kør `git diff --stat` før hver commit og se efter filer du ikke har rørt.
 
 **Der kan køre en anden session i det samme repo.** 18. august dukkede tre ændrede filer op midt i en opgave, heriblandt én i den GAMLE app. De var ikke fejl, en anden session arbejdede parallelt og committede dem bagefter. **Rul aldrig fremmede ændringer tilbage, og bland dem aldrig ind i din egen commit.** Kør `git status` når du begynder OG når du er færdig, og sammenlign.
@@ -381,7 +383,7 @@ semikolon.**
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 2140 tests lige nu, alle grønne
+npm test                               # 2189 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -1849,6 +1851,146 @@ video der tilpasser sig forbindelsen og flytte en regning væk fra Firebase.
   hele svaret på Vimeo-spørgsmålet. B valgt, prøvet og rullet tilbage
 - `mockups-se-oevelserne-foerst.html` — fire måder at kigge øvelserne igennem
   før start. A valgt og bygget
+
+---
+
+### 9.32 DEN 21. AUGUST: TRÆNINGEN BLEV FÆRDIG NOK TIL ET HOLD
+
+Dagen hvor træningen gik fra at virke til at kunne bruges. Ni ting.
+
+**1. DE TO KICKSTART-PROGRAMMER ER BYGGET.** Linns kravspec: 4 øvelser,
+45 sekunder arbejde, 15 sekunders pause, **ét sæt** pr øvelse. Det giver
+præcis 3 minutters effektiv træning. Slot 1 ben, slot 2 ryg, slot 3
+skulder, **slot 4 ALTID planken**. 42 træninger hver, så der er to om
+dagen i et 21-dages forløb.
+
+`Kickstart · med kettlebell` og `Kickstart · uden kettlebell`. Begge er
+verificeret efter skrivning: alle 84 træninger har fire øvelser, 180
+sekunders arbejde, og planken sidst uden undtagelse.
+
+**Ét sæt er nyt.** De gamle programmer kører 3 sæt, hvilket er derfor
+Kettle tog over ti minutter. Med Linns tal skal det være ét.
+
+**Banken er tynd uden kettlebell.** Der findes kun to ryg-øvelser og to
+pres-øvelser uden vægt, så de går igen hver anden dag. **Og der findes
+INGEN ægte skulderøvelse uden vægt.** Incline push-up og dips rammer
+bryst og triceps. Skal skulderen med i den variant, mangler der en øvelse
+i banken, og den skal optages.
+
+**2. RUNDER, OG EN FEJL DER VILLE HAVE RAMT DEN FØRSTE DER BLEV FÆRDIG.**
+Fremgangen gemte ALLE gennemførte numre for altid. Skulle programmet
+loope, sagde appen "din næste er nummer 1", men 1 stod allerede på
+listen, så der skete ingenting. **Hun sad fast på 1.**
+
+Fremgangen har nu et `runde`-felt. `gennemfoerte` er kun den runde hun er
+i gang med. Gamle dokumenter uden feltet læses som runde 1, så der er
+ingen migrering.
+
+`naesteTraening3` giver nu **null** når runden er kørt igennem, også på
+et program der looper. Hun skal spørges. Tre steder siger det samme:
+færdig-skærmen, et bånd på programsiden, og forsidens flise.
+
+**3. HUN VÆLGER NU SELV SIT PROGRAM.** Før fandtes valget slet ikke. Det
+stod ordret i koden: "Der er ikke noget gemt valg: hun vælger ved at
+begynde." Appen gættede ud fra hvad hun senest havde trænet i.
+
+Det holdt indtil et hold får to programmer. Så kunne hun ikke skifte:
+forsiden blev ved med at vise det gamle, indtil hun startede en træning i
+det nye, og så var valget truffet uden at nogen var blevet spurgt.
+
+Valget gemmes nu i `valgtTraeningsprogram3` på kunden. **Programrækken
+VÆLGER, pilen ÅBNER.** Skifter hun væk fra noget, spørges hun først, og
+bliver stående på siden bagefter.
+
+**4. FLUEBENET FØLGER PROGRAMMET, IKKE DAGEN.** Forsiden spurgte "har hun
+trænet i dag" uden at skele til hvilket program. Med to programmer
+foldede den træningen sammen efter én træning i det ene. Fejlen fandtes
+uafhængigt af skift og havde bare ikke kunnet ses.
+
+**5. TRÆNINGSSIDEN RYDDET OP.** Start-knappen fyldte hele bredden og var
+appens største knap, på en side hvor intet haster. Den er nu en pille i
+højre side med fremgangen ved siden af.
+
+**Og en tekst-dublet:** "Uden redskaber · 42 træninger · 42 træninger ·
+ikke begyndt". To stumper skrev begge antallet. `fremgangTekst3` skriver
+det ikke længere og bruger lille begyndelsesbogstav, for den står ALTID
+efter noget andet.
+
+**"Alle øvelser" vises kun til medlemmer UDEN aktivt forløb.** En
+forløbskunde møder øvelserne inde i selve træningen. Hun mister ikke
+adgangen: kortet under Materiale på Din side fører samme sted hen og er
+urørt, efter Linns ønske.
+
+**6. HELE TOPPEN AF AFSPILLEREN ER FJERNET.** I tre skridt samme dag:
+"Øvelse 3 af 6", så "Træning 8", så fremdriftslinjen. Skærmen begynder nu
+direkte med videoen. **Bemærk at striben er skjult i stor visning**, så
+dér er der ikke længere noget der viser hvor langt hun er.
+`procentAfTraening3` har ingen brugere og står med en note.
+
+**7. BYG DIT EGET PROGRAM GENNEMGÅET.** Funktionen fandtes, men var ikke
+givet ud til nogen, så knappen var skjult for alle. Den gives i admin
+under Byg eget program, hvor **Medlemmer** er en af modtagerne.
+
+Fem ting rettet efter en gennemgang som kunde. **Den værste: hun valgte i
+blinde.** Listen viste kun navn og kategori, ingen video. Vælgeren havde
+sin EGEN søgning der kun kiggede på navnet, mens øvelsesbiblioteket lige
+ved siden af kan det hele. **Nu bruger vælgeren bibliotekets søgning og
+bibliotekets ark**, så de tre lister opfører sig ens.
+
+Dertil: to knapper pr række (pilen kigger, plusset vælger), faste valg
+for antal træninger ved oprettelsen, og **tempo for hele træningen** i
+stedet for tre talfelter pr øvelse.
+
+**Tempoerne er Roligt 30/20, Almindeligt 45/15, Hårdt 50/10.** Linns tal.
+**De tre tager IKKE lige lang tid**: Roligt er 50 sekunder pr øvelse, de
+to andre 60. Det er noteret i koden, så ingen retter det uden at spørge.
+
+**8. FØDEVARER OG OPSKRIFTER VISES FRA TELEFONENS EGEN KOPI FØRST.**
+Telefonen har hver doc liggende i forvejen, men `getDocs` spurgte
+serveren alligevel, så skærmen stod og hentede noget vi allerede havde.
+Samme fælde som opstarten faldt i 11. august, bare et andet sted.
+
+Fødevarerne er den der betyder noget: 2.268 rækker, langt den største
+samling, og det eneste sted i databasen der kunne løbe op på regningen.
+**Kopien koster nul læsninger.**
+
+`kost.ts` kunne ikke bruges, for den GAMLE app bruger den seks steder.
+3.0 har fået sin egen indgang i `fodevarer3.ts` mod den samme samling.
+
+**9. SE ØVELSERNE FØR DU STARTER.** Se punkt 8 i 9.31, bygget sent den
+20. og bekræftet virkende den 21.
+
+### Sådan står træningen nu
+
+| | |
+|---|---|
+| Programmer i alt | 4 |
+| Sat til klar | 2, begge Kickstart |
+| Tildelinger | 2, begge til Mette |
+| Kunder med `ny-app` | 2 |
+
+**Ingen rigtige kunder kan se 3.0 endnu.** Det er stadig kun Mette og
+Hanne. De 18 kunder på KropsRo 16. august har ikke flaget.
+
+### Det Linn selv skal gøre, og som ingen kode kan erstatte
+
+- **De fire velkomstvideoer.** Har stået øverst siden 16. august
+- **Fluebenet "Vises altid til alle" på kategorien Uden redskaber.** Det
+  er derfor kettlebell-kunder stadig ser kropsvægts-programmerne. Slås
+  fra i admin under Kategorier. **Konsekvens:** Uden redskaber bliver
+  noget hun skal vælge aktivt, og en kunde der kun har valgt Kettlebells
+  ser så ingenting uden redskaber
+- **En skulderøvelse uden vægt** skal optages, hvis den variant skal ramme
+  skulderen
+- **Tildel programmerne til et rigtigt hold.** Stadig den farligste, for
+  der kommer ingen fejl når det glemmes. Der kommer bare ingenting
+
+### Nye mockup-filer fra 21. august
+
+- `mockups-program-igennem.html` — når programmet er kørt igennem
+- `mockups-skift-program.html` — skift af træningsprogram
+- `mockups-traeningssiden.html` — træningssiden ryddet op
+- `mockups-byg-eget.html` — byg dit eget, hele arbejdsgangen
 
 ---
 
