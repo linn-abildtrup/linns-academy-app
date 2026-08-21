@@ -60,7 +60,11 @@
 	import { hentMineTraeninger3 } from '$lib/firestore/mineTraeninger3';
 	import { harAbonnement3, isoDato3 } from '$lib/firestore/traeningKunde3';
 	import type { Traeningstildeling3 } from '$lib/content/traeningTildeling3';
+	import { portal } from '$lib/actions/portal';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
+	import { skalBekraefteSkift3, vaelgProgram3 } from '$lib/content/valgtProgram3';
+	import { gemValgtProgram3 } from '$lib/firestore/valgtProgram3';
+	import type { NyeKundeFelter } from '$lib/content/forside3';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -108,14 +112,52 @@
 	/**
 	 * Det program hun foelger.
 	 *
-	 * Der findes ikke noget gemt valg, og det er med vilje: hun VAELGER et
-	 * program ved at begynde paa det. Har hun kun ét, er det hendes. Har
-	 * hun flere og er ikke begyndt paa nogen, er der ikke noget at
-	 * fortsaette, og saa staar kortet oeverst ikke.
+	 * DET GEMTE VALG VINDER. Indtil 21. august fandtes valget ikke, og
+	 * appen gaettede ud fra hvad hun senest havde traenet i. Saa kunne hun
+	 * ikke skifte til noget hun ikke havde roert endnu. Se
+	 * content/valgtProgram3 for hele forklaringen.
 	 *
 	 * Samme regel som forsiden bruger, se traeningForside3.
 	 */
-	const valgt = $derived<KundeProgram3 | null>(iGang[0] ?? (liste.length === 1 ? liste[0] : null));
+	const valgtId = $derived((userDoc as NyeKundeFelter | null)?.valgtTraeningsprogram3 ?? null);
+	const valgt = $derived<KundeProgram3 | null>(vaelgProgram3(liste, valgtId, iGang[0] ?? null));
+
+	// ── Skift af program ────────────────────────────────────────
+	// Hun bliver spurgt foer der skiftes, og bliver STAAENDE paa siden
+	// bagefter. Linns oenske 21. august: foer skulle hun starte en
+	// traening for at valget blev gemt, og saa var det truffet uden at
+	// hun var blevet spurgt.
+	let spoergSkift = $state<KundeProgram3 | null>(null);
+	let skifter = $state(false);
+
+	/** Trykket paa en programraekke. Skifter, eller spoerger foerst. */
+	async function vaelgProgram(k: KundeProgram3) {
+		if (skifter) return;
+		if (skalBekraefteSkift3(valgtId, k.program.id)) {
+			spoergSkift = k;
+			return;
+		}
+		await gemSkift(k);
+	}
+
+	async function gemSkift(k: KundeProgram3) {
+		const uid = user?.uid;
+		if (!uid || skifter) return;
+		skifter = true;
+		try {
+			await gemValgtProgram3(uid, k.program.id);
+			// Ingen navigering. Skallen lytter paa kunde-dokumentet, saa
+			// prikken og kortet flytter sig af sig selv naar skrivningen er
+			// naaet igennem.
+			spoergSkift = null;
+		} catch (e) {
+			console.error('[ny] kunne ikke gemme programvalget', e);
+			fejl = 'Kunne ikke skifte program. Prøv igen.';
+			spoergSkift = null;
+		} finally {
+			skifter = false;
+		}
+	}
 
 	/** "Træning 7 af 21 · ca. 12 min", altsaa det hun skal nu. */
 	const naesteTekst = $derived.by(() => {
@@ -245,18 +287,33 @@
 			<div class="mt-liste">
 				{#each liste as k (k.program.id)}
 					{@const erValgt = valgt?.program.id === k.program.id}
-					<a class="mt-r" class:valgt={erValgt} href={`/ny/traening/${k.program.id}`}>
-						<!-- Prikken viser hvad hun foelger. Der er ikke noget gemt
-						     valg: hun vaelger ved at begynde. -->
-						<span class="mt-r-prik" class:fyldt={erValgt} aria-hidden="true"></span>
-						<span class="mt-r-t">
-							<span class="mt-r-navn">
-								{k.program.navn}{#if k.program.egen}<span class="mt-egen">Din egen</span>{/if}
+					<!-- Raekken VAELGER programmet, den aabner det ikke. Vil hun
+					     ind og se traeningerne, trykker hun paa pilen. Foer var
+					     hele raekken et link, og saa var der ingen maade at
+					     vaelge paa uden at starte en traening. -->
+					<div class="mt-r" class:valgt={erValgt}>
+						<button
+							type="button"
+							class="mt-r-vaelg"
+							aria-pressed={erValgt}
+							onclick={() => vaelgProgram(k)}
+						>
+							<span class="mt-r-prik" class:fyldt={erValgt} aria-hidden="true"></span>
+							<span class="mt-r-t">
+								<span class="mt-r-navn">
+									{k.program.navn}{#if k.program.egen}<span class="mt-egen">Din egen</span>{/if}
+								</span>
+								<span class="mt-r-s">{undertekst(k)} · {fremgangTekst3(k)}</span>
 							</span>
-							<span class="mt-r-s">{undertekst(k)} · {fremgangTekst3(k)}</span>
-						</span>
-						<span class="mt-r-pil" aria-hidden="true">›</span>
-					</a>
+						</button>
+						<a
+							class="mt-r-aabn"
+							href={`/ny/traening/${k.program.id}`}
+							aria-label="Se {k.program.navn}"
+						>
+							<span aria-hidden="true">›</span>
+						</a>
+					</div>
 				{/each}
 			</div>
 		</section>
@@ -298,3 +355,44 @@
 		{/if}
 	{/if}
 </div>
+
+<!-- Spoergsmaalet foer der skiftes. Ligger YDERST, saa det kan portalles
+     ud af det omraade der ruller. Ordlyd A fra mockups-skift-program.
+
+     Det vigtigste er saetningen om at fremgangen bliver staaende. Det er
+     dét man er bange for naar man skifter, og det er gratis at berolige
+     hende. -->
+{#if spoergSkift}
+	<div
+		class="ark-lag ny-tokens mt-dlg-lag"
+		use:portal
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="mt-skift-t"
+	>
+		<button
+			type="button"
+			class="ark-luk-flade"
+			onclick={() => (spoergSkift = null)}
+			aria-label="Behold det program du følger"
+		></button>
+		<div class="mt-dlg">
+			<h2 class="mt-dlg-t" id="mt-skift-t">Vil du skifte til {spoergSkift.program.navn}?</h2>
+			<p class="mt-dlg-s">
+				Det bliver det program du følger fra nu af. Din fremgang i
+				{valgt?.program.navn ?? 'det andet program'} bliver stående, så du kan skifte tilbage når du vil.
+			</p>
+			<button
+				type="button"
+				class="tv-knap"
+				onclick={() => spoergSkift && gemSkift(spoergSkift)}
+				disabled={skifter}
+			>
+				{skifter ? 'Et øjeblik …' : 'Ja, skift program'}
+			</button>
+			<button type="button" class="tv-knap rolig" onclick={() => (spoergSkift = null)}>
+				Bliv på {valgt?.program.navn ?? 'det du følger'}
+			</button>
+		</div>
+	</div>
+{/if}

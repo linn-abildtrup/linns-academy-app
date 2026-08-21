@@ -125,8 +125,7 @@
 					userDoc,
 					hentForlob(),
 					adgang.aktiveForlob.map((f) => ({ forlobId: f.forlobId, dagNummer: f.dagNummer })),
-					Date.now(),
-					new Date().toISOString().slice(0, 10)
+					Date.now()
 				).catch(() => null),
 				hentAdgangsskema().catch(() => null)
 			]);

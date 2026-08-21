@@ -8327,6 +8327,80 @@ button.tm-r-t:focus-visible {
 	flex-direction: column;
 }
 
+/* ── Vaelg og aabn er to forskellige ting ──────────────────── */
+/*
+   Raekken VAELGER programmet. Pilen til hoejre AABNER det. Foer var hele
+   raekken ét link, og saa var der ingen maade at vaelge paa uden at
+   starte en traening. Se content/valgtProgram3.
+
+   Traefladerne skal vaere store nok til en finger hver for sig, og de maa
+   ikke ligge oven i hinanden. Derfor er pilen sin egen knap med luft
+   omkring, og ikke bare et tegn inde i raekken.
+*/
+.mt-r-vaelg {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex: 1;
+	min-width: 0;
+	text-align: left;
+	color: inherit;
+	padding: 0;
+	min-height: 52px;
+}
+
+.mt-r-aabn {
+	display: grid;
+	place-items: center;
+	width: 44px;
+	min-height: 44px;
+	flex-shrink: 0;
+	color: var(--ink-3);
+	font-size: calc(17px * var(--fs-scale, 1));
+	text-decoration: none;
+	border-radius: 10px;
+}
+
+/* ── Spoergsmaalet foer der skiftes ────────────────────────── */
+/* Midt paa skaermen og ikke som et ark forneden. Et ark er noget man
+   bladrer i, og det her er et ja eller nej. */
+.mt-dlg-lag {
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+}
+
+.mt-dlg {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	max-width: 380px;
+	background: var(--paper);
+	border-radius: 20px;
+	box-shadow: 0 18px 44px rgba(60, 40, 30, 0.28);
+	padding: 18px 17px 16px;
+	text-align: center;
+	display: flex;
+	flex-direction: column;
+	gap: 9px;
+}
+
+.mt-dlg-t {
+	font-family: var(--serif);
+	font-size: calc(19px * var(--fs-scale, 1));
+	font-weight: 600;
+	margin: 0;
+	line-height: 1.25;
+	color: var(--espresso);
+}
+
+.mt-dlg-s {
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin: 0 0 4px;
+	line-height: 1.5;
+}
+
 .mt-r {
 	display: flex;
 	align-items: center;

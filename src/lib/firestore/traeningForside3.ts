@@ -25,12 +25,13 @@ import {
 	naesteTraening3,
 	type KundeProgram3
 } from '$lib/content/traeningFremgang3';
+import { klaretIProgramIDag3, vaelgProgram3 } from '$lib/content/valgtProgram3';
+import type { NyeKundeFelter } from '$lib/content/forside3';
 import { hentKategorier3 } from './traeningKategori3';
 import { hentProgram3, hentProgrammer3 } from './traeningsprogram3';
 import { hentMineTildelinger3 } from './traeningTildeling3';
 import { hentFremgang3 } from './traeningFremgang3';
 import { harAbonnement3, isoDato3 } from './traeningKunde3';
-import { hentHistorikForDato } from './traeningHistorik';
 import { videoForDag } from './forside3';
 
 export interface DagensTraening3 {
@@ -64,16 +65,14 @@ export async function hentDagensTraening3(
 	userDoc: UserDoc | null,
 	forlob: ForlobKilde[],
 	aktiveForlob: { forlobId: string; dagNummer: number }[],
-	nu: number,
-	dato: string
+	nu: number
 ): Promise<DagensTraening3> {
 	try {
-		const [programmer, kategorier, tildelinger, fremgang, historik] = await Promise.all([
+		const [programmer, kategorier, tildelinger, fremgang] = await Promise.all([
 			hentProgrammer3(),
 			hentKategorier3(),
 			hentMineTildelinger3(uid),
-			hentFremgang3(uid),
-			hentHistorikForDato(uid, dato).catch(() => [])
+			hentFremgang3(uid)
 		]);
 
 		const kontekst: KundeKontekst3 = {
@@ -89,9 +88,13 @@ export async function hentDagensTraening3(
 			.map((x) => x.program);
 		if (mine.length === 0) return INGEN;
 
-		const klaretIDag = historik.length > 0;
 		const liste = kundeProgrammer3(mine, fremgang);
-		const valgt: KundeProgram3 | null = iGangMed3(liste) ?? (liste.length === 1 ? liste[0] : null);
+
+		// DET GEMTE VALG VINDER. Foer blev det gaettet ud fra hvad hun
+		// senest havde traenet i, og saa kunne hun ikke skifte til noget
+		// hun ikke havde roert endnu. Se content/valgtProgram3.
+		const valgtId = (userDoc as NyeKundeFelter | null)?.valgtTraeningsprogram3 ?? null;
+		const valgt: KundeProgram3 | null = vaelgProgram3(liste, valgtId, iGangMed3(liste));
 
 		if (!valgt) {
 			return {
@@ -100,9 +103,17 @@ export async function hentDagensTraening3(
 				undertekst: `${liste.length} programmer er klar til dig`,
 				href: '/ny/traening',
 				videoUrl: null,
-				klaretIDag
+				// Hun har ikke valgt endnu, saa der er intet program at maale
+				// fluebenet paa. Kortet skal staa aabent, saa hun kan vaelge.
+				klaretIDag: false
 			};
 		}
+
+		// FLUEBENET FOELGER PROGRAMMET og ikke dagen. Linns beslutning 21.
+		// august. Foer spurgte vi "har hun traenet i dag" uden at skele til
+		// hvilket program, saa efter et skift foldede forsiden traeningen
+		// sammen med et flueben, selv om hun ikke havde roert det nye.
+		const klaretIDag = klaretIProgramIDag3(valgt.fremgang.senestAt, nu);
 
 		// ER HUN IGENNEM, maa flisen ikke love "Træning 1". Det er ikke
 		// sandt endnu: hun skal foerst sige ja til en runde mere, eller

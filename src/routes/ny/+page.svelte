@@ -209,7 +209,7 @@
 					datoNoegle(ugeStart)
 				).then((r) => (tael(), r)),
 				hentKlaret(uid).then((r) => (tael(), r)),
-				hentDagensTraening3(uid, userDoc, forlobKilder(), adgang.aktiveForlob, nuMs, iDag).then(
+				hentDagensTraening3(uid, userDoc, forlobKilder(), adgang.aktiveForlob, nuMs).then(
 					(r) => (tael(), r)
 				),
 				hentDagensTal(uid, iDag, userDoc).then((r) => (tael(), r))

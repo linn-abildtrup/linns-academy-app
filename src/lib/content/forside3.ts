@@ -28,11 +28,22 @@ export interface Skydere {
 	sovn?: number;
 }
 
-// Her stod NyeKundeFelter, altsaa de felter 3.0 selv lagde paa kunde-
-// dokumentet. De hoerte begge to til inspirator-kortet, som Linn fjernede
-// 20. august 2026, saa typen er tom og taget ud. Skal 3.0 en dag laegge et
-// nyt felt paa kunden, saa skriv typen her igen og ikke i types.ts, for
-// den gamle apps typer maa ikke aendres.
+/**
+ * Felter 3.0 laegger paa kunde-dokumentet. De staar HER og ikke i
+ * types.ts, fordi den gamle apps typer ikke maa aendres. Den gamle app
+ * ignorerer felter den ikke kender.
+ *
+ * Typen var tom fra 20. til 21. august, hvor de to inspirator-felter var
+ * de eneste og kortet blev fjernet.
+ */
+export interface NyeKundeFelter {
+	/**
+	 * Det traeningsprogram hun foelger. Foer 21. august fandtes valget
+	 * slet ikke og blev gaettet ud fra hvad hun sidst traenede, se
+	 * content/valgtProgram3.
+	 */
+	valgtTraeningsprogram3?: string;
+}
 
 /** Én maaling af Dit overskud. Gennemsnittet af de fem skydere, 1-10. */
 export interface Maaling {
