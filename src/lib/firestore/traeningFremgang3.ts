@@ -42,6 +42,24 @@ export async function gemGennemfoert3(
 }
 
 /**
+ * Starter programmet forfra: toemmer listen og taeller runden op.
+ *
+ * SKRIVER OG ROERER IKKE arrayUnion. Listen skal SAETTES til tom, og en
+ * union kan kun laegge til. Det var praecis dét der gjorde at loopet ikke
+ * virkede foer 20. august, se runde-feltet i content/traeningFremgang3.
+ *
+ * Historikken gaar ikke tabt: hver gennemfoert traening ligger separat i
+ * traeningHistorik og roeres ikke her.
+ */
+export async function startNyRunde3(
+	uid: string,
+	programId: string,
+	nyRunde: number
+): Promise<void> {
+	await setDoc(fremgangDoc(uid, programId), { gennemfoerte: [], runde: nyRunde }, { merge: true });
+}
+
+/**
  * Hele hendes fremgang, som et kort fra program-id til fremgang.
  *
  * Ét kald. Der er faa dokumenter, ét pr program hun har traenet i, og
@@ -57,7 +75,9 @@ export async function hentFremgang3(uid: string): Promise<Map<string, Traeningsf
 			gennemfoerte: Array.isArray(data.gennemfoerte)
 				? data.gennemfoerte.filter((n): n is number => typeof n === 'number')
 				: [],
-			senestAt: typeof data.senestAt === 'number' ? data.senestAt : 0
+			senestAt: typeof data.senestAt === 'number' ? data.senestAt : 0,
+			// Gamle dokumenter har ikke feltet. De er i deres foerste runde.
+			runde: typeof data.runde === 'number' && data.runde >= 1 ? data.runde : 1
 		});
 	}
 	return kort;

@@ -37,6 +37,9 @@
 	import { erEgetProgram3 } from '$lib/content/mineTraeninger3';
 	import {
 		antalKlaret3,
+		maaTilbydesNyRunde3,
+		naesteRunde3,
+		rundeTekst3,
 		antalTraeninger3,
 		erFaerdig3,
 		maaAabnes3,
@@ -50,7 +53,7 @@
 	import { hentProgrammer3 } from '$lib/firestore/traeningsprogram3';
 	import { hentProgramMedTraeninger3 } from '$lib/firestore/mineTraeninger3';
 	import { hentMineTildelinger3 } from '$lib/firestore/traeningTildeling3';
-	import { hentFremgang3 } from '$lib/firestore/traeningFremgang3';
+	import { hentFremgang3, startNyRunde3 } from '$lib/firestore/traeningFremgang3';
 	import { harAbonnement3, isoDato3 } from '$lib/firestore/traeningKunde3';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
@@ -77,9 +80,34 @@
 
 	const antal = $derived(program ? antalTraeninger3(program) : 0);
 	const klaret = $derived(antalKlaret3(fremgang, antal));
-	const naeste = $derived(program ? naesteTraening3(fremgang, antal, program.starterForfra) : null);
+	const naeste = $derived(program ? naesteTraening3(fremgang, antal) : null);
 	const procent = $derived(procentKlaret3(fremgang, antal));
 	const faerdig = $derived(erFaerdig3(fremgang, antal));
+
+	// ── Igennem programmet ──────────────────────────────────────
+	// Spoergsmaalet staar OGSAA her og ikke kun i det oejeblik hun blev
+	// faerdig. Lukkede hun appen lige efter sidste traening, skal hun
+	// kunne finde valget igen dagen efter. Linns beslutning 20. august.
+	const maaTageIgen = $derived(!!program && maaTilbydesNyRunde3(fremgang, program));
+	const rundeMaerkat = $derived(rundeTekst3(fremgang));
+	let starterRunde = $state(false);
+
+	async function tagProgrammetIgen() {
+		const uid = user?.uid;
+		if (!uid || !program || starterRunde) return;
+		starterRunde = true;
+		try {
+			const ny = naesteRunde3(fremgang);
+			await startNyRunde3(uid, programId, ny.runde);
+			// Vi opdaterer skaermen selv i stedet for at hente forfra.
+			// Gitteret skal staa blegt igen med det samme.
+			fremgang = ny;
+		} catch (e) {
+			console.error('[ny] kunne ikke starte en ny runde', e);
+		} finally {
+			starterRunde = false;
+		}
+	}
 
 	const undertekst = $derived.by(() => {
 		if (!program) return '';
@@ -197,10 +225,29 @@
 				<span class="mt-n-knap">{klaret > 0 ? 'Fortsæt' : 'Start'}</span>
 			</a>
 		{:else}
-			<div class="mt-naeste faerdigt">
-				<span class="mt-n-k">Færdig</span>
-				<span class="mt-n-navn">Alle {antal} træninger er klaret</span>
-				<span class="mt-n-s">Du kan tage en af dem om nedenfor, når du har lyst.</span>
+			<div class="mt-igennem">
+				<span class="mt-i-ik" aria-hidden="true">★</span>
+				<div class="mt-i-tx">
+					<span class="mt-i-t">Du er igennem</span>
+					<span class="mt-i-s">
+						Alle {antal} træninger er taget.{#if maaTageIgen}
+							Vil du tage programmet en gang til?{:else}
+							Du kan tage en af dem om nedenfor, når du har lyst.{/if}
+					</span>
+					{#if maaTageIgen}
+						<div class="mt-i-k">
+							<button
+								type="button"
+								class="mt-i-ja"
+								onclick={tagProgrammetIgen}
+								disabled={starterRunde}
+							>
+								{starterRunde ? 'Et øjeblik …' : 'Ja, tag det igen'}
+							</button>
+							<a class="mt-i-nej" href="/ny/traening">Vælg et andet</a>
+						</div>
+					{/if}
+				</div>
 			</div>
 		{/if}
 
@@ -213,7 +260,12 @@
 		     endnu. Det er den samme stribe som nede i selve traeningen,
 		     hvor hun ser hvor langt hun er i dagens oevelser. -->
 		<section>
-			<div class="lab"><h2>Alle træninger</h2></div>
+			<div class="lab">
+				<h2>Alle træninger</h2>
+				<!-- "2. gang igennem". Staar der kun fra anden runde, hvor der
+				     er noget at sige. Se rundeTekst3. -->
+				{#if rundeMaerkat}<span class="mt-runde">{rundeMaerkat}</span>{/if}
+			</div>
 			<div class="tr-gitter">
 				{#each dage as dag (dag.dagNummer)}
 					{@const tilstand = traeningstilstand3(dag.dagNummer, fremgang, naeste)}

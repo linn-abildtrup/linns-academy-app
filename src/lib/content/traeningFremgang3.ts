@@ -17,14 +17,40 @@ import type { Traeningsprogram3 } from './traeningsprogram3';
 
 export interface Traeningsfremgang3 {
 	programId: string;
-	/** Numrene paa de traeninger hun har klaret. 1-baseret. */
+	/**
+	 * Numrene paa de traeninger hun har klaret I DEN RUNDE HUN ER I GANG
+	 * MED. Ikke gennem alle runder. Starter hun forfra, toemmes listen.
+	 */
 	gennemfoerte: number[];
 	/** Unix-ms for den senest gennemfoerte traening. 0 = aldrig traenet. */
 	senestAt: number;
+	/**
+	 * Hvilken gang hun er igennem programmet. 1 foerste gang.
+	 *
+	 * KOM TIL 20. august 2026, og den rettede en fejl der ville have ramt
+	 * den foerste kunde der gennemfoerte et program. Foer stod ALLE
+	 * gennemfoerte numre paa listen for altid, og naar programmet skulle
+	 * loope, sagde appen "din naeste er nummer 1". Nummer 1 stod allerede
+	 * paa listen, saa der skete ingenting, og hun sad fast paa 1.
+	 *
+	 * Gamle dokumenter har ikke feltet. De laeses som runde 1.
+	 */
+	runde: number;
 }
 
 export function tomFremgang3(programId: string): Traeningsfremgang3 {
-	return { programId, gennemfoerte: [], senestAt: 0 };
+	return { programId, gennemfoerte: [], senestAt: 0, runde: 1 };
+}
+
+/** Runden, med gamle dokumenter uden feltet laest som den foerste. */
+export function runde3(fremgang: Traeningsfremgang3): number {
+	return fremgang.runde >= 1 ? fremgang.runde : 1;
+}
+
+/** "2. gang igennem". Tom foerste gang, hvor der ikke er noget at sige. */
+export function rundeTekst3(fremgang: Traeningsfremgang3): string {
+	const n = runde3(fremgang);
+	return n <= 1 ? '' : `${n}. gang igennem`;
 }
 
 /** Kun de numre der findes i programmet. Bliver et program kortere, skal
@@ -47,22 +73,50 @@ export function erIGang3(fremgang: Traeningsfremgang3, antal: number): boolean {
 }
 
 /**
- * Den traening hun skal tage nu: den laveste hun ikke har klaret.
+ * Den traening hun skal tage nu: den laveste hun ikke har klaret i den
+ * runde hun er i gang med.
  *
- * Har hun klaret dem alle, starter programmet forfra paa 1 hvis det er
- * sat til det, ellers er der ingen naeste og programmet er faerdigt.
+ * NULL NAAR RUNDEN ER KOERT IGENNEM, ogsaa paa et program der looper.
+ * Foer gav den 1 igen med det samme, og det var baade en fejl, se
+ * kommentaren ved runde-feltet, og forkert over for kunden: at blive sat
+ * tilbage paa nummer 1 uden at have sagt ja foeles som om appen ikke har
+ * opdaget at man er faerdig. Linns beslutning 20. august: hun skal
+ * spoerges. Se maaTilbydesNyRunde3.
  */
-export function naesteTraening3(
-	fremgang: Traeningsfremgang3,
-	antal: number,
-	starterForfra: boolean
-): number | null {
+export function naesteTraening3(fremgang: Traeningsfremgang3, antal: number): number | null {
 	if (antal <= 0) return null;
 	const klaret = new Set(indenfor(fremgang, antal));
 	for (let nr = 1; nr <= antal; nr++) {
 		if (!klaret.has(nr)) return nr;
 	}
-	return starterForfra ? 1 : null;
+	return null;
+}
+
+/**
+ * Skal hun tilbydes at tage programmet en gang til.
+ *
+ * Kun naar runden er koert igennem OG programmet er sat til at starte
+ * forfra. Fluebenet staar paa hvert program i admin.
+ */
+export function maaTilbydesNyRunde3(
+	fremgang: Traeningsfremgang3,
+	program: Pick<Traeningsprogram3, 'antalDage' | 'starterForfra'>
+): boolean {
+	return erFaerdig3(fremgang, program.antalDage) && program.starterForfra === true;
+}
+
+/**
+ * Fremgangen som den ser ud naar hun siger ja til en runde mere.
+ *
+ * Listen toemmes, saa gitteret staar blegt igen og hun kan se sig
+ * igennem. Linns beslutning 20. august: bliver felterne groenne, ser
+ * skaermen ud som om der ikke er mere at lave.
+ *
+ * Historikken gaar ikke tabt. Hver gennemfoert traening logges separat i
+ * traeningHistorik, og den roeres ikke her.
+ */
+export function naesteRunde3(fremgang: Traeningsfremgang3): Traeningsfremgang3 {
+	return { ...fremgang, gennemfoerte: [], runde: runde3(fremgang) + 1 };
 }
 
 export function procentKlaret3(fremgang: Traeningsfremgang3, antal: number): number {
@@ -140,7 +194,7 @@ export function kundeProgrammer3(
 			program,
 			fremgang,
 			klaret: antalKlaret3(fremgang, program.antalDage),
-			naeste: naesteTraening3(fremgang, program.antalDage, program.starterForfra),
+			naeste: naesteTraening3(fremgang, program.antalDage),
 			procent: procentKlaret3(fremgang, program.antalDage),
 			iGang: erIGang3(fremgang, program.antalDage),
 			faerdig: erFaerdig3(fremgang, program.antalDage)
@@ -165,7 +219,7 @@ export function iGangMed3(liste: KundeProgram3[]): KundeProgram3 | null {
 /** Linjen under programmets navn paa hendes liste. */
 export function fremgangTekst3(k: KundeProgram3): string {
 	const i_alt = k.program.antalDage;
-	if (k.faerdig && k.klaret >= i_alt) return `Alle ${i_alt} træninger er klaret`;
+	if (k.faerdig && k.klaret >= i_alt) return `Du er igennem alle ${i_alt} træninger`;
 	if (k.klaret === 0) return `${i_alt} træninger · ikke begyndt`;
 	return `Træning ${k.naeste ?? i_alt} af ${i_alt}`;
 }

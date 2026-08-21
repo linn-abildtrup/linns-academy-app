@@ -11782,6 +11782,114 @@ body.traening-moerk .ny-scroll {
 	gap: 7px;
 }
 
+/* ── Igennem programmet ────────────────────────────────────── */
+/*
+   Baandet der spoerger om hun vil tage programmet en gang til. Det staar
+   OGSAA her og ikke kun i det oejeblik hun blev faerdig: lukkede hun
+   appen lige efter sidste traening, skal valget kunne findes igen.
+   Linns beslutning 20. august.
+
+   Groen og ikke moerk. Det moerke kort ovenfor er "det du skal nu", og
+   her er der netop ikke noget hun skal. Det er en lykoenskning med et
+   spoergsmaal i.
+*/
+.mt-igennem {
+	display: flex;
+	align-items: flex-start;
+	gap: 11px;
+	background: var(--sage-tint);
+	border: 1px solid #d6e2d2;
+	border-radius: 16px;
+	padding: 13px 14px;
+}
+
+.mt-i-ik {
+	width: 28px;
+	height: 28px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background: var(--paper);
+	color: var(--sage-tekst);
+	display: grid;
+	place-items: center;
+	font-size: calc(15px * var(--fs-scale, 1));
+}
+
+.mt-i-tx {
+	flex: 1;
+	min-width: 0;
+}
+
+.mt-i-t {
+	display: block;
+	font-family: var(--serif);
+	font-size: calc(17px * var(--fs-scale, 1));
+	font-weight: 600;
+	line-height: 1.25;
+	color: var(--espresso);
+}
+
+.mt-i-s {
+	display: block;
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin-top: 3px;
+	line-height: 1.45;
+}
+
+.mt-i-k {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 11px;
+}
+
+.mt-i-ja,
+.mt-i-nej {
+	border-radius: 12px;
+	padding: 10px 15px;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	min-height: 44px;
+	text-decoration: none;
+}
+
+.mt-i-ja {
+	background: var(--plum);
+	color: #fff;
+}
+
+.mt-i-ja:disabled {
+	opacity: 0.6;
+}
+
+.mt-i-nej {
+	color: var(--plum);
+	box-shadow: inset 0 0 0 1.5px var(--plum);
+	display: grid;
+	place-items: center;
+}
+
+/* "2. gang igennem" ved siden af overskriften over gitteret. */
+.mt-runde {
+	margin-left: auto;
+	background: var(--plum-tint);
+	color: var(--plum);
+	border-radius: 999px;
+	padding: 4px 11px;
+	font-size: calc(11px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	white-space: nowrap;
+}
+
+/* Stjernen paa faerdig-skaermen i afspilleren. Samme flade som fluebenet,
+   men den siger noget stoerre: hele programmet, ikke én traening. */
+.af-stjerne {
+	background: var(--honey-tint);
+	color: var(--honey-deep);
+}
+
 .tr-felt {
 	aspect-ratio: 1;
 	border-radius: 11px;

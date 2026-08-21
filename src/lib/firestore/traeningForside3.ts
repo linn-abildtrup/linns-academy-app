@@ -21,6 +21,7 @@ import { programmerForKunde3, type KundeKontekst3 } from '$lib/content/traeningT
 import {
 	iGangMed3,
 	kundeProgrammer3,
+	maaTilbydesNyRunde3,
 	naesteTraening3,
 	type KundeProgram3
 } from '$lib/content/traeningFremgang3';
@@ -103,12 +104,32 @@ export async function hentDagensTraening3(
 			};
 		}
 
+		// ER HUN IGENNEM, maa flisen ikke love "Træning 1". Det er ikke
+		// sandt endnu: hun skal foerst sige ja til en runde mere, eller
+		// vaelge noget andet. Flisen foerer derfor til programsiden, hvor
+		// spoergsmaalet staar. Se maaTilbydesNyRunde3 og Linns beslutning
+		// 20. august.
+		//
+		// Ingen video paa den flise. Der er ingen naeste traening at vise,
+		// og et tilfaeldigt klip ville love noget bestemt.
+		if (valgt.faerdig) {
+			return {
+				tilstand: 'program',
+				navn: `Du er igennem ${valgt.program.navn}`,
+				undertekst: maaTilbydesNyRunde3(valgt.fremgang, valgt.program)
+					? 'Vælg hvad du vil nu'
+					: 'Vælg et nyt program',
+				href: `/ny/traening/${valgt.program.id}`,
+				videoUrl: null,
+				klaretIDag
+			};
+		}
+
 		// Selve traeningen hentes for sig, saa flisen kan vise navnet selv
 		// om dagene ikke naar frem. Uden det ville en langsom forbindelse
 		// give en tom flise i stedet for en halv.
 		const data = await hentProgram3(valgt.program.id).catch(() => null);
-		const nr =
-			naesteTraening3(valgt.fremgang, valgt.program.antalDage, valgt.program.starterForfra) ?? 1;
+		const nr = naesteTraening3(valgt.fremgang, valgt.program.antalDage) ?? 1;
 		const traening = data?.dage.find((d) => d.dagNummer === nr) ?? null;
 
 		const dele: string[] = [`Træning ${nr}`];

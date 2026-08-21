@@ -9,7 +9,11 @@ import {
 	iGangMed3,
 	kundeProgrammer3,
 	maaAabnes3,
+	maaTilbydesNyRunde3,
+	naesteRunde3,
 	naesteTraening3,
+	runde3,
+	rundeTekst3,
 	procentKlaret3,
 	tomFremgang3,
 	traeningstilstand3,
@@ -31,8 +35,8 @@ function program(felter: Partial<Traeningsprogram3> = {}): Traeningsprogram3 {
 	};
 }
 
-function fremgang(gennemfoerte: number[], senestAt = 0): Traeningsfremgang3 {
-	return { programId: 'p1', gennemfoerte, senestAt };
+function fremgang(gennemfoerte: number[], senestAt = 0, runde = 1): Traeningsfremgang3 {
+	return { programId: 'p1', gennemfoerte, senestAt, runde };
 }
 
 describe('antalKlaret3', () => {
@@ -52,29 +56,91 @@ describe('antalKlaret3', () => {
 
 describe('naesteTraening3', () => {
 	it('er 1 naar hun ikke har traenet', () => {
-		expect(naesteTraening3(tomFremgang3('p1'), 21, true)).toBe(1);
+		expect(naesteTraening3(tomFremgang3('p1'), 21)).toBe(1);
 	});
 
 	it('er den laveste hun ikke har klaret', () => {
-		expect(naesteTraening3(fremgang([1, 2, 3, 4]), 21, true)).toBe(5);
+		expect(naesteTraening3(fremgang([1, 2, 3, 4]), 21)).toBe(5);
 	});
 
 	it('finder hullet, ikke bare den hoejeste plus én', () => {
 		// Har hun taget 1, 2 og 4 om, mangler 3 stadig.
-		expect(naesteTraening3(fremgang([1, 2, 4]), 21, true)).toBe(3);
+		expect(naesteTraening3(fremgang([1, 2, 4]), 21)).toBe(3);
 	});
 
-	it('starter forfra naar programmet er sat til det', () => {
-		const alle = fremgang([1, 2, 3]);
-		expect(naesteTraening3(alle, 3, true)).toBe(1);
-	});
-
-	it('giver null naar programmet er faerdigt og ikke starter forfra', () => {
-		expect(naesteTraening3(fremgang([1, 2, 3]), 3, false)).toBeNull();
+	// Foer 20. august gav den 1 igen med det samme paa et program der
+	// loopede. Det var baade en fejl, se runde-feltet, og forkert over for
+	// kunden. Nu er der ingen naeste foer hun har sagt ja til en runde til.
+	it('giver null naar runden er koert igennem, ogsaa paa et loopende program', () => {
+		expect(naesteTraening3(fremgang([1, 2, 3]), 3)).toBeNull();
 	});
 
 	it('giver null for et program uden traeninger', () => {
-		expect(naesteTraening3(tomFremgang3('p1'), 0, true)).toBeNull();
+		expect(naesteTraening3(tomFremgang3('p1'), 0)).toBeNull();
+	});
+});
+
+describe('runde3 og rundeTekst3', () => {
+	it('foerste runde som standard', () => {
+		expect(runde3(tomFremgang3('p1'))).toBe(1);
+	});
+
+	// Gamle dokumenter fra foer 20. august har ikke feltet.
+	it('et gammelt dokument uden feltet laeses som runde 1', () => {
+		expect(runde3({ programId: 'p1', gennemfoerte: [], senestAt: 0, runde: 0 })).toBe(1);
+	});
+
+	it('foerste gang siger ingenting', () => {
+		expect(rundeTekst3(fremgang([], 0, 1))).toBe('');
+	});
+
+	it('anden gang staar der 2. gang igennem', () => {
+		expect(rundeTekst3(fremgang([], 0, 2))).toBe('2. gang igennem');
+	});
+
+	it('og videre op', () => {
+		expect(rundeTekst3(fremgang([], 0, 5))).toBe('5. gang igennem');
+	});
+});
+
+describe('maaTilbydesNyRunde3', () => {
+	const loop = { antalDage: 3, starterForfra: true };
+	const engang = { antalDage: 3, starterForfra: false };
+
+	it('tilbydes naar hun er igennem og programmet looper', () => {
+		expect(maaTilbydesNyRunde3(fremgang([1, 2, 3]), loop)).toBe(true);
+	});
+
+	it('tilbydes ikke naar hun ikke er igennem', () => {
+		expect(maaTilbydesNyRunde3(fremgang([1, 2]), loop)).toBe(false);
+	});
+
+	// Fluebenet staar paa hvert program i admin.
+	it('tilbydes ikke naar programmet er en gang igennem', () => {
+		expect(maaTilbydesNyRunde3(fremgang([1, 2, 3]), engang)).toBe(false);
+	});
+});
+
+describe('naesteRunde3', () => {
+	it('toemmer listen og taeller runden op', () => {
+		const ny = naesteRunde3(fremgang([1, 2, 3], 500, 1));
+		expect(ny.gennemfoerte).toEqual([]);
+		expect(ny.runde).toBe(2);
+	});
+
+	it('senestAt bliver staaende, saa raekkefoelgen paa listen holder', () => {
+		expect(naesteRunde3(fremgang([1, 2, 3], 500)).senestAt).toBe(500);
+	});
+
+	it('og videre fra runde 2 til 3', () => {
+		expect(naesteRunde3(fremgang([1, 2, 3], 0, 2)).runde).toBe(3);
+	});
+
+	// Efter en ny runde skal hun kunne begynde paa 1 igen. Det var
+	// praecis dét der ikke virkede foer.
+	it('efter en ny runde er naeste traening 1 igen', () => {
+		const ny = naesteRunde3(fremgang([1, 2, 3]));
+		expect(naesteTraening3(ny, 3)).toBe(1);
 	});
 });
 
@@ -147,8 +213,16 @@ describe('kundeProgrammer3', () => {
 
 	it('laegger i gang foerst, saa ikke begyndt, saa faerdige', () => {
 		const kort = new Map([
-			['a', { programId: 'a', gennemfoerte: [1, 2], senestAt: 100 }],
-			['c', { programId: 'c', gennemfoerte: Array.from({ length: 10 }, (_, i) => i + 1), senestAt: 200 }]
+			['a', { programId: 'a', gennemfoerte: [1, 2], senestAt: 100, runde: 1 }],
+			[
+				'c',
+				{
+					programId: 'c',
+					gennemfoerte: Array.from({ length: 10 }, (_, i) => i + 1),
+					senestAt: 200,
+					runde: 1
+				}
+			]
 		]);
 		const r = kundeProgrammer3([a, b, c], kort);
 		expect(r.map((x) => x.program.id)).toEqual(['a', 'b', 'c']);
@@ -156,8 +230,8 @@ describe('kundeProgrammer3', () => {
 
 	it('laegger den hun sidst traenede oeverst blandt dem i gang', () => {
 		const kort = new Map([
-			['a', { programId: 'a', gennemfoerte: [1], senestAt: 100 }],
-			['b', { programId: 'b', gennemfoerte: [1], senestAt: 900 }]
+			['a', { programId: 'a', gennemfoerte: [1], senestAt: 100, runde: 1 }],
+			['b', { programId: 'b', gennemfoerte: [1], senestAt: 900, runde: 1 }]
 		]);
 		const r = kundeProgrammer3([a, b], kort);
 		expect(r[0].program.id).toBe('b');
@@ -169,7 +243,7 @@ describe('kundeProgrammer3', () => {
 	});
 
 	it('beriger med tal hun kan se paa skaermen', () => {
-		const kort = new Map([['a', { programId: 'a', gennemfoerte: [1, 2], senestAt: 5 }]]);
+		const kort = new Map([['a', { programId: 'a', gennemfoerte: [1, 2], senestAt: 5, runde: 1 }]]);
 		const r = kundeProgrammer3([a], kort)[0];
 		expect(r.klaret).toBe(2);
 		expect(r.naeste).toBe(3);
@@ -188,7 +262,7 @@ describe('kundeProgrammer3', () => {
 describe('iGangMed3', () => {
 	it('finder den hun er i gang med', () => {
 		const a = program({ id: 'a', navn: 'Alfa', antalDage: 10 });
-		const kort = new Map([['a', { programId: 'a', gennemfoerte: [1], senestAt: 1 }]]);
+		const kort = new Map([['a', { programId: 'a', gennemfoerte: [1], senestAt: 1, runde: 1 }]]);
 		expect(iGangMed3(kundeProgrammer3([a], kort))?.program.id).toBe('a');
 	});
 
@@ -205,19 +279,29 @@ describe('fremgangTekst3', () => {
 	});
 
 	it('siger hvor langt hun er', () => {
-		const kort = new Map([['a', { programId: 'a', gennemfoerte: [1, 2, 3, 4], senestAt: 1 }]]);
+		const kort = new Map([
+			['a', { programId: 'a', gennemfoerte: [1, 2, 3, 4], senestAt: 1, runde: 1 }]
+		]);
 		expect(fremgangTekst3(kundeProgrammer3([a], kort)[0])).toBe('Træning 5 af 21');
 	});
 
 	it('siger det naar alt er klaret', () => {
 		const kort = new Map([
-			['a', { programId: 'a', gennemfoerte: Array.from({ length: 21 }, (_, i) => i + 1), senestAt: 1 }]
+			[
+				'a',
+				{
+					programId: 'a',
+					gennemfoerte: Array.from({ length: 21 }, (_, i) => i + 1),
+					senestAt: 1,
+					runde: 1
+				}
+			]
 		]);
-		expect(fremgangTekst3(kundeProgrammer3([a], kort)[0])).toBe('Alle 21 træninger er klaret');
+		expect(fremgangTekst3(kundeProgrammer3([a], kort)[0])).toBe('Du er igennem alle 21 træninger');
 	});
 
 	it('bruger aldrig ordet dag', () => {
-		const kort = new Map([['a', { programId: 'a', gennemfoerte: [1], senestAt: 1 }]]);
+		const kort = new Map([['a', { programId: 'a', gennemfoerte: [1], senestAt: 1, runde: 1 }]]);
 		for (const k of kundeProgrammer3([a], kort)) {
 			expect(fremgangTekst3(k).toLowerCase()).not.toContain('dag');
 		}

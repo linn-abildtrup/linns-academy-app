@@ -34,7 +34,10 @@
 	} from '$lib/content/traeningTildeling3';
 	import { erEgetProgram3 } from '$lib/content/mineTraeninger3';
 	import {
+		erFaerdig3,
 		maaAabnes3,
+		maaTilbydesNyRunde3,
+		naesteRunde3,
 		naesteTraening3,
 		tomFremgang3,
 		type Traeningsfremgang3
@@ -55,7 +58,7 @@
 	import { hentProgrammer3 } from '$lib/firestore/traeningsprogram3';
 	import { hentProgramMedTraeninger3 } from '$lib/firestore/mineTraeninger3';
 	import { hentMineTildelinger3 } from '$lib/firestore/traeningTildeling3';
-	import { gemGennemfoert3, hentFremgang3 } from '$lib/firestore/traeningFremgang3';
+	import { gemGennemfoert3, hentFremgang3, startNyRunde3 } from '$lib/firestore/traeningFremgang3';
 	import { gemPlads3, hentPlads3, sletPlads3 } from '$lib/firestore/traeningPlads3';
 	import { harAbonnement3, isoDato3 } from '$lib/firestore/traeningKunde3';
 	import { logTraening } from '$lib/firestore/traeningHistorik';
@@ -309,9 +312,37 @@
 	 * Der er ingen graense pr dag. Har hun lyst til én mere med det
 	 * samme, skal knappen vaere der. Linns beslutning 18. august.
 	 */
-	const naesteEfter = $derived(
-		program ? naesteTraening3(minFremgang, program.antalDage, program.starterForfra) : null
-	);
+	const naesteEfter = $derived(program ? naesteTraening3(minFremgang, program.antalDage) : null);
+
+	// ── Igennem hele programmet ─────────────────────────────────
+	//
+	// Naar den sidste traening i runden er gemt, er der ingen naeste. Foer
+	// sagde skaermen "Tag træning 1", og det saa ud som om appen havde
+	// mistet taellingen. Og trykkede hun, skete der ingenting, se
+	// runde-feltet i content/traeningFremgang3.
+	//
+	// Nu bliver hun spurgt. Linns beslutning 20. august: at blive sat
+	// tilbage paa nummer 1 uden at have sagt ja foeles som om appen ikke
+	// har opdaget at man er faerdig.
+	const igennem = $derived(!!program && gemtFaerdig && erFaerdig3(minFremgang, program.antalDage));
+	const maaTageIgen = $derived(!!program && maaTilbydesNyRunde3(minFremgang, program));
+	let starterRunde = $state(false);
+
+	async function tagProgrammetIgen() {
+		const uid = user?.uid;
+		if (!uid || !program || starterRunde) return;
+		starterRunde = true;
+		try {
+			const ny = naesteRunde3(minFremgang);
+			await startNyRunde3(uid, programId, ny.runde);
+			// Direkte ind paa foerste traening i den nye runde. Hun har lige
+			// sagt ja, saa et mellemled ville vaere et spildt tryk.
+			void goto(`/ny/traening/${programId}/1${videre}`);
+		} catch (e) {
+			console.error('[ny] kunne ikke starte en ny runde', e);
+			starterRunde = false;
+		}
+	}
 
 	onMount(async () => {
 		const uid = user?.uid;
@@ -367,7 +398,7 @@
 			}
 
 			const fremgang: Traeningsfremgang3 = fremgangKort.get(programId) ?? tomFremgang3(programId);
-			const naeste = naesteTraening3(fremgang, data.program.antalDage, data.program.starterForfra);
+			const naeste = naesteTraening3(fremgang, data.program.antalDage);
 			// Hun maa tage en traening om, men ikke springe frem. Linns valg.
 			if (!maaAabnes3(nr, fremgang, naeste)) {
 				fejl = 'Den træning er ikke åben endnu. Tag den forrige først.';
@@ -772,19 +803,48 @@
 			</button>
 		</div>
 	{:else if skaerm === 'faerdig'}
-		<div class="af-kort">
-			<span class="af-flueben" aria-hidden="true">✓</span>
-			<h1>Flot klaret</h1>
-			<p>Træning {nr} er gennemført.</p>
-			<!-- Har hun lyst til én mere med det samme, skal hun kunne det.
-			     Der er ingen graense pr dag. Linns beslutning 18. august. -->
-			{#if gemtFaerdig && naesteEfter !== null && naesteEfter !== nr}
-				<a class="tv-knap af-link" href={`/ny/traening/${programId}/${naesteEfter}${videre}`}>
-					Tag træning {naesteEfter}
-				</a>
-			{/if}
-			<a class="tv-knap rolig af-link" href={udgang}>{udgangTekst}</a>
-		</div>
+		{#if igennem}
+			<!-- Hele programmet er koert igennem. Se kommentaren ved
+			     `igennem` for hvorfor hun spoerges i stedet for at blive
+			     sendt tilbage paa nummer 1. -->
+			<div class="af-kort">
+				<span class="af-flueben af-stjerne" aria-hidden="true">★</span>
+				<h1>Du er igennem {program?.navn ?? 'programmet'}</h1>
+				{#if maaTageIgen}
+					<p>
+						Alle {program?.antalDage} træninger er taget. Flot arbejde.
+						<br /><br />
+						Vil du tage programmet en gang til, eller har du lyst til noget nyt?
+					</p>
+					<button type="button" class="tv-knap" onclick={tagProgrammetIgen} disabled={starterRunde}>
+						{starterRunde ? 'Et øjeblik …' : `Tag ${program?.navn} en gang til`}
+					</button>
+					<a class="tv-knap rolig af-link" href="/ny/traening">Vælg et andet program</a>
+				{:else}
+					<p>
+						Alle {program?.antalDage} træninger er taget. Flot arbejde.
+						<br /><br />
+						Det her program er en gang igennem, så nu er det tid til noget nyt.
+					</p>
+					<a class="tv-knap af-link" href="/ny/traening">Vælg et andet program</a>
+				{/if}
+				<a class="kl-link af-link" href={udgang}>Ikke nu, {udgangTekst.toLowerCase()} ›</a>
+			</div>
+		{:else}
+			<div class="af-kort">
+				<span class="af-flueben" aria-hidden="true">✓</span>
+				<h1>Flot klaret</h1>
+				<p>Træning {nr} er gennemført.</p>
+				<!-- Har hun lyst til én mere med det samme, skal hun kunne det.
+				     Der er ingen graense pr dag. Linns beslutning 18. august. -->
+				{#if gemtFaerdig && naesteEfter !== null && naesteEfter !== nr}
+					<a class="tv-knap af-link" href={`/ny/traening/${programId}/${naesteEfter}${videre}`}>
+						Tag træning {naesteEfter}
+					</a>
+				{/if}
+				<a class="tv-knap rolig af-link" href={udgang}>{udgangTekst}</a>
+			</div>
+		{/if}
 	{:else}
 		<!-- HELE TOPPEN ER FJERNET 20. august paa Linns oenske: foerst
 		     "Øvelse 3 af 6", saa "Træning 8", og til sidst
