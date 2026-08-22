@@ -12,6 +12,12 @@
 	//
 	// DET ER ET UDGANGSPUNKT, ikke en ordre. Hun kan rette bagefter, og
 	// det staar paa skaermen.
+	//
+	// HUN SER KUN DE TAL HUN HAR SLAAET TIL. Har hun ikke udvidet
+	// naering, staar der protein og fiber og intet andet. De tre andre
+	// bliver GEMT alligevel, saa de staar klar den dag hun slaar dem til,
+	// men et kalorietal skal ikke dukke op paa en skaerm hun ikke har
+	// bedt om. Linns rettelse 22. august.
 	// ============================================================
 
 	import { getContext } from 'svelte';
@@ -27,7 +33,7 @@
 		NAERING_LABELS,
 		beregnDagligeMaal
 	} from '$lib/content/naering';
-	import { gemBrugerProfilOgMaal } from '$lib/userDoc';
+	import { gemBeregnedeMaal3 } from '$lib/firestore/naeringMaal3';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
@@ -37,7 +43,8 @@
 
 	const AKTIVITETER: Aktivitetsniveau[] = ['stille', 'let', 'moderat', 'meget'];
 	const MENOPAUS: MenopausalStatus[] = ['praemenopause', 'perimenopause', 'postmenopause'];
-	const FELTER = ['protein', 'fiber', 'kh', 'fedt', 'kcal'] as const;
+	const SMAA = ['protein', 'fiber'] as const;
+	const ALLE = ['protein', 'fiber', 'kh', 'fedt', 'kcal'] as const;
 
 	// Startvaerdier. Har hun svaret foer, staar hendes egne svar.
 	let hojde = $state(165);
@@ -60,6 +67,9 @@
 		hentet = true;
 	});
 
+	// Kun det hun selv har slaaet til. Se noten i toppen.
+	const viste = $derived(userDoc?.visUdvidetNaering ? ALLE : SMAA);
+
 	const profil = $derived<BrugerProfil>({ hojde, vaegt, alder, aktivitet, menopaus });
 	const gyldig = $derived(
 		hojde >= 100 && hojde <= 220 && vaegt >= 30 && vaegt <= 200 && alder >= 18 && alder <= 100
@@ -72,7 +82,7 @@
 		gemmer = true;
 		fejl = '';
 		try {
-			await gemBrugerProfilOgMaal(uid, profil, forslag);
+			await gemBeregnedeMaal3(uid, profil, forslag);
 			await goto('/ny/naering');
 		} catch (e) {
 			console.error('[ny] kunne ikke gemme de beregnede maal', e);
@@ -148,7 +158,7 @@
 	{#if forslag}
 		<section class="nb-resultat">
 			<div class="nb-r-t">Så foreslår jeg</div>
-			{#each FELTER as f (f)}
+			{#each viste as f (f)}
 				<div class="nb-r-r">
 					<span>{NAERING_LABELS[f]}</span>
 					<b>{forslag[f]} {NAERING_ENHEDER[f]}</b>

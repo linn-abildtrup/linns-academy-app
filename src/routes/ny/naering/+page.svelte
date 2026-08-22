@@ -169,7 +169,11 @@
 
 			{#if !maaRette}
 				<div class="nm-hjaelp">Linn har sat dine mål. Skriv til hende hvis de skal ændres.</div>
-			{:else if visUdvidet && maaVise}
+			{:else}
+				<!-- Guiden staar ALTID fremme. Den laa foerst bag kontakten,
+				     ligesom i den gamle app, og saa kunne hun ikke faa sit
+				     protein-maal beregnet uden ogsaa at slaa kalorier til.
+				     Linns rettelse 22. august, se HANDOVER 9.38. -->
 				<a class="nm-beregn" href="/ny/naering/beregn">
 					<span class="nm-beregn-i" aria-hidden="true">✧</span>
 					<span>
