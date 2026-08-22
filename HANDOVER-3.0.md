@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 22. august 2026. Se 9.32 til 9.37 for de seneste dage, hvor der skete meget.
+Sidst opdateret 22. august 2026. Se 9.32 til 9.38 for de seneste dage, hvor der skete meget.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -70,6 +70,7 @@ gamle app og må kun læses.
 | `src/routes/ny/admin/ingredienser/` | Kobl ingredienser til fødevarer. Se 9.17 |
 | `src/routes/ny/admin/opskrift-makro/` | Regnestykket linje for linje. **Gå her når et tal ser forkert ud** |
 | `src/routes/ny/admin/traening/hensyn/` | Hvad hver øvelse belaster. **Tallene øverst er det vigtigste på siden.** Se 9.33 |
+| `src/routes/ny/admin/naering/` | Hvem ser udvidet næring. Pr forløb, plus undtagelser pr kunde. Se 9.38 |
 | `src/lib/firestore/ingrediensKobling3.ts` | Koblingerne. Læses af regnemaskinen |
 | `src/lib/firestore/opskriftBeregning3.ts` | De gemte beregninger. Overlejres i `hentOpskrifter3` |
 
@@ -121,6 +122,7 @@ gamle app og må kun læses.
 | `content/oevelseHensyn3.ts` | **Hensyn.** Hvad hver øvelse belaster, og hvad der filtreres fra. Se 9.33 | 19 |
 | `content/vaelgSkridt3.ts` | **Hun vælger selv.** Maks tre, kategorier, hendes egne. Se 9.35 | 26 |
 | `content/lektionSet3.ts` | **Hvornår en lektion er set.** Fluebenet følger videoen. Se 9.37 | 16 |
+| `content/naeringAdgang3.ts` | **Hvem ser udvidet næring**, og hvem må rette sine mål. Se 9.38 | 12 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
 
@@ -157,6 +159,7 @@ gamle app og må kun læses.
 | `firestore/valgtProgram3.ts` | Hvilket program hun har valgt. Den tolvte der **skriver** kundedata. Se 9.32 |
 | `firestore/oevelseHensyn3.ts` | Mærkerne på øvelserne. Ét dokument til dem alle. Kun admin skriver. Se 9.33 |
 | `firestore/vaelgSkridt3.ts` | Hendes valgte skridt. Læser begge skuffer. Se 9.35 |
+| `firestore/naeringAdgang3.ts` | Nærings-skemaet og undtagelserne. **Kun admin skriver.** Se 9.38 |
 | `firestore/egneSkridt3.ts` | **3.0's egen skuffe** til forløbskundens egne skridt. Se 9.35 |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
@@ -2432,6 +2435,85 @@ så brug `erSet3` og ikke `klaret.has(id)`.** Der er ingen anden regel.
 Har hun set mandagens video, står **hele ugen** som set, og de dage folder
 sig sammen som taget. Det var det hun bad om, og det er ikke en fejl når det
 ses.
+
+---
+
+### 9.38 UDVIDET NÆRINGSDATA, 22. august
+
+Det startede med et spørgsmål fra Linn: hvorfor siger appen at test-Mette har
+brug for 105 g protein om dagen?
+
+**Svaret var at tallet var tastet ind.** Ikke beregnet, ikke standarden. Begge
+testkonti havde de samme fem runde tal og ingen fysisk profil. De blev fjernet
+fra Mette samme dag efter Linns ja, så hun møder standarden som en ny kunde.
+
+Undervejs blev det tydeligt at halvdelen af udvidet næring allerede fandtes i
+3.0: Mad-modulet viser kulhydrat, fedt og kalorier. Det der manglede var
+hendes egen kontakt, hendes egne mål, og at tallene også står på forsiden.
+
+#### Hvad kunden fik
+
+**Siden "Dine mål"** under Din side. Protein og fiber står ALTID, og det er en
+rettelse af den gamle app: dér er de to felter låst bag den kontakt der
+handler om de tre andre, så hun ikke kan rette sit protein-mål uden også at få
+kalorier at se.
+
+**Kontakten** lægger kulhydrat, fedt og kalorier til. Den er hendes egen og
+står på fra som standard.
+
+**Guiden** er fem spørgsmål på ÉN side. Den gamle er seks skærme i træk med en
+knap mellem hver. Resultatet regner sig om mens hun svarer, og **regnestykket
+er den gamle apps eget** — to steder der regner protein forskelligt er værre
+end ingen beregner.
+
+**På forsiden** står de tre som en stille linje under protein og fiber, uden
+bjælker. Fem bjælker gør kortet til et regneark, og en bjælke på kalorier
+læser som en grænse hun er ved at overskride.
+
+#### Hvad Linn fik, og hvorfor det blev en ny admin-side
+
+Linns krav: alle medlemmer må have det, hun skal kunne slå det til og fra pr
+forløb, og et enkelt kunde-valg skal kunne overrule forløbet. Det samme for
+om kunden må rette sine egne mål.
+
+**"Funktioner og adgang" i den gamle admin kunne ikke bruges.** Den styrer det
+samme i dag, men **pr kundetype** og ikke pr forløb, og den styrer den GAMLE
+app for 760 kunder samtidig. 3.0 fik derfor sin egen side, og den gamle står
+urørt.
+
+**Tre lag, og rækkefølgen er hele reglen:**
+
+1. En **undtagelse** på kunden vinder
+2. Ellers gælder **forløbet**
+3. Ellers gælder linjen for **alle medlemmer**
+4. Og selvom hun må, ser hun det først når hun **selv** slår det til
+
+**ALT ER TIL SOM STANDARD.** Linn slår fra, ikke til. Ellers ville kunder der
+har noget i dag pludselig miste det.
+
+**De to kontakter afgøres hver for sig.** Sætter Linn en undtagelse der kun
+siger noget om den ene, arver den anden videre ned. Ellers ville ét flueben
+komme til at slå noget fra hun aldrig tog stilling til.
+
+#### To ting der er værd at huske
+
+**Undtagelserne ligger i deres egen samling og ikke i det fælles skema.** Alle
+kunder skal kunne læse skemaet for at vide om de må, og lå navnene der, kunne
+enhver kunde se hvem Linn ellers havde taget stilling til.
+
+**Mad-modulet i 3.0 er lagt om til det nye skema.** Gjorde vi ikke det, kunne
+hun slå noget til på sin profil og opdage at det ikke virkede inde i Mad. Det
+gælder måltidssiden, opskrifterne og onboardingen. AI-opskrift spørger stadig
+det gamle skema, og det er med vilje: den styrer også den gamle app.
+
+#### En fejl fundet undervejs
+
+**Forsiden faldt tilbage på målet NUL** når kunden ikke havde sat et. Så stod
+der "56 af 0 g", og dagen blev kaldt i hus. Den faldt først frem da Mettes
+tal blev slettet. Nu falder den tilbage på standarden, 90 g protein og 30 g
+fiber, som resten af appen gør.
+
+Reglerne blev udgivet 22. august kl 21.49 og verificeret mod det der kører.
 
 ---
 
