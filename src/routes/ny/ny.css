@@ -2365,8 +2365,19 @@ body:has(.ny-app) {
 	z-index: 1;
 }
 
-.medie-thumb .rund-fluebe {
-	z-index: 1;
+/* Fluebenet naar hun har set lektionen. Det ligger OVEN PAA billedet og
+   erstatter det ikke, saa hun kan se hvad det var hun saa. Den lyse kant
+   er det der goer at tegnet kan ses paa et lyst billede. Rettet 22.
+   august, se 9.34. */
+.medie-thumb .rund-fluebe.hjoerne {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	width: 23px;
+	height: 23px;
+	z-index: 3;
+	border: 2px solid rgba(251, 248, 242, 0.9);
+	box-shadow: 0 2px 6px rgba(40, 30, 25, 0.45);
 }
 
 .medie-glyph {
@@ -2777,11 +2788,6 @@ body:has(.ny-app) {
 
 .dag-idag + .dag-pil {
 	margin-left: 8px;
-}
-
-.rund-fluebe.stor {
-	width: 34px;
-	height: 34px;
 }
 
 .note-fra-linn {

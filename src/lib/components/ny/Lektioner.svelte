@@ -3,9 +3,9 @@
 	// Dagens lektioner i forloebet.
 	//
 	// Alle er raekker i samme stoerrelse som traeningen, saa siden staar
-	// jaevnt. Hele raekken aabner lektionen. Er en set, faar den flueben i
-	// stedet for billedet. Raekkefoelgen aendrer sig aldrig, og ingenting
-	// forsvinder.
+	// jaevnt. Hele raekken aabner lektionen. Er en set, faar den et flueben
+	// i hjoernet af billedet. Raekkefoelgen aendrer sig aldrig, og
+	// ingenting forsvinder.
 	// ============================================================
 
 	import type { LektionItem } from '$lib/content/forlob';
@@ -79,13 +79,19 @@
 				     alligevel paa billedet eller titlen. -->
 				<a class="medie-raekke" class:set={erKlaret} href={`/ny/lektion/${dagNummer}/${l.id}`}>
 					<span class="medie-thumb {art(l)}">
-						{#if erKlaret}
-							<span class="rund-fluebe stor" aria-hidden="true"><Fluebe /></span>
-						{:else if billede(l)}
+						<!-- Billedet bliver staaende naar hun har set lektionen, og
+						     fluebenet laegger sig i hjoernet. Foer 22. august
+						     ERSTATTEDE fluebenet billedet, og saa kunne hun ikke
+						     se hvad det var hun havde set. Gaelder ogsaa lyd og
+						     laesning, hvor billedet er den farvede flise. -->
+						{#if billede(l)}
 							<img class="medie-foto" src={billede(l)} alt="" loading="lazy" />
 							<span class="medie-play" aria-hidden="true">{IKON[art(l)]}</span>
 						{:else}
 							<span class="medie-glyph" aria-hidden="true">{IKON[art(l)]}</span>
+						{/if}
+						{#if erKlaret}
+							<span class="rund-fluebe hjoerne" aria-hidden="true"><Fluebe /></span>
 						{/if}
 					</span>
 
