@@ -41,11 +41,18 @@ export async function hentSkridtValg3(
 	forlob: { produkt: string } | null
 ): Promise<SkridtValg3> {
 	if (forlob) {
-		const produkt = await hentUserProduct(uid, forlob.produkt);
+		// Forslagene vises ogsaa her. Foerst gjorde de ikke, og saa skulle
+		// hun skrive alt selv. Linns rettelse 22. august. Trykker hun paa et
+		// forslag, bliver det til ét af HENDES egne, for det er den eneste
+		// skuffe en forloebskunde har til sine egne skridt.
+		const [produkt, forslag] = await Promise.all([
+			hentUserProduct(uid, forlob.produkt),
+			hentAboVaneskabelon('basis')
+		]);
 		return {
 			kilde: 'forlob',
 			produktId: forlob.produkt,
-			forslag: [],
+			forslag: forslag.map((f) => ({ id: f.id, label: f.label, kategori: f.kategori })),
 			valgte: (produkt?.egneVaner ?? []).map((v) => ({
 				id: v.id,
 				label: v.label,

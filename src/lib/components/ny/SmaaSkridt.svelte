@@ -87,6 +87,7 @@
 	<!-- Vejen tilbage til valget. Kortet paa forsiden forsvinder i det
 	     oejeblik hun har valgt noget, saa uden den her kunne hun ikke
 	     skifte sine skridt ud igen. Flisen paa Din side er den anden vej
-	     ind. Linns valg 22. august. -->
-	<a class="skridt-ret" href="/ny/skridt">Ret dine skridt</a>
+	     ind. Linns valg 22. august, og hendes ordlyd: "Tilfoej egne
+	     skridt" og ikke "Ret dine skridt". -->
+	<a class="skridt-ret" href="/ny/skridt">Tilføj egne skridt</a>
 </section>

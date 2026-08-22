@@ -12901,3 +12901,13 @@ a.tr-felt:focus-visible {
 	color: var(--ink-3);
 	font-size: calc(19px * var(--fs-scale, 1));
 }
+
+/* Linjen der siger hvad der sker naar en forloebskunde vaelger et
+   forslag. Uden den ser det ud som om hun kan vaelge Linns skridt fra
+   og til, og det kan hun ikke. */
+.vs-hjaelp {
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin-bottom: 4px;
+	line-height: 1.45;
+}

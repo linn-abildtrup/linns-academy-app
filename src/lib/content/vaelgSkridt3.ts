@@ -82,6 +82,24 @@ export function erValgt3(valgte: ValgtSkridt3[], forslagId: string): boolean {
 }
 
 /**
+ * Det valgte skridt der svarer til et forslag, eller null.
+ *
+ * PAA FORLOEBS-SPORET GEMMES ET FORSLAG SOM HENDES EGET. Hun har ikke en
+ * liste med afkrydsninger som medlemmet har, hun har en haandfuld egne
+ * skridt, og et forslag hun trykker paa bliver til ét af dem. Derfor kan
+ * id'et ikke bruges til at genkende det, og vi maa se paa teksten.
+ *
+ * Tilfoejet 22. august: Linn saa at en forloebskunde slet ingen forslag
+ * fik, og skulle skrive alt selv.
+ */
+export function matchForslag3(valgte: ValgtSkridt3[], forslag: Forslag3): ValgtSkridt3 | null {
+	const paaId = valgte.find((v) => v.id === forslag.id);
+	if (paaId) return paaId;
+	const tekst = forslag.label.trim().toLowerCase();
+	return valgte.find((v) => v.label.trim().toLowerCase() === tekst) ?? null;
+}
+
+/**
  * Slaar et forslag til eller fra.
  *
  * Er der ikke plads, sker der ingenting. Det er med vilje at den ikke

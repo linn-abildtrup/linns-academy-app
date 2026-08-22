@@ -6,9 +6,13 @@
 	// En side for sig og ikke et ark: listen med forslag vokser med tiden,
 	// og et ark kan ikke baere en lang liste paa en telefon.
 	//
-	// TO SPOR PAA SAMME SIDE. Et medlem vaelger fra Linns forslag og maa
-	// skrive sine egne. En forloebskunde ser INGEN forslag, kun sine egne,
-	// for Linns skridt kommer fra forloebets plan og kan hun ikke fjerne.
+	// TO SPOR PAA SAMME SIDE. Begge ser Linns forslag og kan skrive deres
+	// egne. Forskellen er hvor det havner: medlemmets valg bliver til
+	// hendes liste, forloebskundens bliver til ét af HENDES EGNE skridt
+	// oveni Linns plan, som hun ikke kan fjerne.
+	//
+	// Forloebskunden fik foerst ingen forslag at se og skulle skrive alt
+	// selv. Linns rettelse 22. august.
 	// Se content/vaelgSkridt3.ts for reglerne bag.
 	//
 	// DER ER INGEN GEM-KNAP. Hvert valg gemmes med det samme. Den gamle
@@ -23,10 +27,10 @@
 		MAKS_SKRIDT3,
 		MAKS_TEGN3,
 		egetSkridtFejl3,
-		erValgt3,
 		fjernSkridt3,
 		grupperForslag3,
 		kanVaelgeFlere3,
+		matchForslag3,
 		skiftForslag3,
 		tilbageTekst3,
 		type Forslag3,
@@ -119,11 +123,48 @@
 		}
 	}
 
-	function skiftForslag(f: Forslag3) {
+	async function skiftForslag(f: Forslag3) {
 		if (gemmer) return;
+
+		// Forloebskunden: forslaget bliver til ét af hendes egne, og der
+		// skrives ét skridt ad gangen. Se firestore-laget for hvorfor.
+		if (erForlob && data?.produktId) {
+			const har = matchForslag3(valgte, f);
+			if (har) {
+				await fjern(har.id);
+			} else if (plads) {
+				await gemEget(f.label);
+			}
+			return;
+		}
+
 		const ny = skiftForslag3(valgte, f);
 		if (ny === valgte) return;
 		void gemMedlem(ny);
+	}
+
+	/** Skriver ét eget skridt paa forloebs-sporet. Bruges af begge veje ind. */
+	async function gemEget(tekst: string): Promise<boolean> {
+		const uid = user?.uid;
+		if (!uid || !data?.produktId) return false;
+		gemmer = true;
+		fejl = '';
+		try {
+			const r = await tilfoejEgetSkridt3(uid, data.produktId, tekst);
+			if (!r.ok) {
+				fejl = r.fejl;
+				return false;
+			}
+			valgte = [...valgte, { id: r.id, label: tekst, kilde: 'egen' }];
+			kvitter();
+			return true;
+		} catch (e) {
+			console.error('[ny] kunne ikke gemme dit skridt', e);
+			fejl = 'Kunne ikke gemme. Prøv igen.';
+			return false;
+		} finally {
+			gemmer = false;
+		}
 	}
 
 	async function tilfoejEget() {
@@ -133,23 +174,9 @@
 		const tekst = egenTekst.trim();
 
 		if (erForlob && data?.produktId) {
-			gemmer = true;
-			fejl = '';
-			try {
-				const r = await tilfoejEgetSkridt3(uid, data.produktId, tekst);
-				if (r.ok) {
-					valgte = [...valgte, { id: r.id, label: tekst, kilde: 'egen' }];
-					egenTekst = '';
-					skriverEget = false;
-					kvitter();
-				} else {
-					fejl = r.fejl;
-				}
-			} catch (e) {
-				console.error('[ny] kunne ikke gemme dit skridt', e);
-				fejl = 'Kunne ikke gemme. Prøv igen.';
-			} finally {
-				gemmer = false;
+			if (await gemEget(tekst)) {
+				egenTekst = '';
+				skriverEget = false;
 			}
 			return;
 		}
@@ -218,34 +245,36 @@
 			<div class="kort rolig vs-fejl">{fejl}</div>
 		{/if}
 
-		{#if !erForlob}
-			{#if kategorier.length === 0}
-				<div class="kort rolig">
-					Linn har ikke lagt nogen forslag op endnu. Du kan skrive dine egne herunder.
-				</div>
-			{:else}
-				<section class="kort">
-					{#each kategorier as k (k.navn)}
-						<div class="vs-kat">{k.navn}</div>
-						{#each k.forslag as f (f.id)}
-							{@const valgt = erValgt3(valgte, f.id)}
-							<button
-								class="vs-forslag"
-								class:valgt
-								class:slukket={!valgt && !plads}
-								disabled={gemmer || (!valgt && !plads)}
-								aria-pressed={valgt}
-								onclick={() => skiftForslag(f)}
-							>
-								<span class="vs-cirkel" class:valgt aria-hidden="true">
-									{#if valgt}<Fluebe />{/if}
-								</span>
-								<span class="vs-l">{f.label}</span>
-							</button>
-						{/each}
+		{#if kategorier.length === 0}
+			<div class="kort rolig">
+				Linn har ikke lagt nogen forslag op endnu. Du kan skrive dine egne herunder.
+			</div>
+		{:else}
+			<section class="kort">
+				{#if erForlob}
+					<div class="vs-egne-t">Linns forslag</div>
+					<div class="vs-hjaelp">Vælger du et, bliver det til ét af dine egne.</div>
+				{/if}
+				{#each kategorier as k (k.navn)}
+					<div class="vs-kat">{k.navn}</div>
+					{#each k.forslag as f (f.id)}
+						{@const valgt = !!matchForslag3(valgte, f)}
+						<button
+							class="vs-forslag"
+							class:valgt
+							class:slukket={!valgt && !plads}
+							disabled={gemmer || (!valgt && !plads)}
+							aria-pressed={valgt}
+							onclick={() => void skiftForslag(f)}
+						>
+							<span class="vs-cirkel" class:valgt aria-hidden="true">
+								{#if valgt}<Fluebe />{/if}
+							</span>
+							<span class="vs-l">{f.label}</span>
+						</button>
 					{/each}
-				</section>
-			{/if}
+				{/each}
+			</section>
 		{/if}
 
 		<section class="kort">
