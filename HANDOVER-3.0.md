@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 22. august 2026. Se 9.32, 9.33 og 9.34 for de seneste dage, hvor der skete meget.
+Sidst opdateret 22. august 2026. Se 9.32 til 9.35 for de seneste dage, hvor der skete meget.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -119,6 +119,7 @@ gamle app og må kun læses.
 | `content/valgtProgram3.ts` | **Hendes valgte program.** Hvornår hun skal spørges før et skift. Se 9.32 | 15 |
 | `content/traeningTempo3.ts` | De tre tempoer: Roligt 30/20, Almindeligt 45/15, Hårdt 50/10. Se 9.32 | 11 |
 | `content/oevelseHensyn3.ts` | **Hensyn.** Hvad hver øvelse belaster, og hvad der filtreres fra. Se 9.33 | 19 |
+| `content/vaelgSkridt3.ts` | **Hun vælger selv.** Maks tre, kategorier, hendes egne. Se 9.35 | 26 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
 
@@ -154,6 +155,7 @@ gamle app og må kun læses.
 | `firestore/onboarding3.ts` | `onboardet3` og `tekstSkala3`. Den ellevte der **skriver** |
 | `firestore/valgtProgram3.ts` | Hvilket program hun har valgt. Den tolvte der **skriver** kundedata. Se 9.32 |
 | `firestore/oevelseHensyn3.ts` | Mærkerne på øvelserne. Ét dokument til dem alle. Kun admin skriver. Se 9.33 |
+| `firestore/vaelgSkridt3.ts` | Hendes valgte skridt. **Skriver med den gamle apps egne funktioner.** Se 9.35 |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
@@ -442,12 +444,9 @@ netop de kunder. Alt det byggede virker med begge, men overskriften skal
 skrives forskelligt: "I dag, tirsdag" kræver kalenderen, "Din næste træning"
 er sandt uanset.
 
-**4. "Vælg dine små skridt" er en død vej.** Fundet 20. august. Har kunden
-ingen små skridt, står der et kort på forsiden der fører til
-`/ny/moduler`, som er en tom plads der siger "Siden er ikke bygget endnu".
-Der findes **intet sted i 3.0 hvor små skridt vælges**. Rammer nok mest
-abonnementskunder, for en forløbskunde får sine fra planen, men linket
-står der for alle. **Stadig ikke løst 20. august sent på dagen.**
+**4.** ~~**"Vælg dine små skridt" er en død vej.**~~ **Klaret 22. august**,
+se 9.35. Kortet fører nu til en rigtig side, og en forløbskunde får en
+anden tekst end et medlem.
 
 Der står også stadig "Resten af din profil kommer her" nederst på Din side.
 
@@ -2209,6 +2208,111 @@ lektioner" har ingen billeder, kun små ikoner, og dér ligger fluebenet
 allerede rigtigt yderst i rækken.
 
 Det store flueben på 34 px havde kun den ene bruger og er fjernet.
+
+---
+
+### 9.35 HUN VÆLGER NU SELV SINE SMÅ SKRIDT, 22. august
+
+Kortet "Vælg dine små skridt" har stået på forsiden siden juni og ført til
+en tom plads. Nu fører det til en rigtig side.
+
+**Det kom ud af en gennemgang mod den gamle app**, funktion for funktion.
+Hele listen over hvad kunden og admin kan i den gamle app og ikke i 3.0 står
+i 9.36. Det her afsnit er den første af de ting der er bygget.
+
+#### To spor, og de må ikke blandes
+
+- **Et medlem uden forløb** vælger alle sine tre skridt selv. Enten fra Linns
+  forslag, som der ligger 14 af i fire kategorier, eller skrevet med hendes
+  egne ord
+- **En kunde på et forløb** ser INGEN forslag. Hun får Linns skridt fra
+  forløbets plan, og dem kan hun ikke fjerne. Hun må lægge op til tre af sine
+  egne oveni
+
+Sådan deler den gamle app dem allerede, og **de to gemmes to forskellige
+steder i databasen.** Medlemmets valg ligger i hendes opsætning, forløbs-
+kundens egne ligger på hendes forløbs-produkt.
+
+#### Ingen ny datamodel, og det er med vilje
+
+Der skrives med den gamle apps egne funktioner, i de samme felter.
+**Kunden kan sidde i begge apper samme dag**, og så skal et flueben lande
+samme sted uanset hvor hun sætter det.
+
+Det gælder også en detalje der er let at overse: hendes egne skridt på
+forløbs-sporet får præfikset `eg-` på selve svaret. Det er ikke en smagssag,
+det er den nøgle den gamle app allerede bruger.
+
+#### To ting jeg rettede i forhold til den gamle side
+
+- **Der er ingen Gem-knap.** Hvert valg gemmes med det samme. Den gamle side
+  har en knap nederst, og går hun tilbage uden at trykke, er alt væk
+- **Når der er valgt tre, står der hvorfor resten er slukket.** Den gamle
+  side gør bare knapperne grå. En slukket knap uden forklaring læser som en
+  fejl i appen
+
+Dertil er hendes egne skridt mærket **"Dit eget"** på dagen. Den gamle app
+blander de to uden at vise forskel, og så ligner hendes eget noget Linn har
+bestemt.
+
+#### To veje ind
+
+Kortet på forsiden forsvinder i det øjeblik hun har valgt noget, så der skal
+være en vej tilbage:
+
+- **En diskret linje nederst i dagens kort**, "Ret dine skridt"
+- **En flise på Din side** der skriver hvad hun har valgt, ikke bare at man
+  kan vælge. Linns ønske samme dag. Den virker også som en påmindelse de dage
+  hun ikke har været på forsiden
+
+Flisen blev en bred række for sig og ikke en tredje flise ved siden af
+Opskrifter og Øvelser. Tre i bredden er trange på en lille telefon, og små
+skridt er ikke materiale, det er hendes egen opsætning.
+
+Tegningen med begge planer ligger i `mockups-vaelg-smaa-skridt.html`.
+
+---
+
+### 9.36 SMÅ SKRIDT MOD DEN GAMLE APP: HVAD DER STADIG MANGLER
+
+Gennemgang 22. august, blok for blok. **9.35 klarede punkt 1.** Resten står
+her, så det ikke skal findes forfra.
+
+#### Admin
+
+Alt admin-værktøjet virker, for admin bor stadig i den gamle app: fem slags
+tidsplaner pr skridt, hvor mange dage det rammer, redigér, slet, og Publicér
+til appen. Men **to ting du kan lave nnår ikke ud i 3.0:**
+
+- **Bonus-skridtet på en dag.** Både forløbets bonus og medlemmernes
+  bonus-spørgsmål fra puljen, hvor der ligger 90. 3.0 viser det slet ikke,
+  heller ikke notefeltet der hører til
+- **De låste "Fra forløb"-vaner**, altså vaner tildelt et helt forløb for en
+  bestemt uge. Ingen admin-side laver nye længere, men de kan ligge i data på
+  eksisterende forløb. **Det skal tjekkes for Kickstart-holdet inden det
+  flyttes**, for de forsvinder lydløst
+
+#### Kunden
+
+1. ~~Vælge sine små skridt som medlem~~. **Klaret 22. august**, se 9.35
+2. ~~Tilføje sine egne oveni på et forløb~~. **Klaret 22. august**, se 9.35
+3. **Svare Delvist.** 3.0 kender kun taget og ikke taget. Feltet i databasen
+   rummer sagtens det tredje svar, så det er kun knappen der mangler.
+   **Venter på Linns beslutning:** er det bevidst gjort enklere
+4. **Bonus-skridtet**, se admin ovenfor
+5. **Baseline på dag 0 og slut-refleksionen på dag 21**, hvor hendes eget
+   svar fra dag 0 stilles op ved siden af. Findes ikke i 3.0
+6. **Oversigten over alle dage med farver** efter hvor meget hun ramte, plus
+   forklaringen på farverne. Medlemmer har et måneds-arkiv. 3.0 har en
+   dag-liste på `/ny/forlob`, men den er sort/hvid og forældreløs
+7. **Statistikken:** "Små skridt opnået" i procent, og velvære-trend over 7
+   og 30 dage
+8. **De låste vaner fra forløbet** som medlem, mærket "Fra forløb"
+9. **Velkomstkortet** første gang hun åbner små skridt
+
+**To ting er bedre i 3.0 og skal ikke tilbage:** svaret gemmes med det samme
+uden en Gem-knap, og der står ikke "3 af 5 gennemført" på dagen. Det sidste
+er Linns regel om at en side aldrig må læse som en anklage, se 9.26.
 
 ---
 
