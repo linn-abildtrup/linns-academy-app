@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 22. august 2026. Se 9.32 og 9.33 for de to seneste dage, hvor der skete meget.
+Sidst opdateret 22. august 2026. Se 9.32, 9.33 og 9.34 for de seneste dage, hvor der skete meget.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -2182,6 +2182,33 @@ gemme, og fejlen ligner ikke en regel-fejl når den kommer.
 Gem, står der ingen mærker i databasen, og så filtrerer et hensyn ingenting
 fra. Det er den samme slags fælde som de manglende tildelinger i 9.32: der
 kommer ingen fejl, der kommer bare ingen forskel.
+
+---
+
+### 9.34 FLUEBENET LIGGER NU OVEN PÅ BILLEDET, 22. august
+
+Lille rettelse, men den fjernede noget hun mistede.
+
+Dagens lektioner viste et flueben **i stedet for** billedet, når hun havde
+set en lektion. Rækken blev anonym: hun kunne se at hun havde set noget, men
+ikke hvad. Nu bliver billedet stående, og fluebenet lægger sig i øverste
+højre hjørne med en lys kant om, så det også kan ses på et lyst billede.
+
+Det gælder alle tre slags, for det var Linns ord: video med sit eget billede
+fra Vimeo eller YouTube, lyd med Linns billede i den lilla tone, og læsning
+med den farvede flise. Play-tegnet og noden bliver stående, så hun stadig kan
+se hvad slags lektion det er.
+
+Der var to muligheder tegnet i `mockups-set-flueben.html`, og Linn valgte A,
+det lille flueben i hjørnet. B lagde billedet i skygge med et stort flueben
+midt på, og det ville have gjort billedet svært at se lige dér hvor pointen
+var at hun skulle kunne se det.
+
+**Kun dagens lektioner er ramt**, altså forsiden og dag-siden. "Dine
+lektioner" har ingen billeder, kun små ikoner, og dér ligger fluebenet
+allerede rigtigt yderst i rækken.
+
+Det store flueben på 34 px havde kun den ene bruger og er fjernet.
 
 ---
 
