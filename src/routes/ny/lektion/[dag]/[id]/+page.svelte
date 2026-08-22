@@ -26,6 +26,7 @@
 		formaterVarighed
 	} from '$lib/content/lektion3';
 	import { hentDagensLektioner, hentKlaret, saetKlaret } from '$lib/firestore/forside3';
+	import { erSet3, setNoegler3 } from '$lib/content/lektionSet3';
 	import { gemLektionNote, hentLektionNote } from '$lib/firestore/lektionNoter';
 	import Lydafspiller from '$lib/components/ny/Lydafspiller.svelte';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
@@ -120,7 +121,9 @@
 			if (afbrudt) return;
 			lektion = alle.find((l) => l.id === id) ?? null;
 			ikkeFundet = !lektion;
-			erKlaret = klarede.has(id);
+			// Fluebenet foelger videoen og ikke dagen, saa den samme film paa
+			// ugens andre dage staar ogsaa som set. Se HANDOVER 9.37.
+			erKlaret = lektion ? erSet3(klarede, lektion) : klarede.has(id);
 			note = gemtNote?.tekst ?? '';
 			henter = false;
 		})().catch((e) => {
@@ -158,7 +161,7 @@
 		const foer = erKlaret;
 		erKlaret = klar;
 		try {
-			await saetKlaret(uid, lektion.id, klar);
+			await saetKlaret(uid, setNoegler3(lektion), klar);
 		} catch (e) {
 			console.error('[ny] kunne ikke gemme klaret', e);
 			erKlaret = foer;

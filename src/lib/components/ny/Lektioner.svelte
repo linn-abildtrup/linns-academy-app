@@ -10,6 +10,7 @@
 
 	import type { LektionItem } from '$lib/content/forlob';
 	import { detekterGuideType, erLydLektion, videoThumbnail } from '$lib/content/bibliotek';
+	import { alleSet3, erSet3 } from '$lib/content/lektionSet3';
 	import Fluebe from './Fluebe.svelte';
 
 	interface Props {
@@ -29,7 +30,7 @@
 
 	let { titel, dagNummer, lektioner, klaret, visTitel = true }: Props = $props();
 
-	const alleKlaret = $derived(lektioner.length > 0 && lektioner.every((l) => klaret.has(l.id)));
+	const alleKlaret = $derived(alleSet3(klaret, lektioner));
 
 	/** Hvilken slags indhold lektionen er. Styrer farve og lille ikon. */
 	function art(l: LektionItem): 'lyd' | 'video' | 'tekst' {
@@ -74,7 +75,7 @@
 	{:else}
 		<div class="medie-liste">
 			{#each lektioner as l (l.id)}
-				{@const erKlaret = klaret.has(l.id)}
+				{@const erKlaret = erSet3(klaret, l)}
 				<!-- Hele raekken aabner lektionen. Ingen knap, for hun trykker
 				     alligevel paa billedet eller titlen. -->
 				<a class="medie-raekke" class:set={erKlaret} href={`/ny/lektion/${dagNummer}/${l.id}`}>

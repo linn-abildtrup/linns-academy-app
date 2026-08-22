@@ -59,6 +59,7 @@
 	import Henter from '$lib/components/ny/Henter.svelte';
 	import Ugestrimmel from '$lib/components/ny/Ugestrimmel.svelte';
 	import TilDig from '$lib/components/ny/TilDig.svelte';
+	import { alleSet3 } from '$lib/content/lektionSet3';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 	import Challenge from '$lib/components/ny/Challenge.svelte';
 
@@ -440,9 +441,7 @@
 	const skridtKlaret = $derived(
 		!!skridtData && skridtData.skridt.length > 0 && skridtData.skridt.every((s) => s.svar === 'ja')
 	);
-	const lektionerKlaret = $derived(
-		lektioner.length > 0 && lektioner.every((l) => klaret.has(l.id))
-	);
+	const lektionerKlaret = $derived(alleSet3(klaret, lektioner));
 	const refleksionSkrevet = $derived((skridtData?.note ?? '').trim().length > 0);
 	// Dagens tal folder foerst naar BEGGE maal er naaet. Ellers ville den
 	// forsvinde, netop som hun skulle bruge den.

@@ -34,6 +34,7 @@
 // ============================================================
 
 import type { LektionItem } from './forlob';
+import { erSet3 } from './lektionSet3';
 import type { AktivtForlob, GennemfoertForlob } from './adgang3';
 
 const MAANEDER = [
@@ -366,7 +367,7 @@ export function opgoerSete(
 	let aabne = 0;
 	for (const p of liste) {
 		if (p.aaben) aabne += 1;
-		if (klaret.has(p.lektion.id)) sete += 1;
+		if (erSet3(klaret, p.lektion)) sete += 1;
 	}
 	return { sete, aabne, ialt: liste.length };
 }

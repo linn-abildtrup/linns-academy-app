@@ -13,6 +13,7 @@
 	import type { Adgangsbillede } from '$lib/content/adgang3';
 	import { dagDato } from '$lib/content/forlobAdgang';
 	import { hentKlaret, datoNoegle } from '$lib/firestore/forside3';
+	import { alleSet3, type SetLektion3 } from '$lib/content/lektionSet3';
 	import { hentForlobsdage } from '$lib/firestore/forlob';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
@@ -26,7 +27,7 @@
 
 	let antalLektioner = $state<Map<number, number>>(new Map());
 	let klaret = $state<Set<string>>(new Set());
-	let lektionerPrDag = $state<Map<number, string[]>>(new Map());
+	let lektionerPrDag = $state<Map<number, SetLektion3[]>>(new Map());
 	let henter = $state(true);
 
 	$effect(() => {
@@ -40,13 +41,14 @@
 			const [dage, k] = await Promise.all([hentForlobsdage(f.forlobId), hentKlaret(uid)]);
 			if (afbrudt) return;
 			const antal = new Map<number, number>();
-			const ids = new Map<number, string[]>();
+			// Baade id og adresse, for fluebenet foelger videoen. Se 9.37.
+			const ids = new Map<number, SetLektion3[]>();
 			for (const d of dage) {
 				const liste = d.lektioner ?? [];
 				antal.set(d.dagNummer, liste.length);
 				ids.set(
 					d.dagNummer,
-					liste.map((l) => l.id)
+					liste.map((l) => ({ id: l.id, url: l.url }))
 				);
 			}
 			antalLektioner = antal;
@@ -83,7 +85,7 @@
 		if (!f) return [];
 		return Array.from({ length: f.antalDage + 1 }, (_, dag) => {
 			const dato = dagDato(new Date(f.startMs), dag);
-			const ids = lektionerPrDag.get(dag) ?? [];
+			const lektionerPaaDagen = lektionerPrDag.get(dag) ?? [];
 			return {
 				dag,
 				noegle: datoNoegle(dato),
@@ -91,7 +93,7 @@
 				laast: dag > f.dagNummer,
 				erIDag: dag === f.dagNummer,
 				antal: antalLektioner.get(dag) ?? 0,
-				alleTaget: ids.length > 0 && ids.every((id) => klaret.has(id))
+				alleTaget: alleSet3(klaret, lektionerPaaDagen)
 			};
 		});
 	});

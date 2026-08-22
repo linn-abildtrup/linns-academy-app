@@ -326,13 +326,26 @@ export async function hentKlaret(uid: string): Promise<Set<string>> {
 	}
 }
 
-export async function saetKlaret(uid: string, id: string, klaret: boolean): Promise<void> {
-	const ref = doc(klaretCol(uid), id);
-	if (klaret) {
-		await setDoc(ref, { klaretAt: Date.now() });
-	} else {
-		await deleteDoc(ref);
-	}
+/**
+ * Saetter eller fjerner fluebenet.
+ *
+ * Der skrives ÉN noegle pr id i listen: lektionens eget id, og noeglen
+ * for videoen hvis der er en. Det er den anden der goer at fluebenet
+ * foelger den samme film til de andre dage i ugen. Linns beslutning 22.
+ * august, se HANDOVER 9.37.
+ */
+export async function saetKlaret(
+	uid: string,
+	noegler: string | string[],
+	klaret: boolean
+): Promise<void> {
+	const liste = typeof noegler === 'string' ? [noegler] : noegler;
+	await Promise.all(
+		liste.map((n) => {
+			const ref = doc(klaretCol(uid), n);
+			return klaret ? setDoc(ref, { klaretAt: Date.now() }) : deleteDoc(ref);
+		})
+	);
 }
 
 // ── Dagens tal ──────────────────────────────────────────────

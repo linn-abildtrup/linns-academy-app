@@ -40,6 +40,7 @@
 	import { hentKlaret } from '$lib/firestore/forside3';
 	import { hentNoterForForlob } from '$lib/firestore/lektionNoter';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
+	import { erSet3 } from '$lib/content/lektionSet3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
@@ -260,7 +261,7 @@
      lydfil har alligevel ikke noget billede. Navnet kommer udefra, fordi
      ugerne saetter dagen paa naar flere lektioner hedder det samme. -->
 {#snippet raekke(p: ListeLektion, navn: string)}
-	{@const erKlaret = klaret.has(p.lektion.id)}
+	{@const erKlaret = erSet3(klaret, p.lektion)}
 
 	{#if p.aaben}
 		<a class="ll-lek" class:set={erKlaret} href={lektionsUrl(p)}>
@@ -383,10 +384,10 @@
 					<div class="ll-qa">
 						{#each opdeling.qa as p (`${p.dagNummer}-${p.lektion.id}`)}
 							{#if p.aaben}
-								<a class="ll-qa-r" class:set={klaret.has(p.lektion.id)} href={lektionsUrl(p)}>
+								<a class="ll-qa-r" class:set={erSet3(klaret, p.lektion)} href={lektionsUrl(p)}>
 									<span class="ll-qa-t">{p.lektion.titel}</span>
 									<span class="ll-qa-d">dag {p.dagNummer}</span>
-									{#if klaret.has(p.lektion.id)}
+									{#if erSet3(klaret, p.lektion)}
 										<span class="ll-lek-fl" title="Set"><Fluebe /></span>
 									{:else}
 										<span class="ll-lek-p" aria-hidden="true">›</span>
