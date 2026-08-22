@@ -429,6 +429,21 @@ service cloud.firestore {
 			}
 		}
 
+		// 3.0: hvem ser udvidet naering, og hvem maa rette sine maal.
+		// Kunden skal selv kunne spoerge, saa alle maa laese skemaet.
+		// Kun Linn saetter det.
+		match /naeringAdgang3/{docId} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
+		// Undtagelserne pr kunde ligger for sig, saa én kunde ikke kan se
+		// hvem Linn ellers har taget stilling til. Hun laeser kun sin egen.
+		match /naeringKunde3/{uid} {
+			allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+			allow write: if isAdmin();
+		}
+
 		// Abo-vanetracker — kurateret vaneliste pr produkttype (basis/premium):
 		// alle autentificerede kan læse (klient skal se forslag), kun admin skriver.
 		match /aboVaneskabelon/{produktType} {
