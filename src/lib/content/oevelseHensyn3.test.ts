@@ -15,8 +15,21 @@ const kort = { a: ['knae'], b: ['ryg'], c: ['knae', 'ryg'], d: [] };
 const alle = [o('a'), o('b'), o('c'), o('d'), o('e')];
 
 describe('HENSYN3', () => {
-	it('er de fire Linn valgte', () => {
-		expect(HENSYN3.map((h) => h.id)).toEqual(['knae', 'ryg', 'skulder', 'gulv']);
+	it('er de seks Linn valgte', () => {
+		expect(HENSYN3.map((h) => h.id)).toEqual([
+			'knae',
+			'ryg',
+			'skulder',
+			'baekkenbund',
+			'gulv',
+			'larm'
+		]);
+	});
+
+	// Tilfoejet 22. august. Den vigtigste for maalgruppen, kvinder fra 40
+	// og opefter, og den blev glemt i foerste omgang.
+	it('baekkenbund er med', () => {
+		expect(HENSYN3.some((h) => h.id === 'baekkenbund')).toBe(true);
 	});
 
 	it('har baade et kunde-navn og et admin-navn', () => {
@@ -58,9 +71,8 @@ describe('filtrerPaaHensyn3', () => {
 
 	// Hellere en oevelse for meget end et program der pludselig er tomt.
 	it('en oevelse uden maerker kommer altid med', () => {
-		expect(filtrerPaaHensyn3(alle, kort, ['knae', 'ryg', 'skulder', 'gulv']).map((x) => x.id)).toEqual(
-			['d', 'e']
-		);
+		const alleHensyn = HENSYN3.map((h) => h.id);
+		expect(filtrerPaaHensyn3(alle, kort, alleHensyn).map((x) => x.id)).toEqual(['d', 'e']);
 	});
 });
 
@@ -72,8 +84,8 @@ describe('tilbageEfterHensyn3', () => {
 		expect(r.find((x) => x.hensyn.id === 'skulder')?.tilbage).toBe(5);
 	});
 
-	it('svarer paa alle fire hensyn', () => {
-		expect(tilbageEfterHensyn3(alle, kort)).toHaveLength(4);
+	it('svarer paa alle hensyn der findes', () => {
+		expect(tilbageEfterHensyn3(alle, kort)).toHaveLength(HENSYN3.length);
 	});
 });
 
@@ -104,5 +116,17 @@ describe('FORSLAG3', () => {
 
 	it('planken belaster baade skuldre og kraever gulvet', () => {
 		expect(FORSLAG3.planke).toEqual(['skulder', 'gulv']);
+	});
+
+	// Dybe mavboejninger er den klassiske synder, planken regnes normalt
+	// for i orden. Fagligt valg, og Linn kan aendre det.
+	it('mavboejninger belaster baekkenbunden, planken goer ikke', () => {
+		expect(FORSLAG3.maveboejninger).toContain('baekkenbund');
+		expect(FORSLAG3.planke).not.toContain('baekkenbund');
+	});
+
+	it('hop baade larmer og belaster baekkenbunden', () => {
+		expect(FORSLAG3.mini_hops).toContain('larm');
+		expect(FORSLAG3.mini_hops).toContain('baekkenbund');
 	});
 });

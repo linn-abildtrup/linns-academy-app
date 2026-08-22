@@ -36,7 +36,19 @@ export const HENSYN3: Hensyn3[] = [
 	{ id: 'knae', navn: 'Skån mine knæ', adminNavn: 'Hård ved knæene' },
 	{ id: 'ryg', navn: 'Skån min ryg', adminNavn: 'Belaster ryggen' },
 	{ id: 'skulder', navn: 'Skån mine skuldre', adminNavn: 'Belaster skuldrene' },
-	{ id: 'gulv', navn: 'Jeg kan ikke ligge på gulvet', adminNavn: 'Kræver at man er på gulvet' }
+	/**
+	 * Bækkenbunden. Tilfoejet 22. august, og den er den vigtigste af dem
+	 * alle for maalgruppen: kvinder fra 40 og opefter. Hop, tunge loeft og
+	 * mavboejninger er de klassiske, og det er noget mange lever med uden
+	 * at tale om det. Derfor er ordlyden neutral og ikke en diagnose.
+	 */
+	{ id: 'baekkenbund', navn: 'Skån min bækkenbund', adminNavn: 'Belaster bækkenbunden' },
+	{ id: 'gulv', navn: 'Jeg kan ikke ligge på gulvet', adminNavn: 'Kræver at man er på gulvet' },
+	/**
+	 * Larm. Hop og kettlebells der rammer gulvet klokken seks om morgenen
+	 * i en lejlighed er en rigtig grund til ikke at traene.
+	 */
+	{ id: 'larm', navn: 'Det må ikke larme', adminNavn: 'Larmer, hop eller vægt mod gulv' }
 ];
 
 /** Kortet fra oevelse til de maerker den har faaet. */
@@ -112,9 +124,15 @@ export function nokTilbage3(antal: number): boolean {
  * IKKE en faglig vurdering, og det er praecis derfor det er et forslag
  * og ikke en fast liste. Linn retter i admin, og hendes valg vinder.
  *
- * Bemaerk at et par af dem er svaere: en glute bridge foregaar paa
- * gulvet, men er samtidig noget af det mest knaevenlige der findes. Den
- * har derfor 'gulv' og ikke 'knae'.
+ * Bemaerk at et par af dem er svaere:
+ *
+ *  - En glute bridge foregaar paa gulvet, men er samtidig noget af det
+ *    mest knaevenlige der findes. Den har derfor 'gulv' og ikke 'knae'.
+ *  - PLANKEN har IKKE faaet 'baekkenbund'. Dybe mavboejninger er den
+ *    klassiske synder, mens planken normalt regnes for i orden. Det er
+ *    et fagligt valg, og Linn kan aendre det.
+ *  - Presset over hovedet, altsaa shoulder press og thruster, HAR faaet
+ *    'baekkenbund', fordi det oeger trykket i maven.
  */
 export const FORSLAG3: HensynKort3 = {
 	// Ben, boejer knaeet dybt eller lander haardt
@@ -127,30 +145,30 @@ export const FORSLAG3: HensynKort3 = {
 	reverse_lunge_nv: ['knae'],
 	split_squat_left: ['knae'],
 	split_squat_right: ['knae'],
-	step_up: ['knae'],
-	step_up_nv: ['knae'],
-	step_up_knee_lift: ['knae'],
+	step_up: ['knae', 'larm'],
+	step_up_nv: ['knae', 'larm'],
+	step_up_knee_lift: ['knae', 'larm'],
 	wall_sit: ['knae'],
 	wall_sit_kettlebell: ['knae'],
-	mini_hops: ['knae'],
-	burpees: ['knae', 'ryg', 'skulder', 'gulv'],
+	mini_hops: ['knae', 'baekkenbund', 'larm'],
+	burpees: ['knae', 'ryg', 'skulder', 'gulv', 'baekkenbund', 'larm'],
 	lunges_rotation: ['knae', 'ryg'],
-	thruster: ['knae', 'skulder'],
+	thruster: ['knae', 'skulder', 'baekkenbund'],
 
 	// Ryg, loefter fra gulv eller boejer ryggen
-	dodloft_kettlebell: ['ryg'],
-	romanian_deadlift_kettlebell: ['ryg'],
-	sumo_dodloft: ['ryg'],
-	suitcase_deadlift_left: ['ryg'],
-	suitcase_deadlift_right: ['ryg'],
-	kettlebell_swing: ['ryg'],
+	dodloft_kettlebell: ['ryg', 'baekkenbund'],
+	romanian_deadlift_kettlebell: ['ryg', 'baekkenbund'],
+	sumo_dodloft: ['ryg', 'baekkenbund'],
+	suitcase_deadlift_left: ['ryg', 'baekkenbund'],
+	suitcase_deadlift_right: ['ryg', 'baekkenbund'],
+	kettlebell_swing: ['ryg', 'baekkenbund', 'larm'],
 	bent_over_row: ['ryg'],
 	good_morning: ['ryg'],
 	single_arm_row_kettlebell_left: ['ryg'],
 	single_arm_row_kettlebell_right: ['ryg'],
 
 	// Skulder, over hovedet eller vaegt paa haenderne
-	shoulder_press: ['skulder'],
+	shoulder_press: ['skulder', 'baekkenbund'],
 	kettlebell_high_pulls: ['skulder'],
 	incline_pushup: ['skulder'],
 	dips_chair: ['skulder'],
@@ -167,9 +185,9 @@ export const FORSLAG3: HensynKort3 = {
 	cat_cow: ['gulv'],
 	dead_bug: ['gulv'],
 	bird_dog: ['gulv'],
-	maveboejninger: ['ryg', 'gulv'],
-	russian_twist: ['ryg', 'gulv'],
-	russian_twist_kettlebell: ['ryg', 'gulv'],
+	maveboejninger: ['ryg', 'gulv', 'baekkenbund'],
+	russian_twist: ['ryg', 'gulv', 'baekkenbund'],
+	russian_twist_kettlebell: ['ryg', 'gulv', 'baekkenbund'],
 
 	// Planke og sidevendt planke: vaegt paa skuldrene OG paa gulvet
 	planke: ['skulder', 'gulv'],

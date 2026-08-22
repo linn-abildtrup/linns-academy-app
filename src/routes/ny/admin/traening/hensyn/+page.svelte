@@ -60,8 +60,8 @@
 	/** Hvor mange der er tilbage pr hensyn. Se kommentaren i toppen. */
 	const tilbage = $derived(tilbageEfterHensyn3(bank, kort));
 
-	/** Alle fire paa én gang. Det vaerste tilfaelde, og det skal ses. */
-	const alleFire = $derived(
+	/** Alle hensyn paa én gang. Det vaerste tilfaelde, og det skal ses. */
+	const alleSamlet = $derived(
 		filtrerPaaHensyn3(
 			bank,
 			kort,
@@ -149,14 +149,14 @@
 					<span class="hs-antal">{t.tilbage} af {bank.length}</span>
 				</div>
 			{/each}
-			<div class="hs-linje hs-alle" class:faa={!nokTilbage3(alleFire)}>
-				<span>Alle fire på én gang</span>
-				<span class="hs-antal">{alleFire} af {bank.length}</span>
+			<div class="hs-linje hs-alle" class:faa={!nokTilbage3(alleSamlet)}>
+				<span>Alle {HENSYN3.length} på én gang</span>
+				<span class="hs-antal">{alleSamlet} af {bank.length}</span>
 			</div>
-			{#if !nokTilbage3(alleFire)}
+			{#if !nokTilbage3(alleSamlet)}
 				<p class="adm-hjaelp">
 					Under {MIN_OEVELSER3} øvelser kan der ikke bygges et program der er værd at have. Beder en
-					kunde om alle fire hensyn, får hun besked om at skrive til dig i stedet.
+					kunde om alle hensyn på én gang, får hun besked om at skrive til dig i stedet.
 				</p>
 			{/if}
 		</section>
