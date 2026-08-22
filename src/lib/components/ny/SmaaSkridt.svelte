@@ -72,7 +72,9 @@
 				>
 					{#if klaret}<Fluebe />{/if}
 				</button>
-				<div class="tx">{s.label}</div>
+				<div class="tx">
+					{s.label}{#if s.fra === 'egen'}<span class="skridt-egen">Dit eget</span>{/if}
+				</div>
 				{#if !klaret}
 					<button class="mrk" disabled={gemmer === s.id} onclick={() => onskift(s.id, true)}>
 						Markér
@@ -81,4 +83,10 @@
 			</div>
 		{/each}
 	</div>
+
+	<!-- Vejen tilbage til valget. Kortet paa forsiden forsvinder i det
+	     oejeblik hun har valgt noget, saa uden den her kunne hun ikke
+	     skifte sine skridt ud igen. Flisen paa Din side er den anden vej
+	     ind. Linns valg 22. august. -->
+	<a class="skridt-ret" href="/ny/skridt">Ret dine skridt</a>
 </section>

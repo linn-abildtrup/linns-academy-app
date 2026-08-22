@@ -12595,3 +12595,309 @@ a.tr-felt:focus-visible {
 .oev-trin li {
 	margin-bottom: 7px;
 }
+
+/* ── Dine smaa skridt: hun vaelger dem selv ─────────────────
+   Siden er /ny/skridt. Bygget 22. august, se HANDOVER 9.35. */
+
+.skridt-side .kort + .kort {
+	margin-top: 11px;
+}
+
+/* Taelleren. Den staar oeverst hele tiden, saa hun altid kan se hvor
+   mange hun har tilbage uden at taelle raekkerne. */
+.vs-taeller {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: var(--plum-tint);
+	border-radius: 16px;
+	padding: 10px 15px;
+	margin-bottom: 12px;
+}
+
+.vs-taeller.fuld {
+	background: var(--sage-tint);
+}
+
+.vs-t {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--plum-deep);
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.vs-taeller.fuld .vs-t,
+.vs-taeller.fuld .vs-n {
+	color: var(--sage-tekst);
+}
+
+.vs-n {
+	font-family: var(--serif);
+	font-size: calc(16px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--plum);
+}
+
+/* Kvitteringen. Den staar kort og forsvinder, for der er ingen knap hun
+   kan have glemt. */
+.vs-gemt {
+	font-size: calc(11px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--sage-tekst);
+	background: rgba(251, 248, 242, 0.75);
+	border-radius: 999px;
+	padding: 2px 8px;
+}
+
+.vs-fejl {
+	margin-bottom: 11px;
+	color: var(--ler-tekst);
+	background: var(--ler-tint);
+}
+
+.vs-kat {
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	letter-spacing: 0.11em;
+	text-transform: uppercase;
+	font-weight: 700;
+	color: var(--ink-3);
+	margin: 15px 0 3px;
+}
+
+.vs-kat:first-child {
+	margin-top: 0;
+}
+
+.vs-forslag {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	width: 100%;
+	background: none;
+	border: 0;
+	border-top: 1px solid var(--line);
+	padding: 11px 0;
+	text-align: left;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+}
+
+.vs-kat + .vs-forslag {
+	border-top: 0;
+}
+
+/* Slukket og ikke skjult. Forsvandt de, ville listen hoppe hver gang hun
+   valgte noget, og hun ville tro at forslaget var vaek for altid. */
+.vs-forslag.slukket {
+	opacity: 0.42;
+	cursor: default;
+}
+
+.vs-cirkel {
+	width: 23px;
+	height: 23px;
+	border-radius: 50%;
+	border: 2px solid #d8cabb;
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	color: #fff;
+}
+
+.vs-cirkel.valgt {
+	background: var(--sage);
+	border-color: var(--sage);
+}
+
+.vs-l {
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	line-height: 1.35;
+}
+
+.vs-forslag.valgt .vs-l {
+	font-weight: 600;
+}
+
+.vs-egne-t {
+	font-family: var(--serif);
+	font-size: calc(15px * var(--fs-scale, 1));
+	font-weight: 600;
+	margin-bottom: 3px;
+}
+
+.vs-egen {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	border-top: 1px solid var(--line);
+	padding: 11px 0;
+}
+
+.vs-egen-l {
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	flex: 1;
+	min-width: 0;
+}
+
+.vs-x {
+	width: 27px;
+	height: 27px;
+	border-radius: 50%;
+	border: 0;
+	background: var(--oat);
+	color: var(--ink-2);
+	font-size: calc(16px * var(--fs-scale, 1));
+	line-height: 1;
+	flex-shrink: 0;
+	cursor: pointer;
+}
+
+.vs-skriv {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	border-top: 1px solid var(--line);
+	padding-top: 11px;
+	margin-top: 9px;
+}
+
+.vs-felt {
+	flex: 1;
+	min-width: 0;
+	background: var(--oat);
+	border: 1px solid var(--line);
+	border-radius: 13px;
+	padding: 9px 12px;
+	font: inherit;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	color: var(--espresso);
+}
+
+.vs-tilfoej {
+	border: 0;
+	border-radius: 999px;
+	background: var(--plum);
+	color: #fff;
+	font-weight: 700;
+	font-size: calc(13px * var(--fs-scale, 1));
+	padding: 9px 16px;
+	flex-shrink: 0;
+	cursor: pointer;
+}
+
+.vs-tilfoej:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+.vs-plus {
+	display: block;
+	width: 100%;
+	border: 0;
+	border-top: 1px solid var(--line);
+	background: none;
+	color: var(--plum);
+	font: inherit;
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 700;
+	text-align: left;
+	padding: 12px 0 2px;
+	margin-top: 9px;
+	cursor: pointer;
+}
+
+.vs-lille-fejl {
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ler-tekst);
+	margin-top: 7px;
+}
+
+.vs-fuld {
+	margin-top: 11px;
+}
+
+/* Maerket paa hendes eget skridt inde i dagens kort. Uden det ligner
+   hendes eget noget Linn har bestemt. */
+.skridt-egen {
+	display: inline-block;
+	font-size: calc(9.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	background: var(--honey-tint);
+	color: var(--honey-deep);
+	border-radius: 999px;
+	padding: 1px 7px;
+	margin-left: 6px;
+	vertical-align: 1px;
+}
+
+/* Vejen tilbage til valget, nederst i kortet. Diskret, for den er en
+   genvej og ikke dagens opgave. */
+.skridt-ret {
+	display: block;
+	border-top: 1px solid var(--line);
+	margin-top: 11px;
+	padding-top: 10px;
+	font-size: calc(12px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--plum);
+	text-decoration: none;
+}
+
+/* Flisen paa Din side. */
+.ds-raekke {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	background: var(--paper);
+	border-radius: 18px;
+	box-shadow: var(--shadow);
+	padding: 13px 14px;
+	text-decoration: none;
+	color: inherit;
+}
+
+.ds-i {
+	width: 36px;
+	height: 36px;
+	border-radius: 12px;
+	background: var(--plum-tint);
+	color: var(--plum);
+	display: grid;
+	place-items: center;
+	font-size: calc(15px * var(--fs-scale, 1));
+	flex-shrink: 0;
+}
+
+.ds-tekst {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.ds-t {
+	font-family: var(--serif);
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	font-weight: 600;
+}
+
+/* Listen over hendes skridt maa fylde én linje. Er de lange, klippes
+   den, for raekken skal have samme hoejde som resten paa siden. */
+.ds-s {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin-top: 1px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ds-pil {
+	margin-left: auto;
+	color: var(--ink-3);
+	font-size: calc(19px * var(--fs-scale, 1));
+}

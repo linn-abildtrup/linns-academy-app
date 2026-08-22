@@ -24,7 +24,7 @@ import {
 import { hentForlobsdag, hentAlleForlob } from './forlob';
 import { hentMaaltiderForDato } from './kost';
 import { hentMitProgram, hentProgramFremgang } from './mineProgrammer';
-import { hentForlobsProgram, hentExercises } from './mikrotraening';
+import { hentForlobsProgram, hentExercises, hentUserProduct } from './mikrotraening';
 import { hentAboMikrotraeningProgram, hentAboFremgang } from './aboMikrotraening';
 import { aktuelAboDagForDato } from '$lib/content/aboMikrotraening';
 import { hentHistorikForDato } from './traeningHistorik';
@@ -60,10 +60,19 @@ export async function hentOverskud(uid: string): Promise<Overskud> {
 
 export type SkridtSvar = 'ja' | 'delvist' | 'nej' | null;
 
+/**
+ * Hvor skridtet kommer fra. 'egen' er et hun selv har skrevet, og det
+ * faar et maerke paa dagen, saa hendes eget ikke ligner noget Linn har
+ * bestemt. Se HANDOVER 9.35.
+ */
+export type SkridtKilde3 = 'linn' | 'egen';
+
 export interface Skridt {
 	id: string;
 	label: string;
 	svar: SkridtSvar;
+	/** 'egen' naar hun selv har skrevet det. */
+	fra: SkridtKilde3;
 }
 
 export interface SmaaSkridtIDag {
@@ -98,22 +107,37 @@ export async function hentSmaaSkridtIDag(
 		// To forskellige noegler, og de maa ikke byttes om:
 		//   programmet (spoergsmaal + refleksion) ligger under FORLOEBETS id
 		//   hendes svar ligger under PRODUKT-noeglen i hendes egen skuffe
-		const [program, entry] = await Promise.all([
+		const [program, entry, produkt] = await Promise.all([
 			hentVaneprogramDag(forlob.forlobId, forlob.dagNummer),
-			hentVanedag(uid, forlob.dagNummer, forlob.produkt)
+			hentVanedag(uid, forlob.dagNummer, forlob.produkt),
+			hentUserProduct(uid, forlob.produkt)
 		]);
 		const checks = program?.checks ?? [];
+		// HENDES EGNE LIGGER EFTER LINNS, og noeglen paa svaret faar
+		// praefikset 'eg-'. Det er ikke en smagssag: den gamle app gemmer
+		// dem under praecis den noegle, og bruger hun begge apper samme
+		// dag, skal afkrydsningen vaere det samme sted. Se HANDOVER 9.35.
+		const egne = (produkt?.egneVaner ?? []).map((v) => ({
+			id: `eg-${v.id}`,
+			label: v.label,
+			svar: (entry?.checks?.[`eg-${v.id}`] as SkridtSvar) ?? null,
+			fra: 'egen' as const
+		}));
 		return {
 			kilde: 'forlob',
 			produktId: forlob.produkt,
 			dagNummer: forlob.dagNummer,
 			refleksion: program?.reflection?.trim() ?? '',
 			note: entry?.note ?? '',
-			skridt: checks.map((c) => ({
-				id: c.id,
-				label: c.label,
-				svar: (entry?.checks?.[c.id] as SkridtSvar) ?? null
-			}))
+			skridt: [
+				...checks.map((c) => ({
+					id: c.id,
+					label: c.label,
+					svar: (entry?.checks?.[c.id] as SkridtSvar) ?? null,
+					fra: 'linn' as const
+				})),
+				...egne
+			]
 		};
 	}
 
@@ -124,10 +148,13 @@ export async function hentSmaaSkridtIDag(
 	return {
 		kilde: 'medlem',
 		dato,
+		// Medlemmet har valgt dem alle sammen selv, saa der er ingen grund
+		// til at maerke nogen af dem som hendes egne.
 		skridt: (opsaetning?.valgteVaner ?? []).map((v) => ({
 			id: v.id,
 			label: v.label,
-			svar: (dag?.checks?.[v.id] as SkridtSvar) ?? null
+			svar: (dag?.checks?.[v.id] as SkridtSvar) ?? null,
+			fra: 'linn' as const
 		}))
 	};
 }

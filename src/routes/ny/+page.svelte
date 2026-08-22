@@ -610,9 +610,16 @@
 				<SmaaSkridt skridt={skridtData.skridt} {gemmer} onskift={skiftSkridt} />
 			{/if}
 		{:else}
-			<a class="kort rolig cta" href="/ny/moduler">
-				<b>Vælg dine små skridt</b>
-				<span>Tre ting du vil øve dig på. Du kan skifte dem igen senere.</span>
+			<!-- Foerte foer til /ny/moduler, som er en tom plads. Rettet 22.
+			     august. En forloebskunde faar en anden tekst: hun kan ikke
+			     vaelge Linns skridt, kun laegge sine egne oveni. -->
+			<a class="kort rolig cta" href="/ny/skridt">
+				<b>{aktivtForlob ? 'Tilføj dine egne små skridt' : 'Vælg dine små skridt'}</b>
+				<span>
+					{aktivtForlob
+						? 'Op til tre, oveni dem Linn har lagt ind i forløbet.'
+						: 'Tre ting du vil øve dig på. Du kan skifte dem igen senere.'}
+				</span>
 			</a>
 		{/if}
 

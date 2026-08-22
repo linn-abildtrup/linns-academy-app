@@ -22,6 +22,8 @@
 		type TraeningKategori3
 	} from '$lib/content/traeningKategori3';
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
+	import { opsummering3, type ValgtSkridt3 } from '$lib/content/vaelgSkridt3';
+	import { hentSkridtValg3 } from '$lib/firestore/vaelgSkridt3';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -69,6 +71,43 @@
 			logudGaar = false;
 		}
 	}
+
+	// DINE SMAA SKRIDT. Linns oenske 22. august: der skal vaere en flise
+	// her ogsaa. Forsiden viser dagen og skifter hele tiden, Din side er
+	// der hvor tingene ligger fast, og det er derfor den er det rigtige
+	// sted at gaa hen naar hun vil skifte sine skridt ud.
+	//
+	// Raekken skriver HVAD hun har valgt og ikke bare at man kan vaelge
+	// noget. Saa virker den ogsaa som en paamindelse de dage hun ikke har
+	// vaeret paa forsiden. Se HANDOVER 9.35.
+	let mineSkridt = $state<ValgtSkridt3[]>([]);
+	let skridtHentet = $state(false);
+	const skridtTekst = $derived(opsummering3(mineSkridt));
+	const skridtTitel = $derived(
+		adgang.aktiveForlob.length > 0 ? 'Dine egne små skridt' : 'Dine små skridt'
+	);
+
+	$effect(() => {
+		const uid = hentUser()?.uid;
+		if (!uid) return;
+		const f = adgang.aktiveForlob[0] ?? null;
+		let afbrudt = false;
+
+		(async () => {
+			const d = await hentSkridtValg3(uid, f ? { produkt: f.produkt } : null);
+			if (afbrudt) return;
+			mineSkridt = d.valgte;
+			skridtHentet = true;
+		})().catch((e) => {
+			// Flisen bliver bare vaek. Den er en genvej og ikke en side hun
+			// mangler for at komme videre.
+			console.error('[ny] kunne ikke hente dine skridt', e);
+		});
+
+		return () => {
+			afbrudt = true;
+		};
+	});
 
 	const forlobRaekker = $derived(
 		byggForlobRaekker(adgang.aktiveForlob, adgang.gennemfoerte, {
@@ -158,6 +197,20 @@
 			</a>
 		</div>
 	</section>
+
+	{#if skridtHentet}
+		<section>
+			<div class="lab"><h2>{skridtTitel}</h2></div>
+			<a class="ds-raekke" href="/ny/skridt">
+				<span class="ds-i" aria-hidden="true">✦</span>
+				<span class="ds-tekst">
+					<span class="ds-t">{skridtTekst.titel}</span>
+					<span class="ds-s">{skridtTekst.under}</span>
+				</span>
+				<span class="ds-pil" aria-hidden="true">›</span>
+			</a>
+		</section>
+	{/if}
 
 	<!-- Opstarten hoerer til en kunde der er i gang. I de 90 dage ville de
 	     to raekker sende hende tilbage hertil med det samme. -->
