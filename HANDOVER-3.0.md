@@ -415,15 +415,16 @@ Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx 
 
 ## 9. Hvor vi står, og hvad der er næste skridt
 
-Opdateret 18. august 2026. Alt herunder er kodet. **Arbejdet fra 18. august er
-IKKE committet endnu**, resten er pushet og `main` er i sync.
+Opdateret 22. august 2026 sidst på eftermiddagen. **Alt er kodet, committet og
+pushet, og `main` er i sync.** Firestore-reglerne er udgivet samme dag kl
+16.02 og verificeret mod det der kører, så der ligger ingen uudgivet regel.
 
 **Etape 1 til 3 er færdige, og hele den åbne liste fra 6. august er klaret.** Etape 4 er i gang.
 
 ### NÆSTE SKRIDT
 
-Opdateret 20. august. Det her afsnit er skrevet om fra bunden, fordi
-halvdelen af den gamle liste var klaret.
+Opdateret 22. august. Punkt 4 faldt væk samme dag, og der er kommet to nye
+grupper til: hvad der er halvbygget, og hvad Linn selv skal gøre.
 
 #### Spærrer for at flytte et hold
 
@@ -458,13 +459,37 @@ Enten en vej ind eller sløjfes.
 #### Halvbygget lige nu
 
 - **Hensyn på øvelserne.** Admin-siden blev bygget 21. august sent og 22.
-  august om formiddagen, men **kunden kan endnu ikke bede om et hensyn.**
-  Hverken "byg dit eget program" eller AI-værktøjet spørger hende, og de
-  filtrerer ikke på mærkerne. Den halvdel der virker er den halvdel ingen
-  kan se. Se 9.33
+  august om formiddagen, og reglen er udgivet, men **kunden kan endnu ikke
+  bede om et hensyn.** Hverken "byg dit eget program" eller AI-værktøjet
+  spørger hende, og de filtrerer ikke på mærkerne. Den halvdel der virker er
+  den halvdel ingen kan se. Se 9.33
+- **Små skridt.** Hun kan nu vælge sine egne, se 9.35, men syv ting fra den
+  gamle app mangler stadig. **Hele listen står i 9.36**, så den ikke skal
+  findes forfra. De to der betyder mest inden et hold flyttes: **bonus-
+  skridtet** vises slet ikke i 3.0, og **de låste "Fra forløb"-vaner** skal
+  tjekkes på Kickstart-holdet, for de forsvinder lydløst
+
+#### Det Linn selv skal gøre, og som ingen kode kan erstatte
+
+Samlet her 22. august, fordi de lå spredt ud over fire afsnit.
+
+1. **De fire velkomstvideoer.** Har stået øverst siden 16. august
+2. **Tildel de to Kickstart-programmer til et rigtigt hold.** Den farligste,
+   for der kommer ingen fejl når det glemmes. Der kommer bare ingenting
+3. **Sæt mærkerne på øvelserne** i admin under Hensyn. Forslaget ligger klar,
+   men indtil du trykker Gem står der ingen mærker, og et hensyn filtrerer
+   ingenting fra. Samme slags fælde som de manglende tildelinger
+4. **Slå fluebenet "Vises altid til alle" fra** på kategorien Uden redskaber.
+   Det er derfor kettlebell-kunder stadig ser kropsvægts-programmerne
+5. **Optag en skulderøvelse uden vægt**, hvis den variant skal ramme
+   skulderen. Banken har ingen
 
 #### Beslutninger der venter på Linn
 
+- **Delvist-knappen på små skridt.** Den gamle app har tre svar: Ja, Delvist,
+  Nej. 3.0 har kun taget og ikke taget. Feltet i databasen rummer sagtens det
+  tredje, så det er kun knappen der mangler. **Er det bevidst gjort enklere,
+  eller skal den tilbage?** Se 9.36
 - **Q&A kendes kun på titlen.** Der er intet mærke i databasen, så vi leder
   efter "Q&A" i overskriften. Skriver hun en gang "Spørgetime", forsvinder
   den ned i ugerne. Den holdbare løsning er et flueben i admin
