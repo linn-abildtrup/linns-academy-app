@@ -2466,6 +2466,21 @@ knap mellem hver. Resultatet regner sig om mens hun svarer, og **regnestykket
 er den gamle apps eget** — to steder der regner protein forskelligt er værre
 end ingen beregner.
 
+**Guiden står ALTID fremme.** Den lå først bag kontakten, som i den gamle app,
+og Linn fangede det med det samme: så kan hun ikke få sit protein-mål beregnet
+uden også at slå kalorier til. Det er nøjagtig den fejl der blev rettet på
+felterne en time før, og som blev glemt på guiden.
+
+**Resultatet viser kun det hun har slået til.** Uden udvidet næring står der
+protein og fiber og intet andet. De tre andre **gemmes alligevel**, så de står
+klar den dag hun slår dem til, men et kalorietal skal ikke dukke op på en
+skærm hun ikke har bedt om.
+
+**Derfor kan den gamle apps gem-funktion ikke bruges.** Den slår udvidet
+næring TIL som en sidegevinst. Det gav mening dengang guiden kun kunne nås når
+kontakten allerede var slået til. 3.0 skriver de to felter og rører ikke
+hendes kontakt, se `firestore/naeringMaal3.ts`.
+
 **På forsiden** står de tre som en stille linje under protein og fiber, uden
 bjælker. Fem bjælker gør kortet til et regneark, og en bjælke på kalorier
 læser som en grænse hun er ved at overskride.
