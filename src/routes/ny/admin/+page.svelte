@@ -57,6 +57,11 @@
 
 	const mad: Punkt[] = [
 		{
+			navn: 'Næring',
+			under: 'Hvem ser udvidet næring, og hvem må rette sine mål',
+			href: '/ny/admin/naering'
+		},
+		{
 			navn: 'Ingredienser',
 			under: 'Kobl opskrifternes ingredienser til fødevarerne',
 			href: '/ny/admin/ingredienser'

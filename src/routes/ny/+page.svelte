@@ -60,6 +60,8 @@
 	import Ugestrimmel from '$lib/components/ny/Ugestrimmel.svelte';
 	import TilDig from '$lib/components/ny/TilDig.svelte';
 	import { alleSet3 } from '$lib/content/lektionSet3';
+	import { visUdvidet3, type NaeringAdgang3 } from '$lib/content/naeringAdgang3';
+	import { hentNaeringAdgang3 } from '$lib/firestore/naeringAdgang3';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 	import Challenge from '$lib/components/ny/Challenge.svelte';
 
@@ -123,6 +125,26 @@
 	const fornavn = $derived(userDoc?.firstName ?? '');
 	const hilsen = $derived(getGreetingWithName(fornavn, nu));
 	const aktivtForlob = $derived(adgang.aktiveForlob[0] ?? null);
+	// Skal de tre udvidede tal staa paa forsiden. Linn skal have givet lov,
+	// OG hun skal selv have slaaet dem til. Se HANDOVER 9.38.
+	let naeringAdgang = $state<NaeringAdgang3 | null>(null);
+	const visUdvidetTal = $derived(visUdvidet3(naeringAdgang, userDoc?.visUdvidetNaering));
+
+	$effect(() => {
+		const uid = user?.uid;
+		if (!uid) return;
+		const fid = aktivtForlob?.forlobId ?? null;
+		let afbrudt = false;
+		hentNaeringAdgang3(uid, fid)
+			.then((a) => {
+				if (!afbrudt) naeringAdgang = a;
+			})
+			.catch((e) => console.warn('[ny] kunne ikke hente naerings-adgangen', e));
+		return () => {
+			afbrudt = true;
+		};
+	});
+
 	const medlemstid = $derived(formatMedlemstid(adgang.medlemstidMs));
 
 	// ── Hentede data ────────────────────────────────────────────
@@ -717,11 +739,11 @@
 						onfold={() => skiftFold('tal')}
 					/>
 					{#if aaben}
-						<div class="fold-krop"><DagensTalKort {tal} /></div>
+						<div class="fold-krop"><DagensTalKort {tal} visUdvidet={visUdvidetTal} /></div>
 					{/if}
 				</section>
 			{:else}
-				<DagensTalKort {tal} />
+				<DagensTalKort {tal} visUdvidet={visUdvidetTal} />
 			{/if}
 		{/if}
 

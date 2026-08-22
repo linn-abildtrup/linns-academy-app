@@ -34,6 +34,8 @@
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 	import Ugestrimmel from '$lib/components/ny/Ugestrimmel.svelte';
 	import SmaaSkridt from '$lib/components/ny/SmaaSkridt.svelte';
+	import { visUdvidet3, type NaeringAdgang3 } from '$lib/content/naeringAdgang3';
+	import { hentNaeringAdgang3 } from '$lib/firestore/naeringAdgang3';
 	import Lektioner from '$lib/components/ny/Lektioner.svelte';
 	import Refleksion from '$lib/components/ny/Refleksion.svelte';
 	import DagensTalKort from '$lib/components/ny/DagensTal.svelte';
@@ -46,6 +48,26 @@
 	const userDoc = $derived(hentUserDoc());
 	const adgang = $derived(hentAdgang());
 	const forlob = $derived(adgang.aktiveForlob[0] ?? null);
+	// Skal de tre udvidede tal staa paa forsiden. Linn skal have givet lov,
+	// OG hun skal selv have slaaet dem til. Se HANDOVER 9.38.
+	let naeringAdgang = $state<NaeringAdgang3 | null>(null);
+	const visUdvidetTal = $derived(visUdvidet3(naeringAdgang, userDoc?.visUdvidetNaering));
+
+	$effect(() => {
+		const uid = user?.uid;
+		if (!uid) return;
+		const fid = forlob?.forlobId ?? null;
+		let afbrudt = false;
+		hentNaeringAdgang3(uid, fid)
+			.then((a) => {
+				if (!afbrudt) naeringAdgang = a;
+			})
+			.catch((e) => console.warn('[ny] kunne ikke hente naerings-adgangen', e));
+		return () => {
+			afbrudt = true;
+		};
+	});
+
 
 	const dato = $derived(page.params.dato ?? '');
 	const iDag = $derived(datoNoegle(new Date()));
@@ -280,7 +302,7 @@
 		{/if}
 
 		{#if tal && harMaal}
-			<DagensTalKort {tal} />
+			<DagensTalKort {tal} visUdvidet={visUdvidetTal} />
 		{/if}
 
 		{#if !harNoget}

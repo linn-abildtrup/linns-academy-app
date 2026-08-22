@@ -12911,3 +12911,547 @@ a.tr-felt:focus-visible {
 	margin-bottom: 4px;
 	line-height: 1.45;
 }
+
+/* ── Dine maal og udvidet naering ───────────────────────────
+   Bygget 22. august, se HANDOVER 9.38. */
+
+.naering-side .kort + .kort,
+.naering-admin .kort + .kort {
+	margin-top: 11px;
+}
+
+.nm-fejl {
+	color: var(--ler-tekst);
+	background: var(--ler-tint);
+	margin-bottom: 11px;
+}
+
+.nm-top {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	margin-bottom: 3px;
+}
+
+.nm-t {
+	font-family: var(--serif);
+	font-size: calc(15px * var(--fs-scale, 1));
+	font-weight: 600;
+}
+
+.nm-gemt {
+	font-size: calc(11px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--sage-tekst);
+	background: var(--sage-tint);
+	border-radius: 999px;
+	padding: 2px 8px;
+}
+
+.nm-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 9px;
+	margin-top: 9px;
+}
+
+.nm-felt {
+	width: calc(50% - 5px);
+}
+
+.nm-l {
+	display: block;
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	font-weight: 700;
+	margin-bottom: 3px;
+}
+
+.nm-b {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	background: var(--oat);
+	border: 1px solid var(--line);
+	border-radius: 13px;
+	padding: 8px 11px;
+}
+
+/* Kan hun ikke rette, ligner feltet en oplysning og ikke et felt der er
+   gaaet i stykker. */
+.nm-b.laast {
+	background: var(--paper-2);
+	border-style: dashed;
+}
+
+.nm-b input {
+	width: 100%;
+	min-width: 0;
+	border: 0;
+	background: none;
+	font: inherit;
+	font-family: var(--serif);
+	font-size: calc(16px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	-moz-appearance: textfield;
+	appearance: textfield;
+}
+
+.nm-b input::-webkit-outer-spin-button,
+.nm-b input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.nm-e {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	flex-shrink: 0;
+}
+
+.nm-hjaelp {
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin-top: 11px;
+}
+
+.nm-beregn {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	background: var(--moerk);
+	color: #f2e9df;
+	border-radius: 16px;
+	padding: 12px 13px;
+	margin-top: 12px;
+	text-decoration: none;
+}
+
+.nm-beregn-i {
+	font-size: calc(16px * var(--fs-scale, 1));
+}
+
+.nm-beregn-t {
+	display: block;
+	font-family: var(--serif);
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	font-weight: 600;
+}
+
+.nm-beregn-s {
+	display: block;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: rgba(242, 233, 223, 0.72);
+	margin-top: 1px;
+}
+
+.nm-beregn-p {
+	margin-left: auto;
+	color: rgba(242, 233, 223, 0.6);
+	font-size: calc(17px * var(--fs-scale, 1));
+}
+
+.nm-kontakt {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	background: none;
+	border: 0;
+	padding: 0;
+	text-align: left;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+}
+
+.nm-kontakt-t {
+	display: block;
+	font-family: var(--serif);
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	font-weight: 600;
+}
+
+.nm-kontakt-s {
+	display: block;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin-top: 2px;
+}
+
+.nm-sw,
+.na-sw {
+	width: 46px;
+	height: 27px;
+	border-radius: 999px;
+	background: #ded2c3;
+	position: relative;
+	flex-shrink: 0;
+	transition: background 0.15s ease;
+}
+
+.nm-sw i,
+.na-sw i {
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 21px;
+	height: 21px;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(60, 40, 30, 0.3);
+	transition: left 0.15s ease;
+}
+
+.nm-sw.on,
+.na-sw.on {
+	background: var(--sage);
+}
+
+.nm-sw.on i,
+.na-sw.on i {
+	left: 22px;
+}
+
+.nm-kontakt .nm-sw {
+	margin-left: auto;
+}
+
+/* ── Beregn mine maal ───────────────────────────────────── */
+
+.nb-sp {
+	border-top: 1px solid var(--line);
+	padding: 12px 0;
+}
+
+.nb-sp:first-child {
+	border-top: 0;
+	padding-top: 0;
+}
+
+.nb-q {
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 700;
+	margin-bottom: 8px;
+}
+
+.nb-tal {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	background: var(--oat);
+	border: 1px solid var(--line);
+	border-radius: 13px;
+	padding: 8px 12px;
+	width: 145px;
+}
+
+.nb-tal input {
+	width: 100%;
+	min-width: 0;
+	border: 0;
+	background: none;
+	font: inherit;
+	font-family: var(--serif);
+	font-size: calc(17px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	-moz-appearance: textfield;
+	appearance: textfield;
+}
+
+.nb-tal input::-webkit-outer-spin-button,
+.nb-tal input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.nb-tal span {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.nb-chips {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.nb-chip {
+	display: block;
+	width: 100%;
+	text-align: left;
+	border: 1px solid var(--line);
+	background: var(--paper-2);
+	border-radius: 13px;
+	padding: 8px 12px;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+}
+
+.nb-chip span {
+	display: block;
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 600;
+}
+
+.nb-chip em {
+	display: block;
+	font-style: normal;
+	font-size: calc(11px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-top: 1px;
+}
+
+.nb-chip.valgt {
+	background: var(--plum);
+	border-color: var(--plum);
+	color: #fff;
+}
+
+.nb-chip.valgt em {
+	color: rgba(255, 255, 255, 0.72);
+}
+
+.nb-resultat {
+	background: var(--sage-tint);
+	border-radius: 18px;
+	padding: 14px 15px;
+	margin-top: 11px;
+}
+
+.nb-r-t {
+	font-family: var(--serif);
+	font-size: calc(14.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--sage-tekst);
+	margin-bottom: 5px;
+}
+
+.nb-r-r {
+	display: flex;
+	justify-content: space-between;
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: #3f5539;
+	padding: 2px 0;
+}
+
+.nb-knap {
+	display: block;
+	width: 100%;
+	border: 0;
+	border-radius: 999px;
+	background: var(--plum);
+	color: #fff;
+	font: inherit;
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 700;
+	padding: 12px 0;
+	margin-top: 13px;
+	cursor: pointer;
+}
+
+.nb-knap:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+/* ── De tre smaa tal paa forsiden ───────────────────────── */
+
+.tal-tre {
+	display: flex;
+	gap: 8px;
+	margin-top: 13px;
+	padding-top: 11px;
+	border-top: 1px solid var(--line);
+}
+
+.tal-tre > div {
+	flex: 1;
+	text-align: center;
+}
+
+.tal-tre-n {
+	font-size: calc(9.5px * var(--fs-scale, 1));
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	font-weight: 700;
+}
+
+.tal-tre-v {
+	font-family: var(--serif);
+	font-size: calc(15px * var(--fs-scale, 1));
+	font-weight: 600;
+	margin-top: 1px;
+}
+
+.tal-tre-m {
+	font-size: calc(10px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+/* ── Admin: naering ─────────────────────────────────────── */
+
+.na-raekke {
+	border-top: 1px solid var(--line);
+	padding: 12px 0;
+}
+
+.na-raekke:first-child {
+	border-top: 0;
+	padding-top: 0;
+}
+
+.na-navn {
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
+}
+
+.na-sub {
+	font-size: calc(11px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-top: 1px;
+}
+
+.na-knapper {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 14px;
+	margin-top: 9px;
+}
+
+.na-k {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	border: 0;
+	background: none;
+	padding: 0;
+	font: inherit;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	cursor: pointer;
+}
+
+.na-k .na-sw {
+	width: 40px;
+	height: 23px;
+}
+
+.na-k .na-sw i {
+	width: 17px;
+	height: 17px;
+}
+
+.na-k .na-sw.on i {
+	left: 20px;
+}
+
+.na-soeg {
+	width: 100%;
+	background: var(--oat);
+	border: 1px solid var(--line);
+	border-radius: 13px;
+	padding: 9px 12px;
+	font: inherit;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--espresso);
+	margin-bottom: 10px;
+}
+
+.na-fund {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	border-top: 1px solid var(--line);
+	padding: 10px 0;
+}
+
+.na-fund-n {
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 600;
+}
+
+.na-fund-s {
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.na-fund-k {
+	display: flex;
+	gap: 6px;
+	margin-left: auto;
+}
+
+.na-fund-k button {
+	border: 1px solid var(--line);
+	background: var(--paper-2);
+	border-radius: 999px;
+	padding: 5px 10px;
+	font: inherit;
+	font-size: calc(11px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--plum);
+	cursor: pointer;
+}
+
+.na-und {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	border-top: 1px solid var(--line);
+	padding: 10px 0;
+}
+
+.na-und-n {
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 600;
+}
+
+.na-und-s {
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+.na-pille {
+	margin-left: auto;
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	border-radius: 999px;
+	padding: 3px 9px;
+	background: var(--sage-tint);
+	color: var(--sage-tekst);
+	text-align: center;
+}
+
+.na-pille.fra {
+	background: var(--ler-tint);
+	color: var(--ler-tekst);
+}
+
+.na-x {
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	border: 0;
+	background: var(--oat);
+	color: var(--ink-3);
+	font-size: calc(14px * var(--fs-scale, 1));
+	line-height: 1;
+	flex-shrink: 0;
+	cursor: pointer;
+}
+
+.na-tom {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+}
+
+.na-forklaring {
+	margin-top: 12px;
+}

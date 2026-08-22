@@ -33,6 +33,7 @@
 	// ============================================================
 
 	import { getContext } from 'svelte';
+	import type { Adgangsbillede } from '$lib/content/adgang3';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 
@@ -62,7 +63,8 @@
 	import { hentOpskrifter3, type Opskrift3 } from '$lib/firestore/opskrifter3';
 	import { hentBeregninger, type Beregninger } from '$lib/firestore/opskriftBeregning3';
 	import { hentBrugteOpskrifter, hentMineOpskrifter3 } from '$lib/firestore/mineOpskrifter3';
-	import { hentAdgangsskema, maaSeUdvidetNaering } from '$lib/firestore/featureAdgang3';
+	import { hentNaeringAdgang3 } from '$lib/firestore/naeringAdgang3';
+	import { visUdvidet3 } from '$lib/content/naeringAdgang3';
 
 	import OpskriftArk from '$lib/components/ny/OpskriftArk.svelte';
 	import MinOpskriftArk from '$lib/components/ny/MinOpskriftArk.svelte';
@@ -72,6 +74,8 @@
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
+	// Forloebet afgoer om hun maa se de udvidede tal. Se HANDOVER 9.38.
+	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
 	const user = $derived(hentUser());
 	const userDoc = $derived(hentUserDoc());
 
@@ -101,8 +105,9 @@
 			mineOpskrifter = mine;
 			if (mine.length > 0) gaettede = gaetKategorier(await hentBrugteOpskrifter(uid));
 
-			const skema = await hentAdgangsskema();
-			if (!afbrudt) visUdvidet = maaSeUdvidetNaering(userDoc, skema);
+			// 3.0's eget skema, ikke den gamle apps. Se HANDOVER 9.38.
+			const naering = await hentNaeringAdgang3(uid, hentAdgang().aktiveForlob[0]?.forlobId ?? null);
+			if (!afbrudt) visUdvidet = visUdvidet3(naering, userDoc?.visUdvidetNaering);
 		})().catch((e) => {
 			console.error('[ny] kunne ikke hente opskrifterne', e);
 			henter = false;

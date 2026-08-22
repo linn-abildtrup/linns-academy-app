@@ -11,6 +11,7 @@
 	// ============================================================
 
 	import { getContext } from 'svelte';
+	import type { Adgangsbillede } from '$lib/content/adgang3';
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
@@ -30,7 +31,9 @@
 		opdaterMadvare
 	} from '$lib/firestore/plejer3';
 	import { hentFodevarer3 } from '$lib/firestore/fodevarer3';
-	import { hentAdgangsskema, maaSeUdvidetNaering } from '$lib/firestore/featureAdgang3';
+	import { hentAdgangsskema } from '$lib/firestore/featureAdgang3';
+	import { hentNaeringAdgang3 } from '$lib/firestore/naeringAdgang3';
+	import { visUdvidet3 } from '$lib/content/naeringAdgang3';
 	import { datoNoegle } from '$lib/firestore/forside3';
 	import MaengdeArk from '$lib/components/ny/MaengdeArk.svelte';
 	import OpskriftArk from '$lib/components/ny/OpskriftArk.svelte';
@@ -131,6 +134,9 @@
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
+	// Forloebet afgoer om hun maa se de udvidede tal, se HANDOVER 9.38.
+	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
+	const forlobId = $derived(hentAdgang().aktiveForlob[0]?.forlobId ?? null);
 	const user = $derived(hentUser());
 	const userDoc = $derived(hentUserDoc());
 
@@ -371,9 +377,15 @@
 			henter = false;
 			// Vanerne hentes bagefter. De maa ikke forsinke maaltidet.
 			plejer = await hentPlejer(uid, t, kort);
-			const skema = await hentAdgangsskema();
+			// To skemaer, og de er ikke det samme. AI-opskrift ligger stadig i
+			// det gamle, som ogsaa styrer den gamle app. Udvidet naering er
+			// lagt om til 3.0's eget, se HANDOVER 9.38.
+			const [skema, naering] = await Promise.all([
+				hentAdgangsskema(),
+				hentNaeringAdgang3(uid, forlobId)
+			]);
 			if (!afbrudt) {
-				visUdvidet = maaSeUdvidetNaering(userDoc, skema);
+				visUdvidet = visUdvidet3(naering, userDoc?.visUdvidetNaering);
 				maaOprette = harFeatureAdgang(userDoc, skema, 'ai-opskrift');
 			}
 		})().catch((e) => {

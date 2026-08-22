@@ -33,6 +33,7 @@ import { getVideoUrl, prefetchVideoer } from '$lib/utils/storage';
 import { maalingerFraMrs, type Maaling } from '$lib/content/forside3';
 import type { LektionItem } from '$lib/content/forlob';
 import type { UserDoc } from '$lib/types';
+import { dagligeMalForBruger } from '$lib/content/naering';
 
 // ── Dit overskud ────────────────────────────────────────────
 
@@ -355,18 +356,38 @@ export interface DagensTal {
 	fiber: number;
 	proteinMaal: number;
 	fiberMaal: number;
+	/** De tre udvidede. Regnes altid, vises kun hvis hun har slaaet dem til. */
+	kh: number;
+	fedt: number;
+	kcal: number;
+	khMaal: number;
+	fedtMaal: number;
+	kcalMaal: number;
 }
 
-/** Summerer dagens maaltider og holder dem op mod hendes egne maal. */
+/**
+ * Summerer dagens maaltider og holder dem op mod hendes egne maal.
+ *
+ * MAALENE FALDER TILBAGE PAA STANDARDEN og ikke paa nul. Stod der nul,
+ * skrev forsiden "56 af 0 g" og kaldte dagen "i hus" for en kunde der
+ * aldrig har sat et maal. Fundet 22. august.
+ */
 export async function hentDagensTal(uid: string, dato: string, userDoc: UserDoc | null) {
 	const maaltider = await hentMaaltiderForDato(uid, dato);
-	const protein = maaltider.reduce((sum, m) => sum + (m.totalP ?? 0), 0);
-	const fiber = maaltider.reduce((sum, m) => sum + (m.totalF ?? 0), 0);
+	const sum = (f: (m: (typeof maaltider)[number]) => number | undefined) =>
+		Math.round(maaltider.reduce((s, m) => s + (f(m) ?? 0), 0));
+	const maal = dagligeMalForBruger(userDoc?.dagligeMaal);
 	return {
-		protein: Math.round(protein),
-		fiber: Math.round(fiber),
-		proteinMaal: userDoc?.dagligeMaal?.protein ?? 0,
-		fiberMaal: userDoc?.dagligeMaal?.fiber ?? 0
+		protein: sum((m) => m.totalP),
+		fiber: sum((m) => m.totalF),
+		kh: sum((m) => m.totalKh),
+		fedt: sum((m) => m.totalFedt),
+		kcal: sum((m) => m.totalKcal),
+		proteinMaal: maal.protein,
+		fiberMaal: maal.fiber,
+		khMaal: maal.kh,
+		fedtMaal: maal.fedt,
+		kcalMaal: maal.kcal
 	} satisfies DagensTal;
 }
 

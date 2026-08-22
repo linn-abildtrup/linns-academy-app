@@ -7,16 +7,28 @@
 	// en hjaelp. Hun skal kunne se paa to sekunder, om der skal et aeg
 	// eller et helt maaltid til.
 	//
-	// Ingen kalorier. Det er et bevidst valg i designet.
+	// Kalorier staar IKKE med som standard. Det er et bevidst valg i
+	// designet. Har hun selv slaaet udvidet naering til, kommer de tre
+	// med som en stille linje under, uden bjaelker: fem bjaelker goer
+	// kortet til et regneark, og en bjaelke paa kalorier laeser som en
+	// graense hun er ved at overskride. Linns valg 22. august.
 	// ============================================================
 
 	import type { DagensTal } from '$lib/firestore/forside3';
 
 	interface Props {
 		tal: DagensTal;
+		/** Har hun selv slaaet kulhydrat, fedt og kalorier til. */
+		visUdvidet?: boolean;
 	}
 
-	let { tal }: Props = $props();
+	let { tal, visUdvidet = false }: Props = $props();
+
+	const smaa = $derived([
+		{ navn: 'Kulhydrat', vaerdi: tal.kh, maal: tal.khMaal, enhed: 'g' },
+		{ navn: 'Fedt', vaerdi: tal.fedt, maal: tal.fedtMaal, enhed: 'g' },
+		{ navn: 'Kalorier', vaerdi: tal.kcal, maal: tal.kcalMaal, enhed: '' }
+	]);
 
 	const linjer = $derived([
 		{ navn: 'Protein', vaerdi: tal.protein, maal: tal.proteinMaal, farve: 'p' },
@@ -56,5 +68,17 @@
 				</div>
 			</div>
 		{/each}
+
+		{#if visUdvidet}
+			<div class="tal-tre">
+				{#each smaa as t (t.navn)}
+					<div>
+						<div class="tal-tre-n">{t.navn}</div>
+						<div class="tal-tre-v">{t.vaerdi}{t.enhed ? ` ${t.enhed}` : ''}</div>
+						<div class="tal-tre-m">af {t.maal}</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
 	</div>
 </section>

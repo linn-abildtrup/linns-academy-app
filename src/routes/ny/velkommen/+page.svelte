@@ -50,7 +50,8 @@
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 	import { gemUdstyr3 } from '$lib/firestore/traeningUdstyr3';
 	import { hentDagensTraening3 } from '$lib/firestore/traeningForside3';
-	import { hentAdgangsskema, maaSeUdvidetNaering } from '$lib/firestore/featureAdgang3';
+	import { hentNaeringAdgang3 } from '$lib/firestore/naeringAdgang3';
+	import { visUdvidet3 } from '$lib/content/naeringAdgang3';
 	import { gemTekstSkala3, markerOnboardet3 } from '$lib/firestore/onboarding3';
 	import UdstyrValg from '$lib/components/ny/UdstyrValg.svelte';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
@@ -118,7 +119,7 @@
 			// Alle fire paa én gang. Ingen af dem maa vaelte skaermen, saa de
 			// har hver sit fald tilbage. Onboarding skal kunne gennemfoeres
 			// ogsaa paa en daarlig forbindelse.
-			const [kat, traening, skema] = await Promise.all([
+			const [kat, traening, naering] = await Promise.all([
 				hentKategorier3().catch(() => []),
 				hentDagensTraening3(
 					u.uid,
@@ -127,11 +128,11 @@
 					adgang.aktiveForlob.map((f) => ({ forlobId: f.forlobId, dagNummer: f.dagNummer })),
 					Date.now()
 				).catch(() => null),
-				hentAdgangsskema().catch(() => null)
+				hentNaeringAdgang3(u.uid, adgang.aktiveForlob[0]?.forlobId ?? null).catch(() => null)
 			]);
 			kategorier = kat;
 			harTraening = traening !== null && traening.tilstand !== 'ingen';
-			maaSeKalorier = maaSeUdvidetNaering(userDoc, skema);
+			maaSeKalorier = visUdvidet3(naering, userDoc?.visUdvidetNaering);
 		} catch (e) {
 			console.warn('[ny] kunne ikke hente alt til opstarten', e);
 		} finally {

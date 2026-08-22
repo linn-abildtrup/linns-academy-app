@@ -23,6 +23,7 @@
 	} from '$lib/content/traeningKategori3';
 	import { hentKategorier3 } from '$lib/firestore/traeningKategori3';
 	import { opsummering3, type ValgtSkridt3 } from '$lib/content/vaelgSkridt3';
+	import { dagligeMalForBruger } from '$lib/content/naering';
 	import { hentSkridtValg3 } from '$lib/firestore/vaelgSkridt3';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
@@ -107,6 +108,15 @@
 		return () => {
 			afbrudt = true;
 		};
+	});
+
+	// DINE MAAL. Raekken skriver hendes tal, saa hun kan se dem uden at
+	// aabne noget. Har hun slaaet de tre udvidede til, staar der "3 mere",
+	// for hele listen ville goere raekken to linjer lang. Se HANDOVER 9.38.
+	const maalTekst = $derived.by(() => {
+		const m = dagligeMalForBruger(userDoc?.dagligeMaal);
+		const grund = `${m.protein} g protein · ${m.fiber} g fiber`;
+		return userDoc?.visUdvidetNaering ? `${grund} · 3 mere` : grund;
 	});
 
 	const forlobRaekker = $derived(
@@ -211,6 +221,18 @@
 			</a>
 		</section>
 	{/if}
+
+	<section>
+		<div class="lab"><h2>Dine mål</h2></div>
+		<a class="ds-raekke" href="/ny/naering">
+			<span class="ds-i" aria-hidden="true">◍</span>
+			<span class="ds-tekst">
+				<span class="ds-t">{maalTekst}</span>
+				<span class="ds-s">Tryk for at ændre dine daglige mål</span>
+			</span>
+			<span class="ds-pil" aria-hidden="true">›</span>
+		</a>
+	</section>
 
 	<!-- Opstarten hoerer til en kunde der er i gang. I de 90 dage ville de
 	     to raekker sende hende tilbage hertil med det samme. -->
