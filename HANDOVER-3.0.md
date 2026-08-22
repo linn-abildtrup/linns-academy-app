@@ -486,10 +486,6 @@ Samlet her 22. august, fordi de lå spredt ud over fire afsnit.
 
 #### Beslutninger der venter på Linn
 
-- **Delvist-knappen på små skridt.** Den gamle app har tre svar: Ja, Delvist,
-  Nej. 3.0 har kun taget og ikke taget. Feltet i databasen rummer sagtens det
-  tredje, så det er kun knappen der mangler. **Er det bevidst gjort enklere,
-  eller skal den tilbage?** Se 9.36
 - **Q&A kendes kun på titlen.** Der er intet mærke i databasen, så vi leder
   efter "Q&A" i overskriften. Skriver hun en gang "Spørgetime", forsvinder
   den ned i ugerne. Den holdbare løsning er et flueben i admin
@@ -2356,9 +2352,20 @@ til appen. Men **to ting du kan lave nnår ikke ud i 3.0:**
 
 1. ~~Vælge sine små skridt som medlem~~. **Klaret 22. august**, se 9.35
 2. ~~Tilføje sine egne oveni på et forløb~~. **Klaret 22. august**, se 9.35
-3. **Svare Delvist.** 3.0 kender kun taget og ikke taget. Feltet i databasen
-   rummer sagtens det tredje svar, så det er kun knappen der mangler.
-   **Venter på Linns beslutning:** er det bevidst gjort enklere
+3. ~~**Svare Delvist.**~~ **Afgjort 22. august: den kommer IKKE med.** Linns
+   beslutning, og den skal ikke tages op igen.
+
+   Den gamle app har tre knapper pr skridt: Ja, Delvist, Nej. **Delvist
+   findes kun for at blødgøre Nej.** 3.0 har ingen Nej-knap, og et skridt hun
+   ikke tog er bare ikke markeret. Så er der ikke noget at blødgøre.
+
+   **Bygger nogen den alligevel, kommer Nej med af sig selv**, for ellers kan
+   hun ikke se forskel på "jeg nåede det halvt" og "jeg har ikke rørt den
+   endnu". Og så er karaktergivningen tilbage på en side der efter Linns
+   regel aldrig må læse som en anklage, se 9.26.
+
+   Feltet i databasen rummer stadig det tredje svar. Det bliver liggende, for
+   den gamle app skriver det, og gamle svar skal kunne læses
 4. **Bonus-skridtet**, se admin ovenfor
 5. **Baseline på dag 0 og slut-refleksionen på dag 21**, hvor hendes eget
    svar fra dag 0 stilles op ved siden af. Findes ikke i 3.0
@@ -2369,6 +2376,9 @@ til appen. Men **to ting du kan lave nnår ikke ud i 3.0:**
    og 30 dage
 8. **De låste vaner fra forløbet** som medlem, mærket "Fra forløb"
 9. **Velkomstkortet** første gang hun åbner små skridt
+
+Tegningen der lå til grund for beslutningen om Delvist er
+`mockups-delvist-knappen.html`, hvor de to sidder ved siden af hinanden.
 
 **To ting er bedre i 3.0 og skal ikke tilbage:** svaret gemmes med det samme
 uden en Gem-knap, og der står ikke "3 af 5 gennemført" på dagen. Det sidste
