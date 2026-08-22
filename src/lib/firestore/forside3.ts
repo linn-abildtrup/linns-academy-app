@@ -25,6 +25,7 @@ import { hentForlobsdag, hentAlleForlob } from './forlob';
 import { hentMaaltiderForDato } from './kost';
 import { hentMitProgram, hentProgramFremgang } from './mineProgrammer';
 import { hentForlobsProgram, hentExercises, hentUserProduct } from './mikrotraening';
+import { hentEgneSkridt3 } from './egneSkridt3';
 import { hentAboMikrotraeningProgram, hentAboFremgang } from './aboMikrotraening';
 import { aktuelAboDagForDato } from '$lib/content/aboMikrotraening';
 import { hentHistorikForDato } from './traeningHistorik';
@@ -107,17 +108,27 @@ export async function hentSmaaSkridtIDag(
 		// To forskellige noegler, og de maa ikke byttes om:
 		//   programmet (spoergsmaal + refleksion) ligger under FORLOEBETS id
 		//   hendes svar ligger under PRODUKT-noeglen i hendes egen skuffe
-		const [program, entry, produkt] = await Promise.all([
+		const [program, entry, produkt, egne3] = await Promise.all([
 			hentVaneprogramDag(forlob.forlobId, forlob.dagNummer),
 			hentVanedag(uid, forlob.dagNummer, forlob.produkt),
-			hentUserProduct(uid, forlob.produkt)
+			hentUserProduct(uid, forlob.produkt),
+			hentEgneSkridt3(uid, forlob.produkt)
 		]);
 		const checks = program?.checks ?? [];
 		// HENDES EGNE LIGGER EFTER LINNS, og noeglen paa svaret faar
 		// praefikset 'eg-'. Det er ikke en smagssag: den gamle app gemmer
 		// dem under praecis den noegle, og bruger hun begge apper samme
 		// dag, skal afkrydsningen vaere det samme sted. Se HANDOVER 9.35.
-		const egne = (produkt?.egneVaner ?? []).map((v) => ({
+		//
+		// Der laeses fra BEGGE skuffer: den gamle apps liste og 3.0's egen.
+		// Samme tekst to steder vises én gang. Se firestore/egneSkridt3.ts
+		// for hvorfor der er to.
+		const gamleEgne = produkt?.egneVaner ?? [];
+		const setEgne = new Set(gamleEgne.map((v) => v.label.trim().toLowerCase()));
+		const egne = [
+			...gamleEgne,
+			...egne3.filter((n) => !setEgne.has(n.label.trim().toLowerCase()))
+		].map((v) => ({
 			id: `eg-${v.id}`,
 			label: v.label,
 			svar: (entry?.checks?.[`eg-${v.id}`] as SkridtSvar) ?? null,

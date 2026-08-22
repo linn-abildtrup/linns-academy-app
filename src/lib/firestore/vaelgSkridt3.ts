@@ -8,8 +8,10 @@
 //  - MEDLEM: hele valget ligger i hendes opsaetning, sammen med Linns
 //    forslag hun har krydset af. Vi genbruger den gamle apps funktioner,
 //    saa de to flader ikke kan drive fra hinanden.
-//  - FORLOEB: kun hendes EGNE ligger paa hendes forloebs-produkt. Linns
-//    skridt for dagen kommer fra forloebets plan og roeres ikke her.
+//  - FORLOEB: kun hendes EGNE. De skrives i 3.0's egen skuffe, se
+//    egneSkridt3.ts for hvorfor, men der LAESES ogsaa fra den gamle apps
+//    plads, saa intet hun har skrevet foer forsvinder. Linns skridt for
+//    dagen kommer fra forloebets plan og roeres ikke her.
 //
 // INGEN NY DATAMODEL. Alt herunder skriver praecis de felter den gamle
 // app skriver, med de samme funktioner. Se HANDOVER 9.35.
@@ -17,7 +19,13 @@
 
 import { MAKS_SKRIDT3, type Forslag3, type ValgtSkridt3 } from '$lib/content/vaelgSkridt3';
 import { hentAboVaneOpsaetning, hentAboVaneskabelon, gemAboVaneOpsaetning } from './aboVaner';
-import { hentUserProduct, tilfoejEgenVane, fjernEgenVane } from './mikrotraening';
+import { hentUserProduct, fjernEgenVane } from './mikrotraening';
+import {
+	gemEgneSkridt3,
+	hentEgneSkridt3,
+	nytEgetSkridtId3,
+	type EgetSkridt3
+} from './egneSkridt3';
 
 /** Alt siden skal bruge, hentet i ét kald. */
 export interface SkridtValg3 {
@@ -45,19 +53,16 @@ export async function hentSkridtValg3(
 		// hun skrive alt selv. Linns rettelse 22. august. Trykker hun paa et
 		// forslag, bliver det til ét af HENDES egne, for det er den eneste
 		// skuffe en forloebskunde har til sine egne skridt.
-		const [produkt, forslag] = await Promise.all([
+		const [produkt, forslag, egne3] = await Promise.all([
 			hentUserProduct(uid, forlob.produkt),
-			hentAboVaneskabelon('basis')
+			hentAboVaneskabelon('basis'),
+			hentEgneSkridt3(uid, forlob.produkt)
 		]);
 		return {
 			kilde: 'forlob',
 			produktId: forlob.produkt,
 			forslag: forslag.map((f) => ({ id: f.id, label: f.label, kategori: f.kategori })),
-			valgte: (produkt?.egneVaner ?? []).map((v) => ({
-				id: v.id,
-				label: v.label,
-				kilde: 'egen' as const
-			}))
+			valgte: flet3(produkt?.egneVaner ?? [], egne3)
 		};
 	}
 
@@ -92,6 +97,26 @@ export async function gemMedlemsSkridt3(uid: string, valgte: ValgtSkridt3[]): Pr
 }
 
 /**
+ * Fletter den gamle apps liste med 3.0's egen.
+ *
+ * De gamle staar foerst, for de er skrevet foerst. Er den samme tekst
+ * begge steder, vinder den gamle: saa peger fjern-knappen paa det sted
+ * hvor teksten ogsaa er synlig i den gamle app.
+ */
+function flet3(
+	gamle: { id: string; label: string }[],
+	nye: EgetSkridt3[]
+): ValgtSkridt3[] {
+	const set = new Set(gamle.map((g) => g.label.trim().toLowerCase()));
+	return [
+		...gamle.map((g) => ({ id: g.id, label: g.label, kilde: 'egen' as const })),
+		...nye
+			.filter((n) => !set.has(n.label.trim().toLowerCase()))
+			.map((n) => ({ id: n.id, label: n.label, kilde: 'egen' as const }))
+	];
+}
+
+/**
  * Laegger ét eget skridt til paa forloebs-sporet.
  *
  * Her skrives ikke hele listen. Den gamle app laeser det samme felt, og
@@ -102,15 +127,38 @@ export async function tilfoejEgetSkridt3(
 	produktId: string,
 	label: string
 ): Promise<{ ok: true; id: string } | { ok: false; fejl: string }> {
-	const r = await tilfoejEgenVane(uid, produktId, label, MAKS_SKRIDT3);
-	return r.ok ? { ok: true, id: r.vane.id } : { ok: false, fejl: r.fejl };
+	const [gamle, nye] = await Promise.all([
+		hentUserProduct(uid, produktId),
+		hentEgneSkridt3(uid, produktId)
+	]);
+	const ialt = (gamle?.egneVaner ?? []).length + nye.length;
+	if (ialt >= MAKS_SKRIDT3) {
+		return { ok: false, fejl: `Du kan højst have ${MAKS_SKRIDT3} egne skridt. Fjern ét først.` };
+	}
+	const id = nytEgetSkridtId3();
+	await gemEgneSkridt3(uid, produktId, [
+		...nye,
+		{ id, label: label.trim(), oprettetMs: Date.now() }
+	]);
+	return { ok: true, id };
 }
 
-/** Fjerner ét eget skridt paa forloebs-sporet. */
-export async function fjernEgetSkridt3(
-	uid: string,
-	produktId: string,
-	id: string
-): Promise<void> {
+/**
+ * Fjerner ét eget skridt paa forloebs-sporet.
+ *
+ * Skridtet kan ligge to steder. Er id'et 3.0's eget, skriver vi vores
+ * egen liste. Ellers er det skrevet i den gamle app, og saa skal det
+ * fjernes der, hvor hun ogsaa kan se det.
+ */
+export async function fjernEgetSkridt3(uid: string, produktId: string, id: string): Promise<void> {
+	if (id.startsWith('es3-')) {
+		const nye = await hentEgneSkridt3(uid, produktId);
+		await gemEgneSkridt3(
+			uid,
+			produktId,
+			nye.filter((n) => n.id !== id)
+		);
+		return;
+	}
 	await fjernEgenVane(uid, produktId, id);
 }
