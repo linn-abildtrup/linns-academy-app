@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 21. august 2026. Se 9.31 og 9.32 for de to seneste dage, hvor der skete meget.
+Sidst opdateret 22. august 2026. Se 9.32 og 9.33 for de to seneste dage, hvor der skete meget.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -69,6 +69,7 @@ gamle app og må kun læses.
 | `src/lib/utils/billede3.ts` | Skalering og webp i browseren. `billede.ts` er den gamle og må ikke røres |
 | `src/routes/ny/admin/ingredienser/` | Kobl ingredienser til fødevarer. Se 9.17 |
 | `src/routes/ny/admin/opskrift-makro/` | Regnestykket linje for linje. **Gå her når et tal ser forkert ud** |
+| `src/routes/ny/admin/traening/hensyn/` | Hvad hver øvelse belaster. **Tallene øverst er det vigtigste på siden.** Se 9.33 |
 | `src/lib/firestore/ingrediensKobling3.ts` | Koblingerne. Læses af regnemaskinen |
 | `src/lib/firestore/opskriftBeregning3.ts` | De gemte beregninger. Overlejres i `hentOpskrifter3` |
 
@@ -114,6 +115,10 @@ gamle app og må kun læses.
 | `content/traeningAi3.ts` | **AI-værktøjet.** Validering mod banken, dage-fra-sætning | 44 |
 | `content/lektionsliste3.ts` | **Dine lektioner.** Rækkerne, låsen, noterne, de 90 dage. Se 9.22 | 57 |
 | `content/hjaelp3.ts` | **Hjælp.** Hvilke forløb FAQ og links hentes fra, og fletningen. Se 9.23 | 15 |
+| `content/oevelsesSoeg3.ts` | Søgning og kategori-tælling i øvelsesbanken. Delt af biblioteket, vælgeren og Hensyn | 22 |
+| `content/valgtProgram3.ts` | **Hendes valgte program.** Hvornår hun skal spørges før et skift. Se 9.32 | 15 |
+| `content/traeningTempo3.ts` | De tre tempoer: Roligt 30/20, Almindeligt 45/15, Hårdt 50/10. Se 9.32 | 11 |
+| `content/oevelseHensyn3.ts` | **Hensyn.** Hvad hver øvelse belaster, og hvad der filtreres fra. Se 9.33 | 19 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
 
@@ -147,6 +152,8 @@ gamle app og må kun læses.
 | `firestore/traeningForside3.ts` | Træningsflisen på forsiden |
 | `firestore/beskedside3.ts` | Beskeder. Kobler til `linnAiSamtaler` og `klientspoergsmaal`. Den tiende der **skriver** |
 | `firestore/onboarding3.ts` | `onboardet3` og `tekstSkala3`. Den ellevte der **skriver** |
+| `firestore/valgtProgram3.ts` | Hvilket program hun har valgt. Den tolvte der **skriver** kundedata. Se 9.32 |
+| `firestore/oevelseHensyn3.ts` | Mærkerne på øvelserne. Ét dokument til dem alle. Kun admin skriver. Se 9.33 |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
@@ -447,6 +454,14 @@ Der står også stadig "Resten af din profil kommer her" nederst på Din side.
 **5. `/ny/forlob` er forældreløs.** Siden 20. august, hvor "Alle dage" blev
 fjernet, linker ingen side til den. Den virker hvis man skriver adressen.
 Enten en vej ind eller sløjfes.
+
+#### Halvbygget lige nu
+
+- **Hensyn på øvelserne.** Admin-siden blev bygget 21. august sent og 22.
+  august om formiddagen, men **kunden kan endnu ikke bede om et hensyn.**
+  Hverken "byg dit eget program" eller AI-værktøjet spørger hende, og de
+  filtrerer ikke på mærkerne. Den halvdel der virker er den halvdel ingen
+  kan se. Se 9.33
 
 #### Beslutninger der venter på Linn
 
@@ -2073,6 +2088,100 @@ scannede      47 varer    2%   fra Open Food Facts
 ### Bevidst udskudt
 
 ~~Biblioteket~~, klaret 18. august, se 9.22 og 9.23. Variant-, makker- og Facebook-modalerne på træning og Kropsro. "Mine køb" for udløbne kunder.
+
+---
+
+### 9.33 HENSYN PÅ ØVELSERNE, 21. august sent og 22. august
+
+Linns beslutning den 21. august: når en kunde selv bygger et program, skal
+hun kunne sige **skån mine knæ**. Det kunne appen ikke, for der stod ingen
+steder hvad en øvelse belaster. Kategorien siger Ben, Core og Balance, ikke
+hvad der gør ondt bagefter.
+
+**Hun vælger fra en liste, hun skriver ikke en sætning.** Det er det
+vigtigste valg i hele funktionen. Et frit felt hvor hun skriver "jeg har ondt
+i knæet", og en app der så bygger et program hun udfører, er
+fysioterapeutisk rådgivning i Linns navn. En liste med lukkede valg er et
+værktøj. Derfor er ordlyden også neutral hele vejen: der står "Skån min
+bækkenbund", ikke noget om en diagnose.
+
+**Og AI'en bliver ikke bedt om at lade være.** De fravalgte øvelser er væk
+fra den bank den vælger fra. En instruktion kan overses, en tom liste kan
+ikke.
+
+#### De seks hensyn
+
+| Det hun trykker på | Det du sætter mærket efter |
+|---|---|
+| Skån mine knæ | Hård ved knæene |
+| Skån min ryg | Belaster ryggen |
+| Skån mine skuldre | Belaster skuldrene |
+| Skån min bækkenbund | Belaster bækkenbunden |
+| Jeg kan ikke ligge på gulvet | Kræver at man er på gulvet |
+| Det må ikke larme | Larmer, hop eller vægt mod gulv |
+
+De fire første kom den 21. august. **Bækkenbund og larm kom til den 22.**
+Bækkenbunden er den vigtigste af dem alle for målgruppen, kvinder fra 40 og
+opefter, og det er noget mange lever med uden at tale om det. Larm er ikke en
+skavank, men det er en rigtig grund til ikke at træne: hop og en kettlebell
+mod gulvet klokken seks om morgenen i en lejlighed.
+
+#### Mærkerne er Linns faglighed, ikke kodens
+
+Alle 62 øvelser er sat på forhånd, men **det er et forslag og et gæt**, sat
+efter hvad de hedder og hvad de åbenlyst gør. Der er en knap i admin der
+lægger forslaget ind, og så retter du i det. Dine valg vinder.
+
+Tre steder hvor gættet kan være forkert, og som du bør kigge på først:
+
+- **Planken har IKKE fået bækkenbund.** Dybe mavebøjninger er den klassiske
+  synder, mens planken normalt regnes for i orden
+- **Pres over hovedet HAR fået bækkenbund**, altså shoulder press og
+  thruster, fordi det øger trykket i maven
+- **Glute bridge har fået gulv og ikke knæ.** Den foregår på gulvet, men er
+  samtidig noget af det mest knævenlige der findes
+
+Fem øvelser står med vilje helt uden mærker: ankelstræk, lægge og balance på
+ét ben. De belaster ikke noget særligt.
+
+#### Tallene øverst i admin er det vigtigste på siden
+
+De siger hvor mange øvelser der er tilbage, hvis en kunde beder om ét hensyn
+— og nederst, hvor få der er tilbage hvis hun beder om dem alle sammen på én
+gang. **Under 8 øvelser kan der ikke bygges et program der er værd at have**,
+og så siger appen det til hende i stedet for at levere de samme fire øvelser
+hver dag. Uden det tal opdager man først for lidt at vælge imellem når en
+kunde står med det.
+
+To regler der hænger sammen med det:
+
+- **En øvelse uden mærker kommer altid med.** Er den ikke nået at blive
+  mærket, skal den ikke forsvinde stille. Hellere en øvelse for meget end et
+  program der pludselig er tomt
+- **Beder hun om to hensyn, respekteres begge.** En øvelse ryger ud hvis den
+  har bare ét af de mærker hun har valgt
+
+#### Hvor det ligger
+
+Mærkerne ligger for sig selv, som ingrediens-koblingerne gør for opskrifter.
+**Der skrives ikke på den gamle apps øvelser**, se regel 2. Kun du kan sætte
+mærker, kunden kan kun læse dem. Der ligger 19 tests på reglerne.
+
+#### Det der mangler, og det er halvdelen
+
+**Kunden kan endnu ikke bede om et hensyn.** Admin-siden virker, mærkerne kan
+sættes og gemmes, og reglerne for hvad der så filtreres fra er skrevet og
+testet. Men "byg dit eget program" spørger hende ikke, og AI-værktøjet
+filtrerer ikke. Funktionen er usynlig for kunden indtil den del bygges.
+
+**Firestore-reglen skal udgives.** Den blev skrevet den 21. august, men et
+push udgiver ikke reglerne, se afsnit 8. Sker det ikke, kan admin-siden ikke
+gemme, og fejlen ligner ikke en regel-fejl når den kommer.
+
+**Og mærkerne skal sættes.** Forslaget ligger klar, men indtil du har trykket
+Gem, står der ingen mærker i databasen, og så filtrerer et hensyn ingenting
+fra. Det er den samme slags fælde som de manglende tildelinger i 9.32: der
+kommer ingen fejl, der kommer bare ingen forskel.
 
 ---
 
