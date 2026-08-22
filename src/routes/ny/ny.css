@@ -13022,8 +13022,12 @@ a.tr-felt:focus-visible {
 	display: flex;
 	align-items: center;
 	gap: 11px;
-	background: var(--moerk);
-	color: #f2e9df;
+	/* Farven var foerst var(--moerk), som ikke findes i 3.0. Kortet blev
+	   derfor gennemsigtigt med naesten hvid tekst, og man kunne ikke se
+	   hvad man skulle trykke paa. Fundet paa et skaermbillede fra Linn
+	   22. august. Det her er den samme brune som coaching-kortet. */
+	background: var(--espresso);
+	color: #f6efe6;
 	border-radius: 16px;
 	padding: 12px 13px;
 	margin-top: 12px;
@@ -13044,13 +13048,13 @@ a.tr-felt:focus-visible {
 .nm-beregn-s {
 	display: block;
 	font-size: calc(11.5px * var(--fs-scale, 1));
-	color: rgba(242, 233, 223, 0.72);
+	color: rgba(246, 239, 230, 0.75);
 	margin-top: 1px;
 }
 
 .nm-beregn-p {
 	margin-left: auto;
-	color: rgba(242, 233, 223, 0.6);
+	color: rgba(246, 239, 230, 0.65);
 	font-size: calc(17px * var(--fs-scale, 1));
 }
 
