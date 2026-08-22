@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 22. august 2026. Se 9.32 til 9.35 for de seneste dage, hvor der skete meget.
+Sidst opdateret 22. august 2026. Se 9.32 til 9.37 for de seneste dage, hvor der skete meget.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -120,6 +120,7 @@ gamle app og må kun læses.
 | `content/traeningTempo3.ts` | De tre tempoer: Roligt 30/20, Almindeligt 45/15, Hårdt 50/10. Se 9.32 | 11 |
 | `content/oevelseHensyn3.ts` | **Hensyn.** Hvad hver øvelse belaster, og hvad der filtreres fra. Se 9.33 | 19 |
 | `content/vaelgSkridt3.ts` | **Hun vælger selv.** Maks tre, kategorier, hendes egne. Se 9.35 | 26 |
+| `content/lektionSet3.ts` | **Hvornår en lektion er set.** Fluebenet følger videoen. Se 9.37 | 16 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
 
@@ -490,7 +491,10 @@ Samlet her 22. august, fordi de lå spredt ud over fire afsnit.
   efter "Q&A" i overskriften. Skriver hun en gang "Spørgetime", forsvinder
   den ned i ugerne. Den holdbare løsning er et flueben i admin
 - **"Set"-fluebenet er ikke bundet til forløbet.** Genbruges en lektion på
-  to hold, viser fluebenet sig begge steder. Noterne har ikke problemet
+  to hold, viser fluebenet sig begge steder. Noterne har ikke problemet.
+  **Fra 22. august gælder det også på tværs af dage, og dér er det med
+  vilje**, se 9.37. Skal det på et tidspunkt bindes til holdet, så husk at
+  video-nøglen skal med i den binding
 - **Beskeder er lukket i de 90 dage.** Det er mit valg og ikke hendes. Hun
   er aldrig blevet spurgt
 - **Træningsvideoen fylder ikke skærmen på en stående telefon.** Prøvet og
@@ -2383,6 +2387,51 @@ Tegningen der lå til grund for beslutningen om Delvist er
 **To ting er bedre i 3.0 og skal ikke tilbage:** svaret gemmes med det samme
 uden en Gem-knap, og der står ikke "3 af 5 gennemført" på dagen. Det sidste
 er Linns regel om at en side aldrig må læse som en anklage, se 9.26.
+
+---
+
+### 9.37 FLUEBENET FØLGER VIDEOEN OG IKKE DAGEN, 22. august
+
+Linns spørgsmål: på Kropsro ligger den samme video på alle syv dage i ugen.
+Ser hun den mandag, hvad møder hun så tirsdag?
+
+**Svaret var: en umarkeret lektion.** Hun skulle sætte flueben på den samme
+film syv gange. Linns beslutning samme dag: fluebenet skal følge lektionen
+til de andre dage.
+
+#### Hvorfor det ikke bare var at slå op på id'et
+
+Jeg tjekkede alle forløb i databasen først. **Der findes ikke ét sted hvor
+det samme lektions-id går igen på to dage.** Kropsro har den samme film
+liggende på dag 1 til 7, men som syv selvstændige lektioner med hvert sit id.
+Appen kendte dem derfor som syv forskellige ting.
+
+Så identiteten måtte komme fra **videoens adresse**. Den renses først, for
+den samme film står med `?share=copy` det ene sted og `#t=0` det andet.
+
+#### To nøgler pr lektion, og hvorfor
+
+Når hun ser noget, gemmes nu **både lektionens eget id og en nøgle for
+videoen**. En lektion tæller som set hvis én af dem findes.
+
+**Det er derfor intet flueben forsvandt ved ændringen.** Alt der blev
+markeret før 22. august har kun sit id, og det virker uændret. En lektion
+uden video, altså en tekst, kendes stadig kun på sit id.
+
+Fortryder hun på tirsdag, ryger både tirsdagens id og video-nøglen. Mandagens
+eget flueben bliver stående, for det er den dag hun faktisk markerede.
+
+#### Fem steder, og de skal blive ved med at være enige
+
+Dagens lektioner, selve lektions-siden, forløbets dagliste, Dine lektioner,
+og optællingen "3 af 12 set". **Bygger du et sjette sted hvor status vises,
+så brug `erSet3` og ikke `klaret.has(id)`.** Der er ingen anden regel.
+
+#### Konsekvensen, som Linn er blevet spurgt om først
+
+Har hun set mandagens video, står **hele ugen** som set, og de dage folder
+sig sammen som taget. Det var det hun bad om, og det er ikke en fejl når det
+ses.
 
 ---
 
