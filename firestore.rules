@@ -86,6 +86,13 @@ service cloud.firestore {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
 			}
 
+			// 3.0: hendes egne smaa skridt paa et forloeb, ét doc pr produkt.
+			// Kun hende selv. Se firestore/egneSkridt3.ts for hvorfor de ikke
+			// ligger paa produkt-dokumentet som i den gamle app.
+			match /egneSkridt3/{produktId} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+			}
+
 			// Abo-vanetracker — brugerens valgte vaner (single doc 'aktiv')
 			match /aboVaneOpsaetning/{docId} {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
