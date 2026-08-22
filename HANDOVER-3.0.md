@@ -155,7 +155,8 @@ gamle app og må kun læses.
 | `firestore/onboarding3.ts` | `onboardet3` og `tekstSkala3`. Den ellevte der **skriver** |
 | `firestore/valgtProgram3.ts` | Hvilket program hun har valgt. Den tolvte der **skriver** kundedata. Se 9.32 |
 | `firestore/oevelseHensyn3.ts` | Mærkerne på øvelserne. Ét dokument til dem alle. Kun admin skriver. Se 9.33 |
-| `firestore/vaelgSkridt3.ts` | Hendes valgte skridt. **Skriver med den gamle apps egne funktioner.** Se 9.35 |
+| `firestore/vaelgSkridt3.ts` | Hendes valgte skridt. Læser begge skuffer. Se 9.35 |
+| `firestore/egneSkridt3.ts` | **3.0's egen skuffe** til forløbskundens egne skridt. Se 9.35 |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
 ### 3.3 Datamodellen
@@ -2173,9 +2174,8 @@ sættes og gemmes, og reglerne for hvad der så filtreres fra er skrevet og
 testet. Men "byg dit eget program" spørger hende ikke, og AI-værktøjet
 filtrerer ikke. Funktionen er usynlig for kunden indtil den del bygges.
 
-**Firestore-reglen skal udgives.** Den blev skrevet den 21. august, men et
-push udgiver ikke reglerne, se afsnit 8. Sker det ikke, kan admin-siden ikke
-gemme, og fejlen ligner ikke en regel-fejl når den kommer.
+~~**Firestore-reglen skal udgives.**~~ **Udgivet 22. august kl 16.02**, og
+verificeret mod det der faktisk kører. Admin-siden kan gemme.
 
 **Og mærkerne skal sættes.** Forslaget ligger klar, men indtil du har trykket
 Gem, står der ingen mærker i databasen, og så filtrerer et hensyn ingenting
@@ -2278,6 +2278,33 @@ Opskrifter og Øvelser. Tre i bredden er trange på en lille telefon, og små
 skridt er ikke materiale, det er hendes egen opsætning.
 
 Tegningen med begge planer ligger i `mockups-vaelg-smaa-skridt.html`.
+
+#### "Produkt ikke fundet", og hvad det lærte os
+
+Første gennemgang på test-Mette samme aften: hun fik **"Produkt ikke
+fundet"**, cirklen ud for et forslag gjorde ingenting, og hendes eget skridt
+kom aldrig på forsiden. Alle tre var den samme fejl.
+
+**Den gamle app gemmer hendes egne skridt inde på kundens
+produkt-dokument**, og det dokument oprettes ved køb. Det findes ikke altid:
+**begge testkonti har nul produkt-dokumenter**, og admin i klient-mode har
+heller ingen. Så fejlede hver eneste skrivning.
+
+3.0 har nu **sin egen skuffe**, ét dokument pr produkt under kunden selv.
+**Vi opretter ikke det gamle dokument.** Det læses af den gamle app i drift,
+og et halvt dokument derinde er præcis den slags risiko regel 10 handler om.
+
+Der **læses fra begge**, så intet hun har skrevet i den gamle app forsvinder,
+og samme tekst to steder vises én gang. Fjern-knappen retter det sted
+skridtet faktisk står, og det kendes på id'et: 3.0's egne begynder med
+`es3-`.
+
+Reglen der giver hende adgang blev **udgivet 22. august kl 16.02** sammen med
+hensyns-reglen, og begge er verificeret mod det der kører.
+
+**Læren, og den gælder bredere end små skridt:** et produkt-dokument er ikke
+noget 3.0 kan regne med. Bygger du noget der skal skrive der, så tjek først
+om dokumentet findes for testkontiene.
 
 ---
 
