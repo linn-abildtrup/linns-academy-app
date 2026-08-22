@@ -2225,9 +2225,16 @@ i 9.36. Det her afsnit er den første af de ting der er bygget.
 - **Et medlem uden forløb** vælger alle sine tre skridt selv. Enten fra Linns
   forslag, som der ligger 14 af i fire kategorier, eller skrevet med hendes
   egne ord
-- **En kunde på et forløb** ser INGEN forslag. Hun får Linns skridt fra
-  forløbets plan, og dem kan hun ikke fjerne. Hun må lægge op til tre af sine
-  egne oveni
+- **En kunde på et forløb** får Linns skridt fra forløbets plan, og dem kan
+  hun ikke fjerne. Hun må lægge op til tre af sine egne oveni
+
+**Rettet samme aften:** forløbskunden fik først ingen forslag at se og skulle
+skrive alt selv. Linn så det på test-Mette. Nu ser begge de 14 forslag.
+Forskellen er hvor valget havner: medlemmets bliver til hendes liste,
+forløbskundens bliver til ét af **hendes egne** skridt. Derfor kan et forslag
+på det spor ikke genkendes på sit id, kun på teksten, og der står en linje på
+skærmen om hvad der sker, så det ikke ligner at hun kan vælge Linns skridt
+fra og til
 
 Sådan deler den gamle app dem allerede, og **de to gemmes to forskellige
 steder i databasen.** Medlemmets valg ligger i hendes opsætning, forløbs-
@@ -2260,7 +2267,8 @@ bestemt.
 Kortet på forsiden forsvinder i det øjeblik hun har valgt noget, så der skal
 være en vej tilbage:
 
-- **En diskret linje nederst i dagens kort**, "Ret dine skridt"
+- **En diskret linje nederst i dagens kort**, "Tilføj egne skridt". Den hed
+  først "Ret dine skridt", og Linn rettede ordlyden samme dag
 - **En flise på Din side** der skriver hvad hun har valgt, ikke bare at man
   kan vælge. Linns ønske samme dag. Den virker også som en påmindelse de dage
   hun ikke har været på forsiden
