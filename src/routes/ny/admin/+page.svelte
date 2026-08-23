@@ -80,6 +80,11 @@
 
 	const andet: Punkt[] = [
 		{
+			navn: 'Skriv til en kunde',
+			under: 'Lander i hendes Beskeder. Hun kan svare',
+			href: '/ny/admin/skriv'
+		},
+		{
 			navn: 'Notifikationer',
 			under: 'Beskeder på telefonen, og hvem der får dem',
 			href: '/ny/admin/noti'

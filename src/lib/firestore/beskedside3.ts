@@ -153,6 +153,11 @@ export interface LinnTraad3 {
 	svar?: string;
 	sendtMs: number;
 	besvaretMs?: number;
+	/**
+	 * Linn skrev foerst. Saa er der ingen boble ovenover, for kunden har
+	 * ikke spurgt om noget. Se HANDOVER 9.43.
+	 */
+	fraLinn?: boolean;
 }
 
 function tilTraad3(q: KlientSpoergsmaal): LinnTraad3 {
@@ -161,7 +166,8 @@ function tilTraad3(q: KlientSpoergsmaal): LinnTraad3 {
 		spoergsmaal: q.spoergsmaal,
 		svar: q.svar,
 		sendtMs: q.oprettet?.toDate?.().getTime() ?? 0,
-		besvaretMs: q.besvaretAt?.toDate?.().getTime()
+		besvaretMs: q.besvaretAt?.toDate?.().getTime(),
+		fraLinn: (q as { fraLinn?: boolean }).fraLinn === true
 	};
 }
 

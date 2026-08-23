@@ -144,6 +144,22 @@ export function proeveNoti3(): Noti3 {
 	};
 }
 
+/**
+ * Beskeden naar Linn skriver FOERST.
+ *
+ * Der staar "skrevet" og ikke "svaret". Hun har ikke spurgt om noget, og
+ * det forkerte ord ville faa hende til at lede efter sit eget
+ * spoergsmaal. Linns valg 23. august.
+ */
+export function skrevetNoti3(tekst: string): Noti3 {
+	return {
+		titel: 'Linn har skrevet til dig',
+		tekst: uddrag3(tekst),
+		sti: '/ny/beskeder?fane=linn',
+		slags: 'svar'
+	};
+}
+
 /** Beskeden naar Linn har svaret. */
 export function svarNoti3(svar: string): Noti3 {
 	return {

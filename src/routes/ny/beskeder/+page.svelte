@@ -158,6 +158,40 @@
 	});
 
 	/**
+	 * Hun svarer paa en besked Linn skrev foerst.
+	 *
+	 * Svaret bliver et helt almindeligt spoergsmaal, og lander derfor i
+	 * Linns egen liste hvor hun svarer som hun plejer. Der er ikke en ny
+	 * indbakke at holde oeje med. Se HANDOVER 9.43.
+	 */
+	let svarTekst = $state<Record<string, string>>({});
+	let svarerPaa = $state<string | null>(null);
+
+	async function svarLinn(traadId: string) {
+		const u = user;
+		const tekst = (svarTekst[traadId] ?? '').trim();
+		if (!u || !tekst || svarerPaa) return;
+		svarerPaa = traadId;
+		fejl = '';
+		try {
+			await gemSpoergsmaal({
+				uid: u.uid,
+				email: u.email ?? userDoc?.email ?? '',
+				spoergsmaal: tekst,
+				forlobId: aktivtForlob?.forlobId,
+				forlobNavn: aktivtForlob?.navn
+			});
+			svarTekst = { ...svarTekst, [traadId]: '' };
+			await indlaesTraade(u.uid);
+		} catch (e) {
+			console.error('[ny] kunne ikke svare Linn', e);
+			fejl = 'Det kunne ikke sendes. Prøv igen om lidt.';
+		} finally {
+			svarerPaa = null;
+		}
+	}
+
+	/**
 	 * Rul ned til det nye svar.
 	 *
 	 * Kom hun fra en besked paa telefonen, staar det nye svar maaske
@@ -413,20 +447,50 @@
 							{/if}
 							<div class="traad-top">
 								<span class="traad-dato">{dato(t.sendtMs)}</span>
-								{#if t.svar}
+								{#if t.fraLinn}
+									<!-- Ingen status. Der er ikke noget hun venter paa. -->
+								{:else if t.svar}
 									<span class="traad-status svaret">Besvaret</span>
 								{:else}
 									<span class="traad-status venter">Venter på svar</span>
 								{/if}
 							</div>
-							<p class="traad-spm">{t.spoergsmaal}</p>
+							<!-- Skrev Linn foerst, er der ingen boble ovenover: kunden
+							     har ikke spurgt om noget. Se HANDOVER 9.43. -->
+							{#if !t.fraLinn}
+								<p class="traad-spm">{t.spoergsmaal}</p>
+							{/if}
 							{#if t.svar}
 								<div class="traad-svar">
 									<span class="traad-ava" aria-hidden="true"></span>
 									<div>
-										<div class="traad-fra">Linn</div>
+										<div class="traad-fra">{t.fraLinn ? 'Linn skrev til dig' : 'Linn'}</div>
 										<p>{t.svar}</p>
 									</div>
+								</div>
+							{/if}
+							{#if t.fraLinn}
+								<div class="traad-svarfelt">
+									<input
+										type="text"
+										placeholder="Skriv til Linn…"
+										value={svarTekst[t.id] ?? ''}
+										disabled={svarerPaa === t.id}
+										oninput={(e) =>
+											(svarTekst = {
+												...svarTekst,
+												[t.id]: (e.target as HTMLInputElement).value
+											})}
+										onkeydown={(e) => {
+											if (e.key === 'Enter') void svarLinn(t.id);
+										}}
+									/>
+									<button
+										disabled={svarerPaa === t.id || !(svarTekst[t.id] ?? '').trim()}
+										onclick={() => void svarLinn(t.id)}
+									>
+										{svarerPaa === t.id ? 'Sender' : 'Send'}
+									</button>
 								</div>
 							{/if}
 						</article>

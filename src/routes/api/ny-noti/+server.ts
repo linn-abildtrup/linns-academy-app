@@ -1,195 +1,53 @@
 // ============================================================
-// Sender beskeder til telefoner. Kun admin maa kalde den.
+// Sender ÉN besked til én telefon. Kun admin, plus proeven.
 //
-// KUN 3.0. Linns krav 23. august: der maa ALDRIG sendes til en kunde i
-// den gamle app. Adgangen tjekkes her, lige foer der sendes, uanset hvad
-// kalderen har bedt om. Det er den anden af de to laase, se
-// service-worker.ts for den foerste.
+// Reglerne bag ligger i server/notiSend.ts, samme sted som det
+// endpoint der skriver en besked til en kunde bruger. Laa de to hver
+// sit sted, ville "kun 3.0" og karantaenen drive fra hinanden.
 //
-// KOERER I CLOUDFLARES WORKERS, saa alt mod databasen gaar gennem
-// firestoreRest. firebase-admin virker ikke der.
+// TO SLAGS KALDERE:
+//  - Linn maa sende til hvem som helst
+//  - Kunden maa sende PROEVEN til sig selv, i opstarten. Uden den kunne
+//    hun ikke afproeve noget, og saa opdager vi foerst at noget er galt
+//    den dag et rigtigt svar aldrig kom frem
 //
-// DEN RYDDER OP EFTER SIG. Svarer en push-tjeneste at telefonen ikke
-// findes mere, slettes adressen. Ellers ville listen vokse for evigt med
-// telefoner der er skiftet ud.
-//
-// Bygget 23. august 2026, se HANDOVER 9.39.
+// Se HANDOVER 9.39.
 // ============================================================
 
 import type { RequestHandler } from '@sveltejs/kit';
 import { json, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
-import { ADMIN_EMAILS } from '$lib/admin';
-import { hentDoc, hentHeleCollection, gemDocMerge } from '$lib/server/firestoreRest';
-import { sendPush, type PushAdresse } from '$lib/server/webPush';
-import {
-	maaSende3,
-	udenforKarantaene3,
-	type Noti3,
-	type NotiRegler3,
-	type NotiSlags3,
-	type NotiValg3
-} from '$lib/content/notifikation3';
-
-/**
- * Hvem sidder der i den anden ende.
- *
- * TO SLAGS KALDERE, og de maa ikke det samme:
- *  - Linn maa sende til hvem som helst
- *  - Kunden maa sende ÉN slags til SIG SELV: proeven i opstarten, hvor
- *    hun lige har sagt ja og skal se at det virker. Uden den kunne hun
- *    ikke afproeve noget, og saa opdager vi foerst at noget er galt den
- *    dag et rigtigt svar aldrig kom frem.
- */
-async function hvemErDet(
-	idToken: string
-): Promise<{ uid: string; erAdmin: boolean } | null> {
-	if (!PUBLIC_FIREBASE_API_KEY) return null;
-	try {
-		const res = await fetch(
-			`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${PUBLIC_FIREBASE_API_KEY}`,
-			{
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ idToken })
-			}
-		);
-		if (!res.ok) return null;
-		const data = (await res.json()) as { users?: Array<{ email?: string; localId?: string }> };
-		const bruger = data.users?.[0];
-		if (!bruger?.localId) return null;
-		const email = bruger.email?.toLowerCase() ?? '';
-		return {
-			uid: bruger.localId,
-			erAdmin: (ADMIN_EMAILS as readonly string[]).map((e) => e.toLowerCase()).includes(email)
-		};
-	} catch {
-		return null;
-	}
-}
-
-/** Den fjerde slags. Staar ikke i indstillingerne, for den sendes én gang. */
-const PROEVE = 'proeve';
+import { hvemErDet3, noeglerFra3, sendTilKunde3, PROEVE3 } from '$lib/server/notiSend';
+import type { Noti3 } from '$lib/content/notifikation3';
 
 interface Krop {
-	/** Hvem. Én kunde ad gangen, saa afsendelsen kan foelges. */
 	uid: string;
 	besked: Noti3;
-	/** Send selvom karantaenen ikke er udloebet. Kun til proeven. */
+	/** Spring karantaenen over. Kun naar Linn selv trykker send. */
 	tvang?: boolean;
-}
-
-/** Hvad der skete med én kunde. Vises i admin. */
-interface Udfald {
-	uid: string;
-	sendt: number;
-	sprunget: 'ingen-adgang' | 'slaaet-fra' | 'karantaene' | 'ingen-telefon' | null;
-	ryddet: number;
 }
 
 export const POST: RequestHandler = async ({ request }) => {
 	const auth = request.headers.get('Authorization');
 	if (!auth?.startsWith('Bearer ')) throw error(401, 'Manglende Bearer-token');
-	const kalder = await hvemErDet(auth.slice(7));
+	const kalder = await hvemErDet3(auth.slice(7), PUBLIC_FIREBASE_API_KEY);
 	if (!kalder) throw error(403, 'Kunne ikke genkende dig');
 
-	const offentlig = env.NOTI_NOEGLE_OFFENTLIG;
-	const privat = env.NOTI_NOEGLE_PRIVAT;
-	if (!offentlig || !privat) {
-		throw error(500, 'Noeglerne til beskeder mangler i miljoeet. Se HANDOVER 9.39.');
-	}
-	const noegler = {
-		offentlig,
-		privat,
-		kontakt: env.NOTI_KONTAKT || 'mailto:kontakt@linnsacademy.dk'
-	};
+	const noegler = noeglerFra3(env);
+	if (!noegler) throw error(500, 'Noeglerne til beskeder mangler i miljoeet. Se HANDOVER 9.39.');
 
 	const krop = (await request.json().catch(() => null)) as Krop | null;
 	if (!krop?.uid || !krop.besked?.titel) throw error(400, 'Mangler uid eller besked');
 
-	// Kunden maa kun proeven, og kun til sig selv.
-	const erProeve = krop.besked.slags === PROEVE;
+	const erProeve = krop.besked.slags === PROEVE3;
 	if (!kalder.erAdmin && !(erProeve && kalder.uid === krop.uid)) {
 		throw error(403, 'Du maa kun sende proeven til dig selv');
 	}
 
-	const { uid, besked } = krop;
-	const nu = Date.now();
-	const udfald: Udfald = { uid, sendt: 0, sprunget: null, ryddet: 0 };
-
-	// 1. Maa hun overhovedet. Den her linje er hele reglen om at den
-	//    gamle app aldrig maa faa noget.
-	const bruger = await hentDoc(`users/${uid}`);
-	const testFlag = (bruger?.testerFeatures ?? []) as string[];
-	const erAdmin = ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(
-		String(bruger?.email ?? '').toLowerCase()
-	);
-	if (!erAdmin && !(Array.isArray(testFlag) && testFlag.includes('ny-app'))) {
-		udfald.sprunget = 'ingen-adgang';
-		return json(udfald);
-	}
-
-	// 2. Har hun slaaet den slags fra, eller har Linn.
-	const regler = ((await hentDoc('notiAdgang3/regler')) ?? {}) as NotiRegler3;
-	const valg = (bruger?.notiValg3 ?? {}) as NotiValg3;
-	const forlobIds = (bruger?.forlobIds ?? []) as string[];
-	const forlobId = Array.isArray(forlobIds) && forlobIds.length ? forlobIds[0] : null;
-	// Proeven spoerger ikke om lov. Hun har lige trykket ja, og pointen er
-	// at se at det virker.
-	if (!erProeve && !maaSende3(besked.slags as Exclude<NotiSlags3, 'proeve'>, regler, valg, forlobId)) {
-		udfald.sprunget = 'slaaet-fra';
-		return json(udfald);
-	}
-
-	// 3. Karantaenen. En travl formiddag i admin maa ikke give fem beskeder.
-	const sidst = (bruger?.notiSidst3 ?? {}) as Record<string, number>;
-	// Proeven har sin egen, kort karantaene: den skal kunne gentages hvis
-	// hun ikke saa den, men ikke fyres af i en uendelighed.
-	if (erProeve) {
-		if (nu - (sidst[PROEVE] ?? 0) < 60_000) {
-			udfald.sprunget = 'karantaene';
-			return json(udfald);
-		}
-	} else if (
-		!krop.tvang &&
-		!udenforKarantaene3(
-			besked.slags as Exclude<NotiSlags3, 'proeve'>,
-			sidst[besked.slags],
-			nu
-		)
-	) {
-		udfald.sprunget = 'karantaene';
-		return json(udfald);
-	}
-
-	// 4. Hendes telefoner.
-	const telefoner = await hentHeleCollection(`users/${uid}/pushTelefon3`);
-	if (!telefoner.length) {
-		udfald.sprunget = 'ingen-telefon';
-		return json(udfald);
-	}
-
-	for (const { id, data } of telefoner) {
-		// En telefon der allerede er meldt doed proever vi ikke igen.
-		if (data.doed === true) continue;
-		const adresse = data as unknown as PushAdresse;
-		if (!adresse.endpoint || !adresse.p256dh || !adresse.auth) continue;
-
-		const r = await sendPush(adresse, besked, noegler);
-		if (r.ok) udfald.sendt += 1;
-		if (r.doed) {
-			// Telefonen findes ikke mere, fx fordi appen er slettet. Vi
-			// maerker den i stedet for at slette den: saa kan man se paa
-			// kunden at hun HAR haft beskeder slaaet til.
-			await gemDocMerge(`users/${uid}/pushTelefon3/${id}`, { doed: true, doedMs: nu });
-			udfald.ryddet += 1;
-		}
-	}
-
-	if (udfald.sendt > 0) {
-		await gemDocMerge(`users/${uid}`, { notiSidst3: { ...sidst, [besked.slags]: nu } });
-	}
-
+	const udfald = await sendTilKunde3(krop.uid, krop.besked, noegler, {
+		tvang: krop.tvang,
+		erProeve
+	});
 	return json(udfald);
 };

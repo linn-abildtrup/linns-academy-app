@@ -218,7 +218,11 @@
 			{/each}
 		</section>
 
-		<div class="lab"><h2>Send en enkelt</h2></div>
+		<div class="lab"><h2>Send et prik</h2></div>
+		<div class="kort rolig" style="margin-bottom:10px">
+			Det her er kun en notifikation. Der bliver ikke skrevet noget i hendes app, så hun kan ikke
+			læse den igen. Skal hun kunne det, så brug <b>Skriv til en kunde</b> i stedet.
+		</div>
 		<section class="kort">
 			{#if !valgt}
 				<input class="na-soeg" type="search" placeholder="Søg efter en kunde…" bind:value={soegeord} />

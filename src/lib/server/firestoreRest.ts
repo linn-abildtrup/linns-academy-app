@@ -129,6 +129,11 @@ function tilFirestoreValue(v: unknown): FirestoreValue {
 	if (typeof v === 'number') {
 		return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
 	}
+	// Et rigtigt tidsstempel og ikke bare et tal. Uden den her linje blev
+	// en dato til et tomt kort-felt, og den gamle admin kunne ikke laese
+	// den. Tilfoejet 23. august 2026 til "Linn skriver foerst", se
+	// HANDOVER 9.43. Rent tilfoejet: ingen kalder sendte datoer foer.
+	if (v instanceof Date) return { timestampValue: v.toISOString() };
 	if (Array.isArray(v)) {
 		return { arrayValue: { values: v.map(tilFirestoreValue) } };
 	}
