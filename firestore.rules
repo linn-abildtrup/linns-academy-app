@@ -86,6 +86,13 @@ service cloud.firestore {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
 			}
 
+			// 3.0: telefonerne hun har sagt ja paa. Kun hende selv, plus
+			// admin der skal kunne sende. Se firestore/notifikation3.ts.
+			match /pushTelefon3/{telefonId} {
+				allow read, write: if request.auth != null && request.auth.uid == uid;
+				allow read: if isAdmin();
+			}
+
 			// 3.0: hendes egne smaa skridt paa et forloeb, ét doc pr produkt.
 			// Kun hende selv. Se firestore/egneSkridt3.ts for hvorfor de ikke
 			// ligger paa produkt-dokumentet som i den gamle app.
@@ -427,6 +434,13 @@ service cloud.firestore {
 				allow read: if request.auth != null;
 				allow write: if isAdmin();
 			}
+		}
+
+		// 3.0: hvad Linn tillader af beskeder paa telefonen. Kunden skal
+		// kunne laese det for at vise sine egne indstillinger rigtigt.
+		match /notiAdgang3/{docId} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
 		}
 
 		// 3.0: hvem ser udvidet naering, og hvem maa rette sine maal.
