@@ -436,6 +436,13 @@ service cloud.firestore {
 			}
 		}
 
+		// 3.0: beskeder paa forsiden. Alle logget ind maa laese, for kunden
+		// skal kunne se sin egen. En besked til et hold er ikke fortrolig.
+		match /forsidebesked3/{beskedId} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin();
+		}
+
 		// 3.0: hvad Linn tillader af beskeder paa telefonen. Kunden skal
 		// kunne laese det for at vise sine egne indstillinger rigtigt.
 		match /notiAdgang3/{docId} {
