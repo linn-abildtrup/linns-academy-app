@@ -329,6 +329,20 @@
 
 	const valgtErIDag = $derived(valgtDagNummer === null || valgtDagNummer === aktivDagNummer);
 
+	// Sikkerhedsnet paa ?dag=N. Parameteren laeses raat ved indlaesning, saa en
+	// adresse med et fremtidigt dag-nummer kunne aabne lektioner der endnu ikke
+	// er frigivet. Klik i strimlen er allerede laast i vaelgDag, men den vej
+	// udenom stod aaben. I preview-mode er fremtidige dage tilladt, det er hele
+	// pointen med den. Vi venter paa at aktivDagNummer er kendt: indtil forloebet
+	// er hentet findes der alligevel ingen dage at vise.
+	$effect(() => {
+		if (iPreviewMode) return;
+		if (valgtDagNummer === null || aktivDagNummer === null) return;
+		if (valgtDagNummer <= aktivDagNummer) return;
+		valgtDagNummer = null;
+		opdaterUrlMedDag(null);
+	});
+
 	// Auto-scroll strip til aktiv dag når data er klar
 	let stripEl = $state<HTMLDivElement | null>(null);
 	$effect(() => {
@@ -1216,12 +1230,23 @@
 		}
 	}
 
-	// Effektiv challenge-dato: i preview-mode bruges previewDag (forskudt fra
-	// forloebets startDato), ellers den faktiske aktuelle dato.
+	// Effektiv challenge-dato: i preview-mode bruges den dag forsiden FAKTISK
+	// viser, altsaa samme tal som lektioner, smaa skridt og refleksion laeser.
+	//
+	// Foer 23/8 2026 stod der previewDag alene her. Klik i datostrimlen satte
+	// valgtDagNummer, men previewDag fulgte kun med naar parameteren allerede
+	// stod i adressen. Resultatet var to dag-numre paa samme skaerm: mandagens
+	// lektioner sammen med soendagens challenge. Det billede ser ingen kunde
+	// nogensinde, og det gjorde forhaandsvisningen ubrugelig til at tjekke en
+	// challenge frem i tiden.
+	//
+	// Uden for preview er den UAENDRET: kundens challenge foelger altid det
+	// faktiske nu, ogsaa naar hun bladrer tilbage til en tidligere dag.
 	const effektivChallengeDatoMs = $derived.by(() => {
-		if (iPreviewMode && previewDag !== null && forlob) {
+		const vistDag = valgtDagNummer ?? aktivDagNummer;
+		if (iPreviewMode && vistDag !== null && forlob) {
 			const startMs = forlob.startDato?.toMillis?.() ?? 0;
-			return startMs + previewDag * 24 * 60 * 60 * 1000;
+			return startMs + vistDag * 24 * 60 * 60 * 1000;
 		}
 		return Date.now();
 	});

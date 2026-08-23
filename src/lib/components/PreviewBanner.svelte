@@ -26,6 +26,10 @@
 	function lukPreview() {
 		const params = new URLSearchParams(page.url.search);
 		params.delete('previewDag');
+		// Ryd ogsaa dag-parameteren. Ellers blev den staaende naar preview blev
+		// lukket, og forsiden viste derefter en fremtidig dags lektioner sammen
+		// med dagens challenge. Det var praecis den uenighed 23/8 2026 afdaekkede.
+		params.delete('dag');
 		const queryStr = params.toString();
 		const sti = page.url.pathname + (queryStr ? '?' + queryStr : '');
 		void goto(sti, { replaceState: true, noScroll: true });
