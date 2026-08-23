@@ -23,7 +23,7 @@ import { ADMIN_EMAILS } from '$lib/admin';
 import { hentDoc, hentHeleCollection, gemDocMerge } from './firestoreRest';
 import { sendPush, type PushAdresse, type PushNoegler } from './webPush';
 import { sendMail3, type MailOpsaetning3 } from './sendMail';
-import { mailFor3 } from '$lib/content/mail3';
+import { mailFor3, type Mail3 } from '$lib/content/mail3';
 import {
 	maaSende3,
 	udenforKarantaene3,
@@ -54,6 +54,12 @@ export interface SendValg3 {
 	 * sendes den her i stedet. RESERVE OG IKKE KOPI, se content/mail3.
 	 */
 	mail?: MailOpsaetning3 | null;
+	/**
+	 * Den faerdigskrevne mail. Er den sat, bruges den i stedet for den
+	 * der udledes af notifikationen: en notifikation er to linjer, og
+	 * mailen kan rumme hele svaret og hendes eget spoergsmaal.
+	 */
+	mailIndhold?: Mail3 | null;
 }
 
 export async function sendTilKunde3(
@@ -112,7 +118,7 @@ export async function sendTilKunde3(
 		// telefonen virker.
 		if (valg.mail && !valg.erProeve) {
 			const mailAdresse = String(bruger?.email ?? '');
-			const r = await sendMail3(mailAdresse, mailFor3(besked), valg.mail);
+			const r = await sendMail3(mailAdresse, valg.mailIndhold ?? mailFor3(besked), valg.mail);
 			udfald.mail = r.ok;
 			if (r.ok && !valg.tvang) {
 				await gemDocMerge(`users/${uid}`, { notiSidst3: { ...sidst, [besked.slags]: nu } });

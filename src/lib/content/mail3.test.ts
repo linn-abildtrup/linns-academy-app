@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { APP_URL3, emneFor3, mailFor3 } from './mail3';
+import { APP_URL3, emneFor3, generelMail3, mailFor3, svarMail3 } from './mail3';
 import { dagNoti3, savnBesked3, svarNoti3, NOTI_STANDARD3 } from './notifikation3';
 
 describe('emneFor3', () => {
@@ -49,5 +49,86 @@ describe('mailFor3', () => {
 	it('knappen hedder noget forskelligt alt efter hvad det er', () => {
 		expect(mailFor3(svarNoti3('x')).html).toContain('Læs svaret');
 		expect(mailFor3(dagNoti3(3, 1, false)).html).toContain('Åbn appen');
+	});
+});
+
+describe('svarMail3', () => {
+	const langt =
+		'Det er helt normalt de første uger. Prøv at flytte lidt af dit protein til morgenmaden, så holder energien længere hen på eftermiddagen.';
+
+	it('HENDES EGET SPOERGSMAAL STAAR MED, saa hun husker sammenhaengen', () => {
+		const m = svarMail3({
+			spoergsmaal: 'Jeg er så træt om eftermiddagen. Er det normalt?',
+			svar: langt,
+			sendtMs: new Date(2026, 7, 18).getTime()
+		});
+		expect(m.tekst).toContain('Jeg er så træt om eftermiddagen');
+		expect(m.html).toContain('Jeg er så træt om eftermiddagen');
+		expect(m.tekst).toContain('18. august');
+	});
+
+	it('ET KORT SVAR faar den korte form, uden ramme', () => {
+		const m = svarMail3({ spoergsmaal: 'Må jeg bytte kyllingen ud?', svar: 'Ja, det må du gerne.' });
+		expect(m.tekst).toContain('Sig endelig til');
+		expect(m.html).not.toContain('Du skrev');
+	});
+
+	it('graensen ligger ved hundrede tegn', () => {
+		const spm = 'Et spørgsmål';
+		expect(svarMail3({ spoergsmaal: spm, svar: 'x'.repeat(99) }).html).not.toContain('Du skrev');
+		expect(svarMail3({ spoergsmaal: spm, svar: 'x'.repeat(101) }).html).toContain('Du skrev');
+	});
+
+	it('skrev Linn foerst, er der intet spoergsmaal, og saa er formen kort', () => {
+		const m = svarMail3({ svar: langt });
+		expect(m.emne).toBe('Linn har skrevet til dig');
+		expect(m.html).not.toContain('Du skrev');
+	});
+
+	it('EMNET NAEVNER HENDES EGNE ORD og ikke bare at der er svaret', () => {
+		const m = svarMail3({ spoergsmaal: 'Jeg er så træt om eftermiddagen', svar: langt });
+		expect(m.emne).toContain('træt');
+		expect(m.emne).not.toBe('Linn har svaret dig');
+	});
+
+	it('et langt spoergsmaal klippes i emnet', () => {
+		const m = svarMail3({ spoergsmaal: 'x'.repeat(200), svar: langt });
+		expect(m.emne.length).toBeLessThan(60);
+		expect(m.emne.endsWith('…')).toBe(true);
+	});
+
+	it('et svar har aldrig en afmelding', () => {
+		expect(svarMail3({ svar: langt, spoergsmaal: 'noget' }).medAfmeld).toBe(false);
+	});
+});
+
+describe('generelMail3', () => {
+	it('opslaget har maerket og en afmelding', () => {
+		const m = generelMail3({ form: 'opslag', tekst: 'Vi ses i aften.', overskrift: 'Live Q&A' });
+		expect(m.medAfmeld).toBe(true);
+		expect(m.html).toContain('Academy');
+		expect(m.tekst).toContain('færre mails');
+	});
+
+	it('INVITATIONEN SAETTER TIDSPUNKTET FOERST, ogsaa i emnet', () => {
+		const m = generelMail3({
+			form: 'invitation',
+			tekst: 'En time hvor du kan spørge om alt.',
+			overskrift: 'Søvn, og hvorfor den bliver dårligere',
+			hvornaar: 'I aften kl. 19.00'
+		});
+		expect(m.emne.startsWith('I aften kl. 19.00')).toBe(true);
+		expect(m.html).toContain('I aften kl. 19.00');
+	});
+
+	it('uden overskrift bliver emnet den foerste saetning', () => {
+		const m = generelMail3({ form: 'opslag', tekst: 'Nye opskrifter er lagt op. Kig forbi.' });
+		expect(m.emne).toBe('Nye opskrifter er lagt op');
+	});
+
+	it('begge former kan afmeldes', () => {
+		for (const form of ['opslag', 'invitation'] as const) {
+			expect(generelMail3({ form, tekst: 'noget' }).medAfmeld).toBe(true);
+		}
 	});
 });

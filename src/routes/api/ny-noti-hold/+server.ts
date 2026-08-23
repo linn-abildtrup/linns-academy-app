@@ -20,11 +20,16 @@ import { mailOpsaetning3 } from '$lib/server/sendMail';
 import { hvemErDet3, noeglerFra3 } from '$lib/server/notiSend';
 import { erMedlem3, medTelefon3, paaForlob3, sendTilFlere3 } from '$lib/server/notiHold';
 import { uddrag3 } from '$lib/content/notifikation3';
+import { generelMail3, type GenerelForm3 } from '$lib/content/mail3';
 import type { Modtager3 } from '$lib/content/forsidebesked3';
 
 interface Krop {
 	modtager: Modtager3;
 	tekst: string;
+	/** Hvordan mailen skal se ud. Linns valg pr besked. Se HANDOVER 9.48. */
+	mailForm?: GenerelForm3;
+	overskrift?: string;
+	hvornaar?: string;
 }
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -61,7 +66,18 @@ export const POST: RequestHandler = async ({ request }) => {
 		noegler,
 		// Linn har lige trykket send. Karantaenen er til det der sker af sig
 		// selv, ikke til det hun selv beder om.
-		{ tvang: true, mail: mailOpsaetning3(env) }
+		{
+			tvang: true,
+			mail: mailOpsaetning3(env),
+			// Mailen til dem der ikke kan naas paa telefonen. Formen er
+			// Linns valg pr besked: opslag eller invitation.
+			mailIndhold: generelMail3({
+				form: krop.mailForm === 'invitation' ? 'invitation' : 'opslag',
+				tekst,
+				overskrift: krop.overskrift,
+				hvornaar: krop.hvornaar
+			})
+		}
 	);
 
 	return json(udfald);

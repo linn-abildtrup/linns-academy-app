@@ -34,7 +34,10 @@ export async function hentForsidebeskeder3(): Promise<Forsidebesked3[]> {
 				modtager: x.modtager ?? { slags: 'alle' },
 				slutMs: x.slutMs ?? 0,
 				oprettetMs: x.oprettetMs ?? 0,
-				prik: x.prik === true
+				prik: x.prik === true,
+				mailForm: x.mailForm === 'invitation' ? 'invitation' : 'opslag',
+				overskrift: x.overskrift ?? '',
+				hvornaar: x.hvornaar ?? ''
 			};
 		});
 	} catch (e) {
@@ -67,7 +70,10 @@ export async function gemForsidebesked3(
 			// Retter hun teksten, bevares tidspunktet: det afgoer hvilken der
 			// vinder, og en rettelse skal ikke skubbe den foran de andre.
 			oprettetMs: besked.oprettetMs ?? Date.now(),
-			prik: besked.prik
+			prik: besked.prik,
+			mailForm: besked.mailForm ?? 'opslag',
+			overskrift: (besked.overskrift ?? '').trim(),
+			hvornaar: (besked.hvornaar ?? '').trim()
 		},
 		{ merge: true }
 	);

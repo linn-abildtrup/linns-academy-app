@@ -26,6 +26,7 @@
 		type Modtager3,
 		type Varighed3
 	} from '$lib/content/forsidebesked3';
+	import { GENEREL_NAVNE3, type GenerelForm3 } from '$lib/content/mail3';
 	import {
 		fjernForsidebesked3,
 		gemForsidebesked3,
@@ -53,8 +54,14 @@
 	let tekst = $state('');
 	let varighed = $state<Varighed3>('idag');
 	let prik = $state(true);
+	// Mailens form. Kun dem der IKKE kan naas paa telefonen faar en mail,
+	// og de to former ser ens ud paa forsiden i appen. Se HANDOVER 9.48.
+	let mailForm = $state<GenerelForm3>('opslag');
+	let overskrift = $state('');
+	let hvornaar = $state('');
 
 	const VARIGHEDER: Varighed3[] = ['idag', 'tre', 'uge', 'altid'];
+	const FORMER: GenerelForm3[] = ['opslag', 'invitation'];
 	const navne = $derived(Object.fromEntries(forlob.map((f) => [f.id, f.navn])));
 	const staarNu = $derived(
 		aktive3(beskeder, Date.now()).sort((a, b) => b.oprettetMs - a.oprettetMs)
@@ -91,6 +98,9 @@
 		varighed = 'idag';
 		prik = true;
 		modtager = { slags: 'alle' };
+		mailForm = 'opslag';
+		overskrift = '';
+		hvornaar = '';
 	}
 
 	function ret(b: Forsidebesked3) {
@@ -98,6 +108,9 @@
 		tekst = b.tekst;
 		modtager = b.modtager;
 		prik = b.prik;
+		mailForm = b.mailForm === 'invitation' ? 'invitation' : 'opslag';
+		overskrift = b.overskrift ?? '';
+		hvornaar = b.hvornaar ?? '';
 		// Varigheden kan ikke regnes tilbage praecist, saa vi lader den staa
 		// paa den hun vaelger. Roerer hun den ikke, bevares slutdatoen.
 		kvittering = '';
@@ -118,7 +131,10 @@
 				// bevares slutdatoen. Ellers ville en stavefejl forlaenge den.
 				slutMs: gammel && varighed === 'idag' ? gammel.slutMs : slutMsFor3(varighed, Date.now()),
 				oprettetMs: gammel?.oprettetMs,
-				prik
+				prik,
+				mailForm,
+				overskrift,
+				hvornaar
 			});
 			beskeder = await hentForsidebeskeder3();
 
@@ -146,7 +162,13 @@
 			const res = await fetch('/api/ny-noti-hold', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-				body: JSON.stringify({ modtager, tekst: tekst.trim() })
+				body: JSON.stringify({
+					modtager,
+					tekst: tekst.trim(),
+					mailForm,
+					overskrift: overskrift.trim(),
+					hvornaar: hvornaar.trim()
+				})
 			});
 			if (!res.ok) return ' Beskeden står, men prikket kunne ikke sendes.';
 			const r = (await res.json()) as { sendt: number; mail: number };
@@ -228,6 +250,30 @@
 					</button>
 				{/each}
 			</div>
+
+			<div class="fb-lbl" style="margin-top:12px">Overskrift</div>
+			<input class="na-soeg" type="text" placeholder="Fx: Live Q&A om søvn" bind:value={overskrift} />
+			<div class="fb-hjaelp">
+				Står kun i mailen. På forsiden i appen er der kun selve teksten.
+			</div>
+
+			<div class="fb-lbl" style="margin-top:12px">Mailen ser ud som</div>
+			<div class="fb-valg">
+				{#each FORMER as f (f)}
+					<button class="fb-chip" class:paa={mailForm === f} onclick={() => (mailForm = f)}>
+						{GENEREL_NAVNE3[f]}
+					</button>
+				{/each}
+			</div>
+			<div class="fb-hjaelp">
+				{mailForm === 'invitation'
+					? 'Tidspunktet står stort og øverst. Til det der sker på et klokkeslæt.'
+					: 'Mærket i toppen, én knap, og en vej ud i bunden. Til alt det almindelige.'}
+			</div>
+
+			{#if mailForm === 'invitation'}
+				<input class="na-soeg" style="margin-top:9px" type="text" placeholder="Hvornår, fx: I aften kl. 19.00" bind:value={hvornaar} />
+			{/if}
 
 			<div class="nk" style="border-top:1px solid var(--line);margin-top:11px">
 				<div>

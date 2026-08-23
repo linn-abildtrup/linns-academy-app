@@ -32,6 +32,17 @@ export interface Forsidebesked3 {
 	oprettetMs: number;
 	/** Skal den ogsaa sige til paa telefonen. */
 	prik: boolean;
+	/**
+	 * Hvordan MAILEN ser ud til dem der ikke kan naas paa telefonen.
+	 * Linns valg 23. august: hun vaelger mellem opslag og invitation.
+	 * Se content/mail3.ts. Paa forsiden i appen ser de to ens ud — det
+	 * er kun mailen der skifter form.
+	 */
+	mailForm?: 'opslag' | 'invitation';
+	/** Overskriften i mailen. Boblen paa forsiden har ingen. */
+	overskrift?: string;
+	/** Kun invitationen: "I aften kl. 19.00". */
+	hvornaar?: string;
 }
 
 /** Hvad vi skal vide om kunden for at vaelge den rigtige. */

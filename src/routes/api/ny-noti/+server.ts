@@ -21,12 +21,19 @@ import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { mailOpsaetning3 } from '$lib/server/sendMail';
 import { hvemErDet3, noeglerFra3, sendTilKunde3, PROEVE3 } from '$lib/server/notiSend';
 import type { Noti3 } from '$lib/content/notifikation3';
+import { svarMail3 } from '$lib/content/mail3';
 
 interface Krop {
 	uid: string;
 	besked: Noti3;
 	/** Spring karantaenen over. Kun naar Linn selv trykker send. */
 	tvang?: boolean;
+	/**
+	 * Hendes eget spoergsmaal og hvornaar hun skrev det. Bruges KUN til
+	 * mailen, hvor der er plads til hele samtalen. Notifikationen paa
+	 * telefonen er to linjer og kan ikke rumme det. Se HANDOVER 9.48.
+	 */
+	samtale?: { spoergsmaal?: string; sendtMs?: number };
 }
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -49,7 +56,17 @@ export const POST: RequestHandler = async ({ request }) => {
 	const udfald = await sendTilKunde3(krop.uid, krop.besked, noegler, {
 		tvang: krop.tvang,
 		erProeve,
-		mail: mailOpsaetning3(env)
+		mail: mailOpsaetning3(env),
+		// Er det et svar, faar mailen hele samtalen med. Linns valg
+		// 23. august: forslag 1, "Samtalen".
+		mailIndhold:
+			krop.besked.slags === 'svar' && !erProeve
+				? svarMail3({
+						spoergsmaal: krop.samtale?.spoergsmaal,
+						svar: krop.besked.tekst,
+						sendtMs: krop.samtale?.sendtMs
+					})
+				: null
 	});
 	return json(udfald);
 };

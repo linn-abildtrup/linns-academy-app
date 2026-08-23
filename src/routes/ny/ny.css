@@ -13935,3 +13935,13 @@ a.tr-felt:focus-visible {
 	color: var(--ink-3);
 	margin-top: 1px;
 }
+
+/* Den lille forklaring under et valg i admin. Den siger hvad valget
+   BETYDER og ikke hvad det hedder. Se HANDOVER 9.48. */
+.fb-hjaelp {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	line-height: 1.45;
+	margin-top: -3px;
+	margin-bottom: 4px;
+}

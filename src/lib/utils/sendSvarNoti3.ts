@@ -25,8 +25,16 @@ import { svarNoti3 } from '$lib/content/notifikation3';
  *
  * Kaldes EFTER at svaret er gemt. Returnerer stille, ogsaa naar der ikke
  * blev sendt noget: det er helt normalt, fx hvis hun ikke har sagt ja.
+ *
+ * `samtale` er hendes eget spoergsmaal og hvornaar hun skrev det. Det
+ * bruges KUN i mailen, hvor der er plads til hele samtalen. Uden det
+ * laeser hun et svar paa noget hun har glemt hun spurgte om.
  */
-export async function sendSvarNoti3(uid: string, svar: string): Promise<void> {
+export async function sendSvarNoti3(
+	uid: string,
+	svar: string,
+	samtale?: { spoergsmaal?: string; sendtMs?: number }
+): Promise<void> {
 	try {
 		const bruger = auth.currentUser;
 		if (!bruger || !uid || !svar.trim()) return;
@@ -34,7 +42,7 @@ export async function sendSvarNoti3(uid: string, svar: string): Promise<void> {
 		await fetch('/api/ny-noti', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-			body: JSON.stringify({ uid, besked: svarNoti3(svar) })
+			body: JSON.stringify({ uid, besked: svarNoti3(svar), samtale })
 		});
 	} catch (e) {
 		// Med vilje kun en note i loggen. Se toppen af filen.

@@ -375,7 +375,10 @@
 			// Sig til paa kundens telefon. Kun 3.0-kunder der har sagt ja
 			// faar noget, og fejler det, er svaret stadig gemt. Se
 			// utils/sendSvarNoti3. Linns ja 23. august 2026.
-			if (q) void sendSvarNoti3(q.uid, tekst);
+			if (q) void sendSvarNoti3(q.uid, tekst, {
+				spoergsmaal: q.spoergsmaal,
+				sendtMs: q.oprettet?.toDate?.().getTime()
+			});
 			alle = alle.map((qx) =>
 				qx.id === id
 					? {

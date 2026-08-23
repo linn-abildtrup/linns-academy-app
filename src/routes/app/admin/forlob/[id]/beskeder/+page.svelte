@@ -239,7 +239,10 @@
 			await svarPaaSpoergsmaal(id, tekst);
 			// Sig til paa kundens telefon. Se den anden svar-skaerm og
 			// utils/sendSvarNoti3. Linns ja 23. august 2026.
-			void sendSvarNoti3(q.uid, tekst);
+			void sendSvarNoti3(q.uid, tekst, {
+				spoergsmaal: q.spoergsmaal,
+				sendtMs: q.oprettet?.toDate?.().getTime()
+			});
 			alle = alle.map((qx) =>
 				qx.id === id ? { ...qx, svar: tekst, status: 'besvaret' as SpoergsmaalStatus } : qx
 			);
