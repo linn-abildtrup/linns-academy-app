@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 22. august 2026. Se 9.32 til 9.38 for de seneste dage, hvor der skete meget.
+Sidst opdateret 23. august 2026. Se 9.39 og 9.40 for beskeder paa telefonen, som er det nyeste.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -123,6 +123,7 @@ gamle app og må kun læses.
 | `content/vaelgSkridt3.ts` | **Hun vælger selv.** Maks tre, kategorier, hendes egne. Se 9.35 | 26 |
 | `content/lektionSet3.ts` | **Hvornår en lektion er set.** Fluebenet følger videoen. Se 9.37 | 16 |
 | `content/naeringAdgang3.ts` | **Hvem ser udvidet næring**, og hvem må rette sine mål. Se 9.38 | 12 |
+| `content/notifikation3.ts` | **Beskeder på telefonen.** De tre slags, hvem der må, og karantænen. Se 9.39 | 20 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
 
@@ -160,6 +161,11 @@ gamle app og må kun læses.
 | `firestore/oevelseHensyn3.ts` | Mærkerne på øvelserne. Ét dokument til dem alle. Kun admin skriver. Se 9.33 |
 | `firestore/vaelgSkridt3.ts` | Hendes valgte skridt. Læser begge skuffer. Se 9.35 |
 | `firestore/naeringAdgang3.ts` | Nærings-skemaet og undtagelserne. **Kun admin skriver.** Se 9.38 |
+| `firestore/notifikation3.ts` | Telefonerne hun har sagt ja på, og hvad Linn tillader. Se 9.39 |
+| `server/webPush.ts` | **Selve afsendelsen.** Web Push direkte, uden tredjepart. Se 9.39 |
+| `utils/notiTilmeld3.ts` | At sige ja, set fra telefonen. Hjemmeskærm, lov, tilmelding |
+| `utils/sendSvarNoti3.ts` | Den ene linje den gamle admin kalder når Linn har svaret |
+| `hooks.server.ts` | **3.0's eget ikon.** Bytter manifest, navn og ikon på `/ny`. Se 9.40 |
 | `firestore/egneSkridt3.ts` | **3.0's egen skuffe** til forløbskundens egne skridt. Se 9.35 |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
@@ -2529,6 +2535,134 @@ tal blev slettet. Nu falder den tilbage på standarden, 90 g protein og 30 g
 fiber, som resten af appen gør.
 
 Reglerne blev udgivet 22. august kl 21.49 og verificeret mod det der kører.
+
+---
+
+### 9.39 BESKEDER PÅ TELEFONEN, 23. august
+
+Linns spørgsmål: kan vi give kunden en notifikation når du har svaret, eller
+når hun har nået et mål?
+
+**Svaret på den sidste halvdel er nej, og det er med vilje.** "Du har nået dit
+mål" sker mens hun har telefonen i hånden, og så kan appen sige det selv. En
+notifikation om noget hun lige har gjort er støj. Notifikationer er kun værd
+at bygge til **det der sker mens appen er lukket.**
+
+#### Forudsætningen, som Linn traf beslutning om
+
+På iPhone virker det **kun** når appen ligger på hjemmeskærmen. Det er Apples
+regel. Jeg foreslog at måle hvor mange der har gjort det, før vi byggede.
+Linns svar: vi forudsætter at kunderne følger vores instruktioner. Så det gør
+vi, og opstarten viser vejledningen.
+
+#### Tre slags, og karantænen
+
+| | |
+|---|---|
+| **svar** | Linn har svaret. Højst én hver sjette time |
+| **dag** | Dagens indhold er klart. Højst én i døgnet |
+| **savn** | Der er gået for lang tid. Højst én om ugen |
+
+Karantænen er ikke pynt: svarer Linn tre gange på ti minutter, bliver det til
+**én** besked. Uden den slår kunden det fra, og så er kanalen væk for altid.
+
+**Både Linn og kunden skal sige ja**, og kunden vinder når hun slår fra. Tre
+lag som med næringen: kundens valg, forløbet, medlems-linjen.
+
+#### Afsendelsen, og hvorfor der ikke er nogen tredjepart
+
+Vi sender **direkte til telefonen** med Web Push, som alle browsere taler.
+Ingen Firebase Cloud Messaging, ingen konto, ingen regning, og ingen der får
+kundernes adresser at vide.
+
+To ting sker for hver besked: vi underskriver os selv over for telefonens
+push-tjeneste, og vi låser indholdet med telefonens egen nøgle. Hverken
+Google, Apple eller vi kan læse det undervejs.
+
+**Krypteringen er BEVIST og ikke bare skrevet.** Testen spiller telefonens
+rolle: den låser beskeden op igen og tjekker at der står det samme, også med
+æ, ø og å, og at en anden telefon ikke kan. **Den slags fejler lydløst** — en
+byte galt giver en besked telefonen bare smider væk uden at sige noget.
+
+Nøglerne ligger i Cloudflare som `NOTI_NOEGLE_OFFENTLIG`, `NOTI_NOEGLE_PRIVAT`
+og `NOTI_KONTAKT`. Den offentlige står også i klarteksten i
+`utils/notiTilmeld3.ts`, og det er meningen: den er lavet til at deles.
+
+#### KUN 3.0, og det står to steder
+
+Linns krav: der må aldrig sendes til en kunde i den gamle app. Der spørges kun
+om lov på `/ny`, **og** endpointet tjekker adgangen igen lige før der sendes.
+To låse om det samme, med vilje.
+
+#### Opstarten, og prøven
+
+Linns idé, og den er bedre end mit forslag om at vente til hun stiller et
+spørgsmål: i opstarten er hun i gang med at sætte ting op og forventer at
+blive spurgt.
+
+To trin, og de hænger sammen. Ligger appen ikke på hjemmeskærmen, vises
+vejledningen, og beskederne springes over — et ja ville alligevel ikke virke.
+Hun møder dem når hun åbner fra ikonet. **Begge trin forsvinder når de er
+overflødige**, og tælleren følger med.
+
+**Prøven er Linns idé og den vigtigste detalje.** Vi sender én besked med det
+samme, og hun bekræfter at den kom. Uden den opdager hverken hun eller Linn at
+noget er galt før den dag et rigtigt svar aldrig kom frem. Kunden må derfor
+sende netop den ene slags til sig selv; alt andet er kun for admin.
+
+#### Automatikken, og de ni linjer i den gamle app
+
+Linn svarer i den GAMLE apps admin, to steder. Der er tilføjet **én linje**
+hvert sted efter at svaret er gemt, plus en import. Linns ja, efter at have
+fået den præcise ændring forelagt.
+
+Det er ni linjer i alt, og **de to filer er admin-sider**: går noget galt der,
+rammer det Linn og ikke de 760 kunder. Alt det svære ligger i en ny fil
+udenfor, så der ikke skulle skrives andet ind i dem.
+
+**Den fejler aldrig opad.** Går afsendelsen galt, er svaret stadig gemt, og
+Linn ser ingen fejl. En besked der ikke kom frem må aldrig kunne se ud som om
+svaret ikke blev sendt.
+
+#### Hvad der IKKE er bygget endnu
+
+- **"Dagen er klar" og "der er gået lang tid"** kræver noget der kører af sig
+  selv hver morgen, og det findes ikke i dag. Reglerne og teksterne er skrevet,
+  men der er ingen der kalder dem
+- **Mail som reserve.** Linns beslutning: vi bruger vores egen afsender, ikke
+  Simplero, og hun har adgang til domænet. Kontoen er ikke oprettet endnu.
+  Reglen ligger klar i `vaelgKanal3`: **mail er en reserve, ikke en kopi.** Kan
+  hun nås på telefonen, sender vi kun dér
+
+---
+
+### 9.40 3.0 FIK SIT EGET IKON, 23. august
+
+Linn kunne ikke lægge 3.0 på sin hjemmeskærm: ikonet blev ved med at åbne den
+gamle app.
+
+**Telefonen læser ét sted hvad appen hedder og hvor den åbner**, og der stod
+`/app`. Filen er fra dengang der kun var én app, og den deles af begge.
+
+**Linn bruger begge apper**, så den gamle skiftes ikke ud. Hun skal have to
+ikoner der kan kendes fra hinanden: "Linn's Academy" med uendelighedstegnet
+mod `/app`, og **"Linn's 3.0" med det store L** mod `/ny`. Hendes valg af navn
+og ikon, hvor L'et er det samme som i notifikations-mockup'en.
+
+**Ingen eksisterende fil er rørt.** To nye: én der beskriver 3.0's ikon, og
+`hooks.server.ts`, som ligger i vejen for alle sider og derfor kun gør ÉN ting
+— på `/ny` bytter den tre linjer ud. Alt andet går igennem urørt.
+
+**iPhone læser hverken navn eller ikon fra manifest-filen.** Den bruger to
+linjer i sidehovedet, og de vinder over alt andet. Havde jeg kun byttet
+manifestet, var der ikke sket noget synligt overhovedet.
+
+**De 760 i drift mærker ingenting.** Deres ikon ligger der allerede, og
+telefonen huskede adressen den dag de lagde det på. Lægger en af dem det på i
+morgen, får hun stadig den gamle app.
+
+**Den dag 3.0 afløser den gamle** ændres navnet tilbage til "Linn's Academy",
+og den gamle lades dø.
 
 ---
 
