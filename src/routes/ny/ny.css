@@ -13459,3 +13459,21 @@ a.tr-felt:focus-visible {
 .na-forklaring {
 	margin-top: 12px;
 }
+
+/* Den bloede vej ud af et trin i opstarten. Der SKAL vaere en: sidder hun
+   ved en computer, kan hun ikke laegge noget paa en hjemmeskaerm, og
+   trinnet maa ikke spaerre resten. Bygget 23. august, se HANDOVER 9.39. */
+.ob-spring {
+	display: block;
+	width: 100%;
+	text-align: center;
+	background: none;
+	border: 0;
+	color: var(--ink-2);
+	font-family: inherit;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	padding: 13px;
+	margin-top: 4px;
+	cursor: pointer;
+}

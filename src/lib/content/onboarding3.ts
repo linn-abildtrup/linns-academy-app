@@ -87,8 +87,34 @@ export type OnboardingTrin3 =
 	| 'tekst'
 	| 'udstyr'
 	| 'hjemmeskaerm'
+	| 'beskeder'
 	| 'kort'
 	| 'slut';
+
+/** Hvad de to sidste trin afhaenger af. Se spoergsmaalTrin3. */
+export interface TrinValg3 {
+	/** Ligger appen allerede paa hjemmeskaermen. Saa springes trinnet over. */
+	paaHjemmeskaerm: boolean;
+	/** Kan telefonen tage imod beskeder, og er hun ikke spurgt endnu. */
+	kanSpoergeOmBeskeder: boolean;
+}
+
+/**
+ * Trinnene hun faktisk skal igennem.
+ *
+ * DE TO SIDSTE HAENGER SAMMEN, og raekkefoelgen er ikke til at komme
+ * udenom: paa iPhone kan beskeder KUN slaas til inde i appen naar den
+ * ligger paa hjemmeskaermen. Ligger den ikke, viser vi vejledningen og
+ * springer beskederne over. Hun moeder dem naar hun aabner fra ikonet.
+ *
+ * Linns beslutning 23. august, se HANDOVER 9.39.
+ */
+export function spoergsmaalTrin3(valg: TrinValg3): OnboardingTrin3[] {
+	const trin: OnboardingTrin3[] = ['velkommen', 'tekst', 'udstyr'];
+	if (!valg.paaHjemmeskaerm) trin.push('hjemmeskaerm');
+	if (valg.kanSpoergeOmBeskeder) trin.push('beskeder');
+	return trin;
+}
 
 /** Det hun skal oplyse. Fire skaerme, ens for alle. Se SPEC 31.3. */
 export const SPOERGSMAAL_TRIN_3: OnboardingTrin3[] = [
@@ -256,9 +282,10 @@ export interface Taeller3 {
 export function taeller3(
 	trinNr: number,
 	antalKort: number,
-	medSpoergsmaal = true
+	medSpoergsmaal = true,
+	antalSpoergsmaal = SPOERGSMAAL_TRIN_3.length
 ): Taeller3 {
-	const ialt = (medSpoergsmaal ? SPOERGSMAAL_TRIN_3.length : 0) + antalKort;
+	const ialt = (medSpoergsmaal ? antalSpoergsmaal : 0) + antalKort;
 	const nu = Math.min(Math.max(trinNr, 1), Math.max(ialt, 1));
 	return { nu, ialt, andel: ialt === 0 ? 1 : nu / ialt };
 }
@@ -272,8 +299,12 @@ export function taeller3(
  * kun kortene. Ville den stadig sige "5 af 11", ville hun lede efter de
  * fire foerste.
  */
-export function kortNr3(trinNr: number, medSpoergsmaal = true): number {
-	return medSpoergsmaal ? trinNr - SPOERGSMAAL_TRIN_3.length - 1 : trinNr - 1;
+export function kortNr3(
+	trinNr: number,
+	medSpoergsmaal = true,
+	antalSpoergsmaal = SPOERGSMAAL_TRIN_3.length
+): number {
+	return medSpoergsmaal ? trinNr - antalSpoergsmaal - 1 : trinNr - 1;
 }
 
 // ── Videoen ──────────────────────────────────────────────────

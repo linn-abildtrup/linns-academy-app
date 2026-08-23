@@ -24,10 +24,19 @@
 // hendes egne ord og kan slaas fra pr forloeb.
 // ============================================================
 
-/** De tre slags. Rækkefoelgen er hvor vigtige de er. */
-export type NotiSlags3 = 'svar' | 'dag' | 'savn';
+/**
+ * De tre slags, plus proeven.
+ *
+ * 'proeve' staar IKKE i hendes indstillinger. Den sendes én gang, i
+ * opstarten, saa hun kan se at det virker. Uden den opdager vi foerst at
+ * noget er galt den dag et rigtigt svar aldrig kom frem.
+ */
+export type NotiSlags3 = 'svar' | 'dag' | 'savn' | 'proeve';
 
-export const NOTI_SLAGS3: NotiSlags3[] = ['svar', 'dag', 'savn'];
+/** Dem hun kan slaa til og fra. Proeven hoerer ikke til her. */
+export type NotiValgSlags3 = 'svar' | 'dag' | 'savn';
+
+export const NOTI_SLAGS3: NotiValgSlags3[] = ['svar', 'dag', 'savn'];
 
 export interface NotiTekster3 {
 	/** Det hun ser i appens egne indstillinger. */
@@ -35,14 +44,14 @@ export interface NotiTekster3 {
 	forklaring: string;
 }
 
-export const NOTI_NAVNE3: Record<NotiSlags3, NotiTekster3> = {
+export const NOTI_NAVNE3: Record<NotiValgSlags3, NotiTekster3> = {
 	svar: { navn: 'Når Linn svarer dig', forklaring: 'Du har spurgt om noget og venter' },
 	dag: { navn: 'Når dagen er klar', forklaring: 'Om morgenen, på de dage der er noget nyt' },
 	savn: { navn: 'Hvis der er gået lang tid', forklaring: 'Højst én gang om ugen' }
 };
 
 /** Hvad kunden selv har valgt. Mangler et svar, er det til. */
-export type NotiValg3 = Partial<Record<NotiSlags3, boolean>>;
+export type NotiValg3 = Partial<Record<NotiValgSlags3, boolean>>;
 
 /** Hvad Linn tillader. Samme tre lag som naeringen, se naeringAdgang3. */
 export interface NotiRegler3 {
@@ -57,7 +66,7 @@ export interface NotiRegler3 {
  * slaaet den fra. Alt er til naar ingen har taget stilling.
  */
 export function maaSende3(
-	slags: NotiSlags3,
+	slags: NotiValgSlags3,
 	regler: NotiRegler3 | null,
 	kundensValg: NotiValg3 | null,
 	aktivtForlobId: string | null
@@ -71,7 +80,7 @@ export function maaSende3(
 }
 
 /** Hvor lang tid der mindst skal gaa mellem to af samme slags. */
-export const KARANTAENE_MS3: Record<NotiSlags3, number> = {
+export const KARANTAENE_MS3: Record<NotiValgSlags3, number> = {
 	// Svarer Linn tre gange paa ti minutter, faar hun én besked.
 	svar: 6 * 60 * 60 * 1000,
 	// Én om dagen. To "dagen er klar" samme dag er en fejl.
@@ -87,7 +96,7 @@ export const KARANTAENE_MS3: Record<NotiSlags3, number> = {
  * notifikationer, og saa slaar hun dem fra. Se HANDOVER 9.39.
  */
 export function udenforKarantaene3(
-	slags: NotiSlags3,
+	slags: NotiValgSlags3,
 	sidstSendtMs: number | null | undefined,
 	nu: number
 ): boolean {
@@ -123,6 +132,16 @@ export function uddrag3(svar: string): string {
 	const kort = ren.slice(0, UDDRAG_TEGN3);
 	const sidsteMellemrum = kort.lastIndexOf(' ');
 	return `${(sidsteMellemrum > 40 ? kort.slice(0, sidsteMellemrum) : kort).trimEnd()}…`;
+}
+
+/** Proeven i opstarten. Kun tekst, ingen indstilling bag. */
+export function proeveNoti3(): Noti3 {
+	return {
+		titel: 'Så er vi i gang',
+		tekst: 'Sådan ser det ud når jeg siger til',
+		sti: '/ny',
+		slags: 'proeve'
+	};
 }
 
 /** Beskeden naar Linn har svaret. */

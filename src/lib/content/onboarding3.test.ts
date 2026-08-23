@@ -6,6 +6,7 @@ import {
 	taeller3,
 	kortNr3,
 	rundvisningskort3,
+	spoergsmaalTrin3,
 	velkomstvideo3,
 	velkomsttekst3,
 	slutTekst3,
@@ -209,5 +210,39 @@ describe('velkomsten', () => {
 	it('slutter forskelligt for en forloebskunde og et medlem', () => {
 		expect(slutTekst3(true).tekst).toContain('måling');
 		expect(slutTekst3(false).tekst).toContain('spist');
+	});
+});
+
+describe('spoergsmaalTrin3', () => {
+	it('tre trin naar appen allerede ligger paa hjemmeskaermen og hun er spurgt', () => {
+		expect(spoergsmaalTrin3({ paaHjemmeskaerm: true, kanSpoergeOmBeskeder: false })).toEqual([
+			'velkommen',
+			'tekst',
+			'udstyr'
+		]);
+	});
+
+	it('vejledningen kommer med naar appen ikke ligger der', () => {
+		const t = spoergsmaalTrin3({ paaHjemmeskaerm: false, kanSpoergeOmBeskeder: false });
+		expect(t).toContain('hjemmeskaerm');
+		expect(t).not.toContain('beskeder');
+	});
+
+	it('BESKEDERNE KOMMER FOERST NAAR APPEN LIGGER DER', () => {
+		// Paa iPhone kan de kun slaas til inde i appen. Er den ikke lagt paa
+		// plads, ville et ja alligevel ikke virke.
+		const t = spoergsmaalTrin3({ paaHjemmeskaerm: true, kanSpoergeOmBeskeder: true });
+		expect(t).toEqual(['velkommen', 'tekst', 'udstyr', 'beskeder']);
+	});
+
+	it('begge kan staa samtidig, og vejledningen kommer foerst', () => {
+		const t = spoergsmaalTrin3({ paaHjemmeskaerm: false, kanSpoergeOmBeskeder: true });
+		expect(t.indexOf('hjemmeskaerm')).toBeLessThan(t.indexOf('beskeder'));
+	});
+
+	it('taelleren foelger med naar der er faerre trin', () => {
+		const trin = spoergsmaalTrin3({ paaHjemmeskaerm: true, kanSpoergeOmBeskeder: false });
+		expect(taeller3(1, 5, true, trin.length).ialt).toBe(8);
+		expect(kortNr3(4, true, trin.length)).toBe(0);
 	});
 });

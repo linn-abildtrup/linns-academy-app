@@ -32,8 +32,20 @@ import {
 	type NotiValg3
 } from '$lib/content/notifikation3';
 
-async function verificerAdmin(idToken: string): Promise<boolean> {
-	if (!PUBLIC_FIREBASE_API_KEY) return false;
+/**
+ * Hvem sidder der i den anden ende.
+ *
+ * TO SLAGS KALDERE, og de maa ikke det samme:
+ *  - Linn maa sende til hvem som helst
+ *  - Kunden maa sende ÉN slags til SIG SELV: proeven i opstarten, hvor
+ *    hun lige har sagt ja og skal se at det virker. Uden den kunne hun
+ *    ikke afproeve noget, og saa opdager vi foerst at noget er galt den
+ *    dag et rigtigt svar aldrig kom frem.
+ */
+async function hvemErDet(
+	idToken: string
+): Promise<{ uid: string; erAdmin: boolean } | null> {
+	if (!PUBLIC_FIREBASE_API_KEY) return null;
 	try {
 		const res = await fetch(
 			`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${PUBLIC_FIREBASE_API_KEY}`,
@@ -43,15 +55,22 @@ async function verificerAdmin(idToken: string): Promise<boolean> {
 				body: JSON.stringify({ idToken })
 			}
 		);
-		if (!res.ok) return false;
-		const data = (await res.json()) as { users?: Array<{ email?: string }> };
-		const email = data.users?.[0]?.email?.toLowerCase() ?? null;
-		if (!email) return false;
-		return (ADMIN_EMAILS as readonly string[]).map((e) => e.toLowerCase()).includes(email);
+		if (!res.ok) return null;
+		const data = (await res.json()) as { users?: Array<{ email?: string; localId?: string }> };
+		const bruger = data.users?.[0];
+		if (!bruger?.localId) return null;
+		const email = bruger.email?.toLowerCase() ?? '';
+		return {
+			uid: bruger.localId,
+			erAdmin: (ADMIN_EMAILS as readonly string[]).map((e) => e.toLowerCase()).includes(email)
+		};
 	} catch {
-		return false;
+		return null;
 	}
 }
+
+/** Den fjerde slags. Staar ikke i indstillingerne, for den sendes én gang. */
+const PROEVE = 'proeve';
 
 interface Krop {
 	/** Hvem. Én kunde ad gangen, saa afsendelsen kan foelges. */
@@ -72,7 +91,8 @@ interface Udfald {
 export const POST: RequestHandler = async ({ request }) => {
 	const auth = request.headers.get('Authorization');
 	if (!auth?.startsWith('Bearer ')) throw error(401, 'Manglende Bearer-token');
-	if (!(await verificerAdmin(auth.slice(7)))) throw error(403, 'Ikke autoriseret som admin');
+	const kalder = await hvemErDet(auth.slice(7));
+	if (!kalder) throw error(403, 'Kunne ikke genkende dig');
 
 	const offentlig = env.NOTI_NOEGLE_OFFENTLIG;
 	const privat = env.NOTI_NOEGLE_PRIVAT;
@@ -87,6 +107,12 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	const krop = (await request.json().catch(() => null)) as Krop | null;
 	if (!krop?.uid || !krop.besked?.titel) throw error(400, 'Mangler uid eller besked');
+
+	// Kunden maa kun proeven, og kun til sig selv.
+	const erProeve = krop.besked.slags === PROEVE;
+	if (!kalder.erAdmin && !(erProeve && kalder.uid === krop.uid)) {
+		throw error(403, 'Du maa kun sende proeven til dig selv');
+	}
 
 	const { uid, besked } = krop;
 	const nu = Date.now();
@@ -109,14 +135,30 @@ export const POST: RequestHandler = async ({ request }) => {
 	const valg = (bruger?.notiValg3 ?? {}) as NotiValg3;
 	const forlobIds = (bruger?.forlobIds ?? []) as string[];
 	const forlobId = Array.isArray(forlobIds) && forlobIds.length ? forlobIds[0] : null;
-	if (!maaSende3(besked.slags as NotiSlags3, regler, valg, forlobId)) {
+	// Proeven spoerger ikke om lov. Hun har lige trykket ja, og pointen er
+	// at se at det virker.
+	if (!erProeve && !maaSende3(besked.slags as Exclude<NotiSlags3, 'proeve'>, regler, valg, forlobId)) {
 		udfald.sprunget = 'slaaet-fra';
 		return json(udfald);
 	}
 
 	// 3. Karantaenen. En travl formiddag i admin maa ikke give fem beskeder.
 	const sidst = (bruger?.notiSidst3 ?? {}) as Record<string, number>;
-	if (!krop.tvang && !udenforKarantaene3(besked.slags, sidst[besked.slags], nu)) {
+	// Proeven har sin egen, kort karantaene: den skal kunne gentages hvis
+	// hun ikke saa den, men ikke fyres af i en uendelighed.
+	if (erProeve) {
+		if (nu - (sidst[PROEVE] ?? 0) < 60_000) {
+			udfald.sprunget = 'karantaene';
+			return json(udfald);
+		}
+	} else if (
+		!krop.tvang &&
+		!udenforKarantaene3(
+			besked.slags as Exclude<NotiSlags3, 'proeve'>,
+			sidst[besked.slags],
+			nu
+		)
+	) {
 		udfald.sprunget = 'karantaene';
 		return json(udfald);
 	}

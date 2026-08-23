@@ -31,6 +31,7 @@
 	import {
 		kortNr3,
 		rundvisningskort3,
+		spoergsmaalTrin3,
 		slutTekst3,
 		taeller3,
 		tekstSkalaFra3,
@@ -51,6 +52,13 @@
 	import { gemUdstyr3 } from '$lib/firestore/traeningUdstyr3';
 	import { hentDagensTraening3 } from '$lib/firestore/traeningForside3';
 	import { hentNaeringAdgang3 } from '$lib/firestore/naeringAdgang3';
+	import {
+		hjemmeskaermTrin3,
+		notiTilstand3,
+		sigJaTilBeskeder3,
+		type NotiTilstand3
+	} from '$lib/utils/notiTilmeld3';
+	import { proeveNoti3 } from '$lib/content/notifikation3';
 	import { visUdvidet3 } from '$lib/content/naeringAdgang3';
 	import { gemTekstSkala3, markerOnboardet3 } from '$lib/firestore/onboarding3';
 	import UdstyrValg from '$lib/components/ny/UdstyrValg.svelte';
@@ -93,11 +101,62 @@
 		})
 	);
 
-	const tael = $derived(taeller3(trin, kort.length, !kunGennemgang));
-	const kortNr = $derived(kortNr3(trin, !kunGennemgang));
+	// BESKEDER PAA TELEFONEN. Tilstanden laeses én gang, naar siden aabner:
+	// aendrer den sig undervejs, ville trinnene flytte sig under hende.
+	// Linns beslutning 23. august, se HANDOVER 9.39.
+	let notiTilstand = $state<NotiTilstand3>('kan-ikke');
+	let notiSvar = $state<'venter' | 'ja' | 'nej' | 'proeve'>('venter');
+	let notiArbejder = $state(false);
+
+	const spoergsmaal = $derived(
+		spoergsmaalTrin3({
+			paaHjemmeskaerm: notiTilstand !== 'ikke-hjemmeskaerm',
+			kanSpoergeOmBeskeder: notiTilstand === 'ikke-spurgt'
+		})
+	);
+	const antalSpoergsmaal = $derived(spoergsmaal.length);
+	const tael = $derived(taeller3(trin, kort.length, !kunGennemgang, antalSpoergsmaal));
+	const kortNr = $derived(kortNr3(trin, !kunGennemgang, antalSpoergsmaal));
 	const aktueltKort = $derived(kortNr >= 0 ? (kort[kortNr] ?? null) : null);
-	/** Er vi stadig i de fire spoergsmaal. */
-	const iSpoergsmaal = $derived(!kunGennemgang && trin <= SPOERGSMAAL_TRIN_3.length);
+	/** Er vi stadig i spoergsmaalene, og i saa fald hvilket. */
+	const iSpoergsmaal = $derived(!kunGennemgang && trin <= antalSpoergsmaal);
+	const aktueltSpoergsmaal = $derived(iSpoergsmaal ? (spoergsmaal[trin - 1] ?? null) : null);
+	const hjemmeskaerm = hjemmeskaermTrin3();
+
+	/**
+	 * Hun trykker ja. Boksen fra telefonen KAN KUN komme af et tryk, saa
+	 * det her skal blive ved med at vaere en knap og maa aldrig flyttes
+	 * ind i noget der koerer af sig selv.
+	 */
+	async function sigJa() {
+		const uid = user?.uid;
+		if (!uid || notiArbejder) return;
+		notiArbejder = true;
+		const r = await sigJaTilBeskeder3(uid);
+		notiArbejder = false;
+		if (!r.ok) {
+			notiSvar = 'nej';
+			return;
+		}
+		notiSvar = 'proeve';
+		void sendProeve();
+	}
+
+	/** Proeven. Fejler den, siger vi det ikke: hun ser det jo selv. */
+	async function sendProeve() {
+		const u = user;
+		if (!u) return;
+		try {
+			const token = await u.getIdToken();
+			await fetch('/api/ny-noti', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+				body: JSON.stringify({ uid: u.uid, besked: proeveNoti3() })
+			});
+		} catch (e) {
+			console.warn('[noti] proeven kunne ikke sendes', e);
+		}
+	}
 
 	// Skriftstoerrelsen spejler det gemte indtil hun roerer noget. Et rent
 	// $state ville laase den fast paa den foerste vaerdi, saa hendes gemte
@@ -110,7 +169,11 @@
 	const videoEmbed = $derived(video ? videoEmbedUrl(video) : null);
 	const slut = $derived(slutTekst3(harAktivtForlob));
 
-	onMount(() => void indlaes());
+	onMount(() => {
+		// Foerst her, for det kraever browseren. Se notiTilmeld3.
+		notiTilstand = notiTilstand3();
+		void indlaes();
+	});
 
 	async function indlaes() {
 		const u = user;
@@ -288,24 +351,53 @@
 					gem={gemUdstyrOgVidere}
 				/>
 			{/if}
-		{:else if iSpoergsmaal && trin === 4}
-			<h1 class="ob-titel">Læg appen på din forside</h1>
+		{:else if aktueltSpoergsmaal === 'hjemmeskaerm'}
+			<h1 class="ob-titel">Læg appen på din hjemmeskærm</h1>
 			<p class="ob-under">
-				Så åbner du den med ét tryk i stedet for at finde den i browseren hver gang.
+				Så åbner den med ét tryk, og jeg kan sige til når der sker noget.
 			</p>
 			<div class="ob-valg">
-				<div class="ob-raekke tal">
-					<span><b>1.</b> Tryk på del-knappen nederst i browseren</span>
-				</div>
-				<div class="ob-raekke tal">
-					<span><b>2.</b> Rul ned og vælg "Føj til hjemmeskærm"</span>
-				</div>
-				<div class="ob-raekke tal"><span><b>3.</b> Tryk Tilføj</span></div>
+				{#each hjemmeskaerm.trin as t, i (t)}
+					<div class="ob-raekke tal"><span><b>{i + 1}.</b> {t}</span></div>
+				{/each}
 			</div>
-			<p class="ob-hjaelp">
-				På en Android-telefon hedder det tre prikker øverst og så "Installer app".
-			</p>
+			<p class="ob-hjaelp">{hjemmeskaerm.note}</p>
 			<button class="ob-knap" onclick={videre}>Videre</button>
+		{:else if aktueltSpoergsmaal === 'beskeder'}
+			<!-- Linns idé 23. august: spoerg i opstarten, og send saa én hun
+			     skal bekraefte. Uden proeven opdager vi foerst at noget er
+			     galt den dag et rigtigt svar aldrig kom frem. -->
+			{#if notiSvar === 'venter'}
+				<h1 class="ob-titel">Må jeg sige til?</h1>
+				<p class="ob-under">
+					Så hører du fra mig når der er noget, også når appen er lukket.
+				</p>
+				<div class="ob-valg">
+					<div class="ob-raekke"><span>Når jeg svarer på dit spørgsmål</span></div>
+					<div class="ob-raekke"><span>Når dagen er klar</span></div>
+				</div>
+				<p class="ob-hjaelp">
+					Du kan slå det fra igen når som helst under Din side. Jeg sender ikke andet.
+				</p>
+				<button class="ob-knap" disabled={notiArbejder} onclick={sigJa}>
+					{notiArbejder ? 'Et øjeblik' : 'Ja tak'}
+				</button>
+				<button class="ob-spring" onclick={videre}>Ikke lige nu</button>
+			{:else if notiSvar === 'proeve'}
+				<h1 class="ob-titel">Jeg har lige sendt dig en</h1>
+				<p class="ob-under">Kig på din skærm. Kan du se den?</p>
+				<button class="ob-knap" onclick={videre}>Ja, den kom</button>
+				<button class="ob-spring" onclick={() => (notiSvar = 'nej')}>
+					Nej, jeg så ingenting
+				</button>
+			{:else}
+				<h1 class="ob-titel">Så springer vi den over</h1>
+				<p class="ob-under">
+					Du kan slå beskeder til under Din side, hvis du ombestemmer dig. Har du sagt nej til
+					telefonen, skal det gøres i telefonens egne indstillinger under Linn's Academy.
+				</p>
+				<button class="ob-knap" onclick={videre}>Videre</button>
+			{/if}
 		{:else if aktueltKort}
 			<!-- Mangler skaermbilledet endnu, skjuler vi rammen i stedet for at
 			     vise et brudt billede. Saa virker gennemgangen fuldt ud, ogsaa
