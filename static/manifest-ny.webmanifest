@@ -1,0 +1,33 @@
+{
+	"name": "Linn's 3.0",
+	"short_name": "Linn's 3.0",
+	"description": "Linns Academy 3.0. Din dag, dine forløb og dine små skridt.",
+	"start_url": "/ny",
+	"scope": "/ny",
+	"display": "standalone",
+	"orientation": "portrait",
+	"background_color": "#FAF6F1",
+	"theme_color": "#B87B6E",
+	"lang": "da-DK",
+	"id": "/ny",
+	"icons": [
+		{
+			"src": "/icon-192.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/icon-512-maskable.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
+		}
+	]
+}
