@@ -12,7 +12,9 @@ const b64u = (b: ArrayBuffer | Uint8Array) => {
 	return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
-const saml = (...dele: Uint8Array[]) => {
+type Bytes = Uint8Array<ArrayBuffer>;
+
+const saml = (...dele: Uint8Array[]): Bytes => {
 	const ud = new Uint8Array(new ArrayBuffer(dele.reduce((n, d) => n + d.length, 0)));
 	let i = 0;
 	for (const d of dele) {
@@ -22,18 +24,24 @@ const saml = (...dele: Uint8Array[]) => {
 	return ud;
 };
 
-const tekst = (s: string) => new TextEncoder().encode(s);
+const tekst = (s: string): Bytes => new TextEncoder().encode(s) as Bytes;
 
-async function hmac(n: Uint8Array, d: Uint8Array) {
+async function hmac(n: Bytes, d: Bytes): Promise<Bytes> {
 	const k = await crypto.subtle.importKey('raw', n, { name: 'HMAC', hash: 'SHA-256' }, false, [
 		'sign'
 	]);
-	return new Uint8Array(await crypto.subtle.sign('HMAC', k, d));
+	return new Uint8Array(await crypto.subtle.sign('HMAC', k, d)) as Bytes;
 }
 
-async function udled(salt: Uint8Array, ikm: Uint8Array, info: Uint8Array, len: number) {
+async function udled(salt: Bytes, ikm: Bytes, info: Bytes, len: number): Promise<Bytes> {
 	const prk = await hmac(salt, ikm);
-	return (await hmac(prk, saml(info, new Uint8Array([1])))).slice(0, len);
+	return (await hmac(prk, saml(info, byte(1)))).slice(0, len) as Bytes;
+}
+
+function byte(n: number): Bytes {
+	const b = new Uint8Array(new ArrayBuffer(1));
+	b[0] = n;
+	return b;
 }
 
 /** En telefon: noeglepar, hemmelighed, og evnen til at laase op. */
@@ -41,8 +49,8 @@ async function lavTelefon() {
 	const kp = (await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, [
 		'deriveBits'
 	])) as CryptoKeyPair;
-	const raa = new Uint8Array(await crypto.subtle.exportKey('raw', kp.publicKey));
-	const auth = crypto.getRandomValues(new Uint8Array(16));
+	const raa = new Uint8Array(await crypto.subtle.exportKey('raw', kp.publicKey)) as Bytes;
+	const auth = crypto.getRandomValues(new Uint8Array(new ArrayBuffer(16)));
 
 	const adresse: PushAdresse = {
 		endpoint: 'https://push.eksempel.dk/abc',
@@ -50,10 +58,10 @@ async function lavTelefon() {
 		auth: b64u(auth)
 	};
 
-	async function laasOp(pakke: Uint8Array): Promise<string> {
-		const salt = pakke.slice(0, 16);
+	async function laasOp(pakke: Bytes): Promise<string> {
+		const salt = pakke.slice(0, 16) as Bytes;
 		const idlen = pakke[20];
-		const afsender = pakke.slice(21, 21 + idlen);
+		const afsender = pakke.slice(21, 21 + idlen) as Bytes;
 		const laast = pakke.slice(21 + idlen);
 
 		const afsenderNoegle = await crypto.subtle.importKey(
@@ -65,19 +73,19 @@ async function lavTelefon() {
 		);
 		const faelles = new Uint8Array(
 			await crypto.subtle.deriveBits({ name: 'ECDH', public: afsenderNoegle }, kp.privateKey, 256)
-		);
-		const info = saml(tekst('WebPush: info'), new Uint8Array([0]), raa, afsender);
+		) as Bytes;
+		const info = saml(tekst('WebPush: info'), byte(0), raa, afsender);
 		const ikm = await udled(auth, faelles, info, 32);
 		const cek = await udled(
 			salt,
 			ikm,
-			saml(tekst('Content-Encoding: aes128gcm'), new Uint8Array([0])),
+			saml(tekst('Content-Encoding: aes128gcm'), byte(0)),
 			16
 		);
 		const nonce = await udled(
 			salt,
 			ikm,
-			saml(tekst('Content-Encoding: nonce'), new Uint8Array([0])),
+			saml(tekst('Content-Encoding: nonce'), byte(0)),
 			12
 		);
 		const n = await crypto.subtle.importKey('raw', cek, { name: 'AES-GCM' }, false, ['decrypt']);
