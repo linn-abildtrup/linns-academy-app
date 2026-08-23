@@ -29,6 +29,8 @@ import { noeglerFra3 } from '$lib/server/notiSend';
 import { medTelefon3, sendTilFlere3 } from '$lib/server/notiHold';
 import { dagNoti3, erMorgen3, medStandard3, savnBesked3, skalSavne3 } from '$lib/content/notifikation3';
 import type { NotiIndstillinger3 } from '$lib/content/notifikation3';
+import { nulDageDatoer } from '$lib/content/forlob';
+import { rammerKunde3, type Traeningstildeling3 } from '$lib/content/traeningTildeling3';
 
 /** Timen i dansk tid lige nu. Klarer sommertid af sig selv. */
 function timeIDanmark(nu: Date): number {
@@ -41,6 +43,29 @@ function timeIDanmark(nu: Date): number {
 }
 
 const DAG_MS = 86_400_000;
+
+/**
+ * Hendes pausedage paa ét forloeb.
+ *
+ * Pauser forlaenger forloebet: har hun holdt to dage fri, er hun paa dag
+ * 10 og ikke dag 12. Uden det her ville morgen-beskeden kalde dagen
+ * noget andet end appen goer, og det er den slags der faar en kunde til
+ * at tvivle paa hele tallet. Rettet 23. august paa Linns oenske.
+ */
+async function nulDageFor(uid: string, forlobId: string): Promise<number> {
+	try {
+		const produkter = await hentHeleCollection(`users/${uid}/products`);
+		for (const p of produkter) {
+			if (String(p.data.forlobId ?? '') !== forlobId) continue;
+			const nd = p.data.nulDage as { intervaller?: { fra: string; til: string }[] } | undefined;
+			return nulDageDatoer(nd?.intervaller ?? []).length;
+		}
+	} catch (e) {
+		// Kan vi ikke laese dem, regner vi uden. Bedre end ingen besked.
+		console.warn('[noti] kunne ikke laese pauser', uid, e);
+	}
+	return 0;
+}
 
 /** Hendes dagnummer paa forloebet, med pauser trukket fra. */
 function dagNummerFor(startMs: number, nu: number, nulDage: number): number {
@@ -101,6 +126,49 @@ export const POST: RequestHandler = async ({ request }) => {
 		return svar;
 	}
 
+	// Tildelingerne laeses ÉN gang. De er faa, og de er de samme for alle.
+	const tildelinger = (await hentHeleCollection('traeningTildelinger3')).map(
+		(t) => ({ id: t.id, ...t.data }) as unknown as Traeningstildeling3
+	);
+
+	const iDag = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Copenhagen' }).format(
+		new Date(nu)
+	);
+
+	/**
+	 * Har hun en traening i dag som hun ikke har taget.
+	 *
+	 * Vi spoerger ikke om HVILKEN. Beskeden siger "din traening venter",
+	 * og til det er det nok at vide at hun har faaet noget tildelt og
+	 * ikke har traenet i dag. Det praecise program regner appen ud naar
+	 * hun aabner den.
+	 */
+	async function harTraeningIDag(
+		uid: string,
+		bruger: Record<string, unknown>
+	): Promise<boolean> {
+		const forlob = Array.isArray(bruger.forlobIds)
+			? bruger.forlobIds.map((id) => ({ id: String(id), dag: 0 }))
+			: [];
+		const kunde = {
+			uid,
+			harAbonnement: true,
+			forlob,
+			udstyr: [] as string[],
+			idag: iDag
+		};
+		const harTildeling = tildelinger.some((t) => rammerKunde3(t, kunde));
+		if (!harTildeling) return false;
+
+		try {
+			const historik = await hentHeleCollection(`users/${uid}/traeningHistorik`);
+			return !historik.some((h) => String(h.data.dato ?? '') === iDag);
+		} catch (e) {
+			console.warn('[noti] kunne ikke laese traeningshistorik', uid, e);
+			return false;
+		}
+	}
+
 	const uids = await medTelefon3();
 
 	const udfald = await sendTilFlere3(
@@ -108,20 +176,22 @@ export const POST: RequestHandler = async ({ request }) => {
 		async (uid, bruger) => {
 			const forlobIds = Array.isArray(bruger.forlobIds) ? bruger.forlobIds.map(String) : [];
 
-			// 1. Er der noget nyt i dag.
+			// 1. Er der noget nyt i dag. Baade lektioner og traening: en
+			//    Kickstart-dag kan sagtens vaere ren traening, og saa ville
+			//    vagten tie stille om det eneste der var.
+			const traener = await harTraeningIDag(uid, bruger);
+
 			for (const fid of forlobIds) {
 				const f = await forlobFor(fid);
 				if (!f?.startMs) continue;
-				const nulDage = 0; // Pauser: se noten i HANDOVER 9.45
-				const dag = dagNummerFor(f.startMs, nu, nulDage);
+				const dag = dagNummerFor(f.startMs, nu, await nulDageFor(uid, fid));
 				const lektioner = f.dage.get(dag) ?? [];
-				if (lektioner.length === 0) continue;
 
 				const klaret = new Set(
 					(await hentHeleCollection(`users/${uid}/nyKlaret`)).map((k) => k.id)
 				);
 				const usete = lektioner.filter((id) => id && !klaret.has(id));
-				if (usete.length > 0) return dagNoti3(dag, usete.length, false);
+				if (usete.length > 0 || traener) return dagNoti3(dag, usete.length, traener);
 			}
 
 			// 2. Ellers et savn, hvis der er gaaet for laenge.

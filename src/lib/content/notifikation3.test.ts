@@ -230,3 +230,23 @@ describe('medStandard3', () => {
 		expect(medStandard3({ forlobTimer: 0 }).forlobTimer).toBe(72);
 	});
 });
+
+describe('dagNoti3 med traening', () => {
+	it('kun traening: der staar din traening og ikke lektioner', () => {
+		const n = dagNoti3(5, 0, true);
+		expect(n.tekst).toBe('din træning venter');
+		expect(n.tekst).not.toContain('lektion');
+	});
+
+	it('kun lektioner', () => {
+		expect(dagNoti3(5, 2, false).tekst).toBe('2 lektioner venter');
+	});
+
+	it('begge dele naevnes', () => {
+		expect(dagNoti3(5, 1, true).tekst).toBe('1 lektion og din træning venter');
+	});
+
+	it('ingen af delene falder tilbage paa noget nyt', () => {
+		expect(dagNoti3(5, 0, false).tekst).toContain('noget nyt');
+	});
+});

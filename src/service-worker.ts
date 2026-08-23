@@ -264,17 +264,33 @@ sw.addEventListener('push', (event) => {
 	if (!pakke?.titel) return;
 
 	e.waitUntil(
-		sw.registration.showNotification(pakke.titel, {
-			body: pakke.tekst,
-			icon: '/icon-192.png',
-			badge: '/icon-192.png',
-			// Samme maerke pr slags, saa to af samme slags erstatter
-			// hinanden i stedet for at hobe sig op paa laaseskaermen.
-			tag: `linn-${pakke.slags}`,
-			data: { sti: pakke.sti || '/ny' }
-		})
+		(async () => {
+			// ER APPEN AABEN? Saa river vi hende ikke vaek fra det hun er i
+			// gang med. Vi sender beskeden ind i appen, som laegger en stille
+			// stribe oeverst hun selv kan trykke paa. Linns valg 23. august,
+			// se HANDOVER 9.41.
+			const vinduer = await sw.clients.matchAll({ type: 'window', includeUncontrolled: true });
+			const synlig = vinduer.find((v) => (v as WindowClient).visibilityState === 'visible');
+			if (synlig) {
+				synlig.postMessage({ slags: 'noti3', pakke });
+				return;
+			}
+			await vis(pakke);
+		})()
 	);
 });
+
+async function vis(pakke: NotiPakke) {
+	await sw.registration.showNotification(pakke.titel, {
+		body: pakke.tekst,
+		icon: '/icon-ny-192.png',
+		badge: '/icon-ny-192.png',
+		// Samme maerke pr slags, saa to af samme slags erstatter
+		// hinanden i stedet for at hobe sig op paa laaseskaermen.
+		tag: `linn-${pakke.slags}`,
+		data: { sti: pakke.sti || '/ny' }
+	});
+}
 
 sw.addEventListener('notificationclick', (event) => {
 	const e = event as NotificationEvent;
