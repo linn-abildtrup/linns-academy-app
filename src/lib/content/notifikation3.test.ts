@@ -59,12 +59,11 @@ describe('udenforKarantaene3', () => {
 		expect(udenforKarantaene3('dag', undefined, nu)).toBe(true);
 	});
 
-	it('to svar lige efter hinanden bliver til ét', () => {
-		expect(udenforKarantaene3('svar', nu - 10 * 60 * 1000, nu)).toBe(false);
-	});
-
-	it('men næste dag maa der godt komme et nyt', () => {
-		expect(udenforKarantaene3('svar', nu - 25 * 60 * 60 * 1000, nu)).toBe(true);
+	it('HVER BESKED FRA LINN ER SIN EGEN, ogsaa to i traek', () => {
+		// Linns beslutning 23. august. Har hun stillet to spoergsmaal og
+		// faaet to svar, skal hun vide det begge gange.
+		expect(udenforKarantaene3('svar', nu - 60 * 1000, nu)).toBe(true);
+		expect(udenforKarantaene3('svar', nu, nu)).toBe(true);
 	});
 
 	it('dagen-er-klar kommer hoejst én gang i doegnet', () => {

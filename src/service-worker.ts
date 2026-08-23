@@ -285,9 +285,12 @@ async function vis(pakke: NotiPakke) {
 		body: pakke.tekst,
 		icon: '/icon-ny-192.png',
 		badge: '/icon-ny-192.png',
-		// Samme maerke pr slags, saa to af samme slags erstatter
-		// hinanden i stedet for at hobe sig op paa laaseskaermen.
-		tag: `linn-${pakke.slags}`,
+		// HVER BESKED FRA LINN ER SIN EGEN, saa to svar staar som to
+		// beskeder paa laaseskaermen. Linns beslutning 23. august.
+		//
+		// De to andre slags erstatter hinanden: "dagen er klar" og et savn
+		// sker af sig selv, og to af dem oven i hinanden er stoej.
+		...(pakke.slags === 'svar' ? {} : { tag: `linn-${pakke.slags}` }),
 		data: { sti: pakke.sti || '/ny' }
 	});
 }

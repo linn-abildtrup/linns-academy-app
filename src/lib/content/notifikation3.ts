@@ -81,8 +81,14 @@ export function maaSende3(
 
 /** Hvor lang tid der mindst skal gaa mellem to af samme slags. */
 export const KARANTAENE_MS3: Record<NotiValgSlags3, number> = {
-	// Svarer Linn tre gange paa ti minutter, faar hun én besked.
-	svar: 6 * 60 * 60 * 1000,
+	// HVER BESKED FRA LINN ER SIN EGEN. Linns beslutning 23. august, og
+	// hun har ret: har hun stillet to spoergsmaal og faaet to svar, skal
+	// hun vide det begge gange. Foer var der seks timer imellem, og saa
+	// sad kunden og ventede paa et svar der allerede laa der.
+	//
+	// Der er ingen risiko for stoej: den her slags kommer kun naar Linn
+	// selv har skrevet noget. Det er de to andre der sker af sig selv.
+	svar: 0,
 	// Én om dagen. To "dagen er klar" samme dag er en fejl.
 	dag: 20 * 60 * 60 * 1000,
 	// Hoejst én om ugen, og det er rigeligt.
@@ -100,6 +106,8 @@ export function udenforKarantaene3(
 	sidstSendtMs: number | null | undefined,
 	nu: number
 ): boolean {
+	// Nul betyder ingen karantaene overhovedet, ikke "et oejeblik".
+	if (KARANTAENE_MS3[slags] === 0) return true;
 	if (!sidstSendtMs) return true;
 	return nu - sidstSendtMs >= KARANTAENE_MS3[slags];
 }
