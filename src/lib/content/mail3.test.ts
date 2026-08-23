@@ -67,22 +67,28 @@ describe('svarMail3', () => {
 		expect(m.tekst).toContain('18. august');
 	});
 
-	it('ET KORT SVAR faar den korte form, uden ramme', () => {
+	it('ET KORT SVAR FAAR SAMME FORM. Linns fravalg 23. august', () => {
+		// Der var foerst en kortere udgave uden ramme. Et svar paa to
+		// linjer uden ramme laeser som om der ikke blev taget tid til
+		// hende.
 		const m = svarMail3({ spoergsmaal: 'Må jeg bytte kyllingen ud?', svar: 'Ja, det må du gerne.' });
-		expect(m.tekst).toContain('Sig endelig til');
-		expect(m.html).not.toContain('Du skrev');
+		expect(m.html).toContain('Du skrev');
+		expect(m.html).toContain('Skriv tilbage');
+		expect(m.tekst).not.toContain('Sig endelig til');
 	});
 
-	it('graensen ligger ved hundrede tegn', () => {
-		const spm = 'Et spørgsmål';
-		expect(svarMail3({ spoergsmaal: spm, svar: 'x'.repeat(99) }).html).not.toContain('Du skrev');
-		expect(svarMail3({ spoergsmaal: spm, svar: 'x'.repeat(101) }).html).toContain('Du skrev');
+	it('lige meget hvor kort svaret er', () => {
+		for (const svar of ['Ja.', 'x'.repeat(20), 'x'.repeat(500)]) {
+			expect(svarMail3({ spoergsmaal: 'Et spørgsmål', svar }).html).toContain('Du skrev');
+		}
 	});
 
-	it('skrev Linn foerst, er der intet spoergsmaal, og saa er formen kort', () => {
+	it('skrev Linn foerst, falder den oeverste boble vaek, men resten staar', () => {
 		const m = svarMail3({ svar: langt });
 		expect(m.emne).toBe('Linn har skrevet til dig');
 		expect(m.html).not.toContain('Du skrev');
+		expect(m.html).toContain('Linn skrev til dig');
+		expect(m.html).toContain('Skriv tilbage');
 	});
 
 	it('EMNET NAEVNER HENDES EGNE ORD og ikke bare at der er svaret', () => {

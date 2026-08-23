@@ -82,9 +82,6 @@ ${
 // opsaetningen i vejen: rammen ville fylde mere end svaret. Det er en
 // regel i koden og ikke noget Linn skal tage stilling til hver gang.
 
-/** Under det her er svaret for kort til den store opsaetning. */
-export const KORT_SVAR3 = 100;
-
 export interface SvarMail3 {
 	/** Det hun selv spurgte om. Tomt naar Linn skrev foerst. */
 	spoergsmaal?: string;
@@ -117,39 +114,33 @@ export function svarEmne3(data: SvarMail3): string {
 	return `Svar på: ${kort}`;
 }
 
-/** Svaret som en samtale, eller kort hvis svaret er kort. */
+/**
+ * Svaret som en samtale.
+ *
+ * ALTID DEN SAMME FORM, ogsaa naar svaret er kort. Der var foerst en
+ * kortere udgave uden ramme til de helt korte svar, men Linn saa den og
+ * fravalgte den 23. august: et svar paa to linjer uden ramme laeser som
+ * om der ikke blev taget tid til hende. Bygger nogen den igen, saa laes
+ * den her linje foerst.
+ *
+ * Skrev Linn FOERST, er der ikke noget spoergsmaal at vise. Saa falder
+ * den oeverste boble vaek, og resten staar som den plejer.
+ */
 export function svarMail3(data: SvarMail3): Mail3 {
 	const svar = data.svar.trim();
 	const spm = (data.spoergsmaal ?? '').trim();
-	const emne = svarEmne3(data);
 	const dato = datoTekst3(data.sendtMs);
 
-	// Den korte form. Ingen ramme, ingen hilsen: bare svaret og fornavnet,
-	// som naar en veninde skriver tilbage.
-	if (svar.length < KORT_SVAR3 || !spm) {
-		return {
-			emne,
-			tekst: [svar, '', 'Sig endelig til hvis det ikke hjælper. Linn', '', `Skriv tilbage: ${APP_URL3}/ny/beskeder?fane=linn`].join('\n'),
-			html: `<!doctype html><html lang="da"><body style="margin:0;padding:0;background:#fbf8f2">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fbf8f2;padding:26px 14px"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;font-family:Helvetica,Arial,sans-serif;color:#382c2a">
-<tr><td style="font-size:15.5px;line-height:1.65">${svar}</td></tr>
-<tr><td style="font-size:15.5px;line-height:1.65;padding-top:14px">Sig endelig til hvis det ikke hjælper. <span style="font-family:Georgia,serif;font-style:italic;font-size:16px;color:#8a3a4e">Linn</span></td></tr>
-<tr><td style="padding-top:22px"><a href="${APP_URL3}/ny/beskeder?fane=linn" style="font-size:14px;color:#7c4f63;font-weight:700;text-decoration:none">Skriv tilbage ›</a></td></tr>
-<tr><td style="font-size:11.5px;color:#a3948a;padding-top:26px">Linn's Academy</td></tr>
-</table></td></tr></table></body></html>`,
-			medAfmeld: false
-		};
-	}
+	const spmBlok = spm
+		? `<tr><td style="font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#a3948a;font-weight:700">Du skrev${dato ? ` ${dato}` : ''}</td></tr>
+<tr><td style="padding-top:7px"><table role="presentation" width="100%"><tr><td style="background:#f1eadf;border-radius:14px;padding:12px 14px;font-family:Helvetica,Arial,sans-serif;font-size:13.5px;line-height:1.55;color:#5c4a44">${spm}</td></tr></table></td></tr>`
+		: '';
 
-	// Samtalen. Hendes boble i sand, Linns i blomme, som i appen.
 	return {
-		emne,
+		emne: svarEmne3(data),
 		tekst: [
-			`Du skrev${dato ? ` ${dato}` : ''}:`,
-			spm,
-			'',
-			'Linn svarede:',
+			...(spm ? [`Du skrev${dato ? ` ${dato}` : ''}:`, spm, ''] : []),
+			spm ? 'Linn svarede:' : 'Linn skrev til dig:',
 			svar,
 			'',
 			`Skriv tilbage: ${APP_URL3}/ny/beskeder?fane=linn`
@@ -157,16 +148,15 @@ export function svarMail3(data: SvarMail3): Mail3 {
 		html: `<!doctype html><html lang="da"><body style="margin:0;padding:0;background:#f1eadf">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1eadf;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#fbf8f2;border-radius:16px;padding:22px 20px">
-<tr><td style="font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#a3948a;font-weight:700">Du skrev${dato ? ` ${dato}` : ''}</td></tr>
-<tr><td style="padding-top:7px"><table role="presentation" width="100%"><tr><td style="background:#f1eadf;border-radius:14px;padding:12px 14px;font-family:Helvetica,Arial,sans-serif;font-size:13.5px;line-height:1.55;color:#5c4a44">${spm}</td></tr></table></td></tr>
-<tr><td style="padding-top:18px"><table role="presentation" width="100%"><tr>
+${spmBlok}
+<tr><td style="padding-top:${spm ? '18px' : '0'}"><table role="presentation" width="100%"><tr>
 <td width="54" valign="top"><table role="presentation" width="44" height="44" style="background:#c9a3b1;border-radius:50%"><tr><td align="center" style="font-family:Georgia,serif;font-style:italic;font-weight:700;color:#ffffff;font-size:18px">L</td></tr></table></td>
 <td valign="top">
-<div style="font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7c4f63;font-weight:700">Linn svarede</div>
+<div style="font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7c4f63;font-weight:700">${spm ? 'Linn svarede' : 'Linn skrev til dig'}</div>
 <div style="background:#f1e5e8;border-radius:14px;padding:13px 15px;margin-top:6px;font-family:Helvetica,Arial,sans-serif;font-size:14.5px;line-height:1.62;color:#4a2c39">${svar}</div>
 </td></tr></table></td></tr>
 <tr><td style="padding-top:20px"><a href="${APP_URL3}/ny/beskeder?fane=linn" style="display:inline-block;background:#7c4f63;color:#ffffff;text-decoration:none;border-radius:999px;padding:13px 24px;font-family:Helvetica,Arial,sans-serif;font-size:13.5px;font-weight:700">Skriv tilbage</a></td></tr>
-<tr><td style="border-top:1px solid #e8dfd1;padding-top:14px;margin-top:20px"><div style="font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#a3948a">Du får den her mail fordi du stillede et spørgsmål i appen.</div></td></tr>
+<tr><td style="border-top:1px solid #e8dfd1;padding-top:14px"><div style="font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#a3948a">Du får den her mail fordi du ${spm ? 'stillede et spørgsmål' : 'bruger'} i appen.</div></td></tr>
 </table></td></tr></table></body></html>`,
 		medAfmeld: false
 	};
