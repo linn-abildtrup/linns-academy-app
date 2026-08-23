@@ -22,6 +22,8 @@
 import { ADMIN_EMAILS } from '$lib/admin';
 import { hentDoc, hentHeleCollection, gemDocMerge } from './firestoreRest';
 import { sendPush, type PushAdresse, type PushNoegler } from './webPush';
+import { sendMail3, type MailOpsaetning3 } from './sendMail';
+import { mailFor3 } from '$lib/content/mail3';
 import {
 	maaSende3,
 	udenforKarantaene3,
@@ -38,6 +40,8 @@ export interface SendUdfald3 {
 	sendt: number;
 	sprunget: 'ingen-adgang' | 'slaaet-fra' | 'karantaene' | 'ingen-telefon' | null;
 	ryddet: number;
+	/** Kom den frem som mail i stedet. */
+	mail?: boolean;
 }
 
 export interface SendValg3 {
@@ -45,6 +49,11 @@ export interface SendValg3 {
 	tvang?: boolean;
 	/** Proeven i opstarten spoerger ikke om lov. */
 	erProeve?: boolean;
+	/**
+	 * Mailen, hvis den er sat op. Kan hun ikke naas paa telefonen,
+	 * sendes den her i stedet. RESERVE OG IKKE KOPI, se content/mail3.
+	 */
+	mail?: MailOpsaetning3 | null;
 }
 
 export async function sendTilKunde3(
@@ -98,6 +107,17 @@ export async function sendTilKunde3(
 	const levende = telefoner.filter((t) => t.data.doed !== true);
 	if (!levende.length) {
 		udfald.sprunget = 'ingen-telefon';
+		// RESERVEN. Hun kan ikke naas paa telefonen, saa mailen tager over.
+		// Proeven sendes aldrig som mail: hele pointen med den er at se at
+		// telefonen virker.
+		if (valg.mail && !valg.erProeve) {
+			const mailAdresse = String(bruger?.email ?? '');
+			const r = await sendMail3(mailAdresse, mailFor3(besked), valg.mail);
+			udfald.mail = r.ok;
+			if (r.ok && !valg.tvang) {
+				await gemDocMerge(`users/${uid}`, { notiSidst3: { ...sidst, [besked.slags]: nu } });
+			}
+		}
 		return udfald;
 	}
 

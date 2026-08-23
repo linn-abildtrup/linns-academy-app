@@ -18,6 +18,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { json, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
+import { mailOpsaetning3 } from '$lib/server/sendMail';
 import { hvemErDet3, noeglerFra3, sendTilKunde3, PROEVE3 } from '$lib/server/notiSend';
 import type { Noti3 } from '$lib/content/notifikation3';
 
@@ -47,7 +48,8 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	const udfald = await sendTilKunde3(krop.uid, krop.besked, noegler, {
 		tvang: krop.tvang,
-		erProeve
+		erProeve,
+		mail: mailOpsaetning3(env)
 	});
 	return json(udfald);
 };

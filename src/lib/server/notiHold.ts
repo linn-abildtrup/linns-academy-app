@@ -34,6 +34,8 @@ export async function medTelefon3(): Promise<string[]> {
 export interface HoldUdfald3 {
 	forsoegt: number;
 	sendt: number;
+	/** Hvor mange der fik en mail i stedet, fordi telefonen ikke kunne naas. */
+	mail: number;
 	/** Hvor mange der IKKE fik noget, og hvorfor. Til admin-kvitteringen. */
 	sprunget: Record<string, number>;
 }
@@ -51,7 +53,7 @@ export async function sendTilFlere3(
 	noegler: PushNoegler,
 	valg: SendValg3 = {}
 ): Promise<HoldUdfald3> {
-	const ud: HoldUdfald3 = { forsoegt: 0, sendt: 0, sprunget: {} };
+	const ud: HoldUdfald3 = { forsoegt: 0, sendt: 0, mail: 0, sprunget: {} };
 
 	for (const uid of uids) {
 		try {
@@ -65,6 +67,7 @@ export async function sendTilFlere3(
 			ud.forsoegt += 1;
 			const r: SendUdfald3 = await sendTilKunde3(uid, besked, noegler, valg);
 			if (r.sendt > 0) ud.sendt += 1;
+			else if (r.mail) ud.mail += 1;
 			else if (r.sprunget) ud.sprunget[r.sprunget] = (ud.sprunget[r.sprunget] ?? 0) + 1;
 		} catch (e) {
 			// Én kunde maa ikke vaelte resten af holdet.

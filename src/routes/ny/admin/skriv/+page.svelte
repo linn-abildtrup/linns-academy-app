@@ -92,17 +92,23 @@
 				fejl = `Det gik galt (${res.status}). Beskeden blev ikke sendt.`;
 				return;
 			}
-			const r = (await res.json()) as { sendt: number; sprunget: string | null };
+			const r = (await res.json()) as {
+				sendt: number;
+				sprunget: string | null;
+				mail?: boolean;
+			};
 			// Beskeden ligger i hendes app uanset hvad. Prikket er en ekstra
 			// tjeneste, og linjen her siger hvad der faktisk skete.
 			kvittering =
 				r.sendt > 0
 					? 'Sendt. Hun har den i Beskeder, og hun blev prikket på telefonen.'
-					: r.sprunget === 'ingen-telefon'
-						? 'Sendt. Hun har den i Beskeder, men hun har ikke sagt ja til beskeder på telefonen.'
-						: r.sprunget === 'slaaet-fra'
-							? 'Sendt. Hun har den i Beskeder, men hun har slået notifikationer fra.'
-							: 'Sendt. Hun har den i Beskeder.';
+					: r.mail
+						? 'Sendt. Hun har den i Beskeder, og hun fik en mail — telefonen kunne ikke nås.'
+						: r.sprunget === 'ingen-telefon'
+							? 'Sendt. Hun har den i Beskeder, men hun kunne hverken nås på telefon eller mail.'
+							: r.sprunget === 'slaaet-fra'
+								? 'Sendt. Hun har den i Beskeder, men hun har slået notifikationer fra.'
+								: 'Sendt. Hun har den i Beskeder.';
 			tekst = '';
 		} catch (e) {
 			console.error('[noti] kunne ikke skrive', e);

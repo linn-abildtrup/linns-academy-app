@@ -25,6 +25,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { json, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { hentDoc, hentHeleCollection } from '$lib/server/firestoreRest';
+import { mailOpsaetning3 } from '$lib/server/sendMail';
 import { noeglerFra3 } from '$lib/server/notiSend';
 import { medTelefon3, sendTilFlere3 } from '$lib/server/notiHold';
 import { dagNoti3, erMorgen3, medStandard3, savnBesked3, skalSavne3 } from '$lib/content/notifikation3';
@@ -201,7 +202,8 @@ export const POST: RequestHandler = async ({ request }) => {
 
 			return null;
 		},
-		noegler
+		noegler,
+		{ mail: mailOpsaetning3(env) }
 	);
 
 	return json({ koert: true, ...udfald });

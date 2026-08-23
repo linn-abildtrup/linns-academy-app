@@ -16,6 +16,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { json, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
+import { mailOpsaetning3 } from '$lib/server/sendMail';
 import { hvemErDet3, noeglerFra3 } from '$lib/server/notiSend';
 import { erMedlem3, medTelefon3, paaForlob3, sendTilFlere3 } from '$lib/server/notiHold';
 import { uddrag3 } from '$lib/content/notifikation3';
@@ -60,7 +61,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		noegler,
 		// Linn har lige trykket send. Karantaenen er til det der sker af sig
 		// selv, ikke til det hun selv beder om.
-		{ tvang: true }
+		{ tvang: true, mail: mailOpsaetning3(env) }
 	);
 
 	return json(udfald);

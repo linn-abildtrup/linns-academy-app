@@ -149,10 +149,11 @@
 				body: JSON.stringify({ modtager, tekst: tekst.trim() })
 			});
 			if (!res.ok) return ' Beskeden står, men prikket kunne ikke sendes.';
-			const r = (await res.json()) as { sendt: number };
-			return r.sendt > 0
-				? ` ${r.sendt} ${r.sendt === 1 ? 'kunde blev' : 'kunder blev'} prikket.`
-				: ' Ingen kunne prikkes — de har ikke sagt ja endnu.';
+			const r = (await res.json()) as { sendt: number; mail: number };
+			const dele: string[] = [];
+			if (r.sendt > 0) dele.push(`${r.sendt} blev prikket`);
+			if (r.mail > 0) dele.push(`${r.mail} fik en mail`);
+			return dele.length ? ` ${dele.join(', og ')}.` : ' Ingen kunne nås endnu.';
 		} catch (e) {
 			console.warn('[noti] kunne ikke prikke holdet', e);
 			return ' Beskeden står, men prikket kunne ikke sendes.';

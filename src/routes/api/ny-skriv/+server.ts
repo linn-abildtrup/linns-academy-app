@@ -20,6 +20,7 @@ import { json, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
+import { mailOpsaetning3 } from '$lib/server/sendMail';
 import { hvemErDet3, noeglerFra3, sendTilKunde3 } from '$lib/server/notiSend';
 import { skrevetNoti3, uddrag3 } from '$lib/content/notifikation3';
 
@@ -71,7 +72,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	// beskeden der stadig naeste gang hun aabner appen.
 	const noegler = noeglerFra3(env);
 	const udfald = noegler
-		? await sendTilKunde3(krop.uid, skrevetNoti3(tekst), noegler, { tvang: true })
+		? await sendTilKunde3(krop.uid, skrevetNoti3(tekst), noegler, {
+				tvang: true,
+				mail: mailOpsaetning3(env)
+			})
 		: { uid: krop.uid, sendt: 0, sprunget: null, ryddet: 0 };
 
 	return json({ ...udfald, id, uddrag: uddrag3(tekst) });
