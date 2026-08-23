@@ -13477,3 +13477,171 @@ a.tr-felt:focus-visible {
 	margin-top: 4px;
 	cursor: pointer;
 }
+
+/* ── Beskeder paa telefonen ─────────────────────────────────
+   Kundens side og admin. Bygget 23. august, se HANDOVER 9.39. */
+
+.noti-side .kort + .kort,
+.noti-admin .kort + .kort {
+	margin-top: 11px;
+}
+
+.nt-t {
+	font-family: var(--serif);
+	font-size: calc(15px * var(--fs-scale, 1));
+	font-weight: 600;
+}
+
+.nt-s {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	line-height: 1.45;
+	margin-top: 3px;
+}
+
+.nt-trin {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+	margin-top: 10px;
+}
+
+.nt-trin b {
+	width: 21px;
+	height: 21px;
+	border-radius: 50%;
+	background: var(--plum-tint);
+	color: var(--plum);
+	display: grid;
+	place-items: center;
+	font-size: calc(11px * var(--fs-scale, 1));
+	flex-shrink: 0;
+}
+
+.nt-trin span {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+}
+
+.nt-note {
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-top: 11px;
+}
+
+.nt-knap {
+	display: block;
+	width: 100%;
+	border: 0;
+	border-radius: 999px;
+	background: var(--plum);
+	color: #fff;
+	font: inherit;
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 700;
+	padding: 12px 0;
+	margin-top: 12px;
+	cursor: pointer;
+}
+
+.nt-knap:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+/* Raekken med en kontakt. Samme form som resten af 3.0's indstillinger. */
+.nk {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 0;
+	border-top: 1px solid var(--line);
+}
+
+.nk:first-child {
+	border-top: 0;
+	padding-top: 0;
+}
+
+.nk-t {
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
+}
+
+.nk-s {
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin-top: 1px;
+}
+
+.nk-sw {
+	width: 46px;
+	height: 27px;
+	border-radius: 999px;
+	border: 0;
+	background: #ded2c3;
+	position: relative;
+	flex-shrink: 0;
+	margin-left: auto;
+	cursor: pointer;
+	transition: background 0.15s ease;
+}
+
+.nk-sw i {
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 21px;
+	height: 21px;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(60, 40, 30, 0.3);
+	transition: left 0.15s ease;
+}
+
+.nk-sw.on {
+	background: var(--sage);
+}
+
+.nk-sw.on i {
+	left: 22px;
+}
+
+.nt-bund {
+	margin-top: 11px;
+}
+
+/* Send en enkelt */
+.nt-fund {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	background: none;
+	border: 0;
+	border-top: 1px solid var(--line);
+	padding: 10px 0;
+	text-align: left;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+}
+
+.nt-valgt {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 10px;
+}
+
+.nt-valgt .na-x {
+	margin-left: auto;
+}
+
+.nt-kvittering {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--sage-tekst);
+	background: var(--sage-tint);
+	border-radius: 12px;
+	padding: 9px 12px;
+	margin-top: 11px;
+}

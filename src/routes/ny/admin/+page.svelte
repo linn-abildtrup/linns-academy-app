@@ -57,6 +57,11 @@
 
 	const mad: Punkt[] = [
 		{
+			navn: 'Notifikationer',
+			under: 'Beskeder på telefonen, og hvem der får dem',
+			href: '/ny/admin/noti'
+		},
+		{
 			navn: 'Næring',
 			under: 'Hvem ser udvidet næring, og hvem må rette sine mål',
 			href: '/ny/admin/naering'

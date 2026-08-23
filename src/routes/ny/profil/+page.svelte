@@ -223,6 +223,18 @@
 	{/if}
 
 	<section>
+		<div class="lab"><h2>Beskeder på telefonen</h2></div>
+		<a class="ds-raekke" href="/ny/profil/beskeder">
+			<span class="ds-i" aria-hidden="true">◔</span>
+			<span class="ds-tekst">
+				<span class="ds-t">Hvad jeg må sige til om</span>
+				<span class="ds-s">Når Linn svarer, og når dagen er klar</span>
+			</span>
+			<span class="ds-pil" aria-hidden="true">›</span>
+		</a>
+	</section>
+
+	<section>
 		<div class="lab"><h2>Dine mål</h2></div>
 		<a class="ds-raekke" href="/ny/naering">
 			<span class="ds-i" aria-hidden="true">◍</span>
