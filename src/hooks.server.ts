@@ -30,12 +30,21 @@ const NY = '/manifest-ny.webmanifest';
 const TITEL_GAMMEL = '<meta name="apple-mobile-web-app-title" content="Linn\'s Academy" />';
 const TITEL_NY = '<meta name="apple-mobile-web-app-title" content="Linn\'s 3.0" />';
 
+// OG IKONET. iPhone tager billedet herfra, ikke fra manifest-filen. 3.0
+// faar det store L, saa de to ikoner ogsaa kan kendes fra hinanden paa
+// et blik. Linns oenske 23. august.
+const IKON_GAMMEL = '<link rel="apple-touch-icon" href="/apple-touch-icon.png" />';
+const IKON_NY = '<link rel="apple-touch-icon" href="/apple-touch-icon-ny.png" />';
+
 export const handle: Handle = async ({ event, resolve }) => {
 	const erNy = event.url.pathname === '/ny' || event.url.pathname.startsWith('/ny/');
 	if (!erNy) return resolve(event);
 
 	return resolve(event, {
 		transformPageChunk: ({ html }) =>
-			html.replace(`href="${GAMMEL}"`, `href="${NY}"`).replace(TITEL_GAMMEL, TITEL_NY)
+			html
+				.replace(`href="${GAMMEL}"`, `href="${NY}"`)
+				.replace(TITEL_GAMMEL, TITEL_NY)
+				.replace(IKON_GAMMEL, IKON_NY)
 	});
 };
