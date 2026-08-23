@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 23. august 2026. **Se 9.39 til 9.47: hele beskedsystemet blev bygget den dag**, fra notifikationer til mail.
+Sidst opdateret 23. august 2026. **Se 9.39 til 9.48: hele beskedsystemet blev bygget den dag**, fra notifikationer til mail.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -129,7 +129,7 @@ gamle app og må kun læses.
 | `content/notifikation3.ts` | **Beskeder på telefonen.** De tre slags, hvem der må, teksterne. Se 9.39 | 38 |
 | `content/videreTil3.ts` | Hvor hun var på vej hen, og **låsen** der holder det inde i 3.0. Se 9.41 | 9 |
 | `content/forsidebesked3.ts` | **Beskeden på forsiden.** Hvem, hvor længe, hvilken der vinder. Se 9.44 | 18 |
-| `content/mail3.ts` | **Mailen.** Emne, tekst og udseende. Afmelding kun hvor den skal. Se 9.47 | 7 |
+| `content/mail3.ts` | **Mailen.** Samtalen til svar, opslag eller invitation til resten. Se 9.47 og 9.48 | 18 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
 
@@ -2904,6 +2904,82 @@ at telefonen virker.
   **Linn \<linn@linnsacademy.dk>**, og svarer en kunde på mailen, går svaret
   dertil
 - Prøvemail sendt og modtaget samme aften
+
+---
+
+### 9.48 MAILENS UDSEENDE, 23. august sent
+
+Mailen virkede, men den så ud som en programmør havde sat den op. Linn bad om
+at få den tegnet ordentligt, og der blev lavet tre runder mockups: én til
+svaret, én til den generelle, og én mere til svaret bagefter.
+
+Alle tre ligger i `linns-academy-design/`: `mockups-mail-design.html`,
+`mockups-mail-generel.html` og `mockups-mail-svar.html`. **Læs dem hvis du
+skal røre mailen** — de forklarer hvorfor hver detalje er som den er.
+
+#### Svaret: "Samtalen". Linns valg
+
+**Hendes eget spørgsmål står ovenover Linns svar**, i de samme to bobler som i
+appen: hendes i sand, Linns i blomme med et L ved siden af.
+
+**Det er hele grunden til at den vandt.** Der kan gå dage mellem spørgsmål og
+svar, og uden hendes egen tekst læser hun et svar på noget hun har glemt hun
+spurgte om. Spørgsmålet følger derfor med hele vejen fra den gamle admin,
+gennem endpointet, ud i mailen.
+
+**Emnet nævner HENDES EGNE ORD:** "Svar på: Jeg er så træt om eftermiddagen…"
+og ikke bare "Linn har svaret dig". Det første bliver åbnet, det andet bliver
+skimmet.
+
+**Bogstavet L og ikke et foto.** Det holder når billeder er slået fra, og det
+er 3.0's ikon i forvejen.
+
+**Ingen afmelding på et svar.** Det er noget hun har bedt om, og en
+afmelde-linje ville gøre et personligt svar til en udsendelse.
+
+#### DEN KORTE FORM BLEV BYGGET OG FRAVALGT SAMME AFTEN
+
+Der var først en kortere udgave uden ramme til svar under hundrede tegn:
+tanken var at opsætningen ville fylde mere end svaret. **Linn så den i sin
+egen indbakke og fravalgte den.**
+
+Hendes begrundelse er den rigtige, og den skal stå her: **et svar på to linjer
+uden ramme læser som om der ikke blev taget tid til hende.** Det er præcis
+forkert på et spørgsmål om hendes helbred, og der er ingen måde at vide på
+forhånd hvornår et kort svar er et hastigt svar og hvornår det bare er præcist.
+
+Der ligger nu en test der falder hvis nogen bygger den igen.
+
+**Skriver Linn FØRST, er der ikke noget spørgsmål at vise.** Så falder den
+øverste boble væk, og der står "Linn skrev til dig" i stedet for "Linn
+svarede". Før faldt det tilfælde tilbage på den korte form, som ikke findes
+mere.
+
+#### Den generelle: opslag eller invitation, Linn vælger pr besked
+
+- **Opslaget** har mærket i toppen, én knap, og "Skru ned for mails" i bunden.
+  Til alt det almindelige
+- **Invitationen** sætter tidspunktet stort og øverst i et mørkt felt, og
+  først i emnelinjen. Til det der sker på et klokkeslæt
+
+**De to ser ens ud på forsiden i appen.** Det er KUN mailen der skifter form,
+og det står på admin-skærmen, så ingen leder efter en forskel der ikke er der.
+
+Overskrift-feltet står **kun i mailen**. Boblen på forsiden har kun teksten.
+
+#### Håndværket, som gælder alle mails herfra
+
+- **Ét formål, én knap.** To knapper halverer hvor mange der trykker på den
+  vigtigste
+- **Afsendernavnet er en beslutning:** "Linn" til det personlige, "Linn's
+  Academy" til det fælles. Hun kan se forskel inden hun åbner
+- **Layoutet er bevidst gammeldags** med tabeller og uden baggrundsbilleder.
+  En mail skal kunne læses i alt fra Outlook til en gammel telefon
+- **Der er altid en ren tekst-udgave** ved siden af den med layout
+- **Skriv altid linjen til dem der ikke kan.** "Optagelsen ligger i appen
+  dagen efter" gør mailen nyttig for hele holdet
+- **Ingen mail uden en vej ud** — bortset fra svar. Og der står "Skru ned for
+  mails", ikke "afmeld": hun skal have færre, ikke forsvinde
 
 ---
 
