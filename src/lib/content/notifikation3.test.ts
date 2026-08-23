@@ -105,7 +105,9 @@ describe('teksterne', () => {
 		const n = svarNoti3('Prøv at spise lidt mere protein til morgenmad');
 		expect(n.titel).toBe('Linn har svaret dig');
 		expect(n.tekst).toContain('protein');
-		expect(n.sti).toBe('/ny/beskeder');
+		// Peger paa FANEN og ikke bare siden. Hun har to, og lander hun paa
+		// den forkerte, skal hun lede efter det hun lige blev lovet.
+		expect(n.sti).toBe('/ny/beskeder?fane=linn');
 	});
 
 	it('dagen naevner hvad der venter', () => {

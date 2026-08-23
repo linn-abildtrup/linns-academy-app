@@ -157,6 +157,29 @@
 		);
 	});
 
+	/**
+	 * Rul ned til det nye svar.
+	 *
+	 * Kom hun fra en besked paa telefonen, staar det nye svar maaske
+	 * langt nede i listen. Uden det her moeder hun toppen af en liste og
+	 * skal selv lede efter det hun lige blev lovet.
+	 *
+	 * Kun ÉN gang: hun skal kunne rulle vaek fra det bagefter uden at
+	 * skaermen hiver hende tilbage. Linns valg 23. august.
+	 */
+	let harRullet = $state(false);
+	$effect(() => {
+		if (harRullet || fane !== 'linn' || traade.length === 0) return;
+		const el = document.querySelector('.traad[data-nyt="ja"]');
+		if (!el) return;
+		harRullet = true;
+		// Foerst naar skaermen er tegnet, ellers rulles der til den forkerte
+		// plads.
+		requestAnimationFrame(() =>
+			el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+		);
+	});
+
 	async function rulNed() {
 		await tick();
 		rulle?.scrollTo({ top: rulle.scrollHeight, behavior: 'smooth' });
@@ -380,7 +403,14 @@
 			{:else}
 				<div class="traade">
 					{#each traade as t (t.id)}
-						<article class="traad" class:nyt={t.svar && t.besvaretMs && t.besvaretMs > senestLaest}>
+						{@const erNy = !!t.svar && !!t.besvaretMs && t.besvaretMs > senestLaest}
+						<article class="traad" class:nyt={erNy} data-nyt={erNy ? 'ja' : null}>
+							{#if erNy}
+								<!-- Baandet forsvinder naar hun har set det, se
+								     markerLaest nedenfor. Bliver det staaende,
+								     holder det op med at betyde noget. -->
+								<span class="traad-baand">Nyt svar</span>
+							{/if}
 							<div class="traad-top">
 								<span class="traad-dato">{dato(t.sendtMs)}</span>
 								{#if t.svar}

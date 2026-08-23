@@ -21,6 +21,8 @@
 
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { VIDERE_NOEGLE3, reneVidere3 } from '$lib/content/videreTil3';
 	import {
 		createUserWithEmailAndPassword,
 		onAuthStateChanged,
@@ -55,10 +57,16 @@
 	// venter holder skaermen tom imens, saa velkomsten ikke blinker forbi.
 	let venter = $state(true);
 
+	// Hvor hun var paa vej hen, da hun blev sendt herhen. Kommer fra en
+	// besked paa telefonen. Kan den ikke bruges, er den null, og saa
+	// lander hun paa forsiden som altid. Se content/videreTil3.
+	const videre = $derived(reneVidere3(page.url.searchParams.get(VIDERE_NOEGLE3)) ?? '/ny');
+	const kommerFraBesked = $derived(videre !== '/ny');
+
 	onMount(() => {
 		return onAuthStateChanged(auth, (u: User | null) => {
 			if (u) {
-				void goto('/ny', { replaceState: true });
+				void goto(videre, { replaceState: true });
 				return;
 			}
 			venter = false;
@@ -95,7 +103,7 @@
 				await opret();
 			} else {
 				await signInWithEmailAndPassword(auth, renEmail(email), kode);
-				await goto('/ny', { replaceState: true });
+				await goto(videre, { replaceState: true });
 			}
 		} catch (e) {
 			fejl = loginFejlTekst(e);
@@ -128,7 +136,7 @@
 		}
 
 		await createUserDoc(konto.user.uid, konto.user.email ?? e);
-		await goto('/ny', { replaceState: true });
+		await goto(videre, { replaceState: true });
 	}
 
 	/**
@@ -183,7 +191,12 @@
 
 			<div class="log-top">
 				<h1>{tekster.titel}</h1>
-				{#if tekster.under}
+				{#if kommerFraBesked}
+					<!-- Hun kom fra en besked paa telefonen. Uden den her linje
+					     staar hun og logger ind uden at vide hvorfor, og saa
+					     foeles beskeden som spild. Se HANDOVER 9.41. -->
+					<p class="log-mrk">Log ind, så viser jeg dig det du blev sagt til om.</p>
+				{:else if tekster.under}
 					<p class="log-mrk">{tekster.under}</p>
 				{/if}
 			</div>

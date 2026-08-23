@@ -11,6 +11,7 @@
 	// ============================================================
 
 	import { goto } from '$app/navigation';
+	import { loginMedVidere3 } from '$lib/content/videreTil3';
 	import { onMount, setContext } from 'svelte';
 	import { page } from '$app/state';
 	import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -23,6 +24,7 @@
 	import type { ForlobKilde, NulDageKilde } from '$lib/content/adgang3';
 	import { hentNulDage } from '$lib/firestore/nulDage3';
 	import Maerke from '$lib/components/ny/Maerke.svelte';
+	import NotiStribe from '$lib/components/ny/NotiStribe.svelte';
 	import { bonusBaandTekst, maaSeIBonus, naadeTekst, BONUS_START } from '$lib/content/spaerring3';
 	import { opstartsBillede, maaAabnePaaKopi3 } from '$lib/content/hurtigStart3';
 	import { hentOpstartFraCache } from '$lib/firestore/hurtigStart3';
@@ -147,7 +149,9 @@
 				// app der er i drift og bliver staaende uroert. Login-siden
 				// ligger BEVIDST uden for det her layout, se filnavnet
 				// ny/login/+page@.svelte, ellers ville den sende sig selv i ring.
-				await goto('/ny/login');
+				// Tag med hvor hun var paa vej hen, saa en besked fra
+				// telefonen ikke ender paa forsiden. Se content/videreTil3.
+				await goto(loginMedVidere3(page.url.pathname + page.url.search));
 				return;
 			}
 
@@ -284,6 +288,10 @@
 </script>
 
 <div class="ny-app">
+	<!-- Kommer der en besked mens appen er aaben, laegger den sig her som
+	     en stille stribe i stedet for at rive hende vaek. Se 9.41. -->
+	<NotiStribe />
+
 	{#if loading}
 		<div class="ny-besked">
 			<Ventetegn variant="fuld" />

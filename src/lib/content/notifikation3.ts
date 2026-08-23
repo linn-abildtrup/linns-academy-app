@@ -149,7 +149,10 @@ export function svarNoti3(svar: string): Noti3 {
 	return {
 		titel: 'Linn har svaret dig',
 		tekst: uddrag3(svar),
-		sti: '/ny/beskeder',
+		// Peger paa FANEN og ikke bare siden. Hun har to, og lander hun paa
+		// den forkerte, skal hun lede efter det hun lige blev lovet.
+		// Linns valg 23. august, se HANDOVER 9.41.
+		sti: '/ny/beskeder?fane=linn',
 		slags: 'svar'
 	};
 }
