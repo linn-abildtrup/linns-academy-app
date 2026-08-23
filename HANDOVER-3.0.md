@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 23. august 2026. Se 9.39 og 9.40 for beskeder paa telefonen, som er det nyeste.
+Sidst opdateret 23. august 2026. **Se 9.39 til 9.47: hele beskedsystemet blev bygget den dag**, fra notifikationer til mail.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -71,6 +71,9 @@ gamle app og må kun læses.
 | `src/routes/ny/admin/opskrift-makro/` | Regnestykket linje for linje. **Gå her når et tal ser forkert ud** |
 | `src/routes/ny/admin/traening/hensyn/` | Hvad hver øvelse belaster. **Tallene øverst er det vigtigste på siden.** Se 9.33 |
 | `src/routes/ny/admin/naering/` | Hvem ser udvidet næring. Pr forløb, plus undtagelser pr kunde. Se 9.38 |
+| `src/routes/ny/admin/skriv/` | **Skriv til en kunde.** Lander i hendes Beskeder. Se 9.43 |
+| `src/routes/ny/admin/forsidebesked/` | **Besked på forsiden.** Til et hold eller alle. Se 9.44 |
+| `src/routes/ny/admin/noti/` | Hvad appen må sige til om, og et prik uden besked. Se 9.39 |
 | `src/lib/firestore/ingrediensKobling3.ts` | Koblingerne. Læses af regnemaskinen |
 | `src/lib/firestore/opskriftBeregning3.ts` | De gemte beregninger. Overlejres i `hentOpskrifter3` |
 
@@ -123,7 +126,10 @@ gamle app og må kun læses.
 | `content/vaelgSkridt3.ts` | **Hun vælger selv.** Maks tre, kategorier, hendes egne. Se 9.35 | 26 |
 | `content/lektionSet3.ts` | **Hvornår en lektion er set.** Fluebenet følger videoen. Se 9.37 | 16 |
 | `content/naeringAdgang3.ts` | **Hvem ser udvidet næring**, og hvem må rette sine mål. Se 9.38 | 12 |
-| `content/notifikation3.ts` | **Beskeder på telefonen.** De tre slags, hvem der må, og karantænen. Se 9.39 | 20 |
+| `content/notifikation3.ts` | **Beskeder på telefonen.** De tre slags, hvem der må, teksterne. Se 9.39 | 38 |
+| `content/videreTil3.ts` | Hvor hun var på vej hen, og **låsen** der holder det inde i 3.0. Se 9.41 | 9 |
+| `content/forsidebesked3.ts` | **Beskeden på forsiden.** Hvem, hvor længe, hvilken der vinder. Se 9.44 | 18 |
+| `content/mail3.ts` | **Mailen.** Emne, tekst og udseende. Afmelding kun hvor den skal. Se 9.47 | 7 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
 
@@ -161,11 +167,16 @@ gamle app og må kun læses.
 | `firestore/oevelseHensyn3.ts` | Mærkerne på øvelserne. Ét dokument til dem alle. Kun admin skriver. Se 9.33 |
 | `firestore/vaelgSkridt3.ts` | Hendes valgte skridt. Læser begge skuffer. Se 9.35 |
 | `firestore/naeringAdgang3.ts` | Nærings-skemaet og undtagelserne. **Kun admin skriver.** Se 9.38 |
-| `firestore/notifikation3.ts` | Telefonerne hun har sagt ja på, og hvad Linn tillader. Se 9.39 |
+| `firestore/notifikation3.ts` | Telefonerne hun har sagt ja på, hvad Linn tillader, og hendes aktivitet. Se 9.39 |
+| `firestore/forsidebesked3.ts` | Beskederne på forsiden. Kun admin skriver. Se 9.44 |
 | `server/webPush.ts` | **Selve afsendelsen.** Web Push direkte, uden tredjepart. Se 9.39 |
+| `server/notiSend.ts` | **De fire spørgsmål før hver besked.** Ét sted, så de ikke kan drive fra hinanden. Se 9.43 |
+| `server/notiHold.ts` | Udsendelse til flere. Går ud fra telefonerne, ikke kundelisten. Se 9.45 |
+| `server/sendMail.ts` | Mailen ud ad døren. Se 9.47 |
 | `utils/notiTilmeld3.ts` | At sige ja, set fra telefonen. Hjemmeskærm, lov, tilmelding |
 | `utils/sendSvarNoti3.ts` | Den ene linje den gamle admin kalder når Linn har svaret |
 | `hooks.server.ts` | **3.0's eget ikon.** Bytter manifest, navn og ikon på `/ny`. Se 9.40 |
+| `vagt/` | **Vækkeuret** hos Cloudflare. Egen lille Worker, egen udrulning. Se 9.45 |
 | `firestore/egneSkridt3.ts` | **3.0's egen skuffe** til forløbskundens egne skridt. Se 9.35 |
 | `routes/api/ny-ai/+server.ts` | AI-endpointet til 3.0. `/api/linn-ai` er den gamle og er urørt |
 
@@ -2663,6 +2674,236 @@ morgen, får hun stadig den gamle app.
 
 **Den dag 3.0 afløser den gamle** ændres navnet tilbage til "Linn's Academy",
 og den gamle lades dø.
+
+---
+
+### 9.41 NÅR HUN TRYKKER PÅ BESKEDEN, 23. august
+
+Beskeden virkede. Det der manglede var hvad der sker i det sekund hun trykker.
+
+**Den pegede på Beskeder, men ikke på fanen.** Hun har to, Linn AI og Linn, og
+hun landede på den hun sidst brugte. Hun blev lovet et svar og skulle selv
+lede efter det.
+
+Nu peger den på fanen, skærmen ruller ned til det nye svar, og det får et bånd
+der siger "Nyt svar". **Der rulles kun ÉN gang**: hun skal kunne rulle væk
+uden at skærmen hiver hende tilbage. Båndet forsvinder når hun har været inde
+på fanen, for et mærke der bliver stående holder op med at betyde noget.
+
+#### Login husker hvor hun var på vej hen
+
+Uden det landede hun på forsiden efter login, og så havde beskeden reelt ikke
+virket. Der står nu "Log ind, så viser jeg dig det du blev sagt til om."
+
+**Adressen kommer fra en besked udefra, så den er også en lås.** Kun stier der
+begynder med `/ny` accepteres. Testen nævner fælderne ved navn, og de er alle
+sammen rigtige angreb — også den med to skråstreger, der sender hende ud af
+appen uden at ligne det.
+
+#### Striben, når appen allerede er åben
+
+Telefonen viser typisk ingenting når appen er fremme. **Vi river hende ikke
+væk fra det hun er i gang med:** beskeden lander som en stille stribe øverst
+hun kan trykke på eller lade ligge. Den forsvinder efter otte sekunder, og
+kommer der én til, erstatter den den første. Den ligger under ark og modaler,
+så den aldrig dækker noget hun skal trykke på.
+
+---
+
+### 9.42 VI MÅLER SELV OM HUN HAR VÆRET INDE, 23. august
+
+Savn-beskeden bygger på det. **Det kan ikke læses på hvornår hun sidst loggede
+ind:** med appen på hjemmeskærmen er hun logget ind i månedsvis uden at åbne
+noget. Det tal lyver, og det har det gjort før.
+
+Skallen stempler `sidstAktiv3` når hun åbner appen, **højst hver sjette time**,
+så hendes mange åbninger på en dag ikke bliver til mange skrivninger.
+
+Feltet er 3.0's eget og står bevidst ikke i den delte bruger-type: den fil
+hører til den gamle app og må kun læses.
+
+---
+
+### 9.43 LINN KAN SKRIVE TIL EN KUNDE, 23. august
+
+Linn sendte et prik til test-Mette. Notifikationen kom, men **der var ingen
+besked at læse**, og trykket landede på forsiden.
+
+Det var ikke en fejl. Det afslørede et hul: **Linn kunne kun SVARE på noget
+kunden selv havde spurgt om.** Hun kunne ikke skrive først. Det havde aldrig
+været bygget, hverken i den gamle app eller i 3.0.
+
+#### Sådan virker det nu
+
+Beskeden lander som en rigtig tråd i kundens Beskeder, med Linns tekst og
+**ingen boble ovenover**: kunden har ikke spurgt om noget. Under den kan hun
+svare, og svaret bliver et helt almindeligt spørgsmål der lander i Linns egen
+liste. **Der er ikke en ny indbakke at holde øje med.**
+
+Tråden ligger som **besvaret**, så Linns liste over ubesvarede bliver ved med
+at være rigtig. Svarer kunden, hopper hendes svar op i listen som noget nyt.
+
+Notifikationen siger **"Linn har SKREVET til dig"** og ikke "svaret". Hun har
+ikke spurgt om noget, og det forkerte ord ville få hende til at lede efter sit
+eget spørgsmål.
+
+#### To ting der kostede tid
+
+**Det sker på serveren.** Reglerne i databasen siger at kun kunden selv må
+oprette en tråd med sit eget navn på, og det er en god regel. I stedet skriver
+serveren den, hvor adgangen allerede er tjekket. Så slap vi for at åbne noget
+for alle. Serveren kunne til gengæld ikke skrive et rigtigt tidsstempel, og
+uden det kunne den gamle admin ikke læse tråden — det er tre linjer i
+`firestoreRest`, rent tilføjet.
+
+**SVARFELTET BLEV ALDRIG TEGNET.** Første gennemgang: beskeden kom frem, men
+kunden kunne ikke svare. 3.0 hentede trådene gennem den gamle apps funktion,
+og **den bygger en fast form med kun de felter den selv kender**. Mærket "det
+her skrev Linn først" var ikke ét af dem, så det forsvandt på vejen. Skærmen
+troede at hun havde spurgt om noget, og så er der ikke noget svarfelt.
+
+Den slags er svær at få øje på: der er ingen fejl nogen steder, alle led
+virker, og feltet er bare ikke der. **3.0 læser nu selv de samme dokumenter.**
+
+---
+
+### 9.44 BESKED PÅ FORSIDEN, 23. august
+
+Linns skelnen, og den er rigtig: **en besked til én kunde er en samtale. En
+generel oplysning er det ikke.** Q&A i aften, nye opskrifter, en ferie.
+
+**ÉN BOBLE, ALDRIG TO.** Forsiden havde allerede en talebobbel fra Linn,
+bundet til dagen i et forløb. Den generelle står nu øverst, dagens note under
+med sit dagnummer og en tynd streg imellem.
+
+**Medlemmer uden forløb har aldrig haft en vej ind på forsiden.** Nu har de en.
+
+**Alt har en slutdato**, og "i dag" er standarden. Uden den bliver forsiden en
+opslagstavle der aldrig ryddes. "I dag" betyder **til midnat** og ikke om 24
+timer: skriver Linn klokken 9 om noget i aften, skal den være væk når kunden
+står op.
+
+**Passer to på samme kunde, vinder den nyeste.** Et hold-opslag fra i dag skal
+ikke ligge under en generel besked fra i mandags.
+
+**Vejen videre står i boblen.** Hun vil svare på den, og der er ikke noget at
+svare i: uden linjen trykker hun og opdager at der ikke sker noget.
+
+Linn kan **rette og fjerne** den bagefter, og det er hele forskellen på den og
+en besked til én kunde, som er afleveret i det sekund den er sendt. Retter hun
+teksten, bevares både tidspunktet og slutdatoen: en stavefejl skal ikke
+forlænge beskeden eller skubbe den foran de andre.
+
+---
+
+### 9.45 VAGTEN, 23. august
+
+Et lille vækkeur hos Cloudflare, i mappen `vagt/`. **Det ved ingenting selv:**
+alt om hvornår der sendes, til hvem og hvad der står ligger i appen, hvor Linn
+kan ændre det i admin.
+
+**DEN BANKER PÅ HVER TIME, og det er sommertidens skyld.** 6.15 dansk er ikke
+det samme klokkeslæt hele året, og en fast tid ude hos vagten ville rykke sig
+en time om vinteren uden at nogen opdagede det. Appen svarer kun ja i den ene
+time, regnet i dansk tid.
+
+Vagten har **ingen dør ud til nettet** og kender en nøgle appen også kender.
+Afprøvet 23. august: med nøglen svarer den "ikke-tid", uden den "Ikke vagten".
+
+**Højst én besked pr kunde pr morgen.** Er der noget nyt i dag, får hun "Dag 12
+er klar". Er der ikke, og har hun været væk for længe, får hun et savn. Aldrig
+begge: to beskeder om det samme er én for mange.
+
+**Den går ud fra TELEFONERNE og ikke fra kundelisten.** Kun de få der har sagt
+ja kan nås, og en gennemgang af alle 760 for at finde dem ville vokse med
+kundetallet. Forløbene læses ÉN gang og ikke pr kunde.
+
+**Én kunde må ikke vælte resten.** Fejler en telefon, fortsættes til den næste.
+
+Linns to rettelser samme dag: **pauser trækkes fra dagnummeret** (ellers kalder
+beskeden dagen noget andet end appen gør), og **træning tæller med som noget
+nyt** (en Kickstart-dag kan være ren træning, og så tav vagten om det eneste
+der var).
+
+**Prikket til et hold** sendes når Linn sætter en forsidebesked op med
+kontakten slået til. **Kun når den er ny:** retter hun en stavefejl, skal
+holdet ikke prikkes igen.
+
+---
+
+### 9.46 TO FEJL DER KOSTEDE TID, OG HVAD DE LÆRTE OS
+
+#### Et manuelt send gjorde appen tavs bagefter
+
+Linn svarede test-Mette fra den gamle admin, og der kom ingen notifikation.
+Ikke en fejl i afsendelsen: **karantænen slog til.**
+
+Trykker Linn selv send, springes karantænen over — men vi stillede også uret.
+Så var den AUTOMATISKE besked lukket ude i seks timer bagefter. Hun skrev til
+Mette, svarede hende et kvarter senere, og kunden hørte ingenting.
+
+**Uret stilles nu kun af det der sker af sig selv.** Linns eget tryk er hendes
+beslutning, og det skal ikke gøre appen tavs.
+
+**Og karantænen på svar er helt væk.** Linns beslutning: hver besked fra hende
+er sin egen notifikation. Før gik der seks timer imellem, og så sad kunden og
+ventede på et svar der allerede lå der. De to står også som TO på låseskærmen
+nu — før erstattede den nye den gamle.
+
+#### Svaret stod der først lidt senere
+
+Linn trykkede på notifikationen, og svaret var der ikke. Det dukkede op lidt
+efter.
+
+**Appen åbner den side den allerede stod på, med det den hentede sidste gang.**
+Beskeder hentede kun sine tråde én gang, og en telefon der har ligget i lommen
+i tre timer står med tre timer gamle data.
+
+Beskeder henter nu forfra **hver gang skærmen bliver synlig igen**. Ikke i en
+løkke: en app der ligger fremme henter ingenting af sig selv. Det samme på
+forsiden og i striben.
+
+**Læren, og den gælder bredere:** en PWA lukkes ikke ned mellem gangene. Alt
+der hentes én gang ved åbning, står stille indtil nogen beder om andet.
+
+---
+
+### 9.47 MAILEN, 23. august
+
+Sidste brik. **Mail er en RESERVE og ikke en kopi:** kan hun nås på telefonen,
+sender vi kun dér. Ellers ville hun få alting to gange og slå begge dele fra.
+
+Den rammer dem vi ellers ikke kan nå: kunder uden appen på hjemmeskærmen, dem
+der har sagt nej, og dem der sidder ved en computer.
+
+**TO SLAGS MAIL, og forskellen er ikke pynt.** Et svar fra Linn er noget hun
+har BEDT om, og der står ingen afmelding nederst. Et savn er tættere på
+markedsføring, og der SKAL stå en vej ud. **Der ligger en test der falder hvis
+de to bytter plads.**
+
+Emnelinjen siger altid hvad det handler om og aldrig "ny besked fra appen".
+Hun skimmer en indbakke.
+
+Layoutet er bevidst gammeldags, og der er altid en ren tekst-udgave ved siden
+af: en mail skal kunne læses i alt fra Outlook til en gammel telefon, og for
+mange billeder med for lidt tekst ligner en reklame for et spamfilter.
+
+**Proeven i opstarten sendes aldrig som mail.** Hele pointen med den er at se
+at telefonen virker.
+
+#### Opsætningen, som er gjort
+
+- **Resend**, gratis-planen: 3.000 mails om måneden, **100 om dagen**. Den
+  daglige grænse er den eneste der kan bide. Den dag alle er på 3.0 og der går
+  en morgen-besked ud, skal der opgraderes til ca. 140 kr/md
+- **Domænet er verificeret** 23. august kl 21.26. Tre poster hos Simply.com på
+  `send.linnsacademy.dk`: DKIM, MX og SPF. **Kundens almindelige mail på
+  linnsacademy.dk er ikke rørt** — den har sin egen MX mod Simply
+- Kontoen ligger i **eu-west-1**, altså Irland. Inden for EU
+- `RESEND_API_KEY` og `MAIL_FRA` ligger i Cloudflare. Afsenderen er
+  **Linn \<linn@linnsacademy.dk>**, og svarer en kunde på mailen, går svaret
+  dertil
+- Prøvemail sendt og modtaget samme aften
 
 ---
 
