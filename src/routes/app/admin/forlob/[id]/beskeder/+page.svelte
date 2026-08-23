@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { sendSvarNoti3 } from '$lib/utils/sendSvarNoti3';
 	import { page } from '$app/state';
 	import { getAuth } from 'firebase/auth';
 	import Icon from '$lib/components/Icon.svelte';
@@ -236,6 +237,9 @@
 		svarSender = id;
 		try {
 			await svarPaaSpoergsmaal(id, tekst);
+			// Sig til paa kundens telefon. Se den anden svar-skaerm og
+			// utils/sendSvarNoti3. Linns ja 23. august 2026.
+			void sendSvarNoti3(q.uid, tekst);
 			alle = alle.map((qx) =>
 				qx.id === id ? { ...qx, svar: tekst, status: 'besvaret' as SpoergsmaalStatus } : qx
 			);

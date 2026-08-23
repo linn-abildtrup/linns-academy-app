@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { sendSvarNoti3 } from '$lib/utils/sendSvarNoti3';
 	import { getAuth } from 'firebase/auth';
 	import Icon from '$lib/components/Icon.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
@@ -371,6 +372,10 @@
 		svarSender = id;
 		try {
 			await svarPaaSpoergsmaal(id, tekst);
+			// Sig til paa kundens telefon. Kun 3.0-kunder der har sagt ja
+			// faar noget, og fejler det, er svaret stadig gemt. Se
+			// utils/sendSvarNoti3. Linns ja 23. august 2026.
+			if (q) void sendSvarNoti3(q.uid, tekst);
 			alle = alle.map((qx) =>
 				qx.id === id
 					? {
