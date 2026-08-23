@@ -220,3 +220,79 @@ async function navigationSvar(event: FetchEvent): Promise<Response> {
 
 	return svar ?? kopi;
 }
+
+// ============================================================
+// Beskeder paa telefonen. Bygget 23. august 2026, se HANDOVER 9.39.
+//
+// Den her del koerer OGSAA naar appen er lukket. Den er derfor holdt saa
+// enkel som overhovedet muligt: der laeses ikke fra databasen, og der
+// hentes ingenting. Alt hvad beskeden skal sige, staar i selve pakken.
+//
+// PAA IPHONE VIRKER DET KUN naar appen er lagt paa hjemmeskaermen. Det er
+// Apples regel, ikke vores, og der er ingen vej udenom.
+//
+// KUN 3.0. Linns krav 23. august: der maa ALDRIG sendes til en kunde i
+// den gamle app. Filen her deles af begge, men det goer ingen forskel:
+// en telefon kan kun modtage hvis den har sagt ja, og der spoerges kun
+// paa /ny. Dertil tjekkes adgangen én gang til lige foer afsendelsen,
+// se firestore/notifikation3.ts. To laase om det samme, med vilje.
+//
+// Filen her er DELT MED DEN GAMLE APP, og de to blokke nedenfor er det
+// eneste 3.0 har lagt i den. Linns ja 23. august. Roerer du dem, saa husk
+// at en fejl her rammer alle 760 kunder og ikke kun 3.0.
+// ============================================================
+
+interface NotiPakke {
+	titel: string;
+	tekst: string;
+	sti: string;
+	slags: string;
+}
+
+sw.addEventListener('push', (event) => {
+	const e = event as PushEvent;
+	// Uden indhold viser vi ingenting. En tom besked er vaerre end ingen:
+	// hun aabner appen og finder ikke ud af hvorfor.
+	if (!e.data) return;
+
+	let pakke: NotiPakke;
+	try {
+		pakke = e.data.json() as NotiPakke;
+	} catch {
+		return;
+	}
+	if (!pakke?.titel) return;
+
+	e.waitUntil(
+		sw.registration.showNotification(pakke.titel, {
+			body: pakke.tekst,
+			icon: '/icon-192.png',
+			badge: '/icon-192.png',
+			// Samme maerke pr slags, saa to af samme slags erstatter
+			// hinanden i stedet for at hobe sig op paa laaseskaermen.
+			tag: `linn-${pakke.slags}`,
+			data: { sti: pakke.sti || '/ny' }
+		})
+	);
+});
+
+sw.addEventListener('notificationclick', (event) => {
+	const e = event as NotificationEvent;
+	e.notification.close();
+	const sti = (e.notification.data as { sti?: string })?.sti ?? '/ny';
+
+	// Har hun appen aabne i forvejen, skal vi IKKE aabne et vindue mere.
+	// Vi flytter hende hen paa det rigtige sted i det hun allerede har.
+	e.waitUntil(
+		(async () => {
+			const vinduer = await sw.clients.matchAll({ type: 'window', includeUncontrolled: true });
+			for (const v of vinduer) {
+				if ('focus' in v) {
+					await (v as WindowClient).navigate(sti).catch(() => undefined);
+					return (v as WindowClient).focus();
+				}
+			}
+			return sw.clients.openWindow(sti);
+		})()
+	);
+});
