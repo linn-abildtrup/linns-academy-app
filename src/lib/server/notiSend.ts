@@ -115,7 +115,16 @@ export async function sendTilKunde3(
 		}
 	}
 
-	if (udfald.sendt > 0) {
+	// UR'ET STILLES KUN AF DET DER SKER AF SIG SELV.
+	//
+	// Trykker Linn selv send, springer vi karantaenen over — men foer
+	// stillede vi ogsaa uret, og saa var den AUTOMATISKE besked lukket
+	// ude i seks timer bagefter. Linn skrev til test-Mette, svarede
+	// hende et kvarter senere, og kunden hoerte ingenting.
+	//
+	// Hendes eget tryk er hendes beslutning. Det skal ikke goere appen
+	// tavs. Fundet 23. august, se HANDOVER 9.46.
+	if (udfald.sendt > 0 && !valg.tvang) {
 		await gemDocMerge(`users/${uid}`, { notiSidst3: { ...sidst, [besked.slags]: nu } });
 	}
 	return udfald;
