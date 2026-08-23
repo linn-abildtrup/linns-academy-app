@@ -14,7 +14,8 @@
 // praecis de samme spoergsmaal som foer.
 // ============================================================
 
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, collection, getDocs, limit, query, where } from 'firebase/firestore';
+import { db } from '$lib/firebase';
 import {
 	hentSamtale,
 	hentSamtaler,
@@ -29,11 +30,7 @@ import {
 	type SamtaleBesked3,
 	type SvarKilde3
 } from '$lib/content/beskedside3';
-import {
-	hentMineSpoergsmaal,
-	markerSpoergsmaalLaest,
-	type KlientSpoergsmaal
-} from '$lib/firestore/spoergsmaal';
+import { markerSpoergsmaalLaest } from '$lib/firestore/spoergsmaal';
 
 /** Hvor mange tegn af det foerste spoergsmaal der bliver samtalens titel. */
 const TITEL_LAENGDE = 60;
@@ -160,21 +157,41 @@ export interface LinnTraad3 {
 	fraLinn?: boolean;
 }
 
-function tilTraad3(q: KlientSpoergsmaal): LinnTraad3 {
-	return {
-		id: q.id,
-		spoergsmaal: q.spoergsmaal,
-		svar: q.svar,
-		sendtMs: q.oprettet?.toDate?.().getTime() ?? 0,
-		besvaretMs: q.besvaretAt?.toDate?.().getTime(),
-		fraLinn: (q as { fraLinn?: boolean }).fraLinn === true
-	};
-}
-
-/** Alt hun har sendt videre. Nyeste foerst, samme raekkefoelge som foer. */
+/**
+ * Alt hun har sendt videre, OG det Linn har skrevet til hende. Nyeste
+ * foerst, samme raekkefoelge som foer.
+ *
+ * HVORFOR DEN HENTER SELV. Den gamle apps henter samme sted, men den
+ * bygger en fast form og taber alle felter den ikke selv kender. Da
+ * "Linn skriver foerst" kom til, forsvandt maerket paa vejen, og saa
+ * kunne kunden ikke se svarfeltet: skaermen troede at hun havde spurgt
+ * om noget. Fundet paa test-Mette 23. august, se HANDOVER 9.43.
+ *
+ * Den gamle funktion maa ikke aendres, saa 3.0 laeser selv.
+ */
 export async function hentLinnTraade3(uid: string): Promise<LinnTraad3[]> {
-	const liste = await hentMineSpoergsmaal(uid);
-	return liste.map(tilTraad3);
+	const snap = await getDocs(
+		query(collection(db, 'klientspoergsmaal'), where('uid', '==', uid), limit(100))
+	);
+	return snap.docs
+		.map((d) => {
+			const x = d.data() as {
+				spoergsmaal?: string;
+				svar?: string;
+				fraLinn?: boolean;
+				oprettet?: { toDate?(): Date };
+				besvaretAt?: { toDate?(): Date };
+			};
+			return {
+				id: d.id,
+				spoergsmaal: x.spoergsmaal ?? '',
+				svar: x.svar,
+				sendtMs: x.oprettet?.toDate?.().getTime() ?? 0,
+				besvaretMs: x.besvaretAt?.toDate?.().getTime(),
+				fraLinn: x.fraLinn === true
+			} satisfies LinnTraad3;
+		})
+		.sort((a, b) => b.sendtMs - a.sendtMs);
 }
 
 /** Den rene form beskedside3.ts regner paa. */
