@@ -158,6 +158,30 @@
 	});
 
 	/**
+	 * HENT FORFRA NAAR HUN KOMMER TILBAGE TIL SKAERMEN.
+	 *
+	 * Trykker hun paa en besked paa telefonen, aabner appen ofte den side
+	 * den allerede stod paa, med det den hentede sidste gang. Saa er
+	 * svaret der ikke, og det dukker foerst op lidt senere. Linn saa det
+	 * 23. august, se HANDOVER 9.46.
+	 *
+	 * Der hentes kun naar skaermen bliver synlig igen, ikke i en
+	 * lykke: en app der ligger fremme henter ingenting af sig selv.
+	 */
+	$effect(() => {
+		const uid = user?.uid;
+		if (!uid || typeof document === 'undefined') return;
+
+		function naarSynlig() {
+			if (document.visibilityState !== 'visible') return;
+			void indlaesTraade(uid!);
+		}
+
+		document.addEventListener('visibilitychange', naarSynlig);
+		return () => document.removeEventListener('visibilitychange', naarSynlig);
+	});
+
+	/**
 	 * Hun svarer paa en besked Linn skrev foerst.
 	 *
 	 * Svaret bliver et helt almindeligt spoergsmaal, og lander derfor i

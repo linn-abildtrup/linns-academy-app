@@ -48,7 +48,10 @@
 	async function aabn() {
 		const sti = vist?.sti ?? '/ny';
 		vist = null;
-		await goto(sti);
+		// invalidateAll saa siden henter forfra. Uden det lander hun paa en
+		// skaerm der allerede stod der, med det den hentede sidste gang, og
+		// saa er beskeden ikke med. Se HANDOVER 9.46.
+		await goto(sti, { invalidateAll: true });
 	}
 </script>
 

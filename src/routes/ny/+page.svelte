@@ -165,18 +165,35 @@
 		const a = adgang;
 		if (!user) return;
 		let afbrudt = false;
-		hentForsidebeskeder3()
-			.then((liste) => {
-				if (afbrudt) return;
-				forsidebesked = beskedTil3(
-					liste,
-					{ aktiveForlobIds: a.aktiveForlob.map((f) => f.forlobId) },
-					Date.now()
-				);
-			})
-			.catch((e) => console.warn('[ny] kunne ikke hente forsidebesked', e));
+
+		function hent() {
+			hentForsidebeskeder3()
+				.then((liste) => {
+					if (afbrudt) return;
+					forsidebesked = beskedTil3(
+						liste,
+						{ aktiveForlobIds: a.aktiveForlob.map((f) => f.forlobId) },
+						Date.now()
+					);
+				})
+				.catch((e) => console.warn('[ny] kunne ikke hente forsidebesked', e));
+		}
+
+		hent();
+
+		// Og igen naar hun kommer tilbage til skaermen. Har hun appen
+		// liggende aaben i baggrunden, ville hun ellers se gaarsdagens
+		// besked. Se HANDOVER 9.46.
+		function naarSynlig() {
+			if (typeof document !== 'undefined' && document.visibilityState === 'visible') hent();
+		}
+		if (typeof document !== 'undefined')
+			document.addEventListener('visibilitychange', naarSynlig);
+
 		return () => {
 			afbrudt = true;
+			if (typeof document !== 'undefined')
+				document.removeEventListener('visibilitychange', naarSynlig);
 		};
 	});
 	let klaret = $state<Set<string>>(new Set());
