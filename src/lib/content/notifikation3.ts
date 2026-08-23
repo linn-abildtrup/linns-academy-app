@@ -191,3 +191,120 @@ export function vaelgKanal3(harPush: boolean, harMail: boolean): Kanal3 {
 	if (harMail) return 'mail';
 	return 'ingen';
 }
+
+// ============================================================
+// Morgen-beskeden og savn-beskeden.
+//
+// Linns beslutninger 23. august 2026:
+//
+//  - Dagen er klar sendes 06.15
+//  - Savn efter 72 timer paa et forloeb, efter en uge for medlemmer
+//  - Alt skal kunne aendres i admin, ogsaa teksten
+//  - INGEN AF DEM MAA LAESE SOM EN LOEFTET PEGEFINGER
+//
+// DEN SIDSTE ER DEN VIGTIGSTE, og den er ikke bare en tone. Beskederne
+// naevner ALDRIG hvor mange dage der er gaaet, hvor meget hun har
+// misset, eller hvad hun burde. Se savnTekst3, hvor ordlyden er Linns
+// egen, og laes dem hoejt foer du aendrer dem.
+// ============================================================
+
+/** En besked Linn selv kan skrive om. */
+export interface SavnTekst3 {
+	titel: string;
+	tekst: string;
+}
+
+export interface NotiIndstillinger3 {
+	/** Hvornaar morgen-beskeden sendes. Dansk tid, "06:15". */
+	morgenTid: string;
+	/** Timer uden aktivitet foer en forloebskunde faar et savn. */
+	forlobTimer: number;
+	/** Det samme for et medlem. */
+	medlemTimer: number;
+	savnForlob: SavnTekst3;
+	savnMedlem: SavnTekst3;
+}
+
+/**
+ * Udgangspunktet. Teksterne er Linns valg 23. august, hvor hun valgte
+ * mellem tre til hver.
+ *
+ * FORLOEBS-TEKSTEN svarer paa det hun er bange for, inden hun naar at
+ * taenke det: at hun er kommet bagud og skal starte forfra.
+ *
+ * MEDLEMS-TEKSTEN handler om OS og ikke om hende. Det er forskellen paa
+ * "vi savner dig" og "du har ikke vaeret her".
+ */
+export const NOTI_STANDARD3: NotiIndstillinger3 = {
+	morgenTid: '06:15',
+	forlobTimer: 72,
+	medlemTimer: 168,
+	savnForlob: {
+		titel: 'Der er ikke noget du skal indhente',
+		tekst: 'Din dag ligger klar når du er. Du behøver ikke starte forfra.'
+	},
+	savnMedlem: {
+		titel: 'Vi savner dig',
+		tekst: 'Din app ligger her, og der er ikke noget du er gået glip af.'
+	}
+};
+
+/** Timer og minutter fra "06:15". Ugyldigt bliver til standarden. */
+export function tidsdele3(tid: string): { time: number; minut: number } {
+	const m = /^(\d{1,2}):(\d{2})$/.exec(tid.trim());
+	if (!m) return { time: 6, minut: 15 };
+	const time = Number(m[1]);
+	const minut = Number(m[2]);
+	if (time > 23 || minut > 59) return { time: 6, minut: 15 };
+	return { time, minut };
+}
+
+/**
+ * Er det tid til morgen-beskeden.
+ *
+ * Vagten vaekker os hver time, og vi svarer kun ja i den ene. Grunden er
+ * sommertid: klokken 6.15 i Danmark er ikke det samme klokkeslaet hele
+ * aaret, og en fast tid ude hos vagten ville rykke sig en time om
+ * vinteren uden at nogen opdagede det.
+ */
+export function erMorgen3(nuTimeKbh: number, indstillet: string): boolean {
+	return nuTimeKbh === tidsdele3(indstillet).time;
+}
+
+/**
+ * Er der gaaet laenge nok til et savn.
+ *
+ * Har vi aldrig set hende goere noget, sender vi INGENTING. En kunde der
+ * lige er begyndt, og som ikke naaede at taste noget, skal ikke moedes
+ * af et savn paa tredjedagen.
+ */
+export function skalSavne3(
+	sidsteAktivitetMs: number | null,
+	nu: number,
+	timer: number
+): boolean {
+	if (!sidsteAktivitetMs) return false;
+	return nu - sidsteAktivitetMs >= timer * 60 * 60 * 1000;
+}
+
+/** Savn-beskeden, med Linns egen ordlyd. */
+export function savnBesked3(erForlobskunde: boolean, ind: NotiIndstillinger3): Noti3 {
+	const t = erForlobskunde ? ind.savnForlob : ind.savnMedlem;
+	return {
+		titel: t.titel.trim() || (erForlobskunde ? NOTI_STANDARD3.savnForlob : NOTI_STANDARD3.savnMedlem).titel,
+		tekst: t.tekst.trim(),
+		sti: '/ny',
+		slags: 'savn'
+	};
+}
+
+/** Fylder huller ud, saa en halv indstilling ikke slaar noget i stykker. */
+export function medStandard3(delvis: Partial<NotiIndstillinger3> | null): NotiIndstillinger3 {
+	return {
+		morgenTid: delvis?.morgenTid || NOTI_STANDARD3.morgenTid,
+		forlobTimer: delvis?.forlobTimer && delvis.forlobTimer > 0 ? delvis.forlobTimer : NOTI_STANDARD3.forlobTimer,
+		medlemTimer: delvis?.medlemTimer && delvis.medlemTimer > 0 ? delvis.medlemTimer : NOTI_STANDARD3.medlemTimer,
+		savnForlob: { ...NOTI_STANDARD3.savnForlob, ...(delvis?.savnForlob ?? {}) },
+		savnMedlem: { ...NOTI_STANDARD3.savnMedlem, ...(delvis?.savnMedlem ?? {}) }
+	};
+}

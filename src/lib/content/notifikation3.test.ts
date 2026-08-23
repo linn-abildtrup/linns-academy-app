@@ -8,6 +8,12 @@ import {
 	uddrag3,
 	udenforKarantaene3,
 	vaelgKanal3,
+	NOTI_STANDARD3,
+	erMorgen3,
+	medStandard3,
+	savnBesked3,
+	skalSavne3,
+	tidsdele3,
 	type NotiRegler3
 } from './notifikation3';
 
@@ -126,5 +132,99 @@ describe('vaelgKanal3', () => {
 
 	it('kan hun ikke naas, sender vi ingenting', () => {
 		expect(vaelgKanal3(false, false)).toBe('ingen');
+	});
+});
+
+describe('tidsdele3 og erMorgen3', () => {
+	it('laeser et almindeligt klokkeslaet', () => {
+		expect(tidsdele3('06:15')).toEqual({ time: 6, minut: 15 });
+		expect(tidsdele3('7:00')).toEqual({ time: 7, minut: 0 });
+	});
+
+	it('vroevl bliver til standarden i stedet for at vaelte noget', () => {
+		expect(tidsdele3('')).toEqual({ time: 6, minut: 15 });
+		expect(tidsdele3('25:00')).toEqual({ time: 6, minut: 15 });
+		expect(tidsdele3('halv syv')).toEqual({ time: 6, minut: 15 });
+	});
+
+	it('siger kun ja i den ene time', () => {
+		expect(erMorgen3(6, '06:15')).toBe(true);
+		expect(erMorgen3(5, '06:15')).toBe(false);
+		expect(erMorgen3(7, '06:15')).toBe(false);
+	});
+});
+
+describe('skalSavne3', () => {
+	const nu = 1_700_000_000_000;
+	const timer = (n: number) => n * 60 * 60 * 1000;
+
+	it('EN KUNDE VI ALDRIG HAR SET GOERE NOGET FAAR INGENTING', () => {
+		// Hun er lige begyndt og naaede ikke at taste. Hun skal ikke moedes
+		// af et savn paa tredjedagen.
+		expect(skalSavne3(null, nu, 72)).toBe(false);
+	});
+
+	it('forloebskunden efter 72 timer', () => {
+		expect(skalSavne3(nu - timer(71), nu, 72)).toBe(false);
+		expect(skalSavne3(nu - timer(73), nu, 72)).toBe(true);
+	});
+
+	it('medlemmet efter en uge', () => {
+		expect(skalSavne3(nu - timer(167), nu, 168)).toBe(false);
+		expect(skalSavne3(nu - timer(169), nu, 168)).toBe(true);
+	});
+});
+
+describe('savnBesked3', () => {
+	it('forloebskunden faar den der siger at hun ikke skal indhente noget', () => {
+		const b = savnBesked3(true, NOTI_STANDARD3);
+		expect(b.titel).toContain('indhente');
+		expect(b.slags).toBe('savn');
+	});
+
+	it('medlemmet faar Vi savner dig', () => {
+		expect(savnBesked3(false, NOTI_STANDARD3).titel).toBe('Vi savner dig');
+	});
+
+	it('INGEN AF DEM NAEVNER DAGE ELLER NOGET HUN BURDE', () => {
+		for (const b of [savnBesked3(true, NOTI_STANDARD3), savnBesked3(false, NOTI_STANDARD3)]) {
+			const alt = `${b.titel} ${b.tekst}`.toLowerCase();
+			for (const ord of ['dage', 'burde', 'skulle have', 'husk', 'glemt', 'misset']) {
+				expect(alt).not.toContain(ord);
+			}
+		}
+	});
+
+	it('Linns egen tekst vinder', () => {
+		const b = savnBesked3(false, {
+			...NOTI_STANDARD3,
+			savnMedlem: { titel: 'Hej igen', tekst: 'Kig forbi' }
+		});
+		expect(b.titel).toBe('Hej igen');
+	});
+
+	it('en tom titel falder tilbage paa standarden', () => {
+		const b = savnBesked3(true, {
+			...NOTI_STANDARD3,
+			savnForlob: { titel: '   ', tekst: 'noget' }
+		});
+		expect(b.titel).toBe(NOTI_STANDARD3.savnForlob.titel);
+	});
+});
+
+describe('medStandard3', () => {
+	it('et tomt skema giver Linns valg', () => {
+		expect(medStandard3(null)).toEqual(NOTI_STANDARD3);
+	});
+
+	it('en halv indstilling fyldes ud', () => {
+		const i = medStandard3({ forlobTimer: 48 });
+		expect(i.forlobTimer).toBe(48);
+		expect(i.medlemTimer).toBe(168);
+		expect(i.morgenTid).toBe('06:15');
+	});
+
+	it('nul timer er ikke en gyldig graense', () => {
+		expect(medStandard3({ forlobTimer: 0 }).forlobTimer).toBe(72);
 	});
 });
