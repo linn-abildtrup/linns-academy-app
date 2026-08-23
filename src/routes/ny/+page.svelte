@@ -60,6 +60,8 @@
 	import Ugestrimmel from '$lib/components/ny/Ugestrimmel.svelte';
 	import TilDig from '$lib/components/ny/TilDig.svelte';
 	import { alleSet3 } from '$lib/content/lektionSet3';
+	import { beskedTil3, type Forsidebesked3 } from '$lib/content/forsidebesked3';
+	import { hentForsidebeskeder3 } from '$lib/firestore/forsidebesked3';
 	import { visUdvidet3, type NaeringAdgang3 } from '$lib/content/naeringAdgang3';
 	import { hentNaeringAdgang3 } from '$lib/firestore/naeringAdgang3';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
@@ -154,6 +156,29 @@
 	let aktiveDage = $state<Set<string>>(new Set());
 	let lektioner = $state<LektionItem[]>([]);
 	let noteFraLinn = $state('');
+
+	// Beskeden paa forsiden, den der ikke hoerer til en bestemt dag. Se
+	// content/forsidebesked3.ts for hvem der ser hvad.
+	let forsidebesked = $state<Forsidebesked3 | null>(null);
+
+	$effect(() => {
+		const a = adgang;
+		if (!user) return;
+		let afbrudt = false;
+		hentForsidebeskeder3()
+			.then((liste) => {
+				if (afbrudt) return;
+				forsidebesked = beskedTil3(
+					liste,
+					{ aktiveForlobIds: a.aktiveForlob.map((f) => f.forlobId) },
+					Date.now()
+				);
+			})
+			.catch((e) => console.warn('[ny] kunne ikke hente forsidebesked', e));
+		return () => {
+			afbrudt = true;
+		};
+	});
 	let klaret = $state<Set<string>>(new Set());
 	let challenge = $state<ChallengeForside | null>(null);
 	let aktivChallenge = $state<AktivChallenge | null>(null);
@@ -577,15 +602,37 @@
 		<TilDig {beskeder} />
 
 		<!-- Noten fra Linn. Den folder sig ikke sammen som de andre
-		     sektioner, for den er ikke noget hun kan goere faerdig. -->
-		{#if noteFraLinn}
+		     sektioner, for den er ikke noget hun kan goere faerdig.
+		     ÉN BOBLE, ALDRIG TO: den generelle besked staar oeverst, og
+		     dagens note under med sit dagnummer. Se HANDOVER 9.44. -->
+		{#if noteFraLinn || forsidebesked}
 			<section class="note-boble">
 				<div class="note-boble-top">
 					<span class="note-ava" aria-hidden="true"></span>
-					<span class="note-boble-navn">Linn skrev til dig i dag</span>
+					<span class="note-boble-navn">
+						{forsidebesked ? 'Fra Linn' : 'Linn skrev til dig i dag'}
+					</span>
 				</div>
 				<div class="note-boble-tekst">
-					<p>{noteFraLinn}</p>
+					{#if forsidebesked}
+						<p>{forsidebesked.tekst}</p>
+					{/if}
+					{#if noteFraLinn}
+						<div class:note-dagsdel={!!forsidebesked}>
+							{#if forsidebesked && aktivtForlob}
+								<span class="note-dagsnr">Dag {aktivtForlob.dagNummer}</span>
+							{/if}
+							<p>{noteFraLinn}</p>
+						</div>
+					{/if}
+					{#if forsidebesked}
+						<!-- Hun vil svare paa den, og der er ikke noget at svare i.
+						     Uden vejen videre trykker hun paa boblen og opdager at
+						     der ikke sker noget. -->
+						<a class="note-vej" href="/ny/beskeder?fane=linn">
+							Vil du spørge om noget? Skriv til mig ›
+						</a>
+					{/if}
 				</div>
 			</section>
 		{/if}

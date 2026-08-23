@@ -85,6 +85,11 @@
 			href: '/ny/admin/skriv'
 		},
 		{
+			navn: 'Besked på forsiden',
+			under: 'Til et hold eller alle. Ingen samtale',
+			href: '/ny/admin/forsidebesked'
+		},
+		{
 			navn: 'Notifikationer',
 			under: 'Beskeder på telefonen, og hvem der får dem',
 			href: '/ny/admin/noti'

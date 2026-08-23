@@ -13815,3 +13815,123 @@ a.tr-felt:focus-visible {
 	opacity: 0.45;
 	cursor: default;
 }
+
+/* ── Besked paa forsiden ────────────────────────────────────
+   Bygget 23. august, se HANDOVER 9.44. */
+
+/* Dagens note under den generelle. Stregen og dagnummeret er det der
+   goer at hun kan se at det er to ting fra Linn og ikke én lang smoere. */
+.note-dagsdel {
+	border-top: 1px solid rgba(124, 79, 99, 0.22);
+	margin-top: 10px;
+	padding-top: 9px;
+}
+
+.note-dagsnr {
+	display: block;
+	font-size: calc(10px * var(--fs-scale, 1));
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: rgba(124, 79, 99, 0.78);
+	font-weight: 700;
+	margin-bottom: 2px;
+}
+
+/* Vejen videre. Hun vil svare paa boblen, og der er ikke noget at svare
+   i: uden den her trykker hun og opdager at der ikke sker noget. */
+.note-vej {
+	display: block;
+	margin-top: 9px;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--plum);
+	text-decoration: none;
+}
+
+.fb-lbl {
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	font-weight: 700;
+	margin-bottom: 6px;
+}
+
+.fb-valg {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-bottom: 10px;
+}
+
+.fb-chip {
+	border: 1px solid var(--line);
+	background: var(--paper-2);
+	border-radius: 999px;
+	padding: 6px 12px;
+	font: inherit;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--ink-2);
+	cursor: pointer;
+}
+
+.fb-chip.paa {
+	background: var(--plum);
+	border-color: var(--plum);
+	color: #fff;
+}
+
+.fb-annuller {
+	display: block;
+	width: 100%;
+	border: 0;
+	background: none;
+	color: var(--ink-2);
+	font: inherit;
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 700;
+	padding: 11px 0 2px;
+	cursor: pointer;
+}
+
+.staar {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	border-top: 1px solid var(--line);
+	padding: 10px 0;
+}
+
+.staar:first-child {
+	border-top: 0;
+	padding-top: 0;
+}
+
+.staar-tekst {
+	flex: 1;
+	min-width: 0;
+	background: none;
+	border: 0;
+	padding: 0;
+	text-align: left;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+}
+
+.staar-tekst .n {
+	display: block;
+	font-size: calc(13px * var(--fs-scale, 1));
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.staar-tekst .s {
+	display: block;
+	font-size: calc(10.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-top: 1px;
+}
