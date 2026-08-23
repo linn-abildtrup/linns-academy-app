@@ -121,13 +121,41 @@
 				prik
 			});
 			beskeder = await hentForsidebeskeder3();
-			kvittering = retterId ? 'Rettet.' : 'Den står på forsiden nu.';
+
+			// Prikket sendes KUN naar den er ny. Retter Linn en stavefejl,
+			// skal holdet ikke prikkes igen. Se HANDOVER 9.45.
+			let prikTekst = '';
+			if (prik && !retterId) prikTekst = await prikHoldet();
+
+			kvittering = (retterId ? 'Rettet.' : 'Den står på forsiden nu.') + prikTekst;
 			nulstil();
 		} catch (e) {
 			console.error('[ny] kunne ikke gemme', e);
 			fejl = 'Kunne ikke gemme. Prøv igen.';
 		} finally {
 			gemmer = false;
+		}
+	}
+
+	/** Prikker dem der kan naas. Fejler det, staar beskeden der stadig. */
+	async function prikHoldet(): Promise<string> {
+		const u = user;
+		if (!u) return '';
+		try {
+			const token = await u.getIdToken();
+			const res = await fetch('/api/ny-noti-hold', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+				body: JSON.stringify({ modtager, tekst: tekst.trim() })
+			});
+			if (!res.ok) return ' Beskeden står, men prikket kunne ikke sendes.';
+			const r = (await res.json()) as { sendt: number };
+			return r.sendt > 0
+				? ` ${r.sendt} ${r.sendt === 1 ? 'kunde blev' : 'kunder blev'} prikket.`
+				: ' Ingen kunne prikkes — de har ikke sagt ja endnu.';
+		} catch (e) {
+			console.warn('[noti] kunne ikke prikke holdet', e);
+			return ' Beskeden står, men prikket kunne ikke sendes.';
 		}
 	}
 

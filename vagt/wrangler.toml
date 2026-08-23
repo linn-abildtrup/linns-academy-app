@@ -1,0 +1,26 @@
+# ============================================================
+# Vagten. Vaekker appen hver time, saa den kan sende morgenens
+# beskeder. Bygget 23. august 2026, se HANDOVER 9.45.
+#
+# HVER TIME OG IKKE ÉN GANG OM DAGEN. Sommertid: klokken 6.15 i Danmark
+# er ikke det samme klokkeslaet hele aaret. Vagten banker paa hver time,
+# og APPEN afgoer om det er tid. Saa kan Linn ogsaa aendre klokkeslaettet
+# i admin uden at nogen skal rette her.
+# ============================================================
+name = "linns-vagt"
+main = "src/index.ts"
+compatibility_date = "2026-08-23"
+
+# Vagten har ingen doer ud til nettet. Den vaekkes af uret og intet
+# andet, saa der er ingen grund til at give den en adresse nogen kan
+# ringe paa.
+workers_dev = false
+preview_urls = false
+
+[triggers]
+# 15 minutter over hver hele time. Ikke paa slaget: der staar hele
+# verdens cron-jobs i koe klokken hel.
+crons = ["15 * * * *"]
+
+[vars]
+APP_URL = "https://app.linnsacademy.dk"
