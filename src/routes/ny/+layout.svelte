@@ -25,6 +25,7 @@
 	import { hentNulDage } from '$lib/firestore/nulDage3';
 	import Maerke from '$lib/components/ny/Maerke.svelte';
 	import NotiStribe from '$lib/components/ny/NotiStribe.svelte';
+	import { stempleAktiv3 } from '$lib/firestore/notifikation3';
 	import { bonusBaandTekst, maaSeIBonus, naadeTekst, BONUS_START } from '$lib/content/spaerring3';
 	import { opstartsBillede, maaAabnePaaKopi3 } from '$lib/content/hurtigStart3';
 	import { hentOpstartFraCache } from '$lib/firestore/hurtigStart3';
@@ -42,6 +43,21 @@
 
 	let user = $state<User | null>(null);
 	let userDoc = $state<UserDoc | null>(null);
+
+	// SIG AT HUN HAR VAERET INDE. Savn-beskeden bygger paa det her tal, og
+	// det kan ikke laeses paa hvornaar hun sidst loggede ind: med appen paa
+	// hjemmeskaermen er hun logget ind i maaneder uden at aabne noget.
+	// Skrives hoejst hver sjette time. Se HANDOVER 9.42.
+	let harStemplet = false;
+	$effect(() => {
+		const u = user;
+		const d = userDoc;
+		if (!u || !d || harStemplet) return;
+		harStemplet = true;
+		// Feltet er 3.0's eget og staar ikke i den delte UserDoc-type. Den
+		// fil hoerer til den gamle app og maa kun laeses, se regel 2.
+		void stempleAktiv3(u.uid, (d as { sidstAktiv3?: number }).sidstAktiv3);
+	});
 	let forlob = $state<ForlobKilde[]>([]);
 	/** Kundens pause-dage pr produkt. Tom for alle andre end Kropsro. */
 	let nulDage = $state<NulDageKilde>({});

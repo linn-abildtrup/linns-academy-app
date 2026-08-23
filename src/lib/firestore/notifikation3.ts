@@ -31,7 +31,12 @@ import { harTestAdgang } from '$lib/utils/userAdgang';
 import { isAdmin } from '$lib/admin';
 import type { User } from 'firebase/auth';
 import type { UserDoc } from '$lib/types';
-import type { NotiRegler3, NotiValg3 } from '$lib/content/notifikation3';
+import {
+	medStandard3,
+	type NotiIndstillinger3,
+	type NotiRegler3,
+	type NotiValg3
+} from '$lib/content/notifikation3';
 
 /** Én telefon, som den ligger gemt. */
 export interface PushTelefon3 {
@@ -112,6 +117,44 @@ export async function hentNotiValg3(uid: string): Promise<NotiValg3> {
 /** Skriver KUN det ene felt. Bruger-dokumentet deles med den gamle app. */
 export async function gemNotiValg3(uid: string, valg: NotiValg3): Promise<void> {
 	await updateDoc(doc(db, 'users', uid), { notiValg3: valg });
+}
+
+/**
+ * Stempler at hun HAR vaeret inde i appen.
+ *
+ * HVORFOR VI SELV MAALER DET. Savn-beskeden handler om at hun ikke har
+ * aabnet appen, og det kan ikke laeses paa hvornaar hun sidst loggede
+ * ind: en kunde med appen paa hjemmeskaermen er logget ind i maaneder
+ * uden at aabne noget. Det tal lyver, se HANDOVER om aktivitets-maaling.
+ *
+ * Der skrives HOEJST hver sjette time. Ellers ville hver eneste aabning
+ * koste en skrivning, og hun aabner appen mange gange om dagen.
+ */
+export async function stempleAktiv3(uid: string, sidst: number | undefined): Promise<void> {
+	const nu = Date.now();
+	if (sidst && nu - sidst < 6 * 60 * 60 * 1000) return;
+	try {
+		await updateDoc(doc(db, 'users', uid), { sidstAktiv3: nu });
+	} catch (e) {
+		// Ingen skade sket. Saa staar tallet bare fra sidst.
+		console.warn('[noti] kunne ikke stemple', e);
+	}
+}
+
+/** Indstillingerne: klokkeslaet, graenser og Linns egne tekster. */
+export async function hentNotiIndstillinger3(): Promise<NotiIndstillinger3> {
+	try {
+		const snap = await getDoc(doc(db, 'notiAdgang3', 'indstillinger'));
+		return medStandard3(snap.exists() ? (snap.data() as Partial<NotiIndstillinger3>) : null);
+	} catch (e) {
+		console.warn('[noti] kunne ikke hente indstillingerne', e);
+		return medStandard3(null);
+	}
+}
+
+/** Kun admin. */
+export async function gemNotiIndstillinger3(ind: NotiIndstillinger3): Promise<void> {
+	await setDoc(doc(db, 'notiAdgang3', 'indstillinger'), { ...ind, opdateretMs: Date.now() }, { merge: true });
 }
 
 /** Hvad Linn tillader. Tomt betyder alt aabent, som med naeringen. */
