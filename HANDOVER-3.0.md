@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 23. august 2026. **Se 9.39 til 9.48: hele beskedsystemet blev bygget den dag**, fra notifikationer til mail.
+Sidst opdateret 24. august 2026. **Se 9.39 til 9.48: hele beskedsystemet blev bygget 23. august**, fra notifikationer til mail. 9.49 er en gennemgang af fødevare-kilderne, tjekket mod databasen 24. august.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -414,7 +414,7 @@ semikolon.**
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 2189 tests lige nu, alle grønne
+npm test                               # 2354 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -428,6 +428,17 @@ npx firebase-tools deploy --only storage
 
 Den oversætter reglerne først og nægter at udgive hvis der er en syntaksfejl. Reglerne styrer adgang for alle kunder i drift, så **vis altid Linn den præcise ændring og få et ja, før du kører den.** Servicekontoen i `scripts/` kan desuden læse de live regler, så du kan sammenligne med repoet uden at udgive noget.
 
+**Cloudflare kan styres fra maskinen.** Siden 23. august er `wrangler` logget
+ind, så hemmeligheder, byggelogs og udrulninger kan klares herfra i stedet for
+i Cloudflares skærmbillede:
+
+```
+npx wrangler pages secret list --project-name linns-academy-app
+npx wrangler pages deployment list --project-name linns-academy-app
+```
+
+Vagten er sit eget lille projekt i `vagt/` med sin egen `wrangler deploy`.
+
 **Regelfilen udgives som helhed.** En fejl i én blok kan lukke kunder ude af noget helt andet, fx træningsvideoer. Læs de live regler bagefter og tjek at de eksisterende blokke stadig står der, ikke kun at den nye er kommet ind.
 
 Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx tsx`, og **slettes bagefter**. Kør altid read-only eller dry-run først og vis Linn resultatet. Skal der skrives til kundedata, skal Linn sige ja specifikt til netop den kørsel. Skriver scriptet oven i noget der ikke kan regnes ud igen, så tag en sikkerhedskopi til `backup/` først. Den mappe er uden for git, for kundedata skal ikke på GitHub.
@@ -436,9 +447,14 @@ Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx 
 
 ## 9. Hvor vi står, og hvad der er næste skridt
 
-Opdateret 22. august 2026 sidst på eftermiddagen. **Alt er kodet, committet og
-pushet, og `main` er i sync.** Firestore-reglerne er udgivet samme dag kl
-16.02 og verificeret mod det der kører, så der ligger ingen uudgivet regel.
+Opdateret 24. august 2026. **Alt er kodet, committet og pushet, og `main` er i
+sync.** Firestore-reglerne er udgivet og verificeret mod det der kører, senest
+23. august, så der ligger ingen uudgivet regel.
+
+**Beskedsystemet er færdigt og afprøvet:** notifikationer, beskeder til én
+kunde, forsidebeskeder, morgen-vagten og mail som reserve. Se 9.39 til 9.48.
+Nøglerne ligger i Cloudflare, mailen er verificeret på domænet, og vagten
+kører hver time.
 
 **Etape 1 til 3 er færdige, og hele den åbne liste fra 6. august er klaret.** Etape 4 er i gang.
 
@@ -489,6 +505,10 @@ Enten en vej ind eller sløjfes.
   findes forfra. De to der betyder mest inden et hold flyttes: **bonus-
   skridtet** vises slet ikke i 3.0, og **de låste "Fra forløb"-vaner** skal
   tjekkes på Kickstart-holdet, for de forsvinder lydløst
+- **Beskedsystemet er færdigt, men kun to konti kan nås.** Alt virker, og det
+  er afprøvet hele vejen. Men Linns egen regel er at der aldrig må sendes til
+  en kunde i den gamle app, og lige nu er alle på nær to dér. **Det skifter i
+  det sekund et hold får flaget `ny-app`** — der er ikke mere at bygge
 
 #### Det Linn selv skal gøre, og som ingen kode kan erstatte
 
@@ -2980,6 +3000,73 @@ Overskrift-feltet står **kun i mailen**. Boblen på forsiden har kun teksten.
   dagen efter" gør mailen nyttig for hele holdet
 - **Ingen mail uden en vej ud** — bortset fra svar. Og der står "Skru ned for
   mails", ikke "afmeld": hun skal have færre, ikke forsvinde
+
+---
+
+### 9.49 FØDEVARE-KILDERNE, tjekket 24. august
+
+Der er **fire kilder**, og de opfører sig meget forskelligt. Tallene her er
+læst direkte i databasen 24. august og er de samme som 13. august.
+
+#### Den fælles liste: 2.268 fødevarer
+
+| Kilde | Antal | Hvad det er |
+|---|---|---|
+| **Frida** | 1.381 (61 %) | Den officielle danske fødevaredatabase fra DTU |
+| **Kickstart-listen** | 840 (37 %) | Dem Linn selv har lavet til appen. Står uden `kilde`-felt |
+| **Scannede** | 47 (2 %) | Fra stregkoder. Alle 47 har et rigtigt stregkodenummer |
+
+**Men kunderne spiser 79 % fra Kickstart-listen og kun 11 % fra Frida.** De 20
+mest brugte madvarer er alle sammen Linns egne. **Frida er komplet og
+upraktisk, Linns liste er lille og rigtig**, og det er den vigtigste
+oplysning i hele afsnittet.
+
+**Frida alene ville gøre det værre.** Søger man på æg i Frida, er de otte
+øverste andeæg, gåseæg, tørret æg og æggeblomme. Tørret æg har 564 kalorier,
+og intet i navnet advarer om det.
+
+#### Kundens egen liste
+
+Hver kunde har sin egen, private samling i `users/{uid}/customFodevarer`.
+Opretter hun en fødevare, ligger den **kun** hos hende. Linns regel 12. august,
+og den kom netop af at de scannede før kunne ses af alle.
+
+#### Open Food Facts
+
+International database med produkter og stregkoder. Bruges to steder:
+**stregkode-scanneren i den gamle app** slår op der, og `/api/off-search` er en
+mellemmand fordi OFF's svar mangler en header browseren kræver. **3.0's
+søgning bruger den ikke.**
+
+#### Hvordan søgningen virker i 3.0
+
+Hun søger i **den fælles liste plus sin egen**. Rækkefølgen er lavet om: hele
+ord først, og inden for hver gruppe det korteste navn øverst, så "Skyr" kommer
+før "Skyr med vanilje". Den gamle app løser det med et afkryds der hedder "Kun
+hele ord" — og **det er netop den slags indstilling målgruppen aldrig prøver.**
+Se `content/fodevareSoeg3.ts`, hvor begrundelsen står i toppen.
+
+#### Stregkode-scanneren: stadig et nej
+
+Den er **bevidst ikke bygget i 3.0**. Af de 47 scannede varer er scanneren
+brugt tre gange i appens levetid. Delene findes hvis den skal bygges: selve
+scanneren i den gamle app, og opslaget mod OFF.
+
+Bygges den, er der tre spørgsmål der skal besvares først: **skal den overhovedet
+med**, **hvad sker der med en vare OFF ikke kender** (hun skal taste tallene
+selv, og det er dér de fleste giver op), og **hvor havner den** — svaret på det
+sidste er givet: kun hos hende selv.
+
+#### To ting der stadig ikke er løst
+
+**53 fødevarer mangler et kalorie-tal.** Det er de gamle community-varer.
+Appen regner nu kalorierne ud af protein, fedt og kulhydrat i stedet for at
+vise nul, men **tallet er et skøn**.
+
+**Det største åbne spørgsmål i Mad er ikke hvilken database, men hvad kunden
+må se.** Der er ingen der har bestemt det. Løsningen er et kurateret lag
+ovenpå de 2.268, og Kickstart-listen er allerede tæt på at være det lag.
+Diagnosticeret, ikke besluttet.
 
 ---
 
