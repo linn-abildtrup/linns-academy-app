@@ -134,6 +134,7 @@
 	import { tilSoegning, hendesVarer } from '$lib/content/fodevareKilde3';
 	import { kendteVarerFra, husKendtVare } from '$lib/firestore/kendteVarer3';
 	import ScanArk from '$lib/components/ny/ScanArk.svelte';
+	import { hentScannedeVarer3, medScannede, delScanning, idFor } from '$lib/firestore/scannedeVarer3';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -396,7 +397,10 @@
 			const alle = await hentFodevarer3((friske) => {
 				if (!afbrudt) foods = new Map(friske.map((f) => [f.id, f]));
 			});
-			const kort = new Map(alle.map((f) => [f.id, f]));
+			// De scannede varer ses af ALLE og laegges oveni den faelles
+			// liste. Se firestore/scannedeVarer3.ts.
+			const scannede = await hentScannedeVarer3().catch(() => []);
+			const kort = new Map(medScannede(alle, scannede).map((f) => [f.id, f]));
 			if (afbrudt) return;
 			foods = kort;
 			poster = await hentMaaltidsPlads(uid, d, t);
@@ -1097,6 +1101,34 @@
 	}) {
 		const uid = user?.uid;
 		if (!uid) return;
+
+		// HAR HUN IKKE RETTET, DELES VAREN MED ALLE. Tallene er
+		// producentens egne og der ligger et billede bag. Retter hun ét
+		// tal, er det ikke laengere pakkens, og saa bliver den kun hendes.
+		// Linns regel 24. august, se HANDOVER 9.51.
+		if (!v.rettet && v.tal.protein !== null) {
+			const delt = await delScanning(uid, {
+				navn: v.navn,
+				barcode: v.barcode,
+				p: v.tal.protein,
+				f: v.tal.fiber,
+				kh: v.tal.kh,
+				fedt: v.tal.fedt,
+				kcal: v.tal.kcal
+			});
+			// Sagde reglen nej, har en anden kunde scannet den samme
+			// stregkode foer hende. Saa bruger vi den der ligger.
+			const id2 = delt ?? idFor(v.barcode);
+			const friske = await hentScannedeVarer3().catch(() => []);
+			const fundet = friske.find((x) => x.id === id2);
+			if (fundet) {
+				foods = new Map(foods).set(fundet.id, fundet as Fodevare);
+				scanArk = false;
+				aabnArk(fundet as Fodevare, null);
+				return;
+			}
+		}
+
 		const id = await gemEgenFodevare3(uid, {
 			name: v.navn,
 			cat: 'andet',
