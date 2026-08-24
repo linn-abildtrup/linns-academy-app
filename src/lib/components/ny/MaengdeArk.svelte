@@ -26,6 +26,7 @@
 		springFor
 	} from '$lib/content/maengde3';
 	import { portal } from '$lib/actions/portal';
+	import { kildeAf, maerkatFor, skalBedesOmScanning } from '$lib/content/fodevareKilde3';
 
 	interface Props {
 		food: Fodevare;
@@ -124,7 +125,11 @@
 		<button type="button" class="ma-luk" onclick={onluk} aria-label="Luk uden at gemme">×</button>
 
 		<div class="ma-navn" id="ma-navn">{food.name}</div>
-		<div class="ma-under">{food.p} g protein og {food.f} g fiber pr 100 g</div>
+		<div class="ma-under">
+			{food.p} g protein og {food.f} g fiber pr 100 g
+			<span class="fk-maerke fk-{kildeAf(food)}">{maerkatFor(food)}</span>
+		</div>
+		<div class="ma-raa">Mængder er før tilberedning</div>
 
 		<div class="ma-makro">
 			<div>
@@ -216,6 +221,12 @@
 					</button>
 				</div>
 			{:else}
+				{#if skalBedesOmScanning(food)}
+					<div class="ma-ukendt">
+						<b>Vi ved ikke hvor tallet kommer fra</b>
+						Det er tastet ind for længe siden. Scan pakken, så læser vi tallene af varedeklarationen.
+					</div>
+				{/if}
 				<div class="ma-chips">
 					{#each genveje as g (g.label)}
 						<button type="button" class="ma-chip" class:valgt={erValgt(g)} onclick={() => vaelgGenvej(g)}>

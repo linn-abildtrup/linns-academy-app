@@ -22,6 +22,7 @@
 	import type { Fodevare } from '$lib/content/kost';
 	import type { PlejerPost } from '$lib/content/plejer3';
 	import { formatPortion } from '$lib/content/maengde3';
+	import { kildeAf, maerkatFor } from '$lib/content/fodevareKilde3';
 
 	interface Props {
 		maaltidLabel: string;
@@ -102,7 +103,10 @@
 						     maaltidet. Linns valg 12. august. -->
 						<div class="tm-tr-raekke">
 							<button type="button" class="tm-tr-vaelg" onclick={() => onvaelg(f)}>
-								<span class="tm-tr-navn">{f.name}</span>
+								<span class="tm-tr-navn">
+									{f.name}
+									<span class="fk-maerke fk-{kildeAf(f)}">{maerkatFor(f)}</span>
+								</span>
 								<span class="tm-tr-makro">{f.p} g protein pr 100 g</span>
 							</button>
 							<button

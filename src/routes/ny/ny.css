@@ -13945,3 +13945,77 @@ a.tr-felt:focus-visible {
 	margin-top: -3px;
 	margin-bottom: 4px;
 }
+
+/* ============================================================
+   HVOR TALLET KOMMER FRA
+   Se content/fodevareKilde3.ts og HANDOVER-3.0.md 9.50.
+
+   Fire maerkater, og de skal bruges ens overalt: Foedevaredatabasen,
+   Scannet, Dit eget tal, Uden kilde. Linns ord 24. august 2026.
+
+   Maerket er et SPAN og aldrig en knap. En bred regel som
+   ".tm-traef button" ville ellers give det width 100 % og laegge det
+   oven i navnet, praecis som det skete for hjertet 12. august.
+   ============================================================ */
+
+.fk-maerke {
+	display: inline-block;
+	vertical-align: 1px;
+	margin-left: 6px;
+	padding: 1px 6px;
+	border-radius: 5px;
+	font-size: calc(9px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.fk-database {
+	background: var(--sage-tint);
+	color: var(--sage-tekst);
+}
+
+.fk-scannet {
+	background: var(--plum-tint);
+	color: var(--plum);
+}
+
+.fk-eget {
+	background: var(--honey-tint);
+	color: var(--honey-deep);
+}
+
+.fk-ukendt {
+	background: var(--paper-2);
+	color: var(--ink-3);
+}
+
+/* Linjen om raa vaegt staar STILLE under tallene og ikke som et baand.
+   Det er reglen hele listen hviler paa, og kunden skal kunne se den uden
+   at blive raabt ad. Linns regel 24. august: vi tager udgangspunkt i den
+   ikke tilberedte vaegt. */
+.ma-raa {
+	margin-top: 3px;
+	font-size: calc(11px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+/* Baandet paa en vare uden kilde. Linns beslutning 24. august: det vises
+   HVER GANG, ikke kun foerste gang og ikke kun paa de mest brugte. Saa
+   laenge tallet er uden kilde, skal hun kunne se det. */
+.ma-ukendt {
+	margin: 0 0 11px;
+	padding: 10px 12px;
+	border-radius: 13px;
+	border-left: 3px solid var(--honey);
+	background: var(--honey-tint);
+	color: #6b4a1e;
+	font-size: calc(12px * var(--fs-scale, 1));
+	line-height: 1.5;
+}
+
+.ma-ukendt b {
+	display: block;
+	margin-bottom: 2px;
+}
