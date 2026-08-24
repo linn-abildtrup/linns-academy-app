@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
 	kildeAf, maerkatFor, skalBedesOmScanning, maaSesISoegning,
-	tilSoegning, maaDeles, hendesVarer, MAERKAT, FORKLARING, type Vare3
+	tilSoegning, maaDeles, hendesVarer, kendteVarerEfter, MAERKAT, FORKLARING, type Vare3
 } from './fodevareKilde3';
 
 const v = (x: Partial<Vare3>): Vare3 =>
@@ -118,11 +118,39 @@ describe('maaDeles', () => {
 });
 
 describe('hendesVarer', () => {
-	it('samler de tre steder hun kan have taget en vare i brug', () => {
+	it('samler de steder hun kan have taget en vare i brug', () => {
 		const ud = hendesVarer(['a', 'b'], ['b', 'c'], ['d']);
 		expect([...ud].sort()).toEqual(['a', 'b', 'c', 'd']);
 	});
 	it('taaler tomme lister og tomme id', () => {
 		expect(hendesVarer([], [''], []).size).toBe(0);
+	});
+});
+
+describe('kendteVarerEfter', () => {
+	const maerke = v({ id: 'granola', kunKendte: true });
+
+	it('en maerkevare hun tager i brug bliver husket', () => {
+		expect(kendteVarerEfter([], 'granola', maerke)).toEqual(['granola']);
+	});
+
+	it('EN ALMINDELIG FOEDEVARE SKRIVES ALDRIG, den ses af alle i forvejen', () => {
+		expect(kendteVarerEfter([], 'gulerod', v({ id: 'gulerod', kildeType: 'dtu' }))).toBeNull();
+	});
+
+	it('den samme vare to gange giver ingen ny skrivning', () => {
+		expect(kendteVarerEfter(['granola'], 'granola', maerke)).toBeNull();
+	});
+
+	it('laegger til uden at miste det hun havde', () => {
+		expect(kendteVarerEfter(['hummus'], 'granola', maerke)).toEqual(['hummus', 'granola']);
+	});
+
+	it('taaler at listen ikke findes endnu', () => {
+		expect(kendteVarerEfter(undefined, 'granola', maerke)).toEqual(['granola']);
+	});
+
+	it('taaler at varen ikke findes', () => {
+		expect(kendteVarerEfter([], 'x', null)).toBeNull();
 	});
 });

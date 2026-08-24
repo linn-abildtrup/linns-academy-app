@@ -151,18 +151,42 @@ export function maaDeles(v: Vare3, tallenePasser: boolean): boolean {
 }
 
 /**
- * Bruges varen af kunden i forvejen? Samler de tre steder hun kan have
- * taget den i brug, saa der kun er ét sted at rette hvis der kommer et
- * fjerde.
+ * Bruges varen af kunden i forvejen? Samler de steder hun kan have taget
+ * den i brug, saa der kun er ét sted at rette hvis der kommer et mere.
+ *
+ * `gemte` er listen paa hendes bruger-dokument. Den er den eneste af dem
+ * der raekker LAENGERE TILBAGE END 45 DAGE, se `kendteVarerEfter`.
  */
-export function hendesVarer(
-	fraMaaltider: Iterable<string>,
-	fraFasteMaaltider: Iterable<string>,
-	fraHjerter: Iterable<string>
-): Set<string> {
+export function hendesVarer(...lister: Iterable<string>[]): Set<string> {
 	const ud = new Set<string>();
-	for (const liste of [fraMaaltider, fraFasteMaaltider, fraHjerter]) {
+	for (const liste of lister) {
 		for (const id of liste) if (id) ud.add(id);
 	}
 	return ud;
+}
+
+/**
+ * Listen paa kundens eget dokument, `kendteVarer3`.
+ *
+ * HVORFOR DEN FINDES. Historikken raekker kun 45 dage tilbage, og Linns
+ * regel er UDEN tidsgraense: en vare hun brugte for et aar siden skal
+ * stadig kunne findes. Derfor gemmes de faa varer hun har taget i brug
+ * paa hende selv i stedet for at blive regnet ud hver gang.
+ *
+ * Den er lille. Maalt 24. august: median ÉN vare pr kunde, gennemsnit 2,7
+ * og hoejeste 21. 29 procent af kunderne har ingen.
+ *
+ * Kun varer der ellers ville forsvinde skal med. En almindelig foedevare
+ * ses af alle i forvejen, og at skrive den ville lade listen vokse uden
+ * grund.
+ */
+export function kendteVarerEfter(
+	gemte: readonly string[] | undefined,
+	brugtNu: string,
+	varen: Vare3 | null | undefined
+): string[] | null {
+	if (!varen || !varen.kunKendte) return null;
+	const liste = gemte ?? [];
+	if (liste.includes(brugtNu)) return null;
+	return [...liste, brugtNu];
 }

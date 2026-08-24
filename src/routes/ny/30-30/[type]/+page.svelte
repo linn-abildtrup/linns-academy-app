@@ -131,6 +131,8 @@
 	import { forberedBillede } from '$lib/utils/billede3';
 	import { harFeatureAdgang } from '$lib/content/features';
 	import type { Kategori3 } from '$lib/content/opskriftKategori3';
+	import { tilSoegning, hendesVarer } from '$lib/content/fodevareKilde3';
+	import { kendteVarerFra, husKendtVare } from '$lib/firestore/kendteVarer3';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -158,6 +160,10 @@
 
 	let foods = $state<Map<string, Fodevare>>(new Map());
 	let plejer = $state<PlejerPost[]>([]);
+	/** Sat naar hun lige har taget en vare i brug, saa listen ikke skal
+	    hentes forfra for at soegningen kan se den. */
+	let kendteRettet = $state<string[] | null>(null);
+
 	let soegeord = $state('');
 
 	// Arket og kvitteringen
@@ -276,6 +282,20 @@
 	let hjerteRettet = $state<string[] | null>(null);
 	const favoritOpskrifter = $derived(favoritRettet ?? favoritterFra(userDoc));
 	const hjerter = $derived(hjerteRettet ?? hjerterFra(userDoc));
+
+	/**
+	 * De varer hun HAR taget i brug. To kilder, og de daekker hver sit:
+	 * listen paa hendes dokument raekker uendeligt tilbage, og "det du
+	 * plejer" fanger de sidste 45 dage ogsaa foer listen er fyldt ud.
+	 */
+	const hendesEgne = $derived(
+		hendesVarer(
+			kendteRettet ?? kendteVarerFra(userDoc),
+			plejer.map((p) => p.foodId),
+			hjerter
+		)
+	);
+
 	/** Hendes hjertede varer, UDEN hendes egne. De staar under Mine egne. */
 	const hjertede = $derived(hjertedeFodevarer(hjerter, foods, new Set(egne.map((f) => f.id))));
 
@@ -333,7 +353,12 @@
 		// Hele ord foerst, saa "aeg" ikke drukner i Aeggenudler, og
 		// derefter korteste navn. Se content/fodevareSoeg3.ts for hvorfor
 		// det er sortering og ikke et afkryds som i den gamle app.
-		return soegFodevarer([...foods.values()], ord);
+		//
+		// Filtreres FOER soegningen, saa antallet af traeffere passer med
+		// det hun faktisk kan se. Dubletter er ude for alle, og
+		// maerkevarer og retter kun for dem der allerede bruger dem.
+		// Se content/fodevareKilde3.ts.
+		return soegFodevarer(tilSoegning([...foods.values()], hendesEgne), ord);
 	});
 
 	/** Maengden som den blev tastet, fx "1 dl" eller "100 g". Tom hvis
@@ -1102,6 +1127,11 @@
 		if (!uid) return;
 		const retter = valgt?.retter;
 		gemmer = true;
+		// Er varen en af dem der ellers ville forsvinde for hende, huskes
+		// det at hun bruger den. Fejler aldrig opad, se kendteVarer3.ts.
+		void husKendtVare(uid, userDoc, food).then((ny) => {
+			if (ny) kendteRettet = ny;
+		});
 		try {
 			if (retter) {
 				await opdaterMadvare({ uid, maaltidId: retter.id, food, portion, enhedId });
