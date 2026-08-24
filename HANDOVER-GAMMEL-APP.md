@@ -1,10 +1,10 @@
 # Overdragelse: den gamle app
 
-Sidst opdateret 18. august 2026.
+Sidst opdateret 24. august 2026.
 
 **Denne fil handler KUN om den app der er i drift på `/app`.** Den må ikke blandes sammen med `HANDOVER-3.0.md`, der handler om den nye kundeflade på `/ny`. To apps, to filer, to arbejdsspor. Retter du noget i den gamle app, hører det til her. Bygger du på 3.0, hører det til der.
 
-**Læs i denne rækkefølge hvis du er ny:** afsnit 2 om hvornår du overhovedet må røre den, afsnit 6 om fælderne, og så afsnit 8 om hvad der er åbent. Resten slås op efter behov.
+**Læs i denne rækkefølge hvis du er ny:** afsnit 2 om hvornår du overhovedet må røre den, afsnit 6 om fælderne, og så afsnit 9 om hvad der er åbent. Resten slås op efter behov.
 
 Læs den sammen med `CLAUDE.md` i repo-roden. Det er arbejdsreglerne, og de gælder begge apps. Gamle overdragelser fra 1.0 og 2.0 ligger i `arkiv/` og er forældede.
 
@@ -134,7 +134,9 @@ Flytter en kunde fra ét hold til et andet med samme produkt-nøgle, peger den g
 
 ---
 
-## 7. Rettet 17. og 18. august 2026
+## 7. Rettet i august 2026
+
+### Rettet 17. og 18. august 2026
 
 Tre akutte rettelser, alle under ventilen i regel 2, alle udrullet.
 
@@ -148,7 +150,55 @@ Sussi og Ann-Brigitt fik deres slettede træningsprogram skrevet tilbage manuelt
 
 ---
 
-## 8. Åbne tråde i den gamle app
+### Rettet 23. og 24. august 2026
+
+Tre rettelser, alle under ventilen i regel 2, alle udrullet. De kom ud af en gennemgang af hele mad-modulet mod rigtige kundedata.
+
+**Forsiden har nu ét dag-nummer i forhåndsvisningen.** Commit `5a7996d`. Forsiden havde to opfattelser af hvilken dag den viste. Lektioner og små skridt fulgte den dag kunden havde valgt i datostrimlen, mens challengen fulgte forhåndsvisnings-dagen. De to faldt kun sammen når `previewDag` allerede stod i adressen, så admin kunne se mandagens lektioner sammen med søndagens challenge. Et billede ingen kunde nogensinde ser.
+
+Krydset der lukkede forhåndsvisningen ryddede kun det ene af de to tal, så det andet blev stående i adressen og trak forsiden skæv bagefter. Det er også rettet. Samme runde lukkede et hul hvor et fremtidigt dag-nummer i adressen kunne åbne lektioner der endnu ikke var frigivet. Berørte 20 kunder med aktivt forløb.
+
+**Et enhedsskift overskriver ikke længere kundens egen mængde.** Commit `cf614a0`. `opdaterEnhed` justerede altid portionstallet når enheden skiftede type, fra gram til en navngiven enhed blev det 1, den anden vej blev det 100. Også når kunden lige selv havde tastet et tal. Mængdefeltet står til venstre for enheds-vælgeren, så den naturlige rækkefølge er at taste tallet først og rette enheden bagefter. Skrev hun 80 og skiftede til gram, blev hendes 80 lydløst til 100.
+
+Reglen ligger nu i `portionVedEnhedsskift` i `content/kost.ts` og justerer kun når tallet stadig er den standard appen selv satte. Otte tests låser begge sider.
+
+Anledningen var en kunde der meldte at den valgte mængde ikke blev gemt. **Det blev aldrig bekræftet at det var hendes problem**, og fingeraftrykket i data er svagt: varer med egen enhed gemt i gram lander på præcis 100 i 13,6 procent af tilfældene, mod 27,8 procent i kontrolgruppen hvor 100 blot er standarden. De fleste opdager altså det forkerte tal og retter det. Rettelsen blev lavet fordi appen ikke bør overskrive et tal kunden selv har skrevet.
+
+**Fiber tæller med i kalorie-tjekket.** Commit `c6ce582`. Plausibilitets-tjekket på næringstal fra Open Food Facts så slet ikke på fiber, og fiber blev ikke engang sendt med fra de to kaldesteder. Konsekvensen var den modsatte af hvad man skulle tro: kalorie-krydstjekket regner Atwater af protein, kulhydrat og fedt, og uden fiber landede rene fiberprodukter helt ved siden af. Husk har 87 gram fiber, næsten intet andet, og 200 kalorier på pakken, men regnestykket gav 10. Hver gang en kunde scannede Husk eller loppefrøskaller, sagde appen at tallene så forkerte ud.
+
+Fiber tæller nu med til 2 kalorier pr gram. Om fiber allerede er talt med i kulhydrat afhænger af hvilket land deklarationen kommer fra, så appen regner begge veje og godtager tallet hvis det er rimeligt efter mindst én af dem. Ændringen tilføjer ingen nye advarsler, den fjerner kun falske.
+
+---
+
+## 8. Beslutninger der ikke skal genopfindes
+
+To beslutninger truffet 24. august 2026. Begge er den slags der bliver bygget igen om et halvt år hvis de ikke står skrevet ned.
+
+### 8.1 Vi kontrollerer ikke fremmede databasers næringstal
+
+**Linns beslutning.** Kommer der x gram fiber ind fra Open Food Facts, stoler vi på det. Appen skal ikke sætte sig til dommer over andres tal.
+
+Anledningen var en LU-kiks der kom hjem med 52 gram fiber pr 100 gram uden en eneste advarsel. Det er åbenlyst forkert, men **det kan ikke fanges af et regnestykke**, for tallene modsiger ikke hinanden. Kalorierne passer til makroerne, og ingen enkelt værdi er umulig.
+
+Hver grænse der ville fange kiksen, gav samtidig falsk alarm på Husk, chiafrø, kokosmel, kakaonibs og otte slags krydderier. Målt på alle 2.268 fælles fødevarer og 5.633 af kundernes egne. En advarsel på netop de fiberrige varer er det værst tænkelige, for så lærer kunden at klikke advarsler væk, og så virker de øvrige advarsler heller ikke.
+
+Begrundelsen står også i `content/openFoodFacts.ts` lige der hvor grænsen ville have stået.
+
+De øvrige advarsler er uændrede. "Kalorier mangler" og "produktet har ingen næringstal" påpeger at noget **mangler**, ikke at kildens tal er forkerte, og de er derfor noget andet end det der blev sagt nej til.
+
+### 8.2 Den gamle app husker aldrig en mængde pr madvare, og det skal den ikke lære
+
+Vælger kunden rugbrød, kommer det ind som "1 skive". Retter hun til 2 og vælger rugbrød igen i morgen, også fra fanen Seneste, står der "1 skive" igen. Hun skal taste tallet forfra hver dag.
+
+Det er ikke en fejl, det er et hul. Og det forvirrer ekstra fordi et helt **måltid** gemt som favorit godt husker mængderne, mens en enkelt **madvare** aldrig gør. To ting der ligner hinanden på skærmen og opfører sig forskelligt.
+
+**Byg det ikke ind i den gamle app.** Det er et rigtigt stykke arbejde, det rører den del af mad-modulet der bruges mest, og 3.0 har det færdigt. Se "Det du plejer" i `content/plejer3.ts`, hvor mængden huskes pr madvare. Målt på rigtige data dækker kundens 10 hyppigste madvarer 54 procent af alt hun taster, og 68,5 procent af alle registreringer er en gentagelse. Det løses når holdene flyttes over.
+
+Skriver en kunde at appen ikke husker hendes mængde, er det eneste spørgsmål der skiller det fra fejlen i afsnit 7: **sker det når hun vælger madvaren igen en anden dag, eller inde i det samme måltid mens hun står med det.**
+
+---
+
+## 9. Åbne tråde i den gamle app
 
 - **Tilbagefalds-reglen i `hentAktivProduktType`** sender udløbne kunder til Kickstart-skuffen. Kendt, ikke rettet. Se 6.3.
 - **Ann og Lone** på Kropsro 24. maj havde kun én nul-dag hver, så deres forlængelse rakte kun til 18. august. Deres forløb er slut nu. Linn nåede ikke at tage stilling til om de skulle have mere tid.
@@ -157,9 +207,19 @@ Sussi og Ann-Brigitt fik deres slettede træningsprogram skrevet tilbage manuelt
 - **Baseline-dagen i vaner-modulet** siger "vi starter med et baseline-tjek" og viser så ét fritekstfelt uden at nævne symptomchecken. Det var teksten der satte Meretes spørgsmål i gang. Ikke rettet.
 - **Forløbskøb sker manuelt.** Der er ingen Simplero-webhook for forløb endnu, kun for abonnementer.
 
+### Fundet ved gennemgangen af mad-modulet, 23. og 24. august
+
+Resten af modulet blev kørt igennem mod rigtige data og virker. Regnestykker, enheder, søgning, dagbogens totaler, opskrifternes filtre og næringstal, indkøbslistens skalering og sammenlægning, stregkode-opslaget og mærkevaresøgningen. Det herunder er hvad der IKKE blev rettet.
+
+- **152 måltids-linjer hos 31 kunder peger på en slettet fødevare.** Kunden ser databasens id, altså noget i stil med `1YfZiQ7rCVPhaupt0iPT`, hvor navnet burde stå, og linjen tæller 0 protein og 0 fiber. Det sker når hun sletter en af sine egne fødevarer efter at have brugt den. Ud af 32.366 måltider, så det er sjældent, men det ser i stykker ud når det rammer. Kræver en beslutning om hvad der skal stå i stedet, for eksempel navnet gemt sammen med linjen, eller bare "slettet fødevare". Se `{food?.name ?? item.foodId}` i mad-modulets dagbog.
+- **Et tomt mængde-felt kan gemme det gamle tal.** `opdaterPortion` springer over opdateringen så længe feltet er tomt, så feltet og det gemte tal kan nå at pege hver sin vej. Taster kunden nye cifre, retter det sig selv. Gemmer hun mens feltet står tomt, gemmes det gamle tal uden varsel.
+- **128 af 130 aktive opskrifter har intet billede** i den gamle app. Kun to har en `billedeUrl`. Billederne blev lagt ind i 3.0 i august, men den gamle app peger ikke på dem.
+- **Mærkevaresøgningen springer gennemsynet over** når næringstallene ser rimelige ud, hvor scanneren altid viser det. Det er den eneste vej hvor tal fra en fremmed database kan ryge direkte i et måltid uden at kunden ser dem. Ikke besluttet.
+- **Madplanen har ingen tests overhovedet.** Den er parkeret i 3.0, men den er stadig tændt for kunderne her. Det eneste modul i Mad uden testdækning.
+
 ---
 
-## 9. Sådan laver du en diagnose
+## 10. Sådan laver du en diagnose
 
 Scriptene mod rigtige kunder følger et fast mønster, se `CLAUDE.md` regel 9.
 
@@ -171,7 +231,7 @@ Vil du vide om en rettelse virker, så kald de rigtige funktioner fra `src/lib/c
 
 ---
 
-## 10. Test og udrulning
+## 11. Test og udrulning
 
 Før hver commit i den gamle app:
 
