@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 24. august 2026. **Se 9.39 til 9.48: hele beskedsystemet blev bygget 23. august**, fra notifikationer til mail. 9.49 er en gennemgang af fødevare-kilderne, tjekket mod databasen 24. august.
+Sidst opdateret 24. august 2026. **Læs 9.50 først hvis du rører noget i Mad: alle fødevarers næringstal kommer nu fra Den Danske Fødevaredatabase, og det er skrevet ud til BEGGE apper 24. august.** 9.49 er gennemgangen af fødevare-kilderne der førte til det. Se 9.39 til 9.48 for hele beskedsystemet, bygget 23. august.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -3067,6 +3067,256 @@ vise nul, men **tallet er et skøn**.
 må se.** Der er ingen der har bestemt det. Løsningen er et kurateret lag
 ovenpå de 2.268, og Kickstart-listen er allerede tæt på at være det lag.
 Diagnosticeret, ikke besluttet.
+
+---
+
+---
+
+### 9.51 SCAN EN VARE, tegnet 24. august. IKKE BYGGET
+
+**Tegningen ligger i `v3 app/linns-academy-design/mockups-scan-vare.html`**, elleve
+skærme i seks afsnit. Læs den før du bygger noget her, den rummer begrundelsen
+for hver detalje.
+
+**Idéen er Linns, og den er bedre end den vi startede med.** Stregkoden og
+billedet gør to forskellige ting:
+
+- **Stregkoden er varens navneskilt.** Den siger hvilket produkt det er, så to
+  kunder der scanner den samme yoghurt får den samme vare
+- **Billedet af varedeklarationen er beviset for tallene.** Det er
+  producentens lovpligtige tal, ikke en frivillig indtastning
+
+**Derfor bruger vi stort set ikke stregkode-registret til andet end navnet.**
+Det var netop dér Lurpak lå med nul kalorier, se `project_fodevarer_kost`.
+
+#### Reglerne Linn har lagt fast
+
+- **En scannet vare med billede deles med ANDRE kunder.** Grundlaget er
+  producentens deklaration og der ligger et bevis
+- **Retter hun ét tal efter scanningen, bliver varen hendes alene.** Så er det
+  ikke længere pakkens tal
+- **En vare hun skriver fra bunden er altid kun hendes**, uanset hvor rigtig
+  den er
+- **Består tallene ikke kvalitetstjekket, deles varen aldrig**
+- **En delt vare kan kun rettes af den der scannede den.** Passer tallene ikke
+  med en anden kundes pakke, tager hun sit eget billede og får sin egen udgave
+- **Linn godkender ikke.** Varen er delt fra det sekund den er scannet. Der er
+  en admin-side som nødbremse, hvor hun kan fjerne, ikke godkende
+
+#### DET STØRSTE PROBLEM: FIBRE ER FRIVILLIGE PÅ EN VAREDEKLARATION
+
+EU kræver energi, fedt, mættet fedt, kulhydrat, sukkerarter, protein og salt.
+**Kostfibre står på listen over det man MÅ skrive, ikke det man SKAL.**
+
+I en app der hedder 30-30 og handler om protein og fiber er det den værst
+tænkelige mangel. Seks af de syv tal kommer sikkert ind fra et billede. Det
+syvende kan mangle.
+
+**Løsningen er at sige det højt.** Mangler fibrene, står der at de mangler, og
+hun vælger mellem at lade dem stå tomme, skrive tallet selv, eller låne det
+fra en tilsvarende råvare. **Aldrig et stille nul**, for det er præcis den
+fejl hvor kunden logger mindre end hun spiste.
+
+#### Den anden fælde
+
+**Mange pakker har to kolonner, pr 100 gram og pr portion.** Læses den
+forkerte, bliver alt skævt og det ser fuldstændig rigtigt ud. Der skal stå
+tydeligt hvilken kolonne der er læst, og hun skal godkende inden der gemmes.
+Samme fremgangsmåde som når hun fotograferer en opskrift i dag, se 9.11.
+
+#### Det er billigt at bygge
+
+Motoren findes: `/api/analyser-opskrift` læser allerede et billede af en
+opskrift og trækker ingredienser ud, og 222 kunder har brugt den. En
+varedeklaration er langt lettere at læse end en kogebogsside.
+
+Mærkerne i søgningen hedder **Fødevaredatabasen**, **Fra pakken** og **Dit
+eget tal**. Linns valg af ord.
+
+### 9.50 FØDEVARERNE KOBLET TIL DTU, 24. august. TALLENE ER SKREVET UD
+
+**Den største enkelt-ting i Mad siden regnemaskinen, og den rammer BEGGE apper.**
+Alle fødevarers næringstal kommer nu fra Den Danske Fødevaredatabase i stedet
+for fra den prototype de blev skrevet i. Det er sket, det er live, og det
+gælder de 760 kunder i den gamle app lige så vel som 3.0.
+
+#### Hvorfor det skulle gøres
+
+Linn spurgte hvor vores egen fødevare-liste kom fra. Svaret var værre end
+forventet. **De 840 varer uden `kilde`-felt blev kopieret ord for ord fra
+`reference/index.html`**, altså prototypen fra før den nuværende app, den 7.
+maj 2026. Der stod i toppen af den fil at grunddata var fra Frida, men tallene
+er runde og var aldrig slået op.
+
+**Og de havde oprindeligt kun protein og fiber.** Kulhydrat, fedt og kalorier
+kom til fire dage senere ved at matche NAVNET mod Frida. Det er nøjagtig den
+fremgangsmåde vi selv afviste på opskrifterne, se 9.16.
+
+Resultatet kunne måles: 17 slags hakket kød havde fået identiske tal, creme
+fraiche 5, 9, 18 og 38 procent stod alle til 50 gram fedt, tørrede grønne
+linser stod til 70 kalorier i stedet for 310, og **mørk chokolade 70 procent
+stod til 47 kalorier i stedet for 549.**
+
+#### Kilden
+
+**Den Danske Fødevaredatabase, version 6.1, maj 2026**, udgivet af DTU
+Fødevareinstituttet. 1.390 fødevarer med 228 næringstal hver. Gratis under
+CC BY 4.0, altså fri kommerciel brug mod kildeangivelse, og den opdateres to
+gange om året.
+
+Datasættet ligger som `scripts/FCDB_6.1.xlsx` og er uden for git, se
+`.gitignore`. Hentes igen fra `https://doi.org/10.11583/DTU.32312844`.
+
+**Kildeangivelsen skal med når tallene vises.** Det er betingelsen for at
+bruge dem.
+
+#### Hvad der står i databasen nu
+
+Hver vare i `fodevarer` har fået fire nye felter, additivt:
+
+| Felt | Hvad |
+|---|---|
+| `kildeType` | `dtu` eller `linn` |
+| `dtuId` | Fødevarens nummer i DTU 6.1 |
+| `dtuNavn` | Det navn DTU selv bruger |
+| `kildeNavn` | Den fulde kildeangivelse |
+| `kildeDato` | 2026-08-24 |
+
+**1.735 varer har DTU-tal. 33 har Linns egne tal.** 500 er bevidst uden
+kobling og står uændret. Verificeret mod den kørende database bagefter: nul
+afvigelser.
+
+**Sikkerhedskopi af alle 2.268 varer som de så ud før ligger i
+`backup/fodevarer-foer-dtu-2026-08-24.json`.** Alt kan sættes tilbage.
+
+#### Hvad kunderne mærker
+
+Målt på 7.398 rigtige dage: **dagens protein falder med 0,7 gram ud af 65.**
+45 procent af dagene ændrer sig under ét gram. 15 procent mister over tre.
+
+De to der bliver bemærket:
+
+- **Rugbrød med kerner** gik fra 8,5 til 5,1 gram protein, 1.458 registreringer
+- **Hørfrø** gik fra 18 til 25,5 gram protein, 1.229 registreringer
+
+**Kundernes egne registreringer er urørte.** Hvert måltid gemmer sine egne tal
+ved gemning, så historikken står som før. Kun nye registreringer bruger de nye
+tal.
+
+#### DE FEM REGLER LINN TRAF, OG DE SKAL HOLDES
+
+**1. Den fælles liste indeholder kun det der kan navngives uden et mærke.**
+Ikke "råvarer". Kefir, rugbrød, hytteost og skyr er forarbejdede og hører
+lige så meget til som gulerod. Cultura Kefir Naturel fra Arla gør ikke.
+
+**2. Rå vægt er udgangspunktet.** Stegt kyllingebryst kobles til det rå, for
+kød og fisk taber vand. **UNDTAGELSEN er alt der SUGER vand**: ris, pasta,
+bælgfrugter og gryn beholder begge udgaver, fordi 100 g rå ris bliver til 250
+g kogte. Har databasen præcis den tilberedning vi skriver, bruges den
+alligevel. Samme regel som opskrifts-beregneren allerede har, se
+`ingrediensNavn3.ts`.
+
+**3. Grammene i en OPSKRIFT er rå vægt**, medmindre der udtrykkeligt står
+andet. Det er allerede praksis: kyllingebryst, laks og torsk peger alle på de
+rå. **Bacon peger stadig på stegt bacon og skal rettes.**
+
+**4. Mærkevarer og retter hører ikke til i den fælles liste.** Kunden scanner
+en købt vare med et billede af varedeklarationen, se 9.51 og
+`mockups-scan-vare.html`.
+
+**5. Linn godkender ikke varer løbende.** Derfor må intet i den fælles liste
+kræve hendes ja. Alt er enten fra databasen eller fra en scanning med billede.
+
+#### Undtagelsen: Linns udvalg
+
+**Bellwell Gut Balance ligger bevidst i den fælles liste og ses af alle**,
+også nye kunder. Den er en del af Linns program, findes ikke i databasen, og
+tallet er hendes med hendes navn på. Det er den eneste af sin slags i dag, og
+kategorien hedder `LINNS_UDVALG` i koblings-scriptet.
+
+#### FÆLDER VI FALDT I, OG SOM KOSTER DEN NÆSTE DYRT
+
+Alle sammen fundet fordi Linn kiggede navnene efter. **Ingen af dem kan fanges
+af en test.**
+
+- **Æg blev til fisken Helt.** "Helt" er både et tillægsord og en fisk. Reglen
+  er nu at det FØRSTE ord i begge navne skal kunne genfindes i det andet
+- **Smør blev til jordnøddesmør, ost til smelteost, æble til paradisæble, sød
+  kartoffel til kartoffel.** Et sammensat ord ender på det rigtige uden at
+  være det. **Et præcist hovedord slår nu altid et sammensat**
+- **Græskarkerner blev til græskar, valnødder til valnøddeolie, solsikkekerner
+  til solsikkeolie.** Råvaren blev blandet sammen med det man laver af den.
+  Formord som olie, kerner, mel og juice er nu en hård grænse
+- **Sodavand light blev til sodavand med sukker.** Én kalorie blev til 41.
+  Light og sukker udelukker nu hinanden
+- **En grov bolle blev til en kiks**, fordi brød og kiks lå i samme kasse
+- **Risalamande blev til andekød.** Ordet "and" står inde i navnet
+- **KYLLINGEBRYST ER DEN VIGTIGSTE.** DTU har KUN kyllingebryst MED skind,
+  altså 6,9 gram fedt mod de 1,5 danske butikker sælger. Koblingen ville have
+  givet 42 procent flere kalorier på en af de mest brugte varer i appen. Det
+  samme gælder kyllingelår og parmaskinke, og de tre har nu Linns tal
+- **Mørk chokolade 70 og 85 procent var lige ved at blive slået sammen**, fordi
+  begge stod med de samme forkerte tal. Forskellige procenter i navnet må nu
+  aldrig smeltes sammen
+
+**Hovedordet i et dansk navn står SIDST i en sammensætning og efter
+tillægsordet.** "Grove havregryn" handler om havregryn. "Rugbrød med kerner"
+om rugbrød. Den ene regel flyttede over hundrede varer på plads.
+
+#### Danske ord der ikke ligner hinanden
+
+Databasen bruger fagsprog. Der ligger en eksplicit liste i scriptet, aldrig et
+gæt: svinekød hedder grisekød, peanutbutter hedder jordnøddesmør, mandelmælk
+hedder mandeldrik, cottage cheese hedder hytteost, isbergsalat hedder Salat
+Iceberg, zucchini hedder squash, druer hedder vindrue, rosiner hedder Rosin
+uden kerner, aroniabær hedder Surbær.
+
+Og danske flertalsformer: dadler bliver til daddel, cashewnødder til cashewnød,
+mandler til mandel. Dobbeltkonsonanten falder bort igen.
+
+#### DET DER IKKE ER GJORT ENDNU
+
+**Kun tallene er skrevet ud. Søgningen er ikke rørt.** Alle 2.268 varer står
+stadig i listen. Det næste er:
+
+- **350 dubletter skal skjules.** 446 af vores varer peger på de samme 208
+  DTU-varer. Æg giver otte rækker, mandler fem, kylling fire. **Ingen må
+  slettes**, kun skjules fra søgningen, for registrerede måltider og faste
+  måltider skal blive ved med at virke
+- **239 retter og mærkevarer skal ud af søgningen.** Frikadelle, lasagne,
+  hummus, proteinpulver, granola. Linns model: **de ses kun af de kunder der
+  allerede har brugt dem.** Nye kunder ser dem ikke. Målt: 29 procent af
+  kunderne har ikke brugt en eneste af dem, og medianen er ÉN vare
+- **Fire varer skal skifte navn**, fordi tallet nu er råvarens: Kyllingebryst
+  stegt bliver til Kyllingebryst, Sød kartoffel ovnbagt til Sød kartoffel,
+  Rødbede kogt til Rødbede, og de to slags havregryn til Havregryn
+- **Bacon i opskrifts-koblingen peger stadig på stegt bacon**
+- **Torskefars, laksefars og oksekød mangler helt en opskrifts-kobling**
+- **225 varer er ikke koblet**, men de fylder kun 1,3 procent af al brug og den
+  mest brugte har 55 registreringer. Cafe latte, flerkornsbrød, frossen
+  bærblanding. Databasen har dem ikke
+
+**`scripts/_kobl-fodevarer.ts` skal blive stående indtil ovenstående er gjort.**
+Den rummer alle håndsatte koblinger, sorteringen i fire slags og Linns
+beslutninger. Koblingerne selv står nu i databasen som `dtuId`, men
+sorteringen gør ikke. Slet den først når søgningen er lagt om.
+
+#### Sådan arbejdede vi, og hvorfor det virkede
+
+Linn gennemgik omkring 50 varer i alt hen over dagen. **Hver eneste gang hun
+rettede noget, afslørede rettelsen en regel der rettede hundrede mere.** Fem
+af hendes syv sidste rettelser var i øvrigt vores egen fejl: havregryn, rødløg
+og dadler stod i hendes liste fordi databasen kalder dem noget andet, men
+tallene var de samme.
+
+**Læren: giv hende de varer hvor hendes svar er det eneste der findes, ikke
+dem hvor maskinen bare ikke er dygtig nok endnu.**
+
+Og en fejl der er værd at kende: gennemgangs-siden voksede til fem sektioner
+med hundredvis af rækker, og Linn kunne ikke finde sin opgave i den. **En
+rapport over dit arbejde er ikke det samme som en opgave til hende.** Den blev
+til sidst delt i to, hvor `tjek-tal.html` kun indeholder de 33 varer hun
+skulle svare på.
 
 ---
 
