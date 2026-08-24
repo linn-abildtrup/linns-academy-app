@@ -14313,3 +14313,61 @@ a.tr-felt:focus-visible {
 	font-weight: 600;
 	cursor: pointer;
 }
+
+/* Scan staar oeverst i tilfoej-arket og er en HEL raekke, ikke et af de
+   fire smaa ikoner. Linns besked 24. august: den skal vaere tydelig fra
+   start. Laa den blandt ikonerne, ville den se ud som endnu en hylde
+   med noget hun har i forvejen, og det er den ikke. Den er vejen til
+   alt det vi IKKE har. */
+.ta-scan {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	margin: 2px 0 6px;
+	padding: 13px 14px;
+	border: 0;
+	border-radius: 15px;
+	background: var(--plum);
+	color: #fff;
+	font-family: var(--sans);
+	text-align: left;
+	cursor: pointer;
+	box-shadow: var(--shadow-soft);
+}
+
+.ta-scan-i {
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	flex-shrink: 0;
+	border-radius: 11px;
+	background: rgba(255, 255, 255, 0.16);
+}
+
+.ta-scan-i svg {
+	width: 19px;
+	height: 19px;
+}
+
+.ta-scan-t {
+	flex: 1;
+	min-width: 0;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	line-height: 1.4;
+	color: rgba(255, 255, 255, 0.82);
+}
+
+.ta-scan-t b {
+	display: block;
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: #fff;
+	margin-bottom: 1px;
+}
+
+.ta-scan-p {
+	font-size: calc(19px * var(--fs-scale, 1));
+	color: rgba(255, 255, 255, 0.6);
+}

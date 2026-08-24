@@ -134,6 +134,24 @@
 			{/if}
 
 			{#if !soeger}
+				<!-- SCAN STAAR OEVERST OG FOER ALT ANDET. Linns besked 24.
+				     august: den skal vaere tydelig fra start. Den laa foer
+				     gemt bag en fejlet soegning, og saa fandt kun den der
+				     allerede vidste den var der den. -->
+				<button type="button" class="ta-scan" onclick={onscan}>
+					<span class="ta-scan-i" aria-hidden="true">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16" />
+							<path d="M7.5 9v6M10.5 9v6M13.5 9v6M16.5 9v6" />
+						</svg>
+					</span>
+					<span class="ta-scan-t">
+						<b>Scan en vare</b>
+						Til alt med en pakke. Du får producentens egne tal
+					</span>
+					<span class="ta-scan-p" aria-hidden="true">›</span>
+				</button>
+
 				{#if plejer.length > 0}
 					<div class="tm-k ta-k">Det du plejer</div>
 					<div class="tm-plejer">
