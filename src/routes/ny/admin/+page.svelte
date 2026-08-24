@@ -57,6 +57,11 @@
 
 	const mad: Punkt[] = [
 		{
+			navn: 'Scannede varer',
+			under: 'Det kunderne har scannet. Din nødbremse, ikke en godkendelse',
+			href: '/ny/admin/scannede'
+		},
+		{
 			navn: 'Næring',
 			under: 'Hvem ser udvidet næring, og hvem må rette sine mål',
 			href: '/ny/admin/naering'
