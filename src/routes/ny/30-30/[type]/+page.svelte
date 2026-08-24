@@ -134,7 +134,7 @@
 	import { tilSoegning, hendesVarer } from '$lib/content/fodevareKilde3';
 	import { kendteVarerFra, husKendtVare } from '$lib/firestore/kendteVarer3';
 	import ScanArk from '$lib/components/ny/ScanArk.svelte';
-	import { hentScannedeVarer3, medScannede, delScanning, idFor } from '$lib/firestore/scannedeVarer3';
+	import { hentScannedeVarer3, medScannede, delScanning, idFor, gemDeklarationsbillede } from '$lib/firestore/scannedeVarer3';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -1098,6 +1098,7 @@
 		barcode: string | null;
 		tal: { protein: number | null; fiber: number | null; kh: number | null; fedt: number | null; kcal: number | null };
 		rettet: boolean;
+		billede: Blob | null;
 	}) {
 		const uid = user?.uid;
 		if (!uid) return;
@@ -1106,7 +1107,12 @@
 		// producentens egne og der ligger et billede bag. Retter hun ét
 		// tal, er det ikke laengere pakkens, og saa bliver den kun hendes.
 		// Linns regel 24. august, se HANDOVER 9.51.
-		if (!v.rettet && v.tal.protein !== null) {
+		// Uden billede er der intet bevis, og saa deles varen ikke. Har hun
+		// skrevet tallene selv, bliver den kun hendes.
+		if (!v.rettet && v.tal.protein !== null && v.billede) {
+			const vareId = idFor(v.barcode);
+			const billedeSti = `deklarationer/${uid}/${vareId}`;
+			const billedeUrl = await gemDeklarationsbillede(uid, vareId, v.billede);
 			const delt = await delScanning(uid, {
 				navn: v.navn,
 				barcode: v.barcode,
@@ -1114,7 +1120,9 @@
 				f: v.tal.fiber,
 				kh: v.tal.kh,
 				fedt: v.tal.fedt,
-				kcal: v.tal.kcal
+				kcal: v.tal.kcal,
+				billedeUrl,
+				billedeSti: billedeUrl ? `${billedeSti}.${v.billede.type.includes('webp') ? 'webp' : 'jpg'}` : null
 			});
 			// Sagde reglen nej, har en anden kunde scannet den samme
 			// stregkode foer hende. Saa bruger vi den der ligger.

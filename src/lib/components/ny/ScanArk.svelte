@@ -40,6 +40,8 @@
 			barcode: string | null;
 			tal: Deklaration;
 			rettet: boolean;
+			/** Billedet af deklarationen. Beviset bag tallene, se 9.51. */
+			billede: Blob | null;
 		}) => Promise<void> | void;
 		onluk: () => void;
 	}
@@ -58,6 +60,8 @@
 	let rettet = $state(false);
 	let fiberValg = $state<FiberValg>('tom');
 	let fiberTal = $state('');
+	/** Billedet beholdes til varen er gemt, saa det kan laegges op som bevis. */
+	let billede = $state<Blob | null>(null);
 
 	const vurdering = $derived(tal ? vurder(tal, kolonne) : null);
 
@@ -82,6 +86,7 @@
 		try {
 			const img = await laesBillede(fil);
 			const skaleret = await skalerTil(img, 'stor');
+			billede = skaleret.blob;
 			const base64 = await tilBase64(skaleret.blob);
 			const { auth } = await import('$lib/firebase');
 			const token = await auth.currentUser?.getIdToken();
@@ -136,7 +141,7 @@
 				vurdering?.fibreMangler && fiberValg !== 'tom'
 					? medFiber(tal, fiberValg, Number(fiberTal.replace(',', '.')))
 					: tal;
-			await ongem({ navn: navn.trim(), barcode, tal: medValgtFiber, rettet });
+			await ongem({ navn: navn.trim(), barcode, tal: medValgtFiber, rettet, billede });
 			onluk();
 		} catch {
 			fejl = 'Kunne ikke gemme varen. Prøv igen.';
@@ -271,8 +276,11 @@
 		<p class="sk-kilde">
 			{#if rettet}
 				Du har rettet i tallene, så varen bliver kun din.
+			{:else if billede}
+				Tallene kommer fra pakken, og billedet gemmes sammen med varen, så
+				andre kan se hvor de kommer fra.
 			{:else}
-				Tallene kommer fra pakken, og billedet gemmes sammen med varen.
+				Du har skrevet tallene selv, så varen bliver kun din.
 			{/if}
 		</p>
 	{/if}

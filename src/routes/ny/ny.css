@@ -14523,3 +14523,40 @@ a.tr-felt:focus-visible {
 	opacity: 0.5;
 	cursor: default;
 }
+
+/* Beviset i admin-listen. Et lille billede af varedeklarationen ved
+   siden af tallene, saa Linn kan laese efter uden at aabne noget. */
+.sc-billede {
+	display: block;
+	width: 44px;
+	height: 56px;
+	flex-shrink: 0;
+	border-radius: 7px;
+	border: 1px solid var(--line);
+	overflow: hidden;
+	background: var(--paper-2);
+}
+
+.sc-billede img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.sc-intet-billede {
+	display: grid;
+	place-items: center;
+	width: 44px;
+	height: 56px;
+	flex-shrink: 0;
+	border-radius: 7px;
+	border: 1px dashed var(--line);
+	color: var(--ink-3);
+	font-size: calc(15px * var(--fs-scale, 1));
+}
+
+.sc-uden {
+	color: var(--honey-deep);
+	font-weight: 600;
+}

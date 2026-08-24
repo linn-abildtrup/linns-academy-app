@@ -66,6 +66,32 @@ service firebase.storage {
 				&& request.resource.contentType.matches('image/.*');
 		}
 
+		// Billeder af VAREDEKLARATIONER, 24. august 2026. Se HANDOVER 9.51.
+		//
+		// Beviset bag en scannet vare. Kunden fotograferer tabellen paa
+		// pakken, vi laeser tallene af den, og billedet bliver liggende
+		// saa alle kan se hvor tallet kommer fra.
+		//
+		// LAESES AF ALLE, fordi varen deles med alle. Kunne kun hun der
+		// tog billedet se det, ville beviset ikke vaere noget bevis.
+		//
+		// SKRIVES KUN I HENDES EGEN MAPPE. Uid'et staar i stien, saa det
+		// altid kan ses hvem der har lagt et billede op, og ingen kan
+		// overskrive en andens.
+		//
+		// 2 MB er rigeligt. Et skaleret billede af en varetabel vejer
+		// omkring 40 KB.
+		match /deklarationer/{uid}/{filename=**} {
+			allow read: if request.auth != null;
+			allow write: if request.auth != null
+				&& request.auth.uid == uid
+				&& request.resource.size < 2 * 1024 * 1024
+				&& request.resource.contentType.matches('image/.*');
+			// Linns noedbremse: hun kan fjerne et billede der ikke skal
+			// ligge der, ligesom hun kan fjerne selve varen.
+			allow delete: if isAdmin();
+		}
+
 		// Private opskrift-billeder — klientens egne billeder fra "Min opskrift".
 		// Hver bruger kan kun læse + skrive til sin egen mappe. Max 5 MB pr fil.
 		match /users/{uid}/opskrift-billeder/{filename=**} {

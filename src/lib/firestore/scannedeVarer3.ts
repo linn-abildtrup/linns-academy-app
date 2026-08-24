@@ -16,7 +16,8 @@
 // ============================================================
 
 import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
-import { db } from '$lib/firebase';
+import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { db, storage } from '$lib/firebase';
 import type { Fodevare } from '$lib/content/kost';
 import type { Vare3 } from '$lib/content/fodevareKilde3';
 
@@ -50,9 +51,41 @@ export function idFor(barcode: string | null): string {
 	return barcode ? `bc_${barcode.replace(/[^0-9A-Za-z]/g, '')}` : doc(collection(db, SAMLING)).id;
 }
 
+/**
+ * Laegger billedet af varedeklarationen op.
+ *
+ * DET ER BEVISET, og det er derfor varen overhovedet maa deles med
+ * andre. Uden det ville vi sende én kundes tastearbejde videre til alle.
+ *
+ * Uid'et staar i stien, saa det altid kan ses hvem der har lagt et
+ * billede op, og ingen kan overskrive en andens. Reglen er udgivet 24.
+ * august, se storage.rules.
+ *
+ * FEJLER ALDRIG OPAD. Gaar uploaden galt, gemmes varen alligevel med
+ * tallene. Et manglende bevis er bedre end en mistet scanning.
+ */
+export async function gemDeklarationsbillede(
+	uid: string,
+	vareId: string,
+	billede: Blob
+): Promise<string | null> {
+	try {
+		const endelse = billede.type.includes('webp') ? 'webp' : 'jpg';
+		const sti = `deklarationer/${uid}/${vareId}.${endelse}`;
+		const svar = await uploadBytes(ref(storage, sti), billede, { contentType: billede.type });
+		return await getDownloadURL(svar.ref);
+	} catch (e) {
+		console.error('[ny] kunne ikke gemme billedet af deklarationen', e);
+		return null;
+	}
+}
+
 export interface NyScanning {
 	navn: string;
 	barcode: string | null;
+	/** Adressen paa billedet af deklarationen. Beviset bag tallene. */
+	billedeUrl?: string | null;
+	billedeSti?: string | null;
 	p: number;
 	f: number | null;
 	kh: number | null;
@@ -85,6 +118,8 @@ export async function delScanning(uid: string, v: NyScanning): Promise<string | 
 			...(v.kcal !== null ? { kcal: v.kcal } : {}),
 			kildeType: 'scannet',
 			scannetAf: uid,
+			...(v.billedeUrl ? { billedeUrl: v.billedeUrl } : {}),
+			...(v.billedeSti ? { billedeSti: v.billedeSti } : {}),
 			...(v.barcode ? { barcode: v.barcode } : {}),
 			scannetDen: new Date().toISOString()
 		});
@@ -98,9 +133,22 @@ export async function delScanning(uid: string, v: NyScanning): Promise<string | 
 	}
 }
 
-/** Til admin-noedbremsen. Kun Linn kan komme igennem reglen. */
-export async function fjernScanning(id: string): Promise<void> {
+/**
+ * Til admin-noedbremsen. Kun Linn kan komme igennem reglen.
+ *
+ * Varen SLETTES IKKE, den maerkes som fjernet. De maaltider hvor den er
+ * brugt skal blive ved med at virke, se regel 10. Billedet slettes til
+ * gengaeld helt, for det er der ingen grund til at gemme paa.
+ */
+export async function fjernScanning(id: string, billedeSti?: string | null): Promise<void> {
 	await setDoc(doc(db, SAMLING, id), { fjernet: true }, { merge: true });
+	if (billedeSti) {
+		try {
+			await deleteObject(ref(storage, billedeSti));
+		} catch (e) {
+			console.warn('[ny] kunne ikke slette billedet', e);
+		}
+	}
 	rydScannedeVarer3Cache();
 }
 

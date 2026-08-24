@@ -71,7 +71,7 @@
 			return;
 		fjerner = v.id;
 		try {
-			await fjernScanning(v.id);
+			await fjernScanning(v.id, (v as { billedeSti?: string }).billedeSti);
 			varer = varer.filter((x) => x.id !== v.id);
 		} finally {
 			fjerner = null;
@@ -117,6 +117,21 @@
 			<div class="sc-liste">
 				{#each vist as v (v.id)}
 					<article class="sc-vare" class:skaev={skaev(v)}>
+						{#if (v as { billedeUrl?: string }).billedeUrl}
+							<!-- Beviset. Tryk aabner det i fuld stoerrelse, saa Linn
+							     kan laese tabellen efter mod tallene. -->
+							<a
+								class="sc-billede"
+								href={(v as { billedeUrl?: string }).billedeUrl}
+								target="_blank"
+								rel="noopener"
+								aria-label="Se billedet af varedeklarationen"
+							>
+								<img src={(v as { billedeUrl?: string }).billedeUrl} alt="" loading="lazy" />
+							</a>
+						{:else}
+							<span class="sc-intet-billede" aria-hidden="true">?</span>
+						{/if}
 						<div class="sc-t">
 							<div class="sc-navn">{v.name}</div>
 							<div class="sc-tal">
@@ -126,6 +141,7 @@
 								{/if}
 							</div>
 							<div class="sc-meta">
+												{#if !(v as { billedeUrl?: string }).billedeUrl}<span class="sc-uden">uden billede</span> · {/if}
 								{#if v.barcode}{v.barcode} · {/if}
 								scannet {new Date((v as { scannetDen?: string }).scannetDen ?? '').toLocaleDateString('da-DK') || 'ukendt dato'}
 							</div>
