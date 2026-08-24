@@ -321,6 +321,50 @@ service cloud.firestore {
 					.hasOnly(['okBy', 'ejBy', 'verificeret']);
 		}
 
+		// ============================================================
+		// SCANNEDE VARER, 24. august 2026. Se HANDOVER-3.0.md 9.51.
+		//
+		// Kunden fotograferer en varedeklaration, og varen bliver synlig
+		// for alle. Det er saadan den faelles liste vokser tilbage efter
+		// at maerkevarer forlod den.
+		//
+		// EGEN SAMLING, OG DET ER HELE POINTEN. Vi aabner IKKE fodevarer
+		// for kunderne. Kunne de skrive der, kunne en enkelt kunde
+		// aendre AEg til 999 g protein for alle 760. Her kan hun kun
+		// laegge noget NYT til, aldrig roere noget der findes.
+		//
+		// Dokument-id er stregkoden, saa to kunder der scanner den samme
+		// vare rammer det samme dokument. Den foerste vinder. Er tallene
+		// forkerte, tager den naeste sit eget billede og faar sin egen
+		// private udgave, se Linns regel 24. august.
+		// ============================================================
+		match /scannedeVarer3/{vareId} {
+			// Alle indloggede laeser. Varen skal kunne findes af andre.
+			allow read: if request.auth != null;
+
+			// Admin maa alt. Det er noedbremsen: Linn godkender ikke, hun
+			// fjerner bagefter hvis noget ser galt ud.
+			allow write: if isAdmin();
+
+			// Kunden maa OPRETTE en vare, og kun med sig selv paa.
+			// Firestore afviser create hvis dokumentet findes i forvejen,
+			// saa den foerste der scanner en stregkode vinder.
+			allow create: if request.auth != null
+				&& request.resource.data.scannetAf == request.auth.uid
+				&& request.resource.data.kildeType == 'scannet'
+				&& request.resource.data.name is string
+				&& request.resource.data.name.size() > 0
+				&& request.resource.data.name.size() < 120
+				&& request.resource.data.p is number
+				&& request.resource.data.p >= 0
+				&& request.resource.data.p <= 100;
+
+			// Kun den der scannede varen maa rette i den. Ingen kan aendre
+			// tal under fingrene paa hinanden.
+			allow update, delete: if request.auth != null
+				&& resource.data.scannetAf == request.auth.uid;
+		}
+
 		// Ingrediens-koblingen. Kortet fra kernenavn til foedevare, som
 		// regnemaskinen bruger til at regne makro ud af maengderne.
 		// Etape 3, se SPEC-3.0.md 26.19.
