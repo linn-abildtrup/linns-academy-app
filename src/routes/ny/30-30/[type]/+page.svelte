@@ -133,6 +133,7 @@
 	import type { Kategori3 } from '$lib/content/opskriftKategori3';
 	import { tilSoegning, hendesVarer } from '$lib/content/fodevareKilde3';
 	import { kendteVarerFra, husKendtVare } from '$lib/firestore/kendteVarer3';
+	import ScanArk from '$lib/components/ny/ScanArk.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -163,6 +164,7 @@
 	/** Sat naar hun lige har taget en vare i brug, saa listen ikke skal
 	    hentes forfra for at soegningen kan se den. */
 	let kendteRettet = $state<string[] | null>(null);
+	let scanArk = $state(false);
 
 	let soegeord = $state('');
 
@@ -1079,6 +1081,48 @@
 		await gem(food, p.portion, p.enhedId);
 	}
 
+	/**
+	 * Gemmer en scannet vare. Den lander som KUNDENS EGEN indtil videre.
+	 *
+	 * At dele den med alle kraever en aendring i firestore.rules, og den
+	 * skal forelaegges Linn foer den udgives, se regel 4. Varen baerer
+	 * allerede kildeType og billedet, saa delingen kan taendes bagefter
+	 * uden at nogen skal scanne igen.
+	 */
+	async function gemScannetVare(v: {
+		navn: string;
+		barcode: string | null;
+		tal: { protein: number | null; fiber: number | null; kh: number | null; fedt: number | null; kcal: number | null };
+		rettet: boolean;
+	}) {
+		const uid = user?.uid;
+		if (!uid) return;
+		const id = await gemEgenFodevare3(uid, {
+			name: v.navn,
+			cat: 'andet',
+			p: v.tal.protein ?? 0,
+			f: v.tal.fiber ?? 0,
+			kh: v.tal.kh ?? undefined,
+			fedt: v.tal.fedt ?? undefined,
+			kcal: v.tal.kcal ?? undefined,
+			kilde: 'custom',
+			// Baerer hvor tallet kommer fra, saa maerket i soegningen er
+			// rigtigt fra foerste sekund. Se content/fodevareKilde3.ts.
+			...(v.rettet ? {} : { kildeType: 'scannet' }),
+			...(v.rettet ? { rettetAfKunde: true } : {}),
+			...(v.barcode ? { barcode: v.barcode } : {})
+		} as never);
+		const vare = { id, name: v.navn, cat: 'andet', p: v.tal.protein ?? 0, f: v.tal.fiber ?? 0,
+			kh: v.tal.kh ?? undefined, fedt: v.tal.fedt ?? undefined, kcal: v.tal.kcal ?? undefined,
+			kilde: 'custom' } as Fodevare;
+		foods = new Map(foods).set(id, vare);
+		egne = [...egne, vare];
+		scanArk = false;
+		// Maengde-arket aabner af sig selv, saa hun kan laegge varen i med
+		// det samme. Samme moenster som en ny egen foedevare, se 9.12.
+		aabnArk(vare, null);
+	}
+
 	/** Fra tilfoej-arket: en traeffer aabner maengden, og arket lukker. */
 	function vaelgTraef(food: Fodevare) {
 		tilfoejArk = false;
@@ -1331,6 +1375,10 @@
 	{/if}
 </div>
 
+{#if scanArk}
+	<ScanArk ongem={gemScannetVare} onluk={() => (scanArk = false)} />
+{/if}
+
 {#if tilfoejArk}
 	<TilfoejArk
 		maaltidLabel={LABELS[type]}
@@ -1343,6 +1391,7 @@
 		onvaelg={vaelgTraef}
 		onhjerte={skiftHjertePaa}
 		onlavSelv={lavSelvFraArk}
+		onscan={() => { tilfoejArk = false; scanArk = true; }}
 		onkilde={aabnKildeFraArk}
 		onluk={() => (tilfoejArk = false)}
 	/>

@@ -38,6 +38,8 @@
 		/** Slaar hjertet til eller fra paa en madvare. */
 		onhjerte: (foodId: string) => void;
 		onlavSelv: (navn: string) => void;
+		/** Scan en vare. Vejen til alt med en pakke om sig, se HANDOVER 9.51. */
+		onscan: () => void;
 		onkilde: (kilde: 'opskrifter' | 'faste' | 'mine') => void;
 		onluk: () => void;
 	}
@@ -53,6 +55,7 @@
 		onhjerte,
 		onvaelg,
 		onlavSelv,
+		onscan,
 		onkilde,
 		onluk
 	}: Props = $props();
@@ -89,8 +92,12 @@
 			{#if intet}
 				<!-- Vejen ind naar soegningen ikke finder noget. Det er HER hun
 				     staar i staa: varen i haanden og en tom skaerm. -->
+				<!-- SCAN STAAR OEVERST og "lav selv" under. Vi vil helst have
+				     tallene fra pakken frem for fra hukommelsen. Linns
+				     raekkefoelge, se mockups-scan-vare.html. -->
 				<div class="kort rolig tm-intet">
-					<span>Ingen fødevarer hedder det.</span>
+					<span>Ingen fødevarer hedder det. Har varen en pakke, henter du tallene direkte fra den.</span>
+					<button type="button" class="tm-scan" onclick={onscan}>Scan varen</button>
 					<button type="button" class="tm-lav-selv" onclick={() => onlavSelv(soegeord)}>
 						+ Lav "{soegeord.trim()}" selv
 					</button>

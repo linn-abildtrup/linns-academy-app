@@ -14019,3 +14019,297 @@ a.tr-felt:focus-visible {
 	display: block;
 	margin-bottom: 2px;
 }
+
+/* ============================================================
+   SCAN EN VARE
+   Se components/ny/ScanArk.svelte og HANDOVER-3.0.md 9.51.
+
+   Arket bruger dvh og ikke vh. Mobilbrowsere regner vh ud som om
+   adresselinjen var vaek, saa et ark paa 86vh bliver hoejere end det
+   hun kan se, og toppen med luk-krydset havner uden for skaermen.
+   Kostede en aften 11. august.
+   ============================================================ */
+
+.sk-baggrund {
+	position: fixed;
+	inset: 0;
+	z-index: 60;
+	background: rgba(40, 30, 26, 0.42);
+}
+
+.sk-ark {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 61;
+	background: var(--oat);
+	border-radius: 22px 22px 0 0;
+	padding: 10px 17px calc(20px + env(safe-area-inset-bottom));
+	height: 84vh;
+	height: 86dvh;
+	max-height: calc(100dvh - 10px);
+	overflow-y: auto;
+	box-shadow: 0 -8px 30px rgba(80, 55, 40, 0.16);
+}
+
+.sk-greb {
+	width: 38px;
+	height: 4px;
+	border-radius: 99px;
+	background: var(--line);
+	margin: 0 auto 10px;
+}
+
+.sk-luk {
+	position: absolute;
+	top: 12px;
+	right: 14px;
+	width: 30px;
+	height: 30px;
+	border: 0;
+	border-radius: 50%;
+	background: var(--paper-2);
+	color: var(--ink-2);
+	font-size: calc(19px * var(--fs-scale, 1));
+	line-height: 1;
+	cursor: pointer;
+}
+
+.sk-h {
+	font-family: var(--serif);
+	font-size: calc(21px * var(--fs-scale, 1));
+	font-weight: 600;
+	margin: 4px 0 5px;
+}
+
+.sk-p {
+	font-size: calc(13px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin: 0 0 14px;
+	line-height: 1.55;
+}
+
+.sk-knap {
+	display: block;
+	width: 100%;
+	text-align: center;
+	background: var(--plum);
+	color: #fff;
+	border: 0;
+	border-radius: 14px;
+	padding: 13px;
+	font-family: var(--sans);
+	font-size: calc(14px * var(--fs-scale, 1));
+	font-weight: 600;
+	margin-top: 10px;
+	cursor: pointer;
+}
+
+.sk-knap.let {
+	background: var(--paper);
+	color: var(--plum);
+	border: 1px solid var(--line);
+}
+
+.sk-knap.gem {
+	background: var(--sage-tekst);
+	margin-top: 16px;
+}
+
+.sk-knap:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+/* Filvaelgeren gemmes inde i knappen, saa hun ser ét trykfelt. */
+.sk-foto {
+	position: relative;
+	overflow: hidden;
+}
+
+.sk-foto input {
+	position: absolute;
+	inset: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+
+.sk-laeser {
+	padding: 26px 0;
+	text-align: center;
+	color: var(--ink-2);
+	font-size: calc(13px * var(--fs-scale, 1));
+}
+
+.sk-fejl {
+	border-radius: 13px;
+	padding: 10px 12px;
+	margin-bottom: 10px;
+	background: var(--plum-tint);
+	color: var(--plum-deep);
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	line-height: 1.5;
+}
+
+.sk-baand {
+	border-radius: 13px;
+	padding: 10px 12px;
+	margin: 10px 0;
+	background: var(--paper-2);
+	color: var(--ink-2);
+	font-size: calc(12px * var(--fs-scale, 1));
+	line-height: 1.5;
+}
+
+.sk-baand.honning {
+	background: var(--honey-tint);
+	color: #6b4a1e;
+	border-left: 3px solid var(--honey);
+}
+
+.sk-baand b {
+	display: block;
+	margin-bottom: 2px;
+	color: var(--espresso);
+}
+
+.sk-baand.honning b {
+	color: #6b4a1e;
+}
+
+.sk-felt {
+	display: block;
+	margin-top: 12px;
+}
+
+.sk-felt span {
+	display: block;
+	font-size: calc(11px * var(--fs-scale, 1));
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	font-weight: 700;
+	margin-bottom: 4px;
+}
+
+.sk-felt input {
+	width: 100%;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--paper);
+	padding: 11px 13px;
+	font-family: var(--sans);
+	font-size: calc(14px * var(--fs-scale, 1));
+	color: var(--espresso);
+}
+
+.sk-tal {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 1px;
+	background: var(--line);
+	border: 1px solid var(--line);
+	border-radius: 11px;
+	overflow: hidden;
+	margin-top: 14px;
+}
+
+.sk-t {
+	background: var(--paper);
+	padding: 8px 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	align-items: center;
+}
+
+.sk-t-n {
+	font-size: calc(9.5px * var(--fs-scale, 1));
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	font-weight: 700;
+}
+
+.sk-t input {
+	width: 100%;
+	border: 0;
+	background: none;
+	text-align: center;
+	font-family: var(--serif);
+	font-size: calc(16px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	min-width: 0;
+}
+
+.sk-pr {
+	text-align: center;
+	font-size: calc(11px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-top: 5px;
+}
+
+.sk-valg {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	margin-top: 9px;
+}
+
+.sk-v {
+	display: flex;
+	gap: 9px;
+	align-items: flex-start;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--paper);
+	padding: 10px 12px;
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	cursor: pointer;
+}
+
+.sk-v.valgt {
+	border-color: var(--plum);
+	background: var(--plum-tint);
+}
+
+.sk-v b {
+	display: block;
+	font-weight: 600;
+}
+
+.sk-v span {
+	color: var(--ink-2);
+}
+
+.sk-v b {
+	color: var(--espresso);
+}
+
+.sk-kilde {
+	margin: 9px 0 0;
+	text-align: center;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	line-height: 1.5;
+}
+
+/* Scan-knappen i tilfoej-arket, naar soegningen ikke fandt noget.
+   Den staar OEVER "lav selv", for vi vil helst have tallene fra pakken
+   frem for fra hukommelsen. Linns raekkefoelge 24. august. */
+.tm-scan {
+	display: block;
+	width: 100%;
+	margin-top: 10px;
+	border: 0;
+	border-radius: 12px;
+	background: var(--plum);
+	color: #fff;
+	padding: 11px;
+	font-family: var(--sans);
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	cursor: pointer;
+}
