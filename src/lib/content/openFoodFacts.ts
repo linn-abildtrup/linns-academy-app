@@ -35,11 +35,13 @@ export interface NaeringTjek {
 export function tjekNaering(n: {
 	kcal?: number;
 	protein?: number;
+	fiber?: number;
 	kh?: number;
 	fedt?: number;
 }): NaeringTjek {
 	const kcal = n.kcal ?? 0;
 	const p = n.protein ?? 0;
+	const fiber = n.fiber ?? 0;
 	const kh = n.kh ?? 0;
 	const fedt = n.fedt ?? 0;
 	const harMakro = p + kh + fedt > 0;
@@ -49,14 +51,49 @@ export function tjekNaering(n: {
 	else if (kcal <= 0) advarsler.push('Kalorier mangler');
 
 	// Krydstjek kcal mod makroerne (Atwater: 4·protein + 4·kulhydrat + 9·fedt).
-	const atwater = p * 4 + kh * 4 + fedt * 9;
-	if (kcal > 0 && atwater > 0 && Math.abs(kcal - atwater) > Math.max(50, atwater * 0.35)) {
+	//
+	// FIBER, tilfoejet 24/8 2026. Fiber giver omkring 2 kcal pr gram, men om
+	// det tal allerede ER talt med i kulhydrat afhaenger af hvilket land
+	// deklarationen kommer fra. Danske og europaeiske labels holder kostfibre
+	// UDEN FOR kulhydrat. Amerikanske taeller dem MED.
+	//
+	// Vi kan ikke se hvilken slags vi har fat i, saa vi regner begge veje og
+	// accepterer tallet hvis det er plausibelt efter mindst én af dem. Maalt
+	// paa alle 2.268 faelles fodevarer og 5.633 af kundernes egne:
+	//   kun uden fiber  -> falsk alarm paa Husk og alle rene fiberprodukter
+	//   kun med fiber   -> falsk alarm paa chili, gurkemeje, kardemomme,
+	//                      fennikelfroe og kakaonibs
+	//   begge accepteret -> ingen af dem
+	const atwaterUdenFiber = p * 4 + kh * 4 + fedt * 9;
+	const atwaterMedFiber = atwaterUdenFiber + fiber * 2;
+	function passerIkke(atwater: number): boolean {
+		if (atwater <= 0) return false;
+		return Math.abs(kcal - atwater) > Math.max(50, atwater * 0.35);
+	}
+	if (
+		kcal > 0 &&
+		(atwaterUdenFiber > 0 || atwaterMedFiber > 0) &&
+		passerIkke(atwaterUdenFiber) &&
+		passerIkke(atwaterMedFiber)
+	) {
 		advarsler.push('Kalorier passer ikke til makroerne');
 	}
 	// Et produkt med fedt/kulhydrat men 0 protein OG 0 kcal er mistænkeligt
 	// håndteres af "kalorier mangler". Plausibilitets-grænser:
 	if (kcal > 900) advarsler.push('Kalorier er urealistisk høje (over 900 pr 100 g)');
 	if (p > 100 || kh > 100 || fedt > 100) advarsler.push('En værdi er over 100 g pr 100 g');
+
+	// INGEN PLAUSIBILITETS-GRAENSE PAA FIBER. Linns beslutning 24/8 2026:
+	// kommer der x gram fiber ind fra en fremmed database, stoler vi paa det.
+	// Vi kontrollerer ikke andres tal.
+	//
+	// Baggrunden, saa den ikke skal findes igen: en LU-kiks kom hjem med
+	// 52 g fiber pr 100 g. Et regnestykke kan ikke fange den, for tallene
+	// modsiger ikke hinanden. Hver graense der VILLE fange den, gav samtidig
+	// falsk alarm paa Husk, chiafroe, kokosmel, kakaonibs og otte slags
+	// krydderier, maalt paa alle 2.268 faelles fodevarer og 5.633 af
+	// kundernes egne. En advarsel paa netop de fiberrige varer laerer kunden
+	// at klikke advarsler vaek, og saa virker de oevrige heller ikke.
 
 	return { ok: advarsler.length === 0, advarsler };
 }

@@ -37,3 +37,43 @@ describe('tjekNaering', () => {
 		expect(r.advarsler).toContain('Kalorier er urealistisk høje (over 900 pr 100 g)');
 	});
 });
+
+
+describe('tjekNaering: fiber giver aldrig alarm', () => {
+	// Linns beslutning 24/8 2026: vi kontrollerer ikke hvad fremmede
+	// databaser siger. Kommer der x gram fiber ind, stoler vi paa det.
+	// Testene her holder fast i at ingen fiber-vaerdi i sig selv kan
+	// udloese en advarsel, og at de fiberrige varer gaar rent igennem.
+	it('godkender selv en absurd fiber-vaerdi, fordi vi stoler paa kilden', () => {
+		expect(tjekNaering({ kcal: 466, protein: 6.3, fiber: 52, kh: 68, fedt: 17 }).ok).toBe(true);
+		expect(tjekNaering({ kcal: 300, protein: 1, fiber: 140, kh: 1, fedt: 1 }).ok).toBe(true);
+	});
+
+	// Herunder staar aegte varer fra jeres egen database. Foer 24/8 2026 gav
+	// Husk og alle rene fiberprodukter en falsk advarsel, fordi fiber ikke
+	// talte med i kalorie-regnestykket.
+	it('giver IKKE alarm paa Husk, som aegte har 87 g fiber', () => {
+		expect(tjekNaering({ kcal: 200, protein: 2.4, fiber: 87 }).ok).toBe(true);
+	});
+
+	it('giver IKKE alarm paa chiafroe', () => {
+		expect(tjekNaering({ kcal: 490, protein: 17, fiber: 34, kh: 24, fedt: 31 }).ok).toBe(true);
+	});
+
+	it('giver IKKE alarm paa kokosmel', () => {
+		expect(tjekNaering({ kcal: 660, protein: 14, fiber: 33, kh: 2.3, fedt: 61.3 }).ok).toBe(true);
+	});
+
+	it('giver IKKE alarm paa krydderier, hvor fiber ofte er talt med i kulhydrat', () => {
+		expect(tjekNaering({ kcal: 282, protein: 13, fiber: 34, kh: 50, fedt: 15 }).ok).toBe(true);
+		expect(tjekNaering({ kcal: 354, protein: 8, fiber: 21, kh: 67, fedt: 10 }).ok).toBe(true);
+	});
+
+	it('giver IKKE alarm paa hvedeklid', () => {
+		expect(tjekNaering({ kcal: 216, protein: 16, fiber: 43, kh: 22, fedt: 4 }).ok).toBe(true);
+	});
+
+	it('taaler at fiber slet ikke er sendt med', () => {
+		expect(tjekNaering({ kcal: 216, protein: 16, kh: 22, fedt: 4 }).ok).toBe(true);
+	});
+});

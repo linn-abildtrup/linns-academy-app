@@ -496,6 +496,7 @@
 			const tjek = tjekNaering({
 				kcal: data.kcal,
 				protein: data.protein,
+				fiber: data.fiber,
 				kh: data.kh,
 				fedt: data.fedt
 			});
@@ -951,7 +952,13 @@
 			// Plausibilitets-tjek af de scannede tal — vis advarsler i dialogen
 			// hvis de ser forkerte/ufuldstændige ud (scan går altid gennem review).
 			const tjek = off
-				? tjekNaering({ kcal: off.kcal, protein: off.protein, kh: off.kh, fedt: off.fedt })
+				? tjekNaering({
+						kcal: off.kcal,
+						protein: off.protein,
+						fiber: off.fiber,
+						kh: off.kh,
+						fedt: off.fedt
+					})
 				: null;
 			nyDialog = {
 				barcode,
