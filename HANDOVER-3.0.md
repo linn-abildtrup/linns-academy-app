@@ -3434,16 +3434,42 @@ giver hende to veje: lad dem staa tomme, eller skriv tallet selv. Paa en
 delt vare gemmes 0 med `fiberUkendt: true` ved siden af, saa regnestykket
 ikke lyver og vi stadig kan se forskel.
 
-#### DET DER MANGLER: BILLEDET
+#### BILLEDET ER BEVISET, OG DET ER DERFOR VAREN MAA DELES
 
-**Vi laeser deklarationen af billedet og smider det vaek.** I tegningen
-ligger billedet bag varen som bevis, og det var halvdelen af begrundelsen
-for at dele den med andre.
+Billedet af varedeklarationen ligger i Storage under
+`deklarationer/{uid}/{vareId}`. **Reglen er udgivet 24. august kl 19.14**
+og verificeret mod det der koerer.
 
-Det kraever at billedet lægges i Storage og at **`storage.rules` aendres**.
-De styrer adgang til traeningsvideoer og lydfiler for alle 760 kunder, saa
-det er den samme slags beslutning som Firestore-reglerne. **Vis Linn den
-praecise aendring og faa et ja foerst.**
+**UDEN BILLEDE DELES VAREN IKKE.** Har hun skrevet tallene selv i stedet
+for at fotografere, bliver varen kun hendes, og det staar paa skaermen
+inden hun gemmer. Uden beviset ville vi sende én kundes tastearbejde
+videre til alle.
+
+Reglen i `storage.rules`:
+
+- **Alle indloggede LAESER.** Varen deles med alle, saa kunne kun hun der
+  tog billedet se det, ville beviset ikke vaere noget bevis
+- **Hver kunde SKRIVER kun i sin egen mappe.** Uid'et staar i stien, saa
+  det altid kan ses hvem der har lagt noget op, og ingen kan overskrive
+  en andens
+- **Hoejst 2 MB og kun billeder.** Et skaleret billede af en varetabel
+  vejer omkring 40 KB
+- **Kun admin maa slette**
+
+**Det er foerste gang en kunde skriver til Storage i en mappe andre kan
+laese.** Hidtil kunne hun kun skrive sine egne opskrift-billeder, som kun
+hun selv ser. Risikoen er lille men reel, og det er derfor stien baerer
+hendes uid og Linn kan slette.
+
+**Uploaden fejler aldrig opad.** Gaar den galt, gemmes varen alligevel med
+tallene. Et manglende bevis er bedre end en mistet scanning.
+
+**Fjerner Linn en vare, slettes billedet HELT**, mens varen kun maerkes
+som fjernet. De maaltider hvor den er brugt skal blive ved med at virke,
+se regel 10.
+
+Sikkerhedskopi af de gamle regler i
+`backup/storage.rules-foer-deklarationer-2026-08-24`.
 
 #### DET DER IKKE ER GJORT ENDNU
 
@@ -3452,8 +3478,9 @@ stadig i listen. Det næste er:
 
 - ~~350 dubletter, 232 retter og mærkevarer, fire nye navne~~. **Klaret 24.
   august**, se afsnittet ovenfor
-- ~~Scanneren~~. **Bygget 24. august**, se afsnittet ovenfor. Kun billedet
-  som bevis mangler, og det kræver en ændring i `storage.rules`
+- ~~Scanneren, inklusive billedet som bevis~~. **Bygget 24. august**, se
+  afsnittet ovenfor. **Den er ikke proevet paa en rigtig telefon endnu**, og
+  det er dér Linn finder de fejl ingen andre kan se
 - **Torskefars, laksefars og oksekød har ingen opskrifts-kobling.** En time
 - **Aftrykket af ingredienslisten**, aftalt 15. august og stadig ikke bygget
 - **225 fødevarer databasen ikke har.** 1,3 procent af al brug, højeste har
