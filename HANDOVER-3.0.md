@@ -3306,22 +3306,78 @@ stegt" og peger nu på DTU's "Bacon i skiver, rå", se regel 3 ovenfor. Bacon
 findes kun i én opskrift, Kyllingesalat med sprød bacon, som gik fra 34,4 til
 32 gram protein pr portion.
 
+#### SOEGNINGEN ER RYDDET OP SAMME DAG, OG SYNLIGHEDEN ER TAENDT
+
+**Punkt 1 til 3 er gjort. Kun scanneren mangler.**
+
+Tre ting blev skrevet til `fodevarer`, og ingen naeringstal blev roert:
+
+- **350 dubletter fik feltet `pegerPaa`** og forsvinder fra soegningen for
+  ALLE. AEg haardkogt, AEg stort, AEg lille, Avocado halv og resten. De er
+  den samme mad med de samme tal, saa der er intet at miste
+- **232 retter og maerkevarer fik `kunKendte: true`** og ses kun af den
+  kunde der allerede bruger dem
+- **Fire varer skiftede navn**, fordi tallet nu er raavarens: Kyllingebryst,
+  Havregryn, Sød kartoffel og Rødbede
+
+**Fra 2.268 raekker til 1.686 for en ny kunde.** Soeger hun paa aeg, faar hun
+aeg, aeggehvide og aeggeblomme plus de fire slags hoenseaeg Linn bad om, i
+stedet for otte raekker af det samme.
+
+Sikkerhedskopi i `backup/fodevarer-foer-sortering-2026-08-24.json`.
+
+**Reglerne ligger i `content/fodevareKilde3.ts` med 31 tests.** Den svarer paa
+to spoergsmaal der er forskellige: hvor kommer tallet fra, og maa hun se varen
+overhovedet. Fire maerkater med Linns ord: **Fødevaredatabasen, Scannet, Dit
+eget tal, Uden kilde.**
+
+Skaermene er i `TilfoejArk.svelte` og `MaengdeArk.svelte`. Maerket er et SPAN
+og aldrig en knap, saa en bred regel som `.tm-traef button` ikke giver det
+width 100 % og laegger det oven i navnet. Samme faelde som hjertet faldt i 12.
+august.
+
+**Maengde-arket har faaet linjen "Mængder er før tilberedning"**, sat stille
+under tallene og ikke som et baand. Og et baand paa varer uden kilde der beder
+hende scanne pakken. **Linns beslutning: hver gang**, ikke kun foerste gang og
+ikke kun paa de mest brugte.
+
+#### `kendteVarer3` PAA KUNDEN, OG HVORFOR DEN MAATTE BLIVE ET FELT
+
+**Jeg lovede Linn at det ikke ville kraeve et script. Det gjorde det.**
+
+Historikken i `plejer3` raekker kun 45 dage tilbage, og Linns regel er UDEN
+tidsgraense: en vare hun brugte for et aar siden skal stadig kunne findes.
+Derfor staar de faa varer hun har taget i brug paa hendes eget dokument som
+`kendteVarer3`, se `firestore/kendteVarer3.ts`.
+
+**Feltet er additivt.** `userDoc.ts` og `types.ts` er uroerte, og der skal
+intet udgives i Firebase, for reglerne tillader kunden at skrive paa sit eget
+dokument i forvejen.
+
+**Backfill koert 24. august:** 382 af 618 kunder fik en liste. Median 3 varer,
+hoejeste 32, i alt 2.039. Verificeret bagefter: nul id'er der ikke burde staa
+der.
+
+**Kun varer med `kunKendte` skrives.** En almindelig foedevare ses af alle i
+forvejen, og at skrive den ville lade listen vokse uden grund. Der er test paa
+det.
+
+Soegningen laeser tre kilder sammen: listen paa dokumentet, "det du plejer" de
+sidste 45 dage, og hendes hjerter. Listen er den eneste der raekker uendeligt
+tilbage, de to andre fanger det nye foer listen naar at blive opdateret.
+
 #### DET DER IKKE ER GJORT ENDNU
 
 **Kun tallene er skrevet ud. Søgningen er ikke rørt.** Alle 2.268 varer står
 stadig i listen. Det næste er:
 
-- **350 dubletter skal skjules.** 446 af vores varer peger på de samme 208
-  DTU-varer. Æg giver otte rækker, mandler fem, kylling fire. **Ingen må
-  slettes**, kun skjules fra søgningen, for registrerede måltider og faste
-  måltider skal blive ved med at virke
-- **239 retter og mærkevarer skal ud af søgningen.** Frikadelle, lasagne,
-  hummus, proteinpulver, granola. Linns model: **de ses kun af de kunder der
-  allerede har brugt dem.** Nye kunder ser dem ikke. Målt: 29 procent af
-  kunderne har ikke brugt en eneste af dem, og medianen er ÉN vare
-- **Fire varer skal skifte navn**, fordi tallet nu er råvarens: Kyllingebryst
-  stegt bliver til Kyllingebryst, Sød kartoffel ovnbagt til Sød kartoffel,
-  Rødbede kogt til Rødbede, og de to slags havregryn til Havregryn
+- ~~350 dubletter, 232 retter og mærkevarer, fire nye navne~~. **Klaret 24.
+  august**, se afsnittet ovenfor
+- **SCANNEREN, og det er det største der mangler.** Uden den kan listen ikke
+  vokse tilbage, og kunderne mangler deres mærkevarer. Tegnet færdigt i
+  `mockups-scan-vare.html`, se 9.51. Fem dele: stregkode-scanner, foto af
+  varedeklarationen, kvalitetstjekket med fibre-manglen, deling af scannede
+  varer, og admin-siden som nødbremse
 - **Torskefars, laksefars og oksekød mangler helt en opskrifts-kobling**
 - **225 varer er ikke koblet**, men de fylder kun 1,3 procent af al brug og den
   mest brugte har 55 registreringer. Cafe latte, flerkornsbrød, frossen
