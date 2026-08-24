@@ -3366,6 +3366,85 @@ Soegningen laeser tre kilder sammen: listen paa dokumentet, "det du plejer" de
 sidste 45 dage, og hendes hjerter. Listen er den eneste der raekker uendeligt
 tilbage, de to andre fanger det nye foer listen naar at blive opdateret.
 
+#### SCANNEREN ER BYGGET 24. august. Kun billedet mangler
+
+Punkt 4 til 8 er gjort. **Kunden kan scanne en vare, faa tallene fra
+varedeklarationen, og varen bliver delt med alle.**
+
+| Fil | Hvad |
+|---|---|
+| `content/varedeklaration3.ts` | At laese en deklaration. 27 tests |
+| `api/ny-varedeklaration/` | Endpointet der laeser billedet |
+| `components/ny/ScanArk.svelte` | Hele forloebet i ét ark |
+| `firestore/scannedeVarer3.ts` | De delte varer. 4 tests |
+| `routes/ny/admin/scannede/` | Linns noedbremse |
+
+**Stregkode-scanneren er den GAMLE apps `BarcodeScanner.svelte`**, kun laest
+og importeret. `@zxing/browser` laa allerede i projektet. Det sparede et
+bibliotek og en aften.
+
+**Kalorie-tjekket er ogsaa den gamle apps `tjekNaering`.** To steder der
+doemmer naeringstal forskelligt er vaerre end ét sted der doemmer dem lidt
+for haardt.
+
+#### Reglerne bag delingen
+
+- **Har hun ikke rettet i tallene, deles varen med alle.** Retter hun ét
+  tal, er det ikke laengere pakkens, og saa bliver den kun hendes
+- **Egen samling, `scannedeVarer3`, ALDRIG i `fodevarer`.** Kunne kunderne
+  skrive i den faelles liste, kunne én kunde aendre AEg til 999 g protein
+  for alle 760, og ingen ville opdage det foer tallene stod forkert i
+  hundredvis af dagboeger. Reglen er udgivet 24. august kl 19.06 og
+  verificeret mod det der koerer
+- **DOKUMENT-ID ER STREGKODEN.** To kunder der scanner den samme yoghurt
+  rammer det samme sted, og den foerste vinder. Firestore afviser den anden
+  af sig selv, saa der skal ingen kode til at haandtere kaploebet. Bliver
+  hun afvist, bruger appen den vare der ligger, og hun ser ingen fejl
+- **Den faelles liste vinder ved sammenlaegning**, saa en scanning aldrig
+  kan skygge for en raavare. Der er test paa det
+- **Linn godkender ikke.** Varen er delt fra det sekund den er scannet.
+  Skulle hun godkende foerst, ville en kunde staa og vente paa hende midt
+  i sin morgenmad. Admin-siden er en noedbremse, hvor de varer med tal der
+  ikke haenger sammen staar oeverst
+
+#### To ting der er dyre at genopdage
+
+**"201 kJ / 48 kcal" bliver til 20148** hvis man fjerner alt der ikke er
+cifre. Sådan skriver enhver dansk pakke energi. `tilTal` tager nu det tal
+der staar lige foer ordet kcal. Fanget af en test, ikke af oejne.
+
+**Et rent fiberprodukt faar en falsk alarm.** Bellwell med 76 g fiber og
+360 kalorier ser umuligt ud for regnestykket, selv om det er rigtigt. Vi
+lever med den, for hun kan gemme alligevel. Alternativet var at slaekke
+tjekket for alle, og saa fanger det heller ikke den forkerte kolonne, som
+er den fejl der goer skade. Begrundelsen staar i testen.
+
+#### KOSTFIBRE ER FRIVILLIGE, OG DET ER DET STOERSTE HUL
+
+EU kraever energi, fedt, maettet fedt, kulhydrat, sukkerarter, protein og
+salt paa en varedeklaration. **Fibre staar paa listen over det man MAA
+skrive, ikke det man SKAL.**
+
+I en app der hedder 30-30 er det den vaerst taenkelige mangel. Seks af de
+syv tal kommer sikkert ind fra et billede. Det syvende, som er halvdelen
+af konceptet, kan mangle.
+
+**Vi skriver ALDRIG et stille nul.** Mangler fibrene, siger arket det og
+giver hende to veje: lad dem staa tomme, eller skriv tallet selv. Paa en
+delt vare gemmes 0 med `fiberUkendt: true` ved siden af, saa regnestykket
+ikke lyver og vi stadig kan se forskel.
+
+#### DET DER MANGLER: BILLEDET
+
+**Vi laeser deklarationen af billedet og smider det vaek.** I tegningen
+ligger billedet bag varen som bevis, og det var halvdelen af begrundelsen
+for at dele den med andre.
+
+Det kraever at billedet lægges i Storage og at **`storage.rules` aendres**.
+De styrer adgang til traeningsvideoer og lydfiler for alle 760 kunder, saa
+det er den samme slags beslutning som Firestore-reglerne. **Vis Linn den
+praecise aendring og faa et ja foerst.**
+
 #### DET DER IKKE ER GJORT ENDNU
 
 **Kun tallene er skrevet ud. Søgningen er ikke rørt.** Alle 2.268 varer står
@@ -3373,11 +3452,12 @@ stadig i listen. Det næste er:
 
 - ~~350 dubletter, 232 retter og mærkevarer, fire nye navne~~. **Klaret 24.
   august**, se afsnittet ovenfor
-- **SCANNEREN, og det er det største der mangler.** Uden den kan listen ikke
-  vokse tilbage, og kunderne mangler deres mærkevarer. Tegnet færdigt i
-  `mockups-scan-vare.html`, se 9.51. Fem dele: stregkode-scanner, foto af
-  varedeklarationen, kvalitetstjekket med fibre-manglen, deling af scannede
-  varer, og admin-siden som nødbremse
+- ~~Scanneren~~. **Bygget 24. august**, se afsnittet ovenfor. Kun billedet
+  som bevis mangler, og det kræver en ændring i `storage.rules`
+- **Torskefars, laksefars og oksekød har ingen opskrifts-kobling.** En time
+- **Aftrykket af ingredienslisten**, aftalt 15. august og stadig ikke bygget
+- **225 fødevarer databasen ikke har.** 1,3 procent af al brug, højeste har
+  55 registreringer. Cafe latte, flerkornsbrød, frossen bærblanding
 - **Torskefars, laksefars og oksekød mangler helt en opskrifts-kobling**
 - **225 varer er ikke koblet**, men de fylder kun 1,3 procent af al brug og den
   mest brugte har 55 registreringer. Cafe latte, flerkornsbrød, frossen
