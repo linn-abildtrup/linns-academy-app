@@ -12,7 +12,8 @@ import {
 	renseIngrediensNavn,
 	splitListeIngrediens,
 	type Fodevare,
-	type MaaltidsItem
+	type MaaltidsItem,
+	portionVedEnhedsskift
 } from './kost';
 
 const skyr: Fodevare = {
@@ -556,5 +557,48 @@ describe('matchIngredienserMaltid med liste-splitting', () => {
 		expect(r.items).toHaveLength(1);
 		expect(r.items[0].foodId).toBe('mandler');
 		expect(r.items[0].portion).toBe(25);
+	});
+});
+
+
+describe('portionVedEnhedsskift', () => {
+	// Fejlen 24/8 2026: et enhedsskift overskrev ALTID maengden, ogsaa en
+	// kunden lige havde tastet. Hun skrev 80, skiftede til gram, og hendes
+	// 80 blev lydloest til 100.
+	it('lader et tal kunden selv har tastet staa, gram -> navngivet enhed', () => {
+		expect(portionVedEnhedsskift(80, 'g', 'skive')).toBe(80);
+	});
+
+	it('lader et tal kunden selv har tastet staa, navngivet enhed -> gram', () => {
+		expect(portionVedEnhedsskift(3, 'skive', 'g')).toBe(3);
+	});
+
+	it('justerer stadig naar tallet er appens egen standard, gram -> enhed', () => {
+		expect(portionVedEnhedsskift(100, 'g', 'skive')).toBe(1);
+	});
+
+	it('justerer stadig naar tallet er appens egen standard, enhed -> gram', () => {
+		expect(portionVedEnhedsskift(1, 'skive', 'g')).toBe(100);
+	});
+
+	it('roerer aldrig tallet mellem to navngivne enheder', () => {
+		expect(portionVedEnhedsskift(1, 'stk', 'skive')).toBe(1);
+		expect(portionVedEnhedsskift(4, 'stk', 'skive')).toBe(4);
+	});
+
+	it('roerer aldrig tallet mellem g og ml, som begge er basis-enheder', () => {
+		expect(portionVedEnhedsskift(100, 'g', 'ml')).toBe(100);
+		expect(portionVedEnhedsskift(250, 'ml', 'g')).toBe(250);
+	});
+
+	it('behandler manglende enhed som gram', () => {
+		expect(portionVedEnhedsskift(100, undefined, 'stk')).toBe(1);
+		expect(portionVedEnhedsskift(75, undefined, 'stk')).toBe(75);
+		expect(portionVedEnhedsskift(1, 'stk', undefined)).toBe(100);
+	});
+
+	it('rammer ikke ved siden af paa decimaler kunden har tastet', () => {
+		expect(portionVedEnhedsskift(1.5, 'skive', 'g')).toBe(1.5);
+		expect(portionVedEnhedsskift(0.5, 'skive', 'g')).toBe(0.5);
 	});
 });

@@ -15,6 +15,7 @@
 		MAALTIDSTYPE_LABELS,
 		MAALTIDSTYPER,
 		maaltidstypeOrder,
+		portionVedEnhedsskift,
 		PROTEIN_MAALTIDS_MAAL,
 		FIBER_DAGS_MAAL,
 		procentMod,
@@ -910,15 +911,10 @@
 	function opdaterEnhed(index: number, ny: string) {
 		const opdateret = [...maaltid];
 		const eksisterende = opdateret[index];
-		// Auto-juster portion-tal naar enheden skifter type, saa kunden
-		// ikke ender med absurde vaerdier som '100 skiver'. Gar fra g/ml
-		// til navngivet enhed -> portion = 1. Modsat vej -> portion = 100.
-		const gammelErGram =
-			!eksisterende.enhedId || eksisterende.enhedId === 'g' || eksisterende.enhedId === 'ml';
-		const nyErGram = !ny || ny === 'g' || ny === 'ml';
-		let portion = eksisterende.portion;
-		if (gammelErGram && !nyErGram) portion = 1;
-		else if (!gammelErGram && nyErGram) portion = 100;
+		// Reglen ligger i portionVedEnhedsskift, se kost.ts. Den justerer kun
+		// tallet naar det stadig er den standard appen selv satte, saa en
+		// maengde kunden har tastet ikke bliver overskrevet af et enhedsskift.
+		const portion = portionVedEnhedsskift(eksisterende.portion, eksisterende.enhedId, ny);
 		opdateret[index] = { ...eksisterende, portion, enhedId: ny || undefined };
 		maaltid = opdateret;
 	}

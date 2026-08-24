@@ -297,6 +297,42 @@ export function getEnheder(food: Fodevare | undefined): Enhed[] {
 	return STANDARD_ENHEDER_KATEGORI[food.cat] ?? [];
 }
 
+/**
+ * True for de to basis-enheder hvor 1 enhed = 1 gram.
+ */
+function erBasisEnhed(enhedId?: string): boolean {
+	return !enhedId || enhedId === 'g' || enhedId === 'ml';
+}
+
+/**
+ * Hvilken maengde skal staa, naar kunden skifter enhed paa en linje.
+ *
+ * Skifter hun mellem gram og en navngiven enhed, justerer vi tallet saa hun
+ * ikke ender med absurde vaerdier som '100 skiver'. MEN kun naar tallet
+ * stadig er den standard appen selv satte.
+ *
+ * Foer 24/8 2026 overskrev vi ALTID. Kunden skrev 80, skiftede enhed til
+ * gram, og hendes 80 blev lydloest til 100. Feltet stod til hoejre for
+ * tallet, saa den naturlige raekkefoelge var netop at taste maengden foerst
+ * og rette enheden bagefter. Et tal kunden selv har skrevet skal blive
+ * staaende.
+ *
+ * Skifter hun mellem to navngivne enheder, eller mellem g og ml, roerer vi
+ * aldrig tallet.
+ */
+export function portionVedEnhedsskift(
+	nuvaerendePortion: number,
+	gammelEnhedId: string | undefined,
+	nyEnhedId: string | undefined
+): number {
+	const gammelErGram = erBasisEnhed(gammelEnhedId);
+	const nyErGram = erBasisEnhed(nyEnhedId);
+	if (gammelErGram === nyErGram) return nuvaerendePortion;
+	const standardForGammel = gammelErGram ? 100 : 1;
+	if (nuvaerendePortion !== standardForGammel) return nuvaerendePortion;
+	return nyErGram ? 100 : 1;
+}
+
 export function gramForEnhed(food: Fodevare | undefined, enhedId?: string): number {
 	// 'g' og 'ml' er begge basis-enheder (1 enhed = 1 gram) — 'ml' bruges
 	// blot som display-label for væsker så det ikke står '200 g mælk'.
