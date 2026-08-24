@@ -351,6 +351,8 @@ Rettet 11. august på alle fire ark. `.henter` og `.side-ramme` bruger stadig `v
 
 **`opretDoc` findes ikke i `firestoreRest.ts`.** Brug `gemDocMerge` med et selvlavet dokument-id.
 
+**Retter du en fødevares tal, bliver opskrifterne forældede i samme sekund.** De 133 opskrifters makro er REGNET UD på forhånd og gemt i `ingrediensKobling/beregninger`. De regnes ikke om af sig selv. Det skete 24. august: fødevarerne fik nye tal fra DTU, og i en time stod opskrifterne med tal fra de gamle. **Rør aldrig ved en fødevares næringstal uden at regne opskrifterne om samme dag.** Fremgangsmåden står i 9.50.
+
 **Firestore-regler driver.** Sammenlign altid de live regler med `firestore.rules` i repoet, inden du udgiver noget. Det er nu ét kald, se afsnit 8.
 
 **`prettier --write` PAA ny.css OMSKRIVER SKRIFTERNE. Jeg gik selv i den 21. august, selv om advarslen stod her.** De indlejrede skrifter er base64 på én linje, og prettier brækker dem op. Diffen bliver 165 linjer i stedet for de 126 du skrev. Redningen er at rulle filen tilbage med `git checkout` og lægge sine egne regler på i hånden. **Hold `ny.css` helt uden for prettier.**
@@ -3274,6 +3276,36 @@ uden kerner, aroniabær hedder Surbær.
 Og danske flertalsformer: dadler bliver til daddel, cashewnødder til cashewnød,
 mandler til mandel. Dobbeltkonsonanten falder bort igen.
 
+#### OPSKRIFTERNE BLEV REGNET OM SAMME DAG, OG DET SKAL DE ALTID
+
+**Det her er den vigtigste driftsregel der kom ud af dagen.**
+
+De 133 opskrifters makro er regnet ud på forhånd og ligger gemt i
+`ingrediensKobling/beregninger`. **De regnes ikke om af sig selv.** Ændrer man
+en fødevares tal, står opskrifterne stille med de gamle, og de to kilder siger
+så forskellige ting om den samme mad.
+
+Det skete den 24. august. Fødevarerne fik nye tal klokken 16.48, og
+opskrifterne blev først regnet om klokken 16.59. **Rækkefølgen var forkert**,
+og den skal være omvendt eller samtidig næste gang.
+
+**Sådan regnes de om:** brug `regnOpskrift` og `afrund` fra
+`content/opskriftMakro3.ts` direkte i et script, med hele `fodevarer`-samlingen
+og `ingrediensKobling/koblinger` som input. Skriv resultatet til
+`ingrediensKobling/beregninger` under `kort`. **Husk `afrund`**, ellers ender
+der tal som 546,9899999999999 i databasen.
+
+**Hvad omregningen gjorde:** 46 af de 133 ændrede sig mærkbart. Protein pr
+portion steg med 1,6 gram i median, spændet var fra minus 3,7 til plus 3,7.
+Linse- og kikærteretterne steg mest, fordi vores gamle tal for tørrede
+bælgfrugter var for lave. Sikkerhedskopi i
+`backup/ingrediensKobling-foer-2026-08-24.json`.
+
+**Bacon blev rettet samme kørsel.** Ingrediensen pegede på vores egen "Bacon,
+stegt" og peger nu på DTU's "Bacon i skiver, rå", se regel 3 ovenfor. Bacon
+findes kun i én opskrift, Kyllingesalat med sprød bacon, som gik fra 34,4 til
+32 gram protein pr portion.
+
 #### DET DER IKKE ER GJORT ENDNU
 
 **Kun tallene er skrevet ud. Søgningen er ikke rørt.** Alle 2.268 varer står
@@ -3290,7 +3322,6 @@ stadig i listen. Det næste er:
 - **Fire varer skal skifte navn**, fordi tallet nu er råvarens: Kyllingebryst
   stegt bliver til Kyllingebryst, Sød kartoffel ovnbagt til Sød kartoffel,
   Rødbede kogt til Rødbede, og de to slags havregryn til Havregryn
-- **Bacon i opskrifts-koblingen peger stadig på stegt bacon**
 - **Torskefars, laksefars og oksekød mangler helt en opskrifts-kobling**
 - **225 varer er ikke koblet**, men de fylder kun 1,3 procent af al brug og den
   mest brugte har 55 registreringer. Cafe latte, flerkornsbrød, frossen
