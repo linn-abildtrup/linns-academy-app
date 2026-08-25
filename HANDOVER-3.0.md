@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 25. august 2026. **9.52 og 9.53 er de nyeste: kunden kan rette mængder og lægge ingredienser til i Linns opskrifter, altså i praksis bytte, og hendes hjerter og favoritter kommer nu først i søgningen.** **Læs 9.50 hvis du rører noget i Mad: alle fødevarers næringstal kommer nu fra Den Danske Fødevaredatabase, og det er skrevet ud til BEGGE apper 24. august.** 9.49 er gennemgangen af fødevare-kilderne der førte til det. Se 9.39 til 9.48 for hele beskedsystemet, bygget 23. august.
+Sidst opdateret 25. august 2026. **Rører du Mad, så læs 9.50 og 9.52 til 9.55.** 9.50 er at alle fødevarers næringstal kommer fra Den Danske Fødevaredatabase, skrevet ud til BEGGE apper 24. august. 9.52 til 9.55 er 25. august: kunden kan rette i Linns opskrifter, søgningen er lagt om to gange, salaterne var forsvundet, og en blank skærm i 30-30 er rettet. 9.49 er gennemgangen af fødevare-kilderne der førte til det. Se 9.39 til 9.48 for hele beskedsystemet, bygget 23. august.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -416,7 +416,7 @@ semikolon.**
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 2354 tests lige nu, alle grønne
+npm test                               # 2504 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -449,9 +449,24 @@ Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx 
 
 ## 9. Hvor vi står, og hvad der er næste skridt
 
-Opdateret 24. august 2026. **Alt er kodet, committet og pushet, og `main` er i
+Opdateret 25. august 2026. **Alt er kodet, committet og pushet, og `main` er i
 sync.** Firestore-reglerne er udgivet og verificeret mod det der kører, senest
-23. august, så der ligger ingen uudgivet regel.
+23. august, så der ligger ingen uudgivet regel. **Der er ikke udgivet regler
+25. august**, alt den dag var kode og data.
+
+**Det der blev lavet 25. august**, hver med sit eget afsnit:
+
+- **9.52** Hun retter i Linns opskrifter: mængder op og ned, læg en
+  ingrediens til, fjern den igen. I praksis et bytte
+- **9.53** Hendes hjerter, egne varer og egne scanninger kommer først i
+  søgningen. Og søgningen tåler nu en slåfejl på ét tegn
+- **9.54** Salaterne var forsvundet. 26 varer er åbnet igen, 64 er
+  forelagt og bevidst fravalgt
+- **Den blanke skærm på 30-30 oversigten er rettet.** Den havde ingen
+  udvej hvis dagen ikke kunne hentes, og så tegnede siden ingenting
+- Tekststørrelsen hedder Lille, Normal og Stor, ligger nu under Din side,
+  og en ny kunde starter på Normal
+- Guides markeres nu som set, så dagen kan folde sig sammen
 
 **Beskedsystemet er færdigt og afprøvet:** notifikationer, beskeder til én
 kunde, forsidebeskeder, morgen-vagten og mail som reserve. Se 9.39 til 9.48.
@@ -462,8 +477,19 @@ kører hver time.
 
 ### NÆSTE SKRIDT
 
-Opdateret 22. august. Punkt 4 faldt væk samme dag, og der er kommet to nye
-grupper til: hvad der er halvbygget, og hvad Linn selv skal gøre.
+Opdateret 25. august. **Det der spærrer for at flytte et hold har ikke
+flyttet sig siden 22. august, og det er stadig indhold og tildelinger fra
+Linn, ikke kode.**
+
+Nyt fra 25. august, som venter på Linn:
+
+- **Søgeord-feltet på fødevarer.** Søgningen kender kun ét navn ad
+  gangen, så "isberg" giver ingenting nu hvor varen hedder Icebergsalat.
+  Det samme gælder brocolli mod broccoli og avocado mod avokado.
+  Slåfejls-slækket løser dem IKKE, se 9.53. Feltet findes ikke i data
+- **Om en scannet vare skal have et synligt hjerte.** Linn bad om det,
+  vi løste det i rækkefølgen i stedet, se 9.53. Beslutningen står ved
+  magt, men er værd at kende hvis nogen undrer sig
 
 #### Spærrer for at flytte et hold
 
@@ -575,6 +601,13 @@ købsdatoer. **Verificér dem mod koden før nogen regner med dem.**
 - **AI-samtalerne slettes ikke automatisk** efter en måned
 - **Repoet er ikke prettier-rent.** Formatér kun de filer du selv har rørt,
   og hold dig fra `ny.css`, hvor prettier omskriver de indlejrede skrifter
+- **"isberg" og "brocolli" giver ingenting.** Se 9.53. Slækket tager kun
+  slåfejl på ét tegn, og de to er ikke slåfejl
+- **Proteindrik, færdig står til 9 g protein og 50 kcal**, hvilket ser
+  lavt ud. Varen er skjult, så det haster ikke, men tallet er ikke tjekket
+- **Scanneren er stadig ikke prøvet på en Android.** iPhone er bekræftet
+  af Linn 25. august. Selve stregkode-læsningen er den gamle apps egen
+  komponent, uændret, inklusive de tre Android-rettelser fra 2. juni
 
 ### Åben liste, aftalt 6. august
 
@@ -3805,6 +3838,77 @@ id. Den goer IKKE at kunden kan finde varen paa dublettens navn.
 Konkret: soeger hun "iceberg", faar hun **ingenting**. "Isberg" virker.
 Navnet paa posen i butikken er det foerste. Ikke loest, og det kraever
 enten et andet navn paa varen eller et soegeord ved siden af.
+
+---
+
+### 9.55 SMÅ TING FRA 25. AUGUST, som er lette at overse
+
+#### DEN BLANKE SKÆRM PÅ 30-30 OVERSIGTEN
+
+Linn så den flere gange: en tom flade med top og bundmenu, mens hun var
+inde i 30-30.
+
+**Skærmen havde kun TO tilstande**, "henter" og "her er dagen". Gik
+hentningen af dagens måltider galt, satte fejl-grenen `henter` til falsk,
+men `dag` stod stadig som null, og så var der **ingen gren tilbage der
+tegnede noget.** Top og bundmenu blev stående, fordi de hører til
+skallen, og derfor lignede det en blank app.
+
+Den blev desuden hængende: siden prøver ikke af sig selv og henter først
+igen hvis hun skifter dag eller forlader siden.
+
+Rettet med to ting. Den prøver **én gang til af sig selv** med en kort
+pause, for de fleste af de her fejl er et øjebliks dårlig forbindelse og
+er væk ved andet forsøg. Slår det også fejl, er der nu en sidste udvej
+med en rolig tekst og en Prøv igen-knap.
+
+**DER STÅR EN ADVARSEL I MARKUP OM AT DEN GREN ALDRIG MÅ FJERNES.**
+Måltidsskærmen inde bagved havde det rigtigt hele tiden, den falder
+tilbage på "Der er ikke noget her endnu". Det var kun oversigten der
+manglede udvejen, og fejlen havde været der siden skærmen blev bygget.
+
+**Læren gælder bredere: en `{#if}`-kæde på en hel side skal altid have
+en sidste udvej der tegner noget.**
+
+#### TEKSTSTØRRELSEN
+
+Tre ting, alle Linns valg 25. august.
+
+- **Den hedder Lille, Normal og Stor.** Før hed den Almindelig, Større og
+  Størst. Tre trin der alle lyder som varianter af det samme er svære at
+  vælge imellem. **Værdierne bagved er urørte**, de deles med den gamle
+  app, se `TEKST_SKALAER_3`
+- **Den ligger nu under Din side.** Før fandtes den KUN i opstarten, så
+  hun kunne kun rette den ved at køre hele opstarten igennem igen.
+  Bemærk at app-hjælpen i forvejen påstod at den lå der
+- **En ny kunde starter på Normal**, ikke på den mindste. Har hun VALGT
+  Lille, står det gemt og bliver respekteret
+
+#### GUIDES MARKERES NU SOM SET
+
+**Målt på Kropsro: af de 43 guide-lektioner har kun 6 en varighed sat.**
+De 37 andre kunne derfor aldrig markere sig selv, hvor video og lyd gør
+det, og så foldede dagen sig aldrig sammen for hende.
+
+En **indlejret side** markeres efter tyve sekunder. Et **link eller en
+PDF** markeres når hun trykker Åbn: den åbner i et nyt vindue, så uret
+står stille imens, og siden er ikke synlig.
+
+Video og lyd får stadig ingen grænse uden varighed. Dér ved vi ikke hvor
+lang filmen er, og et gæt ville markere den mens hun stadig ser.
+
+#### SCANNEREN VIRKER PÅ IPHONE
+
+Bekræftet af Linn 25. august. **Ikke prøvet på en Android.**
+
+Værd at vide hvis nogen fejlsøger den: **selve stregkode-læsningen er den
+GAMLE apps komponent, uændret.** Den har allerede de tre Android-
+rettelser fra 2. juni, hvoraf den vigtigste er at opløsningen blev sat
+ned, fordi mellemklasse-Android ikke kunne nå at behandle billederne
+hurtigt nok og derfor aldrig fik et hit.
+
+Det der ER nyt i 3.0 ligger EFTER scanningen: stregkoden giver kun
+navnet, og tallene kommer fra billedet af varedeklarationen. Se 9.51.
 
 ---
 
