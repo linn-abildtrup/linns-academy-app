@@ -3,6 +3,9 @@ import {
 	MAKS_TRAEF,
 	erHeltOrd,
 	hjerterTilSoegning,
+	redigeringsafstand,
+	naestenEns,
+	MIN_LAENGDE_FOR_SLAEK,
 	foerstISoegning,
 	mineScanninger,
 	rang,
@@ -269,5 +272,75 @@ describe('mineScanninger', () => {
 
 	it('giver ingenting naar hun ikke er logget ind', () => {
 		expect(mineScanninger(varer, undefined)).toEqual([]);
+	});
+});
+
+describe('redigeringsafstand', () => {
+	it('maaler afstanden mellem to ord', () => {
+		expect(redigeringsafstand('yoghurt', 'yogurt')).toBe(1);
+		expect(redigeringsafstand('kartoffel', 'kartofel')).toBe(1);
+		expect(redigeringsafstand('laks', 'laks')).toBe(0);
+	});
+
+	// Loftet er der for hastighedens skyld: der regnes tusindvis af
+	// gange for hvert bogstav hun taster.
+	it('stopper over loftet i stedet for at regne videre', () => {
+		expect(redigeringsafstand('broccoli', 'brocolli')).toBeGreaterThan(1);
+		expect(redigeringsafstand('baguette', 'laks')).toBeGreaterThan(1);
+	});
+});
+
+describe('naestenEns', () => {
+	it('genkender en slaafejl paa ét tegn', () => {
+		expect(naestenEns('Yoghurt naturel', 'yogurt')).toBe(true);
+		expect(naestenEns('Bagt kartoffel', 'kartofel')).toBe(true);
+	});
+
+	// MAALT paa de 1.700 synlige varer: to tegns slaek tog ost fra 98 til
+	// 212 traeffere, med aerter og amaranth. Derfor kun ét.
+	it('giver ikke slaek paa to tegn', () => {
+		expect(naestenEns('Broccoli', 'brocolli')).toBe(false);
+	});
+
+	// Paa et kort ord er ét tegn en stor del af ordet, og maalgruppen
+	// soeger netop paa korte ord.
+	it('giver slet ikke slaek paa korte soegeord', () => {
+		expect(naestenEns('Løg', 'æg')).toBe(false);
+		expect(naestenEns('Ærter', 'ost')).toBe(false);
+		expect(MIN_LAENGDE_FOR_SLAEK).toBe(5);
+	});
+
+	// Er ordet der i forvejen, er det et almindeligt traef og skal ikke
+	// behandles som en slaafejl.
+	it('regner et rigtigt traef som et rigtigt traef', () => {
+		expect(naestenEns('Yoghurt naturel', 'yoghurt')).toBe(false);
+	});
+
+	// Iceberg og isberg er ikke en stavefejl, det er to ord. Det her
+	// loeser dem ALDRIG, og det skal staa fast saa ingen tror det.
+	it('loeser ikke iceberg mod isberg', () => {
+		expect(naestenEns('Icebergsalat', 'isberg')).toBe(false);
+	});
+});
+
+describe('soegFodevarer med slaafejl', () => {
+	const varer = [
+		{ id: 'yog', name: 'Yoghurt naturel', cat: 'andet', p: 5, f: 0 },
+		{ id: 'yog2', name: 'Yoghurt med frugt', cat: 'andet', p: 4, f: 0 },
+		{ id: 'ost', name: 'Ost', cat: 'andet', p: 25, f: 0 }
+	] as Fodevare[];
+
+	it('finder varen selv om hun staver forkert', () => {
+		expect(soegFodevarer(varer, 'yogurt').map((f) => f.id)).toEqual(['yog', 'yog2']);
+	});
+
+	// Et naesten-traef maa ALDRIG skubbe det rigtige svar ned.
+	it('lader de rigtige traeffere komme foerst', () => {
+		const med = [{ id: 'yogurt-eksakt', name: 'Yogurt', cat: 'andet', p: 5, f: 0 }, ...varer] as Fodevare[];
+		expect(soegFodevarer(med, 'yogurt')[0].id).toBe('yogurt-eksakt');
+	});
+
+	it('roerer ikke en soegning der finder nok i forvejen', () => {
+		expect(soegFodevarer(varer, 'ost').map((f) => f.id)).toEqual(['ost']);
 	});
 });

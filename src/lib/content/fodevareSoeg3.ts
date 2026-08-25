@@ -71,6 +71,81 @@ export function antalHeleOrd(navn: string, termer: string[]): number {
 	return termer.filter((t) => erHeltOrd(navn, t)).length;
 }
 
+// ------------------------------------------------------------
+// Slaafejl. Linns beslutning 25. august
+// ------------------------------------------------------------
+
+/**
+ * Hvor kort et soegeord maa vaere, foer der gives slaek.
+ *
+ * MAALT PAA DE 1.700 VARER EN NY KUNDE KAN SE, foer det blev bygget:
+ *
+ *   ét tegns slaek   æg, ost, tomat, laks: INGEN aendring
+ *                    ris: én til, nemlig ribs
+ *                    yogurt: fra 0 til 17. kartofel: fra 0 til 15
+ *
+ *   to tegns slaek   ost: fra 98 til 212, ind kommer aerter, amaranth
+ *                    laks: fra 14 til 45, ind kommer baguette og kiks
+ *                    ris: fra 107 til 190, ind kommer brie
+ *
+ * Derfor ét tegn og ikke to. Graensen paa fem tegn er en ekstra sikring:
+ * paa et kort ord er ét tegn en stor del af ordet, og maalgruppen soeger
+ * netop paa korte ord som aeg, ost og ris.
+ *
+ * DET HER LOESER IKKE "iceberg" MOD "isberg". De to er ikke en stavefejl,
+ * de er to forskellige ord, og ingen grad af slaek faar dem til at moede
+ * hinanden. Det kraever et soegeord-felt ved siden af navnet, og det er
+ * ikke bygget.
+ */
+export const MIN_LAENGDE_FOR_SLAEK = 5;
+
+/**
+ * Redigeringsafstand med loft.
+ *
+ * Stopper saa snart afstanden er stoerre end `maks`, saa vi ikke regner
+ * hele tabellen ud for to ord der aabenlyst ikke ligner hinanden. Det
+ * her koeres tusindvis af gange for hvert bogstav hun taster.
+ */
+export function redigeringsafstand(a: string, b: string, maks = 1): number {
+	if (a === b) return 0;
+	// Er de for forskellige i laengde, kan de umuligt ligge inden for loftet.
+	if (Math.abs(a.length - b.length) > maks) return maks + 1;
+	const n = b.length;
+	let forrige = Array.from({ length: n + 1 }, (_, j) => j);
+	for (let i = 1; i <= a.length; i++) {
+		const naeste = [i, ...Array(n).fill(0)];
+		let bedst = i;
+		for (let j = 1; j <= n; j++) {
+			naeste[j] = Math.min(
+				naeste[j - 1] + 1,
+				forrige[j] + 1,
+				forrige[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+			);
+			if (naeste[j] < bedst) bedst = naeste[j];
+		}
+		// Hele raekken er over loftet, saa slutresultatet bliver det ogsaa.
+		if (bedst > maks) return maks + 1;
+		forrige = naeste;
+	}
+	return forrige[n];
+}
+
+/**
+ * Ligner soegeordet et af ordene i navnet, paa ét tegn naer.
+ *
+ * Kun ord der er lange nok, se MIN_LAENGDE_FOR_SLAEK. Og kun hvis ordet
+ * ikke allerede indeholder soegeordet: saa er det et almindeligt traef
+ * og skal ikke behandles som en slaafejl.
+ */
+export function naestenEns(navn: string, term: string): boolean {
+	if (term.length < MIN_LAENGDE_FOR_SLAEK) return false;
+	const lav = navn.toLowerCase();
+	if (lav.includes(term)) return false;
+	return lav
+		.split(ORD_SKEL)
+		.some((o) => o.length >= MIN_LAENGDE_FOR_SLAEK && redigeringsafstand(o, term) <= 1);
+}
+
 /**
  * Hendes hjerter, klar til soegningen.
  *
@@ -179,7 +254,26 @@ export function soegFodevarer(
 		return termer.every((t) => navn.includes(t));
 	});
 
-	return traef
+	const sorteret = sorter(traef, termer, foerst).slice(0, maks);
+
+	// SLAAFEJL KOMMER ALTID BAGEFTER, og kun naar der er plads tilbage.
+	//
+	// To grunde. Et naesten-traef maa aldrig skubbe det rigtige svar ned,
+	// og har hun allerede otte rigtige traeffere, er der ingen grund til
+	// at regne paa noget som helst. Det her koeres for hvert bogstav hun
+	// taster.
+	if (sorteret.length >= maks) return sorteret;
+	const brugte = new Set(sorteret.map((f) => f.id));
+	const naesten = foods.filter(
+		(f) => !brugte.has(f.id) && termer.every((t) => naestenEns(f.name, t) || f.name.toLowerCase().includes(t))
+	);
+	return [...sorteret, ...sorter(naesten, termer, foerst)].slice(0, maks);
+}
+
+/** Raekkefoelgen, brugt baade paa de noejagtige og paa slaafejlene. */
+function sorter(liste: Fodevare[], termer: string[], foerst: Set<string>): Fodevare[] {
+	return liste
+		.slice()
 		.sort((a, b) => {
 			// Hendes eget foerst. Se hvorfor ovenfor.
 			const ja = foerst.has(a.id);
@@ -193,6 +287,5 @@ export function soegFodevarer(
 			// "Skyr med vanilje". Det er den enkle vare hun oftest vil have.
 			if (a.name.length !== b.name.length) return a.name.length - b.name.length;
 			return a.name.localeCompare(b.name, 'da');
-		})
-		.slice(0, maks);
+		});
 }
