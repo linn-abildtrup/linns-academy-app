@@ -84,23 +84,61 @@
 		return f ? { perioder: null, dagNummer: aktivtForlob.dagNummer } : null;
 	});
 
+	/**
+	 * Sat naar dagen ikke kunne hentes, ogsaa efter et nyt forsoeg.
+	 *
+	 * DEN HER FANDTES IKKE FOER 25. august, og det var en rigtig fejl:
+	 * skaermen havde kun "henter" og "her er dagen". Gik hentningen galt,
+	 * stod `dag` som null mens `henter` blev falsk, og saa tegnede siden
+	 * INGENTING. Top og bundmenu blev staaende, fordi de hoerer til
+	 * skallen, saa det saa ud som en blank app. Linn saa det flere gange.
+	 *
+	 * Maaltidsskaermen inde bagved havde det rigtigt hele tiden. Det var
+	 * kun her udvejen manglede.
+	 */
+	let fejl = $state(false);
+	/** Tael op naar hun trykker Prøv igen, saa effekten koerer forfra. */
+	let forsoeg = $state(0);
+
 	$effect(() => {
 		const uid = user?.uid;
 		const d = dato;
+		// Laeses saa effekten koerer igen naar hun trykker Prøv igen.
+		forsoeg;
 		if (!uid) return;
 		let afbrudt = false;
 		henter = true;
-		hentDagen(uid, d, userDoc, fokus ?? undefined)
-			.then((r) => {
-				if (!afbrudt) {
+		fejl = false;
+
+		/**
+		 * Henter dagen, og proever ÉN gang til hvis det gik galt.
+		 *
+		 * De fleste af de her fejl er et oejebliks daarlig forbindelse paa
+		 * en telefon, og de er vaek ved andet forsoeg. Saa opdager hun det
+		 * aldrig. Slaar det ogsaa fejl, faar hun en tekst og en knap i
+		 * stedet for en tom skaerm.
+		 */
+		(async () => {
+			for (let i = 0; i < 2; i++) {
+				try {
+					const r = await hentDagen(uid, d, userDoc, fokus ?? undefined);
+					if (afbrudt) return;
 					dag = r;
 					henter = false;
+					return;
+				} catch (e) {
+					console.error('[ny] kunne ikke hente dagen, forsoeg', i + 1, e);
+					if (afbrudt) return;
+					// Kort pause foer andet forsoeg. Uden den rammer vi tit
+					// den samme daarlige forbindelse igen med det samme.
+					if (i === 0) await new Promise((r) => setTimeout(r, 900));
 				}
-			})
-			.catch((e) => {
-				console.error('[ny] kunne ikke hente dagen', e);
-				if (!afbrudt) henter = false;
-			});
+			}
+			if (afbrudt) return;
+			fejl = true;
+			henter = false;
+		})();
+
 		return () => {
 			afbrudt = true;
 		};
@@ -169,5 +207,23 @@
 			</div>
 		</div>
 		<p class="tt-snack-note">Snacken tæller med i begge tal.</p>
+	{:else}
+		<!--
+			DEN HER GREN MAA ALDRIG FJERNES.
+
+			Uden den tegnede siden ingenting naar dagen ikke kunne hentes,
+			og kunden saa en blank skaerm med top og bundmenu. Bygger du en
+			ny tilstand ind her, saa soerg for at der stadig er en sidste
+			udvej der ALTID tegner noget.
+
+			Tonen er med vilje. Hun har ikke gjort noget forkert, og hendes
+			tal er der stadig. Ingen roed farve og ingen teknisk besked,
+			samme regel som spaerre-skaermen, se HANDOVER 9.3.
+		-->
+		<div class="kort rolig tt-fejl">
+			<p>Forbindelsen drillede, så jeg kunne ikke hente din dag.</p>
+			<p class="tt-fejl-s">Alt hvad du har tastet ligger der stadig.</p>
+			<button type="button" class="btn" onclick={() => forsoeg++}>Prøv igen</button>
+		</div>
 	{/if}
 </div>
