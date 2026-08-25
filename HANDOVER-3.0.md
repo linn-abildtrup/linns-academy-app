@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 25. august 2026. **9.52 er det nyeste: kunden kan nu rette mængder og lægge ingredienser til i Linns opskrifter, altså i praksis bytte.** **Læs 9.50 hvis du rører noget i Mad: alle fødevarers næringstal kommer nu fra Den Danske Fødevaredatabase, og det er skrevet ud til BEGGE apper 24. august.** 9.49 er gennemgangen af fødevare-kilderne der førte til det. Se 9.39 til 9.48 for hele beskedsystemet, bygget 23. august.
+Sidst opdateret 25. august 2026. **9.52 og 9.53 er de nyeste: kunden kan rette mængder og lægge ingredienser til i Linns opskrifter, altså i praksis bytte, og hendes hjerter og favoritter kommer nu først i søgningen.** **Læs 9.50 hvis du rører noget i Mad: alle fødevarers næringstal kommer nu fra Den Danske Fødevaredatabase, og det er skrevet ud til BEGGE apper 24. august.** 9.49 er gennemgangen af fødevare-kilderne der førte til det. Se 9.39 til 9.48 for hele beskedsystemet, bygget 23. august.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -3614,6 +3614,49 @@ Begge fundet ved at prøve den kørende app, ikke ved at køre tests.
   tal pr ingrediens, så en tæller dér ville ikke kunne regne noget om
 - **Ikke prøvet på en rigtig telefon.** Prøvet i browseren hele vejen
   igennem, men det er i Linns hånd fejlene bliver fundet
+
+### 9.53 HENDES HJERTER OG FAVORITTER KOMMER FØRST I SØGNINGEN, 25. august
+
+Linns spørgsmål: har hun sat en favorit, skal den så ikke komme øverst
+når hun søger på ordet? Det gjorde den ikke. Søgningen så kun på hvor
+godt ordet passede på navnet, og derefter på det korteste navn.
+
+**Det gælder nu både fødevarer og opskrifter.**
+
+#### Hjertet vinder over reglen om hele ord
+
+Reglen om hele ord er et **gæt** på hvad hun mon mener, og den findes
+fordi vi ellers ikke ved noget. Hjertet er hendes **eget valg**, og et
+gæt skal aldrig slå et svar hun selv har givet. Søger hun "feta" og får
+tre slags, er hjertet det eneste sted appen ved hvilken der er hendes.
+
+Det kan ikke oversvømme listen: medianen er 13 hjerter pr kunde, og de
+skal også ramme søgeordet for at komme med. Og **sorteringen skjuler
+ingenting**, præcis som da hele ord blev indført. Der er test på begge.
+
+#### DEN FÆLDE DER KUNNE HAVE ØDELAGT DET
+
+**72 % af de 6.855 hjerter i drift er varer hun selv har oprettet, og
+dem satte den GAMLE app AUTOMATISK.** Talte de med, ville hendes
+søgning fylde sig med gamle egne indtastninger, og hjertet ville sige
+noget om hvad appen har gjort i stedet for hvad hun vil have.
+
+De holdes ude, samme regel som `hjertedeFodevarer` allerede følger, se
+9.14. **De to skal blive ved med at være enige.**
+
+#### På opskrifter gælder det kun når hun søger
+
+Uden et søgeord er rækkefølgen alfabetisk som før. Der er en
+Favoritter-fane til netop det, og et gitter der skifter orden mens hun
+bladrer er forvirrende. Samme begrundelse som da Linn afviste at
+gitteret skulle skifte facon under en søgning, se 9.5.
+
+#### En type blev strammet
+
+`FiltrerbarOpskrift` har fået et **påkrævet** id. Filen siger selv
+hvorfor: var feltet valgfrit, ville favoritterne bare tavst holde op med
+at komme først, præcis som kategori-filteret gjorde én gang, se fælden i
+afsnit 7.
 
 ---
 

@@ -103,6 +103,8 @@ Dagens refleksion skriver du direkte på forsiden.`
 
 Målet er 30 g protein i hvert måltid og 30 g fiber over dagen. Snack har intet mål, og der står aldrig at du mangler noget på en snack.
 
+Har du sat hjerte på en madvare, kommer den øverst når du søger efter den.
+
 Sådan registrerer du: tryk på måltidet, tryk "Tilføj til morgenmaden", og vælg derfra. Du kan søge efter en madvare, tage noget fra "Det du plejer", vælge en opskrift, et fast måltid eller en af dine egne madvarer.
 
 Når du har valgt, sætter du mængden. Der er genveje og plus og minus. Fortryder du, kan du fjerne linjen igen, og du kan trykke på en linje du allerede har tastet for at rette mængden.`
@@ -117,11 +119,13 @@ Når du har valgt, sætter du mængden. Der er genveje og plus og minus. Fortryd
 		gaelder: ALLE,
 		indhold: `Opskrifterne ligger inde i et måltid, bag "Tilføj". Gitteret er to i bredden.
 
+Har du sat hjerte på en opskrift, kommer den øverst når du søger.
+
 Søgningen finder både titler og ingredienser, og hver flise skriver hvorfor den kom med, for eksempel "broccoli i ingredienser". Du kan søge på flere ord, og rækkefølgen er ligegyldig.
 
 Filtrene ligger bag knappen Filtre. Måltidet er valgt på forhånd ud fra hvor du kom fra, så åbner du listen inde fra Frokost, står den på frokost. Tryk "Vis alle" for at se dem alle sammen.
 
-Tryk på hjertet ved "Læg i" for at gemme en opskrift som favorit. Den kan du så finde igen på sin egen fane.`
+Tryk på hjertet ved "Læg i" for at gemme en opskrift som favorit. Den kan du så finde igen på sin egen fane, og den kommer øverst når du søger.`
 	},
 	{
 		titel: 'Ret i en opskrift inden du lægger den i',
