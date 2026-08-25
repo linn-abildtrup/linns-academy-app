@@ -3760,9 +3760,35 @@ skjulte kalorier bor. En kunde der spiser en stor salat med to spsk
 caesardressing og kun kan taste salaten, faar et tal der ser sundere ud
 end hendes dag var.
 
-**64 er stadig skjult fra Linns egen liste**, og over halvdelen af dem
-er protein-varerne hun har fravalgt. Naar de traekkes fra, er listen
-reelt kort. Fortsaet ti ad gangen.
+#### GENNEMGANGEN ER FAERDIG. 64 bliver skjult
+
+Linn gik hele bunken igennem 25. august, ti ad gangen, og sagde stop.
+**Alt det der ikke er naevnt ovenfor bliver hvor det er.** Det er en
+beslutning, ikke noget nogen har glemt.
+
+De 64 fordeler sig saadan:
+
+- **43 protein- og kosttilskudsvarer.** Proteinbar, proteinpulver i ni
+  varianter, whey, kollagen, kreatin, BCAA og resten. Forelagt og
+  fravalgt
+- **11 paalaeg og tilbehoer.** Falafel, tunsalat, rejesalat,
+  gulerodssalat, roedkaalssalat, agurkesalat, pandekage, koedsovs,
+  chili con carne, bagepulver. Forelagt og fravalgt
+- **10 sidste.** Mysli klassisk, spirulina, groen smoothie, light
+  energidrik, Nutella, Philadelphia, pizza, lasagne, kanelsnegl,
+  risalamande. Forelagt og fravalgt
+
+**AABN DEM IKKE UDEN AT SPOERGE.** Argumenterne for og imod er givet én
+gang, og svaret var nej.
+
+To af begrundelserne er vaerd at kende, for de gaelder bredere:
+
+- **Maerkevarer som Nutella og Philadelphia hoerer ikke til.** Kunden
+  scanner dem i stedet og faar pakkens egne tal, se regel 4 i 9.50
+- **Et fast tal paa en ret hun selv laver er et gaet der ser ud som en
+  kendsgerning.** To portioner koedsovs kan ligge hundrede kalorier fra
+  hinanden. Til det har hun faste maaltider, hvor tallet bliver hendes
+  eget og rigtigt
 
 **Isbergsalat hedder nu Icebergsalat.** Linns besked: det hedder Iceberg
 paa posen. Bemaerk konsekvensen: "isberg" giver nu ingenting.
