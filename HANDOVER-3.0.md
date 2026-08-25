@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 24. august 2026. **Læs 9.50 først hvis du rører noget i Mad: alle fødevarers næringstal kommer nu fra Den Danske Fødevaredatabase, og det er skrevet ud til BEGGE apper 24. august.** 9.49 er gennemgangen af fødevare-kilderne der førte til det. Se 9.39 til 9.48 for hele beskedsystemet, bygget 23. august.
+Sidst opdateret 25. august 2026. **9.52 er det nyeste: kunden kan nu rette mængder og lægge ingredienser til i Linns opskrifter, altså i praksis bytte.** **Læs 9.50 hvis du rører noget i Mad: alle fødevarers næringstal kommer nu fra Den Danske Fødevaredatabase, og det er skrevet ud til BEGGE apper 24. august.** 9.49 er gennemgangen af fødevare-kilderne der førte til det. Se 9.39 til 9.48 for hele beskedsystemet, bygget 23. august.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -3511,6 +3511,109 @@ med hundredvis af rækker, og Linn kunne ikke finde sin opgave i den. **En
 rapport over dit arbejde er ikke det samme som en opgave til hende.** Den blev
 til sidst delt i to, hvor `tjek-tal.html` kun indeholder de 33 varer hun
 skulle svare på.
+
+---
+
+### 9.52 HUN RETTER I LINNS OPSKRIFTER, 25. august
+
+**Tegningen er `mockups-ret-maengde-i-opskrift.html`**, og Linns svar
+står i den. Læs den før du rører noget her.
+
+Det startede som et spørgsmål fra Linn: kan en kunde rette i en af
+appens opskrifter når hun lægger den i som måltid? Det kunne hun ikke.
+Hun kunne kun skrue på antal portioner, som flytter alle ingredienser
+på én gang.
+
+#### DET ER ET BYTTE, OG DET SKAL SIGES HØJT
+
+Diagnosen anbefalede kun mængder, altså skrue op og ned. **Linn bad
+samme dag om at hun også skulle kunne lægge en ingrediens til.** Dermed
+kan hun bytte: skru risen til nul, læg kartofler til.
+
+Vi kom altså frem til byttet ad bagvejen, og det er den nemmeste vej
+derhen. To af de tre forhindringer forsvandt af sig selv: **hun siger
+selv hvor meget der skal i**, så der er ingen omregning at gætte på, og
+retten er allerede mærket i hendes dag.
+
+#### Fundamentet, målt før der blev kodet
+
+**Alle 133 opskrifter har 1.008 ingrediens-linjer der betyder noget, og
+hver eneste er koblet til en fødevare.** Ikke én mangler. Der findes
+ikke en opskrift hvor det her falder fra hinanden.
+
+#### Fire ting der er dyre at genopdage
+
+**HUN RETTER DET HUN SER, IKKE DET DER STÅR I OPSKRIFTEN.**
+Ingredienslisten vises allerede skaleret til hendes antal portioner.
+Derfor regnes der på de VISTE mængder, og der deles **aldrig** med
+portionstallet bagefter. Gjorde man det, ville en familieret give hende
+en fjerdedel af den feta hun lige har lagt i.
+
+**En linje hun selv har sat følger IKKE portions-tælleren bagefter.**
+Hun satte 200 g fordi det var det hun spiste. De linjer er mærket på
+skærmen netop derfor.
+
+**To farver med hver sin betydning, og de må ikke smelte sammen.**
+Honning betyder "jeg har ændret noget af Linns", blomme betyder "det
+her er mit eget". Linns linjer kan skrues til nul men ikke fjernes, så
+hun kan fortryde. Hendes egne kan fjernes helt.
+
+**Retter Linn opskriften, falder hendes gemte mængder bort.** Der ligger
+et aftryk af navn og enhed på det gemte. Uden det sad hun med 200 g
+kylling i en ret der var lavet om til fisk, og ingen ville opdage det.
+Aftrykket er bevidst uden mængde: skruer Linn 150 g op til 180, er det
+stadig den samme ret, og hendes "jeg tog ikke avokado i" skal overleve.
+
+#### Tallet regnes på stedet, men kun når hun har rørt noget
+
+Uden ændringer vises det GEMTE tal, som med vilje er frosset, se
+`opskriftBeregning3.ts`. Med ændringer regnes der forfra. **De to kan
+give en lille forskel på den samme mad, og Linn har sagt ja til det 25.
+august.** Alternativet var en omvej der kostede mere end forskellen er
+værd.
+
+#### Hun spørges om mængderne skal huskes
+
+Linns valg: hun skal **spørges**, ikke have en indstilling stående.
+Spørgsmålet er et blødt bånd der kommer når retten ER lagt i, og ikke
+en pop-up, som ville lægge sig hen over kvitteringen med Fortryd. Samme
+mønster som når hun retter i et fast måltid, se 9.10.
+
+**Der spørges kun én gang pr opskrift.** Siger hun nej, spørges der ikke
+igen for netop den ret. Ellers er det en pop-up der aldrig holder op.
+
+#### I hendes dagbog
+
+Der står **"Dine mængder · 2 rettet"** under rettens navn. Navnet selv
+er urørt, så retten stadig kan kendes. Uden linjen kan hverken hun eller
+Linn se at hun spiste noget andet end det der står, og om tre uger
+ligner det en fejl i tallene.
+
+#### Den gamle app er urørt
+
+`content/kost.ts` deles med den app der er i drift, så linjen i dagbogen
+har fået sit eget 3.0-felt og læses gennem et cast ét sted. Feltet på
+kunden er additivt, og **der skal intet udgives i Firebase**: reglerne
+tillader i forvejen at kunden skriver sit eget dokument.
+
+#### To fejl testene ikke kunne se
+
+Begge fundet ved at prøve den kørende app, ikke ved at køre tests.
+
+- **Ingrediens-rækkerne fik browserens grå knap-baggrund.**
+  Nulstillingen i `.ny-app` er pakket i `:where()` og er derfor vægtløs,
+  så en knap uden egen baggrund får browserens. Samme fælde som
+  fliserne faldt i 10. august. **Sæt altid en baggrund på en ny knap.**
+- **Mængde-arket sagde "Læg i frokosten"** mens hun stod og byggede
+  retten færdig. Maden lander først i dagbogen når hun trykker "Læg i"
+  nede i opskriften. Der står nu "Tilføj til retten".
+
+#### Det der IKKE er gjort
+
+- **Kun Linns opskrifter.** Hendes egne har ét samlet næringstal og ikke
+  tal pr ingrediens, så en tæller dér ville ikke kunne regne noget om
+- **Ikke prøvet på en rigtig telefon.** Prøvet i browseren hele vejen
+  igennem, men det er i Linns hånd fejlene bliver fundet
 
 ---
 

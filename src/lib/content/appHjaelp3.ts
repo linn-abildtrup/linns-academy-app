@@ -124,6 +124,19 @@ Filtrene ligger bag knappen Filtre. Måltidet er valgt på forhånd ud fra hvor 
 Tryk på hjertet ved "Læg i" for at gemme en opskrift som favorit. Den kan du så finde igen på sin egen fane.`
 	},
 	{
+		titel: 'Ret i en opskrift inden du lægger den i',
+		gaelder: ALLE,
+		indhold: `Du behøver ikke spise en ret præcis som den står. Tryk på en ingrediens i listen, og du kan skrue mængden op og ned. Er der noget du ikke tog i, trykker du "Jeg tog den ikke i". Linjen bliver stående og streget ud, så du kan fortryde.
+
+Du kan også lægge noget til, som du ikke har brugt i opskriften. Tryk "Tilføj en ingrediens" nederst i listen og søg efter den, præcis som når du lægger en madvare i et måltid.
+
+Tallene øverst regner sig om med det samme, så du kan se hvad du faktisk får. De skifter farve, så du kan se at tallene er dine og ikke opskriftens, og der står hvor mange ting du har ændret. "Sæt tilbage" fortryder det hele.
+
+Bagefter står der "Dine mængder" under retten i din dag, så du kan se at du spiste noget andet end det der står i opskriften.
+
+Når du har lagt retten i, bliver du spurgt om appen skal huske dine mængder til næste gang. Siger du ja, åbner retten med dine tal, og du kan altid trykke "Vis Linns" for at få den oprindelige tilbage.`
+	},
+	{
 		titel: 'Faste måltider og dine egne madvarer',
 		gaelder: ALLE,
 		indhold: `Har du et måltid du spiser tit, kan du gemme det. Knappen står over den første ingrediens i måltidet. Næste gang lægger du hele måltidet i med ét tryk, og det kommer ind som én linje pr madvare, så du kan fjerne noget hvis du ikke spiste det hele.
