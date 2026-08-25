@@ -45,6 +45,13 @@
 		 * ser det ud som om hun er ved at tilfoeje varen en gang til.
 		 */
 		retter?: boolean;
+		/**
+		 * Sat naar varen skal ind I en af Linns opskrifter og ikke i
+		 * dagbogen. Saa maa knappen ikke sige "Læg i frokosten": hun er
+		 * ved at bygge retten faerdig, og maden lander foerst i dagbogen
+		 * naar hun trykker "Læg i" nede i opskriften. Se HANDOVER 9.52.
+		 */
+		tilOpskrift?: boolean;
 		ongem: (portion: number, enhedId: string | undefined) => void;
 		onluk: () => void;
 	}
@@ -56,6 +63,7 @@
 		gemmer = false,
 		visUdvidet = false,
 		retter = false,
+		tilOpskrift = false,
 		ongem,
 		onluk
 	}: Props = $props();
@@ -246,7 +254,13 @@
 			disabled={gemmer}
 			onclick={() => ongem(portion, enhedId)}
 		>
-			{gemmer ? 'Gemmer' : retter ? 'Gem mængden' : `Læg i ${maaltidLabel.toLowerCase()}`}
+			{gemmer
+				? 'Gemmer'
+				: tilOpskrift
+					? 'Tilføj til retten'
+					: retter
+						? 'Gem mængden'
+						: `Læg i ${maaltidLabel.toLowerCase()}`}
 		</button>
 	</div>
 </div>

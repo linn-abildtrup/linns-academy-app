@@ -25,6 +25,17 @@
 	} from '$lib/content/opskriftPortion3';
 	import { fremgangsmaadeTrin, tilberedningstid } from '$lib/content/opskriftTekst3';
 	import { portal } from '$lib/actions/portal';
+	import type { Fodevare } from '$lib/content/kost';
+	import type { KoblingsOpslag } from '$lib/content/opskriftMakro3';
+	import {
+		type Aendring,
+		tomAendring,
+		harAendringer,
+		aendringsTekst,
+		naesteMaengde,
+		saetMaengde,
+		regnMedAendringer
+	} from '$lib/content/opskriftAendring3';
 
 	interface Props {
 		opskrift: Opskrift;
@@ -48,10 +59,30 @@
 		 * ingen knap. Bruges af opskrift-siden under Din side, hvor hun
 		 * kigger og ikke registrerer. Linns valg 18. august.
 		 */
-		ongem?: ((portioner: number) => void) | null;
+		ongem?: ((portioner: number, aendring: Aendring) => void) | null;
 		/** Slaar bogmaerket til eller fra. Udeladt = intet hjerte. */
 		onfavorit?: (() => void) | null;
 		ontilbage: () => void;
+
+		// ── Hun retter i opskriften. Se content/opskriftAendring3.ts ──
+		//
+		// Alt her er VALGFRIT, og uden det opfoerer arket sig noejagtig som
+		// foer. Opskrift-siden under Din side sender ingenting og er derfor
+		// uroert: dér kigger hun, hun registrerer ikke.
+		/**
+		 * Hendes aendringer. Tilstanden bor hos SIDEN og ikke i arket,
+		 * fordi det er siden der ejer soegningen naar hun laegger en
+		 * ingrediens til. Laa den her, ville den vaere vaek i det sekund
+		 * soege-arket aabnede ovenpaa.
+		 */
+		aendring?: Aendring;
+		onaendring?: ((a: Aendring) => void) | null;
+		/** Aabner soegningen. Udeladt = ingen "Tilfoej en ingrediens". */
+		ontilfoej?: (() => void) | null;
+		/** Kernenavn til foedevare. Uden den kan der ikke regnes paa stedet. */
+		koblinger?: Record<string, KoblingsOpslag>;
+		/** Hele foedevaredatabasen, som siden alligevel har hentet. */
+		varer?: Map<string, Fodevare>;
 	}
 
 	let {
@@ -63,8 +94,22 @@
 		beregninger = {},
 		ongem = null,
 		onfavorit = null,
-		ontilbage
+		ontilbage,
+		aendring = tomAendring(),
+		onaendring = null,
+		ontilfoej = null,
+		koblinger = {},
+		varer = new Map()
 	}: Props = $props();
+
+	/**
+	 * Maa hun overhovedet rette i den her opskrift?
+	 *
+	 * Kun naar siden baade har givet os en vej til at gemme aendringen OG
+	 * det der skal til for at regne den ud. Mangler ét af dem, staar
+	 * listen som ren tekst, praecis som foer 25. august.
+	 */
+	const kanRette = $derived(!!onaendring && !!ongem);
 
 	// Arket aabner paa opskriftens eget tal, altsaa 1 for de fleste og 4 for de
 	// retter der er skrevet til en familie. Linns valg 12. august: listen skal
@@ -90,13 +135,99 @@
 	// Makroen er PR PORTION, ogsaa paa de retter der er til fire. Derfor ganges
 	// der kun med antal portioner, og defaultPortioner indgaar aldrig. Se
 	// content/opskriftPortion3.ts for maalingerne bag.
-	const protein = $derived(makroForPortioner(makro.protein ?? 0, portioner) ?? 0);
-	const fiber = $derived(makroForPortioner(makro.fiber ?? 0, portioner) ?? 0);
+	// ── Ingredienslisten som den staar paa skaermen ──
+	//
+	// Skaleret til det antal portioner hun har valgt. Det er DEN liste
+	// hendes aendringer haenger paa, se punkt 1 i opskriftAendring3.ts.
+	const viste = $derived(
+		(opskrift.ingredienser ?? []).map((i) => ({
+			...i,
+			maengde: ingrediensMaengde(i.maengde, opskrift.defaultPortioner, portioner)
+		}))
+	);
+
+	const rettet = $derived(harAendringer(aendring));
+
+	/**
+	 * Regnestykket paa stedet. Kun naar hun har roert noget.
+	 *
+	 * Uden aendringer bruges det GEMTE tal, som med vilje er frosset, se
+	 * opskriftBeregning3.ts. De to kan give en lille forskel paa den
+	 * samme mad, og Linn har sagt ja til det 25. august: hellere ét tal
+	 * der altid er konsekvent end en omvej der koster mere end forskellen
+	 * er vaerd.
+	 */
+	const paaStedet = $derived(
+		rettet ? regnMedAendringer(viste, aendring, koblinger, varer) : null
+	);
+
+	const protein = $derived(
+		paaStedet ? paaStedet.makro.protein : (makroForPortioner(makro.protein ?? 0, portioner) ?? 0)
+	);
+	const fiber = $derived(
+		paaStedet ? paaStedet.makro.fiber : (makroForPortioner(makro.fiber ?? 0, portioner) ?? 0)
+	);
 	// Alle fem skalerer ens. Kulhydrat, fedt og kalorier vises kun med adgang,
 	// men regnes altid ud, saa de kan gemmes uanset. Se SPEC-3.0.md 26.5.
-	const kh = $derived(makroForPortioner(makro.kh ?? 0, portioner) ?? 0);
-	const fedt = $derived(makroForPortioner(makro.fedt ?? 0, portioner) ?? 0);
-	const kalorier = $derived(Math.round(makroForPortioner(makro.kalorier ?? 0, portioner) ?? 0));
+	const kh = $derived(
+		paaStedet ? paaStedet.makro.kh : (makroForPortioner(makro.kh ?? 0, portioner) ?? 0)
+	);
+	const fedt = $derived(
+		paaStedet ? paaStedet.makro.fedt : (makroForPortioner(makro.fedt ?? 0, portioner) ?? 0)
+	);
+	const kalorier = $derived(
+		paaStedet
+			? Math.round(paaStedet.makro.kalorier)
+			: Math.round(makroForPortioner(makro.kalorier ?? 0, portioner) ?? 0)
+	);
+
+	/**
+	 * Linjerne som de skal staa paa skaermen, hendes egne lagt i bunden.
+	 *
+	 * BEMAERK: en linje hun selv har sat foelger IKKE portions-taelleren
+	 * bagefter. Hun satte 200 g fordi det var det hun spiste, og det tal
+	 * skal ikke gange sig selv naar hun skruer paa portionerne. De
+	 * linjer er maerket paa skaermen netop derfor.
+	 */
+	const linjer = $derived(
+		paaStedet
+			? paaStedet.linjer
+			: viste.map((i, plads) => ({
+					plads,
+					navn: i.navn ?? '',
+					maengde: Number(i.maengde),
+					enhed: String(i.enhed ?? ''),
+					foer: undefined as number | undefined,
+					aendret: false,
+					egen: false
+				}))
+	);
+
+	/** Hvilken linje er foldet ud. Kun én ad gangen. */
+	let aabenLinje = $state<number | null>(null);
+
+	function vipLinje(plads: number) {
+		if (!kanRette) return;
+		aabenLinje = aabenLinje === plads ? null : plads;
+	}
+
+	function skru(plads: number, retning: 1 | -1) {
+		const l = linjer[plads];
+		if (!l || !onaendring) return;
+		onaendring(saetMaengde(aendring, plads, naesteMaengde(l.maengde, l.enhed, retning)));
+	}
+
+	function tagIkkeI(plads: number) {
+		if (!onaendring) return;
+		onaendring(saetMaengde(aendring, plads, 0));
+		aabenLinje = null;
+	}
+
+	function saetTilbage() {
+		if (!onaendring) return;
+		onaendring(tomAendring());
+		aabenLinje = null;
+	}
 
 	// Makro-linjen klippes ud af fremgangsmaaden, saa kunden ikke laeser de
 	// samme tal én gang til som en teknisk streng midt i madlavningen. Data er
@@ -162,7 +293,12 @@
 			     er til orientering og staar daempet, saa skaermen ikke ser ud som om
 			     alle fire er lige vigtige. Samme opdeling som i maengde-arket.
 			     Se SPEC-3.0.md 26.5. -->
-			<div class="op-makro">
+			<!-- Flader skifter til honning naar tallene er hendes og ikke
+			     opskriftens. Uden det ser en rettet ret ud som Linns. -->
+			<div class="op-makro" class:op-makro-rettet={rettet}>
+				{#if rettet}
+					<div class="op-m-dine">dine<br />mængder</div>
+				{/if}
 				<div>
 					<div class="op-m-navn">Protein</div>
 					<div class="op-m-tal">{formatPortion(protein)} g</div>
@@ -186,6 +322,15 @@
 				<div class="op-kcal">{kalorier} kcal</div>
 			{/if}
 
+			{#if rettet}
+				<!-- Siger hvad der er sket, ikke hvad hun har gjort forkert. Se
+				     Linns regel om at en side aldrig maa laese som en anklage. -->
+				<div class="op-baand">
+					<span>{aendringsTekst(aendring)} Tallene er dine, ikke opskriftens.</span>
+					<button type="button" class="op-baand-tilbage" onclick={saetTilbage}>Sæt tilbage</button>
+				</div>
+			{/if}
+
 			<div class="op-k">Hvor meget spiste du?</div>
 			<div class="ma-stepper op-stepper">
 				<button
@@ -205,19 +350,98 @@
 
 			{#if opskrift.ingredienser?.length}
 				<div class="op-k">Ingredienser</div>
-				<div class="op-ingredienser">
-					{#each opskrift.ingredienser as ing (ing.navn + ing.maengde)}
-						<div>
-							<span class="op-i-navn">{ing.navn}</span>
-							<span class="op-i-m">
-								{formatMaengde(
-									ingrediensMaengde(ing.maengde, opskrift.defaultPortioner, portioner)
-								)}
-								{ing.enhed}
-							</span>
-						</div>
-					{/each}
-				</div>
+
+				{#if !kanRette}
+					<!-- Ren laesning, fx opskrift-siden under Din side. Uaendret
+					     siden foer 25. august. -->
+					<div class="op-ingredienser">
+						{#each viste as ing (ing.navn + ing.maengde)}
+							<div>
+								<span class="op-i-navn">{ing.navn}</span>
+								<span class="op-i-m">{formatMaengde(ing.maengde)} {ing.enhed}</span>
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<div class="op-ing-liste">
+						{#each linjer as l, plads (plads)}
+							<button
+								type="button"
+								class="op-ing-r"
+								class:aendret={l.aendret}
+								class:egen={l.egen}
+								class:nul={l.maengde === 0}
+								class:aaben={aabenLinje === plads}
+								onclick={() => vipLinje(plads)}
+								aria-expanded={aabenLinje === plads}
+							>
+								{#if l.aendret || l.egen}
+									<span class="op-ing-pip" class:egen={l.egen} aria-hidden="true"></span>
+								{/if}
+								<span class="op-ing-navn">
+									{l.navn}
+									{#if l.egen}<span class="op-ing-maerke">lagt til</span>{/if}
+								</span>
+								<span class="op-ing-m">
+									{#if l.maengde === 0}
+										ikke i
+									{:else}
+										{#if l.foer !== undefined}
+											<span class="op-ing-foer">{formatMaengde(l.foer)} {l.enhed}</span>
+										{/if}
+										{formatMaengde(l.maengde)}
+										{l.enhed}
+									{/if}
+								</span>
+								<span class="op-ing-pil" aria-hidden="true"
+									>{aabenLinje === plads ? '⌄' : '›'}</span
+								>
+							</button>
+
+							{#if aabenLinje === plads}
+								<div class="op-ind">
+									<div class="op-ind-rk">
+										<button
+											type="button"
+											class="op-ind-knap"
+											onclick={() => skru(plads, -1)}
+											disabled={l.maengde === 0}
+											aria-label="Mindre">−</button
+										>
+										<span class="op-ind-tal">
+											{l.maengde === 0 ? 'Ikke i' : formatMaengde(l.maengde)}
+											{#if l.maengde > 0}<span class="op-ind-e">{l.enhed}</span>{/if}
+										</span>
+										<button
+											type="button"
+											class="op-ind-knap"
+											onclick={() => skru(plads, 1)}
+											aria-label="Mere">+</button
+										>
+									</div>
+									{#if l.maengde > 0}
+										<!-- Den hurtige vej til nul. Langt det almindeligste
+										     svar er at hun sprang noget over. -->
+										<div class="op-ind-bund">
+											<button type="button" class="op-ind-nul" onclick={() => tagIkkeI(plads)}
+												>Jeg tog den ikke i</button
+											>
+										</div>
+									{/if}
+								</div>
+							{/if}
+						{/each}
+					</div>
+
+					{#if ontilfoej}
+						<!-- Stiplet, saa den kan ses som en VEJ og ikke som en
+						     ingrediens. Staar nederst, for listen skal foerst kunne
+						     laeses som opskriften. -->
+						<button type="button" class="op-tilfoej" onclick={ontilfoej}>
+							<span class="op-tilfoej-pl" aria-hidden="true">+</span> Tilføj en ingrediens
+						</button>
+					{/if}
+				{/if}
 			{/if}
 
 			{#if trin.length > 0}
@@ -246,7 +470,7 @@
 					type="button"
 					class="ma-gem op-gem"
 					disabled={gemmer}
-					onclick={() => ongem(portioner)}
+					onclick={() => ongem(portioner, aendring)}
 				>
 					{gemmer ? 'Gemmer' : gemEtiket(maaltidLabel, portioner)}
 				</button>

@@ -42,6 +42,20 @@
 		onscan: () => void;
 		onkilde: (kilde: 'opskrifter' | 'faste' | 'mine') => void;
 		onluk: () => void;
+		/**
+		 * Kun soegningen, uden "Det du plejer" og de tre hylder.
+		 *
+		 * Bruges naar hun laegger en ingrediens til en af Linns opskrifter,
+		 * se HANDOVER 9.52. Dér skal hun vaelge en RAAVARE, og en genvej
+		 * der laegger et fast maaltid eller en anden opskrift direkte i
+		 * dagbogen ville springe uden om den ret hun staar i.
+		 *
+		 * Scan og "lav den selv" bliver staaende med vilje: en ingrediens
+		 * kan lige saa godt vaere noget med en pakke om.
+		 */
+		kunSoegning?: boolean;
+		/** Overskriften. Udeladt = "Tilfoej til <maaltid>". */
+		titel?: string;
 	}
 
 	let {
@@ -57,7 +71,9 @@
 		onlavSelv,
 		onscan,
 		onkilde,
-		onluk
+		onluk,
+		kunSoegning = false,
+		titel = ''
 	}: Props = $props();
 
 	const soeger = $derived(soegeord.trim().length >= 2);
@@ -77,7 +93,9 @@
 		<div class="ma-greb" aria-hidden="true"></div>
 		<button type="button" class="ma-luk" onclick={onluk} aria-label="Luk">×</button>
 
-		<h2 class="va-titel" id="ta-titel">Tilføj til {maaltidLabel.toLowerCase()}</h2>
+		<h2 class="va-titel" id="ta-titel">
+			{titel || `Tilføj til ${maaltidLabel.toLowerCase()}`}
+		</h2>
 
 		<input
 			class="va-soeg"
@@ -133,7 +151,7 @@
 				</div>
 			{/if}
 
-			{#if !soeger}
+			{#if !soeger && !kunSoegning}
 				<!-- SCAN STAAR OEVERST OG FOER ALT ANDET. Linns besked 24.
 				     august: den skal vaere tydelig fra start. Den laa foer
 				     gemt bag en fejlet soegning, og saa fandt kun den der

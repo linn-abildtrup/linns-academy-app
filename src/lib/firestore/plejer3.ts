@@ -137,8 +137,17 @@ export async function gemSammensat(args: {
 	kh?: number;
 	fedt?: number;
 	kcal?: number;
+	/**
+	 * Linjen under navnet i dagbogen, fx "Dine mængder · 2 rettet".
+	 *
+	 * EGET 3.0-FELT MED VILJE. `GemtMaaltid` i content/kost.ts deles med
+	 * den app der er i drift og maa kun laeses, se regel 2. Feltet er
+	 * additivt, den gamle app kender det ikke, og der skal intet udgives
+	 * i Firebase. Laeses med noteFra i firestore/opskriftAendring3.ts.
+	 */
+	noteTekst?: string;
 }): Promise<GemtSvar> {
-	const { uid, dato, type, navn, protein, fiber, kh, fedt, kcal } = args;
+	const { uid, dato, type, navn, protein, fiber, kh, fedt, kcal, noteTekst } = args;
 	const ref = doc(collection(db, 'users', uid, 'maaltider'));
 	await setDoc(ref, {
 		navn,
@@ -158,6 +167,9 @@ export async function gemSammensat(args: {
 		totalKh: Math.round((kh ?? 0) * 10) / 10,
 		totalFedt: Math.round((fedt ?? 0) * 10) / 10,
 		totalKcal: Math.round(kcal ?? 0),
+		// Kun sat naar der ER noget at sige. En tom streng ville lave en
+		// tom linje under navnet i dagbogen.
+		...(noteTekst ? { note3: noteTekst } : {}),
 		oprettet: serverTimestamp(),
 		opdateret: serverTimestamp()
 	});

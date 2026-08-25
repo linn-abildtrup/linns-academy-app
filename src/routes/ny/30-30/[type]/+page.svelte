@@ -39,13 +39,33 @@
 	import OpskriftArk from '$lib/components/ny/OpskriftArk.svelte';
 	import OpskriftListe from '$lib/components/ny/OpskriftListe.svelte';
 	import { favoritterFra, erFavorit, skiftFavorit } from '$lib/content/favoritOpskrift3';
-	import { makroForPortioner } from '$lib/content/opskriftPortion3';
+	import { makroForPortioner, ingrediensMaengde } from '$lib/content/opskriftPortion3';
 	import { saetFavoritOpskrift } from '$lib/firestore/favoritOpskrift3';
 	import { hentOpskrifter3, type Opskrift3 } from '$lib/firestore/opskrifter3';
 	import { kategoriForMaaltid } from '$lib/content/opskriftKategori3';
 	import { parseOpskriftMakro } from '$lib/content/opskrifter';
 	import { visMakro } from '$lib/content/opskriftMakro3';
 	import { hentBeregninger, type Beregninger } from '$lib/firestore/opskriftBeregning3';
+	// Hun retter i en af Linns opskrifter, se HANDOVER 9.52.
+	import { hentKoblinger, type Koblingskort } from '$lib/firestore/ingrediensKobling3';
+	import {
+		type Aendring,
+		tomAendring,
+		harAendringer,
+		dagbogsTekst,
+		regnMedAendringer,
+		laegTil,
+		tilGemt,
+		fraGemt,
+		skalSpoerge
+	} from '$lib/content/opskriftAendring3';
+	import {
+		maengderFra,
+		spurgtFra,
+		gemMaengder,
+		husSpurgt,
+		noteFra
+	} from '$lib/firestore/opskriftAendring3';
 	import type { Opskrift } from '$lib/content/opskrifter';
 	import { gemSammensat } from '$lib/firestore/plejer3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
@@ -178,6 +198,11 @@
 		food: Fodevare;
 		saedvanlig: { portion: number; enhedId?: string } | null;
 		retter?: GemtMaaltid;
+		/**
+		 * Sat naar varen skal ind I den aabne opskrift og ikke i dagbogen.
+		 * Se aabnTilfoejTilOpskrift.
+		 */
+		tilOpskrift?: boolean;
 	} | null>(null);
 	let gemmer = $state(false);
 	// Kvitteringen daekker begge veje: tilfoejet og fjernet. Fortryd
@@ -224,6 +249,24 @@
 	 * Se SPEC-3.0.md 26.19.
 	 */
 	let beregninger = $state<Beregninger>({});
+
+	// ── Hun retter i en af Linns opskrifter ──
+	//
+	// Tilstanden bor HER og ikke i arket, fordi det er siden der ejer
+	// soegningen naar hun laegger en ingrediens til. Laa den i arket,
+	// ville den vaere vaek i det sekund soege-arket aabnede ovenpaa.
+	let koblinger = $state<Koblingskort>({});
+	let aabenAendring = $state<Aendring>(tomAendring());
+	/** Sat mens hun soeger efter noget der skal ind I opskriften. */
+	let tilfoejerTilOpskrift = $state(false);
+	/**
+	 * Retten hun lige har lagt i, hvis hun havde rettet i den. Den er
+	 * det spoergsmaalet om at huske maengderne haenger paa. Se D1 i
+	 * mockups-ret-maengde-i-opskrift.html.
+	 */
+	let spoergOmHusk = $state<{ opskriftId: string; titel: string; aendring: Aendring } | null>(
+		null
+	);
 	let egne = $state<Fodevare[]>([]);
 
 	// ── Faste maaltider ────────────────────────────────────────
@@ -439,9 +482,18 @@
 		try {
 			if (kilde === 'opskrifter') {
 				if (opskrifter.length === 0) {
-					const [o, b] = await Promise.all([hentOpskrifter3(), hentBeregninger()]);
+					// Koblingerne er ÉT dokument og hentes her sammen med de
+					// gemte tal. Uden dem kan der ikke regnes paa stedet naar
+					// hun retter i en opskrift, og saa staar listen som ren
+					// tekst i stedet, se OpskriftArk.
+					const [o, b, k] = await Promise.all([
+						hentOpskrifter3(),
+						hentBeregninger(),
+						hentKoblinger()
+					]);
 					opskrifter = o;
 					beregninger = b;
+					koblinger = k;
 				}
 				// Hendes egne hentes samtidig, for de bor paa den samme hylde.
 				// Har hun ingen, findes fanen ikke, og saa koster det ét
@@ -487,6 +539,13 @@
 			const o = opskrifter.find((x) => x.id === id);
 			if (!o) return;
 			aabenOpskrift = o.raa;
+			// Har hun bedt om at faa sine maengder husket, aabner retten paa
+			// dem. fraGemt kaster dem vaek af sig selv hvis Linn har rettet
+			// opskriften siden, se aftryk i opskriftAendring3.
+			aabenAendring = fraGemt(
+				maengderFra(userDoc)[o.id],
+				(o.raa.ingredienser ?? []) as { navn: string; maengde: number; enhed: string }[]
+			);
 			return;
 		}
 
@@ -985,16 +1044,110 @@
 		ilagt = null;
 	}
 
+	/**
+	 * Lukker opskriften. Hendes aendringer kastes vaek med vilje.
+	 *
+	 * De huskes kun hvis hun har sagt ja til spoergsmaalet, og det
+	 * spoergsmaal stilles foerst naar retten ER lagt i. Gik hun ud uden
+	 * at laegge noget i, har hun ikke spist noget, og saa er der intet
+	 * at huske.
+	 */
+	function lukOpskrift() {
+		aabenOpskrift = null;
+		aabenAendring = tomAendring();
+	}
+
+	/**
+	 * Hun vil laegge en ingrediens til retten.
+	 *
+	 * Vi bruger PRAECIS den samme soegning som naar hun laegger en
+	 * madvare i sit maaltid, saa hendes egne og scannede varer er med og
+	 * de to lister ikke kan drive fra hinanden. Se hvad der skete med
+	 * oevelses-vaelgeren 21. august, da den fik sin egen soegning.
+	 */
+	function aabnTilfoejTilOpskrift() {
+		tilfoejerTilOpskrift = true;
+		soegeord = '';
+	}
+
+	function lukTilfoejTilOpskrift() {
+		tilfoejerTilOpskrift = false;
+		soegeord = '';
+	}
+
+	/** Hun har valgt en vare der skal ind i opskriften. */
+	function vaelgTilOpskrift(food: Fodevare) {
+		tilfoejerTilOpskrift = false;
+		soegeord = '';
+		// Maengden saettes i det maengde-ark hun kender i forvejen. `tilOpskrift`
+		// er det der faar gem() til at laegge den i RETTEN og ikke i dagbogen.
+		valgt = { food, saedvanlig: null, tilOpskrift: true };
+	}
+
+	/**
+	 * Hendes svar paa om maengderne skal huskes.
+	 *
+	 * Uanset hvad hun svarer, huskes det at hun ER blevet spurgt om netop
+	 * den ret. Ellers ville baandet dukke op hver eneste gang, og saa er
+	 * det en pop-up der aldrig holder op.
+	 *
+	 * FEJLER ALDRIG OPAD. Gaar skrivningen galt, er retten stadig lagt i
+	 * hendes dagbog, og det er det vigtige. Hun faar ikke en fejl at se
+	 * om noget der kun er en bekvemmelighed.
+	 */
+	async function svarPaaHusk(ja: boolean) {
+		const uid = user?.uid;
+		const s = spoergOmHusk;
+		spoergOmHusk = null;
+		if (!uid || !s) return;
+		const o = opskrifter.find((x) => x.id === s.opskriftId);
+		try {
+			if (ja && o) {
+				await gemMaengder(
+					uid,
+					s.opskriftId,
+					tilGemt(
+						s.aendring,
+						(o.raa.ingredienser ?? []) as { navn: string; maengde: number; enhed: string }[]
+					)
+				);
+			}
+			await husSpurgt(uid, s.opskriftId);
+		} catch (e) {
+			console.error('[ny] kunne ikke gemme svaret om at huske maengder', e);
+		}
+	}
+
 	/** Laegger opskriften i, med det antal portioner hun har valgt. */
-	async function gemOpskrift(portioner: number) {
+	async function gemOpskrift(portioner: number, aendring: Aendring) {
 		const uid = user?.uid;
 		const o = aabenOpskrift;
 		if (!uid || !o) return;
 		gemmer = true;
+		const rettet = harAendringer(aendring);
 		try {
-			// Samme tal som arket viste hende. Beregnet hvor vi har det,
-			// ellers det der staar i teksten.
+			// HAR HUN ROERT NOGET, REGNES DER PAA STEDET.
+			//
+			// Ellers bruges det gemte tal, som med vilje er frosset. De to
+			// kan give en lille forskel paa den samme mad, og Linn har sagt
+			// ja til det 25. august. Det afgoerende er at det tal der
+			// gemmes er PRAECIS det tal arket viste hende, og det er derfor
+			// begge veje gaar gennem de samme to funktioner som arket.
 			const mk = visMakro(o.id, o.instruktioner, beregninger, parseOpskriftMakro(o.instruktioner));
+			const paaStedet = rettet
+				? regnMedAendringer(
+						(o.ingredienser ?? []).map((i) => ({
+							...i,
+							maengde: ingrediensMaengde(i.maengde, o.defaultPortioner, portioner)
+						})),
+						aendring,
+						koblinger,
+						foods
+					)
+				: null;
+			// Navnet siger ikke noget om at hun har rettet. Det staar paa
+			// linjen UNDER i dagbogen, saa retten stadig kan kendes paa sit
+			// eget navn. Linns valg 25. august.
 			const navn = portioner === 1 ? o.titel : `${o.titel} (${formatPortion(portioner)} port.)`;
 			// Alle fem tal skalerer med portionerne, og alle fem gemmes, ogsaa hvis
 			// hun ikke maa se de tre sidste. Se SPEC-3.0.md 26.5. Makroen er PR
@@ -1005,16 +1158,32 @@
 				dato,
 				type,
 				navn,
-				protein: makroForPortioner(mk.protein ?? 0, portioner) ?? 0,
-				fiber: makroForPortioner(mk.fiber ?? 0, portioner) ?? 0,
-				kh: makroForPortioner(mk.kh ?? 0, portioner) ?? 0,
-				fedt: makroForPortioner(mk.fedt ?? 0, portioner) ?? 0,
-				kcal: makroForPortioner(mk.kalorier ?? 0, portioner) ?? 0
+				// "Dine mængder · 2 rettet". Uden den kan hverken hun eller
+				// Linn se at hun spiste noget andet end det der staar, og om
+				// tre uger ligner det en fejl i tallene.
+				noteTekst: rettet ? dagbogsTekst(aendring) : undefined,
+				protein: paaStedet
+					? paaStedet.makro.protein
+					: (makroForPortioner(mk.protein ?? 0, portioner) ?? 0),
+				fiber: paaStedet
+					? paaStedet.makro.fiber
+					: (makroForPortioner(mk.fiber ?? 0, portioner) ?? 0),
+				kh: paaStedet ? paaStedet.makro.kh : (makroForPortioner(mk.kh ?? 0, portioner) ?? 0),
+				fedt: paaStedet ? paaStedet.makro.fedt : (makroForPortioner(mk.fedt ?? 0, portioner) ?? 0),
+				kcal: paaStedet
+					? paaStedet.makro.kalorier
+					: (makroForPortioner(mk.kalorier ?? 0, portioner) ?? 0)
 			});
+			// Spoergsmaalet om at huske maengderne stilles FOERST naar retten
+			// er lagt i, saa det ikke ligger i vejen mens hun arbejder, og
+			// kun én gang pr opskrift. Se skalSpoerge.
+			const spoerg = skalSpoerge(aendring, spurgtFra(userDoc).includes(o.id));
 			aabenOpskrift = null;
 			aabentArk = null;
+			aabenAendring = tomAendring();
 			await indlaesDagen();
 			visKvittering({ slags: 'tilfoejet', ...svar });
+			if (spoerg) spoergOmHusk = { opskriftId: o.id, titel: o.titel, aendring };
 		} catch (e) {
 			console.error('[ny] kunne ikke laegge opskriften i', e);
 		} finally {
@@ -1209,6 +1378,21 @@
 	async function gem(food: Fodevare, portion: number, enhedId: string | undefined) {
 		const uid = user?.uid;
 		if (!uid) return;
+
+		// Skal varen ind I opskriften, roeres dagbogen slet ikke. Den
+		// lander som en linje i retten, og tallene foelger foerst med naar
+		// hun trykker "Læg i".
+		if (valgt?.tilOpskrift) {
+			aabenAendring = laegTil(aabenAendring, {
+				foodId: food.id,
+				navn: food.name,
+				portion,
+				enhedId
+			});
+			valgt = null;
+			return;
+		}
+
 		const retter = valgt?.retter;
 		gemmer = true;
 		// Er varen en af dem der ellers ville forsvinde for hende, huskes
@@ -1363,6 +1547,13 @@
 						aria-label={kanRettes(p) ? `Ret mængden af ${p.navn}` : undefined}
 					>
 						<span class="tm-r-navn">{p.navn}</span>
+						<!-- "Dine mængder · 2 rettet" naar hun har rettet i en af
+						     Linns opskrifter. Uden den kan hverken hun eller Linn
+						     se at hun spiste noget andet end det der staar, og om
+						     tre uger ligner det en fejl i tallene. -->
+						{#if noteFra(p)}
+							<span class="tm-r-note">{noteFra(p)}</span>
+						{/if}
 						<!-- Foer stod der bare "5 g", og man kunne ikke vide hvad
 						     de fem gram var. Nu staar maengden og hvad hver ting
 						     bidrog med, med ord paa. -->
@@ -1437,6 +1628,49 @@
 	/>
 {/if}
 
+{#if tilfoejerTilOpskrift}
+	<!-- SAMME ARK OG SAMME SOEGNING som naar hun laegger en madvare i sit
+	     maaltid, bare uden hylderne. To soegninger ved siden af hinanden
+	     ville drive fra hinanden, se hvad der skete med oevelses-vaelgeren
+	     21. august. -->
+	<TilfoejArk
+		maaltidLabel={LABELS[type]}
+		titel="Tilføj til retten"
+		kunSoegning
+		plejer={[]}
+		bind:soegeord
+		{traef}
+		{hjerter}
+		{gemmer}
+		onplejer={() => {}}
+		onvaelg={vaelgTilOpskrift}
+		onhjerte={skiftHjertePaa}
+		onlavSelv={lavSelvFraArk}
+		onscan={() => {
+			tilfoejerTilOpskrift = false;
+			scanArk = true;
+		}}
+		onkilde={() => {}}
+		onluk={lukTilfoejTilOpskrift}
+	/>
+{/if}
+
+{#if spoergOmHusk}
+	<!-- D1 fra tegningen. Et bloedt baand og ikke en pop-up: en pop-up
+	     ville laegge sig hen over kvitteringen med Fortryd. Samme moenster
+	     som naar hun retter i et fast maaltid, se 9.10. -->
+	<div class="op-husk" class:over-kvit={!!kvittering}>
+		<div class="op-husk-t">Skal jeg huske dine mængder til den her ret?</div>
+		<div class="op-husk-u">
+			Så åbner den med dine tal næste gang. Du kan altid sætte den tilbage.
+		</div>
+		<div class="op-husk-rk">
+			<button type="button" class="op-husk-ja" onclick={() => svarPaaHusk(true)}>Ja tak</button>
+			<button type="button" class="op-husk-nej" onclick={() => svarPaaHusk(false)}>Nej</button>
+		</div>
+	</div>
+{/if}
+
 {#if valgt}
 	<MaengdeArk
 		food={valgt.food}
@@ -1445,6 +1679,7 @@
 		{gemmer}
 		{visUdvidet}
 		retter={!!valgt.retter}
+		tilOpskrift={!!valgt.tilOpskrift}
 		ongem={(portion, enhedId) => gem(valgt!.food, portion, enhedId)}
 		onluk={() => (valgt = null)}
 	/>
@@ -1576,7 +1811,12 @@
 		{beregninger}
 		ongem={gemOpskrift}
 		onfavorit={skiftFavoritOpskrift}
-		ontilbage={() => (aabenOpskrift = null)}
+		ontilbage={lukOpskrift}
+		aendring={aabenAendring}
+		onaendring={(a) => (aabenAendring = a)}
+		ontilfoej={aabnTilfoejTilOpskrift}
+		{koblinger}
+		varer={foods}
 	/>
 {/if}
 
