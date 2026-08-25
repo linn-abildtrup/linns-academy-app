@@ -5308,11 +5308,19 @@ button.tm-ikon:active > span {
 	/* OVER kvitteringen, som ligger paa 90. De to kommer frem samtidig,
 	   og kvitteringen daekkede Ja og Nej. */
 	z-index: 95;
-	background: var(--paper);
-	border: 1px solid var(--line);
+	/* MOERK PLOMME, ikke creme. Linns valg 25. august, model A i
+	   mockups-husk-baand-farve.html.
+	   Cremefarvet laa den paa samme flade som kortene omkring den, og saa
+	   laeste oejet den som en del af siden i stedet for som et spoergsmaal
+	   der venter paa svar.
+	   Honning kunne IKKE bruges: paa netop den her skaerm betyder honning
+	   "du har aendret noget", baade paa tallene inde i opskriften og paa
+	   linjen i dagbogen. Og groen betyder klaret. */
+	background: var(--moerk, #4a2e3d);
+	color: #fff;
 	border-radius: 14px;
 	padding: 13px 15px;
-	box-shadow: var(--shadow);
+	box-shadow: 0 10px 26px rgba(40, 26, 30, 0.34);
 }
 
 /* Er der en kvittering fremme, staar spoergsmaalet OVENOVER den i
@@ -5326,13 +5334,14 @@ button.tm-ikon:active > span {
 	font-family: var(--serif);
 	font-size: calc(14.5px * var(--fs-scale, 1));
 	font-weight: 600;
-	color: var(--espresso);
+	color: #fff;
 	margin-bottom: 3px;
 }
 
 .op-husk-u {
 	font-size: calc(11.5px * var(--fs-scale, 1));
-	color: var(--ink-2);
+	/* Daempet, men stadig laesbar paa den moerke flade. */
+	color: rgba(255, 255, 255, 0.72);
 	line-height: 1.45;
 	margin-bottom: 11px;
 }
@@ -5350,16 +5359,16 @@ button.tm-ikon:active > span {
 	min-height: 44px;
 }
 
+/* Knapperne vendes om paa den moerke flade: Ja bliver den lyse. */
 .op-husk-ja {
-	background: var(--moerk, #4a2e3d);
-	color: #fff;
+	background: #fff;
+	color: var(--moerk, #4a2e3d);
 	font-weight: 600;
 }
 
 .op-husk-nej {
-	background: var(--paper-2, #f6f0e7);
-	border: 1px solid var(--line);
-	color: var(--ink-2);
+	background: rgba(255, 255, 255, 0.14);
+	color: #fff;
 }
 
 .op-tilfoej-pl {
