@@ -3735,7 +3735,20 @@ Efter Linns gennemgang, ti ad gangen. Sikkerhedskopier i `backup/`.
 - **Bagepulver blev bevidst IKKE aabnet.** Man spiser ikke en portion af
   det, og nul i alle felter ligner en fejl i tallene
 
-**75 er stadig skjult fra Linns egen liste.** Fortsaet ti ad gangen.
+Anden runde 25. august: **kun Kyllingefrikadelle og Fiskefrikadelle**
+blev aabnet. De hoerer med fordi den almindelige Frikadelle blev aabnet
+i foerste runde, og ellers kunne kunden finde den ene og ikke de to
+andre.
+
+**PROTEIN-VARERNE BLEV FORELAGT OG FRAVALGT.** Proteinbar, proteinbroed,
+proteinchips, proteinis, proteindrik, proteinberiget knaekbroed og pasta
+og havrekiks med protein staar stadig skjult. Det er Linns beslutning
+og ikke en forglemmelse, saa aabn dem ikke uden at spoerge.
+
+Bemaerk ogsaa at **Proteindrik, færdig staar til 9 g protein og 50 kcal**,
+hvilket ser lavt ud for en faerdig proteindrik. Tallet er ikke tjekket.
+
+**74 er stadig skjult fra Linns egen liste.** Fortsaet ti ad gangen.
 
 **Isbergsalat hedder nu Icebergsalat.** Linns besked: det hedder Iceberg
 paa posen. Bemaerk konsekvensen: "isberg" giver nu ingenting.
