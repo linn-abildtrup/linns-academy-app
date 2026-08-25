@@ -3,6 +3,8 @@ import {
 	MAKS_TRAEF,
 	erHeltOrd,
 	hjerterTilSoegning,
+	foerstISoegning,
+	mineScanninger,
 	rang,
 	soegFodevarer,
 	soegetermer
@@ -224,5 +226,48 @@ describe('soegFodevarer med hjerter', () => {
 	it('rammer ikke ved siden af naar hjertet ikke er blandt traefferne', () => {
 		const ud = soegFodevarer(varer, 'skyr', 8, new Set(['noget-helt-andet']));
 		expect(ud[0].id).toBe('skyr');
+	});
+});
+
+describe('foerstISoegning', () => {
+	// Linns oenske 25. august: en vare hun har scannet skal ligge oeverst.
+	// Vi loefter den frem UDEN at saette et hjerte, saa hjertet bliver ved
+	// med kun at betyde hendes eget valg.
+	it('samler hjerter, hendes egne og hendes scanninger', () => {
+		const ud = foerstISoegning({
+			hjerter: ['h1'],
+			egneIds: new Set(['e1']),
+			scannedeAfHende: ['s1']
+		});
+		expect([...ud].sort()).toEqual(['e1', 'h1', 's1']);
+	});
+
+	// Et gammelt automatisk hjerte paa hendes egen vare taeller ikke som
+	// hjerte, men varen kommer med alligevel fordi den ER hendes egen.
+	// Den maa ikke staa der to gange.
+	it('taeller ikke hendes egen vare med to gange', () => {
+		const ud = foerstISoegning({ hjerter: ['e1'], egneIds: new Set(['e1']) });
+		expect([...ud]).toEqual(['e1']);
+	});
+
+	it('taaler at hun ikke har scannet noget', () => {
+		const ud = foerstISoegning({ hjerter: [], egneIds: new Set() });
+		expect(ud.size).toBe(0);
+	});
+});
+
+describe('mineScanninger', () => {
+	const varer = [
+		{ id: 'a', scannetAf: 'mig' },
+		{ id: 'b', scannetAf: 'en-anden' },
+		{ id: 'c' }
+	];
+
+	it('finder kun dem hun selv har scannet', () => {
+		expect(mineScanninger(varer, 'mig')).toEqual(['a']);
+	});
+
+	it('giver ingenting naar hun ikke er logget ind', () => {
+		expect(mineScanninger(varer, undefined)).toEqual([]);
 	});
 });

@@ -90,6 +90,57 @@ export function hjerterTilSoegning(hjerter: string[], egneIds: Set<string>): Set
 }
 
 /**
+ * Alt der skal ligge OEVERST naar hun soeger.
+ *
+ * Tre ting, og de har hver sin begrundelse:
+ *
+ *   1. HENDES HJERTER, altsaa det hun selv har markeret
+ *   2. HENDES EGNE FOEDEVARER, dem hun har oprettet
+ *   3. DE VARER HUN SELV HAR SCANNET
+ *
+ * LINNS OENSKE 25. august var oprindelig at en scannet vare skulle
+ * saettes som favorit automatisk. Vi goer det HER i stedet, og det er en
+ * bevidst forskel:
+ *
+ *   - 3.0 saetter ALDRIG hjertet automatisk, se hjerteFodevare3. Den
+ *     regel kom af at den gamle app gjorde det, og 72 % af alle hjerter
+ *     er derfor noget kunden aldrig har valgt. Gentog vi det, ville
+ *     hjerte-listen blive ubrugelig igen
+ *   - Et automatisk hjerte ville kun have virket paa HALVDELEN af
+ *     scanningerne. Retter hun ét tal, bliver varen hendes egen, og
+ *     hendes egne holdes ude af hjerte-gruppen. Den anden halvdel ville
+ *     have set ud som noget der ikke virkede
+ *
+ * Paa skaermen faar hun praecis det hun bad om: varen ligger oeverst.
+ * Forskellen er at hjertet stadig kun betyder hendes eget valg.
+ */
+export function foerstISoegning(args: {
+	hjerter: string[];
+	/** Id'erne paa de foedevarer hun selv har oprettet. */
+	egneIds: Set<string>;
+	/** Id'erne paa de varer hun selv har scannet. */
+	scannedeAfHende?: string[];
+}): Set<string> {
+	const ud = hjerterTilSoegning(args.hjerter, args.egneIds);
+	for (const id of args.egneIds) ud.add(id);
+	for (const id of args.scannedeAfHende ?? []) ud.add(id);
+	return ud;
+}
+
+/**
+ * Hvilke af de delte, scannede varer hun selv har scannet.
+ *
+ * Feltet `scannetAf` skrives af `delScanning` og laeses kun her, saa
+ * castet ligger ét sted.
+ */
+export function mineScanninger(varer: { id: string }[], uid: string | undefined): string[] {
+	if (!uid) return [];
+	return varer
+		.filter((v) => (v as { scannetAf?: unknown }).scannetAf === uid)
+		.map((v) => v.id);
+}
+
+/**
  * Soeger og sorterer.
  *
  * ALLE ord skal findes, men de maa staa i hvert sit hjoerne af navnet og
@@ -97,7 +148,9 @@ export function hjerterTilSoegning(hjerter: string[], egneIds: Set<string>): Set
  * vanilje. Et enkelt ord giver praecis samme traeffere som foer, saa
  * ingenting forsvandt da flere ord blev muligt.
  *
- * Raekkefoelgen: HJERTET foerst, saa flest hele ord, saa korteste navn.
+ * Raekkefoelgen: HENDES EGET foerst, saa flest hele ord, saa korteste
+ * navn. `foerst` er hjerter, hendes egne varer og hendes egne
+ * scanninger, se foerstISoegning.
  *
  * HVORFOR HJERTET VINDER OVER HELE ORD. Linns beslutning 25. august.
  * Reglen om hele ord er et gaet paa hvad hun mon mener, og den findes
@@ -116,7 +169,7 @@ export function soegFodevarer(
 	foods: Fodevare[],
 	soegeord: string,
 	maks: number = MAKS_TRAEF,
-	hjerter: Set<string> = new Set()
+	foerst: Set<string> = new Set()
 ): Fodevare[] {
 	const termer = soegetermer(soegeord);
 	if (termer.length === 0) return [];
@@ -128,9 +181,9 @@ export function soegFodevarer(
 
 	return traef
 		.sort((a, b) => {
-			// Hendes eget valg foerst. Se hvorfor ovenfor.
-			const ja = hjerter.has(a.id);
-			const jb = hjerter.has(b.id);
+			// Hendes eget foerst. Se hvorfor ovenfor.
+			const ja = foerst.has(a.id);
+			const jb = foerst.has(b.id);
 			if (ja !== jb) return ja ? -1 : 1;
 			const ha = antalHeleOrd(a.name, termer);
 			const hb = antalHeleOrd(b.name, termer);

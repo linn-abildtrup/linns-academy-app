@@ -17,7 +17,12 @@
 	import type { UserDoc } from '$lib/types';
 	import type { Fodevare, GemtMaaltid, Maaltidstype } from '$lib/content/kost';
 	import { MAALTIDSTYPER, MAALTIDSTYPE_LABELS, PROTEIN_MAALTIDS_MAAL } from '$lib/content/kost';
-	import { soegFodevarer, hjerterTilSoegning, MAKS_TRAEF } from '$lib/content/fodevareSoeg3';
+	import {
+	soegFodevarer,
+	foerstISoegning,
+	mineScanninger,
+	MAKS_TRAEF
+} from '$lib/content/fodevareSoeg3';
 	import { LABELS, harProteinMaal } from '$lib/content/maaltider3';
 	import { formatPortion, naeringFor } from '$lib/content/maengde3';
 	import type { PlejerPost } from '$lib/content/plejer3';
@@ -256,6 +261,8 @@
 	// soegningen naar hun laegger en ingrediens til. Laa den i arket,
 	// ville den vaere vaek i det sekund soege-arket aabnede ovenpaa.
 	let koblinger = $state<Koblingskort>({});
+	/** De varer hun selv har scannet. De ligger oeverst naar hun soeger. */
+	let mineScannedeIds = $state<string[]>([]);
 	let aabenAendring = $state<Aendring>(tomAendring());
 	/** Sat mens hun soeger efter noget der skal ind I opskriften. */
 	let tilfoejerTilOpskrift = $state(false);
@@ -405,15 +412,19 @@
 		// maerkevarer og retter kun for dem der allerede bruger dem.
 		// Se content/fodevareKilde3.ts.
 		//
-		// HENDES HJERTER FOERST. Linns beslutning 25. august. Hendes egne
-		// foedevarer holdes ude af hjerte-gruppen, fordi de 72 % af
-		// hjerterne der er sat AUTOMATISK af den gamle app ikke er noget
-		// hun har valgt. Se hjerterTilSoegning.
+		// HENDES EGET FOERST. Linns beslutninger 25. august: hjerter,
+		// hendes egne foedevarer og de varer hun selv har scannet. De
+		// gamle automatiske hjerter paa hendes egne varer taeller ikke
+		// med som hjerter, se foerstISoegning.
 		return soegFodevarer(
 			tilSoegning([...foods.values()], hendesEgne),
 			ord,
 			MAKS_TRAEF,
-			hjerterTilSoegning(hjerter, new Set(egne.map((f) => f.id)))
+			foerstISoegning({
+				hjerter,
+				egneIds: new Set(egne.map((f) => f.id)),
+				scannedeAfHende: mineScannedeIds
+			})
 		);
 	});
 
@@ -453,6 +464,10 @@
 			// De scannede varer ses af ALLE og laegges oveni den faelles
 			// liste. Se firestore/scannedeVarer3.ts.
 			const scannede = await hentScannedeVarer3().catch(() => []);
+			// De varer HUN selv har scannet, saa de kan ligge oeverst naar
+			// hun soeger efter dem igen. Linns oenske 25. august, se
+			// foerstISoegning.
+			mineScannedeIds = mineScanninger(scannede, uid);
 			const kort = new Map(medScannede(alle, scannede).map((f) => [f.id, f]));
 			if (afbrudt) return;
 			foods = kort;
