@@ -3748,7 +3748,21 @@ og ikke en forglemmelse, saa aabn dem ikke uden at spoerge.
 Bemaerk ogsaa at **Proteindrik, færdig staar til 9 g protein og 50 kcal**,
 hvilket ser lavt ud for en faerdig proteindrik. Tallet er ikke tjekket.
 
-**74 er stadig skjult fra Linns egen liste.** Fortsaet ti ad gangen.
+Tredje runde 25. august: **dressinger, dip og én svamp.** Karl Johan
+frisk, Tzatziki, de to hummus-varianter, Tahin-, Yoghurt-, Cæsar-,
+Æbleeddike- og blandet salatdressing, samt Coleslaw.
+
+**Karl Johan var en decideret fejl.** En frisk svamp med 22 kalorier,
+skjult som om den var en faerdigret. Samme fejl som salaterne.
+
+**Dressingerne ligger paa 300 til 400 kcal pr 100 g.** Det er der de
+skjulte kalorier bor. En kunde der spiser en stor salat med to spsk
+caesardressing og kun kan taste salaten, faar et tal der ser sundere ud
+end hendes dag var.
+
+**64 er stadig skjult fra Linns egen liste**, og over halvdelen af dem
+er protein-varerne hun har fravalgt. Naar de traekkes fra, er listen
+reelt kort. Fortsaet ti ad gangen.
 
 **Isbergsalat hedder nu Icebergsalat.** Linns besked: det hedder Iceberg
 paa posen. Bemaerk konsekvensen: "isberg" giver nu ingenting.
