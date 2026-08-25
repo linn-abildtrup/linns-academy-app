@@ -3,6 +3,7 @@ import {
 	harVaeretIgennem3,
 	skalOnboardes3,
 	tekstSkalaFra3,
+	STANDARD_SKALA_3,
 	taeller3,
 	kortNr3,
 	rundvisningskort3,
@@ -63,9 +64,19 @@ describe('skalOnboardes3', () => {
 });
 
 describe('tekstSkalaFra3', () => {
-	it('falder tilbage paa normal naar intet er valgt', () => {
-		expect(tekstSkalaFra3(null)).toBe('normal');
-		expect(tekstSkalaFra3({})).toBe('normal');
+	// Linns valg 25. august: en ny kunde starter paa Normal, altsaa
+	// `large`, og ikke paa den mindste. Maalgruppen er kvinder fra 40 og
+	// opefter.
+	it('falder tilbage paa standarden naar intet er valgt', () => {
+		expect(tekstSkalaFra3(null)).toBe(STANDARD_SKALA_3);
+		expect(tekstSkalaFra3({})).toBe(STANDARD_SKALA_3);
+		expect(STANDARD_SKALA_3).toBe('large');
+	});
+
+	// Har hun VALGT den mindste, skal den respekteres. Det er kun den
+	// kunde der aldrig har taget stilling der flytter sig.
+	it('respekterer at hun selv har valgt den mindste', () => {
+		expect(tekstSkalaFra3({ tekstSkala3: 'normal' })).toBe('normal');
 	});
 
 	it('laeser hendes valg', () => {
@@ -74,8 +85,14 @@ describe('tekstSkalaFra3', () => {
 	});
 
 	it('afviser vaerdier den ikke kender', () => {
-		expect(tekstSkalaFra3({ tekstSkala3: 'kaempestor' })).toBe('normal');
-		expect(tekstSkalaFra3({ tekstSkala3: 42 })).toBe('normal');
+		expect(tekstSkalaFra3({ tekstSkala3: 'kaempestor' })).toBe(STANDARD_SKALA_3);
+		expect(tekstSkalaFra3({ tekstSkala3: 42 })).toBe(STANDARD_SKALA_3);
+	});
+
+	// Kunden ser Lille, Normal og Stor. Vaerdierne bagved er den gamle
+	// apps egne og maa ikke omdoebes.
+	it('hedder Lille, Normal og Stor paa skaermen', () => {
+		expect(TEKST_SKALAER_3.map((t) => t.navn)).toEqual(['Lille', 'Normal', 'Stor']);
 	});
 
 	it('de tre trin matcher den gamle apps vaerdier', () => {

@@ -146,7 +146,7 @@
 			if (document.visibilityState !== 'visible') return;
 			if (art === 'lyd') return;
 			sekunder += 1;
-			const graense = sekunderFoerKlaret(lektion?.varighedMin);
+			const graense = sekunderFoerKlaret(lektion?.varighedMin, art);
 			if (graense && sekunder >= graense && !erKlaret && !gemmer) {
 				void markerKlaret(true);
 			}
@@ -240,7 +240,28 @@
 		{:else if art === 'lyd'}
 			<Lydafspiller url={lektion.url} titel={lektion.titel} onfaerdig={() => markerKlaret(true)} />
 		{:else}
-			<a class="btn bred" href={lektion.url} target="_blank" rel="noopener noreferrer">
+			<!--
+				GUIDEN MARKERES NAAR HUN AABNER DEN. Linns beslutning 25.
+				august.
+
+				Den aabner i et nyt vindue, saa uret her kan ikke se at hun
+				sidder og laeser: siden er ikke synlig imens, og taelleren
+				staar stille. Og af de 43 guide-lektioner paa Kropsro har kun
+				6 en varighed sat, saa de 37 andre kunne ALDRIG markere sig
+				selv. Dagen foldede sig derfor aldrig sammen for hende.
+
+				At trykke Åbn er en bevidst handling, og hun kan altid fjerne
+				fluebenet igen med knappen nedenfor.
+			-->
+			<a
+				class="btn bred"
+				href={lektion.url}
+				target="_blank"
+				rel="noopener noreferrer"
+				onclick={() => {
+					if (!erKlaret) void markerKlaret(true);
+				}}
+			>
 				Åbn lektionen
 			</a>
 			<p class="kort rolig">Den åbner i et nyt vindue, og så er du tilbage her bagefter.</p>

@@ -47,10 +47,36 @@ export function indlejretUrl(url: string): string | null {
  */
 export const ANDEL_FOER_KLARET = 0.8;
 
-/** Sekunder hun skal have lektionen aaben, foer den taeller som taget. */
-export function sekunderFoerKlaret(varighedMin: number | undefined): number | null {
-	if (!varighedMin || varighedMin <= 0) return null;
-	return Math.round(varighedMin * 60 * ANDEL_FOER_KLARET);
+/**
+ * Hvor laenge en LAESE-lektion uden angivet tid skal vaere aaben.
+ *
+ * LINNS BESLUTNING 25. august. Baggrunden er maalt: af de 43
+ * guide-lektioner paa Kropsro har kun 6 en varighed sat. De 37 andre
+ * kunne derfor ALDRIG markere sig selv, hvor video og lyd goer det.
+ * Konsekvensen var at dagen aldrig foldede sig sammen for hende, fordi
+ * ét punkt blev staaende umarkeret.
+ *
+ * Tyve sekunder er kort nok til at hun ikke naar at undre sig, og langt
+ * nok til at et fejltryk ikke taeller som laest.
+ */
+export const SEKUNDER_LAESNING = 20;
+
+/**
+ * Sekunder hun skal have lektionen aaben, foer den taeller som taget.
+ *
+ * Er der sat en varighed, bruges 80 procent af den, uanset slags.
+ * Er der ikke, faar en LAESNING den faste graense ovenfor. Video og lyd
+ * faar stadig ingenting: dér ved vi ikke hvor lang filmen er, og et
+ * gaet ville markere den mens hun stadig ser.
+ */
+export function sekunderFoerKlaret(
+	varighedMin: number | undefined,
+	art?: LektionsArt
+): number | null {
+	if (varighedMin && varighedMin > 0) return Math.round(varighedMin * 60 * ANDEL_FOER_KLARET);
+	// 'link' markeres ved at hun trykker Åbn, ikke af et ur. Se siden.
+	if (art === 'side') return SEKUNDER_LAESNING;
+	return null;
 }
 
 /** Til teksten under afspilleren, saa hun ved hvad der sker. */

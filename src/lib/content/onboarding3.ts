@@ -84,11 +84,28 @@ export const TEKST_SKALAER_3: { vaerdi: TekstSkala3; navn: string; px: number }[
 	{ vaerdi: 'xlarge', navn: 'Stor', px: 19.5 }
 ];
 
-/** Laeser hendes gemte valg. Ukendte vaerdier falder tilbage paa normal. */
+/**
+ * Hvad en kunde starter paa, foer hun selv har valgt.
+ *
+ * LINNS VALG 25. august: hun starter paa Normal, altsaa `large`, og
+ * ikke paa Lille. Maalgruppen er kvinder fra 40 og opefter, og den
+ * mindste af de tre er lille at laese paa en telefon.
+ *
+ * Bemaerk at vaerdien hedder `large`, selv om kunden ser "Normal". Det
+ * er den gamle apps navn, og det maa ikke roeres, se TEKST_SKALAER_3.
+ */
+export const STANDARD_SKALA_3: TekstSkala3 = 'large';
+
+/**
+ * Laeser hendes gemte valg. Har hun ikke valgt, faar hun standarden.
+ *
+ * Har hun VALGT Lille, staar det gemt og bliver respekteret. Det er kun
+ * den kunde der aldrig har taget stilling der flytter sig.
+ */
 export function tekstSkalaFra3(kilde: unknown): TekstSkala3 {
 	const v = (kilde as { tekstSkala3?: unknown } | null | undefined)?.tekstSkala3;
 	if (v === 'large' || v === 'xlarge' || v === 'normal') return v;
-	return 'normal';
+	return STANDARD_SKALA_3;
 }
 
 // ── Trinnene ─────────────────────────────────────────────────
