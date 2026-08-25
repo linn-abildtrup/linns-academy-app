@@ -3678,6 +3678,61 @@ afsnit 7.
 
 ---
 
+### 9.54 SALATERNE FORSVANDT, 25. august
+
+Linn kunne ikke finde salat i 30-30. **Nul salater var synlige for en ny
+kunde.**
+
+#### Hvad der var sket
+
+Oprydningen 24. august maerkede 232 varer som "retter og maerkevarer"
+med `kunKendte`, se 9.50. Det var rigtigt for de 43 burgere og sandwich
+der har salat i navnet. **Men reglen tog salathovederne med i samme
+net.** Isbergsalat, Romainesalat, Bladsalat, Egebladssalat og Feldsalat
+er alle sammen fra Linns egen liste, og de blev skjult.
+
+Til sammenligning var agurk, tomat, rucola og broccoli synlige hele
+tiden. Det var kun salaterne.
+
+**Foelgefejlen:** de tre DTU-salater peger paa netop de her, saa
+pegepinden endte et sted kunden ikke kunne se.
+
+Rettet samme dag: de fem har faaet `kunKendte` slettet igen.
+Sikkerhedskopi i `backup/fodevarer-salat-foer-2026-08-25.json`.
+
+#### DET STOERRE PROBLEM, IKKE LOEST
+
+**90 varer fra Linns EGEN liste er skjult for nye kunder.** Den liste er
+den kurerede, og kunderne spiser 79 % af netop den, se 9.49.
+
+Noget af det er rigtigt skjult efter Linns egen regel om at maerkevarer
+og retter ikke hoerer til, fx Nutella, Philadelphia og Pizza. Men der er
+mange der ser forkerte ud:
+
+- **Krydderier og pulvere**: bagepulver, kakaopulver, chili, gurkemeje,
+  matcha. Det er ingredienser, ikke retter
+- **Hummus, guacamole, frikadeller, granola og mysli.** De kan navngives
+  uden et maerke, praecis som kefir, rugbroed og hytteost, som Linn selv
+  besluttede skulle blive, se regel 1 i 9.50
+- **Protein-varerne**: proteinbar, proteinbroed, proteindrik,
+  proteinchips, proteinis. Generiske slags og ikke maerkevarer, og
+  praecis det en 30-30-kunde spiser
+
+**Naeste skridt er en side med de 90, hvor Linn siger synlig eller
+skjult.** Det var sådan de 33 blev afgjort 24. august, og det virkede.
+
+#### EN TING DER IKKE VIRKER SOM MAN TROR
+
+**En dublet er skjult i soegningen for ALLE**, se `maaSesISoegning`.
+Pegepinden hjaelper kun de maaltider der allerede peger paa det gamle
+id. Den goer IKKE at kunden kan finde varen paa dublettens navn.
+
+Konkret: soeger hun "iceberg", faar hun **ingenting**. "Isberg" virker.
+Navnet paa posen i butikken er det foerste. Ikke loest, og det kraever
+enten et andet navn paa varen eller et soegeord ved siden af.
+
+---
+
 ## 10. Sådan arbejder Linn
 
 Det her er lige så vigtigt som koden.
