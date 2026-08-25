@@ -67,10 +67,21 @@ export function skalOnboardes3(kilde: unknown, erAdmin: boolean): boolean {
  */
 export type TekstSkala3 = 'normal' | 'large' | 'xlarge';
 
+/**
+ * NAVNENE er Lille, Normal og Stor. Linns valg 25. august.
+ *
+ * Foer hed de Almindelig, Større og Størst. Tre trin der alle sammen
+ * lyder som varianter af det samme er svaere at vaelge imellem, hvor
+ * lille og stor er ord alle kender.
+ *
+ * VAERDIERNE MAA IKKE OMDOEBES. `normal`, `large` og `xlarge` er den
+ * gamle apps egne, og de deles med den, saa de to apper ikke kan komme
+ * til at vise hver sin stoerrelse. Kunden ser kun navnet.
+ */
 export const TEKST_SKALAER_3: { vaerdi: TekstSkala3; navn: string; px: number }[] = [
-	{ vaerdi: 'normal', navn: 'Almindelig', px: 15 },
-	{ vaerdi: 'large', navn: 'Større', px: 17 },
-	{ vaerdi: 'xlarge', navn: 'Størst', px: 19.5 }
+	{ vaerdi: 'normal', navn: 'Lille', px: 15 },
+	{ vaerdi: 'large', navn: 'Normal', px: 17 },
+	{ vaerdi: 'xlarge', navn: 'Stor', px: 19.5 }
 ];
 
 /** Laeser hendes gemte valg. Ukendte vaerdier falder tilbage paa normal. */

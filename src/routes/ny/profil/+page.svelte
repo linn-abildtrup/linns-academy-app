@@ -26,6 +26,9 @@
 	import { dagligeMalForBruger } from '$lib/content/naering';
 	import { hentSkridtValg3 } from '$lib/firestore/vaelgSkridt3';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
+	import { anvendScale, gemScale } from '$lib/utils/textScale';
+	import { TEKST_SKALAER_3, tekstSkalaFra3, type TekstSkala3 } from '$lib/content/onboarding3';
+	import { gemTekstSkala3 } from '$lib/firestore/onboarding3';
 
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
@@ -35,6 +38,41 @@
 	const adgang = $derived(hentAdgang());
 	// Vejen ind i 3.0's admin. Kun for admin, saa ingen kunde ser den.
 	const visAdmin = $derived(isAdmin(hentUser()));
+
+	// ── Tekststoerrelsen ──
+	//
+	// Hendes eget valg vinder over det der staar paa kontoen, saa
+	// skaermen svarer med det samme naar hun trykker. Uden det ville
+	// knappen foerst flytte sig naar bruger-dokumentet var hentet forfra.
+	let egenSkala = $state<TekstSkala3 | null>(null);
+	let gemmerSkala = $state(false);
+	const skala = $derived(egenSkala ?? tekstSkalaFra3(userDoc));
+
+	/**
+	 * Skifter stoerrelsen med det samme og gemmer bagefter.
+	 *
+	 * FEJLER ALDRIG OPAD. Gaar skrivningen galt, har hun stadig faaet den
+	 * stoerrelse hun bad om paa den her telefon, og det er det vigtige.
+	 * Hun faar ikke en fejlbesked om noget der ser ud til at virke.
+	 */
+	async function vaelgSkala(v: TekstSkala3) {
+		if (gemmerSkala) return;
+		egenSkala = v;
+		anvendScale(v);
+		gemScale(v);
+		const uid = hentUser()?.uid;
+		if (!uid) return;
+		gemmerSkala = true;
+		try {
+			// Gemmes ogsaa paa kontoen, saa valget foelger med til en ny
+			// telefon. Den gamle app gemmer kun i browseren.
+			await gemTekstSkala3(uid, v);
+		} catch (e) {
+			console.warn('[ny] kunne ikke gemme skriftstoerrelsen', e);
+		} finally {
+			gemmerSkala = false;
+		}
+	}
 
 	// "Sådan træner jeg" laa her indtil 19. august og flyttede til
 	// Traening, hvor den hoerer hjemme. Derfor hentes traenings-
@@ -244,6 +282,38 @@
 			</span>
 			<span class="ds-pil" aria-hidden="true">›</span>
 		</a>
+	</section>
+
+	<!--
+		TEKSTSTOERRELSEN. Linns oenske 25. august.
+
+		Den fandtes KUN i opstarten, saa hun kunne kun rette den ved at
+		koere hele opstarten igen. Maalgruppen er kvinder fra 40 og
+		opefter, og skriftstoerrelsen er ikke pynt, se regel 7. Derfor
+		staar den her, hvor hun leder efter den.
+
+		Valget gemmes med det samme, uden en Gem-knap, som resten af 3.0.
+		Og hver knap er skrevet i SIN EGEN stoerrelse, saa hun kan se
+		forskellen i stedet for at gaette ud fra ordet. Samme greb som i
+		opstarten.
+	-->
+	<section>
+		<div class="lab"><h2>Tekststørrelse</h2></div>
+		<div class="ob-valg ds-skala">
+			{#each TEKST_SKALAER_3 as t (t.vaerdi)}
+				<button
+					type="button"
+					class="ob-raekke"
+					class:valgt={skala === t.vaerdi}
+					aria-pressed={skala === t.vaerdi}
+					disabled={gemmerSkala}
+					onclick={() => vaelgSkala(t.vaerdi)}
+				>
+					<span style="font-size:{t.px}px">{t.navn}</span>
+				</button>
+			{/each}
+		</div>
+		<p class="ds-skala-note">Hele appen følger med.</p>
 	</section>
 
 	<!-- Opstarten hoerer til en kunde der er i gang. I de 90 dage ville de

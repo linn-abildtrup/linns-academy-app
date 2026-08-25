@@ -10408,6 +10408,18 @@ a.ch-knap {
 	margin-bottom: 6px;
 }
 
+/* Tekststoerrelsen under Din side. Genbruger opstartens vaelger, saa de
+   to steder ser ens ud og ikke kan drive fra hinanden. */
+.ds-skala {
+	margin-bottom: 4px;
+}
+
+.ds-skala-note {
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin: 0 0 4px 2px;
+}
+
 .ob-raekke {
 	display: flex;
 	align-items: center;
