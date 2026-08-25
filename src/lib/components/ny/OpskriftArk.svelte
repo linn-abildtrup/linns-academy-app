@@ -446,19 +446,27 @@
 											aria-label="Mere">+</button
 										>
 									</div>
+									<!--
+										SAMME ORD PAA BEGGE, Linns valg 25. august.
+
+										De to goer stadig ikke det samme, og det er med vilje:
+										Linns ingrediens skrues til nul og BLIVER STAAENDE
+										streget ud, saa hun kan fortryde. Hendes egen FJERNES
+										HELT, for den stod der ikke i forvejen.
+
+										Forskellen kan ses paa skaermen med det samme, og
+										Linn har taget stilling til at ordene alligevel skal
+										vaere ens. Skriv dem ikke fra hinanden igen uden at
+										spoerge.
+									-->
 									<div class="op-ind-bund">
 										{#if l.egen}
-											<!-- Hendes egen linje fjernes HELT. Den stod der ikke i
-											     forvejen, saa der er intet at fortryde. -->
 											<button type="button" class="op-ind-nul" onclick={() => fjernEgen(plads)}
 												>Fjern fra retten</button
 											>
 										{:else if l.maengde > 0}
-											<!-- Linns linje skrues til nul og bliver staaende. Den
-											     hurtige vej, for langt det almindeligste svar er at
-											     hun sprang noget over. -->
 											<button type="button" class="op-ind-nul" onclick={() => tagIkkeI(plads)}
-												>Jeg tog den ikke i</button
+												>Fjern fra retten</button
 											>
 										{/if}
 									</div>

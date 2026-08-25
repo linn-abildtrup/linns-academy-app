@@ -130,7 +130,7 @@ Tryk på hjertet ved "Læg i" for at gemme en opskrift som favorit. Den kan du s
 	{
 		titel: 'Ret i en opskrift inden du lægger den i',
 		gaelder: ALLE,
-		indhold: `Du behøver ikke spise en ret præcis som den står. Tryk på en ingrediens i listen, og du kan skrue mængden op og ned. Er der noget du ikke tog i, trykker du "Jeg tog den ikke i". Linjen bliver stående og streget ud, så du kan fortryde.
+		indhold: `Du behøver ikke spise en ret præcis som den står. Tryk på en ingrediens i listen, og du kan skrue mængden op og ned. Er der noget du ikke tog i, trykker du "Fjern fra retten". Linjen bliver stående og streget ud, så du kan fortryde.
 
 Du kan også lægge noget til, som du ikke har brugt i opskriften. Tryk "Tilføj en ingrediens" nederst i listen og søg efter den, præcis som når du lægger en madvare i et måltid.
 
