@@ -1273,6 +1273,24 @@ Linns besked 16. august: hold det uden om den gamle app.
 
 Konsekvensen skal kendes: **ændrer Linn skemaet, sker der ingenting i 3.0.**
 
+#### Knapperne og farverne, valgt 25. august
+
+Alle fire er tegnet i `mockups-husk-baand-farve.html`, hvor Linns valg
+er markeret.
+
+- **Begge fjern-knapper hedder "Fjern fra retten".** De gør ikke det
+  samme, se punktet om de to farver nedenfor, men Linn har taget
+  stilling til at ordene alligevel skal være ens
+- **Knappen er terracotta**, model E. Før lignede den den grå knap den
+  står ved siden af. Rød er bevidst fravalgt: appen bruger den ingen
+  steder, heller ikke på spærre-skærmen, og at sige at man ikke tog
+  avokado i er ikke en fejl. **Brug ikke `var(--terra)`**, den peger på
+  plomme i `ny.css`, se 9.31
+- **Flisen der spørger er mørk plomme**, model A. Cremefarvet lå den på
+  samme flade som kortene omkring den, og øjet læste den som en del af
+  siden. **Honning kunne ikke bruges**, den betyder "du har ændret
+  noget" på præcis den skærm, og **grøn betyder klaret**
+
 #### Fire ting der er dyre at genopdage
 
 **Vejen ind til Linn går gennem AI'en.** Der findes intet skrivefelt på fanen

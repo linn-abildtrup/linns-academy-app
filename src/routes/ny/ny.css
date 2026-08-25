@@ -5257,13 +5257,30 @@ button.tm-ikon:active > span {
 	margin-top: 10px;
 }
 
+/* TERRACOTTA. Linns valg 25. august, model E i
+   mockups-husk-baand-farve.html.
+
+   Foer lignede den den graa knap den staar ved siden af, saa der var
+   ingenting der sagde hvad den gjorde. Terracotta skiller sig ud fra
+   plus og minus uden at raabe, og farven bruges ikke til noget andet i
+   Mad, saa den kan faa lov at betyde "fjern" hele appen igennem.
+
+   ROED ER BEVIDST FRAVALGT. Appen bruger den ingen steder, heller ikke
+   paa spaerre-skaermen, hvor baandet er honningfarvet netop fordi
+   kunden ikke har gjort noget forkert. At sige at man ikke tog avokado
+   i er ikke en fejl, og knappen sletter intet hun har skrevet.
+
+   BRUG IKKE var(--terra) HER. Den peger paa PLUM i den her fil, saa
+   knappen ville blive lilla uden at nogen opdagede det. Se HANDOVER
+   9.31. */
 .op-ind-nul {
 	font-size: calc(12px * var(--fs-scale, 1));
-	color: var(--ink-2);
+	font-weight: 600;
+	color: #a5604f;
 	background: var(--paper);
-	border: 1px solid var(--line);
+	border: 1px solid #e0c6bf;
 	border-radius: 999px;
-	padding: 9px 15px;
+	padding: 9px 18px;
 	min-height: 40px;
 }
 
