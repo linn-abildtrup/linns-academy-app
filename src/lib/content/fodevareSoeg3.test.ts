@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { MAKS_TRAEF, erHeltOrd, rang, soegFodevarer, soegetermer } from './fodevareSoeg3';
+import {
+	MAKS_TRAEF,
+	erHeltOrd,
+	hjerterTilSoegning,
+	rang,
+	soegFodevarer,
+	soegetermer
+} from './fodevareSoeg3';
 import type { Fodevare } from './kost';
 
 function f(navn: string): Fodevare {
@@ -154,5 +161,68 @@ describe('flere ord', () => {
 	it('soegetermer deler ved baade mellemrum og komma', () => {
 		expect(soegetermer('skyr, vanilje  drik')).toEqual(['skyr', 'vanilje', 'drik']);
 		expect(soegetermer('   ')).toEqual([]);
+	});
+});
+
+// ============================================================
+// HJERTET FOERST, Linns beslutning 25. august
+// ============================================================
+
+describe('hjerterTilSoegning', () => {
+	// 72 % af hjerterne i drift er varer hun selv har oprettet, sat
+	// AUTOMATISK af den gamle app. Talte de med, ville hendes soegning
+	// fyldes med gamle egne indtastninger.
+	it('holder hendes egne foedevarer ude', () => {
+		const ud = hjerterTilSoegning(['a', 'egen1', 'b'], new Set(['egen1']));
+		expect([...ud].sort()).toEqual(['a', 'b']);
+	});
+
+	it('taaler en tom liste', () => {
+		expect(hjerterTilSoegning([], new Set()).size).toBe(0);
+	});
+});
+
+describe('soegFodevarer med hjerter', () => {
+	const varer = [
+		{ id: 'skyr', name: 'Skyr', cat: 'andet', p: 11, f: 0 },
+		{ id: 'vanilje', name: 'Skyr med vanilje', cat: 'andet', p: 9, f: 0 },
+		{ id: 'jordbaer', name: 'Skyr med jordbær', cat: 'andet', p: 9, f: 0 }
+	] as Fodevare[];
+
+	it('sorterer som foer naar hun ingen hjerter har', () => {
+		const ud = soegFodevarer(varer, 'skyr');
+		expect(ud[0].id).toBe('skyr');
+	});
+
+	// Det almindelige tilfaelde: hun bruger altid vanilje-udgaven, og
+	// appen ved det allerede.
+	it('saetter den hjertede foerst', () => {
+		const ud = soegFodevarer(varer, 'skyr', 8, new Set(['vanilje']));
+		expect(ud[0].id).toBe('vanilje');
+	});
+
+	// HJERTET VINDER OVER HELE ORD. Reglen om hele ord er et gaet paa
+	// hvad hun mon mener. Hjertet er hendes eget valg, og et gaet skal
+	// aldrig slaa et svar hun selv har givet.
+	it('lader hjertet vinde over reglen om hele ord', () => {
+		const aeg = [
+			{ id: 'aeg', name: 'Æg', cat: 'andet', p: 13, f: 0 },
+			{ id: 'nudler', name: 'Æggenudler', cat: 'andet', p: 12, f: 0 }
+		] as Fodevare[];
+		expect(soegFodevarer(aeg, 'æg')[0].id).toBe('aeg');
+		expect(soegFodevarer(aeg, 'æg', 8, new Set(['nudler']))[0].id).toBe('nudler');
+	});
+
+	// Sorteringen skjuler ingenting, praecis som da hele ord blev
+	// indfoert. Alle traeffere er der stadig.
+	it('skjuler ingenting', () => {
+		const ud = soegFodevarer(varer, 'skyr', 8, new Set(['jordbaer']));
+		expect(ud).toHaveLength(3);
+		expect(ud.map((f) => f.id).sort()).toEqual(['jordbaer', 'skyr', 'vanilje']);
+	});
+
+	it('rammer ikke ved siden af naar hjertet ikke er blandt traefferne', () => {
+		const ud = soegFodevarer(varer, 'skyr', 8, new Set(['noget-helt-andet']));
+		expect(ud[0].id).toBe('skyr');
 	});
 });

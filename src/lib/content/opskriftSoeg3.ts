@@ -230,6 +230,11 @@ export interface SoegeFiltre {
 	kategorier?: string[];
 	/** Tom liste betyder ingen begraensning. ALLE valgte tags skal vaere sat. */
 	dietTags?: string[];
+	/**
+	 * Hendes bogmaerkede opskrifter. Sat = de kommer foerst NAAR HUN
+	 * SOEGER. Se sorteringen nederst i filen.
+	 */
+	favoritter?: Set<string>;
 }
 
 /**
@@ -240,6 +245,12 @@ export interface SoegeFiltre {
  * saa tallet stod rigtigt men et tryk paa knappen tomte skaermen.
  */
 export interface FiltrerbarOpskrift extends SoegbarOpskrift {
+	/**
+	 * PAAKRAEVET, af samme grund som de to nedenfor: sorteringen efter
+	 * hendes favoritter slaar op paa id'et, og var feltet valgfrit, ville
+	 * favoritterne bare tavst holde op med at komme foerst.
+	 */
+	id: string;
 	kategorier3: string[];
 	dietTags: string[];
 }
@@ -273,5 +284,29 @@ export function filtrerOpskrifter3<T extends FiltrerbarOpskrift>(
 		if (!traef.traf) continue;
 		ud.push({ opskrift: o, grunde: traef.grunde });
 	}
+
+	// HENDES FAVORITTER FOERST, MEN KUN NAAR HUN SOEGER.
+	//
+	// Linns beslutning 25. august, samme regel som hjertet paa en
+	// foedevare: et bogmaerke er hendes eget valg, og appen skal bruge
+	// det den ved i stedet for at lade hende lede.
+	//
+	// Uden et soegeord bliver raekkefoelgen som foer, altsaa alfabetisk.
+	// Der er en Favoritter-fane til netop det, og et gitter der pludselig
+	// skifter orden naar hun bare bladrer, er forvirrende. Samme
+	// begrundelse som da Linn afviste at gitteret skulle skifte facon
+	// under en soegning, se 9.5.
+	const favoritter = filtre.favoritter;
+	if (favoritter && favoritter.size > 0 && termer.length > 0) {
+		// Stabil sortering: kun favorit mod ikke-favorit afgoeres her, saa
+		// den indbyrdes orden inden for hver gruppe er uroert.
+		ud.sort((a, b) => {
+			const fa = favoritter.has(a.opskrift.id);
+			const fb = favoritter.has(b.opskrift.id);
+			if (fa === fb) return 0;
+			return fa ? -1 : 1;
+		});
+	}
+
 	return ud;
 }

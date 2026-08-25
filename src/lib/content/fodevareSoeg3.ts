@@ -72,6 +72,24 @@ export function antalHeleOrd(navn: string, termer: string[]): number {
 }
 
 /**
+ * Hendes hjerter, klar til soegningen.
+ *
+ * HENDES EGNE FOEDEVARER HOLDES UDE, og det er hele forudsaetningen for
+ * at et hjerte kan bruges til at sortere efter.
+ *
+ * 72 % af de 6.855 hjerter i drift er varer hun selv har oprettet, og
+ * dem satte den GAMLE app automatisk, uden at hun har valgt dem. Talte
+ * de med, ville hendes soegning fyldes med gamle egne indtastninger, og
+ * hjertet ville sige noget om hvad appen har gjort i stedet for hvad hun
+ * vil have. Det er samme regel som `hjertedeFodevarer` i
+ * hjerteFodevare3 allerede foelger, og de to skal blive ved med at vaere
+ * enige.
+ */
+export function hjerterTilSoegning(hjerter: string[], egneIds: Set<string>): Set<string> {
+	return new Set((hjerter ?? []).filter((id) => !egneIds.has(id)));
+}
+
+/**
  * Soeger og sorterer.
  *
  * ALLE ord skal findes, men de maa staa i hvert sit hjoerne af navnet og
@@ -79,12 +97,26 @@ export function antalHeleOrd(navn: string, termer: string[]): number {
  * vanilje. Et enkelt ord giver praecis samme traeffere som foer, saa
  * ingenting forsvandt da flere ord blev muligt.
  *
- * Raekkefoelgen: flest hele ord foerst, saa korteste navn.
+ * Raekkefoelgen: HJERTET foerst, saa flest hele ord, saa korteste navn.
+ *
+ * HVORFOR HJERTET VINDER OVER HELE ORD. Linns beslutning 25. august.
+ * Reglen om hele ord er et gaet paa hvad hun mon mener, og den findes
+ * fordi vi ellers ikke ved noget. Hjertet er hendes EGET valg, og et
+ * gaet skal aldrig slaa et svar hun selv har givet. Soeger hun "feta"
+ * og faar tre slags, er hjertet det eneste sted appen ved hvilken der er
+ * hendes.
+ *
+ * Det kan ikke oversvoemme listen: medianen er 13 hjerter pr kunde, og
+ * de skal ogsaa ramme soegeordet for overhovedet at komme med.
+ *
+ * Sorteringen SKJULER ingenting, praecis som da hele ord blev indfoert.
+ * Alle traeffere er der stadig, de staar bare i en anden raekkefoelge.
  */
 export function soegFodevarer(
 	foods: Fodevare[],
 	soegeord: string,
-	maks: number = MAKS_TRAEF
+	maks: number = MAKS_TRAEF,
+	hjerter: Set<string> = new Set()
 ): Fodevare[] {
 	const termer = soegetermer(soegeord);
 	if (termer.length === 0) return [];
@@ -96,6 +128,10 @@ export function soegFodevarer(
 
 	return traef
 		.sort((a, b) => {
+			// Hendes eget valg foerst. Se hvorfor ovenfor.
+			const ja = hjerter.has(a.id);
+			const jb = hjerter.has(b.id);
+			if (ja !== jb) return ja ? -1 : 1;
 			const ha = antalHeleOrd(a.name, termer);
 			const hb = antalHeleOrd(b.name, termer);
 			// Flest hele ord foerst, saa "aeg" ikke drukner i Aeggenudler.

@@ -17,7 +17,7 @@
 	import type { UserDoc } from '$lib/types';
 	import type { Fodevare, GemtMaaltid, Maaltidstype } from '$lib/content/kost';
 	import { MAALTIDSTYPER, MAALTIDSTYPE_LABELS, PROTEIN_MAALTIDS_MAAL } from '$lib/content/kost';
-	import { soegFodevarer } from '$lib/content/fodevareSoeg3';
+	import { soegFodevarer, hjerterTilSoegning, MAKS_TRAEF } from '$lib/content/fodevareSoeg3';
 	import { LABELS, harProteinMaal } from '$lib/content/maaltider3';
 	import { formatPortion, naeringFor } from '$lib/content/maengde3';
 	import type { PlejerPost } from '$lib/content/plejer3';
@@ -404,7 +404,17 @@
 		// det hun faktisk kan se. Dubletter er ude for alle, og
 		// maerkevarer og retter kun for dem der allerede bruger dem.
 		// Se content/fodevareKilde3.ts.
-		return soegFodevarer(tilSoegning([...foods.values()], hendesEgne), ord);
+		//
+		// HENDES HJERTER FOERST. Linns beslutning 25. august. Hendes egne
+		// foedevarer holdes ude af hjerte-gruppen, fordi de 72 % af
+		// hjerterne der er sat AUTOMATISK af den gamle app ikke er noget
+		// hun har valgt. Se hjerterTilSoegning.
+		return soegFodevarer(
+			tilSoegning([...foods.values()], hendesEgne),
+			ord,
+			MAKS_TRAEF,
+			hjerterTilSoegning(hjerter, new Set(egne.map((f) => f.id)))
+		);
 	});
 
 	/** Maengden som den blev tastet, fx "1 dl" eller "100 g". Tom hvis

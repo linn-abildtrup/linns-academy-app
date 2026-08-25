@@ -276,18 +276,21 @@ describe('fremhaev', () => {
 describe('filtrerOpskrifter3', () => {
 	const LISTE = [
 		{
+			id: 'groed',
 			titel: 'Grøn grød',
 			kategorier3: ['morgenmad'],
 			dietTags: ['vegetar', 'glutenfri'],
 			ingredienser: [{ navn: 'havregryn' }, { navn: 'spinat' }]
 		},
 		{
+			id: 'pasta',
 			titel: 'Proteinpasta med kylling og broccoli',
 			kategorier3: ['aftensmad'],
 			dietTags: [],
 			ingredienser: [{ navn: 'pasta' }, { navn: 'kylling' }]
 		},
 		{
+			id: 'skyrbowl',
 			titel: 'Skyrbowl med mandler',
 			kategorier3: ['morgenmad', 'snack'],
 			dietTags: ['vegetar'],
@@ -354,4 +357,48 @@ describe('filtrerOpskrifter3', () => {
 	it('giver tom liste naar intet passer', () => {
 		expect(filtrerOpskrifter3(LISTE, { soegeord: 'blæksprutte' })).toEqual([]);
 	});
+
+	// ============================================================
+	// HENDES FAVORITTER FOERST, Linns beslutning 25. august
+	// ============================================================
+
+	it('saetter hendes favorit foerst naar hun soeger', () => {
+		const ud = filtrerOpskrifter3(LISTE, {
+			soegeord: 'havregryn',
+			favoritter: new Set(['skyrbowl'])
+		});
+		expect(ud.map((r) => r.opskrift.id)).toEqual(['skyrbowl', 'groed']);
+	});
+
+	// Uden et soegeord bliver raekkefoelgen som foer, altsaa den listen
+	// kom i. Der er en Favoritter-fane til netop det, og et gitter der
+	// skifter orden mens hun bladrer er forvirrende.
+	it('roerer ikke raekkefoelgen naar hun ikke soeger', () => {
+		const ud = filtrerOpskrifter3(LISTE, { favoritter: new Set(['skyrbowl']) });
+		expect(ud.map((r) => r.opskrift.id)).toEqual(['groed', 'pasta', 'skyrbowl']);
+	});
+
+	// Sorteringen skjuler ingenting, samme regel som paa foedevarerne.
+	it('skjuler ingenting', () => {
+		const ud = filtrerOpskrifter3(LISTE, {
+			soegeord: 'havregryn',
+			favoritter: new Set(['skyrbowl'])
+		});
+		expect(ud).toHaveLength(2);
+	});
+
+	it('opfoerer sig som foer naar hun ingen favoritter har', () => {
+		const ud = filtrerOpskrifter3(LISTE, { soegeord: 'havregryn', favoritter: new Set() });
+		expect(ud.map((r) => r.opskrift.id)).toEqual(['groed', 'skyrbowl']);
+	});
+
+	it('lader de oevrige staa i deres egen orden indbyrdes', () => {
+		const ud = filtrerOpskrifter3(LISTE, {
+			soegeord: 'a',
+			favoritter: new Set(['skyrbowl'])
+		});
+		expect(ud[0].opskrift.id).toBe('skyrbowl');
+		expect(ud.slice(1).map((r) => r.opskrift.id)).toEqual(['groed', 'pasta']);
+	});
+
 });

@@ -133,11 +133,24 @@
 		glutenfri: udenDiet.filter((r) => r.opskrift.dietTags.includes('glutenfri')).length
 	});
 
+	/**
+	 * Hendes bogmaerker, til sorteringen. Linns beslutning 25. august:
+	 * har hun markeret en opskrift, skal den komme foerst naar hun soeger
+	 * paa ordet.
+	 *
+	 * Kun paa fanen ALLE. Paa Favoritter er de alle sammen favoritter, og
+	 * paa Mine er de hendes egne, saa der er ingenting at loefte frem.
+	 */
+	const favoritSaet = $derived(
+		fane === 'alle' ? new Set(favoritter) : new Set<string>()
+	);
+
 	const resultater = $derived(
 		filtrer(grundliste, {
 			soegeord,
 			kategorier: valgteKategorier,
-			dietTags: valgteDiet
+			dietTags: valgteDiet,
+			favoritter: favoritSaet
 		})
 	);
 
