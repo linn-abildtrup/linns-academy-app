@@ -137,6 +137,37 @@ export function fjernLagtTil(a: Aendring, plads: number): Aendring {
 	return { ...a, lagtTil: a.lagtTil.filter((_, i) => i !== plads) };
 }
 
+/**
+ * Retter maengden paa en linje hun selv har lagt til.
+ *
+ * BEMAERK at hendes egne linjer og Linns opfoerer sig FORSKELLIGT, og
+ * det er med vilje. Linns kan skrues til nul men ikke fjernes, saa hun
+ * kan fortryde at have taget noget ud. Hendes egen kan fjernes helt,
+ * for der er ikke noget at fortryde: den stod der ikke i forvejen.
+ *
+ * Derfor gaar nul her ikke gennem den her funktion. En egen linje paa
+ * nul ville vaere en tom raekke der ikke betyder noget.
+ */
+export function saetLagtTilPortion(a: Aendring, plads: number, portion: number): Aendring {
+	if (portion <= 0) return fjernLagtTil(a, plads);
+	return {
+		...a,
+		lagtTil: a.lagtTil.map((t, i) => (i === plads ? { ...t, portion } : t))
+	};
+}
+
+/**
+ * Hvor i `lagtTil` en linje ligger, ud fra dens plads i den samlede
+ * liste paa skaermen.
+ *
+ * Skaermen viser Linns linjer foerst og hendes egne nedenunder, saa de
+ * to saet indekser loeber i forlaengelse af hinanden. Uden den her
+ * ville et tryk paa hendes egen linje ramme en af Linns.
+ */
+export function egenPlads(plads: number, antalLinnsLinjer: number): number {
+	return plads - antalLinnsLinjer;
+}
+
 export function antalAendret(a: Aendring): number {
 	return Object.keys(a.maengder).length;
 }

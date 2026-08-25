@@ -9,6 +9,8 @@ import {
 	nulstilLinje,
 	laegTil,
 	fjernLagtTil,
+	saetLagtTilPortion,
+	egenPlads,
 	antalAendret,
 	antalLagtTil,
 	harAendringer,
@@ -126,6 +128,40 @@ describe('at aendre og fortryde', () => {
 
 	// Hendes egne linjer er ikke Linns. Linns kan skrues til nul men ikke
 	// fjernes, saa hun kan fortryde. Hendes egne kan fjernes helt.
+	it('retter maengden paa en hun har lagt til', () => {
+		let a = laegTil(tomAendring(), { foodId: 'feta', navn: 'Feta', portion: 30 });
+		a = saetLagtTilPortion(a, 0, 50);
+		expect(a.lagtTil[0].portion).toBe(50);
+		expect(antalLagtTil(a)).toBe(1);
+	});
+
+	// Nul paa hendes egen linje fjerner den. Der er ikke noget at
+	// fortryde, for den stod der ikke i forvejen.
+	it('fjerner hendes egen linje naar den skrues til nul', () => {
+		let a = laegTil(tomAendring(), { foodId: 'feta', navn: 'Feta', portion: 30 });
+		a = saetLagtTilPortion(a, 0, 0);
+		expect(antalLagtTil(a)).toBe(0);
+	});
+
+	it('retter kun den ene naar der er flere lagt til', () => {
+		let a = tomAendring();
+		a = laegTil(a, { foodId: 'feta', navn: 'Feta', portion: 30 });
+		a = laegTil(a, { foodId: 'kylling', navn: 'Kylling', portion: 50 });
+		a = saetLagtTilPortion(a, 1, 80);
+		expect(a.lagtTil[0].portion).toBe(30);
+		expect(a.lagtTil[1].portion).toBe(80);
+	});
+
+	// DEN HER FANGER FEJLEN FRA 25. august: skaermen viser Linns linjer
+	// foerst og hendes egne nedenunder, saa et tryk paa hendes egen
+	// ramte en plads der ikke findes i Linns liste, og der skete
+	// ingenting.
+	it('regner hendes egen plads om fra pladsen paa skaermen', () => {
+		// Linns liste har to linjer, saa hendes foerste egne ligger paa 2.
+		expect(egenPlads(2, 2)).toBe(0);
+		expect(egenPlads(3, 2)).toBe(1);
+	});
+
 	it('rammer den rigtige naar der er flere lagt til', () => {
 		let a = tomAendring();
 		a = laegTil(a, { foodId: 'feta', navn: 'Feta', portion: 30 });

@@ -34,6 +34,9 @@
 		aendringsTekst,
 		naesteMaengde,
 		saetMaengde,
+		saetLagtTilPortion,
+		fjernLagtTil,
+		egenPlads,
 		regnMedAendringer
 	} from '$lib/content/opskriftAendring3';
 
@@ -211,15 +214,39 @@
 		aabenLinje = aabenLinje === plads ? null : plads;
 	}
 
+	/**
+	 * Plus og minus.
+	 *
+	 * Hendes EGNE linjer ligger efter Linns i den samlede liste, saa
+	 * pladsen skal regnes om foerst. Uden det ramte et tryk paa hendes
+	 * egen linje ingenting, fordi tallet blev skrevet paa en plads der
+	 * ikke findes i Linns liste.
+	 */
 	function skru(plads: number, retning: 1 | -1) {
 		const l = linjer[plads];
 		if (!l || !onaendring) return;
-		onaendring(saetMaengde(aendring, plads, naesteMaengde(l.maengde, l.enhed, retning)));
+		const ny = naesteMaengde(l.maengde, l.enhed, retning);
+		if (l.egen) {
+			// Nul fjerner den. Se saetLagtTilPortion: hendes egen linje
+			// stod der ikke i forvejen, saa der er intet at fortryde.
+			onaendring(saetLagtTilPortion(aendring, egenPlads(plads, viste.length), ny));
+			if (ny <= 0) aabenLinje = null;
+			return;
+		}
+		onaendring(saetMaengde(aendring, plads, ny));
 	}
 
+	/** Linns linje: skrues til nul, men bliver staaende saa hun kan fortryde. */
 	function tagIkkeI(plads: number) {
 		if (!onaendring) return;
 		onaendring(saetMaengde(aendring, plads, 0));
+		aabenLinje = null;
+	}
+
+	/** Hendes egen linje: fjernes helt. */
+	function fjernEgen(plads: number) {
+		if (!onaendring) return;
+		onaendring(fjernLagtTil(aendring, egenPlads(plads, viste.length)));
 		aabenLinje = null;
 	}
 
@@ -419,15 +446,22 @@
 											aria-label="Mere">+</button
 										>
 									</div>
-									{#if l.maengde > 0}
-										<!-- Den hurtige vej til nul. Langt det almindeligste
-										     svar er at hun sprang noget over. -->
-										<div class="op-ind-bund">
+									<div class="op-ind-bund">
+										{#if l.egen}
+											<!-- Hendes egen linje fjernes HELT. Den stod der ikke i
+											     forvejen, saa der er intet at fortryde. -->
+											<button type="button" class="op-ind-nul" onclick={() => fjernEgen(plads)}
+												>Fjern fra retten</button
+											>
+										{:else if l.maengde > 0}
+											<!-- Linns linje skrues til nul og bliver staaende. Den
+											     hurtige vej, for langt det almindeligste svar er at
+											     hun sprang noget over. -->
 											<button type="button" class="op-ind-nul" onclick={() => tagIkkeI(plads)}
 												>Jeg tog den ikke i</button
 											>
-										</div>
-									{/if}
+										{/if}
+									</div>
 								</div>
 							{/if}
 						{/each}
