@@ -3721,6 +3721,28 @@ mange der ser forkerte ud:
 **Naeste skridt er en side med de 90, hvor Linn siger synlig eller
 skjult.** Det var sådan de 33 blev afgjort 24. august, og det virkede.
 
+#### Hvad der er aabnet igen, 25. august
+
+Efter Linns gennemgang, ti ad gangen. Sikkerhedskopier i `backup/`.
+
+- **De fem salater**, se ovenfor
+- **Hummus, Guacamole, Frikadelle, Granola, Mysli fuldkorn usødet.**
+  De kan navngives uden et maerke, praecis som kefir, rugbroed og
+  hytteost, se regel 1 i 9.50
+- **Kakaopulver, Matcha, Chili og Gurkemeje.** Man bruger et gram, saa
+  tallene betyder intet for hendes dag, men de taeller som PLANTER, og
+  Kropsro-challengen hedder "Planter til tarmmikrobiom"
+- **Bagepulver blev bevidst IKKE aabnet.** Man spiser ikke en portion af
+  det, og nul i alle felter ligner en fejl i tallene
+
+**75 er stadig skjult fra Linns egen liste.** Fortsaet ti ad gangen.
+
+**Isbergsalat hedder nu Icebergsalat.** Linns besked: det hedder Iceberg
+paa posen. Bemaerk konsekvensen: "isberg" giver nu ingenting.
+Soegningen leder kun i navnet, saa den kan kun kende én stavemaade.
+**Den holdbare loesning er et soegeord-felt ved siden af navnet**, og
+det ville loese mange lignende tilfaelde. Ikke bygget.
+
 #### EN TING DER IKKE VIRKER SOM MAN TROR
 
 **En dublet er skjult i soegningen for ALLE**, se `maaSesISoegning`.
