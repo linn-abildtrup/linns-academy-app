@@ -103,9 +103,7 @@ Dagens refleksion skriver du direkte på forsiden.`
 
 Målet er 30 g protein i hvert måltid og 30 g fiber over dagen. Snack har intet mål, og der står aldrig at du mangler noget på en snack.
 
-Har du sat hjerte på en madvare, kommer den øverst når du søger efter den.
-
-Sådan registrerer du: tryk på måltidet, tryk "Tilføj til morgenmaden", og vælg derfra. Du kan søge efter en madvare, tage noget fra "Det du plejer", vælge en opskrift, et fast måltid eller en af dine egne madvarer.
+Sådan registrerer du: tryk på måltidet, tryk "Tilføj til morgenmaden", og vælg derfra. Du kan søge efter en madvare, tage noget fra "Det du plejer", tage en af dine favoritter, eller vælge en opskrift eller et fast måltid.
 
 Når du har valgt, sætter du mængden. Der er genveje og plus og minus. Fortryder du, kan du fjerne linjen igen, og du kan trykke på en linje du allerede har tastet for at rette mængden.`
 	},
@@ -141,13 +139,26 @@ Bagefter står der "Dine mængder" under retten i din dag, så du kan se at du s
 Når du har lagt retten i, bliver du spurgt om appen skal huske dine mængder til næste gang. Siger du ja, åbner retten med dine tal, og du kan altid trykke "Vis Linns" for at få den oprindelige tilbage.`
 	},
 	{
-		titel: 'Faste måltider og dine egne madvarer',
+		titel: 'Mine favoritter',
+		gaelder: ALLE,
+		indhold: `Mine favoritter er ét sted med de madvarer du bruger. Der er tre måder at få noget derind.
+
+Tryk på hjertet på en madvare, enten i søgningen eller nede i mængden når du har valgt den. Scan en pakke, så læser appen tallene af varedeklarationen. Eller lav en vare selv, når den ikke findes og ikke har en pakke.
+
+Dine favoritter kommer øverst når du søger, og de fire første står fremme når du åbner "Tilføj til morgenmaden". Har du flere, trykker du "Se alle".
+
+På hver linje står der hvor tallet kommer fra: Fødevaredatabasen, Scannet eller Dit eget tal.
+
+Fjerner du en du har sat hjerte på, kan du altid finde den frem igen ved at søge. Sletter du en du selv har lavet, forsvinder den helt, for den findes ikke andre steder. Det du allerede har registreret bliver stående uanset hvad.`
+	},
+	{
+		titel: 'Faste måltider',
 		gaelder: ALLE,
 		indhold: `Har du et måltid du spiser tit, kan du gemme det. Knappen står over den første ingrediens i måltidet. Næste gang lægger du hele måltidet i med ét tryk, og det kommer ind som én linje pr madvare, så du kan fjerne noget hvis du ikke spiste det hele.
 
 Retter du i måltidet bagefter, spørger et blødt bånd om det faste måltid skal opdateres. Svarer du ikke, sker der ingenting.
 
-Finder søgningen ikke din madvare, kan du oprette den selv. Tallene du taster skal være pr 100 g. Kun du kan se dine egne madvarer.`
+Finder søgningen ikke din madvare, kan du oprette den selv. Tallene du taster skal være pr 100 g. Kun du kan se de varer du selv har lavet, og de ligger under Mine favoritter.`
 	},
 	{
 		titel: 'Dine egne opskrifter',
