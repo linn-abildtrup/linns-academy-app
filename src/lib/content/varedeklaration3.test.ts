@@ -165,3 +165,37 @@ describe('medFiber', () => {
 		expect(medFiber(uden, 'egen', -2).fiber).toBeNull();
 	});
 });
+
+// ============================================================
+// TOM er det skema hun faar naar hun vil SKRIVE tallene selv i
+// stedet for at fotografere deklarationen, se ScanArk.
+//
+// Knappen "Skriv tallene selv" sendte foer hende videre UDEN et
+// skema, og saa stod arket blankt. Fejlen kunne hverken typerne,
+// testene eller et build se, for koden var korrekt, den blev bare
+// kaldt uden det den skulle bruge. Rettet 26. august 2026.
+// ============================================================
+describe('TOM, skemaet hun skriver i', () => {
+	it('har alle felter tomme og ingen af dem paa nul', () => {
+		for (const [felt, v] of Object.entries(TOM)) {
+			expect(v, `${felt} skal vaere tom og ikke nul`).toBeNull();
+		}
+	});
+
+	// Et stille nul paa fibre er praecis den fejl hvor kunden logger
+	// mindre end hun spiste. Tomt betyder "vi ved det ikke".
+	it('siger at fibrene mangler, saa der aldrig skrives et stille nul', () => {
+		expect(vurder(TOM, 'pr100').fibreMangler).toBe(true);
+	});
+
+	it('kan ikke gemmes foer hun har skrevet protein', () => {
+		expect(nokTilAtGemme(TOM)).toBe(false);
+		expect(nokTilAtGemme({ ...TOM, protein: 12 })).toBe(true);
+	});
+
+	// Tallene er ikke pakkens, saa varen maa aldrig deles med andre
+	// kunder. Linns regel 24. august, se HANDOVER 9.51.
+	it('en vare hun skriver selv deles aldrig', () => {
+		expect(maaDeles3(vurder({ ...TOM, protein: 12 }, 'pr100'), true)).toBe(false);
+	});
+});

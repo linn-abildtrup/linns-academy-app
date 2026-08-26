@@ -27,6 +27,7 @@
 		vurder,
 		medFiber,
 		nokTilAtGemme,
+		TOM,
 		type Deklaration,
 		type FiberValg,
 		type Kolonne
@@ -58,12 +59,42 @@
 	let tal = $state<Deklaration | null>(null);
 	let kolonne = $state<Kolonne>('ukendt');
 	let rettet = $state(false);
+	/**
+	 * Sat naar hun skriver tallene i haanden i stedet for at fotografere
+	 * deklarationen. Saa er der intet at TJEKKE, og skaermens tekster
+	 * skal sige noget andet. Se skrivSelv().
+	 */
+	let skriverSelv = $state(false);
 	let fiberValg = $state<FiberValg>('tom');
 	let fiberTal = $state('');
 	/** Billedet beholdes til varen er gemt, saa det kan laegges op som bevis. */
 	let billede = $state<Blob | null>(null);
 
 	const vurdering = $derived(tal ? vurder(tal, kolonne) : null);
+
+	/**
+	 * Hun vil skrive tallene i haanden i stedet for at fotografere.
+	 *
+	 * FEJLEN DER VAR HER: knappen sendte hende videre til gennemgangen
+	 * uden at give hende et skema at skrive I. Gennemgangen tegner kun
+	 * noget naar der ER tal, saa arket blev BLANKT. Fejlen havde vaeret
+	 * der siden scanneren blev bygget, og hverken typerne, testene eller
+	 * et build kan se den: koden er korrekt, den bliver bare kaldt uden
+	 * det den skal bruge. Samme slags fejl som den blanke 30-30 oversigt,
+	 * se HANDOVER 9.55.
+	 *
+	 * RETTET er sat med det samme. Tallene er ikke pakkens, saa varen maa
+	 * aldrig deles med andre kunder. Linns regel 24. august, se 9.51: en
+	 * vare hun skriver fra bunden er altid kun hendes.
+	 */
+	function skrivSelv() {
+		tal = { ...TOM };
+		kolonne = 'pr100';
+		rettet = true;
+		skriverSelv = true;
+		fejl = null;
+		trin = 'gennemgang';
+	}
 
 	/** Stregkoden giver kun navnet. Tallene henter vi af pakken. */
 	async function efterStregkode(kode: string) {
@@ -190,13 +221,23 @@
 				Tag billedet
 				<input type="file" accept="image/*" capture="environment" onchange={vaelgBillede} />
 			</label>
-			<button type="button" class="sk-knap let" onclick={() => (trin = 'gennemgang')}>
+			<button type="button" class="sk-knap let" onclick={skrivSelv}>
 				Skriv tallene selv
 			</button>
 		{/if}
 	{:else if trin === 'gennemgang' && tal}
-		<h2 class="sk-h">Tjek tallene</h2>
-		<p class="sk-p">Sammenlign med pakken, og ret hvis noget står forkert.</p>
+		<!-- To saet tekster. Har hun fotograferet, er der noget at TJEKKE.
+		     Skriver hun selv, er der ikke, og saa er den vigtigste linje
+		     paa skaermen at tallene staar PR 100 GRAM. Taster hun hele
+		     pakkens tal, er hendes protein tre gange for hoejt resten af
+		     aaret. Se noten i toppen af egneFodevarer3.ts. -->
+		{#if skriverSelv}
+			<h2 class="sk-h">Skriv tallene</h2>
+			<p class="sk-p">Tallene står pr 100 gram på pakken. Protein skal med, resten er valgfrit.</p>
+		{:else}
+			<h2 class="sk-h">Tjek tallene</h2>
+			<p class="sk-p">Sammenlign med pakken, og ret hvis noget står forkert.</p>
+		{/if}
 
 		<label class="sk-felt">
 			<span>Varens navn</span>
@@ -235,7 +276,10 @@
 		</div>
 		<div class="sk-pr">pr 100 gram</div>
 
-		{#if vurdering?.fibreMangler}
+		<!-- Paa et TOMT skema er alt tomt, saa beskeden om manglende fibre
+		     ville staa der fra foerste sekund og vaere ren stoej. Den giver
+		     kun mening naar der faktisk er noget at mangle. -->
+		{#if vurdering?.fibreMangler && (!skriverSelv || nokTilAtGemme(tal))}
 			<!-- FIBRE ER FRIVILLIGE paa en dansk deklaration. Vi skriver aldrig
 			     et stille nul, for det er praecis den fejl hvor kunden logger
 			     mindre end hun spiste. Linns tre veje ud, 24. august. -->
@@ -283,5 +327,18 @@
 				Du har skrevet tallene selv, så varen bliver kun din.
 			{/if}
 		</p>
+	{:else}
+		<!-- ============================================================
+		     DEN HER GREN MAA ALDRIG FJERNES.
+		     En kaede af tilfaelde paa en hel skaerm skal ALTID have en
+		     sidste udvej der tegner noget. Uden den stod arket blankt naar
+		     hun trykkede "Skriv tallene selv", fordi der ingen tal var, og
+		     hverken typerne, testene eller et build kunne se det. Samme
+		     fejl som den blanke 30-30 oversigt, se HANDOVER 9.55.
+		     ============================================================ -->
+		<h2 class="sk-h">Der gik noget galt</h2>
+		<p class="sk-p">Prøv igen, eller luk og begynd forfra.</p>
+		<button type="button" class="sk-knap" onclick={skrivSelv}>Skriv tallene selv</button>
+		<button type="button" class="sk-knap let" onclick={onluk}>Luk</button>
 	{/if}
 </div>
