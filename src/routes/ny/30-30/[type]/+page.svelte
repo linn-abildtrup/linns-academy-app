@@ -141,17 +141,18 @@
 		hentEgneFodevarer3,
 		sletEgenFodevare3
 	} from '$lib/firestore/egneFodevarer3';
-	import MineFodevarerArk from '$lib/components/ny/MineFodevarerArk.svelte';
+	import MineFavoritterArk from '$lib/components/ny/MineFavoritterArk.svelte';
 	import TilfoejArk from '$lib/components/ny/TilfoejArk.svelte';
 
 	// Hjertet paa en foedevare. Se SPEC-3.0.md afsnit 26.15.
 	import {
 		erHjertet,
 		skiftHjerte,
-		hjertedeFodevarer,
 		hjerterFra
 	} from '$lib/content/hjerteFodevare3';
 	import { saetHjerte3 } from '$lib/firestore/hjerteFodevare3';
+	// Mine favoritter: de tre grupper samlet til ét begreb, 26. august.
+	import { mineFavoritter, type FavoritRaekke } from '$lib/content/mineFavoritter3';
 	import NyFodevareArk from '$lib/components/ny/NyFodevareArk.svelte';
 	import { forberedBillede } from '$lib/utils/billede3';
 	import { harFeatureAdgang } from '$lib/content/features';
@@ -349,8 +350,28 @@
 		)
 	);
 
-	/** Hendes hjertede varer, UDEN hendes egne. De staar under Mine egne. */
-	const hjertede = $derived(hjertedeFodevarer(hjerter, foods, new Set(egne.map((f) => f.id))));
+	/**
+	 * MINE FAVORITTER: hendes hjerter, hendes egne og hendes egne
+	 * scanninger i ÉN liste. Se content/mineFavoritter3.ts.
+	 *
+	 * Listen REGNES UD her og skrives aldrig. Hjertet saettes stadig kun
+	 * naar hun trykker paa det, se reglen i toppen af mineFavoritter3.
+	 */
+	const favoritter = $derived(
+		mineFavoritter({ hjerter, egne, scannedeAfHende: mineScannedeIds, foods })
+	);
+	/** Ligger varen paa listen i forvejen, uanset hvorfor. */
+	const favoritIds = $derived(new Set(favoritter.map((r) => r.vare.id)));
+
+	/**
+	 * Er varen HENDES EGEN eller HENDES EGEN SCANNING? De ligger paa
+	 * favorit-listen altid, for de findes ikke andre steder, saa linjen i
+	 * maengde-arket er ikke en knap. Se favoritLinje() i mineFavoritter3.
+	 */
+	function altidPaaListen(id: string): boolean {
+		const r = favoritter.find((x) => x.vare.id === id);
+		return !!r && r.grund !== 'hjerte';
+	}
 
 	const erIDag = $derived(dato === iDag);
 	const kanFrem = $derived(dato < iDag);
@@ -939,6 +960,30 @@
 		} catch (e) {
 			console.error('[ny] kunne ikke slette foedevaren', e);
 		}
+	}
+
+	/**
+	 * Tager en vare af Mine favoritter.
+	 *
+	 * ÉN handling paa skaermen, tre ting bagved, og raekken ved selv
+	 * hvilken. Et hjerte slaas fra, og varen bliver ved med at findes
+	 * for alle. Hendes egen slettes, for den findes ikke andre steder.
+	 * En scanning hun selv har lavet er delt med andre, saa den bliver
+	 * staaende i den faelles samling og forsvinder kun fra HENDES liste.
+	 * Se content/mineFavoritter3.ts.
+	 */
+	async function fjernFavorit(r: FavoritRaekke) {
+		if (r.grund === 'hjerte') {
+			await skiftHjertePaa(r.vare.id);
+			return;
+		}
+		if (r.grund === 'egen') {
+			await sletFodevare(r.vare.id);
+			return;
+		}
+		// 'ingen'. En vare hun selv har scannet er DELT med andre kunder,
+		// saa raekken har intet kryds og vi kommer aldrig herned. Se
+		// handlingFor() i mineFavoritter3.ts.
 	}
 
 	async function sletEgenOpskrift() {
@@ -1642,6 +1687,7 @@
 		bind:soegeord
 		{traef}
 		{hjerter}
+		{favoritter}
 		{gemmer}
 		onplejer={gemDirekte}
 		onvaelg={vaelgTraef}
@@ -1705,6 +1751,10 @@
 		{visUdvidet}
 		retter={!!valgt.retter}
 		tilOpskrift={!!valgt.tilOpskrift}
+		erFavorit={favoritIds.has(valgt.food.id)}
+		altidPaaListen={altidPaaListen(valgt.food.id)}
+		onfavorit={altidPaaListen(valgt.food.id) ? null : () => skiftHjertePaa(valgt!.food.id)}
+		onret={egne.some((f) => f.id === valgt!.food.id) ? () => retFodevare(valgt!.food.id) : null}
 		ongem={(portion, enhedId) => gem(valgt!.food, portion, enhedId)}
 		onluk={() => (valgt = null)}
 	/>
@@ -1734,15 +1784,16 @@
 		onluk={() => (aabentArk = null)}
 	/>
 {:else if aabentArk === 'mine'}
-	<MineFodevarerArk
-		{egne}
-		{hjertede}
+	<MineFavoritterArk
+		raekker={favoritter}
 		henter={arkHenter}
-		onhjerte={skiftHjertePaa}
 		onvaelg={vaelgFraArk}
+		onfjern={fjernFavorit}
 		onny={() => nyFodevare()}
-		onret={retFodevare}
-		onslet={sletFodevare}
+		onscan={() => {
+			aabentArk = null;
+			scanArk = true;
+		}}
 		onluk={() => (aabentArk = null)}
 	/>
 {/if}

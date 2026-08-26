@@ -23,6 +23,7 @@
 	import type { PlejerPost } from '$lib/content/plejer3';
 	import { formatPortion } from '$lib/content/maengde3';
 	import { kildeAf, maerkatFor } from '$lib/content/fodevareKilde3';
+	import { tilHylden, type FavoritRaekke } from '$lib/content/mineFavoritter3';
 
 	interface Props {
 		maaltidLabel: string;
@@ -32,6 +33,12 @@
 		traef: Fodevare[];
 		/** Id'erne paa de madvarer hun har markeret med hjerte. */
 		hjerter?: string[];
+		/**
+		 * MINE FAVORITTER, hele listen. Hylden viser de foerste faa.
+		 * Hendes hjerter, hendes egne og hendes egne scanninger samlet,
+		 * se content/mineFavoritter3.ts.
+		 */
+		favoritter?: FavoritRaekke[];
 		gemmer?: boolean;
 		onplejer: (p: PlejerPost) => void;
 		onvaelg: (food: Fodevare) => void;
@@ -64,6 +71,7 @@
 		soegeord = $bindable(''),
 		traef,
 		hjerter = [],
+		favoritter = [],
 		gemmer = false,
 		onplejer,
 		onhjerte,
@@ -75,6 +83,8 @@
 		kunSoegning = false,
 		titel = ''
 	}: Props = $props();
+
+	const hylde = $derived(tilHylden(favoritter));
 
 	const soeger = $derived(soegeord.trim().length >= 2);
 	const intet = $derived(soeger && traef.length === 0);
@@ -182,6 +192,33 @@
 					</div>
 				{/if}
 
+				<!-- MINE FAVORITTER. Hendes hjerter, hendes egne og hendes egne
+				     scanninger, samlet. Foer laa de bag ikonet nederst, og
+				     hendes scanninger laa slet ingen steder. Fliserne har
+				     ingen farvekode: hvor varen kom fra er praecis den
+				     forskel vi har fjernet. Se mineFavoritter3.ts. -->
+				{#if hylde.length > 0}
+					<div class="tm-k ta-k">Mine favoritter</div>
+					<div class="tm-plejer">
+						{#each hylde as r (r.vare.id)}
+							<button
+								type="button"
+								class="tm-flise"
+								disabled={gemmer}
+								onclick={() => onvaelg(r.vare)}
+							>
+								<span class="tm-f-navn">{r.vare.name}</span>
+								<span class="tm-f-m">{r.vare.p ?? 0} g protein</span>
+							</button>
+						{/each}
+					</div>
+					{#if favoritter.length > hylde.length}
+						<button type="button" class="ta-se-alle" onclick={() => onkilde('mine')}>
+							Se alle {favoritter.length} ›
+						</button>
+					{/if}
+				{/if}
+
 				<div class="tm-k ta-k">Hent fra</div>
 				<div class="tm-ikoner">
 					<button type="button" class="tm-ikon" onclick={() => onkilde('opskrifter')}>
@@ -209,7 +246,7 @@
 								<path d="M4 20.5h9" />
 							</svg>
 						</span>
-						Mine madvarer
+						Mine favoritter
 					</button>
 				</div>
 			{/if}

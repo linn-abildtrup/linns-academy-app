@@ -5180,7 +5180,7 @@ button.tm-ikon:active > span {
 }
 
 .op-ing-r.egen .op-ing-m {
-	color: var(--plum-deep, #5e3a4b);
+	color: var(--plum-deep);
 }
 
 .op-ing-r.nul .op-ing-m {
@@ -14758,6 +14758,191 @@ a.tr-felt:focus-visible {
 .ta-scan-p {
 	font-size: calc(19px * var(--fs-scale, 1));
 	color: rgba(255, 255, 255, 0.6);
+}
+
+/* Se alle, under favorit-hylden i tilfoej-arket. Egen baggrund, se
+   noten paa .mf-vej. */
+.ta-se-alle {
+	display: block;
+	width: 100%;
+	margin: 7px 0 2px;
+	padding: 8px;
+	border: 0;
+	border-radius: 12px;
+	background: transparent;
+	font-family: var(--sans);
+	font-size: calc(12px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--plum);
+	text-align: center;
+	cursor: pointer;
+}
+
+.ta-se-alle:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: -3px;
+}
+
+/* ============================================================
+   MINE FAVORITTER: linjen i maengde-arket
+   Ligger UNDER maengden og OVER knappen, saa den ikke staar mellem
+   hende og en registrering. Se components/ny/MaengdeArk.svelte.
+   ============================================================ */
+
+/* Egen baggrund med vilje, se noten paa .mf-vej. */
+.ma-favorit {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	width: 100%;
+	margin: 14px 0 0;
+	padding: 10px 13px;
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: var(--paper-2);
+	font-family: var(--sans);
+	font-size: calc(13px * var(--fs-scale, 1));
+	text-align: left;
+	color: var(--ink-2);
+	cursor: pointer;
+}
+
+.ma-favorit.fast {
+	cursor: default;
+}
+
+.ma-favorit svg {
+	width: 20px;
+	height: 20px;
+	flex-shrink: 0;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.9;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	color: var(--ink-3);
+}
+
+.ma-favorit.paa {
+	background: var(--plum-tint);
+	border-color: #e2cdd6;
+	color: var(--plum-deep);
+	font-weight: 600;
+}
+
+.ma-favorit.paa svg {
+	fill: currentColor;
+	color: var(--plum);
+}
+
+.ma-favorit:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: -3px;
+}
+
+/* Egen knap inde i linjen. Den skal have sit eget element for at kunne
+   ligge foran, se faelden om absolut placerede pseudo-flader. */
+.ma-ret-vare {
+	margin-left: auto;
+	flex-shrink: 0;
+	border: 1px solid #e2cdd6;
+	border-radius: 999px;
+	padding: 4px 11px;
+	background: var(--paper);
+	font-family: var(--sans);
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	font-weight: 700;
+	color: var(--plum);
+	cursor: pointer;
+}
+
+.ma-ret-vare:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: 2px;
+}
+
+/* ============================================================
+   MINE FAVORITTER: de to veje til en ny vare
+   Staar NEDERST i arket, hvor hun er naar hun ikke fandt den hun
+   ledte efter. Se components/ny/MineFavoritterArk.svelte.
+   ============================================================ */
+
+.mf-veje {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	margin-top: 14px;
+	padding-top: 13px;
+	border-top: 1px solid var(--line);
+}
+
+/* Baggrunden er sat med vilje. Nulstillingen i .ny-app er pakket i
+   :where() og er derfor vaegtloes, saa en knap UDEN egen baggrund
+   arver browserens graa. Samme faelde som fliserne faldt i 10.
+   august og ingrediens-raekkerne 25. august. */
+.mf-vej {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	width: 100%;
+	padding: 11px 13px;
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: var(--paper-2);
+	font-family: var(--sans);
+	text-align: left;
+	color: var(--espresso);
+	cursor: pointer;
+}
+
+.mf-vej:focus-visible {
+	outline: 3px solid var(--plum);
+	outline-offset: -3px;
+}
+
+.mf-vej-i {
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	flex-shrink: 0;
+	border-radius: 10px;
+	background: var(--oat);
+	color: var(--plum);
+}
+
+.mf-vej-i svg {
+	width: 18px;
+	height: 18px;
+}
+
+.mf-vej-t {
+	flex: 1;
+	min-width: 0;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	line-height: 1.4;
+	color: var(--ink-2);
+}
+
+.mf-vej-t b {
+	display: block;
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-weight: 600;
+	color: var(--espresso);
+	margin-bottom: 1px;
+}
+
+.mf-vej-p {
+	font-size: calc(17px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	flex-shrink: 0;
+}
+
+/* Kilde-maerkatet inde i en favorit-raekke. Navnet skal kunne braekke
+   om uden at maerkatet loesriver sig fra det. */
+.fm-navn .fk-maerke {
+	margin-left: 6px;
+	vertical-align: 1px;
 }
 
 /* ============================================================

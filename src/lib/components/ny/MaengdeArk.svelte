@@ -27,6 +27,7 @@
 	} from '$lib/content/maengde3';
 	import { portal } from '$lib/actions/portal';
 	import { kildeAf, maerkatFor, skalBedesOmScanning } from '$lib/content/fodevareKilde3';
+	import { favoritLinje } from '$lib/content/mineFavoritter3';
 
 	interface Props {
 		food: Fodevare;
@@ -52,6 +53,25 @@
 		 * naar hun trykker "Læg i" nede i opskriften. Se HANDOVER 9.52.
 		 */
 		tilOpskrift?: boolean;
+		/**
+		 * MINE FAVORITTER. Ligger varen paa hendes liste i forvejen?
+		 * Se content/mineFavoritter3.ts.
+		 */
+		erFavorit?: boolean;
+		/**
+		 * Sat naar varen er HENDES EGEN eller HENDES EGEN SCANNING. De
+		 * ligger paa listen altid, for de findes ikke andre steder, saa
+		 * linjen er ikke en knap.
+		 */
+		altidPaaListen?: boolean;
+		/** Slaar favoritten til eller fra. Udeladt naar det ikke giver mening. */
+		onfavorit?: (() => void) | null;
+		/**
+		 * RET VAREN. Kun paa hendes egne. Den laa foer som en knap paa hver
+		 * raekke i listen, og er flyttet herned hvor varen alligevel er
+		 * aaben. Se MineFavoritterArk.
+		 */
+		onret?: (() => void) | null;
 		ongem: (portion: number, enhedId: string | undefined) => void;
 		onluk: () => void;
 	}
@@ -64,9 +84,15 @@
 		visUdvidet = false,
 		retter = false,
 		tilOpskrift = false,
+		erFavorit = false,
+		altidPaaListen = false,
+		onfavorit = null,
+		onret = null,
 		ongem,
 		onluk
 	}: Props = $props();
+
+	const favorit = $derived(favoritLinje({ erFavorit, altidPaaListen }));
 
 	const genveje = $derived(genvejeFor(food, saedvanlig));
 	const enheder = $derived(enhederFor(food));
@@ -244,6 +270,38 @@
 					<button type="button" class="ma-chip anden" onclick={() => (visStepper = true)}>
 						Anden mængde
 					</button>
+				</div>
+			{/if}
+		{/if}
+
+		<!-- FAVORIT-LINJEN. Hjertet var foer et ikon uden ord, og hun kunne
+		     ikke vide hvad der skete naar hun trykkede. Nu staar der hvad
+		     det goer. Linjen ligger UNDER maengden og OVER knappen, altsaa
+		     ikke paa vejen hvis hun bare vil have maden i. Et hjerte maa
+		     aldrig staa mellem hende og en registrering. -->
+		{#if onfavorit || altidPaaListen}
+			{#if favorit.kanTrykkes && onfavorit}
+				<button
+					type="button"
+					class="ma-favorit"
+					class:paa={erFavorit}
+					aria-pressed={erFavorit}
+					onclick={onfavorit}
+				>
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8C19 15.6 12 20 12 20Z" />
+					</svg>
+					<span>{favorit.tekst}</span>
+				</button>
+			{:else}
+				<div class="ma-favorit paa fast">
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8C19 15.6 12 20 12 20Z" />
+					</svg>
+					<span>{favorit.tekst}</span>
+					{#if onret}
+						<button type="button" class="ma-ret-vare" onclick={onret}>Ret varen</button>
+					{/if}
 				</div>
 			{/if}
 		{/if}
