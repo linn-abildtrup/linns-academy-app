@@ -154,12 +154,28 @@ export function harIngenAdgang(userDoc: UserDoc | null | undefined): boolean {
 }
 
 /**
+ * Alle forløb brugeren nogensinde har været på — de aktive (forlobIds) OG
+ * de afsluttede (afsluttedeForlobIds), uden dubletter.
+ *
+ * forlobIds var oprindeligt append-only og dermed en komplet historik, men
+ * symptomcheck-kadence-rettelsen flyttede udløbne forløb over i
+ * afsluttedeForlobIds. Læser man kun forlobIds, forsvinder gennemført
+ * materiale ud af biblioteket for de kunder — derfor skal spørgsmålet
+ * "hvilke forløb har hun været på" altid stilles her.
+ */
+export function alleForlobIds(userDoc: UserDoc | null | undefined): string[] {
+	const aktive = userDoc?.forlobIds ?? [];
+	const afsluttede = userDoc?.afsluttedeForlobIds ?? [];
+	return Array.from(new Set([...aktive, ...afsluttede]));
+}
+
+/**
  * True hvis brugeren tidligere har været på et forløb (Kickstart eller
  * Kropsro). Bruges til at vise Træningsøvelser-fanen i bibliotek
  * for udløbede brugere og rene basis-abonnenter der har gennemført forløb.
  */
 export function harGennemfoertForlob(userDoc: UserDoc | null | undefined): boolean {
-	return (userDoc?.forlobIds?.length ?? 0) > 0;
+	return alleForlobIds(userDoc).length > 0;
 }
 
 /**

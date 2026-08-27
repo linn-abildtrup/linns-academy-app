@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { effektivState } from './userAdgang';
+import { alleForlobIds, effektivState, harGennemfoertForlob } from './userAdgang';
 import type { UserDoc } from '$lib/types';
 
 function ud(overrides: Partial<UserDoc>): UserDoc {
@@ -42,5 +42,29 @@ describe('effektivState — abo-udløb (aboSlutterAt)', () => {
 
 	it('ingen accessLevel -> udlobet', () => {
 		expect(effektivState(ud({ accessLevel: 'none', accessSource: 'abonnement' }))).toBe('udlobet');
+	});
+});
+
+describe('alleForlobIds — aktive + afsluttede forløb', () => {
+	it('samler begge felter uden dubletter', () => {
+		const k = ud({
+			forlobIds: ['kropsro_maj_2026'],
+			afsluttedeForlobIds: ['kickstart_maj_2026', 'kropsro_maj_2026']
+		});
+		expect(alleForlobIds(k)).toEqual(['kropsro_maj_2026', 'kickstart_maj_2026']);
+	});
+
+	it('kunde hvis eneste forløb er afsluttet har stadig et forløb', () => {
+		// De 29 maj-kunder: kickstart blev flyttet ud af forlobIds, men
+		// materialet skal stadig være synligt i biblioteket.
+		const k = ud({ forlobIds: [], afsluttedeForlobIds: ['kickstart_maj_2026'] });
+		expect(alleForlobIds(k)).toEqual(['kickstart_maj_2026']);
+		expect(harGennemfoertForlob(k)).toBe(true);
+	});
+
+	it('kunde helt uden forløb giver tom liste', () => {
+		expect(alleForlobIds(ud({}))).toEqual([]);
+		expect(harGennemfoertForlob(ud({}))).toBe(false);
+		expect(alleForlobIds(null)).toEqual([]);
 	});
 });

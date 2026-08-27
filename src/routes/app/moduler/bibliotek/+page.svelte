@@ -35,7 +35,7 @@
 	import Loading from '$lib/components/Loading.svelte';
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
 	import type { UserDoc } from '$lib/types';
-	import { erForlobsklient, harGennemfoertForlob } from '$lib/utils/userAdgang';
+	import { alleForlobIds, erForlobsklient, harGennemfoertForlob } from '$lib/utils/userAdgang';
 	import { gemLektionNote, hentLektionNote, hentNoterForForlob } from '$lib/firestore/lektionNoter';
 	import { validerNote, type LektionNote } from '$lib/content/lektionNoter';
 	import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
@@ -76,15 +76,17 @@
 
 	/**
 	 * Hent alle forløb brugeren nogensinde har været på. Primær kilde er
-	 * userDoc.forlobIds (sat af webhook + sync). Fallback: scan alle
+	 * userDoc.forlobIds + userDoc.afsluttedeForlobIds (sat af webhook + sync),
+	 * slået sammen via alleForlobIds — et gennemført forløb ligger i det
+	 * andet felt og skal stadig være synligt her. Fallback: scan alle
 	 * dokumenter i users/{uid}/products og uddrag deres forlobId-felt
 	 * (dækker brugere oprettet før forlobIds-feltet blev introduceret).
 	 */
 	async function hentBrugerensForlobIds(uid: string): Promise<string[]> {
 		const userSnap = await getDoc(doc(db, 'users', uid));
 		const data = userSnap.exists() ? (userSnap.data() as UserDoc) : null;
-		const fraDoc = data?.forlobIds ?? [];
-		if (fraDoc.length > 0) return Array.from(new Set(fraDoc));
+		const fraDoc = alleForlobIds(data);
+		if (fraDoc.length > 0) return fraDoc;
 
 		const productsSnap = await getDocs(collection(db, 'users', uid, 'products'));
 		const fraProducts: string[] = [];

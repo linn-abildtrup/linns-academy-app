@@ -260,8 +260,21 @@ export interface UserDoc {
 	 * fremtidige forløb). Bruges af bibliotek-modulet til at vise materiale
 	 * fra alle gennemførte forløb. SKAL aldrig overskrives — kun appendes.
 	 * Webhook + sync-funktion bruger arrayUnion for at bevare historik.
+	 *
+	 * OBS: feltet er IKKE længere en komplet historik. Symptomcheck-kadence-
+	 * rettelsen flyttede udløbne forløb herfra til afsluttedeForlobIds, så
+	 * spørgsmålet "hvilke forløb har hun været på" skal altid stilles via
+	 * alleForlobIds() i userAdgang.ts — aldrig ved at læse dette felt alene.
 	 */
 	forlobIds?: string[];
+
+	/**
+	 * Forløb brugeren HAR gennemført, og som er taget ud af forlobIds så de
+	 * ikke længere styrer symptomcheck-kadence eller aktivt-forløb-opslag.
+	 * Materialet fra dem skal stadig være synligt i biblioteket, så længe
+	 * hun abonnerer eller er i gang med et nyt forløb.
+	 */
+	afsluttedeForlobIds?: string[];
 
 	/**
 	 * Hvilket træningsprogram brugeren har valgt som sit aktive program.
