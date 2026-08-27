@@ -379,3 +379,35 @@ describe('gennemfoerteForlob', () => {
 		expect(g.map((x) => x.forlobId)).toEqual([kickstart.id, kropsro.id]);
 	});
 });
+
+describe('afsluttede forloeb taeller med i historikken', () => {
+	// De 29 maj-kunder fik kickstart flyttet fra forlobIds til
+	// afsluttedeForlobIds. Laeser udledningen kun det foerste felt,
+	// forsvinder forloebet ud af billedet og materialet bliver usynligt.
+	const felter: KundeFelter = {
+		forlobIds: [kropsro.id],
+		afsluttedeForlobIds: [kickstart.id]
+	};
+
+	it('giver en raekke pr forloeb fra begge felter', () => {
+		const raekker = udledAdgange(felter, [kropsro, kickstart]);
+		const ids = raekker.filter((r) => r.art === 'forlob').map((r) => r.forlobId);
+		expect(ids).toContain(kropsro.id);
+		expect(ids).toContain(kickstart.id);
+	});
+
+	it('et afsluttet forloeb staar som gennemfoert naar det er udloebet', () => {
+		const nu = KICKSTART_SLUT + DAG;
+		const raekker = udledAdgange(felter, [kropsro, kickstart]);
+		const gennemfoerte = gennemfoerteForlob(raekker, [kropsro, kickstart], nu);
+		expect(gennemfoerte.map((g) => g.forlobId)).toContain(kickstart.id);
+	});
+
+	it('samme forloeb i begge felter giver kun én raekke', () => {
+		const raekker = udledAdgange(
+			{ forlobIds: [kickstart.id], afsluttedeForlobIds: [kickstart.id] },
+			[kickstart]
+		);
+		expect(raekker.filter((r) => r.art === 'forlob')).toHaveLength(1);
+	});
+});

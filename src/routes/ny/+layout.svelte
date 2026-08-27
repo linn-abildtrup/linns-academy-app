@@ -186,8 +186,14 @@
 				let hentedeForlob: ForlobKilde[] = [];
 				let hentedeNulDage: NulDageKilde = {};
 
-				if (doc?.forlobIds?.length) {
-					hentedeForlob = await indlaesForlob(doc.forlobIds);
+				// Baade aktive og afsluttede forloeb hentes. Uden de afsluttede
+				// mangler forloebs-dokumentet, og udledAdgange springer raekken
+				// over — saa mister kunden sit gennemfoerte materiale.
+				const forlobHistorik = Array.from(
+					new Set([...(doc?.forlobIds ?? []), ...(doc?.afsluttedeForlobIds ?? [])])
+				);
+				if (forlobHistorik.length) {
+					hentedeForlob = await indlaesForlob(forlobHistorik);
 					// Pause-dage skal med, ellers staar dagnummeret forkert for
 					// den kunde der har holdt fri. Kun Kropsro kan holde pause,
 					// saa for alle andre koster det her nul opslag.

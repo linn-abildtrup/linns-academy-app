@@ -49,6 +49,7 @@ export interface Klient3 {
 export function kundeFelterFra(doc: Partial<UserDoc> | null | undefined): KundeFelter {
 	return {
 		forlobIds: doc?.forlobIds ?? [],
+		afsluttedeForlobIds: doc?.afsluttedeForlobIds ?? [],
 		aboKoebtAt: doc?.aboKoebtAt,
 		aboSlutterAt: doc?.aboSlutterAt,
 		aboProdukt: doc?.aboProdukt,

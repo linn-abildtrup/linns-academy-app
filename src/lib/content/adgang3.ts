@@ -79,6 +79,11 @@ export interface ForlobKilde {
  */
 export interface KundeFelter {
 	forlobIds?: string[];
+	/**
+	 * Gennemfoerte forloeb der er taget ud af forlobIds. Skal med i
+	 * udledningen, ellers mister kunden adgangen til sit gamle materiale.
+	 */
+	afsluttedeForlobIds?: string[];
 	aboKoebtAt?: number;
 	aboSlutterAt?: number;
 	aboProdukt?: string;
@@ -157,9 +162,15 @@ export function udledAdgange(
 	const forlobPrId = new Map(forlob.map((f) => [f.id, f]));
 
 	// ── Forloebs-raekker ────────────────────────────────────────────
-	// Én raekke pr forloeb kunden nogensinde har vaeret paa. forlobIds er
-	// append-only i den gamle model, saa den er allerede en historik.
-	for (const id of felter.forlobIds ?? []) {
+	// Én raekke pr forloeb kunden nogensinde har vaeret paa. forlobIds var
+	// oprindeligt append-only og dermed en komplet historik, men
+	// symptomcheck-rettelsen flyttede udloebne forloeb til
+	// afsluttedeForlobIds. Begge felter skal derfor med — ellers falder et
+	// gennemfoert forloeb ud af billedet og kunden mister sit materiale.
+	const forlobHistorik = Array.from(
+		new Set([...(felter.forlobIds ?? []), ...(felter.afsluttedeForlobIds ?? [])])
+	);
+	for (const id of forlobHistorik) {
 		const f = forlobPrId.get(id);
 		if (!f || f.startMs <= 0 || f.antalDage <= 0) continue;
 		// Har hun holdt pause, slutter forloebet tilsvarende senere.

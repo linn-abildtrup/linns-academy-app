@@ -457,6 +457,7 @@
 		return udledAdgange(
 			{
 				forlobIds: userDoc?.forlobIds,
+				afsluttedeForlobIds: userDoc?.afsluttedeForlobIds,
 				aboKoebtAt: userDoc?.aboKoebtAt,
 				aboSlutterAt: userDoc?.aboSlutterAt,
 				aboProdukt: userDoc?.aboProdukt,

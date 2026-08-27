@@ -96,7 +96,12 @@ async function hentKunde(uid: string, userDoc: UserDoc | null): Promise<HjaelpKu
 		// forloebskunder, saa alle saa ud som om de ikke havde et forloeb.
 		// Samme regel som udledAdgange i adgang3.ts: en forloebs-raekke
 		// kraever baade forlobIds paa kunden OG selve forloebs-dokumentet.
-		for (const forlobId of userDoc?.forlobIds ?? []) {
+		// Afsluttede forloeb taeller med — de er praecis dem der goer
+		// harGennemfoertForlob sand.
+		const forlobHistorik = Array.from(
+			new Set([...(userDoc?.forlobIds ?? []), ...(userDoc?.afsluttedeForlobIds ?? [])])
+		);
+		for (const forlobId of forlobHistorik) {
 			const f = (await hentDoc(`forlob/${forlobId}`)) as {
 				navn?: string;
 				startDato?: unknown;
