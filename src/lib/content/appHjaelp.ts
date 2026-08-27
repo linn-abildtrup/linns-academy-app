@@ -307,7 +307,7 @@ Brug 'Stil et nyt spørgsmål'-knappen øverst. Du kan se alle dine tidligere sp
 		visFor: ALLE_PRODUKTER,
 		indhold: `Biblioteket finder du under Moduler → Biblioteket. Det indeholder forskellige faner afhængigt af din adgang:
 - Links: små links til relevante artikler/værktøjer.
-- En tab pr forløb du har været på (fx "Kickstart maj 2026", "Kropsro"). Indeholder alle lektionerne fra det forløb.
+- En tab pr forløb du har været på (fx "Kickstart maj 2026", "Kropsro"). Indeholder alle lektionerne fra det forløb. Fanerne bliver liggende efter forløbet er slut, så længe du abonnerer på appen eller er i gang med et nyt forløb.
 - Træningsøvelser: bibliotek over alle øvelser med video og vejledning.
 - Opskrifter: alle opskrifter — klik for at se ingredienser og næring.
 
