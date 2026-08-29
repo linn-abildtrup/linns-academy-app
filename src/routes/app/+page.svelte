@@ -2518,8 +2518,8 @@
 			{#if facebookTrin === 'spoerg'}
 				<div class="variant-modal-titel">Er du med i vores Facebook-gruppe?</div>
 				<p class="variant-modal-sub">
-					Det er der, vi mødes undervejs, deler små sejre og stiller spørgsmål. Du er meget
-					velkommen, men du får det fulde forløb her i appen uanset hvad.
+					Det er der, vi mødes undervejs og deler små sejre. Du er meget velkommen, men du får det
+					fulde forløb her i appen uanset hvad.
 				</p>
 				<button
 					class="variant-knap"

@@ -467,13 +467,15 @@ Hvis du svarer ja, sætter Linn dig manuelt sammen med en gruppe. Du kan altid s
 Du bliver kun spurgt én gang ved første login. Når du har sagt ja eller nej, popper modalen ikke op igen.`
 	},
 	{
-		titel: 'Facebook-gruppe på Kropsro',
-		visFor: [KROPSRO_PRODUCT_ID],
-		indhold: `På dag 0 eller derefter bliver du spurgt om du er kommet ind i Kropsros Facebook-gruppe. Gruppen er hvor deltagerne mødes, deler oplevelser og stiller spørgsmål til Linn.
+		titel: 'Facebook-gruppen',
+		visFor: ALLE_PRODUKTER,
+		indhold: `Har dit forløb en Facebook-gruppe, bliver du spurgt én gang, når holdet er startet, om du er med. Gruppen er der, hvor deltagerne mødes undervejs og deler små sejre.
 
-Svar Ja hvis du er inde — så spørger vi ikke igen. Svar "Ikke endnu" hvis du stadig leder efter linket (du finder det i din velkomst-mail fra Linn).
+Du får det fulde forløb her i appen uanset hvad, så det er et tilbud og ikke et krav. Er du ikke på Facebook, svarer du bare det, og så spørger vi ikke igen.
 
-Modalen vises kun én gang, så når du har svaret er den væk.`
+Vil du gerne med, kan du trykke dig direkte over i gruppen fra spørgsmålet. Linket står også under Moduler → Biblioteket → Links, så du kan finde det senere.
+
+Spørgsmål til Linn stiller du ikke i gruppen, men under Beskeder nederst i appen.`
 	},
 	{
 		titel: 'Forsidens "Dagens træning"-kort',
