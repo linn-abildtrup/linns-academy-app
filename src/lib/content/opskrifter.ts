@@ -45,7 +45,11 @@ export interface Ingrediens {
 	enhed: string;
 }
 
-export type DietTag = 'vegetar' | 'glutenfri';
+// Maerkater paa en opskrift. 'mejerifri' kom til 29. august 2026 fordi der er
+// kunder der ikke kan taale mejeriprodukter. Ordet daekker ogsaa ost, smoer og
+// floede, hvor "maelkefri" kan laeses som om det kun handler om maelken i
+// kartonen. Linns valg.
+export type DietTag = 'vegetar' | 'glutenfri' | 'mejerifri';
 
 export interface Opskrift {
 	id: string;
@@ -87,10 +91,11 @@ export const ALLE_KATEGORIER: OpskriftKategori[] = [
 
 export const DIET_LABELS: Record<DietTag, string> = {
 	vegetar: 'Vegetar',
-	glutenfri: 'Glutenfri'
+	glutenfri: 'Glutenfri',
+	mejerifri: 'Mejerifri'
 };
 
-export const ALLE_DIET_TAGS: DietTag[] = ['vegetar', 'glutenfri'];
+export const ALLE_DIET_TAGS: DietTag[] = ['vegetar', 'glutenfri', 'mejerifri'];
 
 // ==============================================
 // Beregninger

@@ -130,7 +130,8 @@
 	const udenDiet = $derived(filtrer(grundliste, { soegeord, kategorier: valgteKategorier }));
 	const dietAntal = $derived<Record<DietTag, number>>({
 		vegetar: udenDiet.filter((r) => r.opskrift.dietTags.includes('vegetar')).length,
-		glutenfri: udenDiet.filter((r) => r.opskrift.dietTags.includes('glutenfri')).length
+		glutenfri: udenDiet.filter((r) => r.opskrift.dietTags.includes('glutenfri')).length,
+		mejerifri: udenDiet.filter((r) => r.opskrift.dietTags.includes('mejerifri')).length
 	});
 
 	/**
@@ -383,8 +384,7 @@
 										<span class="ol-maerkat">{KATEGORI_NAVN[farve]}</span>
 									{/if}
 								{:else}
-									<span class="ol-bogstav" aria-hidden="true"
-										>{fliseBogstav(r.opskrift.titel)}</span
+									<span class="ol-bogstav" aria-hidden="true">{fliseBogstav(r.opskrift.titel)}</span
 									>
 								{/if}
 							</span>

@@ -155,7 +155,8 @@
 	const udenDiet = $derived(filtrer(grundliste, { soegeord, kategorier: valgteKategorier }));
 	const dietAntal = $derived<Record<DietTag, number>>({
 		vegetar: udenDiet.filter((r) => r.opskrift.dietTags.includes('vegetar')).length,
-		glutenfri: udenDiet.filter((r) => r.opskrift.dietTags.includes('glutenfri')).length
+		glutenfri: udenDiet.filter((r) => r.opskrift.dietTags.includes('glutenfri')).length,
+		mejerifri: udenDiet.filter((r) => r.opskrift.dietTags.includes('mejerifri')).length
 	});
 
 	const resultater = $derived(

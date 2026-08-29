@@ -55,6 +55,7 @@ Din opgave:
 2. Vælg det ønskede antal forslag til MORGENMAD, FROKOST og AFTENSMAD.
 3. Filtrer kandidaterne efter reglerne:
    - Hvis bruger har angivet "kun glutenfri", så vælg KUN opskrifter der har 'glutenfri' i deres dietTags.
+   - Hvis bruger har angivet "kun mejerifri", så vælg KUN opskrifter der har 'mejerifri' i deres dietTags.
    - Hvis bruger har angivet ingredienser at undgå, så udelad opskrifter hvor en af deres ingredienser indeholder de angivne ord (case-insensitive substring-match).
 4. Vælg så kombinationen tilsammen (1 fra hver kategori) rammer MINDST 80% af klientens protein-mål OG 80% af hendes fiber-mål. Dette er et hårdt krav — vælg ikke kombinationer der ligger under, hvis det er muligt at undgå.
 5. Prioriter variation: hvis brugeren får flere alternativer, så gør dem forskellige (forskellig protein-kilde, forskellige hovedingredienser).
@@ -130,6 +131,12 @@ function byggBrugerBesked(req: ForeslaaRequest): string {
 	const glutenLinje = req.glutenfri
 		? 'Kun glutenfri (vælg kun opskrifter med "glutenfri" i dietTags).'
 		: 'Glutenfri er ikke et krav.';
+	// Kunder der ikke kan taale mejeriprodukter. En madplan fuld af ost er
+	// ubrugelig for dem, saa kravet skal ogsaa staa i prompten og ikke kun i
+	// kandidat-listen.
+	const mejeriLinje = req.mejerifri
+		? 'Kun mejerifri (vælg kun opskrifter med "mejerifri" i dietTags).'
+		: 'Mejerifri er ikke et krav.';
 
 	return `Klientens daglige næringsmål:
 - Protein: ${req.maal.protein}g
@@ -140,6 +147,7 @@ function byggBrugerBesked(req: ForeslaaRequest): string {
 
 Filtre:
 - ${glutenLinje}
+- ${mejeriLinje}
 - ${undgaaLinje}
 - ${favoritLinje}
 

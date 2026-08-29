@@ -299,6 +299,8 @@
 	let madplanSvar = $state<MadplanSvar | null>(null);
 	let madplanAntal = $state<1 | 2 | 3>(2);
 	let madplanGlutenfri = $state(false);
+	// Kunder der ikke kan taale mejeriprodukter. Se DietTag i opskrifter.ts.
+	let madplanMejerifri = $state(false);
 	let madplanUndgaa = $state<string[]>(['', '', '']);
 	let madplanTilfoejer = $state<string | null>(null); // opskriftId der lige nu tilføjes
 	let madplanTilfoejede = $state<Set<string>>(new Set()); // opskriftIds der er tilføjet
@@ -1471,7 +1473,7 @@
 			// Glutenfri filtreres klient-side (halverer pool og giver hurtigere
 			// svar). Undgå-ingredienser sendes til AI'en så katalog-puljen
 			// kan deles via prompt-cache på serveren.
-			const filtrerede = filtrerKandidater(alleKandidater, madplanGlutenfri);
+			const filtrerede = filtrerKandidater(alleKandidater, madplanGlutenfri, madplanMejerifri);
 			if (filtrerede.length === 0) {
 				throw new Error('Ingen glutenfri opskrifter fundet. Prøv at fjerne glutenfri-filteret.');
 			}
@@ -1487,6 +1489,7 @@
 				favoritFoodNavne: favoritNavne,
 				antalAlternativer: madplanAntal,
 				glutenfri: madplanGlutenfri,
+				mejerifri: madplanMejerifri,
 				undgaaIngredienser: madplanUndgaa.filter((s) => s.trim().length > 0),
 				kandidater: filtrerede
 			};
@@ -2829,6 +2832,11 @@
 				<label class="madplan-felt madplan-checkbox">
 					<input type="checkbox" bind:checked={madplanGlutenfri} />
 					<span>Kun glutenfri opskrifter</span>
+				</label>
+
+				<label class="madplan-felt madplan-checkbox">
+					<input type="checkbox" bind:checked={madplanMejerifri} />
+					<span>Kun mejerifri opskrifter</span>
 				</label>
 
 				<div class="madplan-felt">

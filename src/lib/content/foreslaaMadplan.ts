@@ -54,6 +54,12 @@ export interface ForeslaaRequest {
 	antalAlternativer: 1 | 2 | 3;
 	/** True hvis kun glutenfri-opskrifter må foreslås. */
 	glutenfri: boolean;
+	/**
+	 * True hvis kun mejerifri-opskrifter må foreslås. Tilføjet 29. august 2026
+	 * fordi der er kunder der ikke kan tåle mejeriprodukter, og en madplan fuld
+	 * af ost er ubrugelig for dem. Valgfri, så gamle kald uden feltet virker.
+	 */
+	mejerifri?: boolean;
 	/** Op til 3 ingrediens-navne brugeren vil undgå (case-insensitive substring-match). */
 	undgaaIngredienser: string[];
 	/** Pool af opskrifter AI'en må vælge fra (allerede filtreret på klient). */
@@ -107,21 +113,24 @@ export interface MadplanSvar {
 /**
  * Filtrerer kandidat-listen til AI'en.
  *
- * VIGTIGT: Vi filtrerer KUN på glutenfri her, IKKE på undgå-ingredienser.
+ * VIGTIGT: Vi filtrerer KUN på kost-mærkater her, IKKE på undgå-ingredienser.
  * Det er bevidst: AI'en filtrerer undgå-ingredienser på serveren, så
- * kandidat-katalogen er ens for alle ikke-glutenfri-brugere (eller alle
- * glutenfri-brugere) og kan deles via Anthropic prompt caching.
+ * kandidat-katalogen er ens inden for hver kombination af mærkater og kan
+ * deles via Anthropic prompt caching.
  *
- * Glutenfri-filteret beholdes klient-side fordi det halverer pool-størrelsen
- * og giver klart hurtigere svar, og fordi de to grupper alligevel har hver
- * deres cache-entry.
+ * Mærkat-filteret beholdes klient-side fordi det skærer pool'en kraftigt ned
+ * og giver klart hurtigere svar, og fordi grupperne alligevel har hver deres
+ * cache-entry.
  */
 export function filtrerKandidater(
 	kandidater: OpskriftKandidat[],
-	glutenfri: boolean
+	glutenfri: boolean,
+	mejerifri = false
 ): OpskriftKandidat[] {
-	if (!glutenfri) return kandidater;
-	return kandidater.filter((k) => k.dietTags.includes('glutenfri'));
+	let ud = kandidater;
+	if (glutenfri) ud = ud.filter((k) => k.dietTags.includes('glutenfri'));
+	if (mejerifri) ud = ud.filter((k) => k.dietTags.includes('mejerifri'));
+	return ud;
 }
 
 /**
