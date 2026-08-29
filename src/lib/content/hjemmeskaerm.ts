@@ -71,17 +71,32 @@ export function skalViseHjemmeskaerm(v: HjemmeskaermVilkaar): boolean {
 export interface HjemmeskaermVejledning {
 	trin: string[];
 	note: string;
+	/**
+	 * Advarsel der staar for sig over trinnene. Sat paa iPhone, hvor
+	 * "Foej til hjemmeskaerm" KUN findes i Safari.
+	 */
+	kraeverSafari?: string;
 }
 
 /**
  * Vejledningen. Den ene halvdel afhaenger af hvilken telefon hun har.
- * Samme ord som 3.0 bruger.
+ * Samme ord som 3.0 bruger, bortset fra Safari-linjen der er den gamle
+ * apps egen (Linns oenske 29. august).
+ *
+ * HVORFOR SAFARI-LINJEN: paa iPhone findes "Foej til hjemmeskaerm" kun i
+ * Safari. Aabner hun linket fra sin mail eller fra Facebook, sidder hun i
+ * en anden browser, og punktet er der slet ikke. Uden linjen leder hun
+ * forgaeves og giver op.
  */
-export function hjemmeskaermVejledning(erApple: boolean): HjemmeskaermVejledning {
+export function hjemmeskaermVejledning(erApple: boolean, iSafari = true): HjemmeskaermVejledning {
 	if (erApple) {
 		return {
+			kraeverSafari: iSafari
+				? 'Det skal gøres i Safari. Åbner du appen fra din mail eller fra Facebook, findes muligheden ikke.'
+				: 'Du er ikke i Safari lige nu. Åbn linnsacademy-appen i Safari først, ellers findes muligheden ikke.',
 			trin: [
-				'Tryk på Del-knappen nederst i Safari',
+				'Åbn appen i Safari, hvis du ikke allerede er der',
+				'Tryk på Del-knappen nederst',
 				'Rul ned og vælg "Føj til hjemmeskærm"',
 				'Tryk Tilføj. Nu ligger den som en app'
 			],
@@ -96,6 +111,25 @@ export function hjemmeskaermVejledning(erApple: boolean): HjemmeskaermVejledning
 		],
 		note: 'Åbn så appen fra det nye ikon, så fortsætter vi hvor vi slap.'
 	};
+}
+
+/**
+ * Sidder hun i Safari paa sin iPhone, eller i noget andet.
+ *
+ * De andre browsere paa iOS bruger Safaris motor og skriver derfor ogsaa
+ * "Safari" i deres kendetegn. Vi maa se efter deres EGNE maerker i
+ * stedet: CriOS er Chrome, FxiOS er Firefox, EdgiOS er Edge, OPiOS er
+ * Opera. FBAN, FBAV og Instagram er de browsere der aabner inde i
+ * Facebook og Instagram, og GSA er Googles app. Ingen af dem kan laegge
+ * noget paa hjemmeskaermen.
+ */
+export function erSafariPaaIphone(brugerAgent: string): boolean {
+	if (!erApplePhone(brugerAgent)) return false;
+	const andre = /CriOS|FxiOS|EdgiOS|OPiOS|FBAN|FBAV|FB_IAB|Instagram|GSA|Line|Snapchat/i;
+	if (andre.test(brugerAgent)) return false;
+	// De indbyggede browservinduer uden eget maerke skriver slet ikke
+	// "Safari". Mangler ordet, er det ikke Safari.
+	return /Safari/i.test(brugerAgent);
 }
 
 /** Er appen aabnet fra hjemmeskaermen og ikke inde i browseren. */

@@ -16,6 +16,7 @@
 	import Logo from '$lib/components/Logo.svelte';
 	import {
 		erApplePhone,
+		erSafariPaaIphone,
 		hjemmeskaermVejledning,
 		type HjemmeskaermVejledning
 	} from '$lib/content/hjemmeskaerm';
@@ -39,7 +40,8 @@
 	let arbejder = $state(false);
 
 	onMount(() => {
-		vejledning = hjemmeskaermVejledning(erApplePhone(navigator.userAgent));
+		const agent = navigator.userAgent;
+		vejledning = hjemmeskaermVejledning(erApplePhone(agent), erSafariPaaIphone(agent));
 	});
 
 	async function etTryk() {
@@ -81,6 +83,9 @@
 				<p class="hs-note">Din telefon spørger om lov, og så er den der.</p>
 			</div>
 		{:else}
+			{#if vejledning.kraeverSafari}
+				<p class="hs-safari">{vejledning.kraeverSafari}</p>
+			{/if}
 			<ol class="hs-trin">
 				{#each vejledning.trin as t, i (t)}
 					<li class="hs-raekke">
@@ -151,6 +156,18 @@
 		font-size: calc(14px * var(--fs-scale, 1));
 		color: var(--text2);
 		line-height: 1.55;
+	}
+
+	/* Safari-linjen paa iPhone. Staar for sig, fordi den er forskellen
+	   paa at kunne og ikke kunne, ikke et raad. */
+	.hs-safari {
+		margin: 0 0 14px;
+		padding: 12px 14px;
+		background: var(--tdim);
+		border-radius: var(--r);
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text);
+		line-height: 1.5;
 	}
 
 	.hs-trin {

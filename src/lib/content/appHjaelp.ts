@@ -45,10 +45,11 @@ export const APP_HJAELP_SEKTIONER: AppHjaelpSektion[] = [
 		visFor: ALLE_PRODUKTER,
 		indhold: `Appen kan ligge som et ikon på telefonen, så den åbner med ét tryk i stedet for at skulle findes frem i browseren.
 
-Har du en iPhone:
-1. Tryk på Del-knappen nederst i Safari
-2. Rul ned og vælg 'Føj til hjemmeskærm'
-3. Tryk Tilføj. Nu ligger den som en app
+Har du en iPhone, SKAL det gøres i Safari. Åbner du appen fra din mail eller fra Facebook, sidder du i en anden browser, og så findes muligheden slet ikke.
+1. Åbn appen i Safari, hvis du ikke allerede er der
+2. Tryk på Del-knappen nederst
+3. Rul ned og vælg 'Føj til hjemmeskærm'
+4. Tryk Tilføj. Nu ligger den som en app
 
 Har du en Android-telefon:
 1. Tryk på menuen med de tre prikker

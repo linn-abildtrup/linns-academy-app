@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
 	erApplePhone,
+	erSafariPaaIphone,
 	hjemmeskaermVejledning,
 	HJEMMESKAERM_FRA_MS,
 	skalViseHjemmeskaerm,
@@ -52,10 +53,22 @@ describe('skalViseHjemmeskaerm', () => {
 });
 
 describe('hjemmeskaermVejledning', () => {
-	it('iPhone faar Del-knappen i Safari', () => {
+	it('iPhone bliver bedt om at bruge Safari, og faar fire trin', () => {
 		const v = hjemmeskaermVejledning(true);
-		expect(v.trin).toHaveLength(3);
-		expect(v.trin[0]).toContain('Del-knappen');
+		expect(v.trin).toHaveLength(4);
+		expect(v.trin[0]).toContain('Safari');
+		expect(v.kraeverSafari).toContain('Safari');
+	});
+
+	it('iPhone i en anden browser faar en skarpere besked', () => {
+		const iSafari = hjemmeskaermVejledning(true, true).kraeverSafari ?? '';
+		const udenfor = hjemmeskaermVejledning(true, false).kraeverSafari ?? '';
+		expect(udenfor).not.toBe(iSafari);
+		expect(udenfor).toContain('ikke i Safari');
+	});
+
+	it('Android faar ingen Safari-linje', () => {
+		expect(hjemmeskaermVejledning(false).kraeverSafari).toBeUndefined();
 	});
 
 	it('andre telefoner faar de tre prikker', () => {
@@ -76,5 +89,32 @@ describe('erApplePhone', () => {
 
 	it('genkender ikke Android som Apple', () => {
 		expect(erApplePhone('Mozilla/5.0 (Linux; Android 14; Pixel 8)')).toBe(false);
+	});
+});
+
+describe('erSafariPaaIphone', () => {
+	const SAFARI =
+		'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+
+	it('genkender Safari paa iPhone', () => {
+		expect(erSafariPaaIphone(SAFARI)).toBe(true);
+	});
+
+	it('afviser Chrome paa iPhone', () => {
+		// Chrome paa iOS skriver ogsaa "Safari" i sit kendetegn, men CriOS
+		// afsloerer den. Den kan ikke laegge noget paa hjemmeskaermen.
+		expect(erSafariPaaIphone(SAFARI.replace('Version/18.0', 'CriOS/128.0'))).toBe(false);
+	});
+
+	it('afviser browservinduet inde i Facebook', () => {
+		expect(erSafariPaaIphone(SAFARI + ' [FBAN/FBIOS;FBAV/470.0]')).toBe(false);
+	});
+
+	it('afviser et indbygget vindue helt uden Safari i navnet', () => {
+		expect(erSafariPaaIphone('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)')).toBe(false);
+	});
+
+	it('er falsk paa Android, hvor spoergsmaalet ikke giver mening', () => {
+		expect(erSafariPaaIphone('Mozilla/5.0 (Linux; Android 14; Pixel 8) Safari/537.36')).toBe(false);
 	});
 });
