@@ -71,6 +71,10 @@
 	// bruger 3, alle andre 1. Gaelder ogsaa Kickstart/Kropsro, saa feltet
 	// staar uden for bygget-forloebs-blokken. Se traeningStart.ts.
 	let formTraeningStart = $state(TRAENING_START_DAG_DEFAULT);
+	// Hvert hold har sin egen Facebook-gruppe. Er feltet tomt, spoerger appen
+	// slet ikke om gruppen, saa et hold kan aldrig sende kunderne det forkerte
+	// sted hen. Se forlobAdgang.ts.
+	let formFacebookUrl = $state('');
 	let formNulPulje = $state(14);
 	let gemmer = $state(false);
 	let gemFejl = $state<string | null>(null);
@@ -178,6 +182,7 @@
 			formFacebook = f.harFacebookGruppe ?? false;
 			formTraening = f.harTraening ?? false;
 			formTraeningStart = traeningStartDag(f);
+			formFacebookUrl = f.facebookUrl ?? '';
 			formNulPulje = typeof f.nulDagePulje === 'number' ? f.nulDagePulje : 14;
 
 			emails = await hentAllowedEmailsForForlob(forlobId);
@@ -228,12 +233,14 @@
 			// Traeningens startdag gemmes for ALLE forloeb, ogsaa Kickstart og
 			// Kropsro, der ikke er byggede forloeb.
 			const traeningStart = Math.max(0, Math.min(formAntalDage, formTraeningStart));
+			const facebookUrl = formFacebookUrl.trim();
 			await gemForlob(forlobId, {
 				navn: trimmedNavn,
 				startDato: Timestamp.fromDate(startDate),
 				antalDage: formAntalDage,
 				aktiv: formAktiv,
 				traeningStartDag: traeningStart,
+				facebookUrl,
 				...ekstraFelter
 			});
 			if (forlob) {
@@ -244,6 +251,7 @@
 					antalDage: formAntalDage,
 					aktiv: formAktiv,
 					traeningStartDag: traeningStart,
+					facebookUrl,
 					...ekstraFelter
 				};
 			}
@@ -400,6 +408,21 @@
 					</div>
 				{/if}
 			</div>
+
+			<label class="felt">
+				<span class="felt-label">Facebook-gruppe (link)</span>
+				<input
+					type="url"
+					bind:value={formFacebookUrl}
+					placeholder="https://www.facebook.com/groups/..."
+					disabled={gemmer}
+				/>
+				<span class="felt-hint">
+					{formFacebookUrl.trim()
+						? 'Kunden bliver spurgt én gang, om hun er med i gruppen, og kan trykke sig direkte derover.'
+						: 'Tomt felt betyder at vi slet ikke spørger om Facebook på dette hold.'}
+				</span>
+			</label>
 
 			<label class="felt">
 				<span class="felt-label">Træningen starter på dag</span>

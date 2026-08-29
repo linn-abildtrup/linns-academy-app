@@ -73,6 +73,13 @@ export interface Forlob {
 	// uændret uden data-migrering.
 	harBuddy?: boolean;
 	harFacebookGruppe?: boolean;
+	// Link til forloebets EGEN Facebook-gruppe. Hvert hold har sin egen, saa
+	// linket ligger her og ikke ét sted for hele appen. Linns valg 29. august.
+	//
+	// Linket er samtidig kontakten: er det tomt, spoerger vi slet ikke om
+	// gruppen. Saa kan et hold aldrig komme til at sende kunderne hen til den
+	// forkerte gruppe, og du taender det ved at saette et link ind.
+	facebookUrl?: string;
 	// Træning pr forløb (Fase 2B). Når false vises ingen mikrotræning for
 	// forløbet (træning leveres da bare som lektioner/videoer). Når undefined
 	// falder klienten tilbage på "har træning" (Kickstart/Kropsro uændret).
@@ -433,11 +440,7 @@ export function dagDato(startDato: Date, dagNummer: number): Date {
  * start + (N + 1) dage. Bevaret uændret fra den hidtidige login-sync så
  * ingen eksisterende kundes udløbsdato flytter sig.
  */
-export function forlobSlutMs(
-	startMs: number,
-	antalDage: number,
-	nulDageBrugt: number = 0
-): number {
+export function forlobSlutMs(startMs: number, antalDage: number, nulDageBrugt: number = 0): number {
 	if (startMs <= 0 || antalDage <= 0) return 0;
 	// Nul-dage er pauser kunden har holdt undervejs. De taeller ikke som
 	// forloebsdage, saa hendes slutdato rykker tilsvarende frem. Udelades

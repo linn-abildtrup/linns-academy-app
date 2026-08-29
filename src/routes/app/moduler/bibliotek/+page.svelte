@@ -206,6 +206,9 @@
 	// begrænses opskrift-listen til de tilladte kategorier (fx kun morgenmad).
 	// null = ingen begrænsning (normal adfærd). Sat i onMount.
 	let tilladteKategorier = $state<OpskriftKategori[] | null>(null);
+	// Forloebets egen Facebook-gruppe. Kunden der svarede "jeg goer det
+	// senere" paa forsiden fik at vide at linket staar her, saa det skal det.
+	let facebookUrl = $state<string | null>(null);
 	const filtreredeOpskrifter = $derived.by(() => {
 		let liste = opskrifter;
 		const tk = tilladteKategorier;
@@ -278,7 +281,9 @@
 
 	// Skjul Links-fanen hvis brugeren ikke har adgang til nogen guides — så
 	// vi ikke viser en tom fane uden indhold.
-	const visLinks = $derived(sorteredeGuideKats.some((k) => harGuidesIKategori(k.id)));
+	const visLinks = $derived(
+		!!facebookUrl || sorteredeGuideKats.some((k) => harGuidesIKategori(k.id))
+	);
 
 	$effect(() => {
 		if (!loading && aktivTab === 'guides' && !visLinks) {
@@ -481,6 +486,7 @@
 			// kategorier. Fejler dette, forbliver tilladteKategorier null (normal).
 			try {
 				const aktivtNu = await hentAktivtForlob(forlobIds, Date.now(), u.uid);
+				facebookUrl = aktivtNu?.facebookUrl?.trim() || null;
 				if (aktivtNu?.maaltidsFokus && aktivtNu.maaltidsFokus.length > 0) {
 					const dag = dageSidenStart(aktivtNu.startDato.toDate());
 					const tilladte = tilladteMaaltiderForDag(aktivtNu.maaltidsFokus, dag);
@@ -761,111 +767,131 @@
 			<Loading tekst="Henter links..." kompakt />
 		{:else if fejl}
 			<div class="status-besked fejl">{fejl}</div>
-		{:else if sorteredeGuideKats.length === 0}
-			<div class="status-besked">Der er ikke lagt links op for dit forløb endnu.</div>
 		{:else}
-			{@const synligeKategorier = sorteredeGuideKats.filter((k) => harGuidesIKategori(k.id))}
-			{#if synligeKategorier.length === 0}
-				<div class="status-besked">Der er ingen udgivne links endnu.</div>
+			{#if facebookUrl}
+				<a class="fb-raekke" href={facebookUrl} target="_blank" rel="noopener noreferrer">
+					<span class="fb-maerke" aria-hidden="true">f</span>
+					<span class="fb-tekst">
+						<span class="fb-titel">Vores Facebook-gruppe</span>
+						<span class="fb-sub">Her mødes vi undervejs. Du er meget velkommen.</span>
+					</span>
+					<Icon name="chevron-r" size={14} color="var(--text3)" />
+				</a>
+			{/if}
+			{#if sorteredeGuideKats.length === 0}
+				{#if !facebookUrl}
+					<div class="status-besked">Der er ikke lagt links op for dit forløb endnu.</div>
+				{/if}
 			{:else}
-				<div class="kat-liste">
-					{#each synligeKategorier as kat (kat.id)}
-						<section class="kat-section">
-							<h2 class="kat-title">{kat.navn}</h2>
-							<div class="guide-liste">
-								{#each guidesForKategori(kat.id) as it (it.id)}
-									<button class="guide-card" type="button" onclick={() => aabnGuide(it)}>
-										<div class="guide-thumb {typeKlassenavn(it.type)}">
-											<span class="guide-type-pill">{typeLabel(it.type)}</span>
-											<div class="guide-thumb-icon">
-												{#if it.type === 'video'}
-													<svg
-														width="28"
-														height="28"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="rgba(255,255,255,.95)"
-														stroke-width="1.6"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													>
-														<circle cx="12" cy="12" r="10" />
-														<path d="M10 8l6 4-6 4V8z" fill="rgba(255,255,255,.95)" stroke="none" />
-													</svg>
-												{:else if it.type === 'pdf'}
-													<svg
-														width="28"
-														height="28"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="rgba(255,255,255,.95)"
-														stroke-width="1.5"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													>
-														<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
-														<path d="M14 2v6h6" />
-														<path d="M9 13h6M9 17h4" />
-													</svg>
-												{:else if it.type === 'audio'}
-													<svg
-														width="28"
-														height="28"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="rgba(255,255,255,.95)"
-														stroke-width="1.8"
-														stroke-linecap="round"
-													>
-														<path d="M3 10v4M7 7v10M11 4v16M15 8v8M19 11v2" />
-													</svg>
-												{:else if it.type === 'html'}
-													<svg
-														width="28"
-														height="28"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="rgba(255,255,255,.95)"
-														stroke-width="1.6"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													>
-														<path d="M4 5h16v14H4z" />
-														<path d="M4 9h16" />
-														<path d="M8 13l-2 2 2 2M16 13l2 2-2 2" />
-													</svg>
-												{:else}
-													<svg
-														width="28"
-														height="28"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="rgba(255,255,255,.95)"
-														stroke-width="1.5"
-													>
-														<circle cx="12" cy="12" r="9" />
-														<path
-															d="M12 3c-2 2-3 5-3 9s1 7 3 9M12 3c2 2 3 5 3 9s-1 7-3 9M3 12h18"
-														/>
-													</svg>
+				{@const synligeKategorier = sorteredeGuideKats.filter((k) => harGuidesIKategori(k.id))}
+				{#if synligeKategorier.length === 0}
+					<div class="status-besked">Der er ingen udgivne links endnu.</div>
+				{:else}
+					<div class="kat-liste">
+						{#each synligeKategorier as kat (kat.id)}
+							<section class="kat-section">
+								<h2 class="kat-title">{kat.navn}</h2>
+								<div class="guide-liste">
+									{#each guidesForKategori(kat.id) as it (it.id)}
+										<button class="guide-card" type="button" onclick={() => aabnGuide(it)}>
+											<div class="guide-thumb {typeKlassenavn(it.type)}">
+												<span class="guide-type-pill">{typeLabel(it.type)}</span>
+												<div class="guide-thumb-icon">
+													{#if it.type === 'video'}
+														<svg
+															width="28"
+															height="28"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="rgba(255,255,255,.95)"
+															stroke-width="1.6"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+														>
+															<circle cx="12" cy="12" r="10" />
+															<path
+																d="M10 8l6 4-6 4V8z"
+																fill="rgba(255,255,255,.95)"
+																stroke="none"
+															/>
+														</svg>
+													{:else if it.type === 'pdf'}
+														<svg
+															width="28"
+															height="28"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="rgba(255,255,255,.95)"
+															stroke-width="1.5"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+														>
+															<path
+																d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"
+															/>
+															<path d="M14 2v6h6" />
+															<path d="M9 13h6M9 17h4" />
+														</svg>
+													{:else if it.type === 'audio'}
+														<svg
+															width="28"
+															height="28"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="rgba(255,255,255,.95)"
+															stroke-width="1.8"
+															stroke-linecap="round"
+														>
+															<path d="M3 10v4M7 7v10M11 4v16M15 8v8M19 11v2" />
+														</svg>
+													{:else if it.type === 'html'}
+														<svg
+															width="28"
+															height="28"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="rgba(255,255,255,.95)"
+															stroke-width="1.6"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+														>
+															<path d="M4 5h16v14H4z" />
+															<path d="M4 9h16" />
+															<path d="M8 13l-2 2 2 2M16 13l2 2-2 2" />
+														</svg>
+													{:else}
+														<svg
+															width="28"
+															height="28"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="rgba(255,255,255,.95)"
+															stroke-width="1.5"
+														>
+															<circle cx="12" cy="12" r="9" />
+															<path
+																d="M12 3c-2 2-3 5-3 9s1 7 3 9M12 3c2 2 3 5 3 9s-1 7-3 9M3 12h18"
+															/>
+														</svg>
+													{/if}
+												</div>
+											</div>
+											<div class="guide-body">
+												<div class="guide-titel">{it.titel}</div>
+												{#if it.beskrivelse}
+													<div class="guide-beskrivelse">{it.beskrivelse}</div>
+												{/if}
+												{#if it.dato}
+													<div class="guide-dato">{formatDanskDato(it.dato)}</div>
 												{/if}
 											</div>
-										</div>
-										<div class="guide-body">
-											<div class="guide-titel">{it.titel}</div>
-											{#if it.beskrivelse}
-												<div class="guide-beskrivelse">{it.beskrivelse}</div>
-											{/if}
-											{#if it.dato}
-												<div class="guide-dato">{formatDanskDato(it.dato)}</div>
-											{/if}
-										</div>
-									</button>
-								{/each}
-							</div>
-						</section>
-					{/each}
-				</div>
+										</button>
+									{/each}
+								</div>
+							</section>
+						{/each}
+					</div>
+				{/if}
 			{/if}
 		{/if}
 	{:else if aktivLektionsForlob}
@@ -1292,6 +1318,51 @@
 		color: #8a4a3e;
 		background: #fbeeea;
 		border-color: #f0d6cf;
+	}
+
+	/* Forloebets egen Facebook-gruppe, oeverst i Links-fanen. */
+	.fb-raekke {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: var(--r);
+		padding: 13px 15px;
+		margin-bottom: 16px;
+		text-decoration: none;
+	}
+
+	.fb-maerke {
+		width: 34px;
+		height: 34px;
+		border-radius: 9px;
+		background: #1877f2;
+		color: #fff;
+		font-weight: 700;
+		font-size: calc(18px * var(--fs-scale, 1));
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex: none;
+	}
+
+	.fb-tekst {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.fb-titel {
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 700;
+		color: var(--text);
+	}
+
+	.fb-sub {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text3);
+		line-height: 1.4;
 	}
 
 	.kat-liste {

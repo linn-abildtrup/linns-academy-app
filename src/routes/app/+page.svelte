@@ -438,6 +438,11 @@
 	// Facebook-modal: vises på dag 0 eller senere for Kropsro-kunder der
 	// endnu ikke har svaret om de er kommet ind i Facebook-gruppen.
 	let visFacebookModal = $state(false);
+	// To trin. Foerst spoerger vi. Trykker hun paa linket, aabner Facebook, og
+	// naar hun kommer tilbage staar trin to og beder hende bare bekraefte i
+	// stedet for at spoerge forfra. Telefonen kan naa at rydde appen vaek
+	// imens, og saa starter hun forfra paa trin ét. Begge veje virker.
+	let facebookTrin = $state<'spoerg' | 'tilbage'>('spoerg');
 	let gemmerFacebook = $state(false);
 
 	$effect(() => {
@@ -449,7 +454,10 @@
 		// 'premiumforløb' rammes IKKE — vi ser på forløbets flag/type, ikke
 		// activeProduct.
 		const harBuddyFeature = forlob.harBuddy ?? forlob.type === 'kropsro';
-		const harFacebookFeature = forlob.harFacebookGruppe ?? forlob.type === 'kropsro';
+		// Linket ER kontakten. Har forloebet ingen gruppe sat, spoerger vi ikke,
+		// for saa kan vi alligevel ikke hjaelpe hende videre. Hvert hold har sin
+		// egen gruppe, se forlob.facebookUrl.
+		const harFacebookFeature = !!forlob.facebookUrl?.trim();
 
 		// Buddy-modalen har precedens — vises før Facebook-spørgsmålet
 		if (harBuddyFeature && ud.kropsroBuddyOensker === undefined) {
@@ -478,6 +486,14 @@
 			gemmerBuddy = false;
 			visBuddyModal = false;
 		}
+	}
+
+	/** Aabner forloebets egen gruppe i et nyt vindue og skifter til trin to. */
+	function aabnFacebookGruppe() {
+		const url = forlob?.facebookUrl?.trim();
+		if (!url) return;
+		window.open(url, '_blank', 'noopener,noreferrer');
+		facebookTrin = 'tilbage';
 	}
 
 	async function gemFacebookSvar(erInde: boolean) {
@@ -2494,31 +2510,73 @@
 {/if}
 
 {#if visFacebookModal}
+	<!-- Gruppen er et tilbud, ikke et krav. Der er kunder der slet ikke er paa
+	     Facebook, og de skal kunne sige det og faa fred, uden at foele sig som
+	     en undtagelse. Derfor tre svar i samme stoerrelse. -->
 	<div class="variant-modal-bag" role="dialog" aria-modal="true" tabindex="-1">
 		<div class="variant-modal">
-			<div class="variant-modal-titel">Er du kommet ind i Facebook-gruppen?</div>
-			<p class="variant-modal-sub">
-				Facebook-gruppen er hvor deltagerne mødes, deler oplevelser og stiller spørgsmål til Linn.
-				Det er en vigtig del af forløbet.
-			</p>
-			<button
-				class="variant-knap"
-				type="button"
-				onclick={() => gemFacebookSvar(true)}
-				disabled={gemmerFacebook}
-			>
-				<div class="variant-knap-titel">Ja, jeg er inde</div>
-				<div class="variant-knap-sub">Tak — vi spørger ikke igen</div>
-			</button>
-			<button
-				class="variant-knap"
-				type="button"
-				onclick={() => gemFacebookSvar(false)}
-				disabled={gemmerFacebook}
-			>
-				<div class="variant-knap-titel">Ikke endnu</div>
-				<div class="variant-knap-sub">Tjek din velkomst-mail fra Linn for linket</div>
-			</button>
+			{#if facebookTrin === 'spoerg'}
+				<div class="variant-modal-titel">Er du med i vores Facebook-gruppe?</div>
+				<p class="variant-modal-sub">
+					Det er der, vi mødes undervejs, deler små sejre og stiller spørgsmål. Du er meget
+					velkommen, men du får det fulde forløb her i appen uanset hvad.
+				</p>
+				<button
+					class="variant-knap"
+					type="button"
+					onclick={() => gemFacebookSvar(true)}
+					disabled={gemmerFacebook}
+				>
+					<div class="variant-knap-titel">Ja, jeg har anmodet</div>
+					<div class="variant-knap-sub">Så spørger vi ikke igen</div>
+				</button>
+				<button
+					class="variant-knap"
+					type="button"
+					onclick={aabnFacebookGruppe}
+					disabled={gemmerFacebook}
+				>
+					<div class="fb-knap-indhold">
+						<span class="fb-maerke" aria-hidden="true">f</span>
+						<span>
+							<span class="variant-knap-titel">Tag mig til gruppen</span>
+							<span class="variant-knap-sub">Åbner Facebook, så du kan anmode</span>
+						</span>
+					</div>
+				</button>
+				<button
+					class="variant-knap"
+					type="button"
+					onclick={() => gemFacebookSvar(false)}
+					disabled={gemmerFacebook}
+				>
+					<div class="variant-knap-titel">Jeg er ikke på Facebook</div>
+					<div class="variant-knap-sub">Helt i orden — så spørger vi ikke igen</div>
+				</button>
+			{:else}
+				<div class="variant-modal-titel">Velkommen tilbage</div>
+				<p class="variant-modal-sub">
+					Du har lige været ovre i gruppen. Fik du anmodet om at komme med?
+				</p>
+				<button
+					class="variant-knap"
+					type="button"
+					onclick={() => gemFacebookSvar(true)}
+					disabled={gemmerFacebook}
+				>
+					<div class="variant-knap-titel">Ja, det er på plads</div>
+					<div class="variant-knap-sub">Så spørger vi ikke igen</div>
+				</button>
+				<button
+					class="variant-knap"
+					type="button"
+					onclick={() => gemFacebookSvar(false)}
+					disabled={gemmerFacebook}
+				>
+					<div class="variant-knap-titel">Jeg gør det senere</div>
+					<div class="variant-knap-sub">Du finder linket under Bibliotek</div>
+				</button>
+			{/if}
 		</div>
 	</div>
 {/if}
@@ -3955,6 +4013,27 @@
 		opacity: 0.6;
 		cursor: wait;
 	}
+	.fb-knap-indhold {
+		display: flex;
+		align-items: center;
+		gap: 11px;
+	}
+
+	/* Facebooks eget blaa, saa knappen er til at genkende med det samme. */
+	.fb-maerke {
+		width: 28px;
+		height: 28px;
+		border-radius: 8px;
+		background: #1877f2;
+		color: #fff;
+		font-weight: 700;
+		font-size: calc(16px * var(--fs-scale, 1));
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex: none;
+	}
+
 	.variant-knap-titel {
 		font-weight: 600;
 		font-size: calc(14px * var(--fs-scale, 1));
