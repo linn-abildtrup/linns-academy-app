@@ -29,14 +29,49 @@
 	import { maaAabnePaaKopi, tidsgraense, HURTIG_START_MS } from '$lib/content/hurtigStart';
 	import HjemmeskaermScreen from '$lib/components/HjemmeskaermScreen.svelte';
 	import { erMobilEnhed, erPaaHjemmeskaerm, skalViseHjemmeskaerm } from '$lib/content/hjemmeskaerm';
-	import { doc as doc_ref, updateDoc } from 'firebase/firestore';
+	import {
+		clearIndexedDbPersistence,
+		doc as doc_ref,
+		terminate,
+		updateDoc
+	} from 'firebase/firestore';
 	import { db } from '$lib/firebase';
+	import {
+		AERLIG_SKAERM_MS,
+		boerNulstille,
+		harKontaktetDatabasen,
+		harNulstilletFoer,
+		huskNulstilling,
+		VAGT_MS
+	} from '$lib/utils/opstartVagt';
 
 	let { children } = $props();
 
 	let user = $state<User | null>(null);
 	let userDoc = $state<UserDoc | null>(null);
 	let loading = $state(true);
+	// Vagten over opstarten. Saetter appen sig fast uden ét eneste kald til
+	// databasen, rydder vi lageret og starter forfra ÉN gang. Traekker det
+	// bare ud, siger vi det aerligt i stedet for at vise en bjaelke der
+	// tæller sekunder. Se utils/opstartVagt.ts.
+	let opstartHaenger = $state(false);
+
+	/**
+	 * Rydder den lokale kopi og starter appen forfra. Sidste udvej, og kun
+	 * naar vagten har konstateret at der ikke er sendt noget som helst.
+	 */
+	async function nulstilOgStartForfra() {
+		huskNulstilling();
+		try {
+			await terminate(db);
+			await clearIndexedDbPersistence(db);
+		} catch (e) {
+			// Lykkes rydningen ikke, genstarter vi alligevel. En frisk
+			// indlaesning er stadig bedre end at staa fast for evigt.
+			console.warn('[opstart] kunne ikke rydde det lokale lager:', e);
+		}
+		location.reload();
+	}
 
 	// ── Hjemmeskaerms-skaermen for nye kunder ────────────────────
 	// Vises én gang, foer alt andet paa forsiden, saa hun ikke faar
@@ -200,6 +235,24 @@
 	}
 
 	onMount(() => {
+		// Vagten. To ure: det foerste ser efter om appen er sat fast, det
+		// andet holder op med at lade som om der sker noget.
+		const vagtUr = setTimeout(() => {
+			if (
+				boerNulstille({
+					stadigIGang: loading,
+					harKontakt: harKontaktetDatabasen(),
+					alleredeNulstillet: harNulstilletFoer()
+				})
+			) {
+				console.warn('[opstart] ingen kontakt til databasen, rydder og starter forfra');
+				void nulstilOgStartForfra();
+			}
+		}, VAGT_MS);
+		const aerligUr = setTimeout(() => {
+			if (loading) opstartHaenger = true;
+		}, AERLIG_SKAERM_MS);
+
 		// Vilkaarene for hjemmeskaerms-skaermen kan foerst laeses i browseren.
 		hjemmeskaermVilkaar = {
 			paaHjemmeskaerm: erPaaHjemmeskaerm(window),
@@ -379,6 +432,8 @@
 			allowedEmailUnsubscribe?.();
 			document.removeEventListener('visibilitychange', onVisibility);
 			window.removeEventListener('beforeinstallprompt', paaInstaller);
+			clearTimeout(vagtUr);
+			clearTimeout(aerligUr);
 		};
 	});
 </script>
@@ -386,7 +441,21 @@
 {#if loading}
 	<div class="loading-screen">
 		<Logo size="lg" />
-		<Loading tekst="Et øjeblik..." />
+		{#if opstartHaenger}
+			<!-- Bjaelken taeller sekunder, ikke arbejde. Traekker det ud, er det
+			     mere aerligt at sige det end at love en fremdrift der ikke findes. -->
+			<div class="opstart-haenger">
+				<p class="opstart-titel">Det tager længere end normalt</p>
+				<p class="opstart-tekst">
+					Vi kan ikke få fat i dine data lige nu. Tjek din forbindelse, og prøv igen.
+				</p>
+				<button class="opstart-knap" type="button" onclick={() => location.reload()}>
+					Prøv igen
+				</button>
+			</div>
+		{:else}
+			<Loading tekst="Et øjeblik..." />
+		{/if}
 	</div>
 {:else if userDoc && !isAdmin(user) && harIngenAdgang(userDoc)}
 	<!-- Bruger uden adgang (efter 90-dages bonus + ingen aktivt abonnement,
@@ -417,6 +486,41 @@
 {/if}
 
 <style>
+	/* Den aerlige skaerm, naar opstarten traekker ud. */
+	.opstart-haenger {
+		text-align: center;
+		max-width: 300px;
+		padding: 0 24px;
+	}
+
+	.opstart-titel {
+		font-family: var(--ff-d);
+		font-size: calc(19px * var(--fs-scale, 1));
+		color: var(--text);
+		margin: 0 0 8px;
+	}
+
+	.opstart-tekst {
+		font-family: var(--ff-b);
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.55;
+		margin: 0 0 18px;
+	}
+
+	.opstart-knap {
+		width: 100%;
+		background: var(--terra);
+		color: #fff;
+		border: 0;
+		border-radius: 12px;
+		padding: 13px;
+		font-family: var(--ff-b);
+		font-weight: 700;
+		font-size: calc(15px * var(--fs-scale, 1));
+		cursor: pointer;
+	}
+
 	.loading-screen {
 		min-height: 100dvh;
 		display: flex;
