@@ -299,15 +299,29 @@
 		return String(d.getDate());
 	}
 
+	// Maalet for i dag. Paa et forloeb med uge-fokus er det ugens maal, ikke
+	// hele dagens, saa overskriften ikke siger 90 mens soejlerne maales mod 30.
+	const maalIDag = $derived(
+		maalForDagen(userDoc?.dagligeMaal, fokusPerioder, forlobsDagFor(formatDatoKey(new Date())))
+			.maal[aktivMetric]
+	);
+
 	// 7-dages data
 	const syvDageMeta = $derived(dageBack(7));
 	const syvDageVaerdier = $derived(summerPrDag(aktivMetric, syvDageMeta.dage));
-	const syvDageMax = $derived(Math.max(dagligeMaal[aktivMetric], ...syvDageVaerdier, 1));
+	// Toppen af aksen foelger de maal der faktisk staar i perioden. Ellers ville
+	// en uge med maal 30 blive tegnet paa en akse til 90, og soejlerne blev
+	// uleselige.
+	const syvDageMax = $derived(
+		Math.max(...maalPrDag(syvDageMeta.dage, aktivMetric), ...syvDageVaerdier, 1)
+	);
 
 	// 30-dages data (linjegraf)
 	const tredive = $derived(dageBack(30));
 	const trediveVaerdier = $derived(summerPrDag(aktivMetric, tredive.dage));
-	const trediveMax = $derived(Math.max(dagligeMaal[aktivMetric], ...trediveVaerdier, 1));
+	const trediveMax = $derived(
+		Math.max(...maalPrDag(tredive.dage, aktivMetric), ...trediveVaerdier, 1)
+	);
 
 	// === Træning: 0/1 pr dag ===
 	// Unionér datoer fra abo-mikrotræning OG den samlede traeningHistorik.
@@ -574,7 +588,7 @@
 		<section class="kort">
 			<div class="kort-titel">
 				{NAERING_LABELS[aktivMetric]} sidste 7 dage
-				<span class="kort-mål">mål: {dagligeMaal[aktivMetric]} {NAERING_ENHEDER[aktivMetric]}</span>
+				<span class="kort-mål">mål: {maalIDag} {NAERING_ENHEDER[aktivMetric]}</span>
 			</div>
 			{@render naeringsGraf(syvDageVaerdier, syvDageMeta.dage, syvDageMax, true)}
 			<div class="kort-statistik">
@@ -595,7 +609,7 @@
 		<section class="kort">
 			<div class="kort-titel">
 				{NAERING_LABELS[aktivMetric]} sidste 30 dage
-				<span class="kort-mål">mål: {dagligeMaal[aktivMetric]} {NAERING_ENHEDER[aktivMetric]}</span>
+				<span class="kort-mål">mål: {maalIDag} {NAERING_ENHEDER[aktivMetric]}</span>
 			</div>
 			{@render naeringsGraf(trediveVaerdier, tredive.dage, trediveMax, false)}
 			<div class="linje-meta">
@@ -620,7 +634,7 @@
 		<section class="kort">
 			<div class="kort-titel">
 				{NAERING_LABELS[aktivMetric]} mod målet
-				<span class="kort-mål">mål: {dagligeMaal[aktivMetric]} {NAERING_ENHEDER[aktivMetric]}</span>
+				<span class="kort-mål">mål: {maalIDag} {NAERING_ENHEDER[aktivMetric]}</span>
 			</div>
 			<div class="mal-grid">
 				<div class="mal-kort">
