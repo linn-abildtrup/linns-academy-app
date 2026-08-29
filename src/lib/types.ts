@@ -277,6 +277,13 @@ export interface UserDoc {
 	afsluttedeForlobIds?: string[];
 
 	/**
+	 * Hvornår kunden så "Læg appen på din hjemmeskærm", i ms. Sat både når
+	 * hun trykker "Det er gjort" og "Spring over" — det er ét spørgsmål
+	 * hun kun skal se én gang. Se content/hjemmeskaerm.ts.
+	 */
+	hjemmeskaermVistAt?: number;
+
+	/**
 	 * Hvilket træningsprogram brugeren har valgt som sit aktive program.
 	 * Vises på forsiden og bestemmer hvilket program der startes når hun
 	 * klikker på træning-modulet.

@@ -41,6 +41,23 @@ export interface AppHjaelpSektion {
 
 export const APP_HJAELP_SEKTIONER: AppHjaelpSektion[] = [
 	{
+		titel: 'Læg appen på din hjemmeskærm',
+		visFor: ALLE_PRODUKTER,
+		indhold: `Appen kan ligge som et ikon på telefonen, så den åbner med ét tryk i stedet for at skulle findes frem i browseren.
+
+Har du en iPhone:
+1. Tryk på Del-knappen nederst i Safari
+2. Rul ned og vælg 'Føj til hjemmeskærm'
+3. Tryk Tilføj. Nu ligger den som en app
+
+Har du en Android-telefon:
+1. Tryk på menuen med de tre prikker
+2. Vælg 'Installer app' eller 'Føj til startskærm'
+3. Bekræft. Nu ligger den som en app
+
+Nye kunder bliver spurgt om det, første gang de logger ind. Sprang du over dengang, kan du gøre det når som helst herfra.`
+	},
+	{
 		titel: 'Sådan navigerer du i appen',
 		visFor: ALLE_PRODUKTER,
 		indhold: `Appen har en TabBar nederst med fire-fem faner:

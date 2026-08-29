@@ -27,12 +27,63 @@
 	import { STANDARD_MATRIX, type FeatureMatrix } from '$lib/content/features';
 	import { hentUserDocFraCache } from '$lib/userDocCache';
 	import { maaAabnePaaKopi, tidsgraense, HURTIG_START_MS } from '$lib/content/hurtigStart';
+	import HjemmeskaermScreen from '$lib/components/HjemmeskaermScreen.svelte';
+	import { erMobilEnhed, erPaaHjemmeskaerm, skalViseHjemmeskaerm } from '$lib/content/hjemmeskaerm';
+	import { doc as doc_ref, updateDoc } from 'firebase/firestore';
+	import { db } from '$lib/firebase';
 
 	let { children } = $props();
 
 	let user = $state<User | null>(null);
 	let userDoc = $state<UserDoc | null>(null);
 	let loading = $state(true);
+
+	// ── Hjemmeskaerms-skaermen for nye kunder ────────────────────
+	// Vises én gang, foer alt andet paa forsiden, saa hun ikke faar
+	// kettlebell-spoergsmaalet oveni. Reglerne staar i
+	// content/hjemmeskaerm.ts. Se ogsaa HjemmeskaermScreen.svelte.
+	interface InstallerBegivenhed extends Event {
+		prompt: () => Promise<void>;
+		userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+	}
+
+	// Chromes tilbud om at installere med ét tryk. Browseren sender den
+	// ÉN gang og tidligt, saa vi tager imod her i layoutet og giver den
+	// videre. Fanger vi den ikke, er den tabt for den her indlaesning.
+	let installer = $state<InstallerBegivenhed | null>(null);
+	// Sat lokalt naar hun har trykket, saa skaermen forsvinder med det
+	// samme i stedet for at vente paa at userDoc kommer retur.
+	let hjemmeskaermKlaret = $state(false);
+	let hjemmeskaermVilkaar = $state({ paaHjemmeskaerm: false, erMobil: false });
+
+	const visHjemmeskaerm = $derived(
+		!hjemmeskaermKlaret &&
+			!!userDoc &&
+			skalViseHjemmeskaerm({
+				oprettetAt: userDoc.createdAt,
+				vistAt: userDoc.hjemmeskaermVistAt,
+				erAdmin: isAdmin(user),
+				paaHjemmeskaerm: hjemmeskaermVilkaar.paaHjemmeskaerm,
+				erMobil: hjemmeskaermVilkaar.erMobil
+			})
+	);
+
+	/**
+	 * Hun har svaret, uanset om hun gjorde det eller sprang over. Skaermen
+	 * lukkes med det samme, og feltet gemmes bagefter. Fejler skrivningen,
+	 * staar hun ikke fast — hun ser den saa igen naeste gang, og det er
+	 * det mindst irriterende af de to onder.
+	 */
+	async function hjemmeskaermFaerdig() {
+		hjemmeskaermKlaret = true;
+		const u = user;
+		if (!u) return;
+		try {
+			await updateDoc(doc_ref(db, 'users', u.uid), { hjemmeskaermVistAt: Date.now() });
+		} catch (e) {
+			console.warn('Kunne ikke gemme hjemmeskaerm-svaret:', e);
+		}
+	}
 
 	// Feature-adgangs-matrixen hentes én gang og deles via context, saa alle
 	// sider afgoer feature-adgang ud fra SAMME kilde (via harFeatureAdgang).
@@ -149,6 +200,20 @@
 	}
 
 	onMount(() => {
+		// Vilkaarene for hjemmeskaerms-skaermen kan foerst laeses i browseren.
+		hjemmeskaermVilkaar = {
+			paaHjemmeskaerm: erPaaHjemmeskaerm(window),
+			erMobil: erMobilEnhed(window)
+		};
+		// Chromes tilbud om ét-tryks-installation. Vi holder browserens egen
+		// banner tilbage med preventDefault, saa tilbuddet i stedet ligger
+		// paa vores knap.
+		const paaInstaller = (e: Event) => {
+			e.preventDefault();
+			installer = e as InstallerBegivenhed;
+		};
+		window.addEventListener('beforeinstallprompt', paaInstaller);
+
 		let userDocUnsubscribe: (() => void) | null = null;
 		let allowedEmailUnsubscribe: (() => void) | null = null;
 
@@ -313,6 +378,7 @@
 			userDocUnsubscribe?.();
 			allowedEmailUnsubscribe?.();
 			document.removeEventListener('visibilitychange', onVisibility);
+			window.removeEventListener('beforeinstallprompt', paaInstaller);
 		};
 	});
 </script>
@@ -327,6 +393,10 @@
 	     eller email der aldrig blev whitelisted). Admin omgås tjekket så Linn
 	     altid kan komme ind. -->
 	<IngenAdgangScreen {userDoc} />
+{:else if visHjemmeskaerm}
+	<!-- Ny kunde, foerste gang. Skaermen staar alene, saa forsiden ikke
+	     naar at aabne kettlebell-spoergsmaalet bagved. -->
+	<HjemmeskaermScreen {installer} faerdig={hjemmeskaermFaerdig} />
 {:else}
 	<div class="app-shell">
 		{#if userDoc?.adminKlientMode || userDoc?.adminKlientForlobId}
