@@ -325,9 +325,13 @@ På forsidens dato-strip vises pause-dage som stiplede 'Pause'-kasser, og 'Dag X
 	{
 		titel: 'Beskeder — spørgsmål til Linn',
 		visFor: FORLOBSKUNDER,
-		indhold: `Beskeder finder du som en fane i TabBar nederst. Her kan du stille spørgsmål direkte til Linn — hun svarer typisk inden for et par dage.
+		indhold: `Beskeder finder du som en fane i TabBar nederst. Her kan du stille dit spørgsmål til Linn.
 
-Brug 'Stil et nyt spørgsmål'-knappen øverst. Du kan se alle dine tidligere spørgsmål og Linns svar i listen. Når Linn har besvaret et nyt spørgsmål, vises det også som notifikation på forsiden.`
+Linn samler løbende de spørgsmål der kommer ind, og svarer på dem samlet. Svarene finder du på forsiden af appen. Alle spørgsmål deles anonymt, så I alle kan få glæde af svarene — der sidder helt sikkert flere med de samme spørgsmål.
+
+Du skal derfor ikke forvente et personligt svar her, men dit spørgsmål bliver taget med.
+
+Brug 'Stil et nyt spørgsmål'-knappen øverst. Du kan se alle dine tidligere spørgsmål i listen.`
 	},
 	{
 		titel: 'Bibliotek',

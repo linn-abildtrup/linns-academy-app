@@ -407,11 +407,20 @@
 
 {#snippet skrivTilLinnFane()}
 	<section class="card">
+		<p class="intro intro-overskrift">Skriv dit spørgsmål til mig 🌸</p>
 		<p class="intro">
-			Skriv dit spørgsmål til Linn. Hun læser alle spørgsmål og bruger dem til at skabe videoer,
-			live og kommende indhold. Du får ikke nødvendigvis et personligt svar, men du er med til at
-			forme hvad der bliver lavet.
+			Jeg samler løbende de spørgsmål, der kommer ind, og svarer på dem samlet. Du finder svarene på
+			forsiden af appen.
 		</p>
+		<p class="intro">
+			Alle spørgsmål deles anonymt, og på den måde kan vi alle få glæde af svarene – for der sidder
+			helt sikkert flere med nogle af de samme spørgsmål.
+		</p>
+		<p class="intro">
+			Du skal derfor ikke forvente et personligt svar her, men dit spørgsmål skal nok blive taget
+			med 🌸
+		</p>
+		<p class="intro intro-hilsen">Kh Linn</p>
 
 		<label class="felt">
 			<span class="felt-label">Dit spørgsmål</span>
@@ -678,6 +687,23 @@
 		color: var(--text2);
 		margin: 0;
 		line-height: 1.55;
+	}
+
+	/* Teksten er flere afsnit nu, saa de skal have luft imellem sig. */
+	.intro + .intro {
+		margin-top: 10px;
+	}
+
+	.intro-overskrift {
+		font-family: var(--ff-d);
+		font-size: calc(18px * var(--fs-scale, 1));
+		color: var(--text);
+		line-height: 1.3;
+	}
+
+	.intro-hilsen {
+		color: var(--text);
+		font-weight: 500;
 	}
 
 	.felt {
