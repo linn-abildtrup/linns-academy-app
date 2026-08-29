@@ -8,6 +8,7 @@
 	import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type UserDoc } from '$lib/types';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import { produktTypeForForlob } from '$lib/content/forlobAdgang';
+	import { traeningErStartet, traeningsdagFor } from '$lib/content/traeningStart';
 	import type { ForlobDag } from '$lib/content/forlob';
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import { aboVisning, formaterDatoLang, APP_KOB_URL } from '$lib/content/abonnement';
@@ -55,10 +56,7 @@
 	import { hentHistorikForDato } from '$lib/firestore/traeningHistorik';
 	import { senesteEntry, type TraeningHistorikEntry } from '$lib/content/traeningHistorik';
 	import { hentAlleMrsScores } from '$lib/firestore/mrs';
-	import {
-		skalUdfyldeNu as skalUdfyldeMrsNu,
-		type KropsroPlan
-	} from '$lib/content/mrs';
+	import { skalUdfyldeNu as skalUdfyldeMrsNu, type KropsroPlan } from '$lib/content/mrs';
 	import { hentMineSpoergsmaal, type KlientSpoergsmaal } from '$lib/firestore/spoergsmaal';
 	import {
 		hentVaneprogramForForlob,
@@ -1141,9 +1139,7 @@
 						const valgt = vaelgProgramForVariant(programmer, variant);
 						const nuv = ud2?.aktivtTraeningsprogram;
 						const peberRigtigt =
-							nuv?.kilde === 'tildelt' &&
-							nuv.forlobId === aktivt.id &&
-							nuv.programId === valgt?.id;
+							nuv?.kilde === 'tildelt' && nuv.forlobId === aktivt.id && nuv.programId === valgt?.id;
 						if (valgt && !peberRigtigt && uid) {
 							await gemAktivtTraeningsprogram(uid, {
 								kilde: 'tildelt',
@@ -1639,9 +1635,11 @@
 			{#if dagensDag}
 				{@const harProgramValg = !!userProduct?.programValg?.mikrotraening}
 				{@const aktivtProgram = userDoc?.aktivtTraeningsprogram}
-				{@const mikroHrefForDag = harProgramValg
-					? `/app/moduler/traening/mikrotraening/${dagensDag.dagNummer}`
-					: '/app/moduler/traening/mikrotraening'}
+				{@const traeningsdag = traeningsdagFor(dagensDag.dagNummer, forlob)}
+				{@const mikroHrefForDag =
+					harProgramValg && traeningsdag !== null
+						? `/app/moduler/traening/mikrotraening/${traeningsdag}`
+						: '/app/moduler/traening/mikrotraening'}
 				{@const traeningHref = !valgtErIDag
 					? historikForValgtDato?.kilde === 'eget' && historikForValgtDato.programId
 						? `/app/moduler/traening/byg-eget/${historikForValgtDato.programId}/lav`
@@ -1732,7 +1730,9 @@
 								</a>
 							{/each}
 						{/if}
-						{#if dagensDag.dagNummer >= 0 && harForlobTraening}
+						<!-- Traeningen starter foerst paa forloebets egen startdag (Kickstart:
+						     dag 3). Foer den dag findes flisen slet ikke. Se traeningStart.ts. -->
+						{#if harForlobTraening && traeningErStartet(dagensDag.dagNummer, forlob)}
 							{@const forlobGennemfoertCheck = forlobTraeningGennemfoertVist}
 							<a class="action-card" href={traeningHref}>
 								{#if forlobTraeningsVideo}

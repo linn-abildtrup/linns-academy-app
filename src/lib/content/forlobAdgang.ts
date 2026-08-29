@@ -79,6 +79,13 @@ export interface Forlob {
 	// Et bygget forløb med harTraening=true skal have to programmer (med/uden
 	// kettlebell) bygget under admin/forlob/[id]/traening.
 	harTraening?: boolean;
+	// Hvilken forloebsdag den foerste mikrotraening ligger paa. Kickstart har
+	// 3: de to foerste dage handler om mad og smaa skridt, og de smaa skridt
+	// naevner ogsaa foerst mikrotraening fra dag 3. Undefined betyder dag 1,
+	// altsaa uaendret for Kropsro og de byggede forloeb. Regnestykket ligger
+	// ét sted, i traeningStart.ts, saa forsiden, oversigten og selve
+	// traenings-siden ikke kan komme til at sige hver sit.
+	traeningStartDag?: number;
 	// Pause-dage-pulje (max antal nul-dage) for et bygget forløb. Sat af admin
 	// ved oprettelse. Når undefined falder puljen tilbage på den prefix-baserede
 	// default (Kropsro 21 / Kickstart 14), så de er uændrede.

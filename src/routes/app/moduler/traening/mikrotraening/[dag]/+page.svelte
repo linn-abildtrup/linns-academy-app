@@ -17,7 +17,9 @@
 		hentUserProduct,
 		type ProgramMedDage
 	} from '$lib/firestore/mikrotraening';
-	import { hentAktivProduktType } from '$lib/firestore/forlob';
+	import { hentAktivProduktType, hentForlob } from '$lib/firestore/forlob';
+	import { getCurrentDay, toIsoLokal } from '$lib/content/forlob';
+	import { endnuIkkeStartetTekst, maaAabneTraening } from '$lib/content/traeningStart';
 	import { getVideoUrl } from '$lib/utils/storage';
 	import { onDestroy } from 'svelte';
 	import type { UserDoc } from '$lib/types';
@@ -118,7 +120,7 @@
 
 			let programId = up?.programValg?.mikrotraening;
 			const forlobId =
-				(up as UserProduct & { forlobId?: string } | null)?.forlobId ?? adminForlobId;
+				(up as (UserProduct & { forlobId?: string }) | null)?.forlobId ?? adminForlobId;
 			if (!forlobId) {
 				fejl = 'Du er ikke tilknyttet et forløb endnu.';
 				loading = false;
@@ -144,6 +146,23 @@
 				return;
 			}
 			programData = data;
+
+			// Spaerringen. Kender hun adressen, eller ligger den i historikken
+			// fra et tidligere hold, maa hun stadig ikke aabne en traening
+			// forloebet ikke har naaet. Bagud er altid tilladt. Samme regel som
+			// forsiden og oversigten bruger, se traeningStart.ts.
+			const forlobDoc = await hentForlob(forlobId);
+			if (forlobDoc) {
+				const forlobsDag = getCurrentDay({
+					startDato: toIsoLokal(forlobDoc.startDato.toDate()),
+					antalDage: forlobDoc.antalDage
+				});
+				if (!maaAabneTraening(dagNummer, forlobsDag, forlobDoc)) {
+					fejl = endnuIkkeStartetTekst(forlobDoc, forlobsDag);
+					loading = false;
+					return;
+				}
+			}
 
 			const exerciseIds = (data.dage.find((d) => d.dagNummer === dagNummer)?.exercises ?? []).map(
 				(e) => e.exerciseId
@@ -248,14 +267,7 @@
 			{#if previewLoading}
 				<Loading tekst="Henter video..." kompakt />
 			{:else if previewVideoUrl}
-				<video
-					src={previewVideoUrl}
-					autoplay
-					muted
-					loop
-					playsinline
-					preload="auto"
-				></video>
+				<video src={previewVideoUrl} autoplay muted loop playsinline preload="auto"></video>
 			{:else}
 				<div class="preview-fallback">
 					<div class="preview-fallback-navn">{aabenPreview.name}</div>

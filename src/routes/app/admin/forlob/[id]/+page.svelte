@@ -5,6 +5,7 @@
 	import { Timestamp } from 'firebase/firestore';
 	import type { AllowedEmail, CsvParseResult, Forlob, ForlobType } from '$lib/content/forlobAdgang';
 	import { parseSimpleroCsv } from '$lib/content/forlobAdgang';
+	import { TRAENING_START_DAG_DEFAULT, traeningStartDag } from '$lib/content/traeningStart';
 	import {
 		gemAllowedEmailsBatch,
 		gemForlob,
@@ -66,6 +67,10 @@
 	let formBuddy = $state(false);
 	let formFacebook = $state(false);
 	let formTraening = $state(false);
+	// Hvilken forloebsdag den foerste mikrotraening ligger paa. Kickstart
+	// bruger 3, alle andre 1. Gaelder ogsaa Kickstart/Kropsro, saa feltet
+	// staar uden for bygget-forloebs-blokken. Se traeningStart.ts.
+	let formTraeningStart = $state(TRAENING_START_DAG_DEFAULT);
 	let formNulPulje = $state(14);
 	let gemmer = $state(false);
 	let gemFejl = $state<string | null>(null);
@@ -172,6 +177,7 @@
 			formBuddy = f.harBuddy ?? false;
 			formFacebook = f.harFacebookGruppe ?? false;
 			formTraening = f.harTraening ?? false;
+			formTraeningStart = traeningStartDag(f);
 			formNulPulje = typeof f.nulDagePulje === 'number' ? f.nulDagePulje : 14;
 
 			emails = await hentAllowedEmailsForForlob(forlobId);
@@ -219,11 +225,15 @@
 						nulDagePulje: Math.max(0, Math.min(365, formNulPulje))
 					}
 				: { type: formType };
+			// Traeningens startdag gemmes for ALLE forloeb, ogsaa Kickstart og
+			// Kropsro, der ikke er byggede forloeb.
+			const traeningStart = Math.max(0, Math.min(formAntalDage, formTraeningStart));
 			await gemForlob(forlobId, {
 				navn: trimmedNavn,
 				startDato: Timestamp.fromDate(startDate),
 				antalDage: formAntalDage,
 				aktiv: formAktiv,
+				traeningStartDag: traeningStart,
 				...ekstraFelter
 			});
 			if (forlob) {
@@ -233,6 +243,7 @@
 					startDato: Timestamp.fromDate(startDate),
 					antalDage: formAntalDage,
 					aktiv: formAktiv,
+					traeningStartDag: traeningStart,
 					...ekstraFelter
 				};
 			}
@@ -389,6 +400,22 @@
 					</div>
 				{/if}
 			</div>
+
+			<label class="felt">
+				<span class="felt-label">Træningen starter på dag</span>
+				<input
+					type="number"
+					min="0"
+					max={formAntalDage}
+					bind:value={formTraeningStart}
+					disabled={gemmer}
+				/>
+				<span class="felt-hint">
+					{formTraeningStart <= 1
+						? 'Træningen er med fra dag 1. Sådan kører Kropsro.'
+						: `Ingen træning før dag ${formTraeningStart}. Den dag giver træning 1, dagen efter træning 2, og så fremdeles. Kickstart bruger dag 3.`}
+				</span>
+			</label>
 
 			{#if erBygget}
 				<div class="felt">

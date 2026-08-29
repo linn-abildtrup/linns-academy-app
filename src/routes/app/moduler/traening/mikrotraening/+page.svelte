@@ -11,6 +11,7 @@
 		type AboMikrotraeningFremgang
 	} from '$lib/content/aboMikrotraening';
 	import { getCurrentDay, toIsoLokal } from '$lib/content/forlob';
+	import { hoejesteAabneTraeningsdag } from '$lib/content/traeningStart';
 	import {
 		hentForlobsProgram,
 		hentForlobsProgrammer,
@@ -208,13 +209,17 @@
 		aboTraeninger = traeninger;
 	}
 
+	// Hoejeste traening hun har faaet adgang til. Paa Kickstart begynder
+	// traeningen foerst dag 3, saa dag 3 aabner traening 1 og ikke tre paa
+	// én gang. Null betyder at ingen er aabnet endnu. Se traeningStart.ts.
+	const hoejesteAabne = $derived(hoejesteAabneTraeningsdag(aktivKalenderDag, forlob));
+
 	function dagStatus(dagNummer: number): 'klaret' | 'naeste' | 'kommer' | 'fremtid' {
 		if (fremgang.gennemforte.includes(dagNummer)) return 'klaret';
-		if (aktivKalenderDag !== null && dagNummer > aktivKalenderDag) return 'fremtid';
+		if (forlob && (hoejesteAabne === null || dagNummer > hoejesteAabne)) return 'fremtid';
 		if (dagNummer === naeste) return 'naeste';
 		return 'kommer';
 	}
-
 </script>
 
 <div class="page">
@@ -268,7 +273,11 @@
 				{#each programData.dage as dag (dag.dagNummer)}
 					{@const status = dagStatus(dag.dagNummer)}
 					{#if status === 'fremtid'}
-						<span class="dag dag-{status}" aria-disabled="true" title="Låst — dagen er endnu ikke nået">
+						<span
+							class="dag dag-{status}"
+							aria-disabled="true"
+							title="Låst — dagen er endnu ikke nået"
+						>
 							<span class="dag-num">{dag.dagNummer}</span>
 						</span>
 					{:else}
@@ -339,9 +348,7 @@
 			</div>
 		</section>
 	{:else}
-		<div class="status-besked">
-			Mikrotræning kræver et basis-abo, premium-abo eller forløb.
-		</div>
+		<div class="status-besked">Mikrotræning kræver et basis-abo, premium-abo eller forløb.</div>
 	{/if}
 </div>
 
@@ -631,5 +638,4 @@
 		color: var(--text3);
 		margin-top: 2px;
 	}
-
 </style>
