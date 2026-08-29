@@ -31,6 +31,20 @@
 	// kvittering paa skaerm 2, saa hun kan se at koebet er naaet frem.
 	let koebNavn = $state<string | undefined>(undefined);
 
+	// Lav skaerm, fx en iPhone SE eller en telefon med browserens bjaelker
+	// fremme. Der skruer vi ned for logo og undertitel, saa hele skaermen kan
+	// staa uden at kunden skal scrolle for at finde knappen. Maalt 29. august
+	// 2026: 545 px indhold i et 445 px vindue, altsaa 100 px for meget.
+	let lavSkaerm = $state(false);
+	$effect(() => {
+		if (typeof window === 'undefined' || !window.matchMedia) return;
+		const q = window.matchMedia('(max-height: 700px)');
+		lavSkaerm = q.matches;
+		const paaSkift = (e: MediaQueryListEvent) => (lavSkaerm = e.matches);
+		q.addEventListener('change', paaSkift);
+		return () => q.removeEventListener('change', paaSkift);
+	});
+
 	// Maps Firebase Auth fejl-koder til paedagogiske danske beskeder.
 	// Default er 'Noget gik galt' hvis koden ikke kendes.
 	const FIREBASE_FEJL_TEKSTER: Record<string, string> = {
@@ -193,8 +207,10 @@
 		<!-- Skærm 1: den samme for alle. Ét felt, ingen valg at ramme forkert. -->
 		<div class="form-screen">
 			<div class="velkomst-top">
-				<Logo size="lg" />
-				<p class="tagline">Et roligt rum til mikrotræning, refleksion og kvinders sundhed.</p>
+				<Logo size={lavSkaerm ? 'md' : 'lg'} />
+				{#if !lavSkaerm}
+					<p class="tagline">Et roligt rum til mikrotræning, refleksion og kvinders sundhed.</p>
+				{/if}
 			</div>
 
 			<div class="form-content">
@@ -444,7 +460,11 @@
 
 <style>
 	.surface {
-		min-height: 100vh;
+		/* dvh, ikke vh. Paa iPhone regner vh med at browserens egne bjaelker er
+		   vaek, saa siden bliver hoejere end skaermen og teksten falder under
+		   kanten. Kunden skulle scrolle for at se resten. Maalt 29. august
+		   2026: 554 px indhold i et 490 px vindue. */
+		min-height: 100dvh;
 		background: var(--bg);
 		display: flex;
 		flex-direction: column;
@@ -473,11 +493,10 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		padding: 16px 28px 28px;
+		padding: 16px 24px 20px;
 		max-width: 480px;
 		margin: 0 auto;
 		width: 100%;
-		min-height: 100vh;
 		box-sizing: border-box;
 	}
 
@@ -754,5 +773,51 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
+	}
+	/* Paa lave skaerme (iPhone SE og lignende) skrues luften ned, saa hele
+	   skaermen kan staa uden at kunden skal scrolle for at finde knappen. */
+	@media (max-height: 700px) {
+		.velkomst-top {
+			padding-top: 4px;
+			gap: 6px;
+		}
+
+		.form-header {
+			margin-bottom: 16px;
+		}
+
+		.form-content {
+			padding-bottom: 8px;
+		}
+
+		.form {
+			gap: 12px;
+		}
+
+		.form-title {
+			font-size: calc(24px * var(--fs-scale, 1));
+		}
+
+		.back-btn {
+			width: 34px;
+			height: 34px;
+		}
+
+		.kvittering {
+			padding: 10px 12px;
+		}
+
+		.kvittering-ikon {
+			width: 30px;
+			height: 30px;
+		}
+
+		.felt-hjaelp {
+			font-size: calc(11.5px * var(--fs-scale, 1));
+		}
+
+		.besked-kort {
+			padding: 11px 13px;
+		}
 	}
 </style>
