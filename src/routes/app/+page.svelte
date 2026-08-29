@@ -2647,6 +2647,12 @@
 	/* ── Fælles forside-body ───────────────────────────────────── */
 
 	.forside-a1,
+	.forside-b1,
+	.forside-c1 {
+		min-height: 100%;
+		display: flex;
+		flex-direction: column;
+	}
 
 	/* Info-knappen paa abonnentens forside, hvor der ikke er en badge at
 	   laegge den ved siden af. */
@@ -2654,12 +2660,6 @@
 		display: flex;
 		justify-content: flex-end;
 		padding: 10px 20px 0;
-	}
-	.forside-b1,
-	.forside-c1 {
-		min-height: 100%;
-		display: flex;
-		flex-direction: column;
 	}
 
 	.forside-body {
