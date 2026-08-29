@@ -29,19 +29,13 @@
 	import { maaAabnePaaKopi, tidsgraense, HURTIG_START_MS } from '$lib/content/hurtigStart';
 	import HjemmeskaermScreen from '$lib/components/HjemmeskaermScreen.svelte';
 	import { erMobilEnhed, erPaaHjemmeskaerm, skalViseHjemmeskaerm } from '$lib/content/hjemmeskaerm';
-	import {
-		clearIndexedDbPersistence,
-		doc as doc_ref,
-		terminate,
-		updateDoc
-	} from 'firebase/firestore';
+	import { doc as doc_ref, updateDoc } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
 	import {
 		AERLIG_SKAERM_MS,
 		boerNulstille,
 		harKontaktetDatabasen,
 		harNulstilletFoer,
-		huskNulstilling,
 		VAGT_MS
 	} from '$lib/utils/opstartVagt';
 
@@ -55,23 +49,6 @@
 	// bare ud, siger vi det aerligt i stedet for at vise en bjaelke der
 	// tæller sekunder. Se utils/opstartVagt.ts.
 	let opstartHaenger = $state(false);
-
-	/**
-	 * Rydder den lokale kopi og starter appen forfra. Sidste udvej, og kun
-	 * naar vagten har konstateret at der ikke er sendt noget som helst.
-	 */
-	async function nulstilOgStartForfra() {
-		huskNulstilling();
-		try {
-			await terminate(db);
-			await clearIndexedDbPersistence(db);
-		} catch (e) {
-			// Lykkes rydningen ikke, genstarter vi alligevel. En frisk
-			// indlaesning er stadig bedre end at staa fast for evigt.
-			console.warn('[opstart] kunne ikke rydde det lokale lager:', e);
-		}
-		location.reload();
-	}
 
 	// ── Hjemmeskaerms-skaermen for nye kunder ────────────────────
 	// Vises én gang, foer alt andet paa forsiden, saa hun ikke faar
@@ -237,6 +214,19 @@
 	onMount(() => {
 		// Vagten. To ure: det foerste ser efter om appen er sat fast, det
 		// andet holder op med at lade som om der sker noget.
+		// SLAAET FRA 29. august 2026, samme aften den blev lagt ud.
+		//
+		// Linn saa "Det tager laengere end normalt" tre gange i traek. Vagten
+		// afgoer om appen er sat fast ved at se efter kald til
+		// firestore.googleapis.com i browserens maaleliste. Paa min maskine
+		// stod de der. Goer de det ikke paa hendes telefon, fx fordi Firestore
+		// bruger en forbindelsestype der ikke taeller med i listen, konkluderer
+		// vagten fejlagtigt at appen er laast, og saa RIVER den taeppet vaek
+		// under en app der arbejdede fint.
+		//
+		// Vi lader den ligge slukket til vi ved hvad der faktisk sker. Den
+		// aerlige skaerm bliver staaende, for den goer ingen skade og
+		// fortaeller os noget.
 		const vagtUr = setTimeout(() => {
 			if (
 				boerNulstille({
@@ -245,8 +235,7 @@
 					alleredeNulstillet: harNulstilletFoer()
 				})
 			) {
-				console.warn('[opstart] ingen kontakt til databasen, rydder og starter forfra');
-				void nulstilOgStartForfra();
+				console.warn('[opstart] ingen kontakt til databasen (vagten er slaaet fra)');
 			}
 		}, VAGT_MS);
 		const aerligUr = setTimeout(() => {
