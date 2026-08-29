@@ -17,7 +17,6 @@
 		maaltidstypeOrder,
 		portionVedEnhedsskift,
 		PROTEIN_MAALTIDS_MAAL,
-		FIBER_DAGS_MAAL,
 		procentMod,
 		sorterFodevarer,
 		type Fodevare,
@@ -68,7 +67,8 @@
 	} from '$lib/firestore/kost';
 	import { hentAktivtForlob } from '$lib/firestore/forlob';
 	import { dageSidenStart } from '$lib/content/forlobAdgang';
-	import { tilladteMaaltiderForDag } from '$lib/content/maaltidsFokus';
+	import { tilladteMaaltiderForDag, type MaaltidsFokusPeriode } from '$lib/content/maaltidsFokus';
+	import { fokusForklaring, maalForDagen } from '$lib/content/maaltidsMaal';
 
 	const getUser = getContext<() => User | null>('user');
 	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
@@ -399,6 +399,16 @@
 	// null = ingen begrænsning (alt opfører sig præcis som normalt). En liste =
 	// KUN disse måltidstyper må ses/logges i hele mad-modulet.
 	let tilladteMaaltider = $state<Maaltidstype[] | null>(null);
+	// Fokus-perioderne og dagen, saa dagens maal kan udledes ét sted.
+	let fokusPerioder = $state<MaaltidsFokusPeriode[] | null>(null);
+	let fokusForlobsDag = $state<number | null>(null);
+	const dagensMaal = $derived(maalForDagen(userDoc?.dagligeMaal, fokusPerioder, fokusForlobsDag));
+	const fokusMaalTekst = $derived(fokusForklaring(dagensMaal));
+	// Banneret naevner kun de maaltider hun oever sig paa. Snack er tilladt,
+	// men "Morgenmad, Snack" laeser som om snacken var en del af oevelsen.
+	const fokusListe = $derived(
+		dagensMaal.maaltiderIFokus.length > 0 ? dagensMaal.maaltiderIFokus : (tilladteMaaltider ?? [])
+	);
 	const fokusAktiv = $derived(tilladteMaaltider !== null);
 	const synligeMaaltidstyper = $derived<Maaltidstype[]>(tilladteMaaltider ?? MAALTIDSTYPER);
 	// De opskrift-kategorier der svarer til de tilladte måltider (snack har ingen
@@ -412,7 +422,12 @@
 	);
 
 	const filtreredeOpskrifter = $derived.by(() => {
-		let liste = filtrerOpskrifter(opskrifter, opskriftSoeg, valgteOpskriftKategorier, valgteDietTags);
+		let liste = filtrerOpskrifter(
+			opskrifter,
+			opskriftSoeg,
+			valgteOpskriftKategorier,
+			valgteDietTags
+		);
 		const tk = tilladteKategorier;
 		if (tk) liste = liste.filter((o) => o.kategorier.some((k) => tk.includes(k)));
 		return liste;
@@ -556,7 +571,7 @@
 
 	const totaler = $derived(beregnMaaltid(maaltid, foodMap));
 	const proteinPct = $derived(procentMod(PROTEIN_MAALTIDS_MAAL, totaler.protein));
-	const fiberPct = $derived(procentMod(FIBER_DAGS_MAAL, totaler.fiber));
+	const fiberPct = $derived(procentMod(dagensMaal.maal.fiber, totaler.fiber));
 
 	async function toggleFavorit(food: Fodevare) {
 		const u = user;
@@ -726,6 +741,10 @@
 			if (!aktivt?.maaltidsFokus || aktivt.maaltidsFokus.length === 0) return;
 			const dag = dageSidenStart(aktivt.startDato.toDate());
 			tilladteMaaltider = tilladteMaaltiderForDag(aktivt.maaltidsFokus, dag);
+			// Maalene skal foelge det samme fokus. Ellers staar banneret og
+			// tallene og siger hver sit om den samme dag. Se maaltidsMaal.ts.
+			fokusPerioder = aktivt.maaltidsFokus;
+			fokusForlobsDag = dag;
 		} catch (e) {
 			console.warn('Kunne ikke beregne måltids-fokus:', e);
 		}
@@ -1121,7 +1140,8 @@
 		kopierDato = m.dato;
 		kopierType = m.type;
 		// Under en fokus-periode kan man kun kopiere til et tilladt måltid.
-		if (tilladteMaaltider && !tilladteMaaltider.includes(kopierType)) kopierType = tilladteMaaltider[0];
+		if (tilladteMaaltider && !tilladteMaaltider.includes(kopierType))
+			kopierType = tilladteMaaltider[0];
 		kopierBesked = null;
 	}
 
@@ -1461,7 +1481,9 @@
 				.filter((n) => n.length > 0);
 
 			const req: ForeslaaRequest = {
-				maal: userDoc.dagligeMaal,
+				// Ugens maal, ikke hele dagens. Ellers foreslaar AI'en mad til tre
+				// maaltider i en uge hvor kun morgenmaden taeller.
+				maal: dagensMaal.maal,
 				favoritFoodNavne: favoritNavne,
 				antalAlternativer: madplanAntal,
 				glutenfri: madplanGlutenfri,
@@ -1638,8 +1660,13 @@
 		<div class="eyebrow">Mad</div>
 		<h1>30-30 beregner</h1>
 		<p class="page-sub">
-			Sigt efter mindst 30g protein pr. måltid og 30g fiber i alt over dagen. Det holder dig mæt
-			længere og støtter et stabilt blodsukker gennem overgangsalderen.
+			{#if dagensMaal.skaleret}
+				Sigt efter mindst 30g protein pr. måltid. Det holder dig mæt længere og støtter et stabilt
+				blodsukker gennem overgangsalderen.
+			{:else}
+				Sigt efter mindst 30g protein pr. måltid og {dagensMaal.maal.fiber}g fiber i alt over dagen.
+				Det holder dig mæt længere og støtter et stabilt blodsukker gennem overgangsalderen.
+			{/if}
 		</p>
 	</header>
 
@@ -1704,8 +1731,14 @@
 		{#if fokusAktiv && tilladteMaaltider}
 			<div class="fokus-banner">
 				🥣 Denne periode har fokus på
-				<strong>{tilladteMaaltider.map((m) => MAALTIDSTYPE_LABELS[m]).join(', ')}</strong>. De
-				øvrige måltider åbner senere i forløbet.
+				<strong>{fokusListe.map((m) => MAALTIDSTYPE_LABELS[m]).join(', ')}</strong>.
+				{#if fokusMaalTekst}
+					{fokusMaalTekst}
+				{/if}
+				De øvrige måltider åbner senere i forløbet.
+				{#if tilladteMaaltider.includes('snack') && !dagensMaal.maaltiderIFokus.includes('snack')}
+					En snack tæller med i dit mål, men hæver det ikke.
+				{/if}
 			</div>
 		{/if}
 
@@ -1790,7 +1823,7 @@
 				<div class="total-card fiber">
 					<div class="total-head">
 						<span class="total-label">Fibre</span>
-						<span class="total-mål">af {FIBER_DAGS_MAAL}g pr. dag</span>
+						<span class="total-mål">af {dagensMaal.maal.fiber}g pr. dag</span>
 					</div>
 					<div class="total-val">{formatGram(totaler.fiber)}</div>
 					<div class="total-bar">
@@ -2180,7 +2213,8 @@
 				</div>
 			{:else}
 				{@const dagsTotaler = dagbogTotaler()}
-				{@const proteinDagsMaal = userDoc?.dagligeMaal?.protein ?? PROTEIN_MAALTIDS_MAAL * 3}
+				{@const proteinDagsMaal = dagensMaal.maal.protein}
+				{@const fiberDagsMaal = dagensMaal.maal.fiber}
 				<div class="totaler">
 					<div class="total-card">
 						<div class="total-head">
@@ -2198,13 +2232,13 @@
 					<div class="total-card">
 						<div class="total-head">
 							<span class="total-label">Fibre i dag</span>
-							<span class="total-mål">mål {FIBER_DAGS_MAAL}g</span>
+							<span class="total-mål">mål {fiberDagsMaal}g</span>
 						</div>
 						<div class="total-val">{formatGram(dagsTotaler.fiber)}</div>
 						<div class="total-bar">
 							<div
 								class="total-fill fiber-fill"
-								style="width: {procentMod(FIBER_DAGS_MAAL, dagsTotaler.fiber)}%"
+								style="width: {procentMod(fiberDagsMaal, dagsTotaler.fiber)}%"
 							></div>
 						</div>
 					</div>

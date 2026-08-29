@@ -18,6 +18,9 @@
 	import type { VanedagEntry, CheckinSvar } from '$lib/content/vaner';
 	import { CHECKIN_SPORGSMAAL } from '$lib/content/vaner';
 	import { hentAlleMrsScores } from '$lib/firestore/mrs';
+	import { hentAktivtForlob } from '$lib/firestore/forlob';
+	import { maalForDagen } from '$lib/content/maaltidsMaal';
+	import type { MaaltidsFokusPeriode } from '$lib/content/maaltidsFokus';
 	import type { MrsScore } from '$lib/content/mrs';
 
 	const getUser = getContext<() => User | null>('user');
@@ -31,6 +34,29 @@
 			userDoc?.visUdvidetNaering === true
 	);
 	const dagligeMaal = $derived(dagligeMalForBruger(userDoc?.dagligeMaal));
+
+	// Ugens fokus, saa maallinjen foelger den uge dagen laa i. Uden det ville
+	// uge 1 se ud som en fiasko: alle syv soejler langt under en streg paa 90 g,
+	// i en uge hvor maalet var 30. Se maaltidsMaal.ts.
+	let fokusPerioder = $state<MaaltidsFokusPeriode[] | null>(null);
+	let forlobStart = $state<Date | null>(null);
+
+	/** Forloebsdagen en kalenderdato svarer til. Null uden aktivt forloeb. */
+	function forlobsDagFor(dato: string): number | null {
+		if (!forlobStart) return null;
+		const d = new Date(dato + 'T12:00:00');
+		const start = new Date(forlobStart);
+		start.setHours(12, 0, 0, 0);
+		return Math.floor((d.getTime() - start.getTime()) / 86400000);
+	}
+
+	/** Maalet for hver dag i listen, i samme raekkefoelge. */
+	function maalPrDag(dage: string[], metric: Metric): number[] {
+		return dage.map((dato) => {
+			const dag = forlobsDagFor(dato);
+			return maalForDagen(userDoc?.dagligeMaal, fokusPerioder, dag).maal[metric];
+		});
+	}
 
 	type Tab = 'syv' | 'tredive' | 'maal';
 	let aktivTab = $state<Tab>('syv');
@@ -159,6 +185,21 @@
 		if (!u) return;
 		loading = true;
 		try {
+			// Ugens fokus hentes ved siden af. Fejler det, staar maallinjen paa
+			// hendes normale dags-maal, altsaa som foer.
+			void (async () => {
+				try {
+					const ids = userDoc?.forlobIds ?? [];
+					if (ids.length === 0) return;
+					const aktivt = await hentAktivtForlob(ids, Date.now(), u.uid);
+					if (!aktivt?.maaltidsFokus || aktivt.maaltidsFokus.length === 0) return;
+					fokusPerioder = aktivt.maaltidsFokus;
+					forlobStart = aktivt.startDato.toDate();
+				} catch (e) {
+					console.warn('Kunne ikke hente ugens fokus til udviklingen:', e);
+				}
+			})();
+
 			const { fraDato, tilDato } = dageBack(30);
 			// Træninger og vanedage hentes for 90 dage tilbage — udvikling-
 			// tabbens views (7d/30d/Mål) ligger inden for det vindue. Hindrer
@@ -383,7 +424,10 @@
 	const malRapport = $derived.by(() => {
 		const dage = dageBack(30).dage;
 		const vaerdier = summerPrDag(aktivMetric, dage);
-		const mal = dagligeMaal[aktivMetric];
+		// Maalet kan skifte undervejs (Kickstarts tre uger), saa en dag taeller
+		// som naaet mod SIT eget maal. Ellers ville uge 1 aldrig give streak.
+		const malListe = maalPrDag(dage, aktivMetric);
+		const mal = malListe[malListe.length - 1] ?? dagligeMaal[aktivMetric];
 		let dageNåetMaal = 0;
 		let aktuelStreak = 0;
 		let bedsteStreak = 0;
@@ -391,10 +435,11 @@
 		// Aktuel streak — fra slutningen af perioden, kun dage der har mindst ét måltid
 		// Vi tæller IKKE dage uden måltider som "brudt streak" — kun dage med måltider
 		const dageMedMaaltid = new Set(alle.map((m) => m.dato));
+		const naaet = (i: number) => vaerdier[i] >= (malListe[i] ?? mal);
 		for (let i = 0; i < dage.length; i++) {
 			const harMaaltid = dageMedMaaltid.has(dage[i]);
-			if (harMaaltid && vaerdier[i] >= mal) dageNåetMaal++;
-			if (harMaaltid && vaerdier[i] >= mal) {
+			if (harMaaltid && naaet(i)) {
+				dageNåetMaal++;
 				lokalStreak++;
 				bedsteStreak = Math.max(bedsteStreak, lokalStreak);
 			} else if (harMaaltid) {
@@ -404,7 +449,7 @@
 		// Aktuel streak fra slutningen
 		for (let i = dage.length - 1; i >= 0; i--) {
 			if (!dageMedMaaltid.has(dage[i])) continue;
-			if (vaerdier[i] >= mal) aktuelStreak++;
+			if (naaet(i)) aktuelStreak++;
 			else break;
 		}
 		const dageMedData = vaerdier.filter((_, i) => dageMedMaaltid.has(dage[i])).length;
@@ -424,7 +469,9 @@
 </script>
 
 {#snippet naeringsGraf(vaerdier: number[], dage: string[], max: number, visDagLabels: boolean)}
-	{@const maal = dagligeMaal[aktivMetric]}
+	{@const maalListe = maalPrDag(dage, aktivMetric)}
+	{@const ensMaal = maalListe.every((m) => m === maalListe[0])}
+	{@const maal = ensMaal ? (maalListe[0] ?? dagligeMaal[aktivMetric]) : dagligeMaal[aktivMetric]}
 	{@const malPct = Math.min(100, (maal / max) * 100)}
 	<div class="ng-wrap">
 		<div class="ng-yakse">
@@ -434,15 +481,30 @@
 		</div>
 		<div class="ng-kol">
 			<div class="ng-plot">
-				<div class="ng-mal" style:bottom="{malPct}%">
-					<span class="ng-mal-lbl">mål {maal}</span>
-				</div>
+				{#if ensMaal}
+					<div class="ng-mal" style:bottom="{malPct}%">
+						<span class="ng-mal-lbl">mål {maal}</span>
+					</div>
+				{/if}
 				<div class="ng-baarer" class:smal={!visDagLabels}>
 					{#each dage as d, i (d)}
 						{@const v = vaerdier[i]}
 						{@const pct = (v / max) * 100}
-						{@const opfyldt = v >= maal}
-						<div class="ng-spalte" title="{d}: {formatVal(aktivMetric, v)}">
+						{@const dagMaal = maalListe[i] ?? maal}
+						{@const opfyldt = v >= dagMaal}
+						<div
+							class="ng-spalte"
+							title="{d}: {formatVal(aktivMetric, v)} af {formatVal(aktivMetric, dagMaal)}"
+						>
+							{#if !ensMaal}
+								<!-- Maalet skifter undervejs i perioden, saa hver dag faar sit
+								     eget maerke i stedet for én streg der ville vaere forkert
+								     for de fleste af dagene. -->
+								<div
+									class="ng-dagmaal"
+									style:bottom="{Math.min(100, (dagMaal / max) * 100)}%"
+								></div>
+							{/if}
 							<div class="ng-baar" class:opfyldt style:height="{pct}%"></div>
 						</div>
 					{/each}
@@ -1103,6 +1165,19 @@
 		display: flex;
 		align-items: end;
 		height: 100%;
+		position: relative;
+	}
+
+	/* Dagens eget maal, naar maalet skifter undervejs i perioden (fx
+	   Kickstarts tre uger). Én vandret streg ville vaere forkert for de
+	   fleste af dagene. */
+	.ng-dagmaal {
+		position: absolute;
+		left: -1px;
+		right: -1px;
+		border-top: 2px dashed var(--sage);
+		opacity: 0.75;
+		pointer-events: none;
 	}
 
 	.ng-baar {

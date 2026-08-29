@@ -103,7 +103,7 @@
 	} from '$lib/content/aboVaner';
 	import { type VaneSvar } from '$lib/content/vaner';
 	import type { GemtMaaltid } from '$lib/content/kost';
-	import { dagligeMalForBruger } from '$lib/content/naering';
+	import { fokusLinje, maalForDagen } from '$lib/content/maaltidsMaal';
 	import Loading from '$lib/components/Loading.svelte';
 	import { effektivState, harPremium } from '$lib/utils/userAdgang';
 	import {
@@ -995,7 +995,15 @@
 		return { protein: p, fiber: f, kcal };
 	});
 
-	const dagligeMaal = $derived(dagligeMalForBruger(userDoc?.dagligeMaal));
+	// Kickstart bygger op ét maaltid ad gangen, og maalet foelger med: uge 1
+	// er 30 g protein og 10 g fiber, uge 3 hendes normale 90 og 30. Uden det
+	// blev hun maalt paa hele dagen i en uge hvor hun kun maa logge morgenmad,
+	// og soejlen kunne aldrig fyldes. Se maaltidsMaal.ts.
+	const dagensMaal = $derived(
+		maalForDagen(userDoc?.dagligeMaal, forlob?.maaltidsFokus, aktivDagNummer)
+	);
+	const dagligeMaal = $derived(dagensMaal.maal);
+	const madFokusLinje = $derived(fokusLinje(dagensMaal));
 	const modulbrugerProteinPct = $derived(
 		Math.min(100, Math.round((modulbrugerMaaltidsTotaler.protein / dagligeMaal.protein) * 100))
 	);
@@ -1897,6 +1905,9 @@
 						<div class="action-text">
 							<div class="action-eyebrow" style="color: var(--sage)">Mad</div>
 							<div class="action-title">Dagens tal</div>
+							{#if madFokusLinje}
+								<div class="mad-fokus">{madFokusLinje}</div>
+							{/if}
 							<div class="mad-progress">
 								<div class="mad-progress-row">
 									<span class="mad-progress-label">Protein</span>
@@ -3358,6 +3369,14 @@
 
 	.action-meta {
 		font-size: calc(10px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-top: 2px;
+	}
+
+	/* Linjen der forklarer hvorfor maalet er mindre i ugens fokus-periode.
+	   Uden den ser det ud som om hendes maal er skrumpet. */
+	.mad-fokus {
+		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}

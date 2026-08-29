@@ -24,7 +24,12 @@ export function appHjaelpQuotaNoegle(dato: Date = new Date()): string {
 // (se KROPSRO_PRODUCT_ID i types.ts).
 type Produkt = ActiveProduct;
 
-const ALLE_PRODUKTER: Produkt[] = ['basisabo', 'premiumabo', KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID];
+const ALLE_PRODUKTER: Produkt[] = [
+	'basisabo',
+	'premiumabo',
+	KICKSTART_PRODUCT_ID,
+	KROPSRO_PRODUCT_ID
+];
 const MODULBRUGERE: Produkt[] = ['basisabo', 'premiumabo'];
 const FORLOBSKUNDER: Produkt[] = [KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID];
 const PREMIUM: Produkt[] = ['premiumabo', KROPSRO_PRODUCT_ID];
@@ -233,7 +238,11 @@ Paa selve opskrift-listen vises et lille stjerne-maerke i hjoernet af hver opskr
 - Opskrifter: bladrer i opskriftsbiblioteket. Klik en opskrift for at se ingredienser og næring.
 - Dagbog: se dine gemte måltider for en valgt dato. Brug pile/dato-input til at skifte dag. Klik 'Byg måltid for denne dag' for at oprette et måltid på en specifik dato (i stedet for dagens dato).
 
-Målet med 30-30 er minimum 30g protein pr måltid og 30g fiber i alt over dagen.`
+Målet med 30-30 er minimum 30g protein pr måltid og 30g fiber i alt over dagen.
+
+Er du på et forløb der bygger op ét måltid ad gangen, følger dit mål med. I den uge hvor kun morgenmaden tæller, er målet 30g protein og 10g fiber. Når frokosten kommer til, er det 60g og 20g, og når alle tre måltider er med, er du på de fulde 90g og 30g. Det står øverst i mad-modulet, hvilken uge du er i.
+
+En snack tæller med i det du har nået, men den hæver ikke målet.`
 	},
 	{
 		titel: 'Små skridt — basis',
@@ -597,8 +606,6 @@ export function byggAppHjaelpSystemPrompt(activeProduct: ActiveProduct | undefin
 		);
 	}
 	const synlige = APP_HJAELP_SEKTIONER.filter((s) => s.visFor.includes(activeProduct));
-	const videnbase = synlige
-		.map((s) => `\n## ${s.titel}\n${s.indhold}`)
-		.join('\n');
+	const videnbase = synlige.map((s) => `\n## ${s.titel}\n${s.indhold}`).join('\n');
 	return base + videnbase;
 }
