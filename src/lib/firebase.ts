@@ -8,7 +8,7 @@ import {
 	getFirestore,
 	initializeFirestore,
 	persistentLocalCache,
-	persistentMultipleTabManager
+	persistentSingleTabManager
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -41,10 +41,24 @@ export const auth = getAuth(app);
 // "Function setDoc() called with invalid data. Unsupported field value: undefined"
 // så snart en bruger gemmer et dokument hvor et optional felt ikke er sat.
 //
-// localCache: persistentLocalCache med multi-tab-manager cacher hver doc i
-// browserens IndexedDB. Repeat-loads serves fra cache i 0-2 ms i stedet for
-// 100-300 ms over netværk. Firebase håndterer cache-invalidation automatisk.
-// Cross-tab: ændringer i ét fanen propageres til andre.
+// localCache: persistentLocalCache cacher hver doc i browserens IndexedDB.
+// Repeat-loads serves fra cache i 0-2 ms i stedet for 100-300 ms over
+// netværk. Firebase håndterer cache-invalidation automatisk.
+//
+// ENKELT FANE, IKKE FLERE. Vi kørte før med persistentMultipleTabManager, så
+// flere faner kunne dele den samme kopi. Den deling kræver at fanerne bliver
+// enige om hvem der har styringen, og netop den forhandling kan sætte sig
+// fast første gang lageret bygges op efter en frisk installation. Resultatet
+// var en app der stod og "hentede data" i det uendelige: Auth svarede på et
+// par hundrede millisekunder, og derefter blev der IKKE sendt ét eneste kald
+// til Firestore. Maalt 29. august 2026 i Chrome, gentaget flere gange efter
+// at have ryddet alt lokalt, altså det samme som at slette appen fra
+// telefonen.
+//
+// En app på en telefon er altid én fane, så delingen gav ingen værdi der.
+// Prisen er, at har man appen åben i to faner på en computer samtidig, får
+// den anden fane ikke den lokale kopi og bliver lidt langsommere. Ingen data
+// er i fare, og ingen mister noget.
 //
 // Hvis IndexedDB ikke er tilgængelig (private mode, kvota-fuld) falder
 // Firebase SDK stille tilbage til memory-only cache — vi behøver ikke
@@ -53,7 +67,7 @@ export const db = erFoerste
 	? initializeFirestore(app, {
 			ignoreUndefinedProperties: true,
 			localCache: persistentLocalCache({
-				tabManager: persistentMultipleTabManager()
+				tabManager: persistentSingleTabManager(undefined)
 			})
 		})
 	: getFirestore(app);
