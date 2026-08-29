@@ -3,6 +3,7 @@
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
+	import SideInfoKnap from '$lib/components/SideInfoKnap.svelte';
 	import {
 		gemSpoergsmaal,
 		hentMineSpoergsmaal,
@@ -281,8 +282,13 @@
 
 <div class="page">
 	<header class="page-header">
-		<div class="eyebrow">Beskeder</div>
-		<h1>Stil et <em>spørgsmål</em></h1>
+		<div class="titel-rk">
+			<div>
+				<div class="eyebrow">Beskeder</div>
+				<h1>Stil et <em>spørgsmål</em></h1>
+			</div>
+			<SideInfoKnap noegle="beskeder" />
+		</div>
 	</header>
 
 	{#if harLinnAi && harBeskederTilLinn}
@@ -503,6 +509,15 @@
 		margin: 0 auto;
 	}
 
+
+	/* Titel og info-knap i samme raekke, saa knappen sidder samme sted paa
+	   hver side. */
+	.titel-rk {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
 	.page-header {
 		margin-bottom: 14px;
 	}

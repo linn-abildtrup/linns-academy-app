@@ -32,6 +32,7 @@
 	} from '$lib/firestore/bibliotek';
 	import { hentForlob, hentForlobsdage, hentAktivtForlob } from '$lib/firestore/forlob';
 	import Icon from '$lib/components/Icon.svelte';
+	import SideInfoKnap from '$lib/components/SideInfoKnap.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
 	import type { UserDoc } from '$lib/types';
@@ -664,8 +665,13 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Moduler</span>
 		</a>
-		<div class="eyebrow">Bibliotek</div>
-		<h1>Bibliotek</h1>
+		<div class="titel-rk">
+			<div>
+				<div class="eyebrow">Bibliotek</div>
+				<h1>Bibliotek</h1>
+			</div>
+			<SideInfoKnap noegle="bibliotek" />
+		</div>
 	</header>
 
 	<div class="tabs">
@@ -1237,6 +1243,15 @@
 		margin: 0 auto;
 	}
 
+
+	/* Titel og info-knap i samme raekke, saa knappen sidder samme sted paa
+	   hver side. */
+	.titel-rk {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
 	.page-header {
 		margin-bottom: 14px;
 	}

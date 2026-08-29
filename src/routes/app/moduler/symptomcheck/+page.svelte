@@ -6,6 +6,7 @@
 	import { forlobErKickstart, forlobErKropsro } from '$lib/content/forlob';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import Icon from '$lib/components/Icon.svelte';
+	import SideInfoKnap from '$lib/components/SideInfoKnap.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import {
 		getInterpretation,
@@ -274,16 +275,21 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Moduler</span>
 		</a>
-		<div class="eyebrow">Modul · Symptomcheck</div>
-		<h1>
-			{#if visning === 'forside'}
-				Symptomcheck
-			{:else if visning === 'udfyld'}
-				Hvordan har din krop det lige nu?
-			{:else}
-				Din symptomprofil
-			{/if}
-		</h1>
+		<div class="titel-rk">
+			<div>
+				<div class="eyebrow">Modul · Symptomcheck</div>
+				<h1>
+					{#if visning === 'forside'}
+						Symptomcheck
+					{:else if visning === 'udfyld'}
+						Hvordan har din krop det lige nu?
+					{:else}
+						Din symptomprofil
+					{/if}
+				</h1>
+			</div>
+			<SideInfoKnap noegle="symptomcheck" />
+		</div>
 		{#if visning === 'forside'}
 			<p class="page-sub">{kadenceTekst}</p>
 		{:else if visning === 'udfyld'}
@@ -712,6 +718,14 @@
 		margin: 0 auto;
 	}
 
+
+	/* Titel og info-knap i samme raekke. */
+	.titel-rk {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
 	.page-header {
 		margin-bottom: 18px;
 	}

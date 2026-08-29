@@ -47,6 +47,7 @@
 	import { effektivtUnlocket, getPreviewDag } from '$lib/utils/forlobPreview';
 	import { isAdmin } from '$lib/admin';
 	import Icon from '$lib/components/Icon.svelte';
+	import SideInfoKnap from '$lib/components/SideInfoKnap.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import PreviewBanner from '$lib/components/PreviewBanner.svelte';
 
@@ -398,8 +399,13 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Moduler</span>
 		</a>
-		<div class="eyebrow">{gren === 'forlob' ? 'Forløb' : 'Daglig'}</div>
-		<h1>Små skridt</h1>
+		<div class="titel-rk">
+			<div>
+				<div class="eyebrow">{gren === 'forlob' ? 'Forløb' : 'Daglig'}</div>
+				<h1>Små skridt</h1>
+			</div>
+			<SideInfoKnap noegle="vaner" />
+		</div>
 		<p class="page-sub">
 			{#if gren === 'forlob' && forlob}
 				Daglige vaner i {forlob.antalDage} dage. Tjek ind når du har lavet dem.
@@ -735,6 +741,15 @@
 		margin: 0 auto;
 	}
 
+
+	/* Titel og info-knap i samme raekke, saa knappen sidder samme sted paa
+	   hver side. */
+	.titel-rk {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
 	.page-header {
 		margin-bottom: 18px;
 	}

@@ -284,6 +284,12 @@ export interface UserDoc {
 	hjemmeskaermVistAt?: number;
 
 	/**
+	 * Hvornår kunden så introen til appen, i ms. Sat når hun har været de
+	 * fire skærme igennem. Se components/AppIntro.svelte.
+	 */
+	appIntroSetAt?: number;
+
+	/**
 	 * Hvilket træningsprogram brugeren har valgt som sit aktive program.
 	 * Vises på forsiden og bestemmer hvilket program der startes når hun
 	 * klikker på træning-modulet.

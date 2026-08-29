@@ -3,6 +3,7 @@
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
+	import SideInfoKnap from '$lib/components/SideInfoKnap.svelte';
 	import TesterBadge from '$lib/components/TesterBadge.svelte';
 	import { erForlobsklient, erModulbruger, harPremium } from '$lib/utils/userAdgang';
 	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
@@ -204,8 +205,13 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Moduler</span>
 		</a>
-		<div class="eyebrow">Modul</div>
-		<h1>Træning</h1>
+		<div class="titel-rk">
+			<div>
+				<div class="eyebrow">Modul</div>
+				<h1>Træning</h1>
+			</div>
+			<SideInfoKnap noegle="traening" />
+		</div>
 		<p class="page-sub">
 			{#if erForlobsklient(userDoc)}
 				Dine træningsprogrammer fra forløbet og dine egne.
@@ -444,6 +450,14 @@
 		margin: 0 auto;
 	}
 
+
+	/* Titel og info-knap i samme raekke. */
+	.titel-rk {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
 	.page-header {
 		margin-bottom: 18px;
 	}

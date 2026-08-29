@@ -29,6 +29,7 @@
 	import { hentForlob, hentForlobsdage } from '$lib/firestore/forlob';
 	import { hentUserProduct } from '$lib/firestore/mikrotraening';
 	import Icon from '$lib/components/Icon.svelte';
+	import SideInfoKnap from '$lib/components/SideInfoKnap.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
 
@@ -254,8 +255,13 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Moduler</span>
 		</a>
-		<div class="eyebrow">Mit forløb</div>
-		<h1>{forlob?.navn ?? 'Mit forløb'}</h1>
+		<div class="titel-rk">
+			<div>
+				<div class="eyebrow">Mit forløb</div>
+				<h1>{forlob?.navn ?? 'Mit forløb'}</h1>
+			</div>
+			<SideInfoKnap noegle="forlob" />
+		</div>
 		{#if forlob && aktivDagNr !== null}
 			<p class="page-sub">Dag {aktivDagNr} af {forlob.antalDage}</p>
 		{:else if forlob}
@@ -492,6 +498,15 @@
 		margin: 0 auto;
 	}
 
+
+	/* Titel og info-knap i samme raekke, saa knappen sidder samme sted paa
+	   hver side. */
+	.titel-rk {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
 	.page-header {
 		margin-bottom: 18px;
 	}

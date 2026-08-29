@@ -94,6 +94,7 @@
 	import { hentMineOpskrifter } from '$lib/firestore/minOpskrift';
 	import type { MinOpskrift } from '$lib/content/minOpskrift';
 	import Icon from '$lib/components/Icon.svelte';
+	import SideInfoKnap from '$lib/components/SideInfoKnap.svelte';
 	import IndkoebsListeOverlay from '$lib/components/IndkoebsListeOverlay.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import {
@@ -1660,8 +1661,13 @@
 			<Icon name="arrow-l" size={14} color="var(--text2)" />
 			<span>Tilbage</span>
 		</button>
-		<div class="eyebrow">Mad</div>
-		<h1>30-30 beregner</h1>
+		<div class="titel-rk">
+			<div>
+				<div class="eyebrow">Mad</div>
+				<h1>30-30 beregner</h1>
+			</div>
+			<SideInfoKnap noegle="mad" />
+		</div>
 		<p class="page-sub">
 			{#if dagensMaal.skaleret}
 				Sigt efter mindst 30g protein pr. måltid. Det holder dig mæt længere og støtter et stabilt
@@ -3076,6 +3082,15 @@
 		margin: 0 auto;
 	}
 
+
+	/* Titel og info-knap i samme raekke, saa knappen sidder samme sted paa
+	   hver side. */
+	.titel-rk {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
 	.page-header {
 		margin-bottom: 14px;
 	}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
+	import SideInfoKnap from '$lib/components/SideInfoKnap.svelte';
 	import {
 		EmailAuthProvider,
 		reauthenticateWithCredential,
@@ -511,6 +512,7 @@
 
 <div class="profil">
 	<header class="header">
+		<div class="info-hjoerne"><SideInfoKnap noegle="profil" /></div>
 		<div class="avatar" aria-hidden="true">{initial}</div>
 		<h1 class="navn">{userDoc?.firstName ?? ''}</h1>
 		<p class="email">{user?.email ?? ''}</p>
@@ -899,11 +901,20 @@
 		box-sizing: border-box;
 	}
 
+
+	/* Profil-headeren er centreret, saa knappen laegges i hjoernet i stedet
+	   for i en raekke med titlen. */
+	.info-hjoerne {
+		position: absolute;
+		top: 0;
+		right: 0;
+	}
 	.header {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		padding: 32px 16px 24px;
+		position: relative;
 	}
 
 	.avatar {

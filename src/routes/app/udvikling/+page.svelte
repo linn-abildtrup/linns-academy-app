@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
+	import SideInfoKnap from '$lib/components/SideInfoKnap.svelte';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import { hentMaaltiderIPeriode } from '$lib/firestore/kost';
@@ -537,8 +538,13 @@
 
 <div class="page">
 	<header class="page-header">
-		<div class="eyebrow">Min udvikling</div>
-		<h1>Udvikling</h1>
+		<div class="titel-rk">
+			<div>
+				<div class="eyebrow">Min udvikling</div>
+				<h1>Udvikling</h1>
+			</div>
+			<SideInfoKnap noegle="udvikling" />
+		</div>
 		<p class="page-sub">Følg din udvikling over tid.</p>
 	</header>
 
@@ -981,6 +987,15 @@
 		margin: 0 auto;
 	}
 
+
+	/* Titel og info-knap i samme raekke, saa knappen sidder samme sted paa
+	   hver side. */
+	.titel-rk {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
 	.page-header {
 		margin-bottom: 14px;
 	}

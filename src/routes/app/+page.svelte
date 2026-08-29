@@ -104,6 +104,9 @@
 	import { type VaneSvar } from '$lib/content/vaner';
 	import type { GemtMaaltid } from '$lib/content/kost';
 	import { fokusLinje, maalForDagen } from '$lib/content/maaltidsMaal';
+	import AppIntro from '$lib/components/AppIntro.svelte';
+	import { HJEMMESKAERM_FRA_MS } from '$lib/content/hjemmeskaerm';
+	import SideInfoKnap from '$lib/components/SideInfoKnap.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import { effektivState, harPremium } from '$lib/utils/userAdgang';
 	import {
@@ -438,6 +441,11 @@
 	// Facebook-modal: vises på dag 0 eller senere for Kropsro-kunder der
 	// endnu ikke har svaret om de er kommet ind i Facebook-gruppen.
 	let visFacebookModal = $state(false);
+	// Introen kommer EFTER de tre spoergsmaal (hjemmeskaerm, kettlebell,
+	// Facebook). Linns valg. Hun har svaret paa det praktiske, og saa faar
+	// hun at vide hvor hun er. Vises kun én gang, og kun for kunder oprettet
+	// efter at introen fandtes, saa de 760 i drift ikke bliver afbrudt.
+	let introKlaret = $state(false);
 	// To trin. Foerst spoerger vi. Trykker hun paa linket, aabner Facebook, og
 	// naar hun kommer tilbage staar trin to og beder hende bare bekraefte i
 	// stedet for at spoerge forfra. Telefonen kan naa at rydde appen vaek
@@ -494,6 +502,32 @@
 		if (!url) return;
 		window.open(url, '_blank', 'noopener,noreferrer');
 		facebookTrin = 'tilbage';
+	}
+
+	// Introen maa foerst komme naar de tre spoergsmaal er ude af vejen, saa
+	// hun ikke faar to ting oveni hinanden.
+	const visIntro = $derived.by<boolean>(() => {
+		const ud = userDoc;
+		if (introKlaret || !ud || !user) return false;
+		if (isAdmin(user)) return false;
+		if (ud.appIntroSetAt) return false;
+		// Kunder oprettet foer introen fandtes ser den aldrig. Samme graense
+		// som hjemmeskaerms-skaermen bruger, se content/hjemmeskaerm.ts.
+		if (typeof ud.createdAt !== 'number' || ud.createdAt < HJEMMESKAERM_FRA_MS) return false;
+		if (visVariantModal || visBuddyModal || visFacebookModal) return false;
+		return true;
+	});
+
+	/** Hun har vaeret introen igennem. Gemmes, saa den ikke kommer igen. */
+	async function introFaerdig() {
+		introKlaret = true;
+		const u = user;
+		if (!u) return;
+		try {
+			await updateDoc(doc_ref(db, 'users', u.uid), { appIntroSetAt: Date.now() });
+		} catch (e) {
+			console.warn('Kunne ikke gemme at introen er set:', e);
+		}
 	}
 
 	async function gemFacebookSvar(erInde: boolean) {
@@ -1570,6 +1604,7 @@
 						{forlob.navn} · starter snart
 					</a>
 				{/if}
+				<SideInfoKnap noegle="forside" />
 			</header>
 		{/if}
 
@@ -2001,6 +2036,10 @@
 	</div>
 {:else if userState === 'modulbruger'}
 	<div class="forside-b1">
+		<!-- Abonnenten har ingen forloebs-badge, saa info-knappen ville ellers
+		     slet ikke findes paa hendes forside. Den laegges i sin egen raekke
+		     samme sted, altsaa oeverst til hoejre. -->
+		<div class="info-raekke"><SideInfoKnap noegle="forside" /></div>
 		<div class="forside-body">
 			{#if aboForside.taetPaaUdloeb && aboForside.slutterAt}
 				<a class="abo-paamind" href={APP_KOB_URL} target="_blank" rel="noopener">
@@ -2598,10 +2637,24 @@
 	/>
 {/if}
 
+{#if visIntro}
+	<!-- Ligger sidst, saa den laegger sig OVER de tre spoergsmaal hvis de
+	     mod forventning skulle vaere aabne samtidig. -->
+	<AppIntro faerdig={introFaerdig} paaForlob={userState === 'forlobskunde'} />
+{/if}
+
 <style>
 	/* ── Fælles forside-body ───────────────────────────────────── */
 
 	.forside-a1,
+
+	/* Info-knappen paa abonnentens forside, hvor der ikke er en badge at
+	   laegge den ved siden af. */
+	.info-raekke {
+		display: flex;
+		justify-content: flex-end;
+		padding: 10px 20px 0;
+	}
 	.forside-b1,
 	.forside-c1 {
 		min-height: 100%;
@@ -2919,6 +2972,10 @@
 		padding: 8px 20px 14px;
 		background: var(--header);
 		border-bottom: 1px solid var(--border);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
 	}
 
 	.abo-paamind {
