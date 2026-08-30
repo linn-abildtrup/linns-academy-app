@@ -14,7 +14,11 @@
 	} from '$lib/firestore/mikrotraening';
 	import { hentProgramFremgang } from '$lib/firestore/mineProgrammer';
 	import { hentForlob, hentAktivProduktType } from '$lib/firestore/forlob';
-	import { endnuIkkeStartetTekst, traeningErStartet } from '$lib/content/traeningStart';
+	import {
+		endnuIkkeStartetTekst,
+		traeningErStartet,
+		traeningsdagFor
+	} from '$lib/content/traeningStart';
 	import { getCurrentDayMedNulDage, nulDageDatoer, toIsoLokal } from '$lib/content/forlob';
 	import { getVideoUrl } from '$lib/utils/storage';
 	import { alleProdukter } from '$lib/content/produkter';
@@ -163,13 +167,26 @@
 
 				if (idx !== null) {
 					// idx er forloebsdagen (0=baseline, 1..antalDage=traeningsdage) — SAMME
-					// nummerering som forsiden + vaneprogrammet. Programdagene er
-					// 1-indekserede og aligned (forloebsdag N = program-dag N). Modulo
-					// cykler om naar forloebet er slut (basis-abo faar dag 1 igen paa dag
-					// 22). FOER 12/6 2026: '(idx % antalDage) + 1' var off-by-one — den
-					// viste/gemte dag+1, saa forsidens mikrotraening-vane blev auto-ja'et
-					// paa forkert dag.
-					aktuelDagNummer = idx <= 0 ? 1 : ((idx - 1) % forlob.antalDage) + 1;
+					// nummerering som forsiden + vaneprogrammet.
+					//
+					// Traeningen taeller fra sin EGEN foerste dag, ikke fra forloebets.
+					// Begynder traeningen paa dag 3, er dag 3 traening nummer 1, dag 4
+					// nummer 2 og saa fremdeles. Foer fulgte program-dagen forloebsdagen
+					// ét til ét, saa Kickstart sprang de to foerste traeninger over og
+					// naaede aldrig de sidste to. Linns beslutning 30. august 2026.
+					// Regnestykket ligger i content/traeningStart.ts, samme sted som
+					// spaerringen ovenfor, saa de to ikke kan komme til at sige hver sit.
+					//
+					// For alle forloeb uden egen startdag er traeningStartDag 1, og saa
+					// er tallet praecis det samme som foer.
+					//
+					// Modulo cykler om naar forloebet er slut (basis-abo faar dag 1 igen
+					// paa dag 22). FOER 12/6 2026: '(idx % antalDage) + 1' var off-by-one
+					// — den viste/gemte dag+1, saa forsidens mikrotraening-vane blev
+					// auto-ja'et paa forkert dag.
+					const traeningsNr = traeningsdagFor(idx, forlob);
+					aktuelDagNummer =
+						traeningsNr === null ? 1 : ((traeningsNr - 1) % forlob.antalDage) + 1;
 					valgtDag = aktuelDagNummer;
 				}
 			}
