@@ -409,7 +409,21 @@
 			// kunden skal lukke/aabne appen.
 			allowedEmailUnsubscribe?.();
 			if (u.email) {
-				allowedEmailUnsubscribe = lytTilAllowedEmail(u.email, () => {
+				// Lytteren skal reagere paa AENDRINGER, ikke paa at den bliver
+				// sat op. Firestore leverer altid et foerste billede med det
+				// der staar lige nu, og med lokal cache leverer den det to
+				// gange: foerst fra kopien, saa fra serveren. Foer koerte hele
+				// adgangs-tjekket derfor tre gange ved hver eneste app-start,
+				// og de to sidste var rent spild. Maalt 30. august 2026.
+				let sidsteAllowed: string | null = null;
+				allowedEmailUnsubscribe = lytTilAllowedEmail(u.email, (allowed) => {
+					const nu = JSON.stringify(allowed ?? null);
+					if (sidsteAllowed === null) {
+						sidsteAllowed = nu;
+						return;
+					}
+					if (nu === sidsteAllowed) return;
+					sidsteAllowed = nu;
 					void genSynkroniser('allowedEmail-aendring');
 				});
 			}
