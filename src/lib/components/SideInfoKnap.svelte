@@ -32,6 +32,18 @@
 		aaben = false;
 	}
 
+	// Laas siden bagved mens arket er aabent. Uden det ruller baggrunden
+	// under fingeren i stedet for teksten, og kunden kan ikke naa ned til
+	// Luk-knappen. Linns fund 30. august.
+	$effect(() => {
+		if (!aaben || typeof document === 'undefined') return;
+		const foer = document.body.style.overflow;
+		document.body.style.overflow = 'hidden';
+		return () => {
+			document.body.style.overflow = foer;
+		};
+	});
+
 	function paaTast(e: KeyboardEvent) {
 		if (e.key === 'Escape') luk();
 	}
@@ -70,30 +82,32 @@
 				onkeydown={(e) => e.stopPropagation()}
 			>
 				<div class="info-haandtag"></div>
-				<h2 class="info-titel">{info.titel}</h2>
-				<p class="info-tekst">{info.indledning}</p>
-				<ul class="info-punkter">
-					{#each info.punkter as p (p.tekst)}
-						<li>
-							{#if p.navn}<strong>{p.navn}</strong>{/if}
-							{p.tekst}
-						</li>
-					{/each}
-				</ul>
-				{#if info.trin}
-					<h3 class="info-trin-titel">{info.trin.overskrift}</h3>
-					<ol class="info-trin">
-						{#each info.trin.skridt as t (t)}
-							<li>{t}</li>
+				<div class="info-rul">
+					<h2 class="info-titel">{info.titel}</h2>
+					<p class="info-tekst">{info.indledning}</p>
+					<ul class="info-punkter">
+						{#each info.punkter as p (p.tekst)}
+							<li>
+								{#if p.navn}<strong>{p.navn}</strong>{/if}
+								{p.tekst}
+							</li>
 						{/each}
-					</ol>
-				{/if}
-				{#if info.slutning}
-					<p class="info-tekst">{info.slutning}</p>
-				{/if}
-				{#if info.slutningKunForlob && paaForlob}
-					<p class="info-tekst">{info.slutningKunForlob}</p>
-				{/if}
+					</ul>
+					{#if info.trin}
+						<h3 class="info-trin-titel">{info.trin.overskrift}</h3>
+						<ol class="info-trin">
+							{#each info.trin.skridt as t (t)}
+								<li>{t}</li>
+							{/each}
+						</ol>
+					{/if}
+					{#if info.slutning}
+						<p class="info-tekst">{info.slutning}</p>
+					{/if}
+					{#if info.slutningKunForlob && paaForlob}
+						<p class="info-tekst">{info.slutningKunForlob}</p>
+					{/if}
+				</div>
 				<button class="info-luk" type="button" onclick={luk}>Luk</button>
 			</div>
 		</div>
@@ -137,15 +151,30 @@
 		padding: 0;
 	}
 
+	/* Arket er en kolonne: haandtag oeverst, teksten ruller i midten, og
+	   Luk staar fast nederst. Foer kunne knappen falde under kanten paa en
+	   lille skaerm, og saa kunne kunden ikke komme ud. */
 	.info-ark {
 		width: 100%;
 		max-width: 480px;
 		background: var(--white);
 		border-radius: 20px 20px 0 0;
 		padding: 16px 20px calc(22px + env(safe-area-inset-bottom, 0px));
-		max-height: 82vh;
-		overflow-y: auto;
+		/* dvh, ikke vh: paa iPhone regner vh med at browserens bjaelker er
+		   vaek, saa arket bliver hoejere end skaermen. */
+		max-height: 85dvh;
+		display: flex;
+		flex-direction: column;
 		text-align: left;
+	}
+
+	.info-rul {
+		overflow-y: auto;
+		/* Stopper rulningen ved kanten af arket i stedet for at give den
+		   videre til siden bagved. */
+		overscroll-behavior: contain;
+		-webkit-overflow-scrolling: touch;
+		margin-bottom: 14px;
 	}
 
 	.info-haandtag {
@@ -213,6 +242,7 @@
 
 	.info-luk {
 		width: 100%;
+		flex: none;
 		background: var(--bg2);
 		border: 0;
 		border-radius: 12px;
