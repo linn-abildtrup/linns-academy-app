@@ -11,6 +11,7 @@
 		gemForlob,
 		hentAllowedEmailsForForlob,
 		hentAppVersionerForForlob,
+		hentAlleForlob,
 		hentForlob,
 		sletForlob,
 		tilfoejEnKunde,
@@ -75,6 +76,22 @@
 	// slet ikke om gruppen, saa et hold kan aldrig sende kunderne det forkerte
 	// sted hen. Se forlobAdgang.ts.
 	let formFacebookUrl = $state('');
+	// Simplero-produktets nummer. Staar det her, og er holdet sat som
+	// aktivt, lander nye koeb paa holdet af sig selv. Se content/forlobKoeb.ts.
+	let formSimpleroId = $state('');
+	// Andre hold der staar med SAMME nummer. Bruges til advarslen nedenfor,
+	// saa to hold ikke slaas om de samme koebere.
+	let andreMedSammeNummer = $state<{ id: string; navn: string; aktiv: boolean }[]>([]);
+	// Alle hold, hentet én gang. Bruges kun til at finde dem der staar med
+	// samme Simplero-nummer som det her.
+	let alleHold = $state<{ id: string; navn: string; aktiv: boolean; nummer: string }[]>([]);
+
+	$effect(() => {
+		const nummer = formSimpleroId.trim();
+		andreMedSammeNummer = nummer
+			? alleHold.filter((h) => h.id !== forlobId && h.nummer === nummer)
+			: [];
+	});
 	let formNulPulje = $state(14);
 	let gemmer = $state(false);
 	let gemFejl = $state<string | null>(null);
@@ -123,6 +140,19 @@
 			nyEmail = '';
 			nyFornavn = '';
 			nyEfternavn = '';
+			// Best-effort: kan vi ikke hente de andre hold, undvaerer vi bare
+			// advarslen om ens Simplero-numre.
+			alleHold = await hentAlleForlob()
+				.then((liste) =>
+					liste.map((h) => ({
+						id: h.id,
+						navn: h.navn,
+						aktiv: h.aktiv,
+						nummer: (h.simpleroProduktId ?? '').trim()
+					}))
+				)
+				.catch(() => []);
+
 			emails = await hentAllowedEmailsForForlob(forlobId);
 		} catch (e) {
 			console.error(e);
@@ -183,6 +213,7 @@
 			formTraening = f.harTraening ?? false;
 			formTraeningStart = traeningStartDag(f);
 			formFacebookUrl = f.facebookUrl ?? '';
+			formSimpleroId = f.simpleroProduktId ?? '';
 			formNulPulje = typeof f.nulDagePulje === 'number' ? f.nulDagePulje : 14;
 
 			emails = await hentAllowedEmailsForForlob(forlobId);
@@ -234,6 +265,7 @@
 			// Kropsro, der ikke er byggede forloeb.
 			const traeningStart = Math.max(0, Math.min(formAntalDage, formTraeningStart));
 			const facebookUrl = formFacebookUrl.trim();
+			const simpleroProduktId = formSimpleroId.trim();
 			await gemForlob(forlobId, {
 				navn: trimmedNavn,
 				startDato: Timestamp.fromDate(startDate),
@@ -241,6 +273,7 @@
 				aktiv: formAktiv,
 				traeningStartDag: traeningStart,
 				facebookUrl,
+				simpleroProduktId,
 				...ekstraFelter
 			});
 			if (forlob) {
@@ -252,6 +285,7 @@
 					aktiv: formAktiv,
 					traeningStartDag: traeningStart,
 					facebookUrl,
+					simpleroProduktId,
 					...ekstraFelter
 				};
 			}
@@ -376,7 +410,51 @@
 			{/if}
 			<label class="checkbox-rad">
 				<input type="checkbox" bind:checked={formAktiv} disabled={gemmer} />
-				<span>Aktivt forløb (nye køb tilknyttes automatisk)</span>
+				<span>
+					Aktivt forløb
+					{#if formSimpleroId.trim()}
+						(nye køb i Simplero lander på dette hold)
+					{:else}
+						(sæt Simplero-nummeret nedenfor, hvis nye køb skal lande her)
+					{/if}
+				</span>
+			</label>
+
+			<label class="felt">
+				<span class="felt-label">Simplero-produkt (nummer)</span>
+				<input
+					type="text"
+					inputmode="numeric"
+					bind:value={formSimpleroId}
+					placeholder="fx 253807"
+					disabled={gemmer}
+				/>
+				<span class="felt-hint">
+					{#if !formSimpleroId.trim()}
+						Tomt felt betyder, at køb i Simplero ikke kommer med her af sig selv. Så skal du hente
+						købslisten ind manuelt, som du plejer.
+					{:else if !formAktiv}
+						Nummeret står her, men holdet er ikke sat som aktivt. Derfor lander nye køb ikke her.
+						Sæt fluebenet ovenfor.
+					{:else}
+						Nye køb af det produkt lander på dette hold med det samme. Når du åbner næste hold,
+						flytter du fluebenet ovenfor derover.
+					{/if}
+				</span>
+				{#if andreMedSammeNummer.length > 0}
+					<!-- To hold der begge er aktive paa samme nummer ville slaas om
+					     koeberne. Vi vaelger det nyeste, men Linn skal vide det. -->
+					<span class="felt-advarsel">
+						{#if andreMedSammeNummer.some((h) => h.aktiv) && formAktiv}
+							Pas på: {andreMedSammeNummer.filter((h) => h.aktiv).map((h) => h.navn).join(', ')}
+							står med samme nummer og er også aktivt. Nye køb lander på det hold, der starter
+							senest. Fjern fluebenet på det gamle hold.
+						{:else}
+							Samme nummer står også på: {andreMedSammeNummer.map((h) => h.navn).join(', ')}. Det
+							er i orden, så længe kun ét af dem er aktivt.
+						{/if}
+					</span>
+				{/if}
 			</label>
 
 			<div class="felt">
@@ -1072,6 +1150,14 @@
 		flex-direction: column;
 		gap: 7px;
 		margin-top: 4px;
+	}
+
+	.felt-advarsel {
+		display: block;
+		margin-top: 6px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		line-height: 1.5;
+		color: var(--advarsel, #9a6b3f);
 	}
 
 	.felt-hint {

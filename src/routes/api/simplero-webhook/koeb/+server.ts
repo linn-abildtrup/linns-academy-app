@@ -18,7 +18,8 @@ import {
 import { findProduktAdgang } from '$lib/simplero/produktMapping';
 import { FORLOB_KOEB_PRODUKTER } from '$lib/content/produkter';
 import { forlobAdgangFelter, forlobSlutMs, bibliotekBonusSlutMs } from '$lib/content/forlobAdgang';
-import { hentDoc } from '$lib/server/firestoreRest';
+import { hentDoc, hentDocsHvorFeltLig } from '$lib/server/firestoreRest';
+import { vaelgForlobForProdukt } from '$lib/content/forlobKoeb';
 import type { AccessLevel, AccessSource } from '$lib/types';
 
 const EVENT = 'purchase.made';
@@ -59,9 +60,43 @@ export const POST: RequestHandler = async ({ request }) => {
 	//    Slå forlobId op og UDLED adgangen fra forløbet selv, så niveau +
 	//    data-skuffe altid matcher forløbets opsætning og den manuelle import.
 	let forlobUdloeb: { expiresAt: number; bonus: number } | null = null;
+	let holdNote = '';
 	if (!felter) {
-		const forlobId = FORLOB_KOEB_PRODUKTER[String(produktId)];
-		const f = forlobId ? await hentDoc(`forlob/${forlobId}`) : null;
+		// 2a) Holdet staar selv med Simplero-nummeret, og fluebenet "Aktivt
+		//     forloeb" afgoer hvem der tager imod. Linn saelger hvert nyt
+		//     Kickstart-hold under SAMME produkt, saa koblingen kan ikke staa i
+		//     koden. Se content/forlobKoeb.ts. Linns beslutning 30. august 2026.
+		//
+		// 2b) Ellers den gamle faste tabel, saa "Fra Kickstart til Kropsro"
+		//     virker praecis som foer.
+		let forlobId: string | undefined;
+		let f: Record<string, unknown> | null = null;
+		try {
+			const raekker = await hentDocsHvorFeltLig('forlob', 'simpleroProduktId', String(produktId));
+			const valg = vaelgForlobForProdukt(
+				raekker.map((r) => ({
+					id: r.id,
+					navn: r.data.navn as string | undefined,
+					aktiv: r.data.aktiv as boolean | undefined,
+					startMs: tilMs(r.data.startDato),
+					antalDage: (r.data.antalDage as number) ?? 0
+				}))
+			);
+			holdNote = valg.begrundelse;
+			if (valg.valgt) {
+				forlobId = valg.valgt.id;
+				f = raekker.find((r) => r.id === valg.valgt?.id)?.data ?? null;
+			}
+		} catch (e) {
+			// Kan vi ikke slaa hold op, falder vi tilbage paa den faste tabel i
+			// stedet for at afvise koebet.
+			console.warn('Kunne ikke slaa hold op paa Simplero-nummer:', e);
+			holdNote = 'opslag paa holdets nummer fejlede';
+		}
+		if (!forlobId) {
+			forlobId = FORLOB_KOEB_PRODUKTER[String(produktId)];
+			f = forlobId ? await hentDoc(`forlob/${forlobId}`) : null;
+		}
 		if (forlobId && f) {
 			const udledt = forlobAdgangFelter({
 				type: f.type as 'kickstart' | 'kropsro' | undefined,
@@ -87,7 +122,11 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	if (!felter) {
-		await gemILog(EVENT, payload, 'skipped', `ukendt produkt ${produktId}`);
+		// Noten skal kunne laeses af Linn i webhook-loggen, saa hun kan se om
+		// det er nummeret der mangler paa holdet, eller fluebenet der staar
+		// forkert.
+		const grund = holdNote ? `ukendt produkt ${produktId}: ${holdNote}` : `ukendt produkt ${produktId}`;
+		await gemILog(EVENT, payload, 'skipped', grund);
 		return json({ ok: true, status: 'skipped', reason: 'unknown product', produktId });
 	}
 

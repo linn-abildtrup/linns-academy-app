@@ -264,7 +264,9 @@
 			</div>
 			<label class="checkbox-rad">
 				<input type="checkbox" bind:checked={formAktiv} disabled={opretter} />
-				<span>Aktivt forløb (nye køb tilknyttes automatisk)</span>
+				<!-- Selve koblingen til Simplero saettes paa holdet bagefter, under
+				     "Simplero-produkt". Her lover vi derfor ikke mere end vi holder. -->
+				<span>Aktivt forløb</span>
 			</label>
 
 			<!-- Premium/basis er kun relevant for Kickstart/Kropsro. Fleksible

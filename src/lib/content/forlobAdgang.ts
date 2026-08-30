@@ -80,6 +80,11 @@ export interface Forlob {
 	// gruppen. Saa kan et hold aldrig komme til at sende kunderne hen til den
 	// forkerte gruppe, og du taender det ved at saette et link ind.
 	facebookUrl?: string;
+	// Simplero-produktets nummer. Staar det her, OG er holdet sat som aktivt,
+	// lander nye koeb paa holdet af sig selv. Linn saelger hvert nyt hold
+	// under samme produkt, saa koblingen kan ikke staa i koden. Se
+	// content/forlobKoeb.ts. Linns beslutning 30. august 2026.
+	simpleroProduktId?: string;
 	// Træning pr forløb (Fase 2B). Når false vises ingen mikrotræning for
 	// forløbet (træning leveres da bare som lektioner/videoer). Når undefined
 	// falder klienten tilbage på "har træning" (Kickstart/Kropsro uændret).
