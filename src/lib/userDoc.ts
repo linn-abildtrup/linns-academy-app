@@ -22,6 +22,7 @@ import {
 } from '$lib/utils/traeningsvariant';
 import { hentForlobsProgrammer } from '$lib/firestore/mikrotraening';
 import { forlobSlutMs, bibliotekBonusSlutMs, forlobAdgangFelter } from '$lib/content/forlobAdgang';
+import type { AllowedEmail } from '$lib/content/forlobAdgang';
 import { resolverAktuelAdgang, type ForlobVindue } from '$lib/content/adgangResolver';
 
 /**
@@ -234,11 +235,19 @@ export async function gemAppVersion(
 export async function synkroniserForlobskundeStatus(
 	uid: string,
 	email: string,
-	current: UserDoc
+	current: UserDoc,
+	/**
+	 * Kundens raekke i koebslisten, hvis kalderen allerede har hentet den.
+	 * Ved opstart hentes bruger-dokumentet og raekken samtidig i stedet for
+	 * efter hinanden, og saa er der ingen grund til at hente den igen.
+	 * Udelades den, henter vi den selv praecis som foer.
+	 */
+	forudhentetAllowed?: AllowedEmail | null
 ): Promise<UserDoc> {
 	if (!email) return current;
 
-	const allowed = await hentAllowedEmail(email);
+	const allowed =
+		forudhentetAllowed !== undefined ? forudhentetAllowed : await hentAllowedEmail(email);
 	if (!allowed) return current;
 
 	const opdateringer: Record<string, unknown> = {};
@@ -253,7 +262,21 @@ export async function synkroniserForlobskundeStatus(
 	if (allowed.forlobId) {
 		const productId = allowed.activeProduct ?? 'kickstart';
 		const productRef = doc(db, 'users', uid, 'products', productId);
-		const productSnap = await getDoc(productRef);
+
+		// De tre opslag herunder afhaenger ikke af hinanden, saa de hentes
+		// samtidig. Foer laa de i koe, og paa en telefon koster hver tur frem
+		// og tilbage et kvart sekund. Maalt 30. august 2026: opstarten ventede
+		// paa seks ture i raekke. Raekkefoelgen af det der SKER er uaendret,
+		// kun ventetiden er lagt oven i hinanden.
+		const [productSnap, forlobSnapResultat, nulDagePrForlob] = await Promise.all([
+			getDoc(productRef),
+			getDoc(doc(db, 'forlob', allowed.forlobId)).then(
+				(snap) => ({ ok: true as const, snap }),
+				(e) => ({ ok: false as const, fejl: e })
+			),
+			hentNulDagePrForlob(uid)
+		]);
+
 		if (productSnap.exists()) {
 			const data = productSnap.data() as { forlobId?: string };
 			if (data.forlobId !== allowed.forlobId) {
@@ -278,8 +301,10 @@ export async function synkroniserForlobskundeStatus(
 		let forlobAntalDage = 0;
 		let forlobBygget = false;
 		let forlobFeatures: Record<string, boolean> | null = null;
-		try {
-			const forlobSnap = await getDoc(doc(db, 'forlob', allowed.forlobId));
+		if (!forlobSnapResultat.ok) {
+			console.warn('Kunne ikke hente forloeb:', forlobSnapResultat.fejl);
+		} else {
+			const forlobSnap = forlobSnapResultat.snap;
 			if (forlobSnap.exists()) {
 				const data = forlobSnap.data() as {
 					startDato?: { toMillis?: () => number; seconds?: number };
@@ -292,8 +317,6 @@ export async function synkroniserForlobskundeStatus(
 				forlobBygget = data.byggetForlob === true;
 				forlobFeatures = data.features ?? {};
 			}
-		} catch (e) {
-			console.warn('Kunne ikke hente forloeb:', e);
 		}
 		// Fælles slut-beregning (forlobSlutMs i $lib/content/forlobAdgang) så
 		// login-sync og webhooks aldrig regner forskelligt. Se A4-oprydning.
@@ -302,7 +325,6 @@ export async function synkroniserForlobskundeStatus(
 		// kalenderdag 85 selv om forloebet reelt koerte videre, og saa mistede
 		// hun BAADE adgangen og sit tildelte traeningsprogram (forlobUdloebet
 		// nedenfor). Fundet 17/8 2026: 12 kunder paa Kropsro 24. maj.
-		const nulDagePrForlob = await hentNulDagePrForlob(uid);
 		const slutMs = forlobSlutMs(
 			forlobStartMs,
 			forlobAntalDage,

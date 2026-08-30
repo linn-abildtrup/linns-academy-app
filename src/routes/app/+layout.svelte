@@ -11,7 +11,8 @@
 		synkroniserForlobskundeStatus
 	} from '$lib/userDoc';
 	import { version } from '$app/environment';
-	import { lytTilAllowedEmail } from '$lib/firestore/forlob';
+	import { hentAllowedEmail, lytTilAllowedEmail } from '$lib/firestore/forlob';
+	import type { AllowedEmail } from '$lib/content/forlobAdgang';
 	import type { UserDoc } from '$lib/types';
 	import TabBar from '$lib/components/TabBar.svelte';
 	import Header from '$lib/components/Header.svelte';
@@ -318,6 +319,18 @@
 			// Den rigtige kaede. Indholdet er uaendret, den er bare pakket saa
 			// vi kan holde den op mod et ur nedenfor.
 			const kaeden = (async () => {
+				// Kundens raekke i koebslisten afhaenger ikke af bruger-dokumentet,
+				// saa den hentes SAMTIDIG i stedet for bagefter. Foer ventede
+				// opstarten paa seks ture til serveren i raekke. Fejler den, sender
+				// vi undefined videre, og saa henter synkroniseringen den selv
+				// praecis som foer. Maalt 30. august 2026.
+				const raekkeLoefte: Promise<AllowedEmail | null | undefined> = u.email
+					? hentAllowedEmail(u.email).then(
+							(r) => r,
+							() => undefined
+						)
+					: Promise.resolve(null);
+
 				// Hent bruger-dokument fra Firestore
 				let doc = await getUserDoc(u.uid);
 
@@ -333,7 +346,12 @@
 				// blokerer ikke login.
 				if (doc && u.email) {
 					try {
-						doc = await synkroniserForlobskundeStatus(u.uid, u.email, doc);
+						doc = await synkroniserForlobskundeStatus(
+							u.uid,
+							u.email,
+							doc,
+							await raekkeLoefte
+						);
 						sidsteSync = Date.now();
 					} catch (e) {
 						console.warn('Forløbssync fejlede:', e);
