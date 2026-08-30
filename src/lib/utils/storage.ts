@@ -24,32 +24,34 @@ export async function getVideoUrl(filename: string): Promise<string> {
 }
 
 /**
- * Prefetcher en liste af træningsvideoer i baggrunden så de ligger klar i
- * browser-cachen når brugeren går til træningssiden. Best-effort: fejl logges
- * men kaster ikke. Bruges fra forsiden og lignende entry-points.
+ * SLAAET FRA 30. august 2026.
  *
- * Storage-objekterne har Cache-Control: max-age=31536000 (1 år), så når de
- * først er hentet bliver de liggende i cachen.
+ * Funktionen hentede dagens traeningsvideoer paa forhaand, saa de laa klar
+ * hvis kunden trykkede paa traeningen. Den blev maalt paa den rigtige app
+ * og gjorde to ting galt.
+ *
+ * DEN FEJLEDE HVER GANG. Konsollen var fuld af "Prefetch fejlede", saa
+ * videoerne blev aldrig gemt. Arbejdet var spildt, og det har efter alt at
+ * doemme aldrig virket.
+ *
+ * OG DEN SPAERREDE FOR APPENS EGNE DATA. Browseren kan kun have en
+ * haandfuld hentninger i gang mod samme sted ad gangen, saa kundens
+ * bruger-dokument og forloeb stod i koe bag videoerne. Maalt til 72
+ * videokald ved én opstart, langt flere end der er oevelser paa en dag,
+ * fordi den koerte forfra hver gang kundens data blev opdateret. En frisk
+ * oprettelse tog 11 sekunder paa en hurtig computer, og paa en telefon
+ * ramte den over graensen hvor appen siger "det tager laengere end
+ * normalt".
+ *
+ * Videoen hentes stadig naar kunden faktisk aabner traeningen, praecis som
+ * en video paa en hvilken som helst anden side.
+ *
+ * Signaturen er bevaret, saa kaldene kan blive staaende. Vil vi have
+ * forhentning igen, skal den loeses et andet sted: faerre filer, og foerst
+ * naar appen er faerdig med at starte op.
  */
-export async function prefetchVideoer(filenames: string[]): Promise<void> {
-	if (typeof window === 'undefined' || filenames.length === 0) return;
-	// Hent URLs i parallel
-	const urls = await Promise.all(
-		filenames.map((f) =>
-			getVideoUrl(f).catch((e) => {
-				console.warn('Kunne ikke hente video-URL til prefetch:', f, e);
-				return null;
-			})
-		)
-	);
-	// Fetch hver URL for at varme browser-cachen. Vi læser ikke responsen,
-	// bare lader browseren downloade og gemme.
-	for (const url of urls) {
-		if (!url) continue;
-		fetch(url, { cache: 'force-cache' }).catch((e) =>
-			console.warn('Prefetch fejlede:', e)
-		);
-	}
+export async function prefetchVideoer(_filenames: string[]): Promise<void> {
+	return;
 }
 
 /**
