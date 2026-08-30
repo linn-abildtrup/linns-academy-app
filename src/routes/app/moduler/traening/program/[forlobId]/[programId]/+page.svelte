@@ -14,6 +14,7 @@
 	} from '$lib/firestore/mikrotraening';
 	import { hentProgramFremgang } from '$lib/firestore/mineProgrammer';
 	import { hentForlob, hentAktivProduktType } from '$lib/firestore/forlob';
+	import { endnuIkkeStartetTekst, traeningErStartet } from '$lib/content/traeningStart';
 	import { getCurrentDayMedNulDage, nulDageDatoer, toIsoLokal } from '$lib/content/forlob';
 	import { getVideoUrl } from '$lib/utils/storage';
 	import { alleProdukter } from '$lib/content/produkter';
@@ -146,6 +147,20 @@
 				}
 				const startDato = toIsoLokal(forlob.startDato.toDate());
 				const idx = getCurrentDayMedNulDage({ startDato, antalDage: forlob.antalDage }, nulDatoer);
+
+				// Spaerringen. Kender hun adressen, kan hun ellers gaa uden om
+				// forsiden og starte traeningen foer forloebet er naaet dertil.
+				// Kickstart begynder paa dag 3. Samme regel som forsiden og
+				// oversigten, se content/traeningStart.ts.
+				//
+				// Kun naar vi VED hvilken dag hun staar paa. Er idx null, ved vi
+				// det ikke, og saa lukker vi ikke nogen ude paa et gaet.
+				if (idx !== null && !traeningErStartet(idx, forlob)) {
+					fejl = endnuIkkeStartetTekst(forlob, idx);
+					loading = false;
+					return;
+				}
+
 				if (idx !== null) {
 					// idx er forloebsdagen (0=baseline, 1..antalDage=traeningsdage) — SAMME
 					// nummerering som forsiden + vaneprogrammet. Programdagene er
@@ -184,8 +199,13 @@
 		</a>
 		<div class="eyebrow">Dagens træning</div>
 		<h1>{programData?.program.navn ?? 'Dagens øvelser'}</h1>
-		<p class="page-sub">Tryk på en øvelse for at se den. Tryk Start træning for at gå i gang.</p>
-		<div class="meta-pille">{erMaster ? 'Dit tildelte program' : `Tildelt fra ${forlobNavn}`}</div>
+		<!-- Er der ingen oevelser at trykke paa, maa der heller ikke staa at
+		     hun skal trykke paa dem. Gaelder ogsaa naar traeningen endnu ikke
+		     er begyndt, se spaerringen ovenfor. -->
+		{#if !fejl}
+			<p class="page-sub">Tryk på en øvelse for at se den. Tryk Start træning for at gå i gang.</p>
+			<div class="meta-pille">{erMaster ? 'Dit tildelte program' : `Tildelt fra ${forlobNavn}`}</div>
+		{/if}
 	</header>
 
 	{#if loading}

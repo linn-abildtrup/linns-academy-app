@@ -20,6 +20,8 @@
 	import { hentForlobsProgrammer, hentAlleMasterProgrammer } from '$lib/firestore/mikrotraening';
 	import type { TrainingProgram } from '$lib/content/mikrotraening';
 	import { aktivtForlobId } from '$lib/utils/traeningsvariant';
+	import { hentForlobsDag } from '$lib/firestore/traeningsDag';
+	import { endnuIkkeStartetTekst, traeningErStartet } from '$lib/content/traeningStart';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -40,6 +42,9 @@
 	// fra forløbet. Bruges af forløbskunde-grenen saa moduler og forside er
 	// synkroniseret.
 	let forlobsProgrammer = $state<TrainingProgram[]>([]);
+	// Sat naar forloebets traening endnu ikke er begyndt. Saa staar
+	// teksten her i stedet for programmerne, se hentForlobsDag ovenfor.
+	let endnuIkkeStartet = $state<string | null>(null);
 	const erForlobskunde = $derived(erForlobsklient(userDoc));
 	const aktivtForlob = $derived(aktivtForlobId(userDoc));
 
@@ -105,6 +110,26 @@
 			const fId = aktivtForlobId(userDoc);
 			if (!fId) return;
 			indlaeserNyt = true;
+
+			// Begynder forloebets traening foerst senere, skal programmerne
+			// ikke kunne aabnes herfra. Kickstart starter paa dag 3, og foer
+			// den dag kunne kunden gaa uden om forsiden og starte alligevel.
+			// Linns krav 29. august 2026, hullet fundet 30. august.
+			try {
+				const { forlob, forlobsDag } = await hentForlobsDag(
+					user.uid,
+					fId,
+					userDoc.forlobIds ?? [fId]
+				);
+				// Kun naar vi VED hvilken dag hun staar paa. Ellers lader vi
+				// tvivlen komme kunden til gode og viser programmerne som foer.
+				if (forlobsDag !== null && !traeningErStartet(forlobsDag, forlob)) {
+					endnuIkkeStartet = endnuIkkeStartetTekst(forlob, forlobsDag);
+				}
+			} catch (e) {
+				console.error('Kunne ikke afgoere om traeningen er begyndt:', e);
+			}
+
 			try {
 				// Forløbets egne programmer er det kritiske — hentes først.
 				forlobsProgrammer = await hentForlobsProgrammer(fId);
@@ -222,6 +247,10 @@
 		{#if erForlobskunde}
 			{#if indlaeserNyt}
 				<div class="status-rad">Henter dine programmer…</div>
+			{:else if endnuIkkeStartet}
+				<!-- Traeningen er ikke begyndt endnu. Vi siger hvornaar der sker
+				     noget, i stedet for bare at lade raekkerne vaere vaek. -->
+				<div class="status-rad">{endnuIkkeStartet}</div>
 			{:else if forlobsProgrammer.length === 0}
 				<div class="status-rad">Ingen træningsprogrammer fundet for dit forløb.</div>
 			{:else}
