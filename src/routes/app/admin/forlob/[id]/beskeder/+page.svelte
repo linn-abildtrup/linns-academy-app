@@ -16,6 +16,8 @@
 	} from '$lib/firestore/spoergsmaal';
 	import { hentForlob, hentAllowedEmailsForForlob } from '$lib/firestore/forlob';
 	import { gemSvarHistorik } from '$lib/firestore/svarHistorik';
+	import UdkastGrundlagVisning from '$lib/components/UdkastGrundlag.svelte';
+	import type { UdkastGrundlag } from '$lib/content/svarUdkast';
 
 	interface AiUdkast {
 		udkast: string;
@@ -26,6 +28,8 @@
 		antalKundeHistorik?: number;
 		/** Hvor mange svar paa lignende spoergsmaal der blev fundet i hele arkivet. */
 		antalRelevanteSvar?: number;
+		/** Hvad udkastet blev bygget paa, til udfoldning i admin. */
+		grundlag?: UdkastGrundlag;
 	}
 
 	const forlobId = $derived(page.params.id ?? '');
@@ -409,11 +413,8 @@
 											</button>
 										</div>
 										<div class="ai-udkast-tekst">{aiUdkast[q.id].udkast}</div>
-										{#if aiUdkast[q.id].antalKundeHistorik || aiUdkast[q.id].antalRelevanteSvar}
-											<p class="ai-kilde">
-												Bygget med {aiUdkast[q.id].antalKundeHistorik ?? 0} tidligere svar til denne
-												kunde og {aiUdkast[q.id].antalRelevanteSvar ?? 0} svar på lignende spørgsmål
-											</p>
+										{#if aiUdkast[q.id].grundlag}
+											<UdkastGrundlagVisning grundlag={aiUdkast[q.id].grundlag} />
 										{/if}
 										<div class="ai-knapper">
 											<button

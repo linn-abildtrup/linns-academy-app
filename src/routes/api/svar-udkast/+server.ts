@@ -25,6 +25,7 @@ import {
 	byggKlientKontekstTekst,
 	byggKundeHistorikTekst,
 	byggRelevanteSvarTekst,
+	uddrag,
 	byggSystemBlocks,
 	byggTidligereSvarTekst,
 	byggUserMessage,
@@ -33,7 +34,9 @@ import {
 	parseModelOutput,
 	type FaqItem,
 	type KlientKontekst,
+	type GrundlagPost,
 	type TidligereSvar,
+	type UdkastGrundlag,
 	type UdkastResultat
 } from '$lib/content/svarUdkast';
 import { ADMIN_EMAILS } from '$lib/admin';
@@ -261,6 +264,38 @@ export const POST: RequestHandler = async ({ request }) => {
 		spoergsmaalTekst: spm.spoergsmaal
 	});
 
+	// Hvad udkastet bygger paa, i samme raekkefoelge som prompten. Kun uddrag,
+	// saa svaret til admin ikke bliver unoedigt tungt.
+	const grundlag: UdkastGrundlag = {
+		kundeHistorik: kundeHistorik.map(
+			(k): GrundlagPost => ({
+				spoergsmaal: uddrag(k.spoergsmaal),
+				svar: uddrag(k.svar),
+				dato: k.dato,
+				forlobId: ''
+			})
+		),
+		lignende: relevante.map(
+			(r): GrundlagPost => ({
+				spoergsmaal: uddrag(r.spoergsmaal),
+				svar: uddrag(r.svar),
+				dato: r.tidsstempel ? new Date(r.tidsstempel).toISOString().slice(0, 10) : '',
+				forlobId: r.forlobId
+			})
+		),
+		holdSvar: tidligereSvar.map(
+			(t): GrundlagPost => ({
+				spoergsmaal: uddrag(t.spoergsmaal),
+				svar: uddrag(t.svar),
+				dato: '',
+				forlobId: spm.forlobId
+			})
+		),
+		antalFaq: faqItems.length,
+		antalVidenbase: videnbaseUddrag.length,
+		korpusStoerrelse: korpus.length
+	};
+
 	const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
 		method: 'POST',
 		headers: {
@@ -324,6 +359,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		antalKundeHistorik: kundeHistorik.length,
 		antalRelevanteSvar: relevante.length,
 		antalVidenbaseDocs: videnbaseUddrag.length,
-		korpusStoerrelse: korpus.length
+		korpusStoerrelse: korpus.length,
+		grundlag
 	});
 };

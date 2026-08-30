@@ -29,6 +29,30 @@ export interface KundeHistorikPost {
 	dato: string;
 }
 
+/** Én kilde bag et udkast, som den vises for admin. */
+export interface GrundlagPost {
+	spoergsmaal: string;
+	svar: string;
+	/** ISO-dato yyyy-mm-dd, tom hvis ukendt. */
+	dato: string;
+	/** Hvilket hold svaret kom fra. Tom for kundens egen historik. */
+	forlobId: string;
+}
+
+/**
+ * Hvad et udkast blev bygget paa. Ren information til admin, saa det er til
+ * at se HVORFOR udkastet blev som det blev.
+ */
+export interface UdkastGrundlag {
+	kundeHistorik: GrundlagPost[];
+	lignende: GrundlagPost[];
+	holdSvar: GrundlagPost[];
+	antalFaq: number;
+	antalVidenbase: number;
+	/** Hvor mange besvarede spoergsmaal der blev soegt i. */
+	korpusStoerrelse: number;
+}
+
 export interface UdkastResultat {
 	udkast: string;
 	lavSikkerhed: boolean;
@@ -109,6 +133,11 @@ function trimTekst(s: string, maks: number): string {
 	const chars = Array.from(s);
 	if (chars.length <= maks) return s;
 	return chars.slice(0, maks - 1).join('').trimEnd() + '…';
+}
+
+/** Kort uddrag af en tekst, til visning i admin. */
+export function uddrag(tekst: string, maks = 240): string {
+	return trimTekst(tekst, maks);
 }
 
 export function byggFaqTekst(items: FaqItem[]): string {
