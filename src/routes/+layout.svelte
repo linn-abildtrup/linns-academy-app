@@ -34,7 +34,16 @@
 		// Ny SW har taget over → marker at en opdatering venter. Vi genindlaeser
 		// IKKE straks (det ville afbryde fx en video); den nye version anvendes
 		// ved naeste navigation via beforeNavigate ovenfor.
+		// FOERSTE besoeg er ikke en opdatering. Er der ingen controller i
+		// forvejen, tager service workeren over en side der allerede koerer
+		// den nyeste kode, og saa er der intet at anvende. Uden det her blev
+		// foerste skridt ind i appen efter oprettelsen lavet om til en fuld
+		// genindlaesning: hele appen blev smidt vaek og bygget op igen, og
+		// login skulle gaa forfra. Maalt til 1,4 sekund paa en computer 30.
+		// august 2026, og markant mere paa en telefon.
+		const havdeController = !!navigator.serviceWorker.controller;
 		navigator.serviceWorker.addEventListener('controllerchange', () => {
+			if (!havdeController) return;
 			opdateringVenter = true;
 		});
 
