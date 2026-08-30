@@ -46,6 +46,7 @@ Stil:
 - Vær varm, direkte og personlig. Brug klientens fornavn
 - Hold svaret kort (3-8 sætninger) medmindre spørgsmålet kræver mere detalje
 - Brug Linns tidligere svar nedenfor som forbillede for tonen
+- Har du svaret paa et lignende spoergsmaal foer, saa hold dig til den samme faglige linje. Skift ikke holdning fra klient til klient
 - Hvis FAQ'en dækker spørgsmålet direkte, brug formuleringen derfra
 - Skriv ikke "kære". Linn bruger "hej {navn}"
 - Har klienten spurgt om noget lignende foer, saa se afsnittet "Tidligere udveksling med denne klient". Gentag ikke et helt svar hun allerede har faaet, byg videre paa det, og anerkend gerne at I har vaeret inde paa det
@@ -123,6 +124,21 @@ export function byggTidligereSvarTekst(svar: TidligereSvar[]): string {
 		.map(
 			(s, i) =>
 				`--- Eksempel ${i + 1} ---\nKlient spurgte: ${trimTekst(s.spoergsmaal, 300)}\nLinn svarede: ${trimTekst(s.svar, 600)}`
+		)
+		.join('\n\n');
+}
+
+/**
+ * De svar Linn tidligere har givet paa noget lignende, uanset hvilket hold
+ * de kom fra. Ligger i user-message'en og ikke i den cachede system-prompt,
+ * fordi udvalget er forskelligt for hvert spoergsmaal.
+ */
+export function byggRelevanteSvarTekst(svar: TidligereSvar[]): string {
+	if (svar.length === 0) return '';
+	return svar
+		.map(
+			(s, i) =>
+				`--- Lignende ${i + 1} ---\nEn klient spurgte: ${trimTekst(s.spoergsmaal, 300)}\nDu svarede: ${trimTekst(s.svar, 600)}`
 		)
 		.join('\n\n');
 }
@@ -212,9 +228,16 @@ export function byggUserMessage(args: {
 	klientKontekstTekst: string;
 	sidsteBeskeder: string[];
 	spoergsmaalTekst: string;
+	/** Svar paa lignende spoergsmaal fra hele arkivet. Valgfri. */
+	relevanteSvarTekst?: string;
 }): string {
 	const dele: string[] = [];
 	dele.push(`Klient: ${args.klientKontekstTekst}`);
+	if (args.relevanteSvarTekst) {
+		dele.push('');
+		dele.push('Dine egne svar på lignende spørgsmål (fra alle hold, brug dem som facit for indhold):');
+		dele.push(args.relevanteSvarTekst);
+	}
 	if (args.sidsteBeskeder.length > 0) {
 		dele.push('');
 		dele.push('Tidligere udveksling med denne klient:');

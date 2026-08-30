@@ -24,6 +24,8 @@
 		skipBegrundelse: string | null;
 		/** Hvor mange tidligere svar til NETOP denne kunde udkastet blev bygget paa. */
 		antalKundeHistorik?: number;
+		/** Hvor mange svar paa lignende spoergsmaal der blev fundet i hele arkivet. */
+		antalRelevanteSvar?: number;
 	}
 
 	const forlobId = $derived(page.params.id ?? '');
@@ -407,9 +409,10 @@
 											</button>
 										</div>
 										<div class="ai-udkast-tekst">{aiUdkast[q.id].udkast}</div>
-										{#if aiUdkast[q.id].antalKundeHistorik}
+										{#if aiUdkast[q.id].antalKundeHistorik || aiUdkast[q.id].antalRelevanteSvar}
 											<p class="ai-kilde">
-												Bygget med {aiUdkast[q.id].antalKundeHistorik} tidligere svar til denne kunde
+												Bygget med {aiUdkast[q.id].antalKundeHistorik ?? 0} tidligere svar til denne
+												kunde og {aiUdkast[q.id].antalRelevanteSvar ?? 0} svar på lignende spørgsmål
 											</p>
 										{/if}
 										<div class="ai-knapper">

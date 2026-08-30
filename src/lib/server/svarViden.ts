@@ -9,6 +9,7 @@
 
 import { runQuery } from '$lib/server/firestoreRest';
 import type { KundeHistorikPost, TidligereSvar } from '$lib/content/svarUdkast';
+import type { KorpusSvar } from '$lib/content/svarRelevans';
 
 export const MAX_SVAR_HISTORIK = 30;
 
@@ -160,6 +161,43 @@ export async function hentKundeHistorik(
 			.map(({ spoergsmaal, svar, dato }) => ({ spoergsmaal, svar, dato }));
 	} catch (e) {
 		console.warn('kunde-historik-query fejlede:', e);
+		return [];
+	}
+}
+
+/**
+ * HELE arkivet af besvarede spoergsmaal, paa tvaers af alle forloeb. Bruges
+ * som grundlag for relevans-udvalget (se svarRelevans.ts).
+ *
+ * Kun klientspoergsmaal, ikke svarHistorik: svar-feltet her ER den tekst der
+ * blev sendt til kunden, saa det er allerede Linns endelige formulering.
+ *
+ * Loftet paa 1200 er en sikkerhedsventil, ikke en forventning. Arkivet er i
+ * dag nogle faa hundrede. Naar det naermer sig loftet, skal korpusset bygges
+ * som et snapshot i stedet for at blive hentet ved hver forespørgsel.
+ */
+export async function hentSvarKorpus(): Promise<KorpusSvar[]> {
+	try {
+		const docs = await runQuery('klientspoergsmaal', { limit: 1200 });
+		const ud: KorpusSvar[] = [];
+		for (const d of docs) {
+			const sp = d.data.spoergsmaal as string | undefined;
+			const svar = d.data.svar as string | undefined;
+			if (!sp || !svar) continue;
+			const tStr =
+				(d.data.besvaretAt as string | undefined) ?? (d.data.oprettet as string | undefined);
+			const ms = tStr ? new Date(tStr).getTime() : 0;
+			ud.push({
+				id: d.id,
+				spoergsmaal: sp,
+				svar,
+				forlobId: (d.data.forlobId as string) ?? '',
+				tidsstempel: Number.isFinite(ms) ? ms : 0
+			});
+		}
+		return ud;
+	} catch (e) {
+		console.warn('svar-korpus-query fejlede:', e);
 		return [];
 	}
 }

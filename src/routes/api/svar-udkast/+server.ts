@@ -16,13 +16,15 @@ import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentAlleDocs, hentDoc } from '$lib/server/firestoreRest';
-import { hentKundeHistorik, hentTidligereSvar } from '$lib/server/svarViden';
+import { hentKundeHistorik, hentSvarKorpus, hentTidligereSvar } from '$lib/server/svarViden';
+import { vaelgRelevanteSvar } from '$lib/content/svarRelevans';
 import { effektivState } from '$lib/utils/userAdgang';
 import type { UserDoc } from '$lib/types';
 import {
 	byggFaqTekst,
 	byggKlientKontekstTekst,
 	byggKundeHistorikTekst,
+	byggRelevanteSvarTekst,
 	byggSystemBlocks,
 	byggTidligereSvarTekst,
 	byggUserMessage,
@@ -39,6 +41,9 @@ import { ADMIN_EMAILS } from '$lib/admin';
 const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS = 800;
 const MAX_VIDENBASE_DOCS = 10;
+// Hoejeste antal svar paa lignende spoergsmaal der maa hentes ind fra hele
+// arkivet. Ligger oven i de 30 nyeste fra klientens eget hold.
+const MAX_RELEVANTE_SVAR = 40;
 
 interface VerifResultat {
 	uid: string;
@@ -210,14 +215,25 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	// Hent alt kontekst parallelt
-	const [klientKontekst, faqItems, tidligereSvar, videnbaseUddrag, kundeHistorik] =
+	const [klientKontekst, faqItems, tidligereSvar, videnbaseUddrag, kundeHistorik, korpus] =
 		await Promise.all([
 			hentKlientKontekst(spm.uid, spm.forlobId),
 			hentFaq(spm.forlobId),
 			hentTidligereSvar(spm.forlobId),
 			hentVidenbase(),
-			hentKundeHistorik(spm.uid, spoergsmaalId)
+			hentKundeHistorik(spm.uid, spoergsmaalId),
+			hentSvarKorpus()
 		]);
+
+	// Svar paa lignende spoergsmaal fra HELE arkivet. Dedup mod de eksempler
+	// der allerede staar i system-prompten, saa vi ikke sender det samme to
+	// gange: spoergsmaals-teksten er noeglen, for forloebs-laget har ingen id.
+	const alleredeMed = new Set(tidligereSvar.map((s) => s.spoergsmaal));
+	const relevante = vaelgRelevanteSvar(
+		korpus.filter((k) => !alleredeMed.has(k.spoergsmaal)),
+		spm.spoergsmaal,
+		{ maks: MAX_RELEVANTE_SVAR, ekskluder: new Set([spoergsmaalId]) }
+	);
 
 	const systemBlocks = byggSystemBlocks({
 		faqTekst: byggFaqTekst(faqItems),
@@ -229,6 +245,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	const userMessage = byggUserMessage({
 		klientKontekstTekst: byggKlientKontekstTekst(klientKontekst),
 		sidsteBeskeder: byggKundeHistorikTekst(kundeHistorik),
+		relevanteSvarTekst: byggRelevanteSvarTekst(relevante),
 		spoergsmaalTekst: spm.spoergsmaal
 	});
 
@@ -292,6 +309,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		usage: anthropicData.usage ?? null,
 		antalFaqItems: faqItems.length,
 		antalTidligereSvar: tidligereSvar.length,
-		antalKundeHistorik: kundeHistorik.length
+		antalKundeHistorik: kundeHistorik.length,
+		antalRelevanteSvar: relevante.length,
+		korpusStoerrelse: korpus.length
 	});
 };
