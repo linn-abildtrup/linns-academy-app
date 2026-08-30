@@ -16,12 +16,13 @@ import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentAlleDocs, hentDoc } from '$lib/server/firestoreRest';
-import { hentTidligereSvar } from '$lib/server/svarViden';
+import { hentKundeHistorik, hentTidligereSvar } from '$lib/server/svarViden';
 import { effektivState } from '$lib/utils/userAdgang';
 import type { UserDoc } from '$lib/types';
 import {
 	byggFaqTekst,
 	byggKlientKontekstTekst,
+	byggKundeHistorikTekst,
 	byggSystemBlocks,
 	byggTidligereSvarTekst,
 	byggUserMessage,
@@ -209,12 +210,14 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	// Hent alt kontekst parallelt
-	const [klientKontekst, faqItems, tidligereSvar, videnbaseUddrag] = await Promise.all([
-		hentKlientKontekst(spm.uid, spm.forlobId),
-		hentFaq(spm.forlobId),
-		hentTidligereSvar(spm.forlobId),
-		hentVidenbase()
-	]);
+	const [klientKontekst, faqItems, tidligereSvar, videnbaseUddrag, kundeHistorik] =
+		await Promise.all([
+			hentKlientKontekst(spm.uid, spm.forlobId),
+			hentFaq(spm.forlobId),
+			hentTidligereSvar(spm.forlobId),
+			hentVidenbase(),
+			hentKundeHistorik(spm.uid, spoergsmaalId)
+		]);
 
 	const systemBlocks = byggSystemBlocks({
 		faqTekst: byggFaqTekst(faqItems),
@@ -225,7 +228,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	const userMessage = byggUserMessage({
 		klientKontekstTekst: byggKlientKontekstTekst(klientKontekst),
-		sidsteBeskeder: [],
+		sidsteBeskeder: byggKundeHistorikTekst(kundeHistorik),
 		spoergsmaalTekst: spm.spoergsmaal
 	});
 
@@ -288,6 +291,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		...resultat,
 		usage: anthropicData.usage ?? null,
 		antalFaqItems: faqItems.length,
-		antalTidligereSvar: tidligereSvar.length
+		antalTidligereSvar: tidligereSvar.length,
+		antalKundeHistorik: kundeHistorik.length
 	});
 };

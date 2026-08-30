@@ -4,6 +4,7 @@ import {
 	byggKlientKontekstTekst,
 	byggSystemBlocks,
 	byggTidligereSvarTekst,
+	byggKundeHistorikTekst,
 	byggUserMessage,
 	byggVidenbaseTekst,
 	erTrivielBesked,
@@ -261,5 +262,49 @@ describe('parseModelOutput strips em-dash', () => {
 		const raw = '{"udkast":"Hej Lone — godt sporgsmaal","lavSikkerhed":false,"skip":false,"skipBegrundelse":null}';
 		const res = parseModelOutput(raw);
 		expect(res?.udkast).toBe('Hej Lone, godt sporgsmaal');
+	});
+});
+
+describe('byggKundeHistorikTekst', () => {
+	it('vender rækkefølgen så ældste står først', () => {
+		const linjer = byggKundeHistorikTekst([
+			{ spoergsmaal: 'Nyeste spørgsmål', svar: 'Nyeste svar', dato: '2026-08-20' },
+			{ spoergsmaal: 'Ældste spørgsmål', svar: 'Ældste svar', dato: '2026-06-01' }
+		]);
+		expect(linjer).toHaveLength(2);
+		expect(linjer[0]).toContain('Ældste spørgsmål');
+		expect(linjer[1]).toContain('Nyeste spørgsmål');
+	});
+
+	it('tager datoen med når den findes', () => {
+		const [linje] = byggKundeHistorikTekst([
+			{ spoergsmaal: 'Er kaffe ok?', svar: 'Ja, en om dagen', dato: '2026-07-14' }
+		]);
+		expect(linje).toContain('[2026-07-14]');
+		expect(linje).toContain('Hun spurgte: Er kaffe ok?');
+		expect(linje).toContain('Du svarede: Ja, en om dagen');
+	});
+
+	it('udelader datoen når tidsstemplet mangler', () => {
+		const [linje] = byggKundeHistorikTekst([
+			{ spoergsmaal: 'Et spørgsmål', svar: 'Et svar', dato: '' }
+		]);
+		expect(linje.startsWith('Hun spurgte:')).toBe(true);
+	});
+
+	it('giver en tom liste når kunden ikke har historik', () => {
+		expect(byggKundeHistorikTekst([])).toEqual([]);
+	});
+
+	it('lander i user-message under "Tidligere udveksling"', () => {
+		const msg = byggUserMessage({
+			klientKontekstTekst: 'Fornavn: Lone',
+			sidsteBeskeder: byggKundeHistorikTekst([
+				{ spoergsmaal: 'Er kaffe ok?', svar: 'Ja, en om dagen', dato: '2026-07-14' }
+			]),
+			spoergsmaalTekst: 'Må jeg drikke to kopper?'
+		});
+		expect(msg).toContain('Tidligere udveksling med denne klient:');
+		expect(msg).toContain('Er kaffe ok?');
 	});
 });

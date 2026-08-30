@@ -8,7 +8,7 @@
 // svarHistorik vinder ved id-overlap (nyere/redigeret version).
 
 import { runQuery } from '$lib/server/firestoreRest';
-import type { TidligereSvar } from '$lib/content/svarUdkast';
+import type { KundeHistorikPost, TidligereSvar } from '$lib/content/svarUdkast';
 
 export const MAX_SVAR_HISTORIK = 30;
 
@@ -115,4 +115,51 @@ export async function hentTidligereSvarMedBackup(
 	const haves = new Set(primaer.map((s) => s.spoergsmaalId));
 	const samlet = [...primaer, ...backup.filter((s) => !haves.has(s.spoergsmaalId))];
 	return tilTidligereSvar(samlet.sort((a, b) => b.tidsstempel - a.tidsstempel));
+}
+
+export const MAX_KUNDE_HISTORIK = 15;
+
+/**
+ * Kundens EGEN historik paa tvaers af alle forloeb: hvad hun tidligere har
+ * spurgt om, og hvad Linn faktisk svarede. svar-feltet paa klientspoergsmaal
+ * er den tekst der blev sendt til kunden (svarPaaSpoergsmaal skriver den
+ * endelige tekst derind), saa vi behoever ikke slaa op i svarHistorik her.
+ *
+ * Sorteret nyeste foerst, begraenset til MAX_KUNDE_HISTORIK. Det aktuelle
+ * spoergsmaal ekskluderes, saa AI'en ikke faar det serveret to gange.
+ */
+export async function hentKundeHistorik(
+	uid: string,
+	ekskluderSpoergsmaalId?: string
+): Promise<KundeHistorikPost[]> {
+	if (!uid) return [];
+	try {
+		const docs = await runQuery('klientspoergsmaal', {
+			where: { felt: 'uid', vaerdi: uid },
+			limit: 100
+		});
+		const ud: Array<KundeHistorikPost & { tidsstempel: number }> = [];
+		for (const d of docs) {
+			if (ekskluderSpoergsmaalId && d.id === ekskluderSpoergsmaalId) continue;
+			const sp = d.data.spoergsmaal as string | undefined;
+			const svar = d.data.svar as string | undefined;
+			if (!sp || !svar) continue;
+			const tStr =
+				(d.data.besvaretAt as string | undefined) ?? (d.data.oprettet as string | undefined);
+			const ms = tStr ? new Date(tStr).getTime() : 0;
+			ud.push({
+				spoergsmaal: sp,
+				svar,
+				dato: tStr ? String(tStr).slice(0, 10) : '',
+				tidsstempel: Number.isFinite(ms) ? ms : 0
+			});
+		}
+		return ud
+			.sort((a, b) => b.tidsstempel - a.tidsstempel)
+			.slice(0, MAX_KUNDE_HISTORIK)
+			.map(({ spoergsmaal, svar, dato }) => ({ spoergsmaal, svar, dato }));
+	} catch (e) {
+		console.warn('kunde-historik-query fejlede:', e);
+		return [];
+	}
 }

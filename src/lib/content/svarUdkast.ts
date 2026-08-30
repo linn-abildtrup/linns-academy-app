@@ -21,6 +21,14 @@ export interface TidligereSvar {
 	svar: string;
 }
 
+/** Ét tidligere spoergsmaal fra NETOP den kunde der skriver nu, med dato. */
+export interface KundeHistorikPost {
+	spoergsmaal: string;
+	svar: string;
+	/** ISO-dato yyyy-mm-dd. Tom streng hvis tidsstemplet mangler. */
+	dato: string;
+}
+
 export interface UdkastResultat {
 	udkast: string;
 	lavSikkerhed: boolean;
@@ -40,6 +48,8 @@ Stil:
 - Brug Linns tidligere svar nedenfor som forbillede for tonen
 - Hvis FAQ'en dækker spørgsmålet direkte, brug formuleringen derfra
 - Skriv ikke "kære". Linn bruger "hej {navn}"
+- Har klienten spurgt om noget lignende foer, saa se afsnittet "Tidligere udveksling med denne klient". Gentag ikke et helt svar hun allerede har faaet, byg videre paa det, og anerkend gerne at I har vaeret inde paa det
+- Modsig aldrig et svar Linn tidligere har givet den samme klient
 - ${TEGNSAETNINGS_REGEL}
 
 Lav-sikkerhed (sæt lavSikkerhed: true):
@@ -115,6 +125,20 @@ export function byggTidligereSvarTekst(svar: TidligereSvar[]): string {
 				`--- Eksempel ${i + 1} ---\nKlient spurgte: ${trimTekst(s.spoergsmaal, 300)}\nLinn svarede: ${trimTekst(s.svar, 600)}`
 		)
 		.join('\n\n');
+}
+
+/**
+ * Kundens egen historik som linjer til user-message'en. AELDST foerst, saa
+ * forloebet laeses kronologisk. Ligger bevidst UDEN for den cachede del af
+ * prompten, fordi den er forskellig for hver kunde.
+ */
+export function byggKundeHistorikTekst(poster: KundeHistorikPost[]): string[] {
+	return [...poster]
+		.reverse()
+		.map((p) => {
+			const dato = p.dato ? `[${p.dato}] ` : '';
+			return `${dato}Hun spurgte: ${trimTekst(p.spoergsmaal, 300)}\nDu svarede: ${trimTekst(p.svar, 500)}`;
+		});
 }
 
 export function byggVidenbaseTekst(uddrag: string[]): string {

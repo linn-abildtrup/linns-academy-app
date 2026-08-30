@@ -22,6 +22,8 @@
 		lavSikkerhed: boolean;
 		skip: boolean;
 		skipBegrundelse: string | null;
+		/** Hvor mange tidligere svar til NETOP denne kunde udkastet blev bygget paa. */
+		antalKundeHistorik?: number;
 	}
 
 	type Filter = 'alle' | SpoergsmaalStatus | 'ubesvarede';
@@ -612,6 +614,11 @@
 											</button>
 										</div>
 										<div class="ai-udkast-tekst">{aiUdkast[q.id].udkast}</div>
+										{#if aiUdkast[q.id].antalKundeHistorik}
+											<p class="ai-kilde">
+												Bygget med {aiUdkast[q.id].antalKundeHistorik} tidligere svar til denne kunde
+											</p>
+										{/if}
 										<div class="ai-knapper">
 											<button
 												type="button"
@@ -846,6 +853,11 @@
 												</button>
 											</div>
 											<div class="ai-udkast-tekst">{aiUdkast[q.id].udkast}</div>
+										{#if aiUdkast[q.id].antalKundeHistorik}
+											<p class="ai-kilde">
+												Bygget med {aiUdkast[q.id].antalKundeHistorik} tidligere svar til denne kunde
+											</p>
+										{/if}
 											<div class="ai-knapper">
 												<button
 													type="button"
@@ -1341,6 +1353,12 @@
 	.ai-boks-skip {
 		background: var(--bg2);
 		border-color: var(--border);
+	}
+
+	.ai-kilde {
+		margin: 6px 0 0;
+		font-size: calc(12px * var(--fs-scale, 1));
+		opacity: 0.7;
 	}
 
 	.ai-boks-head {
