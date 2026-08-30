@@ -27,6 +27,7 @@
 	import { hentFeatureMatrix } from '$lib/firestore/featureAdgang';
 	import { STANDARD_MATRIX, type FeatureMatrix } from '$lib/content/features';
 	import { hentUserDocFraCache } from '$lib/userDocCache';
+	import { medGentagelse } from '$lib/content/hentIgen';
 	import { maaAabnePaaKopi, tidsgraense, HURTIG_START_MS } from '$lib/content/hurtigStart';
 	import HjemmeskaermScreen from '$lib/components/HjemmeskaermScreen.svelte';
 	import { erMobilEnhed, erPaaHjemmeskaerm, skalViseHjemmeskaerm } from '$lib/content/hjemmeskaerm';
@@ -50,6 +51,10 @@
 	// bare ud, siger vi det aerligt i stedet for at vise en bjaelke der
 	// tæller sekunder. Se utils/opstartVagt.ts.
 	let opstartHaenger = $state(false);
+	// Sat naar kundens adgang slet ikke kunne hentes, ogsaa efter at vi har
+	// proevet igen. Saa siger vi det som det er, i stedet for at paastaa at
+	// hendes koeb ikke findes. Se content/hentIgen.ts.
+	let adgangKunneIkkeHentes = $state(false);
 
 	// ── Hjemmeskaerms-skaermen for nye kunder ────────────────────
 	// Vises én gang, foer alt andet paa forsiden, saa hun ikke faar
@@ -342,19 +347,33 @@
 				}
 
 				// Tjek om brugeren er på et forløbs-whitelist og opdater state +
-				// userProduct hvis det er tilfældet. Best-effort — fejl logges men
-				// blokerer ikke login.
+				// userProduct hvis det er tilfældet.
+				//
+				// Vi proever igen ved fejl. Foer blev fejlen bare logget, og en
+				// helt ny kunde blev lukket ind uden adgang og fik at vide at vi
+				// ikke kunne finde hendes koeb. Se content/hentIgen.ts.
+				//
+				// Foerste forsoeg bruger raekken vi hentede paa forhaand. Gaar
+				// det galt, henter synkroniseringen den selv, saa vi ikke
+				// gentager et daarligt svar.
 				if (doc && u.email) {
+					const email = u.email;
+					const foerste = await raekkeLoefte;
 					try {
-						doc = await synkroniserForlobskundeStatus(
-							u.uid,
-							u.email,
-							doc,
-							await raekkeLoefte
+						const nuvaerende = doc;
+						doc = await medGentagelse((forsoeg) =>
+							synkroniserForlobskundeStatus(
+								u.uid,
+								email,
+								nuvaerende,
+								forsoeg === 1 ? foerste : undefined
+							)
 						);
 						sidsteSync = Date.now();
+						adgangKunneIkkeHentes = false;
 					} catch (e) {
 						console.warn('Forløbssync fejlede:', e);
+						adgangKunneIkkeHentes = true;
 					}
 				}
 
@@ -482,7 +501,7 @@
 	<!-- Bruger uden adgang (efter 90-dages bonus + ingen aktivt abonnement,
 	     eller email der aldrig blev whitelisted). Admin omgås tjekket så Linn
 	     altid kan komme ind. -->
-	<IngenAdgangScreen {userDoc} />
+	<IngenAdgangScreen {userDoc} hentningFejlede={adgangKunneIkkeHentes} />
 {:else if visHjemmeskaerm}
 	<!-- Ny kunde, foerste gang. Skaermen staar alene, saa forsiden ikke
 	     naar at aabne kettlebell-spoergsmaalet bagved. -->

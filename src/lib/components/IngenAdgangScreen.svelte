@@ -14,9 +14,15 @@
 
 	interface Props {
 		userDoc: UserDoc | null;
+		/**
+		 * True naar vi slet ikke kunne HENTE hendes adgang, ogsaa efter at
+		 * have proevet igen. Saa maa vi ikke paastaa at hendes koeb ikke
+		 * findes. Se content/hentIgen.ts.
+		 */
+		hentningFejlede?: boolean;
 	}
 
-	const { userDoc }: Props = $props();
+	const { userDoc, hentningFejlede = false }: Props = $props();
 
 	const harTidligereHaftKob = $derived(
 		!!(userDoc?.simpleroCustomerId || (userDoc?.forlobIds && userDoc.forlobIds.length > 0))
@@ -37,7 +43,15 @@
 		<Logo size="lg" />
 	</div>
 
-	{#if harTidligereHaftKob}
+	{#if hentningFejlede}
+		<!-- Vi ved ikke om hun har adgang, vi kunne bare ikke faa fat i den.
+		     Det skal hun have at vide, i stedet for at hendes koeb ikke findes. -->
+		<h1 class="titel">Vi kunne ikke hente din adgang</h1>
+		<p class="brodtekst">
+			Der var noget galt med forbindelsen lige nu. Det er ikke dig, og dit køb fejler ikke
+			noget. Prøv igen om et øjeblik.
+		</p>
+	{:else if harTidligereHaftKob}
 		<h1 class="titel">Velkommen tilbage</h1>
 		<p class="brodtekst">
 			Din adgang til Linn's Academy er udløbet. Køb et nyt forløb eller et abonnement for at få
@@ -53,14 +67,20 @@
 	{/if}
 
 	<div class="knapper">
-		<Button
-			variant="primary"
-			size="lg"
-			full
-			onclick={() => window.open('https://linn.simplero.com/', '_blank', 'noopener')}
-		>
-			Se tilbud
-		</Button>
+		{#if hentningFejlede}
+			<Button variant="primary" size="lg" full onclick={() => window.location.reload()}>
+				Prøv igen
+			</Button>
+		{:else}
+			<Button
+				variant="primary"
+				size="lg"
+				full
+				onclick={() => window.open('https://linn.simplero.com/', '_blank', 'noopener')}
+			>
+				Se tilbud
+			</Button>
+		{/if}
 		<Button variant="ghost" size="lg" full onclick={logUd}>Log ud</Button>
 	</div>
 
