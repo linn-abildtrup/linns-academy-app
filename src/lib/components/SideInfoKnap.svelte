@@ -71,6 +71,24 @@
 		};
 	});
 
+	/**
+	 * Flytter arket ud i bunden af siden, vaek fra det omraade der ruller.
+	 * Uden det laa arket inde i indholds-omraadet, og paa iPhone tegnede
+	 * bundmenuen sig OVEN PAA arket, saa Luk-knappen laa bag menuen og ikke
+	 * kunne rammes. Linns skaermbilleder 30. august 2026. Alle appens andre
+	 * fuldskaerms-lag bruger allerede samme greb.
+	 */
+	function portalToBody(node: HTMLElement) {
+		document.body.appendChild(node);
+		return {
+			destroy() {
+				if (node.parentNode === document.body) {
+					document.body.removeChild(node);
+				}
+			}
+		};
+	}
+
 	function paaTast(e: KeyboardEvent) {
 		if (e.key === 'Escape') luk();
 	}
@@ -94,6 +112,7 @@
 		     ikke lukker ved at ramme teksten. -->
 		<div
 			class="info-bag"
+			use:portalToBody
 			role="button"
 			tabindex="-1"
 			aria-label="Luk"
@@ -168,6 +187,10 @@
 	}
 
 	.info-bag {
+		/* Fingeren maa ikke traekke siden bagved. overflow: hidden alene er
+		   ikke nok paa iPhone, derfor ogsaa den her. Selve teksten har sin
+		   egen tilladelse nedenfor. */
+		touch-action: none;
 		position: fixed;
 		inset: 0;
 		z-index: 60;
@@ -197,7 +220,14 @@
 	}
 
 	.info-rul {
+		/* Skal kunne krympe. Uden min-height: 0 vokser et langt afsnit ud
+		   over arkets hoejde i stedet for at rulle, og saa bliver Luk skubbet
+		   ud under skaermkanten. */
+		flex: 1 1 auto;
+		min-height: 0;
 		overflow-y: auto;
+		/* Teksten skal kunne rulles lodret, selv om laget udenom siger nej. */
+		touch-action: pan-y;
 		/* Stopper rulningen ved kanten af arket i stedet for at give den
 		   videre til siden bagved. */
 		overscroll-behavior: contain;
