@@ -40,13 +40,44 @@ const ALLE_ASSETS = [...build, ...files];
 // bytte for noget der koerer i baggrunden.
 const HOLD_STOERRELSE = 12;
 
-sw.addEventListener('install', (event) => {
-	event.waitUntil(gemPaaForhaand());
+/**
+ * VENTER IKKE LAENGERE PAA AT ALT ER HENTET.
+ *
+ * Foer stod her waitUntil(gemPaaForhaand()), og saa ventede installationen
+ * paa at ALLE appens filer var hentet: cirka 6 MB fordelt paa over hundrede
+ * filer. Det skete mens kunden stod og saa paa "Et oejeblik", og
+ * hentningerne kaempede samtidig med appens egne kald om den samme
+ * mobilforbindelse.
+ *
+ * Maalt 30. august: naar filerne allerede laa paa telefonen, tog hele
+ * rejsen fra "Kom i gang" til forsiden 3,5 sekunder, hvoraf appens egne
+ * data kun stod for 1,2. Foerste gang, hvor alt skulle hentes, blev det til
+ * over 11 sekunder, og saa siger appen "det tager laengere end normalt".
+ *
+ * Nu venter installationen ikke paa noget. Filerne gemmes i baggrunden
+ * efter appen er aabnet, se aktiveringen nedenfor, og alt hvad kunden
+ * faktisk bruger bliver desuden gemt af sig selv foerste gang hun bruger
+ * det, se fetch-haandteringen.
+ *
+ * Prisen: en kunde der installerer appen og med det samme gaar i flytilstand
+ * kan mangle en side hun endnu ikke har vaeret paa. Til gengaeld kommer hun
+ * ind paa faa sekunder i stedet for at vente. Linns valg 30. august.
+ */
+sw.addEventListener('install', () => {
 	sw.skipWaiting();
 });
 
 /**
- * Gemmer app'ens filer paa forhaand, saa den ogsaa virker uden net.
+ * Hvor laenge vi lader appen vaere i fred, foer vi begynder at hente resten.
+ * Opstarten er faerdig paa faa sekunder, og saa er forbindelsen ledig igen.
+ */
+const BAGGRUND_START_MS = 10000;
+
+/**
+ * Gemmer app'ens filer, saa den ogsaa virker uden net.
+ *
+ * Koerer nu i BAGGRUNDEN, ti sekunder efter at en ny version er aktiveret,
+ * ikke som en del af installationen. Se kommentaren ved install ovenfor.
  *
  * Foer stod her cache.addAll(), og den er alt-eller-intet: fejler ét eneste
  * kald, fx fordi en fil naaede at forsvinde midt i en udrulning eller fordi
@@ -86,6 +117,13 @@ sw.addEventListener('activate', (event) => {
 			await sw.clients.claim();
 		})
 	);
+
+	// Resten hentes stille, efter appen har haft ro til at aabne. Ligger
+	// bevidst UDEN FOR waitUntil: aktiveringen maa ikke vente paa den, for
+	// saa er vi tilbage til at kunden staar og ser paa en spinner.
+	setTimeout(() => {
+		void gemPaaForhaand();
+	}, BAGGRUND_START_MS);
 });
 
 sw.addEventListener('fetch', (event) => {
