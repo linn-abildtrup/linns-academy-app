@@ -98,10 +98,36 @@ interface QA {
 	t: number;
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+/**
+ * Sammenligner to noegler tegn for tegn uden at afsloere hvor de er ens.
+ * Almindelig === stopper ved foerste forskel, og det kan i teorien bruges
+ * til at gaette noeglen ét tegn ad gangen.
+ */
+function noeglerErEns(a: string, b: string): boolean {
+	if (a.length !== b.length) return false;
+	let forskel = 0;
+	for (let i = 0; i < a.length; i++) forskel |= a.charCodeAt(i) ^ b.charCodeAt(i);
+	return forskel === 0;
+}
+
+/**
+ * Adgang: enten et admin-login fra browseren, eller den planlagte ugentlige
+ * koersel der sender en fast noegle med. Noeglen skal vaere sat som
+ * LAER_CRON_NOEGLE i Cloudflare; er den tom, er den vej lukket helt.
+ */
+async function maaKoere(request: Request): Promise<boolean> {
+	const cronNoegle = env.LAER_CRON_NOEGLE;
+	const medsendt = request.headers.get('x-cron-noegle');
+	if (cronNoegle && cronNoegle.length >= 20 && medsendt && noeglerErEns(cronNoegle, medsendt)) {
+		return true;
+	}
 	const auth = request.headers.get('Authorization');
-	if (!auth?.startsWith('Bearer ')) throw error(401, 'Manglende Bearer-token');
-	if (!(await verificerAdmin(auth.slice(7)))) throw error(403, 'Ikke autoriseret som admin');
+	if (!auth?.startsWith('Bearer ')) return false;
+	return verificerAdmin(auth.slice(7));
+}
+
+export const POST: RequestHandler = async ({ request }) => {
+	if (!(await maaKoere(request))) throw error(403, 'Ikke autoriseret');
 
 	try {
 		// 1. Saml alle Q&A. svarHistorik (redigerede udkast) vinder over
