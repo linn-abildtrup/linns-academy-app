@@ -52,8 +52,7 @@
 		SLIDER_SPORGSMAAL.filter((s) => sliders[s.id] !== undefined).length
 	);
 	const klarTilSubmit = $derived(
-		antalMrsBesvaret === MRS_ITEMS.length &&
-			antalSlidersBesvaret === SLIDER_SPORGSMAAL.length
+		antalMrsBesvaret === MRS_ITEMS.length && antalSlidersBesvaret === SLIDER_SPORGSMAAL.length
 	);
 
 	onMount(async () => {
@@ -185,9 +184,7 @@
 		return item ? SUBSCALES[item.subscale].bg : SUBSCALES.somatisk.bg;
 	}
 
-	const resultatFortolkning = $derived(
-		netop_gemt ? getInterpretation(netop_gemt.total) : null
-	);
+	const resultatFortolkning = $derived(netop_gemt ? getInterpretation(netop_gemt.total) : null);
 
 	// Kun rigtige symptomcheck-udfyldelser taeller til kadence.
 	// kunSliders-entries (migrationsdata fra vaner-modulet) vises i grafen
@@ -195,9 +192,7 @@
 	const rigtigeScores = $derived(tidligereScores.filter((s) => !s.kunSliders));
 
 	const sidsteUdfyldelseAt = $derived(
-		rigtigeScores.length > 0
-			? rigtigeScores[rigtigeScores.length - 1].timestamp
-			: null
+		rigtigeScores.length > 0 ? rigtigeScores[rigtigeScores.length - 1].timestamp : null
 	);
 
 	const erKickstart = $derived(forlobErKickstart(aktivtForlob?.id));
@@ -256,17 +251,13 @@
 		return `${d.getDate()}/${d.getMonth() + 1}-${d.getFullYear()}`;
 	}
 
-	const tidligereSorteret = $derived(
-		[...rigtigeScores].sort((a, b) => b.timestamp - a.timestamp)
-	);
+	const tidligereSorteret = $derived([...rigtigeScores].sort((a, b) => b.timestamp - a.timestamp));
 
 	// Til sliders-grafen: kun entries der faktisk har sliders-data (post-22-maj
 	// 2026). Gamle MRS-udfyldelser uden sliders falder fra.
 	// Migration-entries (kunSliders=true) vises ikke i grafen for at undgaa
 	// at nye klienter ser data der ikke er deres egen.
-	const tidligereMedSliders = $derived(
-		tidligereSorteret.filter((s) => s.sliders !== undefined)
-	);
+	const tidligereMedSliders = $derived(tidligereSorteret.filter((s) => s.sliders !== undefined));
 </script>
 
 <div class="page">
@@ -294,8 +285,8 @@
 			<p class="page-sub">{kadenceTekst}</p>
 		{:else if visning === 'udfyld'}
 			<p class="page-sub">
-				Vælg den sværhedsgrad der passer bedst for hvert symptom. Der er ingen rigtige
-				eller forkerte svar.
+				Vælg den sværhedsgrad der passer bedst for hvert symptom. Der er ingen rigtige eller
+				forkerte svar.
 			</p>
 		{/if}
 	</header>
@@ -344,8 +335,8 @@
 				<div class="card-titel">MRS-symptomscore over tid</div>
 				<p class="card-sub">
 					Den internationale Menopause Rating Scale (0-44). Jo
-					<strong>lavere</strong> tal, jo færre overgangsalder-symptomer. En
-					faldende kurve er et godt tegn.
+					<strong>lavere</strong> tal, jo færre overgangsalder-symptomer. En faldende kurve er et godt
+					tegn.
 				</p>
 				<div class="graf-wrapper">
 					<div class="y-akse stor">
@@ -356,29 +347,23 @@
 						<span>0</span>
 					</div>
 					<svg class="udvikling-graf" viewBox="0 0 320 120" preserveAspectRatio="none">
-					<line x1="10" y1="10" x2="10" y2="110" stroke="var(--border)" stroke-width="1" />
-					<line
-						x1="10"
-						y1="110"
-						x2="310"
-						y2="110"
-						stroke="var(--border)"
-						stroke-width="1"
-					/>
-					<path
-						d={grafPath}
-						fill="none"
-						stroke="var(--terra)"
-						stroke-width="2.5"
-						stroke-linejoin="round"
-					/>
-					{#each grafPunkter as p (p.score.id)}
-						<circle cx={p.x} cy={p.y} r="4" fill="var(--terra)" />
-					{/each}
-				</svg>
+						<line x1="10" y1="10" x2="10" y2="110" stroke="var(--border)" stroke-width="1" />
+						<line x1="10" y1="110" x2="310" y2="110" stroke="var(--border)" stroke-width="1" />
+						<path
+							d={grafPath}
+							fill="none"
+							stroke="var(--terra)"
+							stroke-width="2.5"
+							stroke-linejoin="round"
+						/>
+						{#each grafPunkter as p (p.score.id)}
+							<circle cx={p.x} cy={p.y} r="4" fill="var(--terra)" />
+						{/each}
+					</svg>
 				</div>
 				<div class="graf-akse med-y-akse">
-					<span>{formaterDatoTekst(tidligereSorteret[tidligereSorteret.length - 1].timestamp)}</span>
+					<span>{formaterDatoTekst(tidligereSorteret[tidligereSorteret.length - 1].timestamp)}</span
+					>
 					<span>{formaterDatoTekst(tidligereSorteret[0].timestamp)}</span>
 				</div>
 			</section>
@@ -390,9 +375,8 @@
 				<div class="card-titel">Din velvære over tid (Linns Academy)</div>
 				<p class="card-sub">
 					Dine 5 selvvurderinger fra symptomchecken (1-10). Jo
-					<strong>højere</strong> tal, jo bedre velvære. En stigende kurve er et
-					godt tegn. Dette er Linns Academys egen kvalitative måling — det
-					modsatte af MRS-grafen ovenfor, hvor lave tal er bedst.
+					<strong>højere</strong> tal, jo bedre velvære. En stigende kurve er et godt tegn. Dette er Linns
+					Academys egen kvalitative måling — det modsatte af MRS-grafen ovenfor, hvor lave tal er bedst.
 				</p>
 				{#each SLIDER_SPORGSMAAL as spm (spm.id)}
 					{@const punkter = slidersAeldsteFoerst.map((s, i) => {
@@ -415,14 +399,7 @@
 							</div>
 							<svg class="mini-graf" viewBox="0 0 320 80" preserveAspectRatio="none">
 								<line x1="10" y1="10" x2="10" y2="70" stroke="var(--border)" stroke-width="1" />
-								<line
-									x1="10"
-									y1="70"
-									x2="310"
-									y2="70"
-									stroke="var(--border)"
-									stroke-width="1"
-								/>
+								<line x1="10" y1="70" x2="310" y2="70" stroke="var(--border)" stroke-width="1" />
 								<path
 									d={path}
 									fill="none"
@@ -438,7 +415,11 @@
 					</div>
 				{/each}
 				<div class="graf-akse med-y-akse">
-					<span>{formaterDatoTekst(tidligereMedSliders[tidligereMedSliders.length - 1].timestamp)}</span>
+					<span
+						>{formaterDatoTekst(
+							tidligereMedSliders[tidligereMedSliders.length - 1].timestamp
+						)}</span
+					>
 					<span>{formaterDatoTekst(tidligereMedSliders[0].timestamp)}</span>
 				</div>
 			</section>
@@ -454,11 +435,7 @@
 						{@const interp = getInterpretation(s.total)}
 						{@const erNyeste = i === 0}
 						<div class="historik-rad-wrap">
-							<button
-								type="button"
-								class="historik-rad"
-								onclick={() => aabnTidligere(s)}
-							>
+							<button type="button" class="historik-rad" onclick={() => aabnTidligere(s)}>
 								<div class="historik-dato">{formaterDatoTekst(s.timestamp)}</div>
 								<div class="historik-info">
 									<div class="historik-score" style="color: {interp.color};">
@@ -489,43 +466,36 @@
 		</section>
 
 		<div class="info-blok">
-			Denne symptomtjekliste er baseret på Menopause Rating Scale (MRS), som bruges i
-			forskning verden over til at måle overgangsaldersymptomer. Tilpasset til dansk af
-			Linn's Academy. Kilde: Heinemann et al., Health Qual Life Outcomes 2003;1:28.
+			Denne symptomtjekliste er baseret på Menopause Rating Scale (MRS), som bruges i forskning
+			verden over til at måle overgangsaldersymptomer. Tilpasset til dansk af Linn's Academy. Kilde:
+			Heinemann et al., Health Qual Life Outcomes 2003;1:28.
 		</div>
 	{:else if visning === 'udfyld'}
 		<div class="maalepunkt-pill">{MAALEPUNKT_LABEL[valgtMaalepunkt]}</div>
 
 		<div class="intro-blok">
-			<p>
-				Symptomchecken har to dele:
-			</p>
+			<p>Symptomchecken har to dele:</p>
 			<ol class="intro-liste">
 				<li>
-					<strong>Din generelle velvære</strong> — 5 sliders der måler hvordan du
-					har det lige nu (energi, mave, cravings, humør, søvn).
+					<strong>Din generelle velvære</strong> — 5 sliders der måler hvordan du har det lige nu (energi,
+					mave, cravings, humør, søvn).
 				</li>
 				<li>
-					<strong>Dine overgangsalder-symptomer</strong> — 11 spørgsmål fra den
-					internationale MRS-skala der zoomer ind på specifikke symptomer.
+					<strong>Dine overgangsalder-symptomer</strong> — 11 spørgsmål fra den internationale MRS-skala
+					der zoomer ind på specifikke symptomer.
 				</li>
 			</ol>
-			<p class="intro-fodnote">
-				Tag dig god tid og mærk efter. Det tager 2-3 minutter i alt.
-			</p>
+			<p class="intro-fodnote">Tag dig god tid og mærk efter. Det tager 2-3 minutter i alt.</p>
 		</div>
 
 		<section class="subskala-blok del-1">
 			<div class="del-eyebrow">Del 1 af 2</div>
-			<div
-				class="subskala-label"
-				style="background: var(--tdim); color: var(--terra);"
-			>
+			<div class="subskala-label" style="background: var(--tdim); color: var(--terra);">
 				Hvordan har du det generelt?
 			</div>
 			<p class="slider-intro">
-				Træk i hver slider — 1 = lavest, 10 = højest. Bruges sammen med dine
-				symptom-svar nedenfor til at give det fulde billede.
+				Træk i hver slider — 1 = lavest, 10 = højest. Bruges sammen med dine symptom-svar nedenfor
+				til at give det fulde billede.
 			</p>
 			{#each SLIDER_SPORGSMAAL as spm (spm.id)}
 				{@const v = sliders[spm.id]}
@@ -537,8 +507,7 @@
 						max="10"
 						step="1"
 						value={v ?? 5}
-						oninput={(e) =>
-							setSlider(spm.id, parseInt((e.target as HTMLInputElement).value, 10))}
+						oninput={(e) => setSlider(spm.id, parseInt((e.target as HTMLInputElement).value, 10))}
 					/>
 					<div class="slider-vaerdi">{v ?? 5}</div>
 				</div>
@@ -554,20 +523,17 @@
 		<div class="mrs-intro">
 			<h2>Dine overgangsalder-symptomer</h2>
 			<p>
-				Den her del er den internationalt anerkendte MRS-skala (Menopause Rating
-				Scale). Den måler 11 typiske symptomer i tre grupper. For hvert symptom
-				vælger du hvor meget det fylder for dig lige nu — fra <em>Ingen</em> til
+				Den her del er den internationalt anerkendte MRS-skala (Menopause Rating Scale). Den måler
+				11 typiske symptomer i tre grupper. For hvert symptom vælger du hvor meget det fylder for
+				dig lige nu — fra <em>Ingen</em> til
 				<em>Voldsomt</em>. Der er ingen rigtige eller forkerte svar.
 			</p>
 		</div>
 
-		{#each ['somatisk', 'psykologisk', 'urogenital'] as subKey ((subKey))}
+		{#each ['somatisk', 'psykologisk', 'urogenital'] as subKey (subKey)}
 			{@const sub = SUBSCALES[subKey as keyof typeof SUBSCALES]}
 			<section class="subskala-blok">
-				<div
-					class="subskala-label"
-					style="background: {sub.bg}; color: {sub.color};"
-				>
+				<div class="subskala-label" style="background: {sub.bg}; color: {sub.color};">
 					{sub.label}
 				</div>
 				{#each MRS_ITEMS.filter((i) => i.subscale === subKey) as item (item.id)}
@@ -609,9 +575,7 @@
 			{gemmer ? 'Gemmer…' : 'Se mit resultat'}
 		</button>
 
-		<button type="button" class="annuller-knap" onclick={tilbageTilForside}>
-			Annullér
-		</button>
+		<button type="button" class="annuller-knap" onclick={tilbageTilForside}> Annullér </button>
 	{:else if visning === 'resultat' && netop_gemt && resultatFortolkning}
 		{@const score = netop_gemt}
 		<div class="resultat-header">
@@ -632,9 +596,8 @@
 			</div>
 			<p class="total-forklaring">{resultatFortolkning.beskrivelse}</p>
 			<p class="total-forklaring sekundaer">
-				Din samlede score lægger alle 11 svar sammen. Skalaen går fra 0 (ingen gener)
-				til 44 (kraftige gener). Niveauerne følger international konsensus
-				(Heinemann et al.).
+				Din samlede score lægger alle 11 svar sammen. Skalaen går fra 0 (ingen gener) til 44
+				(kraftige gener). Niveauerne følger international konsensus (Heinemann et al.).
 			</p>
 		</section>
 
@@ -647,10 +610,7 @@
 					key as 'somatisk' | 'psykologisk' | 'urogenital',
 					subScore
 				)}
-				<div
-					class="subskala-kort"
-					style="background: {sub.bg}; border: 1px solid {sub.color}20;"
-				>
+				<div class="subskala-kort" style="background: {sub.bg}; border: 1px solid {sub.color}20;">
 					<div class="subskala-tal" style="color: {sub.color};">{subScore}</div>
 					<div class="subskala-max">af {max}</div>
 					<div class="subskala-navn" style="color: {sub.color};">{sub.label}</div>
@@ -686,10 +646,7 @@
 					<div class="bar-row">
 						<span class="bar-label">{spm.label}</span>
 						<div class="bar-track">
-							<div
-								class="bar-fill"
-								style="width: {pct}%; background: var(--terra);"
-							></div>
+							<div class="bar-fill" style="width: {pct}%; background: var(--terra);"></div>
 						</div>
 						<span class="bar-val" style="color: var(--terra);">{val}</span>
 					</div>
@@ -699,10 +656,9 @@
 
 		<div class="info-blok kompakt">
 			<strong>Hvad er dette?</strong><br />
-			Du har lige udfyldt en internationalt anerkendt symptomtjekliste for kvinder i
-			overgangsalderen (Menopause Rating Scale). Den bruges verden over til at måle
-			hvordan symptomer udvikler sig over tid. Ved at udfylde den igen senere i forløbet
-			kan du se din egen udvikling sort på hvidt.
+			Du har lige udfyldt en internationalt anerkendt symptomtjekliste for kvinder i overgangsalderen
+			(Menopause Rating Scale). Den bruges verden over til at måle hvordan symptomer udvikler sig over
+			tid. Ved at udfylde den igen senere i forløbet kan du se din egen udvikling sort på hvidt.
 		</div>
 
 		<button type="button" class="primary-knap klar" onclick={tilbageTilForside}>
@@ -718,13 +674,18 @@
 		margin: 0 auto;
 	}
 
-
 	/* Titel og info-knap i samme raekke. */
 	.titel-rk {
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
 		gap: 12px;
+	}
+
+	/* Uden min-width kan en lang overskrift skubbe knappen ud over kanten
+	   paa en smal telefon. Med den bryder teksten i stedet. */
+	.titel-rk > div {
+		min-width: 0;
 	}
 	.page-header {
 		margin-bottom: 18px;

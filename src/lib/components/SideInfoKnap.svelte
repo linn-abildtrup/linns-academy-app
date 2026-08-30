@@ -17,6 +17,9 @@
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
 	const paaForlob = $derived(erForlobsklient(getUserDoc?.() ?? null));
 
+	// Knappen bruges til at finde det omraade der faktisk ruller, se nedenfor.
+	let knapEl = $state<HTMLButtonElement | null>(null);
+
 	const raa = $derived(sideInfoFor(noegle));
 	const info = $derived(
 		raa
@@ -32,15 +35,39 @@
 		aaben = false;
 	}
 
-	// Laas siden bagved mens arket er aabent. Uden det ruller baggrunden
-	// under fingeren i stedet for teksten, og kunden kan ikke naa ned til
-	// Luk-knappen. Linns fund 30. august.
+	/**
+	 * Finder det omraade der faktisk ruller.
+	 *
+	 * Foerste forsoeg laaste document.body, og det gjorde INGEN forskel:
+	 * app-rammen er hoej som skaermen og ruller slet ikke, det er et indre
+	 * omraade der goer. Derfor gik rulningen videre til baggrunden alligevel.
+	 * Linns fund 30. august, anden runde.
+	 *
+	 * Vi gaar op fra knappen og tager det foerste omraade der baade maa rulle
+	 * og faktisk har mere indhold end plads.
+	 */
+	function findRuller(start: HTMLElement | null): HTMLElement | null {
+		let el: HTMLElement | null = start?.parentElement ?? null;
+		while (el && el !== document.body) {
+			const s = getComputedStyle(el);
+			const kanRulle = s.overflowY === 'auto' || s.overflowY === 'scroll';
+			if (kanRulle && el.scrollHeight > el.clientHeight + 1) return el;
+			el = el.parentElement;
+		}
+		return document.scrollingElement as HTMLElement | null;
+	}
+
+	// Laas det omraade der ruller, mens arket er aabent. Uden det ruller
+	// baggrunden under fingeren i stedet for teksten, og kunden kan ikke naa
+	// ned til Luk-knappen.
 	$effect(() => {
 		if (!aaben || typeof document === 'undefined') return;
-		const foer = document.body.style.overflow;
-		document.body.style.overflow = 'hidden';
+		const ruller = findRuller(knapEl);
+		if (!ruller) return;
+		const foer = ruller.style.overflow;
+		ruller.style.overflow = 'hidden';
 		return () => {
-			document.body.style.overflow = foer;
+			ruller.style.overflow = foer;
 		};
 	});
 
@@ -55,6 +82,7 @@
 	<button
 		class="info-knap"
 		type="button"
+		bind:this={knapEl}
 		onclick={() => (aaben = true)}
 		aria-label="Hvad kan jeg her?"
 	>

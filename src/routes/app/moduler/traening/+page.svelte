@@ -50,10 +50,7 @@
 	type MasterRad = { tildeling: ProgramTildeling; program: TrainingProgram };
 	let masterProgrammer = $state<MasterRad[]>([]);
 
-	function byggMasterListe(
-		tilds: ProgramTildeling[],
-		alleMaster: TrainingProgram[]
-	): MasterRad[] {
+	function byggMasterListe(tilds: ProgramTildeling[], alleMaster: TrainingProgram[]): MasterRad[] {
 		const set = new Map<string, MasterRad>();
 		for (const t of tilds) {
 			if ((t.programKilde ?? 'forlob') !== 'master') continue;
@@ -450,13 +447,18 @@
 		margin: 0 auto;
 	}
 
-
 	/* Titel og info-knap i samme raekke. */
 	.titel-rk {
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
 		gap: 12px;
+	}
+
+	/* Uden min-width kan en lang overskrift skubbe knappen ud over kanten
+	   paa en smal telefon. Med den bryder teksten i stedet. */
+	.titel-rk > div {
+		min-width: 0;
 	}
 	.page-header {
 		margin-bottom: 18px;

@@ -3014,6 +3014,12 @@
 		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-decoration: none;
+		/* Paa en smal telefon skal badgen give plads til info-knappen i
+		   stedet for at skubbe den ud over kanten. */
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.forlob-badge:hover {

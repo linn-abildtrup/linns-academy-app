@@ -503,8 +503,8 @@
 				<div class="egne-vaner-tael">{egneVaner.length} / {MAX_EGNE_VANER}</div>
 			</div>
 			<p class="egne-vaner-hint">
-				Tilføj 1-{MAX_EGNE_VANER} egne små skridt du selv vil arbejde med oveni Linns ugentlige små skridt. Du kan
-				fjerne eller tilføje nye når som helst.
+				Tilføj 1-{MAX_EGNE_VANER} egne små skridt du selv vil arbejde med oveni Linns ugentlige små skridt.
+				Du kan fjerne eller tilføje nye når som helst.
 			</p>
 			{#if egneVaner.length > 0}
 				<div class="egne-vaner-liste">
@@ -557,8 +557,8 @@
 			<div class="onboarding-card">
 				<div class="onboarding-titel">Velkommen til Små skridt</div>
 				<p class="onboarding-tekst">
-					Vælg op til 3 små skridt du vil arbejde med dagligt. Dine små skridt er låst i 21 dage så du
-					har tid til at få dem ind i hverdagen.
+					Vælg op til 3 små skridt du vil arbejde med dagligt. Dine små skridt er låst i 21 dage så
+					du har tid til at få dem ind i hverdagen.
 				</p>
 				<a class="start-knap" href="/app/moduler/vaner/opsaetning">
 					Vælg dine små skridt
@@ -741,7 +741,6 @@
 		margin: 0 auto;
 	}
 
-
 	/* Titel og info-knap i samme raekke, saa knappen sidder samme sted paa
 	   hver side. */
 	.titel-rk {
@@ -749,6 +748,12 @@
 		align-items: flex-start;
 		justify-content: space-between;
 		gap: 12px;
+	}
+
+	/* Uden min-width kan en lang overskrift skubbe knappen ud over kanten
+	   paa en smal telefon. Med den bryder teksten i stedet. */
+	.titel-rk > div {
+		min-width: 0;
 	}
 	.page-header {
 		margin-bottom: 18px;

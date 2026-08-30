@@ -987,7 +987,6 @@
 		margin: 0 auto;
 	}
 
-
 	/* Titel og info-knap i samme raekke, saa knappen sidder samme sted paa
 	   hver side. */
 	.titel-rk {
@@ -995,6 +994,12 @@
 		align-items: flex-start;
 		justify-content: space-between;
 		gap: 12px;
+	}
+
+	/* Uden min-width kan en lang overskrift skubbe knappen ud over kanten
+	   paa en smal telefon. Med den bryder teksten i stedet. */
+	.titel-rk > div {
+		min-width: 0;
 	}
 	.page-header {
 		margin-bottom: 14px;
