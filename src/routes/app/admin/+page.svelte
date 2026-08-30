@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import DestilleringPaamindelse from '$lib/components/DestilleringPaamindelse.svelte';
 
 	// Daglige genveje — vises som store kort øverst.
 	const primaere = [
@@ -178,6 +179,8 @@
 		<h1>Adminpanel</h1>
 		<p class="page-sub">Rediger indhold der vises til kunderne.</p>
 	</header>
+
+	<DestilleringPaamindelse />
 
 	<div class="primaer-grid">
 		{#each primaere as p (p.id)}

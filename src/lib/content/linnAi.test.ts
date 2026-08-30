@@ -5,6 +5,9 @@ import {
 	byggSystemPrompt,
 	byggKontekst,
 	parseSikkerhed,
+	boerMindesOmDestillering,
+	dageSidenDestillering,
+	destilleringAlderTekst,
 	type VidenbaseDokument
 } from './linnAi';
 
@@ -115,5 +118,62 @@ describe('byggKontekst', () => {
 		const k = byggKontekst(docs, '', 600);
 		// Kun ét dokument får plads (500 + format-overhead)
 		expect(k.length).toBeLessThan(700);
+	});
+});
+
+describe('dageSidenDestillering', () => {
+	const NU = new Date('2026-08-30T12:00:00Z').getTime();
+	const dageSiden = (n: number) => new Date(NU - n * 24 * 60 * 60 * 1000).toISOString();
+
+	it('regner dage ud fra det nyeste destillerede dokument', () => {
+		const docs = [
+			{ id: 'destil_1_0', opdateretAt: dageSiden(30) },
+			{ id: 'destil_1_1', opdateretAt: dageSiden(3) }
+		] as unknown as VidenbaseDokument[];
+		expect(dageSidenDestillering(docs, NU)).toBe(3);
+	});
+
+	it('tæller ikke manuelt uploadede dokumenter med', () => {
+		const docs = [
+			{ id: 'destil_1_0', opdateretAt: dageSiden(20) },
+			{ id: 'min-pdf', opdateretAt: dageSiden(1) }
+		] as unknown as VidenbaseDokument[];
+		expect(dageSidenDestillering(docs, NU)).toBe(20);
+	});
+
+	it('læser både Firestore-tidsstempler og datotekst', () => {
+		const docs = [
+			{ id: 'destil_1_0', opdateretAt: { toMillis: () => NU - 5 * 24 * 60 * 60 * 1000 } }
+		] as unknown as VidenbaseDokument[];
+		expect(dageSidenDestillering(docs, NU)).toBe(5);
+	});
+
+	it('giver null når destilleringen aldrig har kørt', () => {
+		expect(dageSidenDestillering([], NU)).toBeNull();
+		expect(
+			dageSidenDestillering([{ id: 'min-pdf', opdateretAt: dageSiden(1) }] as unknown as VidenbaseDokument[], NU)
+		).toBeNull();
+	});
+});
+
+describe('boerMindesOmDestillering', () => {
+	it('minder om det efter en uge, og når den aldrig har kørt', () => {
+		expect(boerMindesOmDestillering(null)).toBe(true);
+		expect(boerMindesOmDestillering(7)).toBe(true);
+		expect(boerMindesOmDestillering(40)).toBe(true);
+	});
+
+	it('tier stille når den er frisk', () => {
+		expect(boerMindesOmDestillering(0)).toBe(false);
+		expect(boerMindesOmDestillering(6)).toBe(false);
+	});
+});
+
+describe('destilleringAlderTekst', () => {
+	it('skriver alderen på almindeligt dansk', () => {
+		expect(destilleringAlderTekst(null)).toBe('Den har aldrig kørt');
+		expect(destilleringAlderTekst(0)).toBe('Sidst opdateret i dag');
+		expect(destilleringAlderTekst(1)).toBe('Sidst opdateret i går');
+		expect(destilleringAlderTekst(9)).toBe('Sidst opdateret for 9 dage siden');
 	});
 });

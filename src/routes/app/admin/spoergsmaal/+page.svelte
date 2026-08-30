@@ -17,6 +17,7 @@
 	import { gemSvarHistorik } from '$lib/firestore/svarHistorik';
 	import { klientSoegeMatch } from '$lib/utils/klientSoegning';
 	import UdkastGrundlagVisning from '$lib/components/UdkastGrundlag.svelte';
+	import DestilleringPaamindelse from '$lib/components/DestilleringPaamindelse.svelte';
 	import type { UdkastGrundlag } from '$lib/content/svarUdkast';
 
 	interface AiUdkast {
@@ -490,6 +491,8 @@
 			</button>
 		</div>
 	</header>
+
+	<DestilleringPaamindelse />
 
 	<section class="filter-card">
 		<label class="forlob-filter">

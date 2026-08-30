@@ -26,6 +26,58 @@ export interface VidenbaseDokument {
 	opdateretAt?: Timestamp;
 }
 
+/** Id-praefiks paa de videns-dokumenter destilleringen selv laver. */
+export const DESTILLERET_PRAEFIKS = 'destil_';
+
+/**
+ * Tidsstemplet kan vaere baade en Firestore-Timestamp (skrevet fra browseren)
+ * og en ISO-streng (skrevet fra serveren under destilleringen), saa begge
+ * former skal kunne laeses.
+ */
+function tilMillisekunder(v: unknown): number {
+	if (!v) return 0;
+	if (typeof v === 'string') {
+		const ms = new Date(v).getTime();
+		return Number.isFinite(ms) ? ms : 0;
+	}
+	const t = v as { toMillis?: () => number };
+	return typeof t.toMillis === 'function' ? t.toMillis() : 0;
+}
+
+const DAG = 24 * 60 * 60 * 1000;
+
+/**
+ * Hvor mange dage siden destilleringen ("Laer af alle svar") sidst koerte.
+ * null hvis den aldrig har koert. Manuelt uploadede dokumenter taeller ikke
+ * med, kun dem destilleringen selv har lavet.
+ */
+export function dageSidenDestillering(
+	dokumenter: Array<Pick<VidenbaseDokument, 'id' | 'opdateretAt'>>,
+	nu = Date.now()
+): number | null {
+	const nyeste = dokumenter
+		.filter((d) => d.id.startsWith(DESTILLERET_PRAEFIKS))
+		.reduce((m, d) => Math.max(m, tilMillisekunder(d.opdateretAt)), 0);
+	if (!nyeste) return null;
+	return Math.max(0, Math.floor((nu - nyeste) / DAG));
+}
+
+/** Hvor gammel destilleringen maa blive foer vi minder Linn om at koere den. */
+export const DESTILLERING_PAAMINDELSE_DAGE = 7;
+
+/** Skal Linn mindes om at koere destilleringen? */
+export function boerMindesOmDestillering(dage: number | null): boolean {
+	return dage === null || dage >= DESTILLERING_PAAMINDELSE_DAGE;
+}
+
+/** Dansk formulering af hvor gammel destilleringen er. */
+export function destilleringAlderTekst(dage: number | null): string {
+	if (dage === null) return 'Den har aldrig kørt';
+	if (dage === 0) return 'Sidst opdateret i dag';
+	if (dage === 1) return 'Sidst opdateret i går';
+	return `Sidst opdateret for ${dage} dage siden`;
+}
+
 // ==============================================
 // Samtale
 // ==============================================
