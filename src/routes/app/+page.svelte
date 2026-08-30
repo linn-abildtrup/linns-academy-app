@@ -9,6 +9,7 @@
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import { produktTypeForForlob } from '$lib/content/forlobAdgang';
 	import { traeningErStartet, traeningsdagFor } from '$lib/content/traeningStart';
+	import { forlobReglerFor } from '$lib/content/forlobRegler';
 	import type { ForlobDag } from '$lib/content/forlob';
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import { aboVisning, formaterDatoLang, APP_KOB_URL } from '$lib/content/abonnement';
@@ -127,6 +128,10 @@
 	const aboForside = $derived(aboVisning(userDoc));
 
 	let forlob = $state<Forlob | null>(null);
+	// Forloebet som dets REGLER gaelder for den her kunde. En app-kunde der
+	// er havnet paa holdet skal ikke rammes af maaltids-fokus eller af at
+	// traeningen begynder senere. Se content/forlobRegler.ts.
+	const forlobForKunden = $derived(forlobReglerFor(forlob, userDoc));
 	let forlobsdage = $state<ForlobDag[]>([]);
 	let alleChallenges = $state<Challenge[]>([]);
 	let visChallengeDialog = $state(false);
@@ -1050,7 +1055,7 @@
 	// blev hun maalt paa hele dagen i en uge hvor hun kun maa logge morgenmad,
 	// og soejlen kunne aldrig fyldes. Se maaltidsMaal.ts.
 	const dagensMaal = $derived(
-		maalForDagen(userDoc?.dagligeMaal, forlob?.maaltidsFokus, aktivDagNummer)
+		maalForDagen(userDoc?.dagligeMaal, forlobForKunden?.maaltidsFokus, aktivDagNummer)
 	);
 	const dagligeMaal = $derived(dagensMaal.maal);
 	const madFokusLinje = $derived(fokusLinje(dagensMaal));
@@ -1694,7 +1699,7 @@
 			{#if dagensDag}
 				{@const harProgramValg = !!userProduct?.programValg?.mikrotraening}
 				{@const aktivtProgram = userDoc?.aktivtTraeningsprogram}
-				{@const traeningsdag = traeningsdagFor(dagensDag.dagNummer, forlob)}
+				{@const traeningsdag = traeningsdagFor(dagensDag.dagNummer, forlobForKunden)}
 				{@const mikroHrefForDag =
 					harProgramValg && traeningsdag !== null
 						? `/app/moduler/traening/mikrotraening/${traeningsdag}`
@@ -1796,7 +1801,7 @@
 						{/if}
 						<!-- Traeningen starter foerst paa forloebets egen startdag (Kickstart:
 						     dag 3). Foer den dag findes flisen slet ikke. Se traeningStart.ts. -->
-						{#if harForlobTraening && traeningErStartet(dagensDag.dagNummer, forlob)}
+						{#if harForlobTraening && traeningErStartet(dagensDag.dagNummer, forlobForKunden)}
 							{@const forlobGennemfoertCheck = forlobTraeningGennemfoertVist}
 							<a class="action-card" href={traeningHref}>
 								{#if forlobTraeningsVideo}

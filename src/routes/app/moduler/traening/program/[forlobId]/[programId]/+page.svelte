@@ -14,6 +14,7 @@
 	} from '$lib/firestore/mikrotraening';
 	import { hentProgramFremgang } from '$lib/firestore/mineProgrammer';
 	import { hentForlob, hentAktivProduktType } from '$lib/firestore/forlob';
+	import { forlobReglerFor } from '$lib/content/forlobRegler';
 	import {
 		endnuIkkeStartetTekst,
 		traeningErSpaerret,
@@ -160,8 +161,11 @@
 				// Kun forloeb der SELV har udskudt traeningen. Kropsro og de
 				// byggede forloeb starter paa dag 1 og spaerres aldrig. Linns
 				// besked 30. august 2026. Se traeningErSpaerret.
-				if (traeningErSpaerret(idx, forlob)) {
-					fejl = endnuIkkeStartetTekst(forlob, idx);
+				// Reglerne gaelder forloebs-kunden, ikke en app-kunde der er havnet
+				// paa holdet. Se content/forlobRegler.ts.
+				const gaeldende = forlobReglerFor(forlob, ud);
+				if (traeningErSpaerret(idx, gaeldende)) {
+					fejl = endnuIkkeStartetTekst(gaeldende, idx);
 					loading = false;
 					return;
 				}
@@ -185,7 +189,7 @@
 					// paa dag 22). FOER 12/6 2026: '(idx % antalDage) + 1' var off-by-one
 					// — den viste/gemte dag+1, saa forsidens mikrotraening-vane blev
 					// auto-ja'et paa forkert dag.
-					const traeningsNr = traeningsdagFor(idx, forlob);
+					const traeningsNr = traeningsdagFor(idx, gaeldende);
 					aktuelDagNummer =
 						traeningsNr === null ? 1 : ((traeningsNr - 1) % forlob.antalDage) + 1;
 					valgtDag = aktuelDagNummer;

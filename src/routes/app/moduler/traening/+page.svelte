@@ -22,6 +22,7 @@
 	import { aktivtForlobId } from '$lib/utils/traeningsvariant';
 	import { hentForlobsDag } from '$lib/firestore/traeningsDag';
 	import { endnuIkkeStartetTekst, traeningErSpaerret } from '$lib/content/traeningStart';
+	import { forlobReglerFor } from '$lib/content/forlobRegler';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -121,10 +122,13 @@
 					fId,
 					userDoc.forlobIds ?? [fId]
 				);
+				// Spaerringen gaelder forloebs-kunden, ikke en app-kunde der er
+				// havnet paa holdet. Se content/forlobRegler.ts.
+				const gaeldende = forlobReglerFor(forlob, userDoc);
 				// Kun forloeb der SELV har udskudt traeningen. Kropsro og de
 				// byggede forloeb starter paa dag 1 og spaerres aldrig.
-				if (traeningErSpaerret(forlobsDag, forlob)) {
-					endnuIkkeStartet = endnuIkkeStartetTekst(forlob, forlobsDag);
+				if (traeningErSpaerret(forlobsDag, gaeldende)) {
+					endnuIkkeStartet = endnuIkkeStartetTekst(gaeldende, forlobsDag);
 				}
 			} catch (e) {
 				console.error('Kunne ikke afgoere om traeningen er begyndt:', e);

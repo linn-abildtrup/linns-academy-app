@@ -68,6 +68,7 @@
 	import { hentAktivtForlob } from '$lib/firestore/forlob';
 	import { dageSidenStart } from '$lib/content/forlobAdgang';
 	import { tilladteMaaltiderForDag, type MaaltidsFokusPeriode } from '$lib/content/maaltidsFokus';
+	import { forlobReglerFor } from '$lib/content/forlobRegler';
 	import { fokusForklaring, maalForDagen } from '$lib/content/maaltidsMaal';
 
 	const getUser = getContext<() => User | null>('user');
@@ -740,7 +741,12 @@
 		try {
 			const forlobIds = userDoc?.forlobIds ?? [];
 			if (forlobIds.length === 0) return;
-			const aktivt = await hentAktivtForlob(forlobIds, Date.now(), user?.uid);
+			// Forloebets begraensninger gaelder forloebs-kunden, ikke en app-kunde
+			// der er havnet paa holdet. Se content/forlobRegler.ts.
+			const aktivt = forlobReglerFor(
+				await hentAktivtForlob(forlobIds, Date.now(), user?.uid),
+				userDoc
+			);
 			if (!aktivt?.maaltidsFokus || aktivt.maaltidsFokus.length === 0) return;
 			const dag = dageSidenStart(aktivt.startDato.toDate());
 			tilladteMaaltider = tilladteMaaltiderForDag(aktivt.maaltidsFokus, dag);

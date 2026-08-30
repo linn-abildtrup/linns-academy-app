@@ -51,6 +51,7 @@
 	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
 	import { KATEGORI_LABELS, type Opskrift, type OpskriftKategori } from '$lib/content/opskrifter';
 	import { tilladteMaaltiderForDag } from '$lib/content/maaltidsFokus';
+	import { forlobReglerFor } from '$lib/content/forlobRegler';
 	import type { Maaltidstype } from '$lib/content/kost';
 	import { goto } from '$app/navigation';
 
@@ -486,7 +487,13 @@
 			// en fokus-periode i dag, begrænses opskrift-listen til de tilladte
 			// kategorier. Fejler dette, forbliver tilladteKategorier null (normal).
 			try {
-				const aktivtNu = await hentAktivtForlob(forlobIds, Date.now(), u.uid);
+				// Begraensningen gaelder forloebs-kunden, ikke en app-kunde der er
+				// havnet paa holdet. Facebook-linket staar uroert. Se
+				// content/forlobRegler.ts.
+				const aktivtNu = forlobReglerFor(
+					await hentAktivtForlob(forlobIds, Date.now(), u.uid),
+					userDoc
+				);
 				facebookUrl = aktivtNu?.facebookUrl?.trim() || null;
 				if (aktivtNu?.maaltidsFokus && aktivtNu.maaltidsFokus.length > 0) {
 					const dag = dageSidenStart(aktivtNu.startDato.toDate());
