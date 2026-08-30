@@ -5,7 +5,8 @@ import {
 	maaAabneTraening,
 	traeningErStartet,
 	traeningsdagFor,
-	traeningStartDag
+	traeningStartDag,
+	traeningErSpaerret
 } from './traeningStart';
 
 const KICKSTART = { traeningStartDag: 3 };
@@ -93,5 +94,29 @@ describe('endnuIkkeStartetTekst', () => {
 
 	it('har en tekst til en dag hun bare ikke er naaet til endnu', () => {
 		expect(endnuIkkeStartetTekst(KICKSTART, 5)).toContain('ikke åbnet endnu');
+	});
+});
+
+describe('traeningErSpaerret', () => {
+	it('spaerrer kun forloeb der selv har udskudt traeningen', () => {
+		// Kickstart venter til dag 3.
+		expect(traeningErSpaerret(0, KICKSTART)).toBe(true);
+		expect(traeningErSpaerret(2, KICKSTART)).toBe(true);
+		expect(traeningErSpaerret(3, KICKSTART)).toBe(false);
+		expect(traeningErSpaerret(10, KICKSTART)).toBe(false);
+	});
+
+	it('spaerrer aldrig et forloeb uden egen startdag', () => {
+		// Kropsro og de byggede forloeb. Ogsaa paa dag 0, hvor de altid har
+		// kunnet aabne traeningen. Linns besked 30. august 2026.
+		expect(traeningErSpaerret(0, UDEN)).toBe(false);
+		expect(traeningErSpaerret(0, null)).toBe(false);
+		expect(traeningErSpaerret(0, { traeningStartDag: 1 })).toBe(false);
+		expect(traeningErSpaerret(5, UDEN)).toBe(false);
+	});
+
+	it('spaerrer ikke naar vi ikke kender dagen', () => {
+		expect(traeningErSpaerret(null, KICKSTART)).toBe(false);
+		expect(traeningErSpaerret(undefined, KICKSTART)).toBe(false);
 	});
 });

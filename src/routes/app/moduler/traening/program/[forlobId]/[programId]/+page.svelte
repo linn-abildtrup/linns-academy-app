@@ -16,7 +16,7 @@
 	import { hentForlob, hentAktivProduktType } from '$lib/firestore/forlob';
 	import {
 		endnuIkkeStartetTekst,
-		traeningErStartet,
+		traeningErSpaerret,
 		traeningsdagFor
 	} from '$lib/content/traeningStart';
 	import { getCurrentDayMedNulDage, nulDageDatoer, toIsoLokal } from '$lib/content/forlob';
@@ -157,9 +157,10 @@
 				// Kickstart begynder paa dag 3. Samme regel som forsiden og
 				// oversigten, se content/traeningStart.ts.
 				//
-				// Kun naar vi VED hvilken dag hun staar paa. Er idx null, ved vi
-				// det ikke, og saa lukker vi ikke nogen ude paa et gaet.
-				if (idx !== null && !traeningErStartet(idx, forlob)) {
+				// Kun forloeb der SELV har udskudt traeningen. Kropsro og de
+				// byggede forloeb starter paa dag 1 og spaerres aldrig. Linns
+				// besked 30. august 2026. Se traeningErSpaerret.
+				if (traeningErSpaerret(idx, forlob)) {
 					fejl = endnuIkkeStartetTekst(forlob, idx);
 					loading = false;
 					return;

@@ -21,7 +21,7 @@
 	import type { TrainingProgram } from '$lib/content/mikrotraening';
 	import { aktivtForlobId } from '$lib/utils/traeningsvariant';
 	import { hentForlobsDag } from '$lib/firestore/traeningsDag';
-	import { endnuIkkeStartetTekst, traeningErStartet } from '$lib/content/traeningStart';
+	import { endnuIkkeStartetTekst, traeningErSpaerret } from '$lib/content/traeningStart';
 
 	const getUser = getContext<() => User | null>('user');
 	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -121,9 +121,9 @@
 					fId,
 					userDoc.forlobIds ?? [fId]
 				);
-				// Kun naar vi VED hvilken dag hun staar paa. Ellers lader vi
-				// tvivlen komme kunden til gode og viser programmerne som foer.
-				if (forlobsDag !== null && !traeningErStartet(forlobsDag, forlob)) {
+				// Kun forloeb der SELV har udskudt traeningen. Kropsro og de
+				// byggede forloeb starter paa dag 1 og spaerres aldrig.
+				if (traeningErSpaerret(forlobsDag, forlob)) {
 					endnuIkkeStartet = endnuIkkeStartetTekst(forlob, forlobsDag);
 				}
 			} catch (e) {

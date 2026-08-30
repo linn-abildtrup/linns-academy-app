@@ -97,6 +97,27 @@ export function maaAabneTraening(
 }
 
 /**
+ * Skal traeningen spaerres paa den her forloebsdag.
+ *
+ * KUN forloeb der selv har udskudt traeningen bliver spaerret. Har et
+ * forloeb ingen egen startdag, er den 1, og saa har traeningen altid
+ * ligget aaben fra foerste faerd. Linns besked 30. august 2026: det skal
+ * kun vaere Kickstart der venter.
+ *
+ * Tvivlen kommer kunden til gode. Ved vi ikke hvilken dag hun staar paa,
+ * spaerrer vi ikke. En forkert vaerdi i databasen maa aldrig kunne laase
+ * et helt hold ude af traeningen.
+ */
+export function traeningErSpaerret(
+	forlobsDag: number | null | undefined,
+	forlob: TraeningStartKilde | null | undefined
+): boolean {
+	if (traeningStartDag(forlob) <= TRAENING_START_DAG_DEFAULT) return false;
+	if (typeof forlobsDag !== 'number') return false;
+	return !traeningErStartet(forlobsDag, forlob);
+}
+
+/**
  * Teksten hun moeder, hvis hun alligevel lander paa en traening der
  * ikke er aabnet. Den skal fortaelle hvornaar der sker noget, ikke bare
  * sige nej.
