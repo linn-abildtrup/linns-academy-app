@@ -312,9 +312,12 @@
 									</div>
 								{/if}
 								<div class="lektion-content">
-									<div class="lektion-meta">
-										Dag {aktivDag.dagNummer} · uge {aktivDag.uge}
-									</div>
+									<!-- Dag 0 er startdagen, ikke en dag i forloebet. Se forsiden. -->
+									{#if aktivDag.dagNummer > 0}
+										<div class="lektion-meta">
+											Dag {aktivDag.dagNummer} · uge {aktivDag.uge}
+										</div>
+									{/if}
 									<div class="lektion-titel">{l.titel}</div>
 									{#if l.beskrivelse}
 										<div class="lektion-beskrivelse">{l.beskrivelse}</div>

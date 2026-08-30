@@ -1767,7 +1767,12 @@
 										</div>
 									{/if}
 									<div class="lektion-content">
-										<div class="lektion-meta">Dag {dagensDag.dagNummer} · uge {dagensDag.uge}</div>
+										<!-- Dag 0 er startdagen, ikke en dag i forloebet. "Dag 0 · uge 0"
+										     siger ingenting til kunden, saa linjen staar der ikke.
+										     Linns besked 30. august 2026. -->
+										{#if dagensDag.dagNummer > 0}
+											<div class="lektion-meta">Dag {dagensDag.dagNummer} · uge {dagensDag.uge}</div>
+										{/if}
 										<div class="lektion-title">{lektion.titel}</div>
 										{#if lektion.beskrivelse}
 											<div class="lektion-description">{lektion.beskrivelse}</div>
