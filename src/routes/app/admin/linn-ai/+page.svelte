@@ -59,6 +59,29 @@
 		}
 	});
 
+	// Hvor gammel er den destillerede viden? Tidsstemplet kan vaere baade en
+	// Firestore-Timestamp (gemt fra browseren) og en ISO-streng (gemt fra
+	// serveren under destilleringen), saa vi haandterer begge.
+	function tilMillisekunder(v: unknown): number {
+		if (!v) return 0;
+		if (typeof v === 'string') {
+			const ms = new Date(v).getTime();
+			return Number.isFinite(ms) ? ms : 0;
+		}
+		const t = v as { toMillis?: () => number };
+		return typeof t.toMillis === 'function' ? t.toMillis() : 0;
+	}
+
+	const DAG = 24 * 60 * 60 * 1000;
+	/** Dage siden destilleringen sidst koerte. null hvis den aldrig har koert. */
+	const dageSidenDestillering = $derived.by(() => {
+		const nyeste = dokumenter
+			.filter((d) => d.id.startsWith('destil_'))
+			.reduce((m, d) => Math.max(m, tilMillisekunder(d.opdateretAt)), 0);
+		if (!nyeste) return null;
+		return Math.floor((Date.now() - nyeste) / DAG);
+	});
+
 	// "Lær af alle svar": destillér alle besvarede klient-spørgsmål til videns-
 	// dokumenter (kører på serveren via Claude). Bagefter kan de redigeres/slettes
 	// i listen nedenfor som alle andre videns-docs.
@@ -314,6 +337,24 @@
 					både dine svar-udkast og kunde-chatten husker dine standpunkter på tværs af forløb. Kør
 					den engang imellem. Du kan redigere resultatet nedenfor.
 				</p>
+				{#if dageSidenDestillering === null}
+					<p class="laer-alder laer-alder-gammel">
+						Den har aldrig kørt. Kør den nu, så udkastene bygger på alt du har svaret.
+					</p>
+				{:else if dageSidenDestillering >= 7}
+					<p class="laer-alder laer-alder-gammel">
+						Sidst opdateret for {dageSidenDestillering} dage siden. Kør den igen, så den lærer af
+						dine nyeste svar.
+					</p>
+				{:else}
+					<p class="laer-alder">
+						Sidst opdateret {dageSidenDestillering === 0
+							? 'i dag'
+							: dageSidenDestillering === 1
+								? 'i går'
+								: `for ${dageSidenDestillering} dage siden`}.
+					</p>
+				{/if}
 				{#if laerBesked}<p class="laer-besked">{laerBesked}</p>{/if}
 			</div>
 			<button class="laer-knap" onclick={laerAfAlleSvar} disabled={laerer}>
@@ -564,6 +605,17 @@
 		margin: 6px 0 0;
 		max-width: 460px;
 	}
+	.laer-alder {
+		margin: 4px 0 0;
+		font-size: calc(13px * var(--fs-scale, 1));
+		opacity: 0.7;
+	}
+
+	.laer-alder-gammel {
+		opacity: 1;
+		font-weight: 600;
+	}
+
 	.laer-besked {
 		font-size: calc(12.5px * var(--fs-scale, 1));
 		color: var(--sage, #6f9e7e);

@@ -40,7 +40,12 @@ import { ADMIN_EMAILS } from '$lib/admin';
 
 const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS = 800;
-const MAX_VIDENBASE_DOCS = 10;
+// Hele videnbasen kommer med. Loftet er en sikkerhedsventil mod en meget
+// stor upload, ikke en forventning: den destillerede viden er faa, korte
+// dokumenter, og den er det eneste sted udkastet moeder laering paa tvaers
+// af alle forloeb. Tegn-loftet vinder over antals-loftet.
+const MAX_VIDENBASE_DOCS = 60;
+const MAX_VIDENBASE_TEGN = 60000;
 // Hoejeste antal svar paa lignende spoergsmaal der maa hentes ind fra hele
 // arkivet. Ligger oven i de 30 nyeste fra klientens eget hold.
 const MAX_RELEVANTE_SVAR = 40;
@@ -125,10 +130,17 @@ async function hentFaq(forlobId: string): Promise<FaqItem[]> {
 async function hentVidenbase(): Promise<string[]> {
 	try {
 		const docs = await hentAlleDocs('linnAiVidenbase');
-		return docs
-			.slice(0, MAX_VIDENBASE_DOCS)
-			.map((d) => (d.data.tekst as string) ?? '')
-			.filter((t) => t.length > 0);
+		const ud: string[] = [];
+		let tegn = 0;
+		for (const d of docs) {
+			if (ud.length >= MAX_VIDENBASE_DOCS) break;
+			const tekst = (d.data.tekst as string) ?? '';
+			if (!tekst) continue;
+			if (tegn + tekst.length > MAX_VIDENBASE_TEGN) break;
+			ud.push(tekst);
+			tegn += tekst.length;
+		}
+		return ud;
 	} catch {
 		return [];
 	}
@@ -311,6 +323,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		antalTidligereSvar: tidligereSvar.length,
 		antalKundeHistorik: kundeHistorik.length,
 		antalRelevanteSvar: relevante.length,
+		antalVidenbaseDocs: videnbaseUddrag.length,
 		korpusStoerrelse: korpus.length
 	});
 };
