@@ -1,10 +1,29 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 25. august 2026. **Rører du Mad, så læs 9.50 og 9.52 til 9.55.** 9.50 er at alle fødevarers næringstal kommer fra Den Danske Fødevaredatabase, skrevet ud til BEGGE apper 24. august. 9.52 til 9.55 er 25. august: kunden kan rette i Linns opskrifter, søgningen er lagt om to gange, salaterne var forsvundet, og en blank skærm i 30-30 er rettet. 9.49 er gennemgangen af fødevare-kilderne der førte til det. Se 9.39 til 9.48 for hele beskedsystemet, bygget 23. august.
+Sidst opdateret 31. august 2026.
+
+**LÆS DEN HER FØRST HVIS DU LEDER EFTER DEN SIDSTE UGES ARBEJDE.** Mellem 27.
+og 31. august blev der lavet 39 ting, og **næsten alle ligger i den GAMLE app**,
+ikke i 3.0. Login i to trin, hjemmeskærms-skærmen, Kickstarts startdag og
+uge-mål, Facebook-gruppen, intro og info-knapper, hele opstarts-oprydningen og
+AI-svarudkastene er alt sammen `/app`. De hører til i `HANDOVER-GAMMEL-APP.md`,
+og **den fil står selv på 24. august og er bagud.** Leder du efter noget fra den
+uge og ikke finder det her, er det derfor, og ikke fordi det mangler.
+
+**3.0 fik i samme uge kun tre ting**, se 9.59. Det sidste rigtige arbejde på
+3.0 er 26. august, se 9.56 til 9.58.
+
+**Rører du Mad, så læs 9.56 først, og derefter 9.50 og 9.52 til 9.55.** 9.56 er
+at hendes egne madvarer, de scannede varer og hjertet er samlet til ét begreb
+der hedder Mine favoritter. 9.50 er at alle fødevarers næringstal kommer fra Den Danske Fødevaredatabase, skrevet ud til BEGGE apper 24. august. 9.52 til 9.55 er 25. august: kunden kan rette i Linns opskrifter, søgningen er lagt om to gange, salaterne var forsvundet, og en blank skærm i 30-30 er rettet. 9.49 er gennemgangen af fødevare-kilderne der førte til det. Se 9.39 til 9.48 for hele beskedsystemet, bygget 23. august.
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
 **Læs i denne rækkefølge hvis du er ny:** afsnit 2 om den vigtigste regel, afsnit 7 om fælderne, og så afsnit 9 om hvor vi står. Resten kan slås op efter behov.
+
+**Er du ny og skal rette noget for en kunde, så læs også 9.58.** Den er listen
+over hvad den gamle app kan, som 3.0 ikke kan. Otte ting, og fem af dem stod
+ikke i noget dokument før 26. august.
 
 Denne fil er til den næste der skal arbejde videre, uanset om det er et nyt Claude-vindue, Bo eller en udvikler udefra. Den fortæller hvor vi er, hvordan tingene hænger sammen, og hvor fælderne ligger.
 
@@ -63,7 +82,8 @@ gamle app og må kun læses.
 |---|---|
 | `src/routes/ny/+layout.svelte` | Skallen. Adgangs-gate, spærring, bundmenu, contexts for `user`, `userDoc`, `adgang` og `forlob`. **Læg ikke nyt her uden en god grund**, se SPEC 26.5 |
 | `src/routes/ny/ny.css` | Alt design. Scoped under `.ny-app`. Cirka 2.000 linjer |
-| `src/lib/components/ny/` | 31 komponenter, alle kun brugt i 3.0. `VaelgArk.svelte` er ubrugt siden 12. august og skal enten slettes eller have en note |
+| `src/lib/components/ny/` | 37 komponenter, alle kun brugt i 3.0. `VaelgArk.svelte` er ubrugt siden 12. august og skal enten slettes eller have en note |
+| `components/ny/MineFavoritterArk.svelte` | **Mine favoritter.** Afløste `MineFodevarerArk` 26. august, som er slettet. Se 9.56 |
 | `components/ny/Sidehoved.svelte` | **Toppen af hver side.** Afløser syv varianter, se 9.31 |
 | `components/ny/Maerke.svelte` | **Logoet.** Ét sted, to udgaver. Skrivemåden er `Linn's` MED apostrof |
 | `src/lib/utils/billede3.ts` | Skalering og webp i browseren. `billede.ts` er den gamle og må ikke røres |
@@ -130,6 +150,7 @@ gamle app og må kun læses.
 | `content/videreTil3.ts` | Hvor hun var på vej hen, og **låsen** der holder det inde i 3.0. Se 9.41 | 9 |
 | `content/forsidebesked3.ts` | **Beskeden på forsiden.** Hvem, hvor længe, hvilken der vinder. Se 9.44 | 18 |
 | `content/mail3.ts` | **Mailen.** Samtalen til svar, opslag eller invitation til resten. Se 9.47 og 9.48 | 18 |
+| `content/mineFavoritter3.ts` | **Mine favoritter.** De tre begreber samlet til ét. **Læs toppen før du rører noget her**, den rummer reglen om at listen regnes ud og aldrig skrives. Se 9.56 | 21 |
 
 **To nye filer uden 3-tallet, og det er med vilje.** `content/hurtigStart.ts`, 16 tests, og `userDocCache.ts` hører til den hurtige opstart i den GAMLE app, se 9.7. De er skrevet af os og må gerne rettes. Navnereglen ovenfor handler om at filer uden 3-tallet typisk er den gamle apps, ikke om at alt uden 3-tal er fredet. `content/hurtigStart.ts` læses desuden af 3.0, som henter tidsgrænsen derfra.
 
@@ -410,13 +431,45 @@ script der lagde en ny import efter "den sidste import-linje" ramte inde i en
 kun fordi navnene forsvandt. **Læg kun noget efter en import der slutter på
 semikolon.**
 
+### Fælder tilføjet 26. august
+
+**EN KAEDE AF TILFAELDE PAA EN HEL SKAERM SKAL ALTID HAVE EN SIDSTE UDVEJ.**
+Det er nu sket TO gange paa to dage, og anden gang stod advarslen allerede i
+dokumentet. 25. august var det 30-30 oversigten. 26. august var det scanneren:
+knappen "Skriv tallene selv" sendte hende videre til gennemgangen uden at give
+hende et skema at skrive I, og gennemgangen tegner kun noget naar der ER tal.
+Arket blev blankt. **Hverken typerne, testene eller et build kan se den slags**,
+for koden er korrekt, den bliver bare kaldt uden det den skal bruge.
+
+Der er nu gaaet alle 53 sider og 37 ark igennem, se 9.57. Resten staar rent,
+paa naer onboardingen, som er beskrevet samme sted.
+
+**Et ark der tegner ingenting ligner en app der er gaaet i staa.** Arket ligger
+som en fast flade over det halve af skaermen med sin egen baggrund. Er der intet
+i det, ser kunden en tom flade i den rigtige farve, og alt hun trykker paa
+inde i fladen gaar ingen steder. Hun kan ikke vide at der ligger noget ovenpaa.
+**Det er derfor en blank skaerm i et ark er vaerre end en blank side.**
+
+**En kunde kan blive laast ude af en udrulning, og selvhelbredelsen kan ikke
+redde hende.** Appen gemmer en kopi af sig selv, og lige efter en udrulning kan
+den naa at vise den GAMLE udgaves ramme, mens de filer rammen peger paa er
+skiftet ud. Saa starter motoren aldrig. Kunden ser top, bund og den rigtige
+baggrund, og INTET reagerer. Der findes en selvhelbredelse i
+`routes/+layout.svelte`, men den lytter efter en fejl der kun opstaar naar
+motoren allerede koerer, saa den kan ikke fange netop det tilfaelde.
+
+Linn sad fast i det 26. august. Udvejen er at lukke appen HELT ned og aabne
+igen. **Den gamle app har en knap til praecis det, "Nulstil appen paa denne
+enhed". 3.0 har den ikke**, se 9.58 punkt 3. Det var en teoretisk mangel indtil
+den dag.
+
 ---
 
 ## 8. Sådan tjekker du dit arbejde
 
 ```
 npx svelte-check --threshold error     # skal give nul fejl
-npm test                               # 2504 tests lige nu, alle grønne
+npm test                               # 2665 tests lige nu, alle grønne
 npm run build                          # ved kundefølsomme ændringer
 git status --porcelain                 # kun nye eller 3.0-filer må stå der
 ```
@@ -449,10 +502,26 @@ Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx 
 
 ## 9. Hvor vi står, og hvad der er næste skridt
 
-Opdateret 25. august 2026. **Alt er kodet, committet og pushet, og `main` er i
+Opdateret 31. august 2026. **Alt er kodet, committet og pushet, og `main` er i
 sync.** Firestore-reglerne er udgivet og verificeret mod det der kører, senest
-23. august, så der ligger ingen uudgivet regel. **Der er ikke udgivet regler
-25. august**, alt den dag var kode og data.
+24. august, hvor de scannede varer fik deres egen samling. Der ligger ingen
+uudgivet regel. **Der er ikke udgivet regler siden**, alt derefter var kode og
+data.
+
+**DET SIDSTE ARBEJDE PÅ 3.0 ER 26. AUGUST.** Ugen 27. til 31. august gik med
+den gamle app, hvor 760 kunder er i drift. Se toppen af dokumentet og 9.60.
+
+**Det der blev lavet 26. august**, hver med sit eget afsnit:
+
+- **9.56** Mine favoritter. Hendes egne madvarer, de scannede varer og
+  hjertet er samlet til ÉT begreb. Det var det største enkelte greb i Mad
+  siden regnemaskinen
+- **9.57** Scanneren gav blank skærm når hun ville skrive tallene selv.
+  Rettet, og derefter er alle 53 sider og 37 ark gennemgået for samme fejl
+- **9.58** Hvad den gamle app kan, som 3.0 ikke kan. Otte ting, og fem af
+  dem stod ikke i noget dokument før den dag
+- **9.59** De 327 hjerter der pegede på en skjult dublet er peget videre.
+  91 kunder rettet, sikkerhedskopi taget
 
 **Det der blev lavet 25. august**, hver med sit eget afsnit:
 
@@ -475,11 +544,25 @@ kører hver time.
 
 **Etape 1 til 3 er færdige, og hele den åbne liste fra 6. august er klaret.** Etape 4 er i gang.
 
+**Mad er nu færdigbygget i 3.0** på nær det der står under NÆSTE SKRIDT. Efter
+9.56 er der ét begreb hvor der var tre, og hendes scannede varer har for første
+gang et sted at være.
+
 ### NÆSTE SKRIDT
 
-Opdateret 25. august. **Det der spærrer for at flytte et hold har ikke
+Opdateret 31. august. **Det der spærrer for at flytte et hold har ikke
 flyttet sig siden 22. august, og det er stadig indhold og tildelinger fra
 Linn, ikke kode.**
+
+**De fire nye ting fra 26. august**, i den rækkefølge jeg ville tage dem, se
+9.60:
+
+1. **"Nulstil appen på denne enhed"** i 3.0. Den gamle app har knappen, 3.0
+   har den ikke, og Linn sad fast uden den 26. august. Se 9.58 punkt 3
+2. **Onboardingens sidste udvej.** Fire linjer, og det er den første skærm
+   en ny kunde møder. Se 9.57
+3. **De to tekster i scanneren** der står forkert på et tomt skema. Se 9.57
+4. **Mine favoritter på en rigtig telefon.** Aldrig prøvet i en hånd
 
 Nyt fra 25. august, som venter på Linn:
 
@@ -3909,6 +3992,248 @@ hurtigt nok og derfor aldrig fik et hit.
 
 Det der ER nyt i 3.0 ligger EFTER scanningen: stregkoden giver kun
 navnet, og tallene kommer fra billedet af varedeklarationen. Se 9.51.
+
+---
+
+---
+
+---
+
+### 9.56 MINE FAVORITTER: tre begreber blev til ét, 26. august
+
+**Tegningen er `mockups-hjerte-og-scannede.html`**, og alle Linns svar staar i
+den. Læs den før du rører noget her.
+
+Det startede som et spørgsmål om hjertet og de scannede varer, og endte et
+andet sted. **Diagnosen pegede på en hylde. Linns svar var at de tre begreber
+er forvirrende i sig selv**, og det var rigtigt. Løsningen fjerner et begreb i
+stedet for at lægge et til.
+
+#### Problemet, målt 26. august på de 618 kunder
+
+| | |
+|---|---|
+| Hjerter i alt | 7.158 |
+| Kunder der har hjertet noget | 310, altså halvdelen |
+| Median pr kunde | 13, den største har 150 |
+| Hjerter på en SYNLIG fælles vare | kun 22 % |
+| Hjerter på hendes EGNE varer, sat automatisk af den gamle app | 74 % |
+| Scannede varer i drift | 4, alle med billede |
+
+Kunden mødte tre ting for at bruge én skærm: hendes egne madvarer, de scannede
+varer og hjertet. **To af dem er appens bogholderi og ikke hendes tanke.** Om
+en vare bor i den fælles samling eller i hendes egen skuffe er noget koden skal
+vide, ikke hende.
+
+**Og grænsen flyttede sig under hende.** Retter hun ét tal efter en scanning,
+holder varen op med at være scannet og bliver til en af hendes egne. Hun gjorde
+ikke noget der føltes som et skift, hun rettede et tal.
+
+**To ting var direkte forkerte.** Hendes egne SCANNINGER stod slet ikke på
+nogen liste, så hun kunne kun finde dem ved at søge. Og rækkerne opførte sig
+forskelligt selv om de lignede hinanden: en hjertet vare havde kun et hjerte,
+en af hendes egne havde Ret og et kryds.
+
+#### Linns beslutninger, og de skal ikke tages op igen
+
+- **Listen hedder Mine favoritter**
+- **Mærkatet bliver ved med at hedde Scannet.** Der lå et forslag om "Fra
+  pakken", og det er droppet
+- **Hjerte og favorit er ét begreb**, også på opskrifterne, som brugte ordet
+  favorit i forvejen
+- **Opskrifter og madvarer er TO lister med samme ord**, ikke én. En opskrift
+  bliver til et helt måltid, en madvare er én linje i et måltid, og de to åbner
+  hver sit ark
+
+#### DEN REGEL DER IKKE MÅ BRYDES
+
+**Listen REGNES UD. Den skrives aldrig.** Der er test på det.
+
+Navnet er en lille overdrivelse for to af de tre grupper. Hun lavede Mors
+rugbrød fordi den ikke fandtes, ikke fordi hun elsker den. **Den nærliggende og
+forkerte måde at gøre navnet sandt på er at sætte hjertet automatisk på det hun
+laver og scanner.** Det er præcis den gamle apps fejl, og det er derfor 74 % af
+alle hjerter er noget kunden aldrig har valgt. Gentages den, kan ingen længere
+måle hvad hun faktisk har valgt.
+
+Hjertet sættes kun når hun trykker. Hendes egne og hendes scanninger kommer med
+ved udregning, uden at der røres et felt.
+
+#### Krydset har TRE svar og ikke to
+
+- **Fjern** på et hjerte. Varen findes for alle bagefter
+- **Slet** på hendes egen. Den findes ikke andre steder, så at fjerne den ER at
+  slette den, og det skal stå på skærmen
+- **INTET kryds** på en vare hun selv har scannet. Den er delt med andre
+  kunder, så den må hverken slettes for alle eller skjules for hende alene uden
+  et nyt felt på kunden. **Det er ikke bygget**, og med 4 scannede varer i drift
+  rammer det få. Spørg Linn før du bygger feltet
+
+#### Det øvrige
+
+**Ret er flyttet** fra hver række ned i mængde-arket, hvor varen alligevel er
+åben. **Favorit-linjen samme sted har fået ord på**, så hun kan vide hvad
+hjertet gør, og den ligger under mængden og over knappen, så den aldrig står
+mellem hende og en registrering.
+
+**Hylden i tilføj-arket** viser fire favoritter med "Se alle" bagved. Fliserne
+har med vilje ingen farvekode: hvor varen kom fra er præcis den forskel vi har
+fjernet.
+
+**App-hjælpen fulgte med.** Den beskrev hjertet og "dine egne madvarer" som to
+forskellige ting og nævnte slet ikke scanning.
+
+#### Det der IKKE er prøvet
+
+**Det har aldrig været på en telefon.** Alt er tjekket i browseren og bygget
+igennem, men de to gange før i Mad blev fejlene fundet ved at bruge appen.
+
+---
+
+### 9.57 SCANNEREN: BLANK SKÆRM, OG GENNEMGANGEN AF ALLE SKÆRME, 26. august
+
+Linn fandt den. Efter stregkoden står hun med to valg, "Tag billedet" og "Skriv
+tallene selv". Trykkede hun på den sidste, **blev arket blankt.**
+
+Årsagen står i afsnit 7 under fælderne, og det er den samme som den blanke
+30-30 oversigt. Det tomme skema lå endda færdigt i koden som `TOM` og var
+aldrig blevet koblet på knappen. Nogen skrev knappen og glemte den sidste
+ledning.
+
+**Fire ting rettet.** Knappen giver hende nu skemaet. Varen mærkes som hendes
+alene med det samme, for tallene er ikke pakkens. Der er en sidste udvej på
+arket, med en advarsel i markup om at grenen ikke må fjernes. Og teksterne
+skifter: "Tjek tallene" og "Sammenlign med pakken" er forkert når hun skriver
+fra bunden, så der står nu **"Skriv tallene"** og at tallene står **pr 100
+gram**. Det er den vigtigste linje på skærmen, for taster hun hele pakkens tal,
+er hendes protein tre gange for højt resten af året.
+
+#### GENNEMGANGEN AF ALLE SKÆRME
+
+Efter anden gang blev alle **53 sider og 37 ark** gennemgået, i alt 622 steder
+hvor appen vælger mellem tilfælde. Det er gjort, så det ikke skal gøres forfra.
+
+**Resultatet:**
+
+- **Ingen skærm i 3.0 mangler en udvej når en hentning går galt.** Det var
+  mønstret fra 30-30, og det står rent alle andre steder
+- **Alle 53 sider har noget der altid tegnes.** Ingen kan blive helt hvid
+- De øvrige steder uden en sidste udvej er ark, modaler og valgfri afsnit, hvor
+  det er rigtigt at der ikke står noget
+
+**Det ene sted der ikke er sikret er onboardingen, `/ny/velkommen`.** Kæden har
+seks tilfælde og ingen sidste udvej. Rammes den, får hun en skærm med kun
+fremdrifts-bjælken, uden tekst og uden knap, og hun er låst fast i opstarten.
+Det kræver at listen af spørgsmål eller kort bliver KORTERE mens hun står midt
+i den, og begge bygges ud fra ting der hentes mens skærmen er åben.
+**Det er ikke bevist at det kan ske i dag, og det er ikke rettet.** Linn har
+set forslaget og ikke svaret. Det er den første skærm en ny kunde møder, og
+prisen er fire linjer.
+
+**Beslægtet, ikke rettet:** går det galt at gemme til allersidst i onboardingen,
+bliver hun stående på det sidste kort med en fejlbesked. Hun kan trykke igen, så
+hun er ikke låst, men det er ikke pænt.
+
+#### To ting fundet ved at BRUGE scanneren, ikke ved at teste
+
+Begge står stadig:
+
+- **"Noget ser forkert ud, produktet har ingen næringstal"** vises allerede på
+  et helt tomt skema, før hun har skrevet noget. Samme slags støj som
+  fibre-beskeden der blev udskudt
+- **"Du har rettet i tallene, så varen bliver kun din"** står nederst, men hun
+  har ikke rettet noget, hun skriver fra bunden
+
+---
+
+### 9.58 HVAD DEN GAMLE APP KAN, SOM 3.0 IKKE KAN, gennemgået 26. august
+
+Den gamle app blev stillet op mod 3.0 rute for rute. **Fem af de otte stod ikke
+i noget dokument før den dag.** Verificér dem mod koden før nogen regner med
+listen, den er fra 26. august.
+
+1. **Kunden kan selv booke sine pause-dage.** Gammel Profil har fra-til, en
+   tæller med brugt og tilbage, en liste og Fortryd samme dag. **3.0 kan kun
+   VISE pause-dage** på datostrimlen. Det er en test-funktion i den gamle app,
+   så det rammer ikke alle
+2. **Skift adgangskode.** Findes på gammel Profil. 3.0 har kun Log ud
+3. **"Nulstil appen på denne enhed."** Rydder den gemte kopi. **Det er præcis
+   den knap der manglede da Linn sad fast 26. august**, se fælderne i afsnit 7.
+   Den bør bygges før noget andet på listen her
+4. **Stjerner på opskrifter.** Kunden giver 1 til 5, og det ruller op i admin
+   og i dashboardet. **Den datastrøm stopper den dag et hold flyttes**
+5. **Stjerner på AI-svar.** Samme, feeder `/admin/ai-ratings`
+6. **Appens versionsnummer** vises ikke i 3.0. Det gør fejlsøgning over
+   telefonen sværere
+7. **"Dit abonnement"** med købt-dato og adgang-til
+8. **"Mine køb"**
+
+**Makker-modalen og Facebook-gruppen** står i forvejen under "Bevidst udskudt" i
+9.32, men det er én linje midt i et langt afsnit og meget nem at overse. Begge
+rammer først når et Kropsro-hold flyttes, ikke Kickstart.
+
+---
+
+### 9.59 DE 327 HJERTER, og hvad 3.0 ellers fik 27. til 31. august
+
+#### Hjerterne på dubletter er peget videre, 26. august
+
+Oprydningen 24. august mærkede en række varer som dubletter, og en dublet er
+skjult for alle, se `maaSesISoegning`. **Hjertet blev liggende.** Varen stod
+stadig på hendes liste og gav nul træffere når hun søgte. Appen gav to
+forskellige svar på det samme hjerte.
+
+**Rettet 26. august efter tørløb og Linns go:**
+
+| | |
+|---|---|
+| Kunder rettet | 91 |
+| Hjerter peget videre | 251 |
+| Fjernet, fordi hun hjertede den overlevende i forvejen | 76 |
+| Hjerter tilbage på en dublet | 0 |
+
+**Det vigtigste tal er et andet: alle 350 dublet-par har fuldstændig identiske
+næringstal.** Ikke ét afviger med 0,1 g protein eller 1 kcal. Det blev målt
+netop fordi linjer som "Kylling, bryst, kød og skind, rå" til "Kyllingefilet"
+ligner rå mod tilberedt. Pegepindene blev sat som samme mad med samme tal og et
+andet navn, og det holder. **Et hjerte der peges videre kan ikke ændre et tal.**
+
+Sikkerhedskopi i `backup/hjerter-foer-2026-08-26.json`, 91 kunder og 3.673
+hjerter. Hjerterne gik fra 7.158 til 7.085.
+
+#### Det 3.0 ellers fik, 27. til 31. august
+
+Kun tre ting. Resten af ugen var den gamle app, se toppen af dokumentet.
+
+- **Gennemførte forløb er med i adgangsbilledet.** `udledAdgange` antog at
+  `forlobIds` var en komplet historik, men de afsluttede ligger i et andet felt
+  og faldt ud af billedet. Både `forlobIds` og `afsluttedeForlobIds` læses nu.
+  **Samme fejl fandtes i den gamle app og blev rettet samme dag**
+- **Mærkatet Mejerifri på opskrifter.** Opfører sig som Glutenfri: flueben i
+  admin, filter-knap i listen, og det står på den enkelte opskrift. Ordet er
+  Linns valg, for "mælkefri" kan læses som om det kun handler om mælken i
+  kartonen. Madplan-forslagene i den gamle app har fået et tilsvarende flueben
+- **App-hjælpens tekst om bibliotekets forløbs-faner**
+
+---
+
+### 9.60 SÅDAN STÅR 3.0 DEN 31. AUGUST
+
+**Der er ikke arbejdet på 3.0 siden 26. august.** Det er ikke fordi noget er
+gået i stå, men fordi hele ugen gik med den gamle app, hvor 760 kunder er i
+drift. Se `HANDOVER-GAMMEL-APP.md`, som selv er bagud og står på 24. august.
+
+**Det der spærrer for at flytte et hold har ikke flyttet sig siden 22. august,
+og det er stadig indhold og tildelinger fra Linn, ikke kode.** Se NÆSTE SKRIDT.
+
+**Nyt på listen siden 26. august**, i den rækkefølge jeg ville tage dem:
+
+1. **"Nulstil appen på denne enhed"** i 3.0, se 9.58 punkt 3. Den er gået fra
+   teoretisk til konkret
+2. **Onboardingens sidste udvej**, se 9.57. Fire linjer, og det er den første
+   skærm en ny kunde møder
+3. **De to tekster i scanneren**, se 9.57
+4. **Mine favoritter på en rigtig telefon.** Det er aldrig prøvet i en hånd
 
 ---
 
