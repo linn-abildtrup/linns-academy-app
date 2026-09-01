@@ -20,6 +20,7 @@
 	// ============================================================
 
 	import { getContext, onMount } from 'svelte';
+	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import { isAdmin } from '$lib/admin';
 	import {
@@ -44,7 +45,12 @@
 	const hentUser = getContext<() => User | null>('user');
 	const maaVaereHer = $derived(isAdmin(hentUser()));
 
-	let omraade = $state<Omraade>('forside');
+	// Skinnen paa de GAMLE admin-sider peger herind med ?omraade=, saa et
+	// tryk paa Mad lander samme sted uanset hvilken app du kom fra.
+	const fraUrl = page.url.searchParams.get('omraade');
+	let omraade = $state<Omraade>(
+		fraUrl && fraUrl in OMRAADE_NAVN ? (fraUrl as Omraade) : 'forside'
+	);
 	let soeg = $state('');
 
 	// null betyder "hentes stadig". Se noten paa StatusTal: nul er en helt
