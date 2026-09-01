@@ -90,7 +90,7 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	{ navn: 'Kategorier', under: 'Det udstyr kunden kan vælge imellem', rute: '/ny/admin/traening/kategorier', omraade: 'traening' },
 	{ navn: 'Byg eget program', under: 'Hvem må sætte deres egen træning sammen', rute: '/ny/admin/traening/byg-eget', omraade: 'traening' },
 	{ navn: 'Øvelsesbank', under: 'Opret og ret de enkelte øvelser', rute: '/app/admin/traening', omraade: 'traening', gammel: true },
-	{ navn: 'Mine programmer', under: 'Forløbs-uafhængige programmer', rute: '/app/admin/programmer', omraade: 'traening', gammel: true },
+	{ navn: 'Mine programmer', under: 'De gamle mikrotrænings-programmer', rute: '/ny/admin/programmer', omraade: 'traening' },
 	{ navn: 'Abo-træning', under: 'Mikrotræning for abonnenter', rute: '/app/admin/abo-traening', omraade: 'traening', gammel: true },
 
 	// ── Beskeder ──────────────────────────────────────────────
