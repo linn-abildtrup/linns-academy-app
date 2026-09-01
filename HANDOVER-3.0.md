@@ -6,9 +6,12 @@ Sidst opdateret 31. august 2026.
 og 31. august blev der lavet 39 ting, og **næsten alle ligger i den GAMLE app**,
 ikke i 3.0. Login i to trin, hjemmeskærms-skærmen, Kickstarts startdag og
 uge-mål, Facebook-gruppen, intro og info-knapper, hele opstarts-oprydningen og
-AI-svarudkastene er alt sammen `/app`. De hører til i `HANDOVER-GAMMEL-APP.md`,
-og **den fil står selv på 24. august og er bagud.** Leder du efter noget fra den
+AI-svarudkastene er alt sammen `/app`. **De hører til i `HANDOVER-GAMMEL-APP.md`, som er
+skrevet op til 1. september og dækker dem alle.** Leder du efter noget fra den
 uge og ikke finder det her, er det derfor, og ikke fordi det mangler.
+
+Værd at kende, selv om du kun arbejder på 3.0: **den gamle app voksede fra 618
+til 925 kunder i den uge.** Et helt nyt Kickstart-hold kom ind.
 
 **3.0 fik i samme uge kun tre ting**, se 9.59. Det sidste rigtige arbejde på
 3.0 er 26. august, se 9.56 til 9.58.
