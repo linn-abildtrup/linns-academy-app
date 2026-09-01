@@ -70,8 +70,8 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	{ navn: 'Forløb og dage', under: 'Lektioner, små skridt og refleksion pr dag', rute: '/app/admin/forlob', omraade: 'forlob', oftest: true, gammel: true },
 	{ navn: 'Challenges', under: 'Opret én og giv den til et hold eller til alle', rute: '/ny/admin/challenges', omraade: 'forlob', oftest: true },
 	{ navn: 'Dashboard', under: 'Tallene på forretningen', rute: '/app/admin/dashboard', omraade: 'forlob', gammel: true },
-	{ navn: 'Modulbruger-lektioner', under: 'Daglige lektioner til abonnenter', rute: '/app/admin/modulbruger-lektioner', omraade: 'forlob', gammel: true },
-	{ navn: 'Abo små skridt', under: 'Vaneliste og bonus-pulje for abonnenter', rute: '/app/admin/abo-vaner', omraade: 'forlob', gammel: true },
+	{ navn: 'Lektioner til abonnenter', under: 'Én lektion pr dag til dem uden forløb', rute: '/ny/admin/modulbruger-lektioner', omraade: 'forlob' },
+	{ navn: 'Små skridt til abonnenter', under: 'Vaneliste og bonus-pulje', rute: '/ny/admin/abo-vaner', omraade: 'forlob' },
 
 	// ── Mad ───────────────────────────────────────────────────
 	{ navn: 'Opskrifter', under: 'Opret, ret og godkend', rute: '/app/admin/opskrifter', omraade: 'mad', gammel: true },
