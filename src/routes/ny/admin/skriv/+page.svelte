@@ -13,6 +13,11 @@
 	// DEN KAN IKKE KALDES TILBAGE, og det staar paa skaermen inden hun
 	// trykker. En besked paa forsiden kan rettes, den her er afleveret.
 	//
+	// LAVET OM 1. september 2026 til det nye admin-udseende. Siden saa ud
+	// som en telefonskaerm med sidehoved og tilbage-pil, midt i en menu
+	// der staar til venstre paa en computer. Nu bruger den de samme seks
+	// byggeklodser som de nitten andre. INTET er aendret i hvad den goer.
+	//
 	// Se HANDOVER 9.43.
 	// ============================================================
 
@@ -28,8 +33,11 @@
 		hentKlienter3,
 		type Klient3
 	} from '$lib/firestore/traeningKunde3';
-	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import AdmSide from '$lib/components/admin/AdmSide.svelte';
+	import AdmKort from '$lib/components/admin/AdmKort.svelte';
+	import AdmKnap from '$lib/components/admin/AdmKnap.svelte';
+	import AdmSoeg from '$lib/components/admin/AdmSoeg.svelte';
+	import AdmTom from '$lib/components/admin/AdmTom.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const user = $derived(hentUser());
@@ -119,72 +127,191 @@
 	}
 </script>
 
-<div class="ny-pad noti-admin">
-	<Sidehoved
+<svelte:head><title>Skriv til en kunde · Admin</title></svelte:head>
+
+{#if !maaVaereHer}
+	<p class="ns-kun">Siden er kun for admin.</p>
+{:else}
+	<AdmSide
 		titel="Skriv til en kunde"
-		tilbage="/ny/admin"
-		tilbageTekst="Admin"
 		under="Beskeden lander i hendes Beskeder, og hun kan svare på den."
-		kant={false}
-	/>
+	>
+		{#if fejl}<div class="ns-fejl">{fejl}</div>{/if}
 
-	{#if !maaVaereHer}
-		<div class="kort rolig">Siden er kun for admin.</div>
-	{:else if henter}
-		<div class="lektion-venter">
-			<Ventetegn variant="lille" />
-			<span>Henter kunderne</span>
-		</div>
-	{:else}
-		{#if fejl}<div class="kort rolig nm-fejl">{fejl}</div>{/if}
+		{#if henter}
+			<AdmTom tekst="Henter kunderne…" />
+		{:else if kunder.length === 0}
+			<AdmTom tekst={fejl || 'Kunne ikke hente kunderne.'} fejl />
+		{:else}
+			<AdmKort>
+				{#if !valgt}
+					<AdmSoeg bind:vaerdi={soegeord} placeholder="Søg efter en kunde…" />
 
-		<section class="kort">
-			{#if !valgt}
-				<input
-					class="na-soeg"
-					type="search"
-					placeholder="Søg efter en kunde…"
-					bind:value={soegeord}
-				/>
-				{#each fundne as k (k.uid)}
-					<button class="nt-fund" onclick={() => (valgt = k)}>
-						<span>
-							<span class="na-fund-n">{k.navn}</span>
-							<span class="na-fund-s">{holdFor(k)}</span>
-						</span>
-						<span class="ds-pil">›</span>
-					</button>
-				{/each}
-				{#if soegeord.trim().length >= 2 && fundne.length === 0}
-					<div class="na-tom">Ingen med det navn.</div>
-				{/if}
-			{:else}
-				<div class="nt-valgt">
-					<div>
-						<div class="na-fund-n">{valgt.navn}</div>
-						<div class="na-fund-s">{holdFor(valgt)}</div>
+					{#if fundne.length > 0}
+						<div class="ns-liste">
+							{#each fundne as k (k.uid)}
+								<button type="button" class="ns-raekke" onclick={() => (valgt = k)}>
+									<span>
+										<span class="ns-navn">{k.navn}</span>
+										<span class="ns-hold">{holdFor(k)}</span>
+									</span>
+									<span class="ns-pil">›</span>
+								</button>
+							{/each}
+						</div>
+					{:else if soegeord.trim().length >= 2}
+						<p class="ns-hint">Ingen med det navn.</p>
+					{:else}
+						<p class="ns-hint">Skriv mindst to bogstaver for at søge.</p>
+					{/if}
+				{:else}
+					<div class="ns-valgt">
+						<div>
+							<span class="ns-navn">{valgt.navn}</span>
+							<span class="ns-hold">{holdFor(valgt)}</span>
+						</div>
+						<AdmKnap onclick={() => (valgt = null)}>Vælg en anden</AdmKnap>
 					</div>
-					<button class="na-x" onclick={() => (valgt = null)} aria-label="Vælg en anden">×</button>
-				</div>
 
-				<textarea
-					class="skriv-felt"
-					rows="5"
-					placeholder="Skriv din besked til hende…"
-					bind:value={tekst}
-				></textarea>
+					<textarea
+						class="ns-felt"
+						rows="5"
+						placeholder="Skriv din besked til hende…"
+						bind:value={tekst}
+					></textarea>
 
-				<div class="skriv-advarsel">
-					Beskeden kan ikke kaldes tilbage. Skal det være noget alle skal se, og som du kan rette
-					igen, så brug Besked på forsiden i stedet.
-				</div>
+					<div class="ns-advarsel">
+						Beskeden kan ikke kaldes tilbage. Skal det være noget alle skal se, og som du kan rette
+						igen, så brug Besked på forsiden i stedet.
+					</div>
 
-				<button class="nt-knap" disabled={sender || !tekst.trim()} onclick={send}>
-					{sender ? 'Sender' : 'Send besked'}
-				</button>
-			{/if}
+					<div class="ns-knapper">
+						<AdmKnap slags="primaer" disabled={sender || !tekst.trim()} onclick={send}>
+							{sender ? 'Sender…' : 'Send besked'}
+						</AdmKnap>
+					</div>
+				{/if}
 
-			{#if kvittering}<div class="nt-kvittering">{kvittering}</div>{/if}
-		</section>
-	{/if}
-</div>
+				{#if kvittering}<div class="ns-kvittering">{kvittering}</div>{/if}
+			</AdmKort>
+		{/if}
+	</AdmSide>
+{/if}
+
+<style>
+	.ns-kun {
+		padding: 24px 18px;
+		color: var(--ink-2);
+		font-size: calc(14px * var(--fs-scale, 1));
+	}
+
+	.ns-fejl {
+		margin-bottom: 12px;
+		padding: 11px 15px;
+		border-radius: 12px;
+		background: var(--ler-tint, #f4e6de);
+		color: var(--ler-tekst, #8a5439);
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-weight: 600;
+	}
+
+	.ns-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+		margin-top: 12px;
+	}
+
+	.ns-raekke {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		width: 100%;
+		padding: 11px 14px;
+		background: var(--paper, #fbf8f2);
+		border: none;
+		border-radius: 11px;
+		font-family: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.ns-pil {
+		color: var(--ink-3, #a3948a);
+		font-size: calc(17px * var(--fs-scale, 1));
+	}
+
+	.ns-navn {
+		display: block;
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--espresso, #382c2a);
+	}
+
+	.ns-hold {
+		display: block;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--ink-3, #a3948a);
+	}
+
+	.ns-hint {
+		margin: 12px 0 0;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--ink-3, #a3948a);
+	}
+
+	.ns-valgt {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		flex-wrap: wrap;
+		padding: 12px 14px;
+		background: var(--paper, #fbf8f2);
+		border-radius: 11px;
+		margin-bottom: 12px;
+	}
+
+	.ns-felt {
+		display: block;
+		width: 100%;
+		padding: 12px 14px;
+		background: var(--paper, #fbf8f2);
+		border: 1px solid var(--line, #e8dfd1);
+		border-radius: 13px;
+		color: var(--espresso, #382c2a);
+		font-family: inherit;
+		font-size: calc(14px * var(--fs-scale, 1));
+		line-height: 1.5;
+		resize: vertical;
+		box-sizing: border-box;
+	}
+
+	.ns-advarsel {
+		margin-top: 12px;
+		padding: 11px 14px;
+		background: var(--honey-tint, #f7ecd7);
+		border-radius: 13px;
+		color: var(--honey-deep, #b47f3e);
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		line-height: 1.5;
+	}
+
+	.ns-knapper {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+		margin-top: 12px;
+	}
+
+	.ns-kvittering {
+		margin-top: 12px;
+		padding: 12px 14px;
+		background: var(--sage-tint, #e7efe5);
+		border-radius: 13px;
+		color: var(--sage-tekst, #46603f);
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+	}
+</style>
