@@ -2143,14 +2143,20 @@
 				✨ Foreslå en madplan
 			</button>
 		{:else if aktivTab === 'mine'}
+			<!-- Teksten er rettet 1. september 2026, samme dag som kunden fik
+			     lov at skrive en opskrift selv. Baade knappen og linjen over
+			     lovede kun billede, og knappen hed noget andet end den skaerm
+			     den aabner. Det var netop den fejl der blev rettet paa Din
+			     side 19. august, hvor hun trykkede ét sted og landede et
+			     andet. Knappen hedder nu det samme som siden. -->
 			<div class="hint-boks">
 				<span class="hint-ikon">✨</span>
 				<span class="hint-tekst">
-					Tag billede af en opskrift — AI'en estimerer makro pr portion. Kun synlig for dig.
+					Tag et billede af en opskrift, eller skriv den selv. Kun du kan se den.
 				</span>
 			</div>
 			<a class="primary-knap mine-tilfoj" href="/app/moduler/30-30-3/min-opskrift/ny">
-				+ Tilføj fra billede
+				+ Tilføj en opskrift
 			</a>
 			{#if mineOpskrifter.length === 0}
 				<div class="tom-boks">
