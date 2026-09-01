@@ -316,12 +316,14 @@ export const POST: RequestHandler = async ({ request }) => {
 	// Hendes egen historik ligger EFTER forloebs-blokken og foer videnbasen,
 	// saa den ikke skaeres vaek.
 	//
-	// HENDES MAD-TAL ER IKKE MED ENDNU. De ligger i en undersamling under
-	// kunden, og firestoreRest kan kun spoerge fra roden, saa de kan ikke
-	// hentes rigtigt herfra. hentAlleDocs stopper ved 300 dokumenter i en
-	// tilfaeldig raekkefoelge, og en kunde har tusindvis af madlinjer, saa
-	// tallene ville blive forkerte uden at nogen opdagede det. Regnestykket
-	// staar klar i content/kundeTal3.ts med 14 tests. Se samtalen 1. sept.
+	// HENDES MAD-TAL ER MED VILJE IKKE MED. Linns beslutning 1. september:
+	// glem tallene paa maaltider. Det blev undersoegt samme dag, og der var
+	// ogsaa en teknisk grund: maaltiderne ligger i en undersamling under
+	// kunden, og firestoreRest kan kun spoerge fra roden. hentAlleDocs
+	// stopper ved 300 dokumenter i tilfaeldig raekkefoelge, og en kunde har
+	// tusindvis af madlinjer, saa et snit ville blive forkert uden at nogen
+	// opdagede det. Bygges det en dag, laa regnestykket i
+	// content/kundeTal3.ts, slettet samme dag. Se git-historikken.
 	const egetBlok =
 		(kundeHistorik.length > 0
 			? `HUN HAR SPURGT DIG OM DET HER FOER, og du svarede saadan. Gentag ikke dig selv ordret:\n${kundeHistorik
@@ -362,8 +364,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		antalFaq: viden?.faq.length ?? 0,
 		antalLektioner: viden?.lektioner.length ?? 0,
 		antalTidligereSvar: tidligereSvar.length,
-		antalEgenHistorik: kundeHistorik.length,
-		harEgneTal: false
+		antalEgenHistorik: kundeHistorik.length
 	});
 
 	return json({
