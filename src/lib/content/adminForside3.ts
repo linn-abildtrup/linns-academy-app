@@ -66,7 +66,8 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	// Den gamle staar under System indtil den nye har vaeret brugt. Se den
 	// samme ordning for Spoergsmaal.
 	{ navn: 'Testere, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/testere', omraade: 'system', gammel: true },
-	{ navn: 'Nulstil adgangskode', under: 'Sæt en midlertidig kode for en kunde', rute: '/app/admin/nulstil-adgang', omraade: 'kunder', gammel: true },
+	{ navn: 'Nulstil adgangskode', under: 'Sæt en midlertidig kode for en kunde', rute: '/ny/admin/nulstil-adgang', omraade: 'kunder' },
+	{ navn: 'Nulstil adgangskode, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/nulstil-adgang', omraade: 'system', gammel: true },
 	{ navn: 'Refleksioner', under: 'Læs svarene på dagens refleksion', rute: '/ny/admin/refleksioner', omraade: 'kunder' },
 
 	// ── Forløb ────────────────────────────────────────────────
