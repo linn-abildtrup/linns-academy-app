@@ -101,7 +101,8 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	{ navn: 'Skriv til en kunde', under: 'Lander i hendes Beskeder. Hun kan svare', rute: '/ny/admin/skriv', omraade: 'beskeder', oftest: true },
 	{ navn: 'Besked på forsiden', under: 'Til et hold eller alle. Ingen samtale', rute: '/ny/admin/forsidebesked', omraade: 'beskeder', oftest: true },
 	{ navn: 'Notifikationer', under: 'Beskeder på telefonen, og hvem der får dem', rute: '/ny/admin/noti', omraade: 'beskeder' },
-	{ navn: 'Linn AI, videnbase', under: 'Det AI en svarer ud fra', rute: '/app/admin/linn-ai', omraade: 'beskeder', gammel: true },
+	{ navn: 'Det AI en svarer ud fra', under: 'Videnbasen og AI ens stemme. Gælder begge apper', rute: '/ny/admin/videnbase', omraade: 'beskeder' },
+	{ navn: 'Videnbase, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/linn-ai', omraade: 'system', gammel: true },
 	{ navn: 'AI-vurderinger', under: 'Hvad kunderne synes om AI ens svar', rute: '/ny/admin/ai-ratings', omraade: 'beskeder' },
 
 	// ── System ────────────────────────────────────────────────
