@@ -117,6 +117,25 @@ describe('byggOversigt', () => {
 		expect(r.map((x) => x.kerne)).toEqual(['olivenolie']);
 	});
 
+	it('giver hver raekke id paa de opskrifter den bruges i, saa der kan linkes ind', () => {
+		const o = [
+			opskrift('o1', 'Ret A', ['frokost'], ['olivenolie']),
+			opskrift('o2', 'Ret B', ['frokost'], ['olivenolie'])
+		];
+		const r = byggOversigt(o, { olivenolie: { foodId: 'f1' } }, varer);
+		expect(r[0].opskrifter).toEqual([
+			{ id: 'o1', titel: 'Ret A' },
+			{ id: 'o2', titel: 'Ret B' }
+		]);
+	});
+
+	it('taeller den samme opskrift én gang, ogsaa naar ingrediensen staar to steder i den', () => {
+		const o = [opskrift('o1', 'Ret A', ['frokost'], ['olivenolie', 'olivenolie'])];
+		const r = byggOversigt(o, { olivenolie: { foodId: 'f1' } }, varer);
+		expect(r[0].antalLinjer).toBe(2);
+		expect(r[0].opskrifter).toHaveLength(1);
+	});
+
 	it('lister de hyppigste foerst', () => {
 		const o = [
 			opskrift('o1', 'A', ['frokost'], ['olivenolie', 'kyllingebryst']),

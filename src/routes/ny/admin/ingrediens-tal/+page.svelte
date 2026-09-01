@@ -207,6 +207,12 @@
 
 							{#if r.fejl}
 								<div class="it-fejl">{fejlTekst(r)}</div>
+								{#if r.fejl === 'ingen kobling'}
+									<div class="it-hjaelp">
+										Ret enten teksten på ingrediensen i opskriften, eller kobl navnet til en
+										madvare. Begge dele får rækken til at forsvinde herfra af sig selv.
+									</div>
+								{/if}
 							{/if}
 						</button>
 
@@ -224,7 +230,15 @@
 								</div>
 								<div class="it-d-linje">
 									<span class="it-d-mrk">Bruges i</span>
-									<span>{r.opskriftTitler.join(' · ')}</span>
+									<!-- Links ind i opskriften, hvor selve teksten paa ingrediensen
+									     staar. Det er DER en raekke uden kobling rettes, og saa
+									     forsvinder den af sig selv herfra. Redigeringen ligger i den
+									     gamle admin, som er det ene sted opskrifterne kan rettes. -->
+									<span class="it-retter">
+										{#each r.opskrifter as o (o.id)}
+											<a class="it-ret-link" href="/app/admin/opskrifter/{o.id}">{o.titel}</a>
+										{/each}
+									</span>
 								</div>
 								<div class="it-d-linje">
 									<span class="it-d-mrk">Madtyper</span>
@@ -458,6 +472,26 @@
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
 		color: var(--ink-3);
+	}
+
+	.it-hjaelp {
+		margin-top: 4px;
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--ink-3);
+		line-height: 1.45;
+	}
+
+	.it-retter {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px 8px;
+		margin-top: 2px;
+	}
+
+	.it-ret-link {
+		color: var(--plum);
+		font-weight: 600;
+		text-decoration: underline;
 	}
 
 	.it-vej {

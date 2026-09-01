@@ -57,8 +57,14 @@ export interface IngrediensRaekke {
 	antalLinjer: number;
 	/** Hvor mange forskellige opskrifter den indgaar i. */
 	antalOpskrifter: number;
-	/** Titlerne, saa Linn kan se hvor den bruges. */
-	opskriftTitler: string[];
+	/**
+	 * Opskrifterne den indgaar i, med id saa der kan linkes ind i dem.
+	 *
+	 * Vejen ind betyder noget for de raekker der ikke kan regnes: teksten
+	 * paa ingrediensen staar i opskriften, saa det er DER den rettes.
+	 * Linns oenske 1. september 2026.
+	 */
+	opskrifter: { id: string; titel: string }[];
 	/** De madtyper de opskrifter hoerer til. Grundlaget for filtreringen. */
 	kategorier: OpskriftKategori[];
 	/** Foedevaren den er koblet til, hvis der er en. */
@@ -130,7 +136,7 @@ export function byggOversigt(
 		varianter: Set<string>;
 		linjer: number;
 		opskrifter: Set<string>;
-		titler: Set<string>;
+		titler: Map<string, string>;
 		kategorier: Set<OpskriftKategori>;
 	};
 	const kort = new Map<string, Saml>();
@@ -148,7 +154,7 @@ export function byggOversigt(
 					varianter: new Set(),
 					linjer: 0,
 					opskrifter: new Set(),
-					titler: new Set(),
+					titler: new Map(),
 					kategorier: new Set()
 				};
 				kort.set(kerne, s);
@@ -156,7 +162,7 @@ export function byggOversigt(
 			s.varianter.add(navn);
 			s.linjer += 1;
 			s.opskrifter.add(o.id);
-			s.titler.add(o.titel);
+			s.titler.set(o.id, o.titel);
 			for (const k of o.kategorier ?? []) s.kategorier.add(k);
 		}
 	}
@@ -202,7 +208,9 @@ export function byggOversigt(
 			varianter: Array.from(s.varianter).sort((a, b) => a.localeCompare(b, 'da')),
 			antalLinjer: s.linjer,
 			antalOpskrifter: s.opskrifter.size,
-			opskriftTitler: Array.from(s.titler).sort((a, b) => a.localeCompare(b, 'da')),
+			opskrifter: Array.from(s.titler, ([id, titel]) => ({ id, titel })).sort((a, b) =>
+				a.titel.localeCompare(b.titel, 'da')
+			),
 			kategorier: Array.from(s.kategorier),
 			vare,
 			varenavn,
