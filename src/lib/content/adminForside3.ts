@@ -71,7 +71,8 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	{ navn: 'Forløb', under: 'Alle hold. Indholdet åbnes inde i det enkelte forløb', rute: '/ny/admin/forlob', omraade: 'forlob', oftest: true },
 	{ navn: 'Forløb, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/forlob', omraade: 'system', gammel: true },
 	{ navn: 'Challenges', under: 'Opret én og giv den til et hold eller til alle', rute: '/ny/admin/challenges', omraade: 'forlob', oftest: true },
-	{ navn: 'Dashboard', under: 'Tallene på forretningen', rute: '/app/admin/dashboard', omraade: 'forlob', gammel: true },
+	{ navn: 'Dashboard', under: 'Kundernes udvikling og tallene på forretningen', rute: '/ny/admin/dashboard', omraade: 'forlob' },
+	{ navn: 'Dashboard, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/dashboard', omraade: 'system', gammel: true },
 	{ navn: 'Lektioner til abonnenter', under: 'Én lektion pr dag til dem uden forløb', rute: '/ny/admin/modulbruger-lektioner', omraade: 'forlob' },
 	{ navn: 'Små skridt til abonnenter', under: 'Vaneliste og bonus-pulje', rute: '/ny/admin/abo-vaner', omraade: 'forlob' },
 
