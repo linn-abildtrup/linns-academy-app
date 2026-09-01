@@ -1,6 +1,6 @@
 # Overdragelse: den gamle app
 
-Sidst opdateret 1. september 2026.
+Sidst opdateret 1. september 2026, sent på dagen.
 
 **UGEN 27. TIL 31. AUGUST VAR NÆSTEN UDELUKKENDE DEN HER APP.** 39 ændringer,
 og de er samlet i afsnit 7. Det er den travleste uge i den gamle app siden 3.0
@@ -450,6 +450,92 @@ admin-forsiden efter syv dage, commit `ec6cb79`. Den ugentlige planlægger er en
 
 ---
 
+### Rettet 1. september 2026
+
+**Fire ting, alle sammen i ADMIN.** Ingen kundeflade er rørt, og ingen kunde
+kan se forskel på noget af det. Læs også 9.61 i `HANDOVER-3.0.md`, for dagens
+femte ting ligger dér og hænger sammen med den fjerde her.
+
+**Admin kan filtrere opskrifter på madtype.** Listen var 133 rækker i én
+alfabetisk liste uden søgning. Der er nu et søgefelt, fire knapper med
+madtyperne, og en linje der siger hvor mange der vises.
+
+Filtreringen genbruger `filtrerOpskrifter` fra `content/opskrifter`, altså
+præcis den samme regel som kunden møder under 30-30-3. To steder der filtrerer
+hver sin vej ville betyde at admin viste noget andet end kunden.
+
+**Bemærk at der kun er FIRE madtyper i den gamle app.** Snack, salat og dessert
+foldes sammen til Andet i `normaliserKategorier`. Snack er først sin egen
+kategori i 3.0, se 9.5 i 3.0-overdragelsen. Linn er gjort opmærksom på det og
+har valgt de fire. Fordelingen målt 1. september: morgenmad 24, frokost 51,
+aftensmad 46, andet 23, **og 3 uden madtype**. De tre er de tomme kladder der
+hedder "Ny opskrift", og de forsvinder så snart der trykkes på en madtype.
+
+**Admin kan godkende en opskrift.** Linns eget flueben på at hun har set den
+igennem. Nyt valgfrit felt `godkendt` plus `godkendtAt` på `Opskrift`,
+additivt, så gamle dokumenter uden feltet læses som ikke-godkendt og ikke som
+afvist. En knap pr række i listen, grøn kant i venstre side på de godkendte, et
+filter der hedder "Mangler godkendelse", og en knap inde i opskriften.
+
+**DET MÅ ALDRIG BLIVE EN PORT FOR HVAD KUNDEN SER.** Det er `aktiv` der styrer
+synlighed, og de to skal blive ved med at være to ting. Der står en note om det
+på feltet og en linje om det på skærmen.
+
+`saetOpskriftGodkendt` skriver KUN de to felter med merge og ikke hele
+dokumentet, fordi fluebenet sættes fra listen hvor der ikke ligger et redigeret
+udkast. `gemOpskrift` skriver også med merge og rører ikke feltet, så
+godkendelsen overlever en redigering.
+
+**Næringstal pr ingrediens inde i en opskrift.** Ud for hver ingrediens står
+nu hvilken madvare den er koblet til, hvor mange gram linjen er, og hvad den
+bidrager med. Det regnes på de felter der står på skærmen, så tallene følger
+med når mængden ændres.
+
+**Regnestykket er 3.0's regnemaskine**, altså `opskriftMakro3` og
+`opskriftPortion3`. Rene funktioner der kun læser, og den samme motor som
+`/ny/admin/opskrift-makro` bruger, så de to sider aldrig kan sige forskellige
+ting om den samme ret. **Der skrives ingenting**: makro-felterne er Linns, og
+hendes regel er at intet regnes om automatisk.
+
+Fire ting der er dyre at genopdage:
+
+- **Fødevarerne hentes med den gamle apps egen `hentAlleFodevarer`**, så siden
+  ikke får sin egen kopi af 2.268 rækker ved siden af den appen har i forvejen
+- **Hentningen ligger EFTER opskriften og blokerer ikke redigeringen.** Går den
+  galt, står der en linje om det og resten af siden virker
+- **En linje der ikke kan regnes skriver hvorfor med ord.** Aldrig et stille
+  nul. Det er fejlen hvor en ret ser ud til at have mindre protein end den har
+- **Summen står både for hele retten og pr portion**, og kun når listen er
+  skrevet til flere. Makro-felterne er PR PORTION, så det er dem der
+  sammenlignes. Det er præcis den fejl der tidligere lå tre steder i to apper,
+  se 9.9 i 3.0-overdragelsen
+
+**Vej fra admin-forsiden til Ingrediensernes tal.** Nyt menupunkt under Delt
+indhold der peger på `/ny/admin/ingrediens-tal`, altså en side der ligger i
+3.0. **Der er kun ÉN side**, og den nås fra begge admin-forsider. To kopier
+ville før eller siden sige forskellige ting om det samme tal. Linn er admin, så
+hun kommer ind på `/ny` uden videre.
+
+#### DET DER RAMMER KUNDERNE, og det ligger i 3.0
+
+Fra den side kan Linn rette en fødevares næringstal, og **rettelsen skrives på
+selve fødevaren**. Begge apper læser den samme samling, så et rettet tal gælder
+også de 925 kunder her, næste gang de taster varen ind.
+
+Det er en bevidst beslutning fra Linn 1. september: der findes ét sæt tal, og
+det er vores. Hele gennemgangen står i 9.61 i `HANDOVER-3.0.md`, og den skal
+læses før nogen rører fødevarernes tal.
+
+**Kundernes gamle registreringer er urørte.** Hvert måltid fryser sine egne tal
+ved gemning. **Og kunden ser ingen forskel på skærmen**, hun ser kun tallet.
+Sikkerhedskopi af alle 2.268 fødevarer ligger i `backup/`.
+
+**Rører du en fødevares tal, så husk at opskrifterne skal regnes om samme dag.**
+Det er indbygget i admin-siden, men gør du det med et script, står reglen i
+9.50 i 3.0-overdragelsen.
+
+---
+
 ## 8. Beslutninger der ikke skal genopfindes
 
 To beslutninger truffet 24. august 2026. Begge er den slags der bliver bygget igen om et halvt år hvis de ikke står skrevet ned.
@@ -479,6 +565,14 @@ Skriver en kunde at appen ikke husker hendes mængde, er det eneste spørgsmål 
 ---
 
 ## 9. Åbne tråde i den gamle app
+
+**Åbnet 1. september:** Linn har bedt om at AI'en i DEN HER app også skal kende
+kundens forløb, altså FAQ, lektioner og dagnummer, sådan som 3.0's AI fik den
+1. september. **Det er ikke bygget her**, og `/api/linn-ai` er urørt. Hele
+opskriften på hvordan det blev gjort i 3.0 står i 9.61 i `HANDOVER-3.0.md`,
+inklusive den fælde hvor udvælgelsen sorterede det rigtige svar helt væk.
+Bemærk at den gamle AI i forvejen bruger Linns tidligere svar, hvor 3.0's ikke
+gjorde før den dag.
 
 - **Tilbagefalds-reglen i `hentAktivProduktType`** sender udløbne kunder til Kickstart-skuffen. Kendt, ikke rettet. Se 6.3.
 - **Ann og Lone** på Kropsro 24. maj havde kun én nul-dag hver, så deres forlængelse rakte kun til 18. august. Deres forløb er slut nu. Linn nåede ikke at tage stilling til om de skulle have mere tid.

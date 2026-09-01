@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 31. august 2026.
+Sidst opdateret 1. september 2026.
 
 **LÆS DEN HER FØRST HVIS DU LEDER EFTER DEN SIDSTE UGES ARBEJDE.** Mellem 27.
 og 31. august blev der lavet 39 ting, og **næsten alle ligger i den GAMLE app**,
@@ -13,8 +13,15 @@ uge og ikke finder det her, er det derfor, og ikke fordi det mangler.
 Værd at kende, selv om du kun arbejder på 3.0: **den gamle app voksede fra 618
 til 925 kunder i den uge.** Et helt nyt Kickstart-hold kom ind.
 
-**3.0 fik i samme uge kun tre ting**, se 9.59. Det sidste rigtige arbejde på
-3.0 er 26. august, se 9.56 til 9.58.
+**3.0 fik i samme uge kun tre ting**, se 9.59.
+
+**DEN 1. SEPTEMBER KOM DER OTTE TING TIL, se 9.61.** Kort: Linn AI ved nu
+hvilket forløb kunden er på, kender hendes FAQ og hendes lektioner til og med
+i dag, og bruger for første gang Linns egne tidligere svar. Dertil en ny
+admin-side, Ingrediensernes tal, hvor Linn kan rette en fødevares næringstal
+så det gælder BEGGE apper, og hvor opskrifterne regnes om i samme kørsel.
+Links i Beskeder kan trykkes. **Rører du Linn AI eller fødevarernes tal, så
+læs 9.61 først.**
 
 **Rører du Mad, så læs 9.56 først, og derefter 9.50 og 9.52 til 9.55.** 9.56 er
 at hendes egne madvarer, de scannede varer og hjertet er samlet til ét begreb
@@ -511,8 +518,9 @@ sync.** Firestore-reglerne er udgivet og verificeret mod det der kører, senest
 uudgivet regel. **Der er ikke udgivet regler siden**, alt derefter var kode og
 data.
 
-**DET SIDSTE ARBEJDE PÅ 3.0 ER 26. AUGUST.** Ugen 27. til 31. august gik med
-den gamle app, hvor 760 kunder er i drift. Se toppen af dokumentet og 9.60.
+**DER ER ARBEJDET PÅ 3.0 IGEN DEN 1. SEPTEMBER, se 9.61.** Ugen 27. til 31.
+august gik med den gamle app, hvor nu 925 kunder er i drift. Se toppen af
+dokumentet og 9.60.
 
 **Det der blev lavet 26. august**, hver med sit eget afsnit:
 
@@ -553,9 +561,11 @@ gang et sted at være.
 
 ### NÆSTE SKRIDT
 
-Opdateret 31. august. **Det der spærrer for at flytte et hold har ikke
-flyttet sig siden 22. august, og det er stadig indhold og tildelinger fra
-Linn, ikke kode.**
+Opdateret 1. september. **Intet af det nedenstående flyttede sig den 1.
+september**, for dagen gik med admin-værktøj og med Linn AI. Se 9.61.
+
+**Det der spærrer for at flytte et hold har ikke flyttet sig siden 22. august,
+og det er stadig indhold og tildelinger fra Linn, ikke kode.**
 
 **De fire nye ting fra 26. august**, i den rækkefølge jeg ville tage dem, se
 9.60:
@@ -4237,6 +4247,195 @@ og det er stadig indhold og tildelinger fra Linn, ikke kode.** Se NÆSTE SKRIDT.
    skærm en ny kunde møder
 3. **De to tekster i scanneren**, se 9.57
 4. **Mine favoritter på en rigtig telefon.** Det er aldrig prøvet i en hånd
+
+### 9.61 DEN 1. SEPTEMBER: INGREDIENSERNES TAL, OG LINN AI FIK ØJNE
+
+Seks ting til 3.0 på én dag, plus fire i den gamle app. Dagen begyndte med
+en admin-opgave om opskrifter og endte et helt andet sted, nemlig med at
+Linn AI for første gang ved hvilket forløb kunden er på.
+
+#### 1. Ingrediensernes tal, ny side
+
+`/ny/admin/ingrediens-tal`. **Alle ingredienser der indgår i opskrifterne,
+med de næringstal de regnes med.** Olivenolie står 38 steder i opskrifterne
+men kun én gang her, og retter du tallet, gælder det dem alle.
+
+Linns ønske: ét sted at kontrollere tallene, ikke ét pr opskrift.
+
+**Der er kun ÉN side, og der er en vej ind fra BEGGE admin-forsider.** To
+kopier ville før eller siden sige forskellige ting om det samme tal. Det er
+værd at holde fast i, for spørgsmålet kommer igen.
+
+**Den samler på kernenavn**, altså præcis den nøgle koblingerne bruger. Gjorde
+den det anderledes, ville oversigten vise noget andet end regnemaskinen regner
+med, og så er den værre end ingenting. Tilstanden bliver PÅ navnet, så tørre og
+afdryppede linser er to rækker.
+
+Målt på de rigtige data samme dag: **282 ingredienser, 278 med tal, 4 uden
+kobling, 0 uden kalorietal, 17 med egne tal.** Fordelt på madtype: morgenmad
+77, frokost 153, aftensmad 151, andet 101. De tæller til mere end 282, fordi
+den samme ingrediens indgår i flere slags retter.
+
+**De fire uden kobling ligner skrivefejl og ikke manglende varer:**
+"citronsaft olivenolie", "citron saft skal", "appelsin saft" og "bær". De to
+første er to ingredienser på samme linje. Rækkerne linker ind i opskriften,
+hvor teksten rettes, og **listen regnes ud hver gang og gemmes aldrig**, så en
+rettet række forsvinder af sig selv.
+
+Logikken ligger i `content/ingrediensOversigt3.ts`, 23 tests.
+
+#### 2. Linn kan rette et næringstal, og det gælder BEGGE apper
+
+**Linns regel 1. september: der findes ét sæt tal, og det er vores.**
+Databasens officielle tal som udgangspunkt, og har Linn rettet et, er det
+hendes der gælder. Både i opskrifterne og når kunden taster varen ind selv.
+
+**DER SKRIVES PÅ SELVE FØDEVAREN** og ikke i en samling ved siden af. Begge
+apper læser allerede den samling, så rettelsen virker for de 925 kunder uden at
+der ændres én linje i det de bruger. Alternativet var at lære begge apper at
+kigge to steder, og det ville betyde ændringer i noget kunderne er afhængige
+af. Se regel 10.
+
+Fem ting der ligger fast:
+
+- **Noten er påkrævet.** Om et halvt år er den det eneste der forklarer hvorfor
+  varen står til noget andet end databasen siger. **Kunden ser den aldrig**,
+  hun ser kun tallet. Linns beslutning samme dag
+- **Det oprindelige tal gemmes i `foerRettelse`, og KUN første gang.** Ellers
+  ville anden rettelse gøre den første permanent, og fortryd ville føre tilbage
+  til et mellemtrin ingen har valgt
+- **Kilden sættes til `linn`.** Vi skriver ikke DTU på noget vi selv har
+  ændret. Kunden ser samme mærkat som før, se `kildeAf`, så der er ingen synlig
+  ændring for hende
+- **Et tomt felt skrives som null og aldrig som nul.** Nul betyder at varen ikke
+  indeholder noget, og det er ikke det samme som at vi ikke ved det
+- **Opskrifterne regnes om i SAMME kørsel**, og skærmen viser hvilke der
+  flyttede sig. Det gik galt 24. august, hvor de to kilder i elleve minutter
+  sagde forskellige ting om den samme mad. Går omregningen galt EFTER at varen
+  er skrevet, siges det højt
+
+**Kundernes gamle registreringer er urørte.** Hvert måltid fryser sine egne tal
+ved gemning, så rettelsen gælder kun fremad.
+
+Reglerne tillod admin at skrive begge steder i forvejen, så **der er intet
+udgivet i Firebase.** Sikkerhedskopi af alle 2.268 fødevarer plus koblinger og
+beregninger ligger i `backup/`, taget før felterne blev bygget.
+
+**Tørløb før commit fandt ÉN opskrift der allerede var ude af sync:**
+Chia-pudding med bær og mandler stod gemt med 45,4 g protein og regnes til
+42,9. Den flytter sig ved første omregning uanset hvad Linn retter.
+
+Logikken ligger i `content/ingrediensRettelse3.ts`, 29 tests, og skrivningen i
+`firestore/ingrediensRettelse3.ts`.
+
+#### 3. LINN AI KENDER NU KUNDENS FORLØB
+
+**Det her er dagens vigtigste, og det kom af et spørgsmål fra en testkunde.**
+Hun spurgte hvornår der er Q&A. Svaret står ordret i hendes forløbs FAQ med
+Zoom-tidspunkter og det hele, men AI'en fik kun en generel videnbase på seks
+dokumenter, og ingen af dem nævner Q&A. **Den kunne ikke svare på noget der lå
+én skuffe væk.**
+
+AI'en får nu forløbets navn, hendes dagnummer, dagens dato og FAQ'en fra
+hendes eget forløb. Kun det UDGIVNE: et svar Linn stadig arbejder på må ikke
+komme ud af munden på AI'en.
+
+**AI'EN MÅ ALDRIG FINDE PÅ ET TIDSPUNKT.** Det er den værste fejl her, for så
+møder en kunde op på det forkerte klokkeslæt. Instruktionen står i selve
+blokken og TIL SIDST, så den ikke drukner i 25 svar.
+
+**FUNDET VED AT KØRE MOD DE RIGTIGE DATA, ikke af testene.** Første udgave
+sorterede Q&A-svaret HELT UD. De 25 svar fylder mere end der er plads til, og
+et langt svar om at spise nok mad vandt, fordi ordet "der" stod fyrre gange i
+det og også inde i "måltider". Rettet med en fyldord-liste, med at et ord kun
+tæller én gang pr felt, og med at der deles på mellemrum så "Q&A" ikke bliver
+til "q" og "a". Der er test på alle tre. **Kør altid udvælgelsen mod de
+rigtige data, testene fanger den slags ikke.**
+
+Målt i `nyAiLog` samme dag: kunden spurgte om Q&A kl 11.04 og AI'en var **15
+procent** sikker. Kl 11.16, efter ændringen var ude, var den **100 procent**.
+
+#### 4. AI'en kender også lektionerne, men KUN til og med i dag
+
+Titel og beskrivelse på alle videoer, lyd og guides kunden har i appen. På
+Kickstart August er det 36 lektioner over 22 dage, og de fylder kun 3.753 tegn.
+
+**Linns beslutning 20. august står ved magt:** et forløb der kører viser kun i
+dag og bagud, og dagene fremad er helt væk fra listen. Fik AI'en hele forløbet,
+kunne den fortælle en kunde på dag 3 hvad der ligger på dag 15, og så modsiger
+AI'en appen uden at nogen har taget beslutningen om. Linn fik tre muligheder
+forelagt 1. september og valgte den snævre.
+
+**FREMTIDEN FJERNES I DATA OG IKKE MED EN INSTRUKTION.** En instruktion kan
+overses, en tom liste kan ikke. Samme regel som træningens AI-værktøj, se
+SPEC 29.10.
+
+#### 5. AI'en bruger nu Linns egne svar
+
+**Det største hul, og det havde stået åbent hele tiden.** Motoren har altid
+kunnet bruge Linns tidligere svar, og admin-værktøjet til svar-udkast gør det,
+men kunde-AI'en i 3.0 gjorde ikke. Den henter nu kundens eget forløb først og
+supplerer på tværs, præcis som `/api/linn-ai` gør.
+
+**BEMÆRK HVAD DET GØR VED SIKKERHEDS-PROCENTEN.** Instruktionen beder modellen
+bedømme hvor godt LINNS TIDLIGERE SVAR dækkede spørgsmålet, se
+`SIKKERHEDS_INSTRUKTION`. Uden svarene målte tallet på noget der ikke var der.
+**Tallene i `nyAiLog` fra før 1. september kan ikke sammenlignes med dem
+efter.**
+
+Dertil kundens egen historik, altså hvad hun selv har spurgt om før og hvad
+Linn svarede. Højst fem, med besked om ikke at gentage sig selv ordret.
+
+Loggen får nu forløb, dagnummer, antal FAQ, antal lektioner, antal tidligere
+svar og antal egen historik med, så et forkert svar kan fejlsøges.
+
+#### 6. MAD-TALLENE UDGÅR. Linns beslutning samme dag
+
+Der lå et forslag om at AI'en også skulle kende kundens egne tal, altså protein
+og fiber pr dag. **Linn droppede det samme dag.** `content/kundeTal3.ts` og
+dens 14 tests blev bygget og slettet igen, for en fil der er bygget og testet
+men aldrig kaldt er en fælde: den næste tror den virker. Se advarslen om
+`VaelgArk` i afsnit 3.2.
+
+**Der lå også en teknisk grund, og den er værd at kende hvis nogen tager det
+op igen:** måltiderne ligger i en undersamling under kunden, og
+`firestoreRest` kan kun spørge fra roden. Der er ingen parent i `runQuery`.
+`hentAlleDocs` stopper ved 300 dokumenter i tilfældig rækkefølge, og en kunde
+har tusindvis af madlinjer, så et snit ville blive regnet på 300 tilfældige og
+blive forkert uden at nogen opdagede det. **Forkerte tal om hendes egen mad er
+værre end ingen tal.** Regnestykket kan hentes op af git-historikken.
+
+#### 7. Links i Beskeder kan trykkes
+
+Zoom-linket kom ud som død tekst, så kunden skulle markere og kopiere det i
+hånden på en telefon. Gælder nu AI'ens svar, hendes egne beskeder og Linns svar
+på den anden fane.
+
+**DER LAVES ALDRIG HTML AF TEKSTEN.** Teksten kommer fra en sprogmodel, og en
+sprogmodel kan skrive hvad som helst. Blev svaret sat ind som HTML, kunne et
+svar indeholde noget der kørte i kundens browser. `content/linkTekst3.ts` giver
+en LISTE af stumper, som skærmen tegner med almindelige Svelte-elementer, så
+der pr definition ikke kan komme kode ud. **Kun http og https**, og der er test
+på både `javascript:`, `data:` og `file:`.
+
+**Stumperne står på ÉN linje i markup med vilje.** Boblen bevarer linjeskift,
+så et linjeskift i selve markup ville blive til luft på skærmen.
+
+`ny.css` er rørt med 16 tilføjede linjer og intet andet. **De indlejrede
+skrifter er urørte, tjekket i diffen**, se advarslen i afsnit 7 om prettier.
+
+#### 8. En testkonto mere på 3.0
+
+`kickstart-aug-2026@linnsacademy.dk` har fået flaget `ny-app`. Den ligger på
+`kickstart_august`, der startede 29. august og løber 21 dage, så den er inde
+fordi forløbet er aktivt. **Den har ingen træningstildeling**, så forsiden
+siger "Din træning er på vej". Det er ikke en fejl, det er præcis det punkt
+der står øverst under NÆSTE SKRIDT.
+
+**Flaget sættes pr person under Testere i den gamle admin.** Linn kan selv,
+det kræver ikke et script.
+
+---
 
 ---
 
