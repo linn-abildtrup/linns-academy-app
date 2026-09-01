@@ -2,8 +2,11 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import {
+		ALLE_KATEGORIER,
 		KATEGORI_LABELS,
-		type Opskrift
+		filtrerOpskrifter,
+		type Opskrift,
+		type OpskriftKategori
 	} from '$lib/content/opskrifter';
 	import { gemOpskrift, hentAlleOpskrifter } from '$lib/firestore/opskrifter';
 	import Icon from '$lib/components/Icon.svelte';
@@ -12,6 +15,20 @@
 	let loading = $state(true);
 	let fejl = $state<string | null>(null);
 	let opretter = $state(false);
+
+	let soeg = $state('');
+	let valgteKategorier = $state<OpskriftKategori[]>([]);
+
+	// Samme filtrering som kunden moeder under 30-30-3. Reglen er bevidst IKKE
+	// skrevet forfra her: to steder der filtrerer hver sin vej ville betyde at
+	// admin viste noget andet end kunden, og saa kan man ikke stole paa listen.
+	const filtrerede = $derived(filtrerOpskrifter(opskrifter, soeg, valgteKategorier));
+
+	function toggleKategori(k: OpskriftKategori) {
+		valgteKategorier = valgteKategorier.includes(k)
+			? valgteKategorier.filter((v) => v !== k)
+			: [...valgteKategorier, k];
+	}
 
 	onMount(async () => {
 		try {
@@ -83,32 +100,59 @@
 	{:else if opskrifter.length === 0}
 		<div class="status-besked">Ingen opskrifter endnu — opret den første ovenfor.</div>
 	{:else}
-		<div class="liste">
-			{#each opskrifter as o (o.id)}
-				<a class="row" href="/app/admin/opskrifter/{o.id}">
-					<div class="thumb">
-						{#if o.billedeUrl}
-							<img src={o.billedeUrl} alt={o.titel} />
-						{:else}
-							<div class="thumb-emoji">🍽️</div>
-						{/if}
-					</div>
-					<div class="tekst">
-						<div class="navn">
-							{o.titel}
-							{#if !o.aktiv}
-								<span class="badge inaktiv">Inaktiv</span>
-							{/if}
-						</div>
-						<div class="sub">
-							{o.kategorier.map((k) => KATEGORI_LABELS[k]).join(', ') || 'Ingen kategori'}
-							· {o.ingredienser.length} ingredienser
-						</div>
-					</div>
-					<Icon name="chevron-r" size={14} color="var(--text3)" />
-				</a>
+		<input type="search" class="search" placeholder="Søg opskrift (fx laks, ris)..." bind:value={soeg} />
+
+		<div class="chips">
+			{#each ALLE_KATEGORIER as k (k)}
+				<button
+					type="button"
+					class="chip"
+					class:aktiv={valgteKategorier.includes(k)}
+					onclick={() => toggleKategori(k)}
+				>
+					{KATEGORI_LABELS[k]}
+				</button>
 			{/each}
 		</div>
+
+		<div class="antal">
+			{#if filtrerede.length === opskrifter.length}
+				{opskrifter.length} opskrifter
+			{:else}
+				{filtrerede.length} af {opskrifter.length} opskrifter
+			{/if}
+		</div>
+
+		{#if filtrerede.length === 0}
+			<div class="status-besked">Ingen opskrifter matcher.</div>
+		{:else}
+			<div class="liste">
+				{#each filtrerede as o (o.id)}
+					<a class="row" href="/app/admin/opskrifter/{o.id}">
+						<div class="thumb">
+							{#if o.billedeUrl}
+								<img src={o.billedeUrl} alt={o.titel} />
+							{:else}
+								<div class="thumb-emoji">🍽️</div>
+							{/if}
+						</div>
+						<div class="tekst">
+							<div class="navn">
+								{o.titel}
+								{#if !o.aktiv}
+									<span class="badge inaktiv">Inaktiv</span>
+								{/if}
+							</div>
+							<div class="sub">
+								{o.kategorier.map((k) => KATEGORI_LABELS[k]).join(', ') || 'Ingen kategori'}
+								· {o.ingredienser.length} ingredienser
+							</div>
+						</div>
+						<Icon name="chevron-r" size={14} color="var(--text3)" />
+					</a>
+				{/each}
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -176,6 +220,53 @@
 	.opret-knap:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+	}
+
+	.search {
+		display: block;
+		width: 100%;
+		padding: 11px 13px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		color: var(--text);
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		margin-bottom: 10px;
+		box-sizing: border-box;
+	}
+
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-bottom: 10px;
+	}
+
+	/* Baggrunden staar eksplicit. Uden den giver browseren knappen sin egen graa
+	   flade, og saa ligner en fravalgt kategori en valgt. */
+	.chip {
+		padding: 7px 13px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 99px;
+		color: var(--text2);
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.chip.aktiv {
+		background: var(--terra);
+		border-color: var(--terra);
+		color: #fff;
+	}
+
+	.antal {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		margin-bottom: 8px;
 	}
 
 	.status-besked {
