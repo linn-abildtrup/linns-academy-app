@@ -50,6 +50,7 @@
 		type BeskedFane3,
 		type SamtaleBesked3
 	} from '$lib/content/beskedside3';
+	import { delOpILinks } from '$lib/content/linkTekst3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
@@ -489,7 +490,7 @@
 									<span class="traad-ava" aria-hidden="true"></span>
 									<div>
 										<div class="traad-fra">{t.fraLinn ? 'Linn skrev til dig' : 'Linn'}</div>
-										<p>{t.svar}</p>
+										<p>{#each delOpILinks(t.svar) as d, di (di)}{#if d.slags === 'link'}<a class="besk-link" href={d.url} target="_blank" rel="noopener noreferrer">{d.tekst}</a>{:else}{d.tekst}{/if}{/each}</p>
 									</div>
 								</div>
 							{/if}
@@ -572,7 +573,10 @@
 							class:hende={b.rolle === 'user'}
 							class:svar={b.rolle === 'assistant'}
 						>
-							{b.indhold}
+							<!-- Stumperne staar paa ÉN linje med vilje. Boblen bevarer
+							     linjeskift (white-space: pre-wrap), saa et linjeskift i
+							     selve markup ville blive til luft paa skaermen. -->
+							{#each delOpILinks(b.indhold) as d, di (di)}{#if d.slags === 'link'}<a class="besk-link" href={d.url} target="_blank" rel="noopener noreferrer">{d.tekst}</a>{:else}{d.tekst}{/if}{/each}
 						</div>
 						{#if erSendt(i)}
 							<span class="besk-videre sendt">

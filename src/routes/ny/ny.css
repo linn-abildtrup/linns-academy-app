@@ -2119,6 +2119,22 @@ body:has(.ny-app) {
 	white-space: pre-wrap;
 }
 
+/* Et link i en besked. Understreget OG i en anden farve, saa det ogsaa
+   kan ses af en der ikke skelner farver skarpt. Maalgruppen er kvinder i
+   40erne og opefter paa en telefon.
+   word-break er ikke pynt: et Zoom-link med kodeord er over 70 tegn og
+   ville ellers skubbe boblen ud over skaermkanten. */
+.boble .besk-link,
+.traad-svar .besk-link {
+	color: var(--plum-deep);
+	text-decoration: underline;
+	word-break: break-word;
+}
+
+.boble.hende .besk-link {
+	color: #fff;
+}
+
 .boble.hende {
 	align-self: flex-end;
 	background: var(--plum);
