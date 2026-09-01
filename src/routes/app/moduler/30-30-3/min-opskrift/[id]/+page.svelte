@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
+	import { portal } from '$lib/actions/portal';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
@@ -517,6 +518,7 @@
 {#if viserMaaltidModal && opskrift}
 	<div
 		class="modal-bag"
+		use:portal
 		role="dialog"
 		aria-modal="true"
 		tabindex="-1"
@@ -1054,7 +1056,15 @@
 	.modal {
 		width: 100%;
 		max-width: 520px;
+		/* dvh OG IKKE vh. Mobilbrowsere regner vh ud som om adresselinjen
+		   var vaek, saa et ark paa 92vh blev HOEJERE end det hun kunne se.
+		   Saa mente arket selv at det var plads nok, overflow slog aldrig
+		   til, og hun kunne hverken rulle op eller ned. vh staar som
+		   reserve til de faa browsere der ikke kender dvh.
+		   Samme fejl som blev rettet paa alle fire ark i 3.0 den 11. august.
+		   Fundet af Linn 1. september paa hendes egen opskrift. */
 		max-height: 92vh;
+		max-height: 92dvh;
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		-webkit-overflow-scrolling: touch;
@@ -1070,6 +1080,7 @@
 		.modal {
 			border-radius: 18px;
 			max-height: 88vh;
+			max-height: 88dvh;
 		}
 	}
 

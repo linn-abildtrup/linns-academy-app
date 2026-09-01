@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
+	import { portal } from '$lib/actions/portal';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
@@ -425,6 +426,7 @@
 {#if viserMaaltidModal && opskrift}
 	<div
 		class="modal-bag"
+		use:portal
 		role="dialog"
 		aria-modal="true"
 		tabindex="-1"
@@ -829,7 +831,11 @@
 	.modal {
 		width: 100%;
 		max-width: 520px;
+		/* dvh OG IKKE vh, se den samme rettelse paa min-opskrift. Et ark paa
+		   92vh bliver hoejere end den synlige skaerm paa mobil, og saa slaar
+		   overflow aldrig til: hun kan hverken rulle op eller ned. */
 		max-height: 92vh;
+		max-height: 92dvh;
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		-webkit-overflow-scrolling: touch;
@@ -845,6 +851,7 @@
 		.modal {
 			border-radius: 18px;
 			max-height: 88vh;
+			max-height: 88dvh;
 		}
 	}
 
