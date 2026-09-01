@@ -78,7 +78,7 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	{ navn: 'Scannede varer', under: 'Din nødbremse, ikke en godkendelse', rute: '/ny/admin/scannede', omraade: 'mad' },
 	{ navn: 'Fællesskabs-fødevarer', under: 'Varer kunderne har oprettet', rute: '/app/admin/fodevarer', omraade: 'mad', gammel: true },
 	{ navn: 'Næring', under: 'Hvem ser udvidet næring, og hvem må rette sine mål', rute: '/ny/admin/naering', omraade: 'mad' },
-	{ navn: 'Opskrift-ratings', under: 'Hvilke retter kunderne giver lavest og højest', rute: '/app/admin/opskrifter/ratings', omraade: 'mad', gammel: true },
+	{ navn: 'Opskrift-vurderinger', under: 'Hvilke retter kunderne giver lavest og højest', rute: '/ny/admin/opskrift-ratings', omraade: 'mad' },
 
 	// ── Træning ───────────────────────────────────────────────
 	{ navn: 'Træningsprogrammer', under: 'Byg programmer og sæt dem til klar', rute: '/ny/admin/traening', omraade: 'traening' },
@@ -94,7 +94,7 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	{ navn: 'Besked på forsiden', under: 'Til et hold eller alle. Ingen samtale', rute: '/ny/admin/forsidebesked', omraade: 'beskeder', oftest: true },
 	{ navn: 'Notifikationer', under: 'Beskeder på telefonen, og hvem der får dem', rute: '/ny/admin/noti', omraade: 'beskeder' },
 	{ navn: 'Linn AI, videnbase', under: 'Det AI en svarer ud fra', rute: '/app/admin/linn-ai', omraade: 'beskeder', gammel: true },
-	{ navn: 'AI-ratings', under: 'Hvad kunderne synes om AI ens svar', rute: '/app/admin/ai-ratings', omraade: 'beskeder', gammel: true },
+	{ navn: 'AI-vurderinger', under: 'Hvad kunderne synes om AI ens svar', rute: '/ny/admin/ai-ratings', omraade: 'beskeder' },
 
 	// ── System ────────────────────────────────────────────────
 	{ navn: 'Funktioner og adgang', under: 'Hvem må hvad, pr kundetype', rute: '/app/admin/feature-adgang', omraade: 'system', gammel: true },
