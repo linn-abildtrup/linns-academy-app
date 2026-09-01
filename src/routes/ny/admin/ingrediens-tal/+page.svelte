@@ -38,6 +38,18 @@
 		type IngrediensRaekke
 	} from '$lib/content/ingrediensOversigt3';
 	import type { KoblingsOpslag } from '$lib/content/opskriftMakro3';
+	import {
+		valider,
+		advarsler,
+		talFra,
+		noget,
+		type Fejl,
+		type RettbarVare,
+		type RettedeTal
+	} from '$lib/content/ingrediensRettelse3';
+	import { retFodevare, fortrydRettelse } from '$lib/firestore/ingrediensRettelse3';
+	import type { Opskrift } from '$lib/content/opskrifter';
+	import type { Aendring } from '$lib/content/ingrediensRettelse3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
@@ -48,6 +60,22 @@
 	let besked = $state('');
 	let alle = $state<IngrediensRaekke[]>([]);
 
+	// Grundlaget bliver liggende, saa en rettelse kan regne opskrifterne om
+	// uden at hente 2.268 raekker en gang til.
+	let opskrifter: Opskrift[] = [];
+	let koblinger: Record<string, KoblingsOpslag> = {};
+	let varer = new Map<string, Fodevare>();
+
+	// Rettelsen. Der rettes ÉN ad gangen, med vilje: skaermen skal sige
+	// hoejt hvad den ene rettelse goer, og det kan den ikke hvis der ligger
+	// fem halve aendringer.
+	let retter = $state('');
+	let felter = $state<RettedeTal>({ p: null, f: null, kh: null, fedt: null, kcal: null });
+	let note = $state('');
+	let gemmer = $state(false);
+	let gemFejl = $state('');
+	let kvittering = $state<{ navn: string; aendrede: Aendring[] } | null>(null);
+
 	let soeg = $state('');
 	let valgteKategorier = $state<OpskriftKategori[]>([]);
 	let kunMedFejl = $state(false);
@@ -56,17 +84,19 @@
 	onMount(() => {
 		(async () => {
 			try {
-				const [opskrifter, varerListe, kort] = await Promise.all([
+				const [opskrifterListe, varerListe, kort] = await Promise.all([
 					hentAlleOpskrifter(false),
 					hentFodevarer3(),
 					hentKoblinger()
 				]);
-				const varer = new Map<string, Fodevare>(varerListe.map((v) => [v.id, v]));
+				varer = new Map<string, Fodevare>(varerListe.map((v) => [v.id, v]));
 				const enkel: Record<string, KoblingsOpslag> = {};
 				for (const [k, v] of Object.entries(kort)) {
 					enkel[k] = { foodId: v.foodId, egenVare: v.egenVare };
 				}
-				alle = byggOversigt(opskrifter, enkel, varer);
+				opskrifter = opskrifterListe;
+				koblinger = enkel;
+				alle = byggOversigt(opskrifterListe, enkel, varer);
 			} catch (e) {
 				console.error('[admin] kunne ikke hente ingrediens-tallene', e);
 				besked = 'Kunne ikke hente. Prøv at hente siden igen.';
@@ -88,6 +118,93 @@
 	function etTal(x: number | null): string {
 		if (x === null) return '—';
 		return (Math.round(x * 10) / 10).toString().replace('.', ',');
+	}
+
+	const fejlliste = $derived<Fejl[]>(retter ? valider(felter, note) : []);
+	const advarselliste = $derived<string[]>(retter ? advarsler(felter) : []);
+	const raekkeDerRettes = $derived(alle.find((r) => r.kerne === retter) ?? null);
+	const harAendret = $derived.by(() => {
+		const v = raekkeDerRettes?.vare as RettbarVare | null | undefined;
+		return v ? noget(talFra(v), felter) : false;
+	});
+
+	function fejlFor(f: Fejl['felt']): string {
+		return fejlliste.find((x) => x.felt === f)?.tekst ?? '';
+	}
+
+	function aabnRettelse(r: IngrediensRaekke) {
+		const v = r.vare as RettbarVare | null;
+		if (!v) return;
+		retter = r.kerne;
+		felter = talFra(v);
+		note = '';
+		gemFejl = '';
+		kvittering = null;
+	}
+
+	function lukRettelse() {
+		retter = '';
+		gemFejl = '';
+	}
+
+	/** Bygger listen forfra, saa skaermen viser det der nu staar i databasen. */
+	function byggForfra() {
+		alle = byggOversigt(opskrifter, koblinger, varer);
+	}
+
+	async function gem(r: IngrediensRaekke) {
+		const v = r.vare as RettbarVare | null;
+		if (!v || gemmer) return;
+		if (fejlliste.length > 0) return;
+		gemmer = true;
+		gemFejl = '';
+		try {
+			const res = await retFodevare(
+				v,
+				felter,
+				note,
+				opskrifter,
+				koblinger,
+				varer,
+				hentUser()?.uid ?? 'admin'
+			);
+			byggForfra();
+			kvittering = { navn: v.name, aendrede: res.aendrede };
+			retter = '';
+		} catch (e) {
+			console.error('[admin] kunne ikke rette tallet', e);
+			// Bemaerk ordlyden. Gaar omregningen galt EFTER at varen er
+			// skrevet, staar de to kilder og er uenige, og saa skal det siges
+			// hoejt i stedet for at ligne en fejl der ikke skete.
+			gemFejl =
+				'Kunne ikke gemme hele vejen. Tjek tallet på varen, og hent siden igen før du retter mere.';
+		} finally {
+			gemmer = false;
+		}
+	}
+
+	async function fortryd(r: IngrediensRaekke) {
+		const v = r.vare as RettbarVare | null;
+		if (!v || gemmer) return;
+		gemmer = true;
+		gemFejl = '';
+		try {
+			const res = await fortrydRettelse(
+				v,
+				opskrifter,
+				koblinger,
+				varer,
+				hentUser()?.uid ?? 'admin'
+			);
+			byggForfra();
+			if (res) kvittering = { navn: v.name, aendrede: res.aendrede };
+			retter = '';
+		} catch (e) {
+			console.error('[admin] kunne ikke fortryde', e);
+			gemFejl = 'Kunne ikke fortryde. Hent siden igen.';
+		} finally {
+			gemmer = false;
+		}
 	}
 
 	/** Teksten paa en raekke der mangler noget. Aldrig et stille nul. */
@@ -135,6 +252,27 @@
 		</div>
 
 		{#if besked}<p class="it-besked">{besked}</p>{/if}
+
+		{#if kvittering}
+			<div class="it-kvit">
+				<strong>{kvittering.navn} er rettet.</strong>
+				{#if kvittering.aendrede.length === 0}
+					Ingen opskrifter flyttede sig.
+				{:else}
+					{kvittering.aendrede.length}
+					{kvittering.aendrede.length === 1 ? 'opskrift' : 'opskrifter'} blev regnet om:
+					<ul class="it-kvit-liste">
+						{#each kvittering.aendrede as a (a.opskriftId)}
+							<li>
+								{a.titel}: protein {a.foerProtein} → {a.efterProtein} g, {a.foerKalorier} →
+								{a.efterKalorier} kcal
+							</li>
+						{/each}
+					</ul>
+				{/if}
+				<button type="button" class="it-kvit-luk" onclick={() => (kvittering = null)}>Luk</button>
+			</div>
+		{/if}
 
 		<input
 			type="search"
@@ -247,6 +385,113 @@
 									</span>
 								</div>
 								<a class="it-vej" href="/ny/admin/ingredienser">Ret koblingen</a>
+
+								{#if r.vare}
+									{#if retter !== r.kerne}
+										<div class="it-ret-rad">
+											<button type="button" class="it-ret-knap" onclick={() => aabnRettelse(r)}>
+												Ret næringstallene
+											</button>
+											{#if (r.vare as RettbarVare).linnRettet}
+												<span class="it-rettet">Rettet af dig</span>
+											{/if}
+										</div>
+										{#if (r.vare as RettbarVare).linnNote}
+											<p class="it-note-vist">
+												Din note: {(r.vare as RettbarVare).linnNote}
+											</p>
+										{/if}
+									{:else}
+										<div class="it-form">
+											<p class="it-form-advarsel">
+												Tallene hører til madvaren <strong>{r.varenavn}</strong>, ikke kun til
+												denne ingrediens. Retter du dem, gælder de i alle
+												{r.antalOpskrifter}
+												{r.antalOpskrifter === 1 ? 'opskrift' : 'opskrifter'} der bruger den, og
+												kunderne får det nye tal når de taster varen ind fremover. Det de
+												allerede har registreret ændrer sig ikke.
+											</p>
+
+											<div class="it-felter">
+												{#each [['p', 'Protein'], ['f', 'Fiber'], ['kh', 'Kulhydrat'], ['fedt', 'Fedt'], ['kcal', 'Kalorier']] as [n, mrk] (n)}
+													<label class="it-felt">
+														<span>{mrk}</span>
+														<input
+															type="number"
+															step="0.1"
+															min="0"
+															disabled={gemmer}
+															bind:value={felter[n as keyof RettedeTal]}
+														/>
+														{#if fejlFor(n as keyof RettedeTal)}
+															<em>{fejlFor(n as keyof RettedeTal)}</em>
+														{/if}
+													</label>
+												{/each}
+											</div>
+											<p class="it-form-hint">
+												Alle tal er pr 100 gram. Kulhydrat, fedt og kalorier må stå tomme. Lad
+												dem hellere være tomme end at skrive nul, for nul betyder at varen ikke
+												indeholder noget.
+											</p>
+
+											<label class="it-felt bred">
+												<span>Hvorfor retter du tallet</span>
+												<input
+													type="text"
+													placeholder="Fx: DTU har kun med skind, dansk butiksvare er magrere"
+													disabled={gemmer}
+													bind:value={note}
+												/>
+												{#if fejlFor('note')}<em>{fejlFor('note')}</em>{/if}
+											</label>
+											<p class="it-form-hint">
+												Noten står kun her i admin. Kunden ser den aldrig, hun ser kun tallet.
+											</p>
+
+											{#if advarselliste.length > 0}
+												<div class="it-form-tjek">
+													{#each advarselliste as a (a)}<span>{a}</span>{/each}
+													<em>Du kan godt gemme alligevel.</em>
+												</div>
+											{/if}
+
+											{#if gemFejl}<div class="it-form-fejl">{gemFejl}</div>{/if}
+
+											<div class="it-form-knapper">
+												<button
+													type="button"
+													class="it-gem"
+													disabled={gemmer || fejlliste.length > 0 || !harAendret}
+													onclick={() => gem(r)}
+												>
+													{gemmer ? 'Gemmer og regner om...' : 'Gem og regn opskrifterne om'}
+												</button>
+												<button
+													type="button"
+													class="it-annuller"
+													disabled={gemmer}
+													onclick={lukRettelse}
+												>
+													Annuller
+												</button>
+												{#if (r.vare as RettbarVare).foerRettelse}
+													<button
+														type="button"
+														class="it-annuller"
+														disabled={gemmer}
+														onclick={() => fortryd(r)}
+													>
+														Sæt tilbage til det oprindelige
+													</button>
+												{/if}
+											</div>
+											{#if !harAendret}
+												<p class="it-form-hint">Ret et tal før du kan gemme.</p>
+											{/if}
+										</div>
+									{/if}
+								{/if}
 							</div>
 						{/if}
 					</article>
@@ -500,6 +745,204 @@
 		font-size: calc(12px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--plum);
+	}
+
+	.it-kvit {
+		margin: 10px 17px;
+		padding: 12px 14px;
+		background: var(--sage-tint);
+		border: 1px solid var(--sage);
+		border-radius: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--sage-tekst);
+		line-height: 1.5;
+	}
+
+	.it-kvit-liste {
+		margin: 6px 0 0;
+		padding-left: 18px;
+	}
+
+	.it-kvit-luk {
+		margin-top: 8px;
+		padding: 6px 12px;
+		background: var(--paper);
+		border: 1px solid var(--sage);
+		border-radius: 99px;
+		color: var(--sage-tekst);
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-family: inherit;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.it-ret-rad {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-top: 8px;
+	}
+
+	.it-ret-knap {
+		padding: 8px 14px;
+		background: var(--plum);
+		border: 1px solid var(--plum);
+		border-radius: 99px;
+		color: #fff;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-family: inherit;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.it-rettet {
+		padding: 2px 9px;
+		background: var(--honey-tint);
+		border-radius: 99px;
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 700;
+		color: var(--honey-deep);
+	}
+
+	.it-note-vist {
+		margin: 6px 0 0;
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--ink-3);
+		line-height: 1.45;
+	}
+
+	.it-form {
+		margin-top: 10px;
+		padding: 12px;
+		background: var(--paper-2);
+		border: 1px solid var(--line);
+		border-radius: 12px;
+	}
+
+	/* Den her linje er hele grunden til at rettelsen ikke kan ske ved et
+	   uheld. Den skal blive staaende. */
+	.it-form-advarsel {
+		margin: 0 0 10px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--espresso);
+		line-height: 1.5;
+	}
+
+	.it-felter {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.it-felt {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+		flex: 1 1 90px;
+	}
+
+	.it-felt.bred {
+		flex-basis: 100%;
+		margin-top: 10px;
+	}
+
+	.it-felt span {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color: var(--ink-3);
+	}
+
+	.it-felt input {
+		padding: 9px 10px;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 9px;
+		color: var(--espresso);
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-family: inherit;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.it-felt em {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		color: var(--ler-tekst);
+		font-style: normal;
+		font-weight: 600;
+	}
+
+	.it-form-hint {
+		margin: 8px 0 0;
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		color: var(--ink-3);
+		line-height: 1.45;
+	}
+
+	.it-form-tjek {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		margin-top: 10px;
+		padding: 9px 11px;
+		background: var(--honey-tint);
+		border-radius: 9px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--honey-deep);
+		font-weight: 600;
+	}
+
+	.it-form-tjek em {
+		font-style: normal;
+		font-weight: 400;
+	}
+
+	.it-form-fejl {
+		margin-top: 10px;
+		padding: 9px 11px;
+		background: var(--ler-tint);
+		border-radius: 9px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--ler-tekst);
+		font-weight: 600;
+		line-height: 1.45;
+	}
+
+	.it-form-knapper {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 12px;
+	}
+
+	.it-gem {
+		padding: 10px 16px;
+		background: var(--plum);
+		border: 1px solid var(--plum);
+		border-radius: 99px;
+		color: #fff;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-family: inherit;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.it-gem:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.it-annuller {
+		padding: 10px 16px;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 99px;
+		color: var(--ink-2);
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-family: inherit;
+		font-weight: 600;
+		cursor: pointer;
 	}
 
 	.it-fod {
