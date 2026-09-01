@@ -31,6 +31,7 @@
 		gemUdveksling3,
 		hentLinnTraade3,
 		hentTidligereSamtale3,
+		harSvarIndhold3,
 		markerLinnSvarLaest3,
 		tidligereSamtaler3,
 		tilSvarKilder3,
@@ -52,6 +53,8 @@
 	} from '$lib/content/beskedside3';
 	import { delOpILinks } from '$lib/content/linkTekst3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Lydbesked from '$lib/components/ny/Lydbesked.svelte';
+	import BilledeLag from '$lib/components/ny/BilledeLag.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
@@ -94,6 +97,8 @@
 	/** Spoergsmaal hun allerede har sendt videre. Styrer send-linjen. */
 	let sendteTekster = $state<string[]>([]);
 	let senderTilLinn = $state<number | null>(null);
+	/** Det billede hun har trykket paa, hvis nogen. Vises i fuld skaerm. */
+	let stortBillede = $state<{ url: string; tekst: string } | null>(null);
 
 	const senestLaest = $derived(userDoc?.senestSpoergsmaalLaestAt ?? 0);
 	const nytSvar = $derived(harNytSvar3(tilSvarKilder3(traade), senestLaest));
@@ -462,7 +467,8 @@
 			{:else}
 				<div class="traade">
 					{#each traade as t (t.id)}
-						{@const erNy = !!t.svar && !!t.besvaretMs && t.besvaretMs > senestLaest}
+						{@const harNoget = harSvarIndhold3(t)}
+						{@const erNy = harNoget && !!t.besvaretMs && t.besvaretMs > senestLaest}
 						<article class="traad" class:nyt={erNy} data-nyt={erNy ? 'ja' : null}>
 							{#if erNy}
 								<!-- Baandet forsvinder naar hun har set det, se
@@ -474,7 +480,7 @@
 								<span class="traad-dato">{dato(t.sendtMs)}</span>
 								{#if t.fraLinn}
 									<!-- Ingen status. Der er ikke noget hun venter paa. -->
-								{:else if t.svar}
+								{:else if harNoget}
 									<span class="traad-status svaret">Besvaret</span>
 								{:else}
 									<span class="traad-status venter">Venter på svar</span>
@@ -485,12 +491,32 @@
 							{#if !t.fraLinn}
 								<p class="traad-spm">{t.spoergsmaal}</p>
 							{/if}
-							{#if t.svar}
+							{#if harNoget}
 								<div class="traad-svar">
 									<span class="traad-ava" aria-hidden="true"></span>
 									<div>
 										<div class="traad-fra">{t.fraLinn ? 'Linn skrev til dig' : 'Linn'}</div>
-										<p>{#each delOpILinks(t.svar) as d, di (di)}{#if d.slags === 'link'}<a class="besk-link" href={d.url} target="_blank" rel="noopener noreferrer">{d.tekst}</a>{:else}{d.tekst}{/if}{/each}</p>
+										{#if t.svar}
+											<p>{#each delOpILinks(t.svar) as d, di (di)}{#if d.slags === 'link'}<a class="besk-link" href={d.url} target="_blank" rel="noopener noreferrer">{d.tekst}</a>{:else}{d.tekst}{/if}{/each}</p>
+										{/if}
+										{#if t.lydUrl}
+											<div class="traad-lyd">
+												<Lydbesked url={t.lydUrl} sekunder={t.lydSekunder ?? 0} />
+											</div>
+										{/if}
+										{#if t.billedUrl}
+											<!-- Trykker hun paa billedet, aabner det i fuld skaerm.
+											     Laget portales ud i body, ellers ligger bundmenuen
+											     ovenpaa paa en iPhone. -->
+											<button
+												type="button"
+												class="traad-billede"
+												onclick={() =>
+													(stortBillede = { url: t.billedUrl ?? '', tekst: t.svar ?? '' })}
+											>
+												<img src={t.billedUrl} alt="Billede fra Linn" loading="lazy" />
+											</button>
+										{/if}
 									</div>
 								</div>
 							{/if}
@@ -626,3 +652,40 @@
 		{/if}
 	{/if}
 </div>
+
+{#if stortBillede}
+	<BilledeLag
+		url={stortBillede.url}
+		tekst={stortBillede.tekst}
+		luk={() => (stortBillede = null)}
+	/>
+{/if}
+
+<style>
+	/* Lyd og billede i en besked fra Linn. Kom til 1. september 2026. */
+	.traad-lyd {
+		margin-top: 8px;
+	}
+
+	.traad-billede {
+		display: block;
+		width: 100%;
+		margin-top: 8px;
+		padding: 0;
+		border: 0;
+		border-radius: 14px;
+		background: none;
+		cursor: pointer;
+		overflow: hidden;
+	}
+
+	.traad-billede img {
+		display: block;
+		width: 100%;
+		/* Et hoejt billede maa ikke fylde hele traaden. Hun kan trykke det
+		   op i fuld skaerm, og der er intet klippet vaek. */
+		max-height: 260px;
+		object-fit: cover;
+		border-radius: 14px;
+	}
+</style>

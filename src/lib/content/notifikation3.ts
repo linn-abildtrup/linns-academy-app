@@ -168,6 +168,26 @@ export function skrevetNoti3(tekst: string): Noti3 {
 	};
 }
 
+/**
+ * Beskeden naar Linn har sendt en lydbesked eller et billede.
+ *
+ * TITLEN SIGER HVAD DET ER. Foer sagde prikket altid "Linn har skrevet
+ * til dig". Er der ingen tekst, staar kunden med en besked hun ikke kan
+ * finde, og leder efter ord der ikke findes.
+ *
+ * Skrev Linn en linje ved siden af, staar den under. Ellers staar der
+ * hvad hun skal goere. Linns valg 1. september 2026.
+ */
+export function medFilNoti3(slags: 'lyd' | 'billede', tekst: string): Noti3 {
+	const skrevet = uddrag3(tekst ?? '');
+	return {
+		titel: slags === 'lyd' ? 'Linn har sendt dig en lydbesked' : 'Linn har sendt dig et billede',
+		tekst: skrevet || (slags === 'lyd' ? 'Tryk for at høre den' : 'Tryk for at se det'),
+		sti: '/ny/beskeder?fane=linn',
+		slags: 'svar'
+	};
+}
+
 /** Beskeden naar Linn har svaret. */
 export function svarNoti3(svar: string): Noti3 {
 	return {

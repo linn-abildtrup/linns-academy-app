@@ -101,5 +101,21 @@ service firebase.storage {
 				&& request.resource.size < 5 * 1024 * 1024
 				&& request.resource.contentType.matches('image/.*');
 		}
+
+		// Personlige beskeder fra Linn til ÉN kunde: lyd og billeder.
+		// /beskeder/{uid}/{tidsstempel}-billede.webp
+		//
+		// DEN ENESTE MAPPE HVOR ANDRE KUNDER IKKE MAA KIGGE MED. Alt andet
+		// indhold i appen er det samme for alle, og derfor står der
+		// "request.auth != null" ovenfor. Her er filen til én person, så
+		// læsningen er låst til det uid der står i stien. Linn kan læse
+		// alt, så hun kan tjekke en besked hun har sendt.
+		match /beskeder/{uid}/{filename=**} {
+			allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+			allow write: if isAdmin()
+				&& request.resource.size < 20 * 1024 * 1024
+				&& (request.resource.contentType.matches('image/.*')
+					|| request.resource.contentType.matches('audio/.*'));
+		}
 	}
 }

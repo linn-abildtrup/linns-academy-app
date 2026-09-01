@@ -155,6 +155,21 @@ export interface LinnTraad3 {
 	 * ikke spurgt om noget. Se HANDOVER 9.43.
 	 */
 	fraLinn?: boolean;
+	/** Et billede Linn har sendt med beskeden. */
+	billedUrl?: string;
+	/** En lydbesked Linn har optaget. */
+	lydUrl?: string;
+	/** Hvor lang lyden er, saa afspilleren kan sige det foer den hentes. */
+	lydSekunder?: number;
+}
+
+/** Er der overhovedet noget fra Linn i traaden: tekst, lyd eller billede. */
+export function harSvarIndhold3(t: {
+	svar?: string;
+	lydUrl?: string;
+	billedUrl?: string;
+}): boolean {
+	return !!(t.svar || t.lydUrl || t.billedUrl);
 }
 
 /**
@@ -179,6 +194,9 @@ export async function hentLinnTraade3(uid: string): Promise<LinnTraad3[]> {
 				spoergsmaal?: string;
 				svar?: string;
 				fraLinn?: boolean;
+				billedUrl?: string;
+				lydUrl?: string;
+				lydSekunder?: number;
 				oprettet?: { toDate?(): Date };
 				besvaretAt?: { toDate?(): Date };
 			};
@@ -188,7 +206,10 @@ export async function hentLinnTraade3(uid: string): Promise<LinnTraad3[]> {
 				svar: x.svar,
 				sendtMs: x.oprettet?.toDate?.().getTime() ?? 0,
 				besvaretMs: x.besvaretAt?.toDate?.().getTime(),
-				fraLinn: x.fraLinn === true
+				fraLinn: x.fraLinn === true,
+				billedUrl: x.billedUrl,
+				lydUrl: x.lydUrl,
+				lydSekunder: x.lydSekunder
 			} satisfies LinnTraad3;
 		})
 		.sort((a, b) => b.sendtMs - a.sendtMs);
@@ -199,7 +220,11 @@ export function tilSvarKilder3(traade: LinnTraad3[]): SvarKilde3[] {
 	return traade.map((t) => ({
 		id: t.id,
 		spoergsmaal: t.spoergsmaal,
-		svar: t.svar,
+		// EN LYDBESKED UDEN TEKST TAELLER OGSAA SOM ET SVAR. Prikken paa
+		// fanen ser kun paa feltet svar, og en besked der kun er Linns
+		// stemme har ingen tekst. Uden den her linje ville hun ikke faa at
+		// vide at der ligger noget.
+		svar: t.svar || (t.lydUrl ? 'Lydbesked' : t.billedUrl ? 'Billede' : undefined),
 		besvaretMs: t.besvaretMs
 	}));
 }
