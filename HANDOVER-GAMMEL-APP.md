@@ -534,6 +534,42 @@ Sikkerhedskopi af alle 2.268 fødevarer ligger i `backup/`.
 Det er indbygget i admin-siden, men gør du det med et script, står reglen i
 9.50 i 3.0-overdragelsen.
 
+#### LINN AI KENDER NU KUNDENS FORLØB, også her
+
+**Den femte ting, og den eneste der rører kundefladen.** `/api/linn-ai` fik
+samme dag det samme som 3.0's AI: forløbets navn, dagnummer med pause trukket
+fra, dagens dato, FAQ'en fra kundens eget forløb, og lektionerne **til og med i
+dag**. Dertil hendes egen historik, altså hvad hun selv har spurgt om før og
+hvad Linn svarede.
+
+Anledningen var at en testkunde spurgte hvornår der er Q&A. Svaret stod ordret
+i hendes FAQ, men AI'en havde aldrig fået den at vide. Hele gennemgangen står i
+9.61 i `HANDOVER-3.0.md`, og den skal læses før nogen rører det her.
+
+**Hentningen er DELT med 3.0**, se `lib/server/forlobViden.ts`. To steder der
+udleder dagnummeret eller finder FAQ'en ville drive fra hinanden, og så ville
+de to apper svare forskelligt på det samme spørgsmål. **Ret det ét sted, og du
+retter begge apper. Det er meningen.**
+
+**BEGGE HENTNINGER FEJLER NEDAD.** Går noget galt, svarer AI'en præcis som den
+gjorde før 1. september, og kunden ser ingen fejl. Et dårligere svar er
+uendeligt meget bedre end intet svar, når der er 925 kunder i drift.
+
+Tre regler der følger med, og som ikke må laves om uden at spørge:
+
+- **AI'en må aldrig finde på et tidspunkt.** Står det ikke ordret i FAQ'en, skal
+  den sige det og tilbyde at sende spørgsmålet videre. En kunde der møder op på
+  det forkerte klokkeslæt er værre end intet svar
+- **Fremtidige dage er ikke med**, og de fjernes i DATA og ikke med en
+  instruktion. En instruktion kan overses, en tom liste kan ikke
+- **"Vi ved det ikke" er ikke det samme som "hun har intet forløb".** Fejler
+  opslaget, siger vi ingenting om forløbet i stedet for at påstå at hun er
+  almindeligt medlem
+
+**Bemærk forskellen på de to apper:** den her app har hele tiden brugt Linns
+tidligere svar, så sikkerheds-procenten har målt på det rigtige. Det gjaldt
+IKKE 3.0 før 1. september.
+
 ---
 
 ## 8. Beslutninger der ikke skal genopfindes
@@ -566,13 +602,8 @@ Skriver en kunde at appen ikke husker hendes mængde, er det eneste spørgsmål 
 
 ## 9. Åbne tråde i den gamle app
 
-**Åbnet 1. september:** Linn har bedt om at AI'en i DEN HER app også skal kende
-kundens forløb, altså FAQ, lektioner og dagnummer, sådan som 3.0's AI fik den
-1. september. **Det er ikke bygget her**, og `/api/linn-ai` er urørt. Hele
-opskriften på hvordan det blev gjort i 3.0 står i 9.61 i `HANDOVER-3.0.md`,
-inklusive den fælde hvor udvælgelsen sorterede det rigtige svar helt væk.
-Bemærk at den gamle AI i forvejen bruger Linns tidligere svar, hvor 3.0's ikke
-gjorde før den dag.
+**Klaret 1. september:** AI'en i DEN HER app kender nu også kundens forløb.
+Se "Rettet 1. september" i afsnit 7.
 
 - **Tilbagefalds-reglen i `hentAktivProduktType`** sender udløbne kunder til Kickstart-skuffen. Kendt, ikke rettet. Se 6.3.
 - **Ann og Lone** på Kropsro 24. maj havde kun én nul-dag hver, så deres forlængelse rakte kun til 18. august. Deres forløb er slut nu. Linn nåede ikke at tage stilling til om de skulle have mere tid.
