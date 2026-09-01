@@ -23,7 +23,12 @@ import {
 } from '$lib/content/linnAi';
 import type { VidenbaseDokument } from '$lib/content/linnAi';
 import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
-import { hentTidligereSvarMedBackup } from '$lib/server/svarViden';
+// Kundens eget forloeb. Delt med /api/ny-ai, saa de to apper ikke kan
+// svare forskelligt paa det samme spoergsmaal. Tilfoejet 1. september
+// 2026 efter Linns oenske, se 9.61 i HANDOVER-3.0.md.
+import { hentForlobViden } from '$lib/server/forlobViden';
+import { byggForlobKontekst } from '$lib/content/forlobKontekst3';
+import { hentKundeHistorik, hentTidligereSvarMedBackup } from '$lib/server/svarViden';
 import { byggTidligereSvarTekst } from '$lib/content/svarUdkast';
 import { aktivtForlobId } from '$lib/utils/traeningsvariant';
 import type { UserDoc } from '$lib/types';
@@ -131,9 +136,40 @@ export const POST: RequestHandler = async ({ request }) => {
 	const tidligereSvar = await hentTidligereSvarMedBackup(forlobId);
 	const tidligereSvarTekst = byggTidligereSvarTekst(tidligereSvar);
 
+	// Kundens EGET forloeb: navn, dagnummer, dagens dato, hendes FAQ og de
+	// lektioner hun har adgang til. Uden det kunne AI'en ikke svare paa
+	// hvornaar der er Q&A, selv om svaret staar ordret i hendes egen FAQ.
+	//
+	// BEGGE HENTNINGER FEJLER NEDAD. Der er 925 kunder i drift her, og et
+	// daarligere svar er uendeligt meget bedre end intet svar. Gaar noget
+	// galt, svarer AI'en praecis som den gjorde foer 1. september.
+	const [viden, kundeHistorik] = await Promise.all([
+		hentForlobViden(uid, userDoc).catch(() => null),
+		hentKundeHistorik(uid).catch(() => [])
+	]);
+
+	const forlobBlok = byggForlobKontekst(
+		viden ? { ...viden, iDag: new Date().toISOString().slice(0, 10) } : null,
+		besked
+	);
+
+	const egetBlok =
+		kundeHistorik.length > 0
+			? `HUN HAR SPURGT DIG OM DET HER FOER, og du svarede saadan. Gentag ikke dig selv ordret:\n${kundeHistorik
+					.slice(0, 5)
+					.map((h, i) => `--- ${i + 1} ---\nHun spurgte: ${h.spoergsmaal}\nDu svarede: ${h.svar}`)
+					.join('\n\n')}\n\n---\n`
+			: '';
+
 	// Hent admin's custom system-prompt hvis sat
 	const konfig = (await hentDoc('linnAiKonfiguration/aktiv')) as { systemPrompt?: string } | null;
-	const systemPrompt = byggSystemPrompt(kontekst, konfig?.systemPrompt, tidligereSvarTekst);
+	// Forloebs-blokken staar FOERST, saa den ikke skaeres vaek naar
+	// videnbasen fylder. Det er den der indeholder tidspunkterne.
+	const systemPrompt = byggSystemPrompt(
+		forlobBlok + egetBlok + kontekst,
+		konfig?.systemPrompt,
+		tidligereSvarTekst
+	);
 
 	// Byg messages-array til Anthropic
 	const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
