@@ -45,10 +45,15 @@
 	const hentUser = getContext<() => User | null>('user');
 	const maaVaereHer = $derived(isAdmin(hentUser()));
 
-	// Skinnen paa de GAMLE admin-sider peger herind med ?omraade=, saa et
-	// tryk paa Mad lander samme sted uanset hvilken app du kom fra.
-	const fraUrl = page.url.searchParams.get('omraade');
-	let omraade = $state<Omraade>(
+	// SKINNEN LIGGER I +layout.svelte, ikke her. Linns oenske 1. september:
+	// menuen skal altid staa ude til hoejre, ogsaa paa undersiderne, og saa
+	// skal den ligge ét sted.
+	//
+	// Omraadet kommer derfor fra ADRESSEN og ikke fra en knap paa siden.
+	// $derived og ikke $state: skinnen navigerer, og et $state ville blive
+	// staaende paa det foerste omraade resten af besoeget.
+	const fraUrl = $derived(page.url.searchParams.get('omraade'));
+	const omraade = $derived<Omraade>(
 		fraUrl && fraUrl in OMRAADE_NAVN ? (fraUrl as Omraade) : 'forside'
 	);
 	let soeg = $state('');
@@ -169,7 +174,6 @@
 	const status = $derived(byggStatus(tal));
 	const traeffer = $derived(soegVaerktoej(soeg));
 	const soeger = $derived(soeg.trim().length > 0);
-	const OMRAADER: Omraade[] = ['forside', 'kunder', 'forlob', 'mad', 'traening', 'beskeder', 'system'];
 
 	function vis(t: number | null): string {
 		return t === null ? '—' : String(t);
@@ -182,27 +186,6 @@
 	<p class="af-tom">Siden er kun for admin.</p>
 {:else}
 	<div class="af">
-		<!-- Skinnen. Paa telefon bliver den til en raekke der ruller. -->
-		<nav class="af-skinne">
-			<div class="af-logo"><i></i><b>Linn's Academy</b></div>
-			{#each OMRAADER as o (o)}
-				<button
-					type="button"
-					class="af-punkt"
-					class:paa={omraade === o && !soeger}
-					onclick={() => {
-						omraade = o;
-						soeg = '';
-					}}
-				>
-					<span>{OMRAADE_NAVN[o]}</span>
-					{#if o === 'kunder' && (tal.ubesvarede ?? 0) > 0}
-						<span class="af-pip">{tal.ubesvarede}</span>
-					{/if}
-				</button>
-			{/each}
-		</nav>
-
 		<main class="af-hoved">
 			<div class="af-top">
 				<div>
@@ -286,77 +269,9 @@
 		font-size: calc(14px * var(--fs-scale, 1));
 	}
 
+	/* Skinnen ligger i +layout.svelte. Forsiden er kun indhold. */
 	.af {
-		display: grid;
-		grid-template-columns: 216px 1fr;
 		min-height: 100%;
-	}
-
-	/* ── skinnen ────────────────────────────────────────────── */
-	.af-skinne {
-		background: var(--paper-2);
-		padding: 20px 12px 30px;
-		border-right: 1px solid var(--line);
-	}
-
-	.af-logo {
-		display: flex;
-		align-items: center;
-		gap: 9px;
-		padding: 0 10px 16px;
-	}
-
-	.af-logo i {
-		width: 9px;
-		height: 9px;
-		border-radius: 50%;
-		background: var(--maerke);
-	}
-
-	.af-logo b {
-		font-size: calc(15.5px * var(--fs-scale, 1));
-		font-weight: 600;
-	}
-
-	/* Baggrunden staar eksplicit. Nulstillingen i .ny-app er vaegtloes, saa
-	   en knap uden egen baggrund faar browserens graa. */
-	.af-punkt {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-		width: 100%;
-		padding: 11px 12px;
-		margin-bottom: 2px;
-		background: none;
-		border: none;
-		border-radius: 12px;
-		color: var(--espresso);
-		font-size: calc(14.5px * var(--fs-scale, 1));
-		font-family: inherit;
-		text-align: left;
-		cursor: pointer;
-	}
-
-	.af-punkt.paa {
-		background: var(--plum);
-		color: #fff;
-		font-weight: 600;
-	}
-
-	.af-pip {
-		min-width: 21px;
-		padding: 1px 7px;
-		border-radius: 99px;
-		background: var(--plum);
-		color: #fff;
-		font-size: calc(11.5px * var(--fs-scale, 1));
-		font-weight: 700;
-		text-align: center;
-	}
-
-	.af-punkt.paa .af-pip {
-		background: rgba(255, 255, 255, 0.26);
 	}
 
 	/* ── hovedfladen ────────────────────────────────────────── */
@@ -519,35 +434,6 @@
 
 	/* ── iPad paa hoejkant og telefon ───────────────────────── */
 	@media (max-width: 900px) {
-		.af {
-			grid-template-columns: 1fr;
-		}
-
-		/* Skinnen bliver en raekke der ruller. Den bliver IKKE til en
-		   bundmenu her: admin har syv omraader, og fem er graensen
-		   forneden. Se 9.28 om de seks faner. */
-		.af-skinne {
-			display: flex;
-			gap: 6px;
-			overflow-x: auto;
-			padding: 10px 14px;
-			border-right: none;
-			border-bottom: 1px solid var(--line);
-		}
-
-		.af-logo {
-			display: none;
-		}
-
-		.af-punkt {
-			width: auto;
-			flex-shrink: 0;
-			margin-bottom: 0;
-			padding: 9px 15px;
-			background: var(--paper);
-			border-radius: 99px;
-		}
-
 		.af-hoved {
 			padding: 18px 16px 34px;
 		}

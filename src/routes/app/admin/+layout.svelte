@@ -54,18 +54,10 @@
 
 {#if erAdmin}
 	<div class="ar">
-		<nav class="ar-skinne">
-			<a class="ar-logo" href="/ny/admin"><i></i><b>Linn's Academy</b></a>
-			<a class="ar-punkt" href="/ny/admin">Forside</a>
-			{#each OMRAADER as o (o)}
-				<a
-					class="ar-punkt"
-					class:paa={nuVaerktoej?.omraade === o}
-					href="/ny/admin?omraade={o}">{OMRAADE_NAVN[o]}</a
-				>
-			{/each}
-		</nav>
-
+		<!-- Indholdet staar FOERST i markup og skinnen SIDST. Linns oenske
+		     1. september: menuen skal altid vaere ude til hoejre paa en
+		     computer. Paa en telefon falder de under hinanden, og der
+		     loefter order:-1 menuen op over indholdet. -->
 		<div class="ar-hoved">
 			{#if nuVaerktoej}
 				<div class="ar-top">
@@ -77,6 +69,15 @@
 			{/if}
 			{@render children()}
 		</div>
+
+		<nav class="ar-skinne" aria-label="Admin-menu">
+			<a class="ar-punkt" href="/ny/admin">Forside</a>
+			{#each OMRAADER as o (o)}
+				<a class="ar-punkt" class:paa={nuVaerktoej?.omraade === o} href="/ny/admin?omraade={o}"
+					>{OMRAADE_NAVN[o]}</a
+				>
+			{/each}
+		</nav>
 	</div>
 {:else}
 	<div class="ingen-adgang">
@@ -95,10 +96,10 @@
 		--ar-ink-3: #a3948a;
 		--ar-line: #e8dfd1;
 		--ar-plum: #7c4f63;
-		--ar-maerke: #b87b6e;
 
 		display: grid;
-		grid-template-columns: 216px 1fr;
+		grid-template-columns: 1fr 208px;
+		align-items: start;
 		background: var(--ar-paper);
 	}
 
@@ -109,32 +110,11 @@
 
 	.ar-skinne {
 		background: var(--ar-paper-2);
-		border-right: 1px solid var(--ar-line);
+		border-left: 1px solid var(--ar-line);
 		padding: 20px 12px 30px;
-		align-self: start;
+		align-self: stretch;
 		position: sticky;
 		top: 0;
-	}
-
-	.ar-logo {
-		display: flex;
-		align-items: center;
-		gap: 9px;
-		padding: 0 10px 16px;
-		text-decoration: none;
-		color: var(--ar-espresso);
-	}
-
-	.ar-logo i {
-		width: 9px;
-		height: 9px;
-		border-radius: 50%;
-		background: var(--ar-maerke);
-	}
-
-	.ar-logo b {
-		font-size: calc(15.5px * var(--fs-scale, 1));
-		font-weight: 600;
 	}
 
 	.ar-punkt {
@@ -189,22 +169,20 @@
 	   praecis som paa den nye forside. */
 	@media (max-width: 900px) {
 		.ar {
-			grid-template-columns: 1fr;
+			display: flex;
+			flex-direction: column;
 			min-height: 0;
 		}
 
 		.ar-skinne {
+			order: -1;
 			display: flex;
 			gap: 6px;
 			overflow-x: auto;
 			padding: 10px 14px;
-			border-right: none;
+			border-left: none;
 			border-bottom: 1px solid var(--ar-line);
 			position: static;
-		}
-
-		.ar-logo {
-			display: none;
 		}
 
 		.ar-punkt {
