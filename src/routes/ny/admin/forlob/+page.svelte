@@ -4,10 +4,9 @@
 	//
 	// Sekstende af de 19 gamle admin-sider, 1. september 2026.
 	//
-	// DET HER ER KUN LISTEN. Selve forloebet har otte undersider, altsaa
-	// lektioner, smaa skridt, traening, bibliotek, beskeder, challenges,
-	// buddy og Facebook-gruppen. De ligger stadig i den gamle app og aabnes
-	// derfra. "Forloeb og dage" er i virkeligheden ni sider.
+	// FORLOEBET HAR OTTE UNDERSIDER: lektioner, smaa skridt, traening,
+	// bibliotek, beskeder, challenges, makker og Facebook-gruppen. De er
+	// alle lavet om samme dag og ligger under /ny/admin/forlob/[id].
 	//
 	// LOGIKKEN ER FLYTTET, IKKE SKREVET OM. Samme opretForlob, gemForlob og
 	// kopierForlobIndhold, og id'et laves med praecis den samme regel.
@@ -220,7 +219,7 @@
 				}
 			}
 
-			goto(`/app/admin/forlob/${id}`);
+			goto(`/ny/admin/forlob/${id}`);
 		} catch (e) {
 			console.error('[admin] opret forløb', e);
 			opretFejl = e instanceof Error ? e.message : 'Kunne ikke oprette forløbet.';
@@ -409,7 +408,7 @@
 						{:else}
 							<AdmKnap
 								slags="primaer"
-								onclick={() => (window.location.href = `/app/admin/forlob/${f.id}`)}
+								onclick={() => goto(`/ny/admin/forlob/${f.id}`)}
 							>
 								Åbn forløbet
 							</AdmKnap>
@@ -433,10 +432,7 @@
 			{/each}
 		{/if}
 
-		<p class="fo-fod">
-			Selve forløbets indhold, altså dage, lektioner, små skridt, træning, bibliotek og beskeder,
-			ligger stadig i den gamle admin og åbnes derfra.
-		</p>
+
 	</AdmSide>
 {/if}
 
@@ -605,10 +601,4 @@
 		font-weight: 600;
 	}
 
-	.fo-fod {
-		margin: 20px 0 0;
-		font-size: calc(11.5px * var(--fs-scale, 1));
-		color: var(--ink-3, #a3948a);
-		line-height: 1.5;
-	}
 </style>
