@@ -12,8 +12,14 @@
 	// aendring 11. august gav en helt blank app uden at aarsagen kunne
 	// findes.
 	//
-	// SIDEN SKRIVER INGENTING. Den laeser opskrifter, koblinger og
-	// foedevarer og regner ved siden af.
+	// SIDEN SKRIVER TO STEDER. Et rettet naeringstal skrives paa
+	// foedevaren, se ingrediensRettelse3, og fluebenet "gennemgaaet"
+	// skrives for sig, se ingrediensGennemgang3. Opskrifterne og
+	// koblingerne laeses kun.
+	//
+	// FLUEBENET er Linns oenske 1. september 2026: hun kunne se hvad der
+	// var RETTET, men ikke hvad der var SET EFTER og fundet i orden, og
+	// det er dét der afgoer hvor hun fortsaetter i morgen.
 	//
 	// Naaes fra BEGGE admin-forsider. Der er kun den her ene side, saa de
 	// to ikke kan komme til at sige forskellige ting.
@@ -48,6 +54,20 @@
 		type RettedeTal
 	} from '$lib/content/ingrediensRettelse3';
 	import { retFodevare, fortrydRettelse } from '$lib/firestore/ingrediensRettelse3';
+	import {
+		antalGennemgaaet,
+		datoTekst,
+		erGennemgaaet,
+		fjernGennemgaaet,
+		kunIkkeGennemgaaede,
+		markerGennemgaaet,
+		type Gennemgangskort
+	} from '$lib/content/ingrediensGennemgang3';
+	import {
+		gemGennemgaaet,
+		hentGennemgang,
+		sletGennemgaaet
+	} from '$lib/firestore/ingrediensGennemgang3';
 	import type { Opskrift } from '$lib/content/opskrifter';
 	import type { Aendring } from '$lib/content/ingrediensRettelse3';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
@@ -81,14 +101,24 @@
 	let kunMedFejl = $state(false);
 	let aaben = $state('');
 
+	// Fluebenene. Skaermen viser markeringen med det samme og skriver
+	// bagefter, for det er ét lille felt, og Linn skal kunne klikke sig
+	// gennem en lang liste uden at vente paa netvaerket hver gang.
+	let gennemgang = $state<Gennemgangskort>({});
+	let kunIkkeGennemgaaet = $state(false);
+	let markerer = $state('');
+	let markerFejl = $state('');
+
 	onMount(() => {
 		(async () => {
 			try {
-				const [opskrifterListe, varerListe, kort] = await Promise.all([
+				const [opskrifterListe, varerListe, kort, sete] = await Promise.all([
 					hentAlleOpskrifter(false),
 					hentFodevarer3(),
-					hentKoblinger()
+					hentKoblinger(),
+					hentGennemgang()
 				]);
+				gennemgang = sete;
 				varer = new Map<string, Fodevare>(varerListe.map((v) => [v.id, v]));
 				const enkel: Record<string, KoblingsOpslag> = {};
 				for (const [k, v] of Object.entries(kort)) {
@@ -106,8 +136,40 @@
 		})();
 	});
 
-	const synlige = $derived(filtrerOversigt(alle, soeg, valgteKategorier, kunMedFejl));
+	const synlige = $derived.by(() => {
+		const r = filtrerOversigt(alle, soeg, valgteKategorier, kunMedFejl);
+		return kunIkkeGennemgaaet ? kunIkkeGennemgaaede(r, gennemgang) : r;
+	});
 	const tal = $derived(opgoerelse(alle));
+	const seteIalt = $derived(antalGennemgaaet(alle, gennemgang));
+
+	/**
+	 * Saetter eller fjerner fluebenet.
+	 *
+	 * Skaermen opdateres foerst. Gaar skrivningen galt, ruller vi tilbage
+	 * og siger det, saa der ikke staar et flueben der kun findes her.
+	 */
+	async function skiftGennemgaaet(kerne: string) {
+		if (markerer) return;
+		const foer = gennemgang;
+		const harFlueben = erGennemgaaet(gennemgang, kerne);
+		const uid = hentUser()?.uid ?? 'admin';
+		markerer = kerne;
+		markerFejl = '';
+		gennemgang = harFlueben
+			? fjernGennemgaaet(gennemgang, kerne)
+			: markerGennemgaaet(gennemgang, kerne, uid);
+		try {
+			if (harFlueben) await sletGennemgaaet(kerne, uid);
+			else await gemGennemgaaet(kerne, uid);
+		} catch (e) {
+			console.error('[admin] kunne ikke gemme markeringen', e);
+			gennemgang = foer;
+			markerFejl = 'Kunne ikke gemme markeringen. Prøv igen.';
+		} finally {
+			markerer = '';
+		}
+	}
 
 	function toggleKategori(k: OpskriftKategori) {
 		valgteKategorier = valgteKategorier.includes(k)
@@ -237,6 +299,9 @@
 			<div class="it-tal">
 				<div class="it-tal-boks"><strong>{tal.ialt}</strong> ingredienser</div>
 				<div class="it-tal-boks"><strong>{tal.medTal}</strong> med tal</div>
+				<div class="it-tal-boks sete">
+					<strong>{seteIalt} af {tal.ialt}</strong> gennemgået
+				</div>
 				<div class="it-tal-boks" class:advarsel={tal.udenKobling > 0}>
 					<strong>{tal.udenKobling}</strong> uden kobling
 				</div>
@@ -252,6 +317,7 @@
 		</div>
 
 		{#if besked}<p class="it-besked">{besked}</p>{/if}
+		{#if markerFejl}<p class="it-besked">{markerFejl}</p>{/if}
 
 		{#if kvittering}
 			<div class="it-kvit">
@@ -300,6 +366,14 @@
 			>
 				Mangler noget
 			</button>
+			<button
+				type="button"
+				class="it-chip sete"
+				class:paa={kunIkkeGennemgaaet}
+				onclick={() => (kunIkkeGennemgaaet = !kunIkkeGennemgaaet)}
+			>
+				Ikke gennemgået
+			</button>
 		</div>
 
 		<p class="it-antal">
@@ -327,6 +401,9 @@
 									{r.antalOpskrifter}
 									{r.antalOpskrifter === 1 ? 'opskrift' : 'opskrifter'}
 								</span>
+								{#if erGennemgaaet(gennemgang, r.kerne)}
+									<span class="it-set">✓ Gennemgået</span>
+								{/if}
 							</div>
 
 							{#if r.naering}
@@ -386,22 +463,50 @@
 								</div>
 								<a class="it-vej" href="/ny/admin/ingredienser">Ret koblingen</a>
 
-								{#if r.vare}
-									{#if retter !== r.kerne}
-										<div class="it-ret-rad">
+								<!-- Fluebenet staar sammen med rettelsen, og det gaelder ogsaa
+								     de raekker der IKKE har en madvare. De er netop dem der skal
+								     ses efter foerst, og de skal kunne markeres som set. -->
+								{#if retter !== r.kerne}
+									<div class="it-ret-rad">
+										{#if r.vare}
 											<button type="button" class="it-ret-knap" onclick={() => aabnRettelse(r)}>
 												Ret næringstallene
 											</button>
-											{#if (r.vare as RettbarVare).linnRettet}
-												<span class="it-rettet">Rettet af dig</span>
-											{/if}
-										</div>
-										{#if (r.vare as RettbarVare).linnNote}
-											<p class="it-note-vist">
-												Din note: {(r.vare as RettbarVare).linnNote}
-											</p>
 										{/if}
-									{:else}
+										<button
+											type="button"
+											class="it-set-knap"
+											class:af={erGennemgaaet(gennemgang, r.kerne)}
+											disabled={markerer === r.kerne}
+											onclick={() => skiftGennemgaaet(r.kerne)}
+										>
+											{#if erGennemgaaet(gennemgang, r.kerne)}
+												Fjern markeringen
+											{:else}
+												✓ Marker som gennemgået
+											{/if}
+										</button>
+										{#if r.vare && (r.vare as RettbarVare).linnRettet}
+											<span class="it-rettet">Rettet af dig</span>
+										{/if}
+									</div>
+									{#if gennemgang[r.kerne]}
+										<p class="it-set-linje">
+											✓ Gennemgået {gennemgang[r.kerne].af === (hentUser()?.uid ?? 'admin')
+												? 'af dig'
+												: ''}
+											{datoTekst(gennemgang[r.kerne].naar)}
+										</p>
+									{/if}
+									{#if r.vare && (r.vare as RettbarVare).linnNote}
+										<p class="it-note-vist">
+											Din note: {(r.vare as RettbarVare).linnNote}
+										</p>
+									{/if}
+								{/if}
+
+								{#if r.vare}
+									{#if retter === r.kerne}
 										<div class="it-form">
 											<p class="it-form-advarsel">
 												Tallene hører til madvaren <strong>{r.varenavn}</strong>, ikke kun til
@@ -638,6 +743,7 @@
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
+		flex-wrap: wrap;
 		gap: 8px;
 	}
 
@@ -951,5 +1057,68 @@
 		font-size: calc(10.5px * var(--fs-scale, 1));
 		color: var(--ink-3);
 		line-height: 1.5;
+	}
+
+	/* Gennemgaaet. Sage er husets farve for noget der er faldet paa
+	   plads, se ny.css. Den maa ikke ligne en advarsel. */
+	.it-tal-boks.sete {
+		border-color: var(--sage);
+		background: var(--sage-tint);
+		color: var(--sage-tekst);
+	}
+
+	.it-tal-boks.sete strong {
+		color: var(--sage-tekst);
+	}
+
+	.it-chip.sete.paa {
+		border-color: var(--sage);
+		background: var(--sage-tint);
+		color: var(--sage-tekst);
+	}
+
+	.it-set {
+		flex-shrink: 0;
+		padding: 2px 8px;
+		border: 1px solid var(--sage);
+		border-radius: 999px;
+		background: var(--sage-tint);
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--sage-tekst);
+		white-space: nowrap;
+	}
+
+	.it-set-knap {
+		padding: 9px 13px;
+		border: 1px solid var(--sage);
+		border-radius: 12px;
+		background: var(--sage-tint);
+		font-size: calc(13px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--sage-tekst);
+		cursor: pointer;
+	}
+
+	/* Naar fluebenet allerede staar, er det at TAGE det af der er den
+	   sjaeldne handling. Saa skal knappen ikke raabe. */
+	.it-set-knap.af {
+		border-color: var(--line);
+		background: transparent;
+		font-weight: 400;
+		color: var(--ink-2);
+	}
+
+	.it-set-knap:disabled {
+		opacity: 0.5;
+	}
+
+	.it-set-linje {
+		margin: 8px 0 0;
+		padding: 7px 10px;
+		border-radius: 10px;
+		background: var(--sage-tint);
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--sage-tekst);
 	}
 </style>
