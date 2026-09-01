@@ -76,7 +76,7 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	{ navn: 'Små skridt til abonnenter', under: 'Vaneliste og bonus-pulje', rute: '/ny/admin/abo-vaner', omraade: 'forlob' },
 
 	// ── Mad ───────────────────────────────────────────────────
-	{ navn: 'Opskrifter', under: 'Opret, ret og godkend', rute: '/app/admin/opskrifter', omraade: 'mad', gammel: true },
+	{ navn: 'Opskrifter', under: 'Opret, ret og godkend', rute: '/ny/admin/opskrifter', omraade: 'mad' },
 	{ navn: 'Ingrediensernes tal', under: 'Ét sted at kontrollere alle næringstal', rute: '/ny/admin/ingrediens-tal', omraade: 'mad' },
 	{ navn: 'Ingredienser', under: 'Kobl en ingrediens til en fødevare', rute: '/ny/admin/ingredienser', omraade: 'mad' },
 	{ navn: 'Regnestykket bag en opskrift', under: 'Gå herhen når et makro-tal ser forkert ud', rute: '/ny/admin/opskrift-makro', omraade: 'mad' },
