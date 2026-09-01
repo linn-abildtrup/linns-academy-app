@@ -55,7 +55,7 @@ export const OMRAADE_NAVN: Record<Omraade, string> = {
  */
 export const VAERKTOEJER: Vaerktoej[] = [
 	// ── Kunder ────────────────────────────────────────────────
-	{ navn: 'Spørgsmål fra kunder', under: 'Svar, og send som besked eller mail', rute: '/app/admin/spoergsmaal', omraade: 'kunder', oftest: true, gammel: true },
+	{ navn: 'Spørgsmål fra kunder', under: 'Svar, og send som besked', rute: '/ny/admin/spoergsmaal', omraade: 'kunder', oftest: true },
 	{ navn: 'Slå en kunde op', under: 'Se hvad hun kan se, og hvorfor', rute: '/ny/admin/traening/kunde', omraade: 'kunder', oftest: true },
 	{ navn: 'Abonnenter', under: 'Alle abonnenter, hentet fra Simplero', rute: '/app/admin/abonnenter', omraade: 'kunder', gammel: true },
 	{ navn: 'Testere', under: 'Giv adgang til noget der er under udvikling', rute: '/app/admin/testere', omraade: 'kunder', gammel: true },
@@ -97,7 +97,10 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	{ navn: 'AI-ratings', under: 'Hvad kunderne synes om AI ens svar', rute: '/app/admin/ai-ratings', omraade: 'beskeder', gammel: true },
 
 	// ── System ────────────────────────────────────────────────
-	{ navn: 'Funktioner og adgang', under: 'Hvem må hvad, pr kundetype', rute: '/app/admin/feature-adgang', omraade: 'system', gammel: true }
+	{ navn: 'Funktioner og adgang', under: 'Hvem må hvad, pr kundetype', rute: '/app/admin/feature-adgang', omraade: 'system', gammel: true },
+	// Den gamle udgave bliver staaende som en vej tilbage, saa laenge den
+	// nye er ny. Fjern den naar Linn har brugt den nye i en uge.
+	{ navn: 'Spørgsmål, gammel udgave', under: 'Den gamle side. Vejen tilbage hvis den nye driller', rute: '/app/admin/spoergsmaal', omraade: 'system', gammel: true }
 ];
 
 /**
@@ -150,7 +153,7 @@ export function byggStatus(i: StatusInput): StatusTal[] {
 				i.aeldsteSpoergsmaalDage && i.aeldsteSpoergsmaalDage > 0
 					? `ældste er ${i.aeldsteSpoergsmaalDage} ${i.aeldsteSpoergsmaalDage === 1 ? 'dag' : 'dage'} gammelt`
 					: 'ingen venter lige nu',
-			rute: '/app/admin/spoergsmaal',
+			rute: '/ny/admin/spoergsmaal',
 			// Kun naar der FAKTISK venter noget.
 			vigtig: (i.ubesvarede ?? 0) > 0
 		},
