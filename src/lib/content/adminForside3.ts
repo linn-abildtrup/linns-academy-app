@@ -89,7 +89,7 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	{ navn: 'Hold og dækning', under: 'Hvem har fået hvad, og mangler nogen noget', rute: '/ny/admin/traening/hold', omraade: 'traening' },
 	{ navn: 'Kategorier', under: 'Det udstyr kunden kan vælge imellem', rute: '/ny/admin/traening/kategorier', omraade: 'traening' },
 	{ navn: 'Byg eget program', under: 'Hvem må sætte deres egen træning sammen', rute: '/ny/admin/traening/byg-eget', omraade: 'traening' },
-	{ navn: 'Øvelsesbank', under: 'Opret og ret de enkelte øvelser', rute: '/app/admin/traening', omraade: 'traening', gammel: true },
+	{ navn: 'Øvelsesbanken', under: 'Opret og ret de enkelte øvelser. Fælles for begge apper', rute: '/ny/admin/oevelser', omraade: 'traening' },
 	{ navn: 'Mine programmer', under: 'De gamle mikrotrænings-programmer', rute: '/ny/admin/programmer', omraade: 'traening' },
 	{ navn: 'Abo-træning', under: 'Mikrotræning for abonnenter', rute: '/app/admin/abo-traening', omraade: 'traening', gammel: true },
 
