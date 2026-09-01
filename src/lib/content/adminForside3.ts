@@ -80,7 +80,7 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	{ navn: 'Regnestykket bag en opskrift', under: 'Gå herhen når et makro-tal ser forkert ud', rute: '/ny/admin/opskrift-makro', omraade: 'mad' },
 	{ navn: 'Billeder på opskrifter', under: 'Læg et billede på én ret ad gangen', rute: '/ny/admin/opskrift-billeder', omraade: 'mad' },
 	{ navn: 'Scannede varer', under: 'Din nødbremse, ikke en godkendelse', rute: '/ny/admin/scannede', omraade: 'mad' },
-	{ navn: 'Fællesskabs-fødevarer', under: 'Varer kunderne har oprettet', rute: '/app/admin/fodevarer', omraade: 'mad', gammel: true },
+	{ navn: 'Fællesskabs-fødevarer', under: 'Varer kunderne har oprettet', rute: '/ny/admin/fodevarer', omraade: 'mad' },
 	{ navn: 'Næring', under: 'Hvem ser udvidet næring, og hvem må rette sine mål', rute: '/ny/admin/naering', omraade: 'mad' },
 	{ navn: 'Opskrift-vurderinger', under: 'Hvilke retter kunderne giver lavest og højest', rute: '/ny/admin/opskrift-ratings', omraade: 'mad' },
 
