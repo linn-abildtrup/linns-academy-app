@@ -325,11 +325,7 @@ export function erMorgen3(nuTimeKbh: number, indstillet: string): boolean {
  * lige er begyndt, og som ikke naaede at taste noget, skal ikke moedes
  * af et savn paa tredjedagen.
  */
-export function skalSavne3(
-	sidsteAktivitetMs: number | null,
-	nu: number,
-	timer: number
-): boolean {
+export function skalSavne3(sidsteAktivitetMs: number | null, nu: number, timer: number): boolean {
 	if (!sidsteAktivitetMs) return false;
 	return nu - sidsteAktivitetMs >= timer * 60 * 60 * 1000;
 }
@@ -338,7 +334,9 @@ export function skalSavne3(
 export function savnBesked3(erForlobskunde: boolean, ind: NotiIndstillinger3): Noti3 {
 	const t = erForlobskunde ? ind.savnForlob : ind.savnMedlem;
 	return {
-		titel: t.titel.trim() || (erForlobskunde ? NOTI_STANDARD3.savnForlob : NOTI_STANDARD3.savnMedlem).titel,
+		titel:
+			t.titel.trim() ||
+			(erForlobskunde ? NOTI_STANDARD3.savnForlob : NOTI_STANDARD3.savnMedlem).titel,
 		tekst: t.tekst.trim(),
 		sti: '/ny',
 		slags: 'savn'
@@ -349,8 +347,14 @@ export function savnBesked3(erForlobskunde: boolean, ind: NotiIndstillinger3): N
 export function medStandard3(delvis: Partial<NotiIndstillinger3> | null): NotiIndstillinger3 {
 	return {
 		morgenTid: delvis?.morgenTid || NOTI_STANDARD3.morgenTid,
-		forlobTimer: delvis?.forlobTimer && delvis.forlobTimer > 0 ? delvis.forlobTimer : NOTI_STANDARD3.forlobTimer,
-		medlemTimer: delvis?.medlemTimer && delvis.medlemTimer > 0 ? delvis.medlemTimer : NOTI_STANDARD3.medlemTimer,
+		forlobTimer:
+			delvis?.forlobTimer && delvis.forlobTimer > 0
+				? delvis.forlobTimer
+				: NOTI_STANDARD3.forlobTimer,
+		medlemTimer:
+			delvis?.medlemTimer && delvis.medlemTimer > 0
+				? delvis.medlemTimer
+				: NOTI_STANDARD3.medlemTimer,
 		savnForlob: { ...NOTI_STANDARD3.savnForlob, ...(delvis?.savnForlob ?? {}) },
 		savnMedlem: { ...NOTI_STANDARD3.savnMedlem, ...(delvis?.savnMedlem ?? {}) }
 	};

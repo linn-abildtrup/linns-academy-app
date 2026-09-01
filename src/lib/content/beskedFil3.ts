@@ -58,6 +58,24 @@ export function erVoresBeskedFil(url: string, uid: string): boolean {
 	return url.toLowerCase().includes(`beskeder%2f${uid.toLowerCase()}%2f`);
 }
 
+/**
+ * Filendelsen der hoerer til en lydoptagelse.
+ *
+ * Browserne optager i hver sit format: Chrome laver webm, Safari laver
+ * mp4. Begge kan afspilles af begge, saa vi laver ikke om paa filen. Vi
+ * skal bare give den det navn den fortjener, ellers gaetter telefonen
+ * paa hvad den har faaet.
+ */
+export function lydEndelseFor(mime: string): string {
+	const m = (mime ?? '').toLowerCase();
+	if (m.includes('webm')) return 'webm';
+	if (m.includes('mp4') || m.includes('m4a') || m.includes('aac')) return 'm4a';
+	if (m.includes('ogg')) return 'ogg';
+	if (m.includes('wav')) return 'wav';
+	if (m.includes('mpeg') || m.includes('mp3')) return 'mp3';
+	return 'lyd';
+}
+
 /** "2,4 MB" eller "61 KB". Til linjen under filen paa admin-skaermen. */
 export function filStoerrelse(bytes: number): string {
 	if (!Number.isFinite(bytes) || bytes < 0) return '';

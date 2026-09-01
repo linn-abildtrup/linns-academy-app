@@ -239,9 +239,7 @@
 		harRullet = true;
 		// Foerst naar skaermen er tegnet, ellers rulles der til den forkerte
 		// plads.
-		requestAnimationFrame(() =>
-			el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-		);
+		requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
 	});
 
 	async function rulNed() {
@@ -497,7 +495,14 @@
 									<div>
 										<div class="traad-fra">{t.fraLinn ? 'Linn skrev til dig' : 'Linn'}</div>
 										{#if t.svar}
-											<p>{#each delOpILinks(t.svar) as d, di (di)}{#if d.slags === 'link'}<a class="besk-link" href={d.url} target="_blank" rel="noopener noreferrer">{d.tekst}</a>{:else}{d.tekst}{/if}{/each}</p>
+											<p>
+												{#each delOpILinks(t.svar) as d, di (di)}{#if d.slags === 'link'}<a
+															class="besk-link"
+															href={d.url}
+															target="_blank"
+															rel="noopener noreferrer">{d.tekst}</a
+														>{:else}{d.tekst}{/if}{/each}
+											</p>
 										{/if}
 										{#if t.lydUrl}
 											<div class="traad-lyd">
@@ -602,7 +607,12 @@
 							<!-- Stumperne staar paa ÉN linje med vilje. Boblen bevarer
 							     linjeskift (white-space: pre-wrap), saa et linjeskift i
 							     selve markup ville blive til luft paa skaermen. -->
-							{#each delOpILinks(b.indhold) as d, di (di)}{#if d.slags === 'link'}<a class="besk-link" href={d.url} target="_blank" rel="noopener noreferrer">{d.tekst}</a>{:else}{d.tekst}{/if}{/each}
+							{#each delOpILinks(b.indhold) as d, di (di)}{#if d.slags === 'link'}<a
+										class="besk-link"
+										href={d.url}
+										target="_blank"
+										rel="noopener noreferrer">{d.tekst}</a
+									>{:else}{d.tekst}{/if}{/each}
 						</div>
 						{#if erSendt(i)}
 							<span class="besk-videre sendt">
@@ -654,11 +664,7 @@
 </div>
 
 {#if stortBillede}
-	<BilledeLag
-		url={stortBillede.url}
-		tekst={stortBillede.tekst}
-		luk={() => (stortBillede = null)}
-	/>
+	<BilledeLag url={stortBillede.url} tekst={stortBillede.tekst} luk={() => (stortBillede = null)} />
 {/if}
 
 <style>

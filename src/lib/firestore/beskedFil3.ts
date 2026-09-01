@@ -14,7 +14,7 @@
 
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { storage } from '$lib/firebase';
-import { beskedFilSti } from '$lib/content/beskedFil3';
+import { beskedFilSti, lydEndelseFor } from '$lib/content/beskedFil3';
 import { laesBillede, skalerTil } from '$lib/utils/billede3';
 
 export interface LagtOp {
@@ -58,4 +58,25 @@ export async function gemBeskedBillede(uid: string, fil: File): Promise<LagtOpBi
 		hoejde: skaleret.hoejde,
 		kildeBytes: fil.size
 	};
+}
+
+/**
+ * Laegger en lydbesked i kundens mappe.
+ *
+ * Lyden laves IKKE om undervejs. Fem minutters tale fra en browser
+ * fylder omkring 3 MB, og det er ikke vaerd at bygge en omkodning for.
+ */
+export async function gemBeskedLyd(uid: string, blob: Blob): Promise<LagtOp> {
+	if (!uid) throw new Error('gemBeskedLyd: uid er paakraevet');
+	if (!blob.size) throw new Error('Optagelsen er tom.');
+
+	const mime = blob.type || 'audio/webm';
+	const sti = beskedFilSti(uid, 'lyd', lydEndelseFor(mime));
+
+	await uploadBytes(ref(storage, sti), blob, {
+		contentType: mime,
+		cacheControl: 'public, max-age=31536000, immutable'
+	});
+
+	return { url: await getDownloadURL(ref(storage, sti)), bytes: blob.size };
 }

@@ -27,7 +27,13 @@
 	}}
 />
 
-<div class="bl-lag ny-tokens" use:portal role="dialog" aria-modal="true" aria-label="Billede fra Linn">
+<div
+	class="bl-lag ny-tokens"
+	use:portal
+	role="dialog"
+	aria-modal="true"
+	aria-label="Billede fra Linn"
+>
 	<button type="button" class="bl-flade" aria-label="Luk billedet" onclick={luk}></button>
 	<div class="bl-indhold">
 		<button type="button" class="bl-luk" onclick={luk} aria-label="Luk">×</button>

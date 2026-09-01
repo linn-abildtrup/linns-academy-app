@@ -3,7 +3,8 @@ import {
 	beskedFilSti,
 	erVoresBeskedFil,
 	filStoerrelse,
-	formaterSekunder
+	formaterSekunder,
+	lydEndelseFor
 } from './beskedFil3';
 
 describe('beskedFilSti', () => {
@@ -57,5 +58,17 @@ describe('formaterSekunder', () => {
 		expect(formaterSekunder(72)).toBe('1:12');
 		expect(formaterSekunder(5)).toBe('0:05');
 		expect(formaterSekunder(-3)).toBe('0:00');
+	});
+});
+
+describe('lydEndelseFor', () => {
+	it('kender de formater browserne optager i', () => {
+		expect(lydEndelseFor('audio/webm;codecs=opus')).toBe('webm');
+		expect(lydEndelseFor('audio/mp4')).toBe('m4a');
+		expect(lydEndelseFor('audio/mpeg')).toBe('mp3');
+	});
+
+	it('finder paa noget der kan bruges naar formatet er ukendt', () => {
+		expect(lydEndelseFor('')).toBe('lyd');
 	});
 });
