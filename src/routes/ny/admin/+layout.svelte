@@ -2,14 +2,15 @@
 	// ============================================================
 	// Rammen om ALLE admin-sider i den nye app.
 	//
-	// Linns oenske 1. september 2026: sidemenuen skal ALTID staa ude til
-	// hoejre paa en computer. Foer den her fil laa skinnen kun paa
-	// admin-forsiden, saa de nye undersider havde slet ingen menu.
+	// Linns oenske 1. september 2026: sidemenuen skal ALTID vaere der paa en
+	// computer. Foer den her fil laa skinnen kun paa admin-forsiden, saa de
+	// nye undersider havde slet ingen menu.
 	//
-	// SKINNEN STAAR TIL HOEJRE. Det er derfor indholdet kommer FOERST i
-	// markup og skinnen SIDST: paa en telefon falder de to under hinanden i
-	// den raekkefoelge de staar, og der skal menuen ligge oeverst, ikke
-	// under en side der kan vaere flere skaerme lang.
+	// SKINNEN STAAR TIL VENSTRE. Linns valg, aendret samme dag fra hoejre.
+	// Den staar FOERST i markup, hvilket ogsaa er det rigtige paa en
+	// telefon: der falder de to under hinanden i den raekkefoelge de staar,
+	// og menuen skal ligge oeverst og ikke under en side der kan vaere
+	// flere skaerme lang.
 	//
 	// Den samme skinne ligger i /app/admin/+layout.svelte, som er rammen om
 	// de 19 gamle sider. Retter du navnene her, saa ret dem ogsaa der.
@@ -45,8 +46,6 @@
 
 {#if erAdmin}
 	<div class="al">
-		<div class="al-indhold">{@render children()}</div>
-
 		<nav class="al-skinne" aria-label="Admin-menu">
 			<a class="al-punkt" class:paa={erForside && !valgtOmraade} href="/ny/admin">Forside</a>
 			{#each OMRAADER as o (o)}
@@ -56,6 +55,8 @@
 			{/each}
 			<a class="al-punkt al-ud" href="/app">Ud til appen</a>
 		</nav>
+
+		<div class="al-indhold">{@render children()}</div>
 	</div>
 {:else}
 	{@render children()}
@@ -64,8 +65,8 @@
 <style>
 	.al {
 		display: grid;
-		/* Indholdet foerst, skinnen sidst. Se noten i toppen. */
-		grid-template-columns: 1fr 208px;
+		/* Skinnen foerst, indholdet efter. Se noten i toppen. */
+		grid-template-columns: 208px 1fr;
 		align-items: start;
 		min-height: 100%;
 	}
@@ -76,7 +77,7 @@
 
 	.al-skinne {
 		padding: 18px 12px 30px;
-		border-left: 1px solid var(--line);
+		border-right: 1px solid var(--line);
 		background: var(--paper-2);
 		align-self: stretch;
 		position: sticky;
@@ -105,9 +106,9 @@
 		font-size: calc(13px * var(--fs-scale, 1));
 	}
 
-	/* iPad paa hoejkant og telefon. Skinnen falder OP over indholdet, fordi
-	   den staar sidst i markup men foerst i raekkefoelgen her. En menu under
-	   en side der er fem skaerme lang kan man ikke finde. */
+	/* iPad paa hoejkant og telefon. Skinnen bliver en raekke der ruller, og
+	   den ligger oeverst fordi den staar foerst i markup. En menu under en
+	   side der er fem skaerme lang kan man ikke finde. */
 	@media (max-width: 900px) {
 		.al {
 			display: flex;
@@ -115,12 +116,11 @@
 		}
 
 		.al-skinne {
-			order: -1;
 			display: flex;
 			gap: 6px;
 			overflow-x: auto;
 			padding: 10px 14px;
-			border-left: none;
+			border-right: none;
 			border-bottom: 1px solid var(--line);
 			position: static;
 		}

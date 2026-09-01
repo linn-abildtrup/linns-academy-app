@@ -54,10 +54,19 @@
 
 {#if erAdmin}
 	<div class="ar">
-		<!-- Indholdet staar FOERST i markup og skinnen SIDST. Linns oenske
-		     1. september: menuen skal altid vaere ude til hoejre paa en
-		     computer. Paa en telefon falder de under hinanden, og der
-		     loefter order:-1 menuen op over indholdet. -->
+		<!-- Skinnen staar FOERST i markup. Linns valg 1. september, aendret
+		     samme dag fra hoejre til venstre. Paa en telefon falder de to
+		     under hinanden i den raekkefoelge de staar, og der skal menuen
+		     ligge oeverst. -->
+		<nav class="ar-skinne" aria-label="Admin-menu">
+			<a class="ar-punkt" href="/ny/admin">Forside</a>
+			{#each OMRAADER as o (o)}
+				<a class="ar-punkt" class:paa={nuVaerktoej?.omraade === o} href="/ny/admin?omraade={o}"
+					>{OMRAADE_NAVN[o]}</a
+				>
+			{/each}
+		</nav>
+
 		<div class="ar-hoved">
 			{#if nuVaerktoej}
 				<div class="ar-top">
@@ -69,15 +78,6 @@
 			{/if}
 			{@render children()}
 		</div>
-
-		<nav class="ar-skinne" aria-label="Admin-menu">
-			<a class="ar-punkt" href="/ny/admin">Forside</a>
-			{#each OMRAADER as o (o)}
-				<a class="ar-punkt" class:paa={nuVaerktoej?.omraade === o} href="/ny/admin?omraade={o}"
-					>{OMRAADE_NAVN[o]}</a
-				>
-			{/each}
-		</nav>
 	</div>
 {:else}
 	<div class="ingen-adgang">
@@ -98,7 +98,7 @@
 		--ar-plum: #7c4f63;
 
 		display: grid;
-		grid-template-columns: 1fr 208px;
+		grid-template-columns: 208px 1fr;
 		align-items: start;
 		background: var(--ar-paper);
 	}
@@ -110,7 +110,7 @@
 
 	.ar-skinne {
 		background: var(--ar-paper-2);
-		border-left: 1px solid var(--ar-line);
+		border-right: 1px solid var(--ar-line);
 		padding: 20px 12px 30px;
 		align-self: stretch;
 		position: sticky;
@@ -175,12 +175,11 @@
 		}
 
 		.ar-skinne {
-			order: -1;
 			display: flex;
 			gap: 6px;
 			overflow-x: auto;
 			padding: 10px 14px;
-			border-left: none;
+			border-right: none;
 			border-bottom: 1px solid var(--ar-line);
 			position: static;
 		}
