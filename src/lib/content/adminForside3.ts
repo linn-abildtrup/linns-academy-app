@@ -57,11 +57,8 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	// ── Kunder ────────────────────────────────────────────────
 	{ navn: 'Spørgsmål fra kunder', under: 'Svar, og send som besked', rute: '/ny/admin/spoergsmaal', omraade: 'kunder', oftest: true },
 	{ navn: 'Slå en kunde op', under: 'Se hvad hun kan se, og hvorfor', rute: '/ny/admin/traening/kunde', omraade: 'kunder', oftest: true },
-	// SKRIVER til kundedata: nulstiller koder, opretter kunder og retter
-	// udloebsdatoer. Den laves om til SIDST, sammen med de oevrige der
-	// roerer adgang. Fundet 1. september, hvor den foerst var sat i den
-	// ufarlige gruppe ved en fejl.
-	{ navn: 'Abonnenter', under: 'Alle abonnenter, hentet fra Simplero', rute: '/app/admin/abonnenter', omraade: 'kunder', gammel: true },
+	{ navn: 'Abonnenter', under: 'Abonnenter fra Simplero, plus gratis kunder og udløb', rute: '/ny/admin/abonnenter', omraade: 'kunder' },
+	{ navn: 'Abonnenter, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/abonnenter', omraade: 'system', gammel: true },
 	{ navn: 'Testere', under: 'Giv adgang til noget der er under udvikling', rute: '/ny/admin/testere', omraade: 'kunder' },
 	// Den gamle staar under System indtil den nye har vaeret brugt. Se den
 	// samme ordning for Spoergsmaal.
