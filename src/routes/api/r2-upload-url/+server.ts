@@ -4,17 +4,25 @@
 // gennem vores server, kun selve URL-genereringen.
 //
 // Authentication-flow:
-//   1. Klient: POST /api/r2-upload-url med { filename, contentType }
-//   2. Server: validerer at brugeren er logget ind + admin
+//   1. Klient: POST /api/r2-upload-url med { filename, contentType } og
+//      sit login-bevis i Authorization-linjen
+//   2. Server: slaar beviset op og tjekker at det ER admin
 //   3. Server: returnerer { uploadUrl, publicUrl }
 //   4. Klient: PUT filen direkte til uploadUrl (binær body)
 //   5. Klient: gemmer publicUrl i Firestore-feltet
+//
+// LAASEN KOM PAA 1. SEPTEMBER 2026. Noten ovenfor sagde allerede at
+// serveren tjekkede admin, men koden gjorde det ikke: doeren stod aaben
+// for alle der kendte adressen, og enhver kunne laegge filer i lageret.
+// Fundet under diagnosen af lydbeskeder til én kunde.
 
 import type { RequestHandler } from '@sveltejs/kit';
 import { json, error } from '@sveltejs/kit';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '$env/dynamic/private';
+import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
+import { hvemErDet3 } from '$lib/server/notiSend';
 
 interface RequestBody {
 	filename: string;
@@ -30,6 +38,11 @@ function sluggify(navn: string): string {
 }
 
 export const POST: RequestHandler = async ({ request }) => {
+	const auth = request.headers.get('Authorization');
+	if (!auth?.startsWith('Bearer ')) throw error(401, 'Manglende Bearer-token');
+	const kalder = await hvemErDet3(auth.slice(7), PUBLIC_FIREBASE_API_KEY);
+	if (!kalder?.erAdmin) throw error(403, 'Kun admin kan uploade filer');
+
 	const accessKeyId = env.R2_ACCESS_KEY_ID;
 	const secretAccessKey = env.R2_SECRET_ACCESS_KEY;
 	const endpoint = env.R2_ENDPOINT;

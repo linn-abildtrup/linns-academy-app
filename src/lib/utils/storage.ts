@@ -3,7 +3,7 @@
 // Videos live in /exercises/, audio files live in /audio/.
 
 import { ref, getDownloadURL, uploadBytes } from 'firebase/storage';
-import { storage } from '$lib/firebase';
+import { auth, storage } from '$lib/firebase';
 
 /**
  * Returns a download URL for an exercise video.
@@ -147,10 +147,18 @@ export async function uploadThumbnailFil(forlobId: string, fil: File): Promise<s
 export async function uploadLydFil(fil: File): Promise<string> {
 	if (!fil) throw new Error('uploadLydFil: fil er påkrævet');
 
-	// 1. Hent pre-signed URL fra vores API
+	// 1. Hent pre-signed URL fra vores API.
+	//
+	// Login-beviset hentes her og ikke af de tre sider der kalder, saa
+	// doeren kunne laases uden at roere ved dem. Doeren afviser alle
+	// andre end admin siden 1. september 2026.
+	const bruger = auth.currentUser;
+	if (!bruger) throw new Error('Du skal vaere logget ind for at uploade.');
+	const token = await bruger.getIdToken();
+
 	const res = await fetch('/api/r2-upload-url', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
 		body: JSON.stringify({
 			filename: fil.name,
 			contentType: fil.type || 'audio/mpeg'
