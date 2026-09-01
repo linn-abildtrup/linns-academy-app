@@ -572,6 +572,103 @@ IKKE 3.0 før 1. september.
 
 ---
 
+### Rettet 1. september 2026, sent på dagen
+
+**Fire ting mere, og de tre af dem RAMMER KUNDERNE.** Alt sammen efter
+Linns ønske samme dag.
+
+#### 1. Kunden kan skrive en opskrift selv
+
+Før kunne hun kun lægge en opskrift ind ved at **fotografere** den. Havde
+hun den på papir eller i hovedet, kunne hun ikke. Siden hed ligefrem
+"Tilføj fra billede".
+
+**Skemaet fandtes allerede.** Efter AI'en havde læst et billede, landede
+hun på en skærm hvor hun kunne rette alt. Der var bare ingen dør ind til
+den. Samme slags hul som scanneren havde 26. august, hvor knappen fandtes
+men skemaet aldrig blev koblet på.
+
+Linns fire svar, som ligger fast:
+
+- **ALLE kunder kan nu både skrive og fotografere.** Låsen er fjernet både
+  på siden og i `/api/analyser-opskrift`. **Det koster penge:** hvert
+  billede er et kald til modellen, og det er nu åbent for alle 925 i
+  stedet for de få. Den daglige pulje på 20 pr kunde er tilbage, og skal
+  det lukkes til igen, findes nøglen `ai-opskrift` stadig i
+  featureAdgang-skemaet
+- **Protein og fiber er tvungne.** En opskrift uden dem lægger NUL i
+  hendes dag hver gang hun bruger den, og det ser rigtigt ud. I et modul
+  der hedder 30-30 er det den værst tænkelige fejl
+- **Hun spørges** om appen skal gætte tallene eller om hun selv vil skrive
+  dem. Nyt endepunkt `/api/estimer-opskrift`, eget og ikke en gren i
+  analyser-opskrift, som læser billeder for 925 kunder i drift
+- **Fremgangsmåde.** Nyt valgfrit felt `fremgangsmaade` på `MinOpskrift`.
+  Bemærk at en opskrift læst af AI'en heller ikke får den: analysen gemmer
+  kun ingredienser og tal
+
+**Billedet er nu valgfrit.** Før gemte siden slet ikke uden et. Uden
+billede får retten et bogstav i listen, hvilket den kunne i forvejen.
+
+**Der står et bånd over tallene om at de er PR PORTION.** Skriver hun hele
+rettens tal på en ret til fire, bliver hendes dag talt fire gange for højt
+hver gang hun bruger opskriften. Samme fejl som lå tre steder i to apper,
+se SPEC 26.9.
+
+Knappen under Mine hedder nu **"+ Tilføj en opskrift"** og ikke "+ Tilføj
+fra billede", altså det samme som siden den åbner. En knap der hedder
+noget andet end den skærm den fører til er den fejl der blev rettet på Din
+side 19. august.
+
+#### 2. ARK KUNNE IKKE RULLES PÅ EN TELEFON. Rettet 13 steder
+
+Linn fandt det på arket der lægger en opskrift i dagbogen: hun kunne vælge
+portioner og måltidstype, men ikke rulle.
+
+**To fejl oven i hinanden, og begge kendte fra før:**
+
+- **`vh` i stedet for `dvh`.** Mobilbrowsere regner `vh` ud som om
+  adresselinjen var væk, så arket på 92vh blev HØJERE end det hun kunne
+  se. Arket mente selv at der var plads nok, `overflow-y` slog aldrig til,
+  og der var intet at rulle i. Præcis den fejl der blev rettet på alle
+  fire ark i 3.0 den 11. august, men **den gamle apps ark stod tilbage**
+- **Arket var ikke portaleret ud i body.** Det lå inde i den rullende
+  skal, som på iOS fanger `position: fixed`-børn
+
+**Rettet 13 steder**, kun ved at TILFØJE en `dvh`-linje hvert sted. `vh`
+bliver stående som reserve. De kundevendte: opskrifter, egne opskrifter,
+Dit forløb, Biblioteket, Byg dit eget program, App-hjælpen og
+frugt-og-grønt-dialogen. Dertil syv admin-sider.
+
+**Og ét i 3.0:** `.oev-ark` blev sprunget over 11. august og har haft
+fejlen siden. Det bruges to steder, se 9.31 punkt 8.
+
+**Se efter `max-height: NNvh` uden en `dvh` ved siden af, hvis et ark
+opfører sig underligt.**
+
+#### 3. Linn AI kender kundens forløb
+
+Se afsnittet ovenfor under "Rettet 1. september".
+
+#### 4. ADMIN ER FLYTTET TIL 3.0, og de gamle sider er urørte
+
+**Hele admin er lavet om og ligger nu i den nye app**, 27 skærme i samme
+udseende. Se 9.62 i `HANDOVER-3.0.md` for hele gennemgangen.
+
+**Ingen af de 19 gamle admin-sider er rørt.** Der er kun lagt en ramme
+udenom i `app/admin/+layout.svelte`, så de sidder i den samme menu som de
+nye. Rammens farver står lokalt i filen og kan ikke slippe ud i resten af
+den gamle app.
+
+**De fem der rører adgang har deres gamle udgave stående i menuen under
+System.** Fjern dem når Linn har brugt de nye i en uge.
+
+**Dashboard og forløbets otte undersider er KOPIERET ordret** til 3.0, med
+en farvebro i stilen. Retter du noget i den gamle udgave af dem, sker der
+ikke noget i den nye. Det er den pris der blev betalt for ikke at tegne
+9.000 linjer tal og tabeller forfra.
+
+---
+
 ## 8. Beslutninger der ikke skal genopfindes
 
 To beslutninger truffet 24. august 2026. Begge er den slags der bliver bygget igen om et halvt år hvis de ikke står skrevet ned.

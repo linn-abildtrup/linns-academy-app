@@ -15,7 +15,8 @@ til 925 kunder i den uge.** Et helt nyt Kickstart-hold kom ind.
 
 **3.0 fik i samme uge kun tre ting**, se 9.59.
 
-**DEN 1. SEPTEMBER KOM DER OTTE TING TIL, se 9.61.** Kort: Linn AI ved nu
+**DEN 1. SEPTEMBER KOM DER OTTE TING TIL, se 9.61, OG HELE ADMIN BLEV
+LAVET OM SAMME DAG, se 9.62.** Kort: Linn AI ved nu
 hvilket forløb kunden er på, kender hendes FAQ og hendes lektioner til og med
 i dag, og bruger for første gang Linns egne tidligere svar. Dertil en ny
 admin-side, Ingrediensernes tal, hvor Linn kan rette en fødevares næringstal
@@ -562,7 +563,8 @@ gang et sted at være.
 ### NÆSTE SKRIDT
 
 Opdateret 1. september. **Intet af det nedenstående flyttede sig den 1.
-september**, for dagen gik med admin-værktøj og med Linn AI. Se 9.61.
+september**, for dagen gik med admin-værktøj, med Linn AI og med at lave
+hele admin om. Se 9.61 og 9.62.
 
 **Det der spærrer for at flytte et hold har ikke flyttet sig siden 22. august,
 og det er stadig indhold og tildelinger fra Linn, ikke kode.**
@@ -4434,6 +4436,133 @@ der står øverst under NÆSTE SKRIDT.
 
 **Flaget sættes pr person under Testere i den gamle admin.** Linn kan selv,
 det kræver ikke et script.
+
+---
+
+### 9.62 DEN 1. SEPTEMBER, SENT: HELE ADMIN LAVET OM
+
+Samme dag som 9.61, men efter. **Admin er gået fra to forsider og 34
+spredte sider til ét sted med 27 skærme i samme udseende.** Ingen
+kundeflade er rørt.
+
+#### Hvorfor, og hvad Linn valgte
+
+Der lå **to admin-forsider**, én pr app, og man skulle vide om et værktøj
+hørte til den gamle eller den nye app for at finde det. Med 34 sider er
+det ikke til at holde ud.
+
+Linn pegede på Teslas skærme i bilerne. Tegningen ligger i
+`mockups-admin.html`. Hun fik fire spørgsmål og svarede:
+
+- **Én samlet admin**, ikke to
+- **Lyst i hendes egne farver**, ikke mørkt. Så det vi tog med fra Tesla
+  er ikke paletten, men måden at tænke på
+- **Status først, menu under**
+- **Kunder og beskeder øverst**, det er dem hun bruger mest
+
+**Menuen skiftede side to gange samme dag.** Først venstre, så højre efter
+hendes ønske, så venstre igen. Den ligger til venstre nu. Skriv den ikke
+om uden at spørge.
+
+#### Det der er bygget
+
+| | |
+|---|---|
+| `content/adminForside3.ts` | Alle værktøjer, status-reglerne og søgningen. 25 tests |
+| `routes/ny/admin/+page.svelte` | Forsiden |
+| `routes/ny/admin/+layout.svelte` | Rammen om alle nye admin-sider |
+| `routes/app/admin/+layout.svelte` | Den samme ramme om de 19 gamle |
+| `lib/components/admin/` | Seks byggeklodser |
+
+**NÅR DER KOMMER EN NY ADMIN-SIDE, SKAL DEN IND I `VAERKTOEJER`.** Ellers
+findes den kun for den der kender adressen, og sådan er det gået med
+challenges, opskrift-billeder og scannede varer, der alle lå uden
+menupunkt i uger. Der er test på at listen dækker begge apper.
+
+#### De fire tal på forsiden
+
+Ubesvarede spørgsmål, hold uden træning, ingredienser uden kobling og
+opskrifter der mangler godkendelse. Linns valg, og feltet er lavet til at
+vokse: der skal kun lægges en række til for at hænge et femte tal op.
+
+Tre ting der er dyre at genopdage:
+
+- **Tallene hentes EFTER siden er tegnet, og hver for sig.** Går én galt,
+  står det ene tal med en streg og resten virker. Et forsøg på at hente
+  noget i en skal gav en blank app 11. august
+- **`null` betyder "hentes stadig" og bliver ALDRIG til nul.** Nul betyder
+  at der ikke er noget at se til, og det er en anden besked
+- **Kun det kort der venter på hende er i plomme.** Er alt i orden, er
+  intet fremhævet. Det er hele grunden til at fremhævelsen betyder noget
+
+Og en detalje: **fødevarerne hentes IKKE** for at tælle manglende
+koblinger. Det kan ses uden dem, og de 2.268 rækker hører ikke hjemme på
+en forside der skal åbne hurtigt.
+
+#### Byggeklodserne
+
+Seks stykker: side, kort, knap, mærkat, søgefelt og **sidste udvej**.
+Uden dem ville de samme designbeslutninger blive truffet nitten gange, og
+så kommer siderne til at ligne hinanden næsten men ikke helt.
+
+**`AdmTom` er den vigtigste og skal på hver eneste side.** En kæde af
+tilfælde uden noget der altid tegnes giver en blank side, og det er sket
+to gange på to dage i august.
+
+**Klodserne virker i BEGGE apper.** Farverne skrives som
+`var(--paper, #fbf8f2)`: på `/ny` findes tokenet i `ny.css`, og alle andre
+steder falder den tilbage på samme værdi.
+
+#### TO MÅDER AT FLYTTE EN SIDE PÅ, og hvornår hver bruges
+
+Det her er den vigtigste lære fra dagen.
+
+**1. Skrevet om med byggeklodser.** Brugt på de sider hvor skærmen var
+værd at forbedre: Spørgsmål, AI-vurderinger, Opskrift-vurderinger,
+Refleksioner, Fællesskabs-fødevarer, Lektioner og Små skridt til
+abonnenter, Mine programmer, Øvelsesbanken, Træning til abonnenter,
+Testere, Nulstil adgangskode, Funktioner og adgang, Videnbasen,
+Abonnenter, Forløb-listen og Opskrifter.
+
+**Logikken er flyttet, ALDRIG skrevet om.** Hver side kalder præcis de
+samme funktioner som den den afløser. To sider der gemmer forskelligt er
+kundedata der driver fra hinanden.
+
+**2. Kopieret ordret med en farvebro.** Brugt på Dashboard og de ni
+forløbs-sider, i alt godt 9.000 linjer. Script, markup og stil er kopieret
+uændret, og udseendet skifter ved at de gamle farve-navne peger på de nye
+værdier inde i `.page`.
+
+**Hvorfor:** Dashboard rummer 897 linjer tal og tabeller om kundernes
+udvikling. En forkert overskrift på et tal DER er værre end at siden ser
+gammel ud. Det samme gælder forløbets otte undersider. **Brug den metode
+igen på store sider hvor markup bærer betydning.**
+
+**Alle interne veje i de kopierede sider peger nu på den nye admin.** Uden
+det falder man tilbage i det gamle udseende så snart man åbner en lektion.
+
+#### Det Linn skal vide
+
+**De gamle sider er urørte, alle nitten.** De fem der rører adgang, altså
+Spørgsmål, Testere, Nulstil adgangskode, Funktioner og adgang og
+Abonnenter, har deres gamle udgave stående i menuen under System som vej
+tilbage. **Fjern dem når Linn har brugt de nye i en uge.**
+
+**Ingen af de nye sider er set af et menneske endnu.** De bygger, typerne
+holder og alle tests er grønne, men admin kan ikke logges ind udefra.
+
+#### Rettet undervejs: "ingen forløb" er ikke "vi ved det ikke"
+
+`hentForlobViden` gav `null` i to helt forskellige tilfælde: når kunden
+ikke er på et aktivt forløb, og når hentningen fejlede. Blandet sammen
+betød det at **et fejlet opslag fik AI'en at vide at kunden IKKE er på et
+forløb**, og så ville den svare en forløbskunde som om hun var almindeligt
+medlem. En forkert oplysning er værre end en manglende. Rettet med `TOMT`
+mod `null`, og der er test på begge.
+
+#### Det der IKKE er lavet om
+
+Ingenting i admin. Alle 27 skærme står i det nye udseende.
 
 ---
 
