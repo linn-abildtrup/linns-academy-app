@@ -14,8 +14,6 @@ import { env } from '$env/dynamic/private';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
 import { MAX_QUERIES_PR_DAG, quotaNoegle } from '$lib/content/linnAi';
-import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
-import type { UserDoc } from '$lib/types';
 
 const MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS = 4096;
@@ -116,13 +114,16 @@ export const POST: RequestHandler = async ({ request }) => {
 		if (estStr > MAX_IMAGE_BYTES) throw error(413, 'Et billede er for stort (max 5 MB)');
 	}
 
-	// Premium-adgang. harPremium håndterer udlobet/bonus-periode korrekt.
-	const userDoc = (await hentDoc(`users/${uid}`)) as UserDoc | null;
-	const matrix = (await hentDoc('featureAdgang/aktiv')) as FeatureMatrix | null;
-	const erPremium =
-		harFeatureAdgang(userDoc, matrix, 'ai-opskrift') || userDoc?.adminKlientMode === 'premiumapp';
-	if (!erPremium) throw error(403, 'Funktionen kræver premium-adgang');
-
+	// LAASEN ER FJERNET 1. september 2026. Linns beslutning: alle kunder
+	// skal kunne tage et billede af en opskrift, ikke kun premium-app og
+	// Kropsro. Den daglige pulje nedenfor er tilbage, saa det stadig ikke
+	// kan loebe loebsk, og den deles med Linn AI og med det gaet paa en
+	// skreven opskrift der kom samme dag.
+	//
+	// BEMAERK AT DET KOSTER. Hvert billede er et kald til modellen, og det
+	// er nu aabent for alle 925 kunder i stedet for de faa. Skal det
+	// begraenses igen, er featureAdgang-skemaet stadig stedet, og
+	// 'ai-opskrift' findes stadig som noegle.
 	// Rate-limit (deler kvota med Linn AI)
 	const noegle = quotaNoegle();
 	const quotaPath = `users/${uid}/linnAiQuotaer/${noegle}`;

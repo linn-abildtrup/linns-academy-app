@@ -2,8 +2,6 @@
 	import { getContext } from 'svelte';
 	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
-	import type { UserDoc } from '$lib/types';
-	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 	import { storage } from '$lib/firebase';
 	import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 	import { opretMinOpskrift } from '$lib/firestore/minOpskrift';
@@ -19,18 +17,19 @@
 	import Loading from '$lib/components/Loading.svelte';
 
 	const getUser = getContext<() => User | null>('user');
-	const getUserDoc = getContext<() => UserDoc | null>('userDoc');
-	const getFeatureMatrix = getContext<() => FeatureMatrix | null>('featureMatrix');
 	const user = $derived(getUser());
-	const userDoc = $derived(getUserDoc());
-	// AI-opskriftsanalyse styres af feature-skemaet (koblet 11/6).
-	const harAdgang = $derived(
-		harFeatureAdgang(userDoc, getFeatureMatrix?.() ?? null, 'ai-opskrift')
-	);
+	// LAASEN ER FJERNET 1. september 2026. Linns beslutning: ALLE kunder
+	// skal kunne skrive en opskrift selv OG tage et billede af en. Foer den
+	// dag var hele siden lukket for alle andre end premium-app og Kropsro,
+	// og den laas sad om AI-laesningen.
+	//
+	// Den daglige pulje er stadig der, saa det ikke kan loebe loebsk: baade
+	// billed-laesningen og gaettet paa en skreven opskrift traekker paa de
+	// samme 20 om dagen pr kunde.
 
 	const MAX_BILLEDER = 3;
 
-	type Tilstand = 'vaelg' | 'analyserer' | 'redigerer' | 'gemmer' | 'fejl';
+	type Tilstand = 'vaelg' | 'analyserer' | 'estimerer' | 'redigerer' | 'gemmer' | 'fejl';
 	let tilstand = $state<Tilstand>('vaelg');
 	let fejlBesked = $state<string | null>(null);
 	let infoBesked = $state<string | null>(null);
@@ -42,6 +41,13 @@
 	let antalPortioner = $state(4);
 	let ingredienser = $state<MinOpskriftIngrediens[]>([]);
 	let makro = $state<MinOpskriftMakro>({ ...DEFAULT_MAKRO });
+	/** Fremgangsmaaden. Linns oenske 1. september. Kommer ikke fra et billede. */
+	let fremgangsmaade = $state('');
+	/** Sand naar hun skriver opskriften selv i stedet for at fotografere den. */
+	let manuel = $state(false);
+	/** Sat naar hun har svaret paa om appen skal gaette tallene. */
+	let harSvaretPaaGaet = $state(false);
+	let estimatFejl = $state<string | null>(null);
 
 	// Snapshot af AI-analyserens originale forslag — bruges af effekten
 	// nedenfor til at omberegne makro-pr-portion saa total-makroen bevares
@@ -94,6 +100,73 @@
 		if (url) URL.revokeObjectURL(url);
 		billedeFiler = billedeFiler.filter((_, i) => i !== index);
 		billedePreviews = billedePreviews.filter((_, i) => i !== index);
+	}
+
+	/**
+	 * Skriv opskriften selv. Aabner PRAECIS det samme skema som efter en
+	 * billed-analyse, bare tomt. Der bygges ingen ny skaerm: skemaet fandtes
+	 * allerede, der var bare ingen doer ind til det.
+	 */
+	function skrivSelv() {
+		manuel = true;
+		harSvaretPaaGaet = false;
+		estimatFejl = null;
+		navn = '';
+		antalPortioner = 4;
+		ingredienser = [
+			{ navn: '', maengde: 0, enhed: 'g' },
+			{ navn: '', maengde: 0, enhed: 'g' }
+		];
+		makro = { ...DEFAULT_MAKRO };
+		fremgangsmaade = '';
+		// Nul betyder "AI har ikke regnet paa det", saa omregningen ved
+		// portions-skift holder sig vaek. Hun skriver selv tallene pr portion.
+		originalAntalPortioner = 0;
+		tilstand = 'redigerer';
+	}
+
+	/**
+	 * Lad appen gaette naeringstallene ud fra det hun har skrevet.
+	 *
+	 * DEN GAETTER, og det staar paa skaermen. Tallene kommer ikke fra en
+	 * database, de er et skoen ud fra ingrediensernes navne og maengder, og
+	 * hun kan rette dem alle sammen bagefter.
+	 */
+	async function estimerFraTekst() {
+		const brugbare = ingredienser.filter((i) => i.navn.trim());
+		if (brugbare.length === 0) {
+			estimatFejl = 'Skriv mindst én ingrediens først.';
+			return;
+		}
+		tilstand = 'estimerer';
+		estimatFejl = null;
+		try {
+			const idToken = await user?.getIdToken();
+			const res = await fetch('/api/estimer-opskrift', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+				body: JSON.stringify({ navn, antalPortioner, ingredienser: brugbare })
+			});
+			if (!res.ok) throw new Error(await res.text());
+			const data = (await res.json()) as {
+				makroPrPortion?: MinOpskriftMakro;
+				error?: string;
+			};
+			if (data.error || !data.makroPrPortion) {
+				estimatFejl = data.error ?? 'Der var ikke nok at regne på.';
+			} else {
+				makro = data.makroPrPortion;
+				// Saa omregningen ved portions-skift virker herfra.
+				originalMakro = { ...data.makroPrPortion };
+				originalAntalPortioner = antalPortioner;
+			}
+		} catch (e) {
+			console.error(e);
+			estimatFejl = 'Kunne ikke regne på opskriften. Skriv tallene selv, eller prøv igen.';
+		} finally {
+			harSvaretPaaGaet = true;
+			tilstand = 'redigerer';
+		}
 	}
 
 	async function analyserOpskrift() {
@@ -150,25 +223,42 @@
 
 	async function gem() {
 		const u = user;
-		if (!u || billedeFiler.length === 0) return;
+		if (!u) return;
+
+		// PROTEIN OG FIBER ER TVUNGNE. Linns beslutning 1. september. En
+		// opskrift uden dem laegger NUL i hendes dag hver eneste gang hun
+		// bruger den, og det ser rigtigt ud. I et modul der hedder 30-30 og
+		// handler om praecis de to tal er det den vaerst taenkelige fejl.
+		if (!(Number(makro.protein) > 0) || !(Number(makro.fiber) > 0)) {
+			fejlBesked = 'Protein og fiber skal udfyldes. Uden dem tæller retten nul i din dag.';
+			return;
+		}
+
 		tilstand = 'gemmer';
 		fejlBesked = null;
 		try {
-			// Vi gemmer kun det første billede som thumbnail. AI har allerede
-			// udvundet alle data fra de øvrige, så de behøver ikke gemmes.
-			const thumbnail = await komprimerBillede(billedeFiler[0]);
-			const billedeId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-			const sti = `users/${u.uid}/opskrift-billeder/${billedeId}`;
-			const billedeRef = ref(storage, sti);
-			await uploadBytes(billedeRef, thumbnail, { contentType: thumbnail.type });
-			const billedeUrl = await getDownloadURL(billedeRef);
+			// BILLEDET ER VALGFRIT nu. Skriver hun opskriften selv, er der
+			// ingen, og saa faar retten et bogstav i listen. Foer den 1.
+			// september gemte siden slet ikke uden et billede.
+			let billedeUrl: string | undefined;
+			if (billedeFiler.length > 0) {
+				// Vi gemmer kun det første billede som thumbnail. AI har allerede
+				// udvundet alle data fra de øvrige, så de behøver ikke gemmes.
+				const thumbnail = await komprimerBillede(billedeFiler[0]);
+				const billedeId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+				const sti = `users/${u.uid}/opskrift-billeder/${billedeId}`;
+				const billedeRef = ref(storage, sti);
+				await uploadBytes(billedeRef, thumbnail, { contentType: thumbnail.type });
+				billedeUrl = await getDownloadURL(billedeRef);
+			}
 
 			await opretMinOpskrift(u.uid, {
 				navn: navn.trim() || 'Min opskrift',
 				billedeUrl,
 				antalPortioner: Math.max(1, antalPortioner),
 				ingredienser: ingredienser.filter((i) => i.navn.trim()),
-				makroPrPortion: makro
+				makroPrPortion: makro,
+				fremgangsmaade: fremgangsmaade.trim() || undefined
 			});
 			goto('/app/moduler/30-30-3?tab=mine');
 		} catch (e) {
@@ -193,12 +283,10 @@
 			<span>Tilbage</span>
 		</a>
 		<div class="eyebrow">Min opskrift</div>
-		<h1>Tilføj fra billede</h1>
+		<h1>Tilføj en opskrift</h1>
 	</header>
 
-	{#if !harAdgang}
-		<div class="status-besked">Denne funktion er kun tilgængelig for premium-app og Kropsro.</div>
-	{:else if tilstand === 'vaelg'}
+	{#if tilstand === 'vaelg'}
 		<div class="vaelg-card">
 			<p class="hint">
 				Tag et billede af en opskrift, upload fra galleri, eller paste en screenshot. AI'en læser
@@ -254,6 +342,26 @@
 					Analysér {billedeFiler.length === 1 ? 'opskrift' : `${billedeFiler.length} billeder`}
 				</button>
 			{/if}
+
+			<!-- Den anden vej ind. Billedet staar oeverst, for det er den
+			     hurtigste naar hun har en kogebog foran sig, og den nye
+			     mulighed skal laegge sig ved siden af og ikke skubbe noget
+			     vaek. Knappen har kant og er ikke fyldt, saa det kan ses at
+			     det er en ANDEN vej og ikke en tredje maade at vaelge et
+			     billede paa. -->
+			<div class="eller"><span>eller</span></div>
+			<button class="skriv-selv-knap" type="button" onclick={skrivSelv}>
+				Skriv opskriften selv
+			</button>
+			<p class="hint" style="margin-top: 9px">
+				Har du den på papir eller i hovedet, kan du skrive den ind. Bagefter kan du vælge om appen
+				skal gætte næringstallene, eller om du selv vil skrive dem.
+			</p>
+		</div>
+	{:else if tilstand === 'estimerer'}
+		<div class="analyse-card">
+			<Loading tekst="Regner på opskriften..." />
+			<p class="hint center">Det tager typisk 5-15 sekunder.</p>
 		</div>
 	{:else if tilstand === 'analyserer'}
 		<div class="analyse-card">
@@ -295,10 +403,48 @@
 			</label>
 		</section>
 
+		{#if manuel && !harSvaretPaaGaet}
+			<!-- Linns oenske 1. september: hun skal SPOERGES, ikke faa et
+			     gaet hun ikke har bedt om. Spoergsmaalet staar efter
+			     ingredienserne i loebet, men over tallene, saa hun har noget
+			     at regne paa naar hun svarer. -->
+			<section class="card gaet-kort">
+				<div class="section-label">Næringstallene</div>
+				<p class="hint">
+					Skal appen prøve at gætte dem ud fra dine ingredienser, eller vil du selv skrive dem?
+					Den gætter ud fra navne og mængder, så tallene er et skøn. Du kan rette dem bagefter.
+				</p>
+				<button class="analyser-knap" type="button" onclick={estimerFraTekst}>
+					Lad appen gætte tallene
+				</button>
+				<button
+					class="annuller-btn"
+					type="button"
+					style="margin-top: 8px"
+					onclick={() => (harSvaretPaaGaet = true)}
+				>
+					Jeg skriver dem selv
+				</button>
+			</section>
+		{/if}
+
 		<section class="card">
 			<div class="card-head">
 				<div class="section-label">Makro pr portion</div>
 			</div>
+			{#if manuel}
+				<!-- DEN VIGTIGSTE LINJE PAA SKAERMEN. Skriver hun hele rettens
+				     tal paa en ret til fire, bliver hendes dag talt fire gange
+				     for hoejt hver eneste gang hun bruger opskriften. Det er den
+				     samme fejl der laa tre steder i to apper i august, se
+				     SPEC 26.9. -->
+				<div class="pr-portion-baand">
+					Tallene er <b>pr portion</b> og ikke for hele retten.
+				</div>
+			{/if}
+			{#if estimatFejl}
+				<div class="status-besked fejl" style="margin-bottom: 10px">{estimatFejl}</div>
+			{/if}
 			<div class="makro-grid">
 				<label class="makro-felt">
 					<span>Protein (g)</span>
@@ -348,6 +494,21 @@
 			</button>
 		</section>
 
+		<!-- Fremgangsmaaden. Linns oenske 1. september. Den kommer ALDRIG fra
+		     et billede, ogsaa naar opskriften er laest af AI'en: den gemmer
+		     kun ingredienser og tal. Feltet staar derfor begge veje. -->
+		<section class="card">
+			<div class="card-head">
+				<div class="section-label">Sådan laver du den</div>
+			</div>
+			<textarea
+				class="fremgang-felt"
+				rows="7"
+				placeholder="Skriv fremgangsmåden her, hvis du vil kunne slå den op senere"
+				bind:value={fremgangsmaade}
+			></textarea>
+		</section>
+
 		{#if fejlBesked}
 			<div class="status-besked fejl">{fejlBesked}</div>
 		{/if}
@@ -383,6 +544,70 @@
 </div>
 
 <style>
+	/* Den anden vej ind, tilfoejet 1. september 2026. */
+	.eller {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin: 16px 0 12px;
+		color: var(--text3);
+		font-size: calc(11.5px * var(--fs-scale, 1));
+	}
+
+	.eller::before,
+	.eller::after {
+		content: '';
+		flex: 1;
+		height: 1px;
+		background: var(--border);
+	}
+
+	/* Kant og ikke fyldt, saa det kan ses at det er en ANDEN vej og ikke en
+	   tredje maade at vaelge et billede paa. Baggrunden staar eksplicit. */
+	.skriv-selv-knap {
+		display: block;
+		width: 100%;
+		padding: 13px;
+		background: var(--white);
+		border: 1.5px solid var(--terra);
+		border-radius: 12px;
+		color: var(--terra);
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.gaet-kort {
+		background: var(--gdim);
+	}
+
+	/* Den vigtigste linje paa skaermen. Se noten i markup. */
+	.pr-portion-baand {
+		margin-bottom: 12px;
+		padding: 11px 13px;
+		background: var(--gdim);
+		border-radius: 11px;
+		color: #8a6a3a;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		line-height: 1.45;
+	}
+
+	.fremgang-felt {
+		display: block;
+		width: 100%;
+		padding: 12px 13px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 11px;
+		color: var(--text);
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		line-height: 1.55;
+		box-sizing: border-box;
+		resize: vertical;
+	}
+
 	.page {
 		padding: 18px 18px 100px;
 		max-width: 520px;

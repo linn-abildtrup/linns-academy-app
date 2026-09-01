@@ -28,6 +28,16 @@ export interface MinOpskrift {
 	antalPortioner: number;
 	ingredienser: MinOpskriftIngrediens[];
 	makroPrPortion: MinOpskriftMakro;
+	/**
+	 * Saadan laver hun retten. Tilfoejet 1. september 2026 efter Linns
+	 * oenske, da kunden fik lov at skrive en opskrift selv.
+	 *
+	 * VALGFRI OG ADDITIV. De opskrifter der allerede ligger har den ikke,
+	 * og en opskrift laest af AI'en fra et billede faar den heller ikke:
+	 * analysen gemmer kun ingredienser og tal. Feltet er derfor tomt paa
+	 * langt de fleste, og en skaerm der viser det skal taale det.
+	 */
+	fremgangsmaade?: string;
 	oprettet: Timestamp;
 	opdateret?: Timestamp;
 }
