@@ -20,6 +20,23 @@
 		sletOpskrift
 	} from '$lib/firestore/opskrifter';
 	import { byggMakroLinje, skrivMakroLinje, tidenILinjen } from '$lib/content/makroLinje';
+	// Regnemaskinen fra august. Rene funktioner der KUN laeser, se
+	// opskriftMakro3.ts. Den skriver aldrig i opskrifterne, og den bruges her
+	// praecis som paa admin-siden i 3.0, saa de to aldrig kan sige forskellige
+	// ting om den samme ret.
+	import {
+		afrund,
+		afvigelse,
+		regnOpskrift,
+		tilliden,
+		type IngrediensLinje,
+		type KoblingsOpslag,
+		type OpskriftBeregning
+	} from '$lib/content/opskriftMakro3';
+	import { listenErSkrevetTil } from '$lib/content/opskriftPortion3';
+	import { hentAlleFodevarer } from '$lib/firestore/kost';
+	import { hentKoblinger } from '$lib/firestore/ingrediensKobling3';
+	import type { Fodevare } from '$lib/content/kost';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const opskriftId = $derived(page.params.id ?? '');
@@ -90,6 +107,102 @@
 	let gemmerGodkendt = $state(false);
 	let godkendFejl = $state<string | null>(null);
 
+	// ============================================================
+	// Naeringstal pr ingrediens.
+	//
+	// Regnes paa de felter der staar paa skaermen lige nu, og ikke paa det
+	// der ligger i databasen. Retter du en maengde, foelger tallene med med
+	// det samme. Der SKRIVES ingenting: makro-felterne ovenfor er dine, og
+	// Linns regel er at intet regnes om automatisk.
+	//
+	// Foedevarerne hentes med den GAMLE apps egen indgang, saa den her side
+	// ikke faar sin egen kopi af 2.268 raekker ved siden af den appen har i
+	// forvejen. Kun selve regnestykket kommer fra 3.0's filer, og de laeser
+	// kun.
+	// ============================================================
+	let varer = $state<Map<string, Fodevare> | null>(null);
+	let koblinger = $state<Record<string, KoblingsOpslag> | null>(null);
+	let henterTal = $state(true);
+	let talFejl = $state<string | null>(null);
+
+	async function hentGrundlag() {
+		henterTal = true;
+		talFejl = null;
+		try {
+			const [liste, kort] = await Promise.all([hentAlleFodevarer(), hentKoblinger()]);
+			const enkel: Record<string, KoblingsOpslag> = {};
+			for (const [k, v] of Object.entries(kort)) {
+				enkel[k] = { foodId: v.foodId, egenVare: v.egenVare };
+			}
+			varer = new Map(liste.map((v) => [v.id, v]));
+			koblinger = enkel;
+		} catch (e) {
+			console.error(e);
+			talFejl = 'Kunne ikke hente næringsdata. Resten af siden virker.';
+		} finally {
+			henterTal = false;
+		}
+	}
+
+	const beregning = $derived.by<OpskriftBeregning | null>(() => {
+		if (!varer || !koblinger) return null;
+		return regnOpskrift(
+			{
+				id: opskriftId,
+				titel: formTitel,
+				ingredienser: formIngredienser,
+				defaultPortioner: formDefaultPortioner
+			},
+			koblinger,
+			varer
+		);
+	});
+
+	/** Linjerne i samme raekkefoelge som felterne, saa de kan staa side om side. */
+	const linjer = $derived<IngrediensLinje[]>(beregning?.linjer ?? []);
+
+	const ialt = $derived(beregning ? afrund(beregning.ialt) : null);
+	const prPortion = $derived(beregning ? afrund(beregning.prPortion) : null);
+
+	// Listen er skrevet til det antal portioner der staar i feltet. Er det 1,
+	// er hele retten og én portion det samme tal, og saa er der ingen grund
+	// til at skrive det to gange.
+	const flerePortioner = $derived(listenErSkrevetTil(formDefaultPortioner) > 1);
+
+	/**
+	 * Hvor langt det beregnede ligger fra det du selv har skrevet.
+	 * Sammenlignes altid PR PORTION, for det er det makro-felterne er.
+	 */
+	const afvig = $derived.by(() => {
+		if (!prPortion) return null;
+		return {
+			protein: afvigelse(prPortion.protein, formProtein),
+			fiber: afvigelse(prPortion.fiber, formFiber),
+			kh: afvigelse(prPortion.kh, formKh),
+			fedt: afvigelse(prPortion.fedt, formFedt),
+			kalorier: afvigelse(prPortion.kalorier, formKalorier)
+		};
+	});
+
+	function etTal(x: number): string {
+		return (Math.round(x * 10) / 10).toString().replace('.', ',');
+	}
+
+	function afvigTekst(pct: number | null): string {
+		if (pct === null) return '';
+		if (pct === 0) return 'passer';
+		return pct > 0 ? `${pct} % mere` : `${Math.abs(pct)} % mindre`;
+	}
+
+	/** Teksten paa en linje der ikke kunne regnes. Aldrig et stille nul. */
+	function mangelTekst(l: IngrediensLinje): string {
+		if (l.uden_betydning) return 'Tæller ikke med';
+		if (l.mangel === 'ingen kobling') return 'Ingen kobling, tælles ikke med';
+		if (l.mangel === 'varen findes ikke') return 'Varen findes ikke længere';
+		if (l.mangel === 'varen mangler tal') return 'Varen mangler kalorietal';
+		return '';
+	}
+
 	async function toggleGodkendt() {
 		if (gemmerGodkendt) return;
 		gemmerGodkendt = true;
@@ -138,6 +251,10 @@
 		} finally {
 			loading = false;
 		}
+		// Hentes FOR SIG, efter opskriften. De 2.268 foedevarer tager tid, og
+		// redigeringen maa ikke vente paa dem. Gaar det galt, staar der en
+		// linje om det og resten af siden virker som foer.
+		hentGrundlag();
 	});
 
 	function toggleKategori(k: OpskriftKategori) {
@@ -380,11 +497,94 @@
 							aria-label="Fjern">×</button
 						>
 					</div>
+
+					{#if henterTal}
+						<div class="ing-tal henter">Henter næringsdata...</div>
+					{:else if linjer[i]}
+						{@const l = linjer[i]}
+						{#if l.vare && !l.uden_betydning}
+							<div class="ing-tal">
+								<span class="ing-tal-vare">{l.vare.name}</span>
+								<span class="ing-tal-gram">{etTal(l.gram)} g</span>
+								<span class="ing-tal-makro">
+									Protein {etTal(l.makro.protein)} g · Fiber {etTal(l.makro.fiber)} g · Kulhydrat
+									{etTal(l.makro.kh)} g · Fedt {etTal(l.makro.fedt)} g · {etTal(l.makro.kalorier)} kcal
+								</span>
+								{#if l.mangel === 'varen mangler tal'}
+									<span class="ing-tal-mangel">Varen mangler kalorietal</span>
+								{/if}
+								{#if l.vaegtSikkerhed !== 'tabel'}
+									<span class="ing-tal-usikker">Vægten er et skøn</span>
+								{/if}
+							</div>
+						{:else}
+							<div class="ing-tal tom">{mangelTekst(l)}</div>
+						{/if}
+					{/if}
 				</div>
 			{/each}
 			<button class="ghost-knap" type="button" onclick={tilfoejIngrediens} disabled={gemmer}>
 				+ Tilføj ingrediens
 			</button>
+
+			{#if talFejl}
+				<div class="tal-fejl">{talFejl}</div>
+			{:else if beregning && ialt && prPortion}
+				<div class="sum-boks">
+					<div class="sum-titel">Regnet af ingredienserne</div>
+
+					<div class="sum-rad">
+						<span class="sum-navn">{flerePortioner ? 'Hele retten' : 'I alt'}</span>
+						<span class="sum-tal">
+							Protein {etTal(ialt.protein)} g · Fiber {etTal(ialt.fiber)} g · Kulhydrat
+							{etTal(ialt.kh)} g · Fedt {etTal(ialt.fedt)} g · {etTal(ialt.kalorier)} kcal
+						</span>
+					</div>
+
+					{#if flerePortioner}
+						<div class="sum-rad">
+							<span class="sum-navn">Pr portion</span>
+							<span class="sum-tal">
+								Protein {etTal(prPortion.protein)} g · Fiber {etTal(prPortion.fiber)} g · Kulhydrat
+								{etTal(prPortion.kh)} g · Fedt {etTal(prPortion.fedt)} g · {etTal(prPortion.kalorier)}
+								kcal
+							</span>
+						</div>
+						<p class="sum-hint">
+							Ingredienslisten er skrevet til {listenErSkrevetTil(formDefaultPortioner)} portioner.
+							Dine makro-felter nedenfor er PR PORTION, så det er den nederste række der skal
+							sammenlignes.
+						</p>
+					{/if}
+
+					<div class="daekning" class:advarsel={tilliden(beregning.daekning) !== 'god'}>
+						Der er gjort rede for {Math.round(beregning.daekning)} % af rettens vægt.
+						{#if beregning.antalMangler > 0}
+							{beregning.antalMangler} ingrediens{beregning.antalMangler === 1 ? '' : 'er'} mangler en
+							kobling og tæller ikke med, så tallene er for lave.
+						{/if}
+						{#if !beregning.kalorierPaalidelige}
+							En eller flere varer mangler kalorietal, så kalorier, kulhydrat og fedt kan ikke bruges.
+							Protein og fiber er stadig rigtige.
+						{/if}
+					</div>
+
+					{#if afvig}
+						<div class="sum-titel andet">Mod det du selv har skrevet</div>
+						<div class="afvig-liste">
+							<span>Protein: {afvigTekst(afvig.protein) || 'intet tal skrevet'}</span>
+							<span>Fiber: {afvigTekst(afvig.fiber) || 'intet tal skrevet'}</span>
+							<span>Kulhydrat: {afvigTekst(afvig.kh) || 'intet tal skrevet'}</span>
+							<span>Fedt: {afvigTekst(afvig.fedt) || 'intet tal skrevet'}</span>
+							<span>Kalorier: {afvigTekst(afvig.kalorier) || 'intet tal skrevet'}</span>
+						</div>
+						<p class="sum-hint">
+							En forskel er ikke i sig selv en fejl. De skrevne tal er runde måltal, og retterne
+							indeholder som regel lidt mere end der står. Der bliver ikke ændret noget automatisk.
+						</p>
+					{/if}
+				</div>
+			{/if}
 		</section>
 
 		<section class="card">
@@ -817,6 +1017,124 @@
 
 	.slet-omraade {
 		margin-top: 24px;
+	}
+
+	.ing-tal {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 4px 8px;
+		margin-top: 4px;
+		padding: 6px 8px;
+		background: var(--bg2);
+		border-radius: 8px;
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.4;
+	}
+
+	.ing-tal.tom,
+	.ing-tal.henter {
+		color: var(--text3);
+		font-style: italic;
+	}
+
+	.ing-tal-vare {
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.ing-tal-gram {
+		color: var(--text3);
+	}
+
+	.ing-tal-makro {
+		flex-basis: 100%;
+	}
+
+	/* En manglende oplysning skal SES. Et stille nul er den fejl hvor en ret
+	   ser ud til at have mindre protein end den har. */
+	.ing-tal-mangel {
+		color: #8a4a3e;
+		font-weight: 600;
+	}
+
+	.ing-tal-usikker {
+		color: var(--text3);
+	}
+
+	.sum-boks {
+		margin-top: 14px;
+		padding: 12px 14px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+	}
+
+	.sum-titel {
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin-bottom: 8px;
+	}
+
+	.sum-titel.andet {
+		margin-top: 12px;
+		padding-top: 12px;
+		border-top: 1px solid var(--border);
+	}
+
+	.sum-rad {
+		margin-bottom: 6px;
+	}
+
+	.sum-navn {
+		display: block;
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.sum-tal {
+		display: block;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.45;
+	}
+
+	.sum-hint {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text3);
+		line-height: 1.45;
+		margin: 6px 0 0;
+	}
+
+	.daekning {
+		margin-top: 8px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.45;
+	}
+
+	.daekning.advarsel {
+		color: #8a4a3e;
+		font-weight: 600;
+	}
+
+	.afvig-liste {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text2);
+	}
+
+	.tal-fejl {
+		margin-top: 12px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
 	}
 
 	.godkend-omraade {
