@@ -57,6 +57,17 @@
 					icon: 'workout' as const
 				},
 				{
+					id: 'ingrediens-tal',
+					navn: 'Ingrediensernes tal',
+					// Siden ligger i 3.0, og der er kun den ene. To kopier ville
+					// foer eller siden sige forskellige ting om det samme tal.
+					// Linns oenske 1. september 2026: vej ind fra begge apper.
+					beskrivelse: 'Alle ingredienser med næringstal — ét sted at kontrollere dem',
+					rute: '/ny/admin/ingrediens-tal',
+					accent: '#7C4F63',
+					icon: 'book' as const
+				},
+				{
 					id: 'fodevarer',
 					navn: 'Fællesskabs-fødevarer',
 					beskrivelse: 'Se fødevarer scannet af brugere — verificér eller slet',

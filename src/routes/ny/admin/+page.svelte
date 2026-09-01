@@ -72,6 +72,11 @@
 			href: '/ny/admin/ingredienser'
 		},
 		{
+			navn: 'Ingrediensernes tal',
+			under: 'Alle ingredienser med næringstal. Ét sted at kontrollere dem',
+			href: '/ny/admin/ingrediens-tal'
+		},
+		{
 			navn: 'Regnestykket bag en opskrift',
 			under: 'Gå herhen når et makro-tal ser forkert ud',
 			href: '/ny/admin/opskrift-makro'
