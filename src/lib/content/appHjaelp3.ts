@@ -226,6 +226,17 @@ Uden redskaber er altid med og kan ikke slås fra. Du har altid din egen krop.`
 		indhold: `Tryk på Beskeder i bundmenuen. Her snakker du med Linn AI, som svarer ud fra Linns materialer. Samtalen bliver gemt, så du kan rulle tilbage og se hvad I har talt om.`
 	},
 	{
+		titel: 'Når Linn skriver til dig',
+		gaelder: (k) => k.maaSkriveTilLinn,
+		indhold: `Linn kan skrive til dig af sig selv. Så ligger beskeden på fanen Linn, ved siden af Linn AI, og der står "Linn skrev til dig". Du kan svare på den i feltet under beskeden.
+
+Beskeden kan indeholde en lydbesked eller et billede. En lydbesked afspiller du med den runde play-knap. Et billede kan du trykke på, så fylder det hele skærmen, og du lukker det igen med krydset øverst.
+
+Får du en besked på telefonen, står der hvad det er: "Linn har skrevet til dig", "Linn har sendt dig en lydbesked" eller "Linn har sendt dig et billede".
+
+Du kan selv svare med tekst. Du kan ikke sende lyd eller billeder tilbage.`
+	},
+	{
 		titel: 'Send et spørgsmål videre til Linn',
 		gaelder: (k) => k.maaSkriveTilLinn,
 		indhold: `Er du ikke tilfreds med AI'ens svar, står der en linje under svaret hvor du kan sende spørgsmålet videre til Linn selv. Hun ser både dit spørgsmål og det svar du fik.
