@@ -105,7 +105,8 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	{ navn: 'AI-vurderinger', under: 'Hvad kunderne synes om AI ens svar', rute: '/ny/admin/ai-ratings', omraade: 'beskeder' },
 
 	// ── System ────────────────────────────────────────────────
-	{ navn: 'Funktioner og adgang', under: 'Hvem må hvad, pr kundetype', rute: '/app/admin/feature-adgang', omraade: 'system', gammel: true },
+	{ navn: 'Funktioner og adgang', under: 'Hvem må hvad i den gamle app, pr kundetype', rute: '/ny/admin/feature-adgang', omraade: 'system' },
+	{ navn: 'Funktioner og adgang, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/feature-adgang', omraade: 'system', gammel: true },
 	// Den gamle udgave bliver staaende som en vej tilbage, saa laenge den
 	// nye er ny. Fjern den naar Linn har brugt den nye i en uge.
 	{ navn: 'Spørgsmål, gammel udgave', under: 'Den gamle side. Vejen tilbage hvis den nye driller', rute: '/app/admin/spoergsmaal', omraade: 'system', gammel: true }
