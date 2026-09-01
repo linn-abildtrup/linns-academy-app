@@ -1479,7 +1479,12 @@
 		border-radius: 14px;
 		width: 100%;
 		max-width: 640px;
+		/* dvh og ikke kun vh. Mobilbrowsere regner vh ud som om adresselinjen
+		   var vaek, saa arket bliver hoejere end det der kan ses, og saa slaar
+		   overflow aldrig til: der er intet at rulle i. Fundet 1. september.
+		   vh bliver staaende som reserve. */
 		max-height: 90vh;
+		max-height: 90dvh;
 		display: flex;
 		flex-direction: column;
 		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);

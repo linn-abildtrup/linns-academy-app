@@ -285,7 +285,12 @@
 		flex-direction: column;
 		gap: 10px;
 		min-height: 320px;
+		/* dvh og ikke kun vh. Mobilbrowsere regner vh ud som om adresselinjen
+		   var vaek, saa arket bliver hoejere end det der kan ses, og saa slaar
+		   overflow aldrig til: der er intet at rulle i. Fundet 1. september.
+		   vh bliver staaende som reserve. */
 		max-height: 60vh;
+		max-height: 60dvh;
 		overflow-y: auto;
 		padding: 6px 2px;
 	}

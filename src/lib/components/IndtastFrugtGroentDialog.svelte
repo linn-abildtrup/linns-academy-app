@@ -297,7 +297,12 @@
 	.chips-omraade {
 		padding: 0 16px 8px;
 		flex-shrink: 0;
+		/* dvh og ikke kun vh. Mobilbrowsere regner vh ud som om adresselinjen
+		   var vaek, saa arket bliver hoejere end det der kan ses, og saa slaar
+		   overflow aldrig til: der er intet at rulle i. Fundet 1. september.
+		   vh bliver staaende som reserve. */
 		max-height: 30vh;
+		max-height: 30dvh;
 		overflow-y: auto;
 	}
 

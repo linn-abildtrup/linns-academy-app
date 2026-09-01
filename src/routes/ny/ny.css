@@ -12932,7 +12932,11 @@ a.tr-felt:focus-visible {
 /* ── Arket med én oevelse ─────────────────────────────────── */
 
 .oev-ark {
+	/* dvh og ikke kun vh. Den her blev sprunget over da de fire andre ark
+	   blev rettet 11. august, og fundet 1. september da den samme fejl blev
+	   ryddet op i den gamle app. Arket bruges to steder, se 9.31 punkt 8. */
 	max-height: 88vh;
+	max-height: 88dvh;
 }
 
 .oev-scene {
