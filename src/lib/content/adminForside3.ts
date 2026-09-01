@@ -68,7 +68,8 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	{ navn: 'Refleksioner', under: 'Læs svarene på dagens refleksion', rute: '/ny/admin/refleksioner', omraade: 'kunder' },
 
 	// ── Forløb ────────────────────────────────────────────────
-	{ navn: 'Forløb og dage', under: 'Lektioner, små skridt og refleksion pr dag', rute: '/app/admin/forlob', omraade: 'forlob', oftest: true, gammel: true },
+	{ navn: 'Forløb', under: 'Alle hold. Indholdet åbnes inde i det enkelte forløb', rute: '/ny/admin/forlob', omraade: 'forlob', oftest: true },
+	{ navn: 'Forløb, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/forlob', omraade: 'system', gammel: true },
 	{ navn: 'Challenges', under: 'Opret én og giv den til et hold eller til alle', rute: '/ny/admin/challenges', omraade: 'forlob', oftest: true },
 	{ navn: 'Dashboard', under: 'Tallene på forretningen', rute: '/app/admin/dashboard', omraade: 'forlob', gammel: true },
 	{ navn: 'Lektioner til abonnenter', under: 'Én lektion pr dag til dem uden forløb', rute: '/ny/admin/modulbruger-lektioner', omraade: 'forlob' },
