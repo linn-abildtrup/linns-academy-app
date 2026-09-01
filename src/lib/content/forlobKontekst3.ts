@@ -186,8 +186,21 @@ export function vaelgFaq(
  * system-prompten, fordi den skal staa lige ved siden af de tidspunkter
  * den handler om.
  */
-export function byggForlobKontekst(v: ForlobViden, spoergsmaal: string): string {
+export function byggForlobKontekst(
+	v: ForlobViden | null,
+	spoergsmaal: string,
+	iDagHvisUkendt?: string
+): string {
 	const dele: string[] = [];
+
+	// v er null naar hentningen FEJLEDE. Saa siger vi ingenting om forloebet.
+	// At sige "hun er ikke paa et forloeb" ville vaere en forkert oplysning
+	// og ikke en manglende, og AI'en ville svare en forloebskunde som om hun
+	// var almindeligt medlem.
+	if (!v) {
+		const dato = iDagHvisUkendt ?? new Date().toISOString().slice(0, 10);
+		return `I DAG ER DET ${datoTekst(dato)}.\n\n---\n`;
+	}
 
 	dele.push(`I DAG ER DET ${datoTekst(v.iDag)}.`);
 

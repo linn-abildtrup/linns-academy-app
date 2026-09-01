@@ -196,14 +196,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		hentKundeHistorik(uid).catch(() => [])
 	]);
 	const forlobBlok = byggForlobKontekst(
-		{
-			forlobNavn: viden?.forlobNavn ?? '',
-			dagNummer: viden?.dagNummer ?? 0,
-			antalDage: viden?.antalDage ?? 0,
-			iDag: new Date().toISOString().slice(0, 10),
-			faq: viden?.faq ?? [],
-			lektioner: viden?.lektioner ?? []
-		},
+		viden ? { ...viden, iDag: new Date().toISOString().slice(0, 10) } : null,
 		besked
 	);
 	// Hendes egen historik ligger EFTER forloebs-blokken og foer videnbasen,

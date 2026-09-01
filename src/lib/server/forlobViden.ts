@@ -26,6 +26,15 @@ export interface ForlobVidenResultat {
 	lektioner: Lektion[];
 }
 
+/** Hun er ikke paa et aktivt forloeb, og det VED vi. */
+export const TOMT: ForlobVidenResultat = {
+	forlobNavn: '',
+	dagNummer: 0,
+	antalDage: 0,
+	faq: [],
+	lektioner: []
+};
+
 const MS_PER_DAG = 86400000;
 
 /**
@@ -47,7 +56,11 @@ export async function hentForlobViden(
 ): Promise<ForlobVidenResultat | null> {
 	try {
 		const ids = (userDoc as unknown as { forlobIds?: string[] })?.forlobIds ?? [];
-		if (ids.length === 0) return null;
+		// TOM og ikke null. null betyder "vi kunne ikke finde ud af det", og
+		// de to maa ikke blandes sammen: siger vi til AI'en at hun ikke er paa
+		// et forloeb, fordi en hentning fejlede, er det en FORKERT oplysning
+		// og ikke en manglende.
+		if (ids.length === 0) return TOMT;
 
 		const nu = Date.now();
 		let valgt: { id: string; navn: string; start: number; antalDage: number } | null = null;
@@ -66,7 +79,7 @@ export async function hentForlobViden(
 				break;
 			}
 		}
-		if (!valgt) return null;
+		if (!valgt) return TOMT;
 
 		const raat = Math.floor((nu - valgt.start) / MS_PER_DAG) + 1;
 		let dagNummer = Math.min(valgt.antalDage, Math.max(1, raat));

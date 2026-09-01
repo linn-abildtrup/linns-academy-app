@@ -136,6 +136,22 @@ describe('byggForlobKontekst med lektioner', () => {
 	});
 });
 
+describe('byggForlobKontekst naar vi ikke ved noget', () => {
+	it('SIGER IKKE at hun er uden forloeb naar hentningen fejlede', () => {
+		// null betyder "vi kunne ikke finde ud af det". Sagde vi at hun ikke
+		// er paa et forloeb, ville AI en svare en forloebskunde som om hun var
+		// almindeligt medlem. En forkert oplysning er vaerre end en manglende.
+		const t = byggForlobKontekst(null, 'hvornår er der Q&A?', '2026-09-01');
+		expect(t).not.toContain('IKKE PÅ ET FORLØB');
+		expect(t).toContain('tirsdag den 1. september 2026');
+	});
+
+	it('siger DERIMOD tydeligt fra naar vi VED hun ikke har et forloeb', () => {
+		const t = byggForlobKontekst({ ...viden, forlobNavn: '', faq: [] }, 'noget');
+		expect(t).toContain('IKKE PÅ ET FORLØB');
+	});
+});
+
 describe('byggForlobKontekst', () => {
 	const tekst = byggForlobKontekst(viden, 'hvornår er der Q&A?');
 
