@@ -21,6 +21,8 @@ import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentAlleDocs, hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
 import { byggKontekst, byggSystemPrompt, parseSikkerhed, quotaNoegle } from '$lib/content/linnAi';
 import type { VidenbaseDokument } from '$lib/content/linnAi';
+import { byggForlobKontekst, type FaqPunkt } from '$lib/content/forlobKontekst3';
+import { nulDatoer, dagNummerMedNulDage, produktHarNulDage } from '$lib/content/nulDage3';
 import type { UserDoc } from '$lib/types';
 
 const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
@@ -97,7 +99,91 @@ async function spoerg(
  * Bygger persona + videnbase, praecis som Linn AI goer det.
  * `emne` bruges til at vaelge de mest relevante dokumenter fra videnbasen.
  */
-async function byggGrundlag(emne: string): Promise<string> {
+const MS_PER_DAG = 86400000;
+
+/**
+ * Hvad AI'en skal vide om kundens eget forloeb.
+ *
+ * TRE FAELDER I firestoreRest, alle tre fundet 16. august, og alle tre
+ * ligger i den her funktion:
+ *  - hentAlleDocs giver { id, data } og IKKE dokumentet selv
+ *  - et tidsstempel kommer som en ISO-STRENG, ikke som _seconds
+ *  - forloebene staar paa BRUGER-dokumentet som forlobIds. Samlingen
+ *    products er TOM for forloebskunder
+ *
+ * Fejler noget her, svarer AI'en som foer i stedet for slet ikke. Et
+ * manglende forloebs-afsnit er daarligere svar, en fejl er intet svar.
+ */
+async function hentForlobViden(
+	uid: string,
+	userDoc: UserDoc | null
+): Promise<{ forlobNavn: string; dagNummer: number; antalDage: number; faq: FaqPunkt[] } | null> {
+	try {
+		const ids = (userDoc as unknown as { forlobIds?: string[] })?.forlobIds ?? [];
+		if (ids.length === 0) return null;
+
+		const nu = Date.now();
+		let valgt: { id: string; navn: string; start: number; antalDage: number } | null = null;
+
+		for (const id of ids) {
+			const f = (await hentDoc(`forlob/${id}`)) as Record<string, unknown> | null;
+			if (!f) continue;
+			// ISO-streng, ikke _seconds. Se fael­den ovenfor.
+			const start = new Date(String(f.startDato ?? '')).getTime();
+			const antalDage = Number(f.antalDage) || 0;
+			if (!Number.isFinite(start) || start <= 0 || antalDage <= 0) continue;
+			// Det AKTIVE forloeb, altsaa det hun staar midt i lige nu.
+			const slut = start + (antalDage + 1) * MS_PER_DAG;
+			if (nu >= start && nu <= slut) {
+				valgt = { id, navn: String(f.navn ?? id), start, antalDage };
+				break;
+			}
+		}
+		if (!valgt) return null;
+
+		const raat = Math.floor((nu - valgt.start) / MS_PER_DAG) + 1;
+		let dagNummer = Math.min(valgt.antalDage, Math.max(1, raat));
+
+		// Pause. Kun Kropsro kan holde pause, se nulDage3. Uden det ville
+		// AI'en sige et andet dagnummer end resten af appen.
+		if (produktHarNulDage(valgt.id)) {
+			const p = (await hentDoc(`users/${uid}/products/${valgt.id}`)) as Record<
+				string,
+				unknown
+			> | null;
+			const intervaller = (p?.nulDage as { intervaller?: [] } | undefined)?.intervaller ?? [];
+			if (intervaller.length > 0) {
+				dagNummer = dagNummerMedNulDage(raat, valgt.antalDage, nulDatoer(intervaller), nu);
+			}
+		}
+
+		// FAQ hoerer til forloebet, og kategorien staar i sin egen samling.
+		const [punkter, kategorier] = await Promise.all([
+			hentAlleDocs(`forlob/${valgt.id}/faqItems`),
+			hentAlleDocs(`forlob/${valgt.id}/faqKategorier`)
+		]);
+		const katNavn: Record<string, string> = {};
+		for (const k of kategorier) katNavn[k.id] = String(k.data.navn ?? '');
+
+		const faq: FaqPunkt[] = punkter
+			// Kun det UDGIVNE. Et svar Linn stadig arbejder paa maa ikke
+			// komme ud af munden paa AI'en foer hun har udgivet det.
+			.filter((d) => d.data.udgivet === true)
+			.map((d) => ({
+				spoergsmaal: String(d.data.spoergsmaal ?? ''),
+				svar: String(d.data.svar ?? ''),
+				kategori: katNavn[String(d.data.kategoriId ?? '')] || undefined
+			}))
+			.filter((p) => p.spoergsmaal && p.svar);
+
+		return { forlobNavn: valgt.navn, dagNummer, antalDage: valgt.antalDage, faq };
+	} catch (e) {
+		console.warn('[ny-ai] kunne ikke hente forloebs-viden', e);
+		return null;
+	}
+}
+
+async function byggGrundlag(emne: string, forlobBlok: string): Promise<string> {
 	const docs = await hentAlleDocs('linnAiVidenbase');
 	const videnbase: VidenbaseDokument[] = docs.map((d) => ({
 		id: d.id,
@@ -107,7 +193,9 @@ async function byggGrundlag(emne: string): Promise<string> {
 		tags: (d.data.tags as string[]) ?? []
 	}));
 	const konf = (await hentDoc('linnAiKonfiguration/aktiv')) as { systemPrompt?: string } | null;
-	return byggSystemPrompt(byggKontekst(videnbase, emne), konf?.systemPrompt);
+	// Forloebs-blokken staar FOERST, saa den ikke bliver skaaret vaek naar
+	// videnbasen fylder. Det er den der indeholder tidspunkterne.
+	return byggSystemPrompt(forlobBlok + byggKontekst(videnbase, emne), konf?.systemPrompt);
 }
 
 /**
@@ -167,7 +255,18 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(429, `Du har brugt dine ${MAX_SAMTALER_PR_DAG} spørgsmål i dag. Vi ses i morgen.`);
 	}
 
-	const grundlag = await byggGrundlag(besked);
+	const viden = await hentForlobViden(uid, userDoc);
+	const forlobBlok = byggForlobKontekst(
+		{
+			forlobNavn: viden?.forlobNavn ?? '',
+			dagNummer: viden?.dagNummer ?? 0,
+			antalDage: viden?.antalDage ?? 0,
+			iDag: new Date().toISOString().slice(0, 10),
+			faq: viden?.faq ?? []
+		},
+		besked
+	);
+	const grundlag = await byggGrundlag(besked, forlobBlok);
 	const historik = (body.historik ?? []).map((b) => ({
 		role: b.rolle === 'user' ? ('user' as const) : ('assistant' as const),
 		content: b.indhold
@@ -182,7 +281,18 @@ export const POST: RequestHandler = async ({ request }) => {
 	const { svar, sikkerhed } = parseSikkerhed(raat);
 
 	await gemDocMerge(quotaSti, { antal: brugt + 1, sidste: Date.now() });
-	await log({ uid, tilstand: 'samtale', spoergsmaal: besked, svar, sikkerhed });
+	await log({
+		uid,
+		tilstand: 'samtale',
+		spoergsmaal: besked,
+		svar,
+		sikkerhed,
+		// Saa Linn kan se HVILKET grundlag svaret byggede paa, naar hun
+		// laeser med. Uden det kan et forkert svar ikke fejlsoeges.
+		forlob: viden?.forlobNavn ?? '',
+		dagNummer: viden?.dagNummer ?? 0,
+		antalFaq: viden?.faq.length ?? 0
+	});
 
 	return json({
 		svar,
