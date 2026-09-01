@@ -4,9 +4,8 @@
 	//
 	// Syttende af de 19 gamle admin-sider, 1. september 2026.
 	//
-	// REDIGERINGS-SIDEN ER IKKE LAVET OM ENDNU. Listen peger derfor paa
-	// den gamle, som virker uaendret. Naar den nye er klar, skiftes de to
-	// links, og saa er hele Opskrifter i ét udseende.
+	// LISTEN OG REDIGERINGS-SIDEN FOELGES AD. Begge er lavet om, saa der
+	// springes ikke mellem to udseender midt i en opgave.
 	//
 	// Filtrering, soegning og godkend-fluebenet blev bygget til den GAMLE
 	// side tidligere samme dag. Alt det er flyttet med.
@@ -119,10 +118,7 @@
 				instruktioner: '',
 				aktiv: false
 			});
-			// Peger paa den GAMLE redigerings-side indtil den ogsaa er lavet
-			// om. Bedre at springe mellem to udseender end at pege paa en side
-			// der ikke findes.
-			goto(`/app/admin/opskrifter/${id}`);
+			goto(`/ny/admin/opskrifter/${id}`);
 		} catch (e) {
 			console.error('[admin] opret opskrift', e);
 			fejl = 'Kunne ikke oprette opskriften.';
@@ -220,7 +216,7 @@
 							✓
 						</button>
 
-						<a class="op-link" href="/app/admin/opskrifter/{o.id}">
+						<a class="op-link" href="/ny/admin/opskrifter/{o.id}">
 							<div class="op-billede">
 								{#if o.billedeUrl}
 									<img src={o.billedeUrl} alt={o.titel} />
