@@ -21,7 +21,7 @@ import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentAlleDocs, hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
 import { byggKontekst, byggSystemPrompt, parseSikkerhed, quotaNoegle } from '$lib/content/linnAi';
 import type { VidenbaseDokument } from '$lib/content/linnAi';
-import { byggForlobKontekst, type FaqPunkt } from '$lib/content/forlobKontekst3';
+import { byggForlobKontekst, type FaqPunkt, type Lektion } from '$lib/content/forlobKontekst3';
 import { nulDatoer, dagNummerMedNulDage, produktHarNulDage } from '$lib/content/nulDage3';
 import type { UserDoc } from '$lib/types';
 
@@ -117,7 +117,13 @@ const MS_PER_DAG = 86400000;
 async function hentForlobViden(
 	uid: string,
 	userDoc: UserDoc | null
-): Promise<{ forlobNavn: string; dagNummer: number; antalDage: number; faq: FaqPunkt[] } | null> {
+): Promise<{
+	forlobNavn: string;
+	dagNummer: number;
+	antalDage: number;
+	faq: FaqPunkt[];
+	lektioner: Lektion[];
+} | null> {
 	try {
 		const ids = (userDoc as unknown as { forlobIds?: string[] })?.forlobIds ?? [];
 		if (ids.length === 0) return null;
@@ -176,7 +182,24 @@ async function hentForlobViden(
 			}))
 			.filter((p) => p.spoergsmaal && p.svar);
 
-		return { forlobNavn: valgt.navn, dagNummer, antalDage: valgt.antalDage, faq };
+		// Lektionerne, KUN til og med i dag. Se noten paa ForlobViden.
+		const dage = await hentAlleDocs(`forlob/${valgt.id}/forlobsdage`);
+		const lektioner: Lektion[] = [];
+		for (const d of dage) {
+			const nr = Number(d.data.dagNummer ?? String(d.id).replace(/\D/g, ''));
+			if (!Number.isFinite(nr) || nr > dagNummer) continue;
+			for (const l of (d.data.lektioner ?? []) as Record<string, unknown>[]) {
+				const titel = String(l.titel ?? '').trim();
+				if (!titel) continue;
+				lektioner.push({
+					dag: nr,
+					titel,
+					beskrivelse: String(l.beskrivelse ?? '').trim() || undefined
+				});
+			}
+		}
+
+		return { forlobNavn: valgt.navn, dagNummer, antalDage: valgt.antalDage, faq, lektioner };
 	} catch (e) {
 		console.warn('[ny-ai] kunne ikke hente forloebs-viden', e);
 		return null;
@@ -262,7 +285,8 @@ export const POST: RequestHandler = async ({ request }) => {
 			dagNummer: viden?.dagNummer ?? 0,
 			antalDage: viden?.antalDage ?? 0,
 			iDag: new Date().toISOString().slice(0, 10),
-			faq: viden?.faq ?? []
+			faq: viden?.faq ?? [],
+			lektioner: viden?.lektioner ?? []
 		},
 		besked
 	);
@@ -291,7 +315,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		// laeser med. Uden det kan et forkert svar ikke fejlsoeges.
 		forlob: viden?.forlobNavn ?? '',
 		dagNummer: viden?.dagNummer ?? 0,
-		antalFaq: viden?.faq.length ?? 0
+		antalFaq: viden?.faq.length ?? 0,
+		antalLektioner: viden?.lektioner.length ?? 0
 	});
 
 	return json({

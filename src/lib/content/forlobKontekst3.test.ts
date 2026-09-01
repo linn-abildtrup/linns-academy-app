@@ -103,6 +103,39 @@ describe('vaelgFaq', () => {
 	});
 });
 
+describe('byggForlobKontekst med lektioner', () => {
+	const medLektioner: ForlobViden = {
+		...viden,
+		lektioner: [
+			{ dag: 1, titel: 'Dag 1, Protein til morgenmad' },
+			{ dag: 3, titel: 'Dag 3, Cravings', beskrivelse: 'Om trang til sødt' }
+		]
+	};
+
+	it('tager lektionerne med', () => {
+		const t = byggForlobKontekst(medLektioner, 'hvad har jeg set');
+		expect(t).toContain('Dag 1, Protein til morgenmad');
+		expect(t).toContain('Om trang til sødt');
+	});
+
+	it('sorterer dem efter dag', () => {
+		const t = byggForlobKontekst(
+			{ ...medLektioner, lektioner: [{ dag: 3, titel: 'Sent' }, { dag: 1, titel: 'Tidligt' }] },
+			'noget'
+		);
+		expect(t.indexOf('Tidligt')).toBeLessThan(t.indexOf('Sent'));
+	});
+
+	it('siger at den ikke maa finde paa hvad der kommer senere', () => {
+		const t = byggForlobKontekst(medLektioner, 'noget');
+		expect(t).toContain('kommer senere i forløbet');
+	});
+
+	it('naevner ikke afsnittet naar der ingen lektioner er', () => {
+		expect(byggForlobKontekst(viden, 'noget')).not.toContain('DET HUN HAR I APPEN INDTIL NU');
+	});
+});
+
 describe('byggForlobKontekst', () => {
 	const tekst = byggForlobKontekst(viden, 'hvornår er der Q&A?');
 

@@ -37,6 +37,13 @@ export interface FaqPunkt {
 	forlobNavn?: string;
 }
 
+/** Én lektion kunden har adgang til lige nu. */
+export interface Lektion {
+	dag: number;
+	titel: string;
+	beskrivelse?: string;
+}
+
 export interface ForlobViden {
 	/** Fx "Kickstart August 2026". Tom naar hun ikke er paa et forloeb. */
 	forlobNavn: string;
@@ -46,6 +53,19 @@ export interface ForlobViden {
 	/** Dagens dato som ISO, altsaa 2026-09-01. */
 	iDag: string;
 	faq: FaqPunkt[];
+	/**
+	 * KUN de lektioner hun kan se i appen, altsaa til og med i dag.
+	 *
+	 * Linns beslutning 20. august: et forloeb der koerer viser kun i dag og
+	 * bagud, og dagene fremad er HELT vaek fra listen. Begge udgaver har
+	 * vaeret proevet. Fik AI'en hele forloebet, kunne den fortaelle en kunde
+	 * paa dag 3 hvad der ligger paa dag 15, og saa modsiger den appen.
+	 *
+	 * Fremtiden filtreres FRA i data og ikke med en instruktion. En
+	 * instruktion kan overses, en tom liste kan ikke. Samme regel som
+	 * traeningens AI-vaerktoej, se SPEC 29.10.
+	 */
+	lektioner?: Lektion[];
 }
 
 /** Hvor meget forloebs-viden der maa fylde i prompten. */
@@ -179,6 +199,20 @@ export function byggForlobKontekst(v: ForlobViden, spoergsmaal: string): string 
 		dele.push('KUNDEN ER IKKE PÅ ET FORLØB lige nu. Hun har appen som medlem.');
 	}
 
+	const lek = v.lektioner ?? [];
+	if (lek.length > 0) {
+		const linjer = lek
+			.slice()
+			.sort((a, b) => a.dag - b.dag)
+			.map((l) => {
+				const b = l.beskrivelse?.trim();
+				return `Dag ${l.dag}: ${l.titel}${b ? ` — ${b}` : ''}`;
+			});
+		dele.push(
+			`DET HUN HAR I APPEN INDTIL NU. Lektioner, videoer, lyd og guides til og med i dag:\n${linjer.join('\n')}`
+		);
+	}
+
 	const valgt = vaelgFaq(v.faq, spoergsmaal);
 	if (valgt.length > 0) {
 		dele.push(
@@ -198,7 +232,8 @@ export function byggForlobKontekst(v: ForlobViden, spoergsmaal: string): string 
 			'- Datoer, klokkeslæt og mødelinks må du KUN nævne hvis de står ordret ovenfor. Find aldrig et tidspunkt på.',
 			'- Står tidspunktet ikke der, så sig at du ikke kan se det, og tilbyd at sende spørgsmålet videre til Linn.',
 			'- Brug dagens dato til at sige om noget er i dag, i morgen eller overstået.',
-			'- Nævn kun materiale fra hendes eget forløb. Andre hold har andre tidspunkter.'
+			'- Nævn kun materiale fra hendes eget forløb. Andre hold har andre tidspunkter.',
+			'- Listen over lektioner går kun til og med i dag. Spørger hun om noget der ikke står der, så sig at det kommer senere i forløbet, og find ikke på hvad det er eller hvornår.'
 		].join('\n')
 	);
 
