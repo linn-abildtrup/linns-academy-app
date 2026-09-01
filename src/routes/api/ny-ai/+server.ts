@@ -19,6 +19,8 @@ import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentAlleDocs, hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
+import { hentTidligereSvarMedBackup, hentKundeHistorik } from '$lib/server/svarViden';
+import { byggTidligereSvarTekst } from '$lib/content/svarUdkast';
 import { byggKontekst, byggSystemPrompt, parseSikkerhed, quotaNoegle } from '$lib/content/linnAi';
 import type { VidenbaseDokument } from '$lib/content/linnAi';
 import { byggForlobKontekst, type FaqPunkt, type Lektion } from '$lib/content/forlobKontekst3';
@@ -206,7 +208,11 @@ async function hentForlobViden(
 	}
 }
 
-async function byggGrundlag(emne: string, forlobBlok: string): Promise<string> {
+async function byggGrundlag(
+	emne: string,
+	forlobBlok: string,
+	tidligereSvarTekst: string
+): Promise<string> {
 	const docs = await hentAlleDocs('linnAiVidenbase');
 	const videnbase: VidenbaseDokument[] = docs.map((d) => ({
 		id: d.id,
@@ -218,7 +224,16 @@ async function byggGrundlag(emne: string, forlobBlok: string): Promise<string> {
 	const konf = (await hentDoc('linnAiKonfiguration/aktiv')) as { systemPrompt?: string } | null;
 	// Forloebs-blokken staar FOERST, saa den ikke bliver skaaret vaek naar
 	// videnbasen fylder. Det er den der indeholder tidspunkterne.
-	return byggSystemPrompt(forlobBlok + byggKontekst(videnbase, emne), konf?.systemPrompt);
+	//
+	// LINNS TIDLIGERE SVAR er det vigtigste grundlag, og de kom foerst med
+	// 1. september. Bemaerk at sikkerheds-procenten HELE TIDEN har maalt
+	// hvor godt de daekkede spoergsmaalet, se SIKKERHEDS_INSTRUKTION. Uden
+	// dem maalte tallet paa noget der ikke var der.
+	return byggSystemPrompt(
+		forlobBlok + byggKontekst(videnbase, emne),
+		konf?.systemPrompt,
+		tidligereSvarTekst
+	);
 }
 
 /**
@@ -278,7 +293,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(429, `Du har brugt dine ${MAX_SAMTALER_PR_DAG} spørgsmål i dag. Vi ses i morgen.`);
 	}
 
-	const viden = await hentForlobViden(uid, userDoc);
+	// Alt grundlaget hentes paa én gang. Fejler noget af det, svarer AI'en
+	// paa det den har i stedet for slet ikke.
+	const forlobId =
+		(userDoc as unknown as { forlobIds?: string[] })?.forlobIds?.slice(-1)[0] ?? '';
+	const [viden, tidligereSvar, kundeHistorik] = await Promise.all([
+		hentForlobViden(uid, userDoc),
+		hentTidligereSvarMedBackup(forlobId).catch(() => []),
+		hentKundeHistorik(uid).catch(() => [])
+	]);
 	const forlobBlok = byggForlobKontekst(
 		{
 			forlobNavn: viden?.forlobNavn ?? '',
@@ -290,7 +313,28 @@ export const POST: RequestHandler = async ({ request }) => {
 		},
 		besked
 	);
-	const grundlag = await byggGrundlag(besked, forlobBlok);
+	// Hendes egen historik ligger EFTER forloebs-blokken og foer videnbasen,
+	// saa den ikke skaeres vaek.
+	//
+	// HENDES MAD-TAL ER IKKE MED ENDNU. De ligger i en undersamling under
+	// kunden, og firestoreRest kan kun spoerge fra roden, saa de kan ikke
+	// hentes rigtigt herfra. hentAlleDocs stopper ved 300 dokumenter i en
+	// tilfaeldig raekkefoelge, og en kunde har tusindvis af madlinjer, saa
+	// tallene ville blive forkerte uden at nogen opdagede det. Regnestykket
+	// staar klar i content/kundeTal3.ts med 14 tests. Se samtalen 1. sept.
+	const egetBlok =
+		(kundeHistorik.length > 0
+			? `HUN HAR SPURGT DIG OM DET HER FOER, og du svarede saadan. Gentag ikke dig selv ordret:\n${kundeHistorik
+					.slice(0, 5)
+					.map((h, i) => `--- ${i + 1} ---\nHun spurgte: ${h.spoergsmaal}\nDu svarede: ${h.svar}`)
+					.join('\n\n')}\n\n---\n`
+			: '');
+
+	const grundlag = await byggGrundlag(
+		besked,
+		forlobBlok + egetBlok,
+		byggTidligereSvarTekst(tidligereSvar)
+	);
 	const historik = (body.historik ?? []).map((b) => ({
 		role: b.rolle === 'user' ? ('user' as const) : ('assistant' as const),
 		content: b.indhold
@@ -316,7 +360,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		forlob: viden?.forlobNavn ?? '',
 		dagNummer: viden?.dagNummer ?? 0,
 		antalFaq: viden?.faq.length ?? 0,
-		antalLektioner: viden?.lektioner.length ?? 0
+		antalLektioner: viden?.lektioner.length ?? 0,
+		antalTidligereSvar: tidligereSvar.length,
+		antalEgenHistorik: kundeHistorik.length,
+		harEgneTal: false
 	});
 
 	return json({
