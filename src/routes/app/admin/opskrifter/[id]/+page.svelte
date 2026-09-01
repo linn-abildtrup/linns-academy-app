@@ -13,7 +13,12 @@
 		type Opskrift,
 		type OpskriftKategori
 	} from '$lib/content/opskrifter';
-	import { gemOpskrift, hentOpskrift, sletOpskrift } from '$lib/firestore/opskrifter';
+	import {
+		gemOpskrift,
+		hentOpskrift,
+		saetOpskriftGodkendt,
+		sletOpskrift
+	} from '$lib/firestore/opskrifter';
 	import { byggMakroLinje, skrivMakroLinje, tidenILinjen } from '$lib/content/makroLinje';
 	import Icon from '$lib/components/Icon.svelte';
 
@@ -77,6 +82,30 @@
 	let bekraefter = $state(false);
 	let sletter = $state(false);
 
+	// Godkendelsen er Linns eget flueben og har intet med 'aktiv' at goere.
+	// Den gemmes med det samme og foelger derfor IKKE Gem-knappen: to ting der
+	// gemmes hver sin vej paa samme skaerm er forvirrende, og fluebenet skal
+	// virke ens her og i listen.
+	let godkendt = $state(false);
+	let gemmerGodkendt = $state(false);
+	let godkendFejl = $state<string | null>(null);
+
+	async function toggleGodkendt() {
+		if (gemmerGodkendt) return;
+		gemmerGodkendt = true;
+		godkendFejl = null;
+		const ny = !godkendt;
+		try {
+			await saetOpskriftGodkendt(opskriftId, ny);
+			godkendt = ny;
+		} catch (e) {
+			console.error(e);
+			godkendFejl = 'Kunne ikke gemme godkendelsen. Prøv igen.';
+		} finally {
+			gemmerGodkendt = false;
+		}
+	}
+
 	onMount(async () => {
 		try {
 			const o = await hentOpskrift(opskriftId);
@@ -102,6 +131,7 @@
 			formKalorier = m.kalorier;
 			formTid = tidenILinjen(o.instruktioner) ?? '';
 			formAktiv = o.aktiv;
+			godkendt = o.godkendt === true;
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke hente opskriften.';
@@ -427,6 +457,36 @@
 		<button class="primary-knap" type="button" onclick={gem} disabled={gemmer}>
 			{gemmer ? 'Gemmer...' : 'Gem opskrift'}
 		</button>
+
+		<div class="godkend-omraade" class:sat={godkendt}>
+			<button
+				class="godkend-knap"
+				class:sat={godkendt}
+				type="button"
+				onclick={toggleGodkendt}
+				disabled={gemmerGodkendt}
+				aria-pressed={godkendt ? 'true' : 'false'}
+			>
+				<span class="godkend-flueben">✓</span>
+				<span>
+					{#if gemmerGodkendt}
+						Gemmer...
+					{:else if godkendt}
+						Godkendt. Tryk for at fjerne
+					{:else}
+						Marker som godkendt
+					{/if}
+				</span>
+			</button>
+			<p class="godkend-hint">
+				Kun dit eget overblik. Kunderne kan hverken se eller mærke det, og det er
+				stadig Aktiv ovenfor der bestemmer om opskriften vises for dem. Gemmes med
+				det samme, du behøver ikke trykke Gem.
+			</p>
+			{#if godkendFejl}
+				<div class="fejl-besked">{godkendFejl}</div>
+			{/if}
+		</div>
 
 		<div class="slet-omraade">
 			{#if !bekraefter}
@@ -757,6 +817,61 @@
 
 	.slet-omraade {
 		margin-top: 24px;
+	}
+
+	.godkend-omraade {
+		margin-top: 12px;
+		padding: 12px 14px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+	}
+
+	.godkend-omraade.sat {
+		background: #e7f2e9;
+		border-color: #cfe3d4;
+	}
+
+	/* Baggrunden staar eksplicit, ellers giver browseren knappen sin egen
+	   graa flade og de to tilstande ligner hinanden. */
+	.godkend-knap {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		width: 100%;
+		padding: 10px 12px;
+		background: var(--bg2);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		color: var(--text);
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-family: var(--ff-b);
+		font-weight: 600;
+		cursor: pointer;
+		text-align: left;
+	}
+
+	.godkend-knap.sat {
+		background: #4f8a5b;
+		border-color: #4f8a5b;
+		color: #fff;
+	}
+
+	.godkend-knap:disabled {
+		opacity: 0.6;
+		cursor: wait;
+	}
+
+	.godkend-flueben {
+		font-size: calc(15px * var(--fs-scale, 1));
+		line-height: 1;
+	}
+
+	.godkend-hint {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		line-height: 1.45;
+		margin: 8px 0 0;
 	}
 
 	.slet-knap {

@@ -69,6 +69,13 @@ export interface Opskrift {
 	ratingSum?: number;
 	ratingCount?: number;
 	ratingAvg?: number | null;
+	// KUN ADMIN. Linns eget flueben paa at hun har set opskriften igennem.
+	// Den maa ALDRIG bruges som port for hvad kunden ser: det er 'aktiv' der
+	// styrer synlighed, og de to skal blive ved med at vaere to ting.
+	// Feltet er additivt og findes ikke paa de fleste dokumenter, saa
+	// undefined betyder "ikke godkendt endnu" og ikke "afvist".
+	godkendt?: boolean;
+	godkendtAt?: Timestamp;
 }
 
 // ==============================================

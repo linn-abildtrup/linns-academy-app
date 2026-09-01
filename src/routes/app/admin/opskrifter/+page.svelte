@@ -8,7 +8,11 @@
 		type Opskrift,
 		type OpskriftKategori
 	} from '$lib/content/opskrifter';
-	import { gemOpskrift, hentAlleOpskrifter } from '$lib/firestore/opskrifter';
+	import {
+		gemOpskrift,
+		hentAlleOpskrifter,
+		saetOpskriftGodkendt
+	} from '$lib/firestore/opskrifter';
 	import Icon from '$lib/components/Icon.svelte';
 
 	let opskrifter = $state<Opskrift[]>([]);
@@ -18,16 +22,45 @@
 
 	let soeg = $state('');
 	let valgteKategorier = $state<OpskriftKategori[]>([]);
+	let kunUgodkendte = $state(false);
+	let gemmerGodkendt = $state<string | null>(null);
+	let godkendFejl = $state<string | null>(null);
 
 	// Samme filtrering som kunden moeder under 30-30-3. Reglen er bevidst IKKE
 	// skrevet forfra her: to steder der filtrerer hver sin vej ville betyde at
 	// admin viste noget andet end kunden, og saa kan man ikke stole paa listen.
-	const filtrerede = $derived(filtrerOpskrifter(opskrifter, soeg, valgteKategorier));
+	// Godkendelses-filteret ligger UDENFOR og er kun admins, saa kundens
+	// filtrering ikke skal kende til et felt hun aldrig ser.
+	const filtrerede = $derived.by(() => {
+		const liste = filtrerOpskrifter(opskrifter, soeg, valgteKategorier);
+		return kunUgodkendte ? liste.filter((o) => !o.godkendt) : liste;
+	});
+
+	const antalGodkendte = $derived(opskrifter.filter((o) => o.godkendt).length);
 
 	function toggleKategori(k: OpskriftKategori) {
 		valgteKategorier = valgteKategorier.includes(k)
 			? valgteKategorier.filter((v) => v !== k)
 			: [...valgteKategorier, k];
+	}
+
+	async function toggleGodkendt(o: Opskrift) {
+		if (gemmerGodkendt) return;
+		gemmerGodkendt = o.id;
+		godkendFejl = null;
+		const ny = !o.godkendt;
+		try {
+			await saetOpskriftGodkendt(o.id, ny);
+			// Raetter listen paa stedet i stedet for at hente alt forfra. En hel
+			// genindlaesning ville rykke listen under fingeren midt i en
+			// gennemgang af 133 opskrifter.
+			opskrifter = opskrifter.map((x) => (x.id === o.id ? { ...x, godkendt: ny } : x));
+		} catch (e) {
+			console.error(e);
+			godkendFejl = 'Kunne ikke gemme godkendelsen. Prøv igen.';
+		} finally {
+			gemmerGodkendt = null;
+		}
 	}
 
 	onMount(async () => {
@@ -113,6 +146,14 @@
 					{KATEGORI_LABELS[k]}
 				</button>
 			{/each}
+			<button
+				type="button"
+				class="chip godkend-chip"
+				class:aktiv={kunUgodkendte}
+				onclick={() => (kunUgodkendte = !kunUgodkendte)}
+			>
+				Mangler godkendelse
+			</button>
 		</div>
 
 		<div class="antal">
@@ -121,35 +162,58 @@
 			{:else}
 				{filtrerede.length} af {opskrifter.length} opskrifter
 			{/if}
+			· {antalGodkendte} godkendt
 		</div>
+
+		{#if godkendFejl}
+			<div class="status-besked fejl">{godkendFejl}</div>
+		{/if}
 
 		{#if filtrerede.length === 0}
 			<div class="status-besked">Ingen opskrifter matcher.</div>
 		{:else}
 			<div class="liste">
 				{#each filtrerede as o (o.id)}
-					<a class="row" href="/app/admin/opskrifter/{o.id}">
-						<div class="thumb">
-							{#if o.billedeUrl}
-								<img src={o.billedeUrl} alt={o.titel} />
-							{:else}
-								<div class="thumb-emoji">🍽️</div>
-							{/if}
-						</div>
-						<div class="tekst">
-							<div class="navn">
-								{o.titel}
-								{#if !o.aktiv}
-									<span class="badge inaktiv">Inaktiv</span>
+					<div class="row" class:godkendt={o.godkendt}>
+						<!-- Godkend-knappen ligger UDEN FOR linket. En knap inde i et
+						     link kan ikke trykkes paa uden ogsaa at aabne opskriften. -->
+						<button
+							type="button"
+							class="godkend"
+							class:sat={o.godkendt}
+							disabled={gemmerGodkendt === o.id}
+							title={o.godkendt ? 'Godkendt. Tryk for at fjerne' : 'Marker som godkendt'}
+							aria-label={o.godkendt
+								? `Fjern godkendelsen af ${o.titel}`
+								: `Godkend ${o.titel}`}
+							aria-pressed={o.godkendt ? 'true' : 'false'}
+							onclick={() => toggleGodkendt(o)}
+						>
+							✓
+						</button>
+						<a class="row-link" href="/app/admin/opskrifter/{o.id}">
+							<div class="thumb">
+								{#if o.billedeUrl}
+									<img src={o.billedeUrl} alt={o.titel} />
+								{:else}
+									<div class="thumb-emoji">🍽️</div>
 								{/if}
 							</div>
-							<div class="sub">
-								{o.kategorier.map((k) => KATEGORI_LABELS[k]).join(', ') || 'Ingen kategori'}
-								· {o.ingredienser.length} ingredienser
+							<div class="tekst">
+								<div class="navn">
+									{o.titel}
+									{#if !o.aktiv}
+										<span class="badge inaktiv">Inaktiv</span>
+									{/if}
+								</div>
+								<div class="sub">
+									{o.kategorier.map((k) => KATEGORI_LABELS[k]).join(', ') || 'Ingen kategori'}
+									· {o.ingredienser.length} ingredienser
+								</div>
 							</div>
-						</div>
-						<Icon name="chevron-r" size={14} color="var(--text3)" />
-					</a>
+							<Icon name="chevron-r" size={14} color="var(--text3)" />
+						</a>
+					</div>
 				{/each}
 			</div>
 		{/if}
@@ -294,17 +358,62 @@
 	.row {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		gap: 8px;
 		padding: 10px 12px;
 		background: var(--white);
 		border: 1px solid var(--border);
 		border-radius: 12px;
-		text-decoration: none;
 		color: inherit;
 	}
 
 	.row:hover {
 		background: var(--bg2);
+	}
+
+	/* En godkendt raekke faar en groen kant i venstre side, saa det kan ses
+	   ved at skimme listen og ikke kun ved at kigge paa hvert flueben. */
+	.row.godkendt {
+		border-left: 3px solid #4f8a5b;
+	}
+
+	.row-link {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		flex: 1;
+		min-width: 0;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	/* Baggrunden staar eksplicit, ellers giver browseren knappen sin egen
+	   graa flade og et ugodkendt flueben ligner et godkendt. */
+	.godkend {
+		width: 30px;
+		height: 30px;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		color: var(--text3);
+		font-size: calc(14px * var(--fs-scale, 1));
+		line-height: 1;
+		cursor: pointer;
+		padding: 0;
+	}
+
+	.godkend.sat {
+		background: #e7f2e9;
+		border-color: #4f8a5b;
+		color: #3d7048;
+	}
+
+	.godkend:disabled {
+		opacity: 0.5;
+		cursor: wait;
 	}
 
 	.thumb {

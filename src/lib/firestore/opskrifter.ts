@@ -4,6 +4,7 @@
 import {
 	collection,
 	deleteDoc,
+	deleteField,
 	doc,
 	getDoc,
 	getDocs,
@@ -96,6 +97,27 @@ export async function gemOpskrift(opskrift: Opskrift): Promise<void> {
 		skrivData.oprettet = oprettet ?? serverTimestamp();
 	}
 	await setDoc(ref, skrivData, { merge: true });
+}
+
+/**
+ * Saetter eller fjerner Linns godkendelses-flueben paa en opskrift.
+ *
+ * Skriver KUN de to felter, og ikke hele dokumentet. Fluebenet saettes fra
+ * listen hvor der ikke ligger et redigeret udkast, saa en fuld skrivning
+ * kunne naa at rulle noget tilbage hvis to faner stod aabne paa samme
+ * opskrift. Reglerne tillader admin at opdatere frit, saa der skal intet
+ * udgives i Firebase.
+ */
+export async function saetOpskriftGodkendt(id: string, godkendt: boolean): Promise<void> {
+	const ref = doc(db, 'opskrifter', id);
+	await setDoc(
+		ref,
+		godkendt
+			? { godkendt: true, godkendtAt: serverTimestamp() }
+			: { godkendt: false, godkendtAt: deleteField() },
+		{ merge: true }
+	);
+	ryAlleOpskrifterCache();
 }
 
 /**
