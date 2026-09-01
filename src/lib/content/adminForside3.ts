@@ -57,10 +57,14 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	// ── Kunder ────────────────────────────────────────────────
 	{ navn: 'Spørgsmål fra kunder', under: 'Svar, og send som besked', rute: '/ny/admin/spoergsmaal', omraade: 'kunder', oftest: true },
 	{ navn: 'Slå en kunde op', under: 'Se hvad hun kan se, og hvorfor', rute: '/ny/admin/traening/kunde', omraade: 'kunder', oftest: true },
+	// SKRIVER til kundedata: nulstiller koder, opretter kunder og retter
+	// udloebsdatoer. Den laves om til SIDST, sammen med de oevrige der
+	// roerer adgang. Fundet 1. september, hvor den foerst var sat i den
+	// ufarlige gruppe ved en fejl.
 	{ navn: 'Abonnenter', under: 'Alle abonnenter, hentet fra Simplero', rute: '/app/admin/abonnenter', omraade: 'kunder', gammel: true },
 	{ navn: 'Testere', under: 'Giv adgang til noget der er under udvikling', rute: '/app/admin/testere', omraade: 'kunder', gammel: true },
 	{ navn: 'Nulstil adgangskode', under: 'Sæt en midlertidig kode for en kunde', rute: '/app/admin/nulstil-adgang', omraade: 'kunder', gammel: true },
-	{ navn: 'Refleksioner', under: 'Læs svarene på dagens refleksion', rute: '/app/admin/refleksioner', omraade: 'kunder', gammel: true },
+	{ navn: 'Refleksioner', under: 'Læs svarene på dagens refleksion', rute: '/ny/admin/refleksioner', omraade: 'kunder' },
 
 	// ── Forløb ────────────────────────────────────────────────
 	{ navn: 'Forløb og dage', under: 'Lektioner, små skridt og refleksion pr dag', rute: '/app/admin/forlob', omraade: 'forlob', oftest: true, gammel: true },
