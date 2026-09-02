@@ -12,6 +12,7 @@
 		type MinOpskriftIngrediens,
 		type MinOpskriftMakro
 	} from '$lib/content/minOpskrift';
+	import { ENHEDER } from '$lib/content/mineOpskrifter3';
 	import { komprimerBillede, blobTilBase64 } from '$lib/utils/billede';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
@@ -264,6 +265,25 @@
 			!(Number(makro.fedt) > 0) &&
 			!(Number(makro.kcal) > 0)
 	);
+
+	/**
+	 * Enheds-feltet er en liste, men hun skal kunne skrive noget der ikke
+	 * staar paa den. Vi holder ikke styr paa det i en ekstra tilstand: staar
+	 * der en enhed vi ikke kender, ER det en egen enhed, og skrivefeltet
+	 * staar aabent. Det daekker ogsaa den enhed AI'en kan finde paa at laese
+	 * ud af et billede, saa hendes opskrift ikke bliver lavet om bag om
+	 * ryggen paa hende.
+	 */
+	function erEgenEnhed(enhed: string): boolean {
+		return !ENHEDER.includes((enhed ?? '').trim());
+	}
+
+	function vaelgEnhed(i: number, vaerdi: string) {
+		// Tom vaerdi betyder "andet", og saa aabner skrivefeltet.
+		ingredienser[i].enhed = vaerdi === ANDET ? '' : vaerdi;
+	}
+
+	const ANDET = '__andet__';
 
 	function tilfojIngrediens() {
 		ingredienser = [...ingredienser, { navn: '', maengde: TOM_MAENGDE, enhed: 'g' }];
@@ -535,9 +555,27 @@
 							step="any"
 							bind:value={ing.maengde}
 						/>
-						<input type="text" class="ing-enhed" placeholder="g" bind:value={ing.enhed} />
+						<select
+							class="ing-enhed"
+							value={erEgenEnhed(ing.enhed) ? ANDET : ing.enhed.trim()}
+							onchange={(e) => vaelgEnhed(i, e.currentTarget.value)}
+							aria-label="Enhed"
+						>
+							{#each ENHEDER as e (e)}
+								<option value={e}>{e}</option>
+							{/each}
+							<option value={ANDET}>andet</option>
+						</select>
 						<button class="ing-slet" type="button" onclick={() => fjernIngrediens(i)}>×</button>
 					</div>
+					{#if erEgenEnhed(ing.enhed)}
+						<input
+							type="text"
+							class="egen-enhed"
+							placeholder="Skriv din egen enhed, fx dåse eller pose"
+							bind:value={ing.enhed}
+						/>
+					{/if}
 				{/each}
 				<button class="tilfoj-btn" type="button" onclick={tilfojIngrediens}>
 					<Icon name="plus" size={12} color="var(--text2)" /> Tilføj ingrediens
@@ -766,6 +804,33 @@
 	.valg-knap.sekundaer {
 		background: var(--white);
 		color: var(--terra);
+	}
+
+	/* Enheden er en liste fra 2. september 2026, ikke laengere et frit felt.
+	   Den skal fylde det samme som feltet gjorde. */
+	select.ing-enhed {
+		/* Smallere sidekant end felterne, saa det laengste ord, knivspids,
+		   kan staa helt. Skriften bliver paa 16px, ellers zoomer iPhone ind
+		   naar hun rammer feltet. */
+		padding-left: 6px;
+		padding-right: 6px;
+		appearance: none;
+		text-align: center;
+		cursor: pointer;
+	}
+
+	.egen-enhed {
+		display: block;
+		width: 100%;
+		margin: -3px 0 9px;
+		padding: 9px 11px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		color: var(--text);
+		font-family: var(--ff-b);
+		font-size: max(16px, calc(13px * var(--fs-scale, 1)));
+		box-sizing: border-box;
 	}
 
 	/* Trin-bjaelken. Tilfoejet 2. september 2026 sammen med de tre trin. */
@@ -1123,12 +1188,15 @@
 
 	.ing-rad {
 		display: grid;
-		grid-template-columns: 1fr 60px 60px 30px;
-		gap: 6px;
+		/* Enheds-kolonnen blev bredere 2. september 2026, da feltet blev til en
+		   liste. "knivspids" skal kunne staa der uden at blive klippet. */
+		grid-template-columns: 1fr 52px 100px 26px;
+		gap: 5px;
 		margin-bottom: 6px;
 	}
 
-	.ing-rad input {
+	.ing-rad input,
+	.ing-rad select {
 		padding: 8px 10px;
 		border: 1px solid var(--border);
 		border-radius: 8px;

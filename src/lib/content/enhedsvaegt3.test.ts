@@ -59,6 +59,13 @@ describe('linjer der ikke bidrager', () => {
 		expect(tilGram('Salt og peber', 1, 'stk').gram).toBe(0);
 	});
 
+	it('kender de tre enheder der kom til 2. september', () => {
+		// Uden dem faldt de ned i styk-grenen og blev gaettet som 100 g.
+		expect(tilGram('hakkede tomater', 1, 'dåse').gram).toBe(400);
+		expect(tilGram('mandler', 2, 'håndfuld').gram).toBe(60);
+		expect(tilGram('persille', 1, 'bundt').gram).toBe(25);
+	});
+
 	it('springer knivspids og nip over', () => {
 		expect(tilGram('chiliflager', 1, 'knivspids').gram).toBe(0);
 		expect(tilGram('chiliflager', 1, 'nip').gram).toBe(0);

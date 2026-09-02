@@ -486,7 +486,11 @@ function slaaOp(tabel: Vaegttabel, navn: string): number | null {
 /** Gaetter hvilken gruppe en ukendt vare hoerer til. */
 function gaetGruppe(navn: string): 'vaeske' | 'olie' | 'toert' | 'urt' {
 	if (/olie|smoer\b|fedt/.test(navn)) return 'olie';
-	if (/saft|sauce|dressing|eddike|yoghurt|kefir|fraiche|maelk|sirup|honning|pesto|hummus|pure/.test(navn))
+	if (
+		/saft|sauce|dressing|eddike|yoghurt|kefir|fraiche|maelk|sirup|honning|pesto|hummus|pure/.test(
+			navn
+		)
+	)
 		return 'vaeske';
 	if (/frisk|hakket|persille|dild|koriander|basilikum|purloeg|mynte|urt/.test(navn)) return 'urt';
 	return 'toert';
@@ -544,8 +548,10 @@ export function tilGram(navn: string, maengde: number, enhed: string): Vaegtsvar
 	}
 
 	// Allerede vaegt eller rumfang.
-	if (e === 'g' || e === 'gram') return { gram: m, sikkerhed: 'tabel', forklaring: 'Staar allerede i gram.' };
-	if (e === 'kg') return { gram: m * 1000, sikkerhed: 'tabel', forklaring: 'Kilo regnet om til gram.' };
+	if (e === 'g' || e === 'gram')
+		return { gram: m, sikkerhed: 'tabel', forklaring: 'Staar allerede i gram.' };
+	if (e === 'kg')
+		return { gram: m * 1000, sikkerhed: 'tabel', forklaring: 'Kilo regnet om til gram.' };
 	// Rumfang. Vaeske vejer som vand, toerre varer vejer mindre.
 	if (e === 'ml' || e === 'dl' || e === 'l') {
 		const ml = e === 'ml' ? m : e === 'dl' ? m * 100 : m * 1000;
@@ -564,14 +570,22 @@ export function tilGram(navn: string, maengde: number, enhed: string): Vaegtsvar
 		const t = slaaOp(SPSK, n);
 		if (t !== null) return { gram: m * t, sikkerhed: 'tabel', forklaring: `1 spsk vejer ${t} g.` };
 		const g = gaetGruppe(n);
-		return { gram: m * GRUPPE_SPSK[g], sikkerhed: 'gruppe', forklaring: `Ukendt vare, regnet som ${g}, ${GRUPPE_SPSK[g]} g pr spsk.` };
+		return {
+			gram: m * GRUPPE_SPSK[g],
+			sikkerhed: 'gruppe',
+			forklaring: `Ukendt vare, regnet som ${g}, ${GRUPPE_SPSK[g]} g pr spsk.`
+		};
 	}
 
 	if (e === 'tsk') {
 		const t = slaaOp(TSK, n);
 		if (t !== null) return { gram: m * t, sikkerhed: 'tabel', forklaring: `1 tsk vejer ${t} g.` };
 		const g = gaetGruppe(n);
-		return { gram: m * GRUPPE_TSK[g], sikkerhed: 'gruppe', forklaring: `Ukendt vare, regnet som ${g}, ${GRUPPE_TSK[g]} g pr tsk.` };
+		return {
+			gram: m * GRUPPE_TSK[g],
+			sikkerhed: 'gruppe',
+			forklaring: `Ukendt vare, regnet som ${g}, ${GRUPPE_TSK[g]} g pr tsk.`
+		};
 	}
 
 	if (e === 'skive') {
@@ -584,10 +598,34 @@ export function tilGram(navn: string, maengde: number, enhed: string): Vaegtsvar
 		return { gram: m * 4, sikkerhed: 'tabel', forklaring: '1 fed hvidloeg vejer 4 g.' };
 	}
 
+	// Tre enheder der kom paa listen 2. september 2026. Uden dem her faldt de
+	// ned i styk-grenen nederst og blev gaettet som 100 g, altsaa en daase
+	// tomater regnet som en fjerdedel af sig selv.
+	if (e === 'daase' || e === 'dåse') {
+		return { gram: m * 400, sikkerhed: 'gruppe', forklaring: 'En almindelig daase vejer 400 g.' };
+	}
+
+	if (e === 'haandfuld' || e === 'håndfuld') {
+		return { gram: m * 30, sikkerhed: 'gruppe', forklaring: 'En haandfuld regnet som 30 g.' };
+	}
+
+	if (e === 'bundt') {
+		return {
+			gram: m * 25,
+			sikkerhed: 'gruppe',
+			forklaring: 'Et bundt krydderurter regnet som 25 g.'
+		};
+	}
+
 	// stk og tom enhed. Tom enhed sker naar maengden staar i navnet.
 	const t = slaaOp(STK, n);
-	if (t !== null) return { gram: m * t, sikkerhed: 'tabel', forklaring: `1 stk vejer ${t} g spiselig.` };
-	return { gram: m * 100, sikkerhed: 'gruppe', forklaring: 'Ukendt styk, regnet som 100 g. Skal bekraeftes.' };
+	if (t !== null)
+		return { gram: m * t, sikkerhed: 'tabel', forklaring: `1 stk vejer ${t} g spiselig.` };
+	return {
+		gram: m * 100,
+		sikkerhed: 'gruppe',
+		forklaring: 'Ukendt styk, regnet som 100 g. Skal bekraeftes.'
+	};
 }
 
 /**

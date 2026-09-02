@@ -392,8 +392,27 @@ export function tomIngrediens(): UdkastIngrediens {
 	return { navn: '', maengde: '', enhed: 'g' };
 }
 
-/** Enhederne hun kan vaelge mellem. De samme som i maengde-arket. */
-export const ENHEDER = ['g', 'ml', 'dl', 'stk', 'spsk', 'tsk', 'skive'];
+/**
+ * Enhederne hun kan vaelge mellem. De samme som i maengde-arket.
+ *
+ * De fem sidste kom til 2. september 2026 efter Linns oenske. Vaegten paa
+ * daase, haandfuld og bundt blev laert til enhedsvaegt3.ts samtidig, ellers
+ * ville de blive gaettet som et almindeligt stykke paa 100 g.
+ */
+export const ENHEDER = [
+	'g',
+	'ml',
+	'dl',
+	'stk',
+	'spsk',
+	'tsk',
+	'skive',
+	'fed',
+	'dåse',
+	'håndfuld',
+	'knivspids',
+	'bundt'
+];
 
 // ============================================================
 // Det AI'en laeser af et billede
