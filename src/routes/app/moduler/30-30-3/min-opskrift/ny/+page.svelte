@@ -169,7 +169,17 @@
 				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
 				body: JSON.stringify({ navn, antalPortioner, ingredienser: brugbare })
 			});
-			if (!res.ok) throw new Error(await res.text());
+			if (!res.ok) {
+				// SIG HVAD DER GIK GALT. Foer stod der bare "kunne ikke regne
+				// paa opskriften", uanset om puljen var brugt op, om noeglen
+				// manglede, eller om svaret var for langt. Saa kunne hverken
+				// kunden eller vi se hvad der skulle rettes.
+				const grund = await res
+					.json()
+					.then((d: { message?: string }) => d?.message)
+					.catch(() => null);
+				throw new Error(grund || `Fejl ${res.status}`);
+			}
 			const data = (await res.json()) as {
 				makroPrPortion?: MinOpskriftMakro;
 				error?: string;
@@ -185,7 +195,8 @@
 			}
 		} catch (e) {
 			console.error(e);
-			estimatFejl = 'Kunne ikke regne på opskriften. Skriv tallene selv, eller prøv igen.';
+			const grund = e instanceof Error && e.message ? ` ${e.message}` : '';
+			estimatFejl = `Kunne ikke regne på opskriften.${grund} Skriv tallene selv, eller prøv igen.`;
 			// Naar det gik galt, skal hun kunne komme videre og skrive tallene
 			// selv i stedet for at staa paa spoergsmaals-skaermen igen.
 		} finally {
