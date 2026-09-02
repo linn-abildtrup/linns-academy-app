@@ -55,61 +55,286 @@ export const OMRAADE_NAVN: Record<Omraade, string> = {
  */
 export const VAERKTOEJER: Vaerktoej[] = [
 	// ── Kunder ────────────────────────────────────────────────
-	{ navn: 'Spørgsmål fra kunder', under: 'Svar, og send som besked', rute: '/ny/admin/spoergsmaal', omraade: 'kunder', oftest: true },
-	{ navn: 'Slå en kunde op', under: 'Se hvad hun kan se, og hvorfor', rute: '/ny/admin/traening/kunde', omraade: 'kunder', oftest: true },
-	{ navn: 'Abonnenter', under: 'Abonnenter fra Simplero, plus gratis kunder og udløb', rute: '/ny/admin/abonnenter', omraade: 'kunder' },
-	{ navn: 'Abonnenter, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/abonnenter', omraade: 'system', gammel: true },
-	{ navn: 'Testere', under: 'Giv adgang til noget der er under udvikling', rute: '/ny/admin/testere', omraade: 'kunder' },
+	{
+		navn: 'Spørgsmål fra kunder',
+		under: 'Svar, og send som besked',
+		rute: '/ny/admin/spoergsmaal',
+		omraade: 'kunder',
+		oftest: true
+	},
+	{
+		navn: 'Slå en kunde op',
+		under: 'Se hvad hun kan se, og hvorfor',
+		rute: '/ny/admin/traening/kunde',
+		omraade: 'kunder',
+		oftest: true
+	},
+	{
+		navn: 'Abonnenter',
+		under: 'Abonnenter fra Simplero, plus gratis kunder og udløb',
+		rute: '/ny/admin/abonnenter',
+		omraade: 'kunder'
+	},
+	{
+		navn: 'Abonnenter, gammel udgave',
+		under: 'Vejen tilbage hvis den nye driller',
+		rute: '/app/admin/abonnenter',
+		omraade: 'system',
+		gammel: true
+	},
+	{
+		navn: 'Testere',
+		under: 'Giv adgang til noget der er under udvikling',
+		rute: '/ny/admin/testere',
+		omraade: 'kunder'
+	},
 	// Den gamle staar under System indtil den nye har vaeret brugt. Se den
 	// samme ordning for Spoergsmaal.
-	{ navn: 'Testere, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/testere', omraade: 'system', gammel: true },
-	{ navn: 'Nulstil adgangskode', under: 'Sæt en midlertidig kode for en kunde', rute: '/ny/admin/nulstil-adgang', omraade: 'kunder' },
-	{ navn: 'Nulstil adgangskode, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/nulstil-adgang', omraade: 'system', gammel: true },
-	{ navn: 'Refleksioner', under: 'Læs svarene på dagens refleksion', rute: '/ny/admin/refleksioner', omraade: 'kunder' },
+	{
+		navn: 'Testere, gammel udgave',
+		under: 'Vejen tilbage hvis den nye driller',
+		rute: '/app/admin/testere',
+		omraade: 'system',
+		gammel: true
+	},
+	{
+		navn: 'Nulstil adgangskode',
+		under: 'Sæt en midlertidig kode for en kunde',
+		rute: '/ny/admin/nulstil-adgang',
+		omraade: 'kunder'
+	},
+	{
+		navn: 'Nulstil adgangskode, gammel udgave',
+		under: 'Vejen tilbage hvis den nye driller',
+		rute: '/app/admin/nulstil-adgang',
+		omraade: 'system',
+		gammel: true
+	},
+	{
+		navn: 'Refleksioner',
+		under: 'Læs svarene på dagens refleksion',
+		rute: '/ny/admin/refleksioner',
+		omraade: 'kunder'
+	},
 
 	// ── Forløb ────────────────────────────────────────────────
-	{ navn: 'Forløb', under: 'Alle hold. Indholdet åbnes inde i det enkelte forløb', rute: '/ny/admin/forlob', omraade: 'forlob', oftest: true },
-	{ navn: 'Forløb, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/forlob', omraade: 'system', gammel: true },
-	{ navn: 'Challenges', under: 'Opret én og giv den til et hold eller til alle', rute: '/ny/admin/challenges', omraade: 'forlob', oftest: true },
-	{ navn: 'Dashboard', under: 'Kundernes udvikling og tallene på forretningen', rute: '/ny/admin/dashboard', omraade: 'forlob' },
-	{ navn: 'Dashboard, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/dashboard', omraade: 'system', gammel: true },
-	{ navn: 'Lektioner til abonnenter', under: 'Én lektion pr dag til dem uden forløb', rute: '/ny/admin/modulbruger-lektioner', omraade: 'forlob' },
-	{ navn: 'Små skridt til abonnenter', under: 'Vaneliste og bonus-pulje', rute: '/ny/admin/abo-vaner', omraade: 'forlob' },
+	{
+		navn: 'Forløb',
+		under: 'Alle hold. Indholdet åbnes inde i det enkelte forløb',
+		rute: '/ny/admin/forlob',
+		omraade: 'forlob',
+		oftest: true
+	},
+	{
+		navn: 'Forløb, gammel udgave',
+		under: 'Vejen tilbage hvis den nye driller',
+		rute: '/app/admin/forlob',
+		omraade: 'system',
+		gammel: true
+	},
+	{
+		navn: 'Challenges',
+		under: 'Opret én og giv den til et hold eller til alle',
+		rute: '/ny/admin/challenges',
+		omraade: 'forlob',
+		oftest: true
+	},
+	{
+		navn: 'Dashboard',
+		under: 'Kundernes udvikling og tallene på forretningen',
+		rute: '/ny/admin/dashboard',
+		omraade: 'forlob'
+	},
+	{
+		navn: 'Dashboard, gammel udgave',
+		under: 'Vejen tilbage hvis den nye driller',
+		rute: '/app/admin/dashboard',
+		omraade: 'system',
+		gammel: true
+	},
+	{
+		navn: 'Lektioner til abonnenter',
+		under: 'Én lektion pr dag til dem uden forløb',
+		rute: '/ny/admin/modulbruger-lektioner',
+		omraade: 'forlob'
+	},
+	{
+		navn: 'Små skridt til abonnenter',
+		under: 'Vaneliste og bonus-pulje',
+		rute: '/ny/admin/abo-vaner',
+		omraade: 'forlob'
+	},
 
 	// ── Mad ───────────────────────────────────────────────────
-	{ navn: 'Opskrifter', under: 'Opret, ret og godkend', rute: '/ny/admin/opskrifter', omraade: 'mad' },
-	{ navn: 'Ingrediensernes tal', under: 'Ét sted at kontrollere alle næringstal', rute: '/ny/admin/ingrediens-tal', omraade: 'mad' },
-	{ navn: 'Ingredienser', under: 'Kobl en ingrediens til en fødevare', rute: '/ny/admin/ingredienser', omraade: 'mad' },
-	{ navn: 'Regnestykket bag en opskrift', under: 'Gå herhen når et makro-tal ser forkert ud', rute: '/ny/admin/opskrift-makro', omraade: 'mad' },
-	{ navn: 'Billeder på opskrifter', under: 'Læg et billede på én ret ad gangen', rute: '/ny/admin/opskrift-billeder', omraade: 'mad' },
-	{ navn: 'Scannede varer', under: 'Din nødbremse, ikke en godkendelse', rute: '/ny/admin/scannede', omraade: 'mad' },
-	{ navn: 'Fællesskabs-fødevarer', under: 'Varer kunderne har oprettet', rute: '/ny/admin/fodevarer', omraade: 'mad' },
-	{ navn: 'Næring', under: 'Hvem ser udvidet næring, og hvem må rette sine mål', rute: '/ny/admin/naering', omraade: 'mad' },
-	{ navn: 'Opskrift-vurderinger', under: 'Hvilke retter kunderne giver lavest og højest', rute: '/ny/admin/opskrift-ratings', omraade: 'mad' },
+	{
+		navn: 'Opskrifter',
+		under: 'Opret, ret og godkend',
+		rute: '/ny/admin/opskrifter',
+		omraade: 'mad'
+	},
+	{
+		navn: 'Ingrediensernes tal',
+		under: 'Ét sted at kontrollere alle næringstal',
+		rute: '/ny/admin/ingrediens-tal',
+		omraade: 'mad'
+	},
+	{
+		navn: 'Ingredienser',
+		under: 'Kobl en ingrediens til en fødevare',
+		rute: '/ny/admin/ingredienser',
+		omraade: 'mad'
+	},
+	{
+		navn: 'Regnestykket bag en opskrift',
+		under: 'Gå herhen når et makro-tal ser forkert ud',
+		rute: '/ny/admin/opskrift-makro',
+		omraade: 'mad'
+	},
+	{
+		navn: 'Billeder på opskrifter',
+		under: 'Læg et billede på én ret ad gangen',
+		rute: '/ny/admin/opskrift-billeder',
+		omraade: 'mad'
+	},
+	{
+		navn: 'Scannede varer',
+		under: 'Din nødbremse, ikke en godkendelse',
+		rute: '/ny/admin/scannede',
+		omraade: 'mad'
+	},
+	{
+		navn: 'Fællesskabs-fødevarer',
+		under: 'Varer kunderne har oprettet',
+		rute: '/ny/admin/fodevarer',
+		omraade: 'mad'
+	},
+	{
+		navn: 'Næring',
+		under: 'Hvem ser udvidet næring, og hvem må rette sine mål',
+		rute: '/ny/admin/naering',
+		omraade: 'mad'
+	},
+	{
+		navn: 'Opskrift-vurderinger',
+		under: 'Hvilke retter kunderne giver lavest og højest',
+		rute: '/ny/admin/opskrift-ratings',
+		omraade: 'mad'
+	},
 
 	// ── Træning ───────────────────────────────────────────────
-	{ navn: 'Træningsprogrammer', under: 'Byg programmer og sæt dem til klar', rute: '/ny/admin/traening', omraade: 'traening' },
-	{ navn: 'Hold og dækning', under: 'Hvem har fået hvad, og mangler nogen noget', rute: '/ny/admin/traening/hold', omraade: 'traening' },
-	{ navn: 'Kategorier', under: 'Det udstyr kunden kan vælge imellem', rute: '/ny/admin/traening/kategorier', omraade: 'traening' },
-	{ navn: 'Byg eget program', under: 'Hvem må sætte deres egen træning sammen', rute: '/ny/admin/traening/byg-eget', omraade: 'traening' },
-	{ navn: 'Øvelsesbanken', under: 'Opret og ret de enkelte øvelser. Fælles for begge apper', rute: '/ny/admin/oevelser', omraade: 'traening' },
-	{ navn: 'Mine programmer', under: 'De gamle mikrotrænings-programmer', rute: '/ny/admin/programmer', omraade: 'traening' },
-	{ navn: 'Træning til abonnenter', under: 'Fire programmer, dagene laves automatisk', rute: '/ny/admin/abo-traening', omraade: 'traening' },
+	{
+		navn: 'Træningsprogrammer',
+		under: 'Byg programmer og sæt dem til klar',
+		rute: '/ny/admin/traening',
+		omraade: 'traening'
+	},
+	{
+		navn: 'Hold og dækning',
+		under: 'Hvem har fået hvad, og mangler nogen noget',
+		rute: '/ny/admin/traening/hold',
+		omraade: 'traening'
+	},
+	{
+		navn: 'Kategorier',
+		under: 'Det udstyr kunden kan vælge imellem',
+		rute: '/ny/admin/traening/kategorier',
+		omraade: 'traening'
+	},
+	{
+		navn: 'Byg eget program',
+		under: 'Hvem må sætte deres egen træning sammen',
+		rute: '/ny/admin/traening/byg-eget',
+		omraade: 'traening'
+	},
+	{
+		navn: 'Øvelsesbanken',
+		under: 'Opret og ret de enkelte øvelser. Fælles for begge apper',
+		rute: '/ny/admin/oevelser',
+		omraade: 'traening'
+	},
+	{
+		navn: 'Mine programmer',
+		under: 'De gamle mikrotrænings-programmer',
+		rute: '/ny/admin/programmer',
+		omraade: 'traening'
+	},
+	{
+		navn: 'Træning til abonnenter',
+		under: 'Fire programmer, dagene laves automatisk',
+		rute: '/ny/admin/abo-traening',
+		omraade: 'traening'
+	},
 
 	// ── Beskeder ──────────────────────────────────────────────
-	{ navn: 'Skriv til en kunde', under: 'Lander i hendes Beskeder. Hun kan svare', rute: '/ny/admin/skriv', omraade: 'beskeder', oftest: true },
-	{ navn: 'Besked på forsiden', under: 'Til et hold eller alle. Ingen samtale', rute: '/ny/admin/forsidebesked', omraade: 'beskeder', oftest: true },
-	{ navn: 'Notifikationer', under: 'Beskeder på telefonen, og hvem der får dem', rute: '/ny/admin/noti', omraade: 'beskeder' },
-	{ navn: 'Det AI en svarer ud fra', under: 'Videnbasen og AI ens stemme. Gælder begge apper', rute: '/ny/admin/videnbase', omraade: 'beskeder' },
-	{ navn: 'Videnbase, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/linn-ai', omraade: 'system', gammel: true },
-	{ navn: 'AI-vurderinger', under: 'Hvad kunderne synes om AI ens svar', rute: '/ny/admin/ai-ratings', omraade: 'beskeder' },
+	{
+		navn: 'Skriv til en kunde',
+		under: 'Lander i hendes Beskeder. Hun kan svare',
+		rute: '/ny/admin/skriv',
+		omraade: 'beskeder',
+		oftest: true
+	},
+	{
+		navn: 'Besked på forsiden',
+		under: 'Til et hold eller alle. Ingen samtale',
+		rute: '/ny/admin/forsidebesked',
+		omraade: 'beskeder',
+		oftest: true
+	},
+	{
+		navn: 'Notifikationer',
+		under: 'Beskeder på telefonen, og hvem der får dem',
+		rute: '/ny/admin/noti',
+		omraade: 'beskeder'
+	},
+	{
+		navn: 'Det AI en svarer ud fra',
+		under: 'Videnbasen og AI ens stemme. Gælder begge apper',
+		rute: '/ny/admin/videnbase',
+		omraade: 'beskeder'
+	},
+	{
+		navn: 'Videnbase, gammel udgave',
+		under: 'Vejen tilbage hvis den nye driller',
+		rute: '/app/admin/linn-ai',
+		omraade: 'system',
+		gammel: true
+	},
+	{
+		navn: 'AI-vurderinger',
+		under: 'Hvad kunderne synes om AI ens svar',
+		rute: '/ny/admin/ai-ratings',
+		omraade: 'beskeder'
+	},
 
 	// ── System ────────────────────────────────────────────────
-	{ navn: 'Funktioner og adgang', under: 'Hvem må hvad i den gamle app, pr kundetype', rute: '/ny/admin/feature-adgang', omraade: 'system' },
-	{ navn: 'Funktioner og adgang, gammel udgave', under: 'Vejen tilbage hvis den nye driller', rute: '/app/admin/feature-adgang', omraade: 'system', gammel: true },
+	{
+		navn: 'Tjek video',
+		under: 'Åbnes på den telefon der driller. Den siger hvorfor videoen er sort eller uden lyd',
+		rute: '/ny/admin/tjek-video',
+		omraade: 'system'
+	},
+	{
+		navn: 'Funktioner og adgang',
+		under: 'Hvem må hvad i den gamle app, pr kundetype',
+		rute: '/ny/admin/feature-adgang',
+		omraade: 'system'
+	},
+	{
+		navn: 'Funktioner og adgang, gammel udgave',
+		under: 'Vejen tilbage hvis den nye driller',
+		rute: '/app/admin/feature-adgang',
+		omraade: 'system',
+		gammel: true
+	},
 	// Den gamle udgave bliver staaende som en vej tilbage, saa laenge den
 	// nye er ny. Fjern den naar Linn har brugt den nye i en uge.
-	{ navn: 'Spørgsmål, gammel udgave', under: 'Den gamle side. Vejen tilbage hvis den nye driller', rute: '/app/admin/spoergsmaal', omraade: 'system', gammel: true }
+	{
+		navn: 'Spørgsmål, gammel udgave',
+		under: 'Den gamle side. Vejen tilbage hvis den nye driller',
+		rute: '/app/admin/spoergsmaal',
+		omraade: 'system',
+		gammel: true
+	}
 ];
 
 /**
