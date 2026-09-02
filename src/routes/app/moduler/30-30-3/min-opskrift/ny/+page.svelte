@@ -544,38 +544,49 @@
 					<div class="section-label">Ingredienser</div>
 					<div class="card-tael">{ingredienser.length}</div>
 				</div>
+				<!-- TO LINJER PR INGREDIENS. Foer 2. september stod navn, maengde
+				     og enhed paa én linje, og da enheden blev en liste, blev
+				     navnefeltet for smalt paa en telefon. Navnet faar nu hele
+				     bredden, og de smaa felter staar under. -->
 				{#each ingredienser as ing, i (i)}
 					<div class="ing-rad">
-						<input type="text" class="ing-navn" placeholder="Navn" bind:value={ing.navn} />
-						<input
-							type="number"
-							class="ing-maengde"
-							placeholder="0"
-							min="0"
-							step="any"
-							bind:value={ing.maengde}
-						/>
-						<select
-							class="ing-enhed"
-							value={erEgenEnhed(ing.enhed) ? ANDET : ing.enhed.trim()}
-							onchange={(e) => vaelgEnhed(i, e.currentTarget.value)}
-							aria-label="Enhed"
-						>
-							{#each ENHEDER as e (e)}
-								<option value={e}>{e}</option>
-							{/each}
-							<option value={ANDET}>andet</option>
-						</select>
-						<button class="ing-slet" type="button" onclick={() => fjernIngrediens(i)}>×</button>
+						<input type="text" class="ing-navn" placeholder="Ingrediens" bind:value={ing.navn} />
+						<div class="ing-tal">
+							<input
+								type="number"
+								class="ing-maengde"
+								placeholder="Mængde"
+								min="0"
+								step="any"
+								bind:value={ing.maengde}
+							/>
+							<select
+								class="ing-enhed"
+								value={erEgenEnhed(ing.enhed) ? ANDET : ing.enhed.trim()}
+								onchange={(e) => vaelgEnhed(i, e.currentTarget.value)}
+								aria-label="Enhed"
+							>
+								{#each ENHEDER as e (e)}
+									<option value={e}>{e}</option>
+								{/each}
+								<option value={ANDET}>andet</option>
+							</select>
+							<button
+								class="ing-slet"
+								type="button"
+								aria-label="Fjern ingrediens"
+								onclick={() => fjernIngrediens(i)}>×</button
+							>
+						</div>
+						{#if erEgenEnhed(ing.enhed)}
+							<input
+								type="text"
+								class="egen-enhed"
+								placeholder="Skriv din egen enhed, fx pose eller glas"
+								bind:value={ing.enhed}
+							/>
+						{/if}
 					</div>
-					{#if erEgenEnhed(ing.enhed)}
-						<input
-							type="text"
-							class="egen-enhed"
-							placeholder="Skriv din egen enhed, fx dåse eller pose"
-							bind:value={ing.enhed}
-						/>
-					{/if}
 				{/each}
 				<button class="tilfoj-btn" type="button" onclick={tilfojIngrediens}>
 					<Icon name="plus" size={12} color="var(--text2)" /> Tilføj ingrediens
@@ -811,18 +822,24 @@
 	select.ing-enhed {
 		/* Smallere sidekant end felterne, saa det laengste ord, knivspids,
 		   kan staa helt. Skriften bliver paa 16px, ellers zoomer iPhone ind
-		   naar hun rammer feltet. */
-		padding-left: 6px;
-		padding-right: 6px;
+		   naar hun rammer feltet.
+
+		   Den lille pil er tegnet med i baggrunden. Uden den ligner feltet
+		   et almindeligt skrivefelt, og saa er der ingen der opdager at der
+		   er noget at vaelge imellem. */
+		padding: 8px 22px 8px 8px;
 		appearance: none;
 		text-align: center;
+		text-align-last: center;
 		cursor: pointer;
+		background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a08878' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 8px center;
 	}
 
 	.egen-enhed {
 		display: block;
 		width: 100%;
-		margin: -3px 0 9px;
 		padding: 9px 11px;
 		background: var(--white);
 		border: 1px solid var(--border);
@@ -1186,13 +1203,27 @@
 		box-sizing: border-box;
 	}
 
+	/* To linjer pr ingrediens, se noten i markup. Navnet oeverst i fuld
+	   bredde, de smaa felter under. En tynd streg mellem dem, saa det kan ses
+	   hvor den ene ingrediens slutter og den naeste begynder. */
 	.ing-rad {
-		display: grid;
-		/* Enheds-kolonnen blev bredere 2. september 2026, da feltet blev til en
-		   liste. "knivspids" skal kunne staa der uden at blive klippet. */
-		grid-template-columns: 1fr 52px 100px 26px;
+		display: flex;
+		flex-direction: column;
 		gap: 5px;
-		margin-bottom: 6px;
+		padding-bottom: 10px;
+		margin-bottom: 10px;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.ing-rad:last-of-type {
+		border-bottom: none;
+		padding-bottom: 0;
+	}
+
+	.ing-tal {
+		display: grid;
+		grid-template-columns: 1fr 118px 38px;
+		gap: 5px;
 	}
 
 	.ing-rad input,
