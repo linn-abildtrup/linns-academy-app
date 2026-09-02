@@ -37,6 +37,7 @@
 	import { hentAlleFodevarer } from '$lib/firestore/kost';
 	import { hentKoblinger } from '$lib/firestore/ingrediensKobling3';
 	import type { Fodevare } from '$lib/content/kost';
+	import { ENHEDER } from '$lib/content/mineOpskrifter3';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const opskriftId = $derived(page.params.id ?? '');
@@ -274,7 +275,23 @@
 	}
 
 	function tilfoejIngrediens() {
-		formIngredienser = [...formIngredienser, { navn: '', maengde: 0, enhed: 'g' }];
+		// Maengden staar tom, ikke paa nul. Et nul ligner et tal der allerede
+		// er skrevet. Rettet 2. september 2026 sammen med kunde-siderne.
+		formIngredienser = [
+			...formIngredienser,
+			{ navn: '', maengde: undefined as unknown as number, enhed: 'g' }
+		];
+	}
+
+	/** Staar der en enhed vi ikke kender, ER den skrevet i haanden. */
+	function erEgenEnhed(enhed: string): boolean {
+		return !ENHEDER.includes((enhed ?? '').trim());
+	}
+
+	const ANDET = '__andet__';
+
+	function vaelgEnhed(i: number, vaerdi: string) {
+		formIngredienser[i].enhed = vaerdi === ANDET ? '' : vaerdi;
 	}
 
 	function fjernIngrediens(index: number) {
@@ -459,13 +476,18 @@
 							bind:value={formIngredienser[i].maengde}
 							disabled={gemmer}
 						/>
-						<input
+						<select
 							class="ing-enhed"
-							type="text"
-							placeholder="g"
-							bind:value={formIngredienser[i].enhed}
+							value={erEgenEnhed(ing.enhed) ? ANDET : ing.enhed.trim()}
+							onchange={(e) => vaelgEnhed(i, e.currentTarget.value)}
 							disabled={gemmer}
-						/>
+							aria-label="Enhed"
+						>
+							{#each ENHEDER as e (e)}
+								<option value={e}>{e}</option>
+							{/each}
+							<option value={ANDET}>andet</option>
+						</select>
 						<input
 							class="ing-navn"
 							type="text"
@@ -474,6 +496,18 @@
 							disabled={gemmer}
 						/>
 					</div>
+					<!-- Vaelger du andet, skriver du den selv her. Feltet staar
+					     ogsaa aabent hvis en gammel opskrift har en enhed der
+					     ikke er paa listen, saa den ikke bliver lavet om. -->
+					{#if erEgenEnhed(ing.enhed)}
+						<input
+							class="egen-enhed"
+							type="text"
+							placeholder="Skriv enheden, fx dåse eller bundt"
+							bind:value={formIngredienser[i].enhed}
+							disabled={gemmer}
+						/>
+					{/if}
 					<div class="ing-handlinger">
 						<button
 							type="button"
@@ -546,14 +580,15 @@
 							<span class="sum-navn">Pr portion</span>
 							<span class="sum-tal">
 								Protein {etTal(prPortion.protein)} g · Fiber {etTal(prPortion.fiber)} g · Kulhydrat
-								{etTal(prPortion.kh)} g · Fedt {etTal(prPortion.fedt)} g · {etTal(prPortion.kalorier)}
+								{etTal(prPortion.kh)} g · Fedt {etTal(prPortion.fedt)} g · {etTal(
+									prPortion.kalorier
+								)}
 								kcal
 							</span>
 						</div>
 						<p class="sum-hint">
-							Ingredienslisten er skrevet til {listenErSkrevetTil(formDefaultPortioner)} portioner.
-							Dine makro-felter nedenfor er PR PORTION, så det er den nederste række der skal
-							sammenlignes.
+							Ingredienslisten er skrevet til {listenErSkrevetTil(formDefaultPortioner)} portioner. Dine
+							makro-felter nedenfor er PR PORTION, så det er den nederste række der skal sammenlignes.
 						</p>
 					{/if}
 
@@ -564,8 +599,8 @@
 							kobling og tæller ikke med, så tallene er for lave.
 						{/if}
 						{#if !beregning.kalorierPaalidelige}
-							En eller flere varer mangler kalorietal, så kalorier, kulhydrat og fedt kan ikke bruges.
-							Protein og fiber er stadig rigtige.
+							En eller flere varer mangler kalorietal, så kalorier, kulhydrat og fedt kan ikke
+							bruges. Protein og fiber er stadig rigtige.
 						{/if}
 					</div>
 
@@ -679,9 +714,9 @@
 				</span>
 			</button>
 			<p class="godkend-hint">
-				Kun dit eget overblik. Kunderne kan hverken se eller mærke det, og det er
-				stadig Aktiv ovenfor der bestemmer om opskriften vises for dem. Gemmes med
-				det samme, du behøver ikke trykke Gem.
+				Kun dit eget overblik. Kunderne kan hverken se eller mærke det, og det er stadig Aktiv
+				ovenfor der bestemmer om opskriften vises for dem. Gemmes med det samme, du behøver ikke
+				trykke Gem.
 			</p>
 			{#if godkendFejl}
 				<div class="fejl-besked">{godkendFejl}</div>
@@ -820,8 +855,6 @@
 		border-left-color: #b8860b;
 	}
 
-
-
 	.felt {
 		display: flex;
 		flex-direction: column;
@@ -908,19 +941,46 @@
 
 	.ing-form {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 6px;
 		align-items: stretch;
 	}
 
 	.ing-form-rad {
 		display: grid;
-		grid-template-columns: 70px 70px 1fr;
+		/* Enheds-feltet blev en liste 2. september 2026 og skal have plads
+		   til det laengste ord, knivspids. */
+		grid-template-columns: 70px 116px 1fr;
 		gap: 6px;
 		flex: 1;
 	}
 
+	.egen-enhed {
+		/* Hele bredden paa sin egen linje under raden. */
+		flex: 1 0 100%;
+		width: 100%;
+		padding: 8px 10px;
+		font-size: calc(13px * var(--fs-scale, 1));
+		border-radius: 8px;
+		border: 1px solid var(--border);
+		background: var(--white);
+		font-family: var(--ff-b);
+		box-sizing: border-box;
+	}
+
+	select.ing-enhed {
+		padding: 8px 20px 8px 8px;
+		appearance: none;
+		cursor: pointer;
+		color: var(--text);
+		background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a08878' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 6px center;
+	}
+
 	.ing-maengde,
 	.ing-enhed,
+	select.ing-enhed,
 	.ing-navn {
 		padding: 8px 10px;
 		font-size: calc(13px * var(--fs-scale, 1));
