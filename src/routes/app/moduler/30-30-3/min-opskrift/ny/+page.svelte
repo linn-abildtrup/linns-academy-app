@@ -29,6 +29,14 @@
 
 	const MAX_BILLEDER = 3;
 
+	/**
+	 * Et tomt maengde-felt. Typen siger tal, men skaermen skal kunne staa tom,
+	 * og et tomt tal-felt giver undefined. Vi gemmer aldrig undefined: den
+	 * bliver til nul i gem(), og tjenesten der regner springer tomme
+	 * maengder over og antager en almindelig portion.
+	 */
+	const TOM_MAENGDE = undefined as unknown as number;
+
 	type Tilstand = 'vaelg' | 'analyserer' | 'estimerer' | 'redigerer' | 'gemmer' | 'fejl';
 	let tilstand = $state<Tilstand>('vaelg');
 	let fejlBesked = $state<string | null>(null);
@@ -47,6 +55,16 @@
 	let manuel = $state(false);
 	/** Sat naar hun har svaret paa om appen skal gaette tallene. */
 	let harSvaretPaaGaet = $state(false);
+	/**
+	 * Hvor langt hun er i skemaet. Omlagt 2. september 2026 efter Linns
+	 * oenske: én lang side blev til tre trin i den raekkefoelge man selv
+	 * taenker en opskrift — retten, indholdet, tallene.
+	 *
+	 * Kommer hun fra et billede, er de to foerste trin allerede udfyldt af
+	 * analysen, og hun lander direkte paa trin 3. Hun kan gaa tilbage.
+	 */
+	let trin = $state<1 | 2 | 3>(1);
+	const TRIN_TITLER = ['Hvad hedder retten?', 'Hvad er der i?', 'Næringstallene'];
 	let estimatFejl = $state<string | null>(null);
 
 	// Snapshot af AI-analyserens originale forslag — bruges af effekten
@@ -113,15 +131,18 @@
 		estimatFejl = null;
 		navn = '';
 		antalPortioner = 4;
+		// MAENGDEN STAAR TOM, ikke paa nul. Et nul i feltet ligner et tal hun
+		// allerede har skrevet, og det blev sendt videre som "nul gram".
 		ingredienser = [
-			{ navn: '', maengde: 0, enhed: 'g' },
-			{ navn: '', maengde: 0, enhed: 'g' }
+			{ navn: '', maengde: TOM_MAENGDE, enhed: 'g' },
+			{ navn: '', maengde: TOM_MAENGDE, enhed: 'g' }
 		];
 		makro = { ...DEFAULT_MAKRO };
 		fremgangsmaade = '';
 		// Nul betyder "AI har ikke regnet paa det", saa omregningen ved
 		// portions-skift holder sig vaek. Hun skriver selv tallene pr portion.
 		originalAntalPortioner = 0;
+		trin = 1;
 		tilstand = 'redigerer';
 	}
 
@@ -153,7 +174,8 @@
 				error?: string;
 			};
 			if (data.error || !data.makroPrPortion) {
-				estimatFejl = data.error ?? 'Der var ikke nok at regne på.';
+				estimatFejl =
+					'Der var ikke nok at regne på. Skriv hvor meget der er af hver ingrediens, eller skriv tallene selv.';
 			} else {
 				makro = data.makroPrPortion;
 				// Saa omregningen ved portions-skift virker herfra.
@@ -163,6 +185,8 @@
 		} catch (e) {
 			console.error(e);
 			estimatFejl = 'Kunne ikke regne på opskriften. Skriv tallene selv, eller prøv igen.';
+			// Naar det gik galt, skal hun kunne komme videre og skrive tallene
+			// selv i stedet for at staa paa spoergsmaals-skaermen igen.
 		} finally {
 			harSvaretPaaGaet = true;
 			tilstand = 'redigerer';
@@ -205,6 +229,11 @@
 			makro = data.makroPrPortion;
 			originalAntalPortioner = data.antalPortioner;
 			originalMakro = { ...data.makroPrPortion };
+			// Analysen har allerede fyldt trin 1 og 2 ud, saa hun lander paa
+			// tallene. Trin-bjaelken viser at de to foerste er klaret, og
+			// tilbage-knappen foerer hende ind i dem hvis noget skal rettes.
+			harSvaretPaaGaet = true;
+			trin = 3;
 			tilstand = 'redigerer';
 		} catch (e) {
 			console.error(e);
@@ -213,8 +242,31 @@
 		}
 	}
 
+	function videre() {
+		fejlBesked = null;
+		if (trin < 3) trin = (trin + 1) as 1 | 2 | 3;
+	}
+
+	function tilbage() {
+		fejlBesked = null;
+		estimatFejl = null;
+		if (trin > 1) trin = (trin - 1) as 1 | 2 | 3;
+	}
+
+	/**
+	 * Sand naar der reelt ikke er noget at gemme. ALLE fem tal skal staa paa
+	 * nul foer vi spaerrer — se noten i gem().
+	 */
+	const alleTalNul = $derived(
+		!(Number(makro.protein) > 0) &&
+			!(Number(makro.fiber) > 0) &&
+			!(Number(makro.kh) > 0) &&
+			!(Number(makro.fedt) > 0) &&
+			!(Number(makro.kcal) > 0)
+	);
+
 	function tilfojIngrediens() {
-		ingredienser = [...ingredienser, { navn: '', maengde: 0, enhed: 'g' }];
+		ingredienser = [...ingredienser, { navn: '', maengde: TOM_MAENGDE, enhed: 'g' }];
 	}
 
 	function fjernIngrediens(i: number) {
@@ -225,12 +277,17 @@
 		const u = user;
 		if (!u) return;
 
-		// PROTEIN OG FIBER ER TVUNGNE. Linns beslutning 1. september. En
-		// opskrift uden dem laegger NUL i hendes dag hver eneste gang hun
-		// bruger den, og det ser rigtigt ud. I et modul der hedder 30-30 og
-		// handler om praecis de to tal er det den vaerst taenkelige fejl.
-		if (!(Number(makro.protein) > 0) || !(Number(makro.fiber) > 0)) {
-			fejlBesked = 'Protein og fiber skal udfyldes. Uden dem tæller retten nul i din dag.';
+		// SPAERREN ER LOESNET 2. september 2026. Linns beslutning: den
+		// spurgte foer efter BAADE protein og fiber over nul, og saa kunne en
+		// omelet med ost ikke gemmes — den har nul fiber, og det er rigtigt.
+		//
+		// Vi spaerrer derfor kun naar der reelt intet er at gemme: staar alle
+		// fem tal paa nul, laegger retten nul i hendes dag hver gang hun
+		// bruger den, og det ser rigtigt ud paa skaermen. Ét udfyldt tal er
+		// nok. Et enkelt nul i fiber, fedt eller kulhydrater spaerrer aldrig.
+		if (alleTalNul) {
+			fejlBesked =
+				'Alle tallene står på nul, så retten vil tælle nul i din dag. Udfyld mindst ét tal, eller lad appen regne dem ud.';
 			return;
 		}
 
@@ -256,7 +313,9 @@
 				navn: navn.trim() || 'Min opskrift',
 				billedeUrl,
 				antalPortioner: Math.max(1, antalPortioner),
-				ingredienser: ingredienser.filter((i) => i.navn.trim()),
+				ingredienser: ingredienser
+					.filter((i) => i.navn.trim())
+					.map((i) => ({ ...i, maengde: Number(i.maengde) || 0 })),
 				makroPrPortion: makro,
 				fremgangsmaade: fremgangsmaade.trim() || undefined
 			});
@@ -278,12 +337,32 @@
 
 <div class="page">
 	<header class="page-header">
-		<a class="back" href="/app/moduler/30-30-3?tab=mine">
-			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>Tilbage</span>
-		</a>
-		<div class="eyebrow">Min opskrift</div>
-		<h1>Tilføj en opskrift</h1>
+		{#if tilstand === 'redigerer' && trin > 1}
+			<button class="back" type="button" onclick={tilbage}>
+				<Icon name="arrow-l" size={14} color="var(--text2)" />
+				<span>Trin {trin - 1}</span>
+			</button>
+		{:else}
+			<a class="back" href="/app/moduler/30-30-3?tab=mine">
+				<Icon name="arrow-l" size={14} color="var(--text2)" />
+				<span>Tilbage</span>
+			</a>
+		{/if}
+		{#if tilstand === 'redigerer'}
+			<div class="eyebrow">Trin {trin} af 3</div>
+			<h1>{TRIN_TITLER[trin - 1]}</h1>
+			<!-- Bjaelken svarer paa det hun spurgte om foerst: hvor lang er
+			     vejen, og hvor langt er jeg. -->
+			<div class="trin-bar" aria-hidden="true">
+				<div class={trin >= 1 ? 'on' : ''}></div>
+				<div class={trin >= 2 ? 'on' : ''}></div>
+				<div class={trin >= 3 ? 'on' : ''}></div>
+			</div>
+			<div class="trin-tekst">Retten · Indholdet · Tallene</div>
+		{:else}
+			<div class="eyebrow">Min opskrift</div>
+			<h1>Tilføj en opskrift</h1>
+		{/if}
 	</header>
 
 	{#if tilstand === 'vaelg'}
@@ -384,55 +463,138 @@
 			</p>
 		</div>
 	{:else if tilstand === 'redigerer'}
-		<section class="card">
-			{#if billedePreviews.length > 0}
-				<img class="preview-billede" src={billedePreviews[0]} alt="Opskrift" />
-				{#if billedePreviews.length > 1}
-					<div class="hint center small">
-						{billedePreviews.length} billeder brugt til analysen — kun det første gemmes som thumbnail.
-					</div>
+		<!-- TRIN 1 — RETTEN. Navnet og portionerne foerst, for det er dem hun
+		     selv ville sige hoejt om retten. -->
+		{#if trin === 1}
+			<section class="card">
+				{#if billedePreviews.length > 0}
+					<img class="preview-billede" src={billedePreviews[0]} alt="Opskrift" />
+					{#if billedePreviews.length > 1}
+						<div class="hint center small">
+							{billedePreviews.length} billeder brugt til analysen — kun det første gemmes som thumbnail.
+						</div>
+					{/if}
 				{/if}
-			{/if}
-			<label class="felt">
-				<span class="felt-label">Opskriftens navn</span>
-				<input type="text" bind:value={navn} placeholder="fx Pasta med hytteost" />
-			</label>
-			<label class="felt">
-				<span class="felt-label">Antal portioner</span>
-				<input type="number" min="1" max="20" bind:value={antalPortioner} />
-			</label>
-		</section>
-
-		{#if manuel && !harSvaretPaaGaet}
-			<!-- Linns oenske 1. september: hun skal SPOERGES, ikke faa et
-			     gaet hun ikke har bedt om. Spoergsmaalet staar efter
-			     ingredienserne i loebet, men over tallene, saa hun har noget
-			     at regne paa naar hun svarer. -->
-			<section class="card gaet-kort">
-				<div class="section-label">Næringstallene</div>
+				<label class="felt">
+					<span class="felt-label">Opskriftens navn</span>
+					<input type="text" bind:value={navn} placeholder="fx Pasta med hytteost" />
+				</label>
+				<label class="felt">
+					<span class="felt-label">Hvor mange portioner giver den?</span>
+					<input type="number" min="1" max="20" bind:value={antalPortioner} />
+				</label>
 				<p class="hint">
-					Skal appen prøve at gætte dem ud fra dine ingredienser, eller vil du selv skrive dem?
-					Den gætter ud fra navne og mængder, så tallene er et skøn. Du kan rette dem bagefter.
+					Portionerne bruges til at regne tallene om, så du kan tage én portion i din dag.
 				</p>
-				<button class="analyser-knap" type="button" onclick={estimerFraTekst}>
-					Lad appen gætte tallene
-				</button>
-				<button
-					class="annuller-btn"
-					type="button"
-					style="margin-top: 8px"
-					onclick={() => (harSvaretPaaGaet = true)}
-				>
-					Jeg skriver dem selv
+			</section>
+
+			<!-- Billedet er valgfrit paa den skrevne vej. Det bliver kun gemt
+			     som lille billede i listen, det bliver ikke laest af AI'en. -->
+			{#if manuel && billedeFiler.length === 0}
+				<section class="card">
+					<div class="card-head">
+						<div class="section-label">Billede</div>
+						<div class="card-tael valgfri">valgfrit</div>
+					</div>
+					<label class="upload-knap sekundaer">
+						<span>Tilføj et billede af retten</span>
+						<input type="file" accept="image/*" onchange={handleFileInput} />
+					</label>
+				</section>
+			{:else if manuel}
+				<section class="card">
+					<div class="card-head">
+						<div class="section-label">Billede</div>
+					</div>
+					<img class="preview-billede" src={billedePreviews[0]} alt="Retten" />
+					<button class="annuller-btn" type="button" onclick={() => fjernBillede(0)}>
+						Fjern billedet
+					</button>
+				</section>
+			{/if}
+
+			<button class="gem-btn" type="button" onclick={videre}>Videre</button>
+
+			<!-- TRIN 2 — INDHOLDET. Ingredienserne skal staa foer tallene:
+			     det er dem appen regner ud fra, og det er dem hun har i
+			     hovedet lige efter navnet. -->
+		{:else if trin === 2}
+			<section class="card">
+				<div class="card-head">
+					<div class="section-label">Ingredienser</div>
+					<div class="card-tael">{ingredienser.length}</div>
+				</div>
+				{#each ingredienser as ing, i (i)}
+					<div class="ing-rad">
+						<input type="text" class="ing-navn" placeholder="Navn" bind:value={ing.navn} />
+						<input
+							type="number"
+							class="ing-maengde"
+							placeholder="0"
+							min="0"
+							step="any"
+							bind:value={ing.maengde}
+						/>
+						<input type="text" class="ing-enhed" placeholder="g" bind:value={ing.enhed} />
+						<button class="ing-slet" type="button" onclick={() => fjernIngrediens(i)}>×</button>
+					</div>
+				{/each}
+				<button class="tilfoj-btn" type="button" onclick={tilfojIngrediens}>
+					<Icon name="plus" size={12} color="var(--text2)" /> Tilføj ingrediens
 				</button>
 			</section>
-		{/if}
 
-		<section class="card">
-			<div class="card-head">
-				<div class="section-label">Makro pr portion</div>
-			</div>
-			{#if manuel}
+			<!-- Fremgangsmaaden. Linns oenske 1. september. Den kommer ALDRIG
+			     fra et billede, ogsaa naar opskriften er laest af AI'en: den
+			     gemmer kun ingredienser og tal. Feltet staar derfor begge veje. -->
+			<section class="card">
+				<div class="card-head">
+					<div class="section-label">Sådan laver du den</div>
+					<div class="card-tael valgfri">valgfrit</div>
+				</div>
+				<textarea
+					class="fremgang-felt"
+					rows="7"
+					placeholder="Skriv fremgangsmåden her, hvis du vil kunne slå den op senere"
+					bind:value={fremgangsmaade}
+				></textarea>
+			</section>
+
+			<button class="gem-btn" type="button" onclick={videre}>Videre til tallene</button>
+
+			<!-- TRIN 3 — TALLENE. Spoergsmaalet om appen skal regne staar nu
+			     EFTER ingredienserne. Foer 2. september blev hun spurgt paa en
+			     skaerm hvor der endnu ikke var noget at regne paa. -->
+		{:else if manuel && !harSvaretPaaGaet}
+			<section class="card gaet-kort">
+				<p class="hint" style="margin-top: 0">
+					Nu hvor ingredienserne står, kan appen prøve at regne tallene ud for dig. Den gætter ud
+					fra navne og mængder, så tallene er et skøn. Du kan rette dem bagefter.
+				</p>
+				{#if estimatFejl}
+					<div class="status-besked fejl" style="margin: 10px 0">{estimatFejl}</div>
+				{/if}
+				<!-- De to veje er lige gyldige, saa de skal fylde det samme.
+				     Foer 2. september var den ene hoej og bred og den anden lav
+				     og smal, og det saa ud som om den ene var den rigtige. -->
+				<div class="valg-par">
+					<button class="valg-knap" type="button" onclick={estimerFraTekst}>
+						Lad appen regne tallene ud
+					</button>
+					<button
+						class="valg-knap sekundaer"
+						type="button"
+						onclick={() => (harSvaretPaaGaet = true)}
+					>
+						Jeg skriver dem selv
+					</button>
+				</div>
+			</section>
+		{:else}
+			<section class="card">
+				<div class="card-head">
+					<div class="section-label">Makro pr portion</div>
+				</div>
 				<!-- DEN VIGTIGSTE LINJE PAA SKAERMEN. Skriver hun hele rettens
 				     tal paa en ret til fire, bliver hendes dag talt fire gange
 				     for hoejt hver eneste gang hun bruger opskriften. Det er den
@@ -441,91 +603,61 @@
 				<div class="pr-portion-baand">
 					Tallene er <b>pr portion</b> og ikke for hele retten.
 				</div>
-			{/if}
-			{#if estimatFejl}
-				<div class="status-besked fejl" style="margin-bottom: 10px">{estimatFejl}</div>
-			{/if}
-			<div class="makro-grid">
-				<label class="makro-felt">
-					<span>Protein (g)</span>
-					<input type="number" min="0" step="0.1" bind:value={makro.protein} />
-				</label>
-				<label class="makro-felt">
-					<span>Fiber (g)</span>
-					<input type="number" min="0" step="0.1" bind:value={makro.fiber} />
-				</label>
-				<label class="makro-felt">
-					<span>Kulhydrater (g)</span>
-					<input type="number" min="0" step="0.1" bind:value={makro.kh} />
-				</label>
-				<label class="makro-felt">
-					<span>Fedt (g)</span>
-					<input type="number" min="0" step="0.1" bind:value={makro.fedt} />
-				</label>
-				<label class="makro-felt fuld">
-					<span>Kalorier</span>
-					<input type="number" min="0" bind:value={makro.kcal} />
-				</label>
-			</div>
-		</section>
-
-		<section class="card">
-			<div class="card-head">
-				<div class="section-label">Ingredienser</div>
-				<div class="card-tael">{ingredienser.length}</div>
-			</div>
-			{#each ingredienser as ing, i (i)}
-				<div class="ing-rad">
-					<input type="text" class="ing-navn" placeholder="Navn" bind:value={ing.navn} />
-					<input
-						type="number"
-						class="ing-maengde"
-						placeholder="0"
-						min="0"
-						step="any"
-						bind:value={ing.maengde}
-					/>
-					<input type="text" class="ing-enhed" placeholder="g" bind:value={ing.enhed} />
-					<button class="ing-slet" type="button" onclick={() => fjernIngrediens(i)}>×</button>
+				{#if estimatFejl}
+					<div class="status-besked fejl" style="margin-bottom: 10px">{estimatFejl}</div>
+				{/if}
+				<div class="makro-grid">
+					<label class="makro-felt">
+						<span>Protein (g)</span>
+						<input type="number" min="0" step="0.1" bind:value={makro.protein} />
+					</label>
+					<label class="makro-felt">
+						<span>Fiber (g)</span>
+						<input type="number" min="0" step="0.1" bind:value={makro.fiber} />
+					</label>
+					<label class="makro-felt">
+						<span>Kulhydrater (g)</span>
+						<input type="number" min="0" step="0.1" bind:value={makro.kh} />
+					</label>
+					<label class="makro-felt">
+						<span>Fedt (g)</span>
+						<input type="number" min="0" step="0.1" bind:value={makro.fedt} />
+					</label>
+					<label class="makro-felt fuld">
+						<span>Kalorier</span>
+						<input type="number" min="0" bind:value={makro.kcal} />
+					</label>
 				</div>
-			{/each}
-			<button class="tilfoj-btn" type="button" onclick={tilfojIngrediens}>
-				<Icon name="plus" size={12} color="var(--text2)" /> Tilføj ingrediens
+				<!-- Nul fiber er rigtigt paa rigtig mange retter. Den linje her
+				     staar i stedet for den spaerre der laa foer. -->
+				{#if !(Number(makro.fiber) > 0) && !alleTalNul}
+					<div class="rolig-note">
+						Nul fiber er helt fint — mange retter har ingen. Du kan gemme alligevel.
+					</div>
+				{/if}
+			</section>
+
+			{#if fejlBesked}
+				<div class="status-besked fejl">{fejlBesked}</div>
+			{/if}
+
+			<button class="gem-btn" type="button" onclick={gem}>Gem opskrift</button>
+			<button
+				class="annuller-btn"
+				type="button"
+				onclick={() => {
+					tilstand = 'vaelg';
+					trin = 1;
+					manuel = false;
+					harSvaretPaaGaet = false;
+					for (const url of billedePreviews) URL.revokeObjectURL(url);
+					billedeFiler = [];
+					billedePreviews = [];
+				}}
+			>
+				Start forfra
 			</button>
-		</section>
-
-		<!-- Fremgangsmaaden. Linns oenske 1. september. Den kommer ALDRIG fra
-		     et billede, ogsaa naar opskriften er laest af AI'en: den gemmer
-		     kun ingredienser og tal. Feltet staar derfor begge veje. -->
-		<section class="card">
-			<div class="card-head">
-				<div class="section-label">Sådan laver du den</div>
-			</div>
-			<textarea
-				class="fremgang-felt"
-				rows="7"
-				placeholder="Skriv fremgangsmåden her, hvis du vil kunne slå den op senere"
-				bind:value={fremgangsmaade}
-			></textarea>
-		</section>
-
-		{#if fejlBesked}
-			<div class="status-besked fejl">{fejlBesked}</div>
 		{/if}
-
-		<button class="gem-btn" type="button" onclick={gem}>Gem opskrift</button>
-		<button
-			class="annuller-btn"
-			type="button"
-			onclick={() => {
-				tilstand = 'vaelg';
-				for (const url of billedePreviews) URL.revokeObjectURL(url);
-				billedeFiler = [];
-				billedePreviews = [];
-			}}
-		>
-			Start forfra
-		</button>
 	{:else if tilstand === 'gemmer'}
 		<Loading tekst="Gemmer..." />
 	{:else if tilstand === 'fejl'}
@@ -606,6 +738,89 @@
 		line-height: 1.55;
 		box-sizing: border-box;
 		resize: vertical;
+	}
+
+	/* De to veje til naeringstallene. Samme hoejde, samme bredde, samme
+	   skrift — kun farven skiller dem ad. */
+	.valg-par {
+		display: flex;
+		flex-direction: column;
+		gap: 9px;
+		margin-top: 13px;
+	}
+
+	.valg-knap {
+		display: block;
+		width: 100%;
+		padding: 14px;
+		background: var(--terra);
+		color: #fff;
+		font-size: max(16px, calc(14px * var(--fs-scale, 1)));
+		font-weight: 600;
+		font-family: var(--ff-b);
+		border: 1.5px solid var(--terra);
+		border-radius: 12px;
+		cursor: pointer;
+	}
+
+	.valg-knap.sekundaer {
+		background: var(--white);
+		color: var(--terra);
+	}
+
+	/* Trin-bjaelken. Tilfoejet 2. september 2026 sammen med de tre trin. */
+	.trin-bar {
+		display: flex;
+		gap: 6px;
+		margin: 14px 0 0;
+	}
+
+	.trin-bar div {
+		flex: 1;
+		height: 4px;
+		border-radius: 99px;
+		background: var(--border);
+	}
+
+	.trin-bar div.on {
+		background: var(--terra);
+	}
+
+	.trin-tekst {
+		margin-top: 7px;
+		color: var(--text3);
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		letter-spacing: 0.04em;
+	}
+
+	/* Staar i stedet for den spaerre der laa paa fiber foer 2. september. */
+	.rolig-note {
+		margin-top: 11px;
+		padding: 10px 12px;
+		background: var(--sdim);
+		border-radius: 11px;
+		color: #3f6b4f;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		line-height: 1.5;
+	}
+
+	.card-tael.valgfri {
+		background: none;
+		color: var(--text3);
+		font-weight: 500;
+		text-transform: none;
+		letter-spacing: 0;
+	}
+
+	/* Tilbage er en knap paa trin 2 og 3, et link paa trin 1. Den skal se
+	   ens ud begge steder. */
+	button.back {
+		background: none;
+		border: 0;
+		padding: 0;
+		font-family: var(--ff-b);
+		cursor: pointer;
 	}
 
 	.page {
