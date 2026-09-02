@@ -26,6 +26,7 @@
 		MAALTIDSTYPE_LABELS,
 		type Maaltidstype
 	} from '$lib/content/kost';
+	import { ENHEDER } from '$lib/content/mineOpskrifter3';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
@@ -50,6 +51,21 @@
 	let makro = $state<MinOpskriftMakro>({ ...DEFAULT_MAKRO });
 	let nyBilledeFil = $state<File | null>(null);
 	let nyBilledePreview = $state<string | null>(null);
+	/**
+	 * Saadan laver hun retten. Feltet blev til 1. september 2026, men kunne
+	 * kun skrives ved oprettelsen. Hun kunne hverken laese eller rette det
+	 * bagefter, saa teksten laa gemt uden vej ind til. Rettet 2. september.
+	 * Langt de fleste opskrifter har den ikke, saa skaermen skal kunne staa
+	 * uden.
+	 */
+	let fremgangsmaade = $state('');
+	/** Naar appen regner naeringstallene ud af ingredienserne. */
+	let regner = $state(false);
+	let regneFejl = $state<string | null>(null);
+
+	/** Et tomt maengde-felt. Se noten paa opret-siden. */
+	const TOM_MAENGDE = undefined as unknown as number;
+	const ANDET = '__andet__';
 
 	// Snapshot af original makro + antal portioner taget ved start af rediger.
 	// Bruges af effekten nedenfor til at omberegne makro-pr-portion saa
@@ -109,8 +125,10 @@
 		makro = { ...opskrift.makroPrPortion };
 		originalAntalPortioner = opskrift.antalPortioner;
 		originalMakro = { ...opskrift.makroPrPortion };
+		fremgangsmaade = opskrift.fremgangsmaade ?? '';
 		nyBilledeFil = null;
 		nyBilledePreview = null;
+		regneFejl = null;
 		editMode = true;
 		gemBesked = null;
 	}
@@ -157,7 +175,57 @@
 	}
 
 	function tilfojIngrediens() {
-		ingredienser = [...ingredienser, { navn: '', maengde: 0, enhed: 'g' }];
+		ingredienser = [...ingredienser, { navn: '', maengde: TOM_MAENGDE, enhed: 'g' }];
+	}
+
+	/** Se noten paa opret-siden: staar der en enhed vi ikke kender, ER den hendes egen. */
+	function erEgenEnhed(enhed: string): boolean {
+		return !ENHEDER.includes((enhed ?? '').trim());
+	}
+
+	function vaelgEnhed(i: number, vaerdi: string) {
+		ingredienser[i].enhed = vaerdi === ANDET ? '' : vaerdi;
+	}
+
+	/**
+	 * Lad appen regne naeringstallene ud af ingredienserne. Hjaelpen fandtes
+	 * kun da opskriften blev oprettet, saa rettede hun en ingrediens
+	 * bagefter, stod hun med regnestykket selv.
+	 *
+	 * DEN GAETTER, og det staar paa skaermen. Alle tal kan rettes bagefter.
+	 */
+	async function regnTallene() {
+		const brugbare = ingredienser.filter((i) => i.navn.trim());
+		if (brugbare.length === 0) {
+			regneFejl = 'Skriv mindst én ingrediens først.';
+			return;
+		}
+		regner = true;
+		regneFejl = null;
+		try {
+			const idToken = await user?.getIdToken();
+			const res = await fetch('/api/estimer-opskrift', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+				body: JSON.stringify({ navn, antalPortioner, ingredienser: brugbare })
+			});
+			if (!res.ok) throw new Error(await res.text());
+			const data = (await res.json()) as { makroPrPortion?: MinOpskriftMakro; error?: string };
+			if (data.error || !data.makroPrPortion) {
+				regneFejl =
+					'Der var ikke nok at regne på. Skriv hvor meget der er af hver ingrediens, eller skriv tallene selv.';
+			} else {
+				makro = data.makroPrPortion;
+				// Saa omregningen ved portions-skift regner videre paa de nye tal.
+				originalMakro = { ...data.makroPrPortion };
+				originalAntalPortioner = antalPortioner;
+			}
+		} catch (e) {
+			console.error(e);
+			regneFejl = 'Kunne ikke regne på opskriften. Skriv tallene selv, eller prøv igen.';
+		} finally {
+			regner = false;
+		}
 	}
 
 	function fjernIngrediens(i: number) {
@@ -200,8 +268,11 @@
 			await gemMinOpskrift(u.uid, id, {
 				navn: navnTrimmet,
 				antalPortioner: Math.max(1, antalPortioner),
-				ingredienser: rensede,
+				ingredienser: rensede.map((i) => ({ ...i, maengde: Number(i.maengde) || 0 })),
 				makroPrPortion: makro,
+				// Tom tekst skrives som tom, ikke som ingenting. Ellers kunne
+				// hun ikke slette en fremgangsmaade hun havde fortrudt.
+				fremgangsmaade: fremgangsmaade.trim(),
 				...(nyBilledeUrl ? { billedeUrl: nyBilledeUrl } : {})
 			});
 
@@ -373,12 +444,26 @@
 				<ul class="ing-liste">
 					{#each opskrift.ingredienser as ing, i (i)}
 						<li class="ing-item">
-							<span class="ing-maengde">{ing.maengde} {ing.enhed}</span>
+							<!-- Staar der ingen maengde, skriver vi ikke "0 g". -->
+							<span class="ing-maengde"
+								>{ing.maengde ? `${ing.maengde} ${ing.enhed ?? ''}`.trim() : ''}</span
+							>
 							<span class="ing-navn">{ing.navn}</span>
 						</li>
 					{/each}
 				</ul>
 			</section>
+
+			<!-- Fremgangsmaaden. Den blev skrevet ved oprettelsen, men blev
+			     aldrig vist bagefter. Rettet 2. september 2026. De fleste
+			     opskrifter har den ikke, saa kortet staar kun naar der er
+			     noget at vise. -->
+			{#if opskrift.fremgangsmaade?.trim()}
+				<section class="card">
+					<div class="section-label">Sådan laver du den</div>
+					<p class="fremgang-tekst">{opskrift.fremgangsmaade}</p>
+				</section>
+			{/if}
 
 			{#if gemBesked}
 				<div class="status-besked ok">{gemBesked}</div>
@@ -444,8 +529,94 @@
 
 			<section class="card">
 				<div class="card-head">
+					<div class="section-label">Ingredienser</div>
+					<div class="card-tael">{ingredienser.length}</div>
+				</div>
+				<!-- To linjer pr ingrediens, som paa opret-siden. Navnet faar
+				     hele bredden, de smaa felter staar under. -->
+				{#each ingredienser as ing, i (i)}
+					<div class="ing-rad">
+						<input
+							type="text"
+							class="ing-navn-input"
+							placeholder="Ingrediens"
+							bind:value={ing.navn}
+						/>
+						<div class="ing-tal">
+							<input
+								type="number"
+								class="ing-maengde-input"
+								placeholder="Mængde"
+								min="0"
+								step="any"
+								bind:value={ing.maengde}
+							/>
+							<select
+								class="ing-enhed-input"
+								value={erEgenEnhed(ing.enhed) ? ANDET : ing.enhed.trim()}
+								onchange={(e) => vaelgEnhed(i, e.currentTarget.value)}
+								aria-label="Enhed"
+							>
+								{#each ENHEDER as e (e)}
+									<option value={e}>{e}</option>
+								{/each}
+								<option value={ANDET}>andet</option>
+							</select>
+							<button
+								class="ing-slet"
+								type="button"
+								aria-label="Fjern ingrediens"
+								onclick={() => fjernIngrediens(i)}>×</button
+							>
+						</div>
+						{#if erEgenEnhed(ing.enhed)}
+							<input
+								type="text"
+								class="egen-enhed"
+								placeholder="Skriv din egen enhed, fx pose eller glas"
+								bind:value={ing.enhed}
+							/>
+						{/if}
+					</div>
+				{/each}
+				<button class="tilfoj-btn" type="button" onclick={tilfojIngrediens}>
+					<Icon name="plus" size={12} color="var(--text2)" /> Tilføj ingrediens
+				</button>
+			</section>
+
+			<section class="card">
+				<div class="card-head">
+					<div class="section-label">Sådan laver du den</div>
+					<div class="card-tael valgfri">valgfrit</div>
+				</div>
+				<textarea
+					class="fremgang-felt"
+					rows="7"
+					placeholder="Skriv fremgangsmåden her, hvis du vil kunne slå den op senere"
+					bind:value={fremgangsmaade}
+				></textarea>
+			</section>
+
+			<section class="card">
+				<div class="card-head">
 					<div class="section-label">Makro pr portion</div>
 				</div>
+				<div class="pr-portion-baand">
+					Tallene er <b>pr portion</b> og ikke for hele retten.
+				</div>
+				<!-- Hjaelpen til tallene fandtes kun da opskriften blev
+				     oprettet. Rettede hun en ingrediens bagefter, stod hun med
+				     regnestykket selv. -->
+				{#if regner}
+					<Loading tekst="Regner på opskriften..." />
+				{:else}
+					<button class="regn-knap" type="button" onclick={regnTallene}>
+						Lad appen regne tallene ud af ingredienserne
+					</button>
+				{/if}
+				{#if regneFejl}
+					<div class="status-besked fejl" style="margin-top: 10px">{regneFejl}</div>
+				{/if}
 				<div class="makro-edit-grid">
 					<label class="makro-edit-felt">
 						<span>Protein (g)</span>
@@ -468,31 +639,6 @@
 						<input type="number" min="0" bind:value={makro.kcal} />
 					</label>
 				</div>
-			</section>
-
-			<section class="card">
-				<div class="card-head">
-					<div class="section-label">Ingredienser</div>
-					<div class="card-tael">{ingredienser.length}</div>
-				</div>
-				{#each ingredienser as ing, i (i)}
-					<div class="ing-rad">
-						<input type="text" class="ing-navn-input" placeholder="Navn" bind:value={ing.navn} />
-						<input
-							type="number"
-							class="ing-maengde-input"
-							placeholder="0"
-							min="0"
-							step="any"
-							bind:value={ing.maengde}
-						/>
-						<input type="text" class="ing-enhed-input" placeholder="g" bind:value={ing.enhed} />
-						<button class="ing-slet" type="button" onclick={() => fjernIngrediens(i)}>×</button>
-					</div>
-				{/each}
-				<button class="tilfoj-btn" type="button" onclick={tilfojIngrediens}>
-					<Icon name="plus" size={12} color="var(--text2)" /> Tilføj ingrediens
-				</button>
 			</section>
 
 			{#if gemBesked}
@@ -941,14 +1087,110 @@
 		box-sizing: border-box;
 	}
 
+	/* To linjer pr ingrediens, som paa opret-siden. Navnet oeverst i fuld
+	   bredde, de smaa felter under, og en tynd streg mellem dem. Lavet om 2.
+	   september 2026, da enheden blev en liste og navnefeltet blev for
+	   smalt paa en telefon. */
 	.ing-rad {
-		display: grid;
-		grid-template-columns: 1fr 60px 60px 30px;
-		gap: 6px;
-		margin-bottom: 6px;
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+		padding-bottom: 10px;
+		margin-bottom: 10px;
+		border-bottom: 1px solid var(--border);
 	}
 
-	.ing-rad input {
+	.ing-rad:last-of-type {
+		border-bottom: none;
+		padding-bottom: 0;
+	}
+
+	.ing-tal {
+		display: grid;
+		grid-template-columns: 1fr 118px 38px;
+		gap: 5px;
+	}
+
+	select.ing-enhed-input {
+		/* Den lille pil er tegnet med i baggrunden. Uden den ligner feltet et
+		   almindeligt skrivefelt. Skriften bliver paa 16px, ellers zoomer
+		   iPhone ind naar hun rammer feltet. */
+		padding: 8px 22px 8px 8px;
+		appearance: none;
+		text-align: center;
+		text-align-last: center;
+		cursor: pointer;
+		background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a08878' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 8px center;
+	}
+
+	.egen-enhed {
+		display: block;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	/* Fremgangsmaaden, baade at laese og at skrive. */
+	.fremgang-tekst {
+		margin: 0;
+		color: var(--text2);
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		line-height: 1.7;
+		white-space: pre-wrap;
+	}
+
+	.fremgang-felt {
+		display: block;
+		width: 100%;
+		padding: 12px 13px;
+		background: var(--white);
+		border: 1px solid var(--border);
+		border-radius: 11px;
+		color: var(--text);
+		font-size: max(16px, calc(14px * var(--fs-scale, 1)));
+		font-family: var(--ff-b);
+		line-height: 1.55;
+		box-sizing: border-box;
+		resize: vertical;
+	}
+
+	.card-tael.valgfri {
+		background: none;
+		color: var(--text3);
+		font-weight: 500;
+		text-transform: none;
+		letter-spacing: 0;
+	}
+
+	/* Den vigtigste linje paa skaermen, samme som paa opret-siden. */
+	.pr-portion-baand {
+		margin-bottom: 12px;
+		padding: 11px 13px;
+		background: var(--gdim);
+		border-radius: 11px;
+		color: #8a6a3a;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		line-height: 1.45;
+	}
+
+	.regn-knap {
+		display: block;
+		width: 100%;
+		margin-bottom: 12px;
+		padding: 13px;
+		background: var(--white);
+		border: 1.5px solid var(--terra);
+		border-radius: 12px;
+		color: var(--terra);
+		font-size: max(16px, calc(14px * var(--fs-scale, 1)));
+		font-weight: 600;
+		font-family: var(--ff-b);
+		cursor: pointer;
+	}
+
+	.ing-rad input,
+	.ing-rad select {
 		padding: 8px 10px;
 		border: 1px solid var(--border);
 		border-radius: 8px;
