@@ -26,7 +26,11 @@ import { hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
 import { MAX_QUERIES_PR_DAG, quotaNoegle } from '$lib/content/linnAi';
 
 const MODEL = 'claude-sonnet-4-6';
-const MAX_TOKENS = 2048;
+// Loeftet fra 2048 den 2. september 2026. Svaret indeholder et regnestykke
+// pr ingrediens, saa en lang opskrift lob toer for plads midtvejs, og et
+// halvt JSON-svar kunne ikke laeses. 60 ingredienser er loftet i forvejen,
+// og de fylder cirka 4000 tokens, saa der er rigelig luft nu.
+const MAX_TOKENS = 8192;
 const MAX_INGREDIENSER = 60;
 
 async function verificerToken(idToken: string): Promise<string | null> {
@@ -123,8 +127,19 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(429, `Du har brugt dine ${MAX_QUERIES_PR_DAG} forsøg i dag. Prøv igen i morgen.`);
 	}
 
+	// MAENGDEN SKRIVES KUN NAAR DEN ER DER. Foer 2. september sendte vi
+	// "- 0 g Aeg" naar kunden ikke havde skrevet en maengde, og saa fik
+	// modellen at vide at der var nul gram aeg. Den svarede helt korrekt at
+	// der ikke var noget at regne paa, og kunden saa en app der ikke kunne
+	// regne. Uden maengde antager systemprompten en almindelig portion.
 	const linjer = ingredienser
-		.map((i) => `- ${i.maengde ?? ''} ${(i.enhed ?? '').trim()} ${(i.navn ?? '').trim()}`.trim())
+		.map((i) => {
+			const maengde = Number(i.maengde);
+			const harMaengde = Number.isFinite(maengde) && maengde > 0;
+			const enhed = (i.enhed ?? '').trim();
+			const navn = (i.navn ?? '').trim();
+			return harMaengde ? `- ${maengde} ${enhed} ${navn}`.replace(/\s+/g, ' ').trim() : `- ${navn}`;
+		})
 		.join('\n');
 	const besked = `Ret: ${(body.navn ?? '').trim() || 'Uden navn'}\nAntal portioner: ${antalPortioner}\n\nIngredienser:\n${linjer}`;
 
@@ -148,12 +163,26 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(502, 'Kunne ikke regne på opskriften lige nu');
 	}
 
-	const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
+	const data = (await res.json()) as {
+		content?: Array<{ type: string; text?: string }>;
+		stop_reason?: string;
+	};
+
+	// Loeb svaret alligevel toer for plads, saa sig det som det er i stedet
+	// for at fejle paa et halvt JSON-svar.
+	if (data.stop_reason === 'max_tokens') {
+		console.error('[estimer-opskrift] svaret blev afkortet');
+		throw error(502, 'Opskriften er for lang til at regne på i ét stykke. Skriv tallene selv');
+	}
 	const raa = data.content?.find((c) => c.type === 'text')?.text ?? '';
 
 	// Modellen kan finde paa at pakke svaret i markdown, selv om den er bedt
 	// om at lade vaere. Vi klipper det vaek i stedet for at fejle.
-	const renset = raa.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+	const renset = raa
+		.trim()
+		.replace(/^```(?:json)?/i, '')
+		.replace(/```$/, '')
+		.trim();
 
 	let svar: unknown;
 	try {
