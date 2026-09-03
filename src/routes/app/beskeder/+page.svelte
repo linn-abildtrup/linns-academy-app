@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
+	import { getContext, tick } from 'svelte';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
@@ -167,6 +167,19 @@
 	// Index på de assistant-svar kunden allerede har sendt videre til Linn.
 	let aiSendtIndex = $state<Set<number>>(new Set());
 
+	// Linn AI vises som en almindelig chat: samtalen ruller for sig selv, og
+	// skrivefeltet staar fast i bunden. Derfor skal vi selv rulle til nyeste
+	// besked — baade naar samtalen hentes og hver gang der kommer et svar.
+	let aiRulle = $state<HTMLDivElement | null>(null);
+	const visChat = $derived(harLinnAi && aktivFane === 'ai');
+
+	async function rulTilNyeste(bloed = true) {
+		await tick();
+		const el = aiRulle;
+		if (!el) return;
+		el.scrollTo({ top: el.scrollHeight, behavior: bloed ? 'smooth' : 'auto' });
+	}
+
 	// Hent kundens seneste Linn AI-samtale naar hun har adgang.
 	$effect(() => {
 		const u = user;
@@ -175,7 +188,12 @@
 		void (async () => {
 			try {
 				const samtaler = await hentSamtaler(u.uid);
-				if (samtaler.length > 0) aiSamtale = samtaler[0];
+				if (samtaler.length > 0) {
+					aiSamtale = samtaler[0];
+					// Uden bloed rulning ved foerste visning: hun skal bare staa
+					// nederst med det samme, ikke se skaermen glide.
+					void rulTilNyeste(false);
+				}
 			} catch (e) {
 				console.warn('Kunne ikke hente Linn AI-samtale:', e);
 			}
@@ -207,6 +225,7 @@
 			// Vis bruger-besked optimistisk.
 			aiSamtale = { ...samtale, beskeder: [...samtale.beskeder, brugerBesked] };
 			aiInput = '';
+			void rulTilNyeste();
 
 			const idToken = await u.getIdToken();
 			const historik = samtale.beskeder.map((b) => ({ rolle: b.rolle, indhold: b.indhold }));
@@ -226,6 +245,7 @@
 			};
 			await tilfojBeskeder(u.uid, samtale.id, [brugerBesked, aiBesked]);
 			aiSamtale = (await hentSamtale(u.uid, samtale.id)) ?? aiSamtale;
+			void rulTilNyeste();
 		} catch (e) {
 			console.error('Linn AI fejlede:', e);
 			aiFejl = harBeskederTilLinn
@@ -280,7 +300,7 @@
 	});
 </script>
 
-<div class="page">
+<div class="page" class:chat={visChat}>
 	<header class="page-header">
 		<div class="titel-rk">
 			<div>
@@ -331,83 +351,90 @@
 </div>
 
 {#snippet linnAiFane()}
+	<!-- Linn AI staar som en almindelig chat: samtalen ruller for sig selv,
+	     nyeste nederst, og skrivefeltet ligger fast over bundmenuen. Hun skal
+	     aldrig rulle op for at stille naeste spoergsmaal. -->
 	<section class="ai-card">
-		<div class="ai-header">
-			<div class="ai-ikon">
-				<Icon name="sparkle" size={18} color="#fff" />
-			</div>
-			<div>
-				<div class="ai-titel">Spørg Linn AI</div>
-				<div class="ai-sub">
-					Få svar med det samme — bygget på alle de svar Linn har givet andre.{#if harBeskederTilLinn}
-						Er svaret ikke godt nok, kan du sende dit spørgsmål videre til Linn.{/if}
+		<div class="ai-rulle" bind:this={aiRulle}>
+			{#if !aiSamtale || aiSamtale.beskeder.length === 0}
+				<div class="ai-velkomst">
+					<div class="ai-ikon">
+						<Icon name="sparkle" size={18} color="#fff" />
+					</div>
+					<div class="ai-titel">Spørg Linn AI</div>
+					<div class="ai-sub">
+						Få svar med det samme — bygget på alle de svar Linn har givet andre.{#if harBeskederTilLinn}
+							Er svaret ikke godt nok, kan du sende dit spørgsmål videre til Linn.{/if}
+					</div>
 				</div>
-			</div>
+			{:else}
+				<div class="ai-traad">
+					{#each aiSamtale.beskeder as b, i (i)}
+						{#if b.rolle === 'user'}
+							<div class="ai-besked ai-bruger">{b.indhold}</div>
+						{:else}
+							<div class="ai-besked ai-assistant">
+								<div class="ai-svar-tekst">{b.indhold}</div>
+								{#if b.sikkerhed !== null && b.sikkerhed !== undefined}
+									<div class="ai-sikkerhed" class:lav={b.sikkerhed < 60}>
+										<Icon
+											name={b.sikkerhed < 60 ? 'lightbulb' : 'check'}
+											size={12}
+											color="currentColor"
+										/>
+										<span>
+											{b.sikkerhed}% sikker på at dette er som Linn ville svare{b.sikkerhed < 60 &&
+											harBeskederTilLinn
+												? ' — overvej at spørge Linn'
+												: ''}
+										</span>
+									</div>
+								{/if}
+								{#if harBeskederTilLinn}
+									{#if aiSendtIndex.has(i)}
+										<div class="ai-sendt-note">Sendt til Linn ✓</div>
+									{:else}
+										<button
+											type="button"
+											class="ghost-knap ai-send-knap"
+											onclick={() => sendAiTilLinn(i)}
+										>
+											Send til Linn i stedet
+										</button>
+									{/if}
+								{/if}
+							</div>
+						{/if}
+					{/each}
+					{#if aiLoader}
+						<div class="ai-besked ai-assistant ai-taenker">Linn AI tænker...</div>
+					{/if}
+				</div>
+			{/if}
+
+			{#if aiFejl}
+				<div class="status fejl">{aiFejl}</div>
+			{/if}
 		</div>
 
-		<label class="felt">
+		<div class="ai-skrivelinje">
 			<textarea
-				class="felt-input"
-				placeholder="Skriv dit spørgsmål til Linn AI..."
-				rows="3"
+				class="ai-felt"
+				placeholder="Skriv dit spørgsmål..."
+				rows="1"
 				bind:value={aiInput}
 				disabled={aiLoader}
 			></textarea>
-		</label>
-		<button
-			type="button"
-			class="primary-knap"
-			onclick={spoergLinnAi}
-			disabled={aiLoader || !aiInput.trim()}
-		>
-			{aiLoader ? 'Linn AI tænker...' : 'Spørg Linn AI'}
-		</button>
-
-		{#if aiFejl}
-			<div class="status fejl">{aiFejl}</div>
-		{/if}
-
-		{#if aiSamtale && aiSamtale.beskeder.length > 0}
-			<div class="ai-traad">
-				{#each aiSamtale.beskeder as b, i (i)}
-					{#if b.rolle === 'user'}
-						<div class="ai-besked ai-bruger">{b.indhold}</div>
-					{:else}
-						<div class="ai-besked ai-assistant">
-							<div class="ai-svar-tekst">{b.indhold}</div>
-							{#if b.sikkerhed !== null && b.sikkerhed !== undefined}
-								<div class="ai-sikkerhed" class:lav={b.sikkerhed < 60}>
-									<Icon
-										name={b.sikkerhed < 60 ? 'lightbulb' : 'check'}
-										size={12}
-										color="currentColor"
-									/>
-									<span>
-										{b.sikkerhed}% sikker på at dette er som Linn ville svare{b.sikkerhed < 60 &&
-										harBeskederTilLinn
-											? ' — overvej at spørge Linn'
-											: ''}
-									</span>
-								</div>
-							{/if}
-							{#if harBeskederTilLinn}
-								{#if aiSendtIndex.has(i)}
-									<div class="ai-sendt-note">Sendt til Linn ✓</div>
-								{:else}
-									<button
-										type="button"
-										class="ghost-knap ai-send-knap"
-										onclick={() => sendAiTilLinn(i)}
-									>
-										Send til Linn i stedet
-									</button>
-								{/if}
-							{/if}
-						</div>
-					{/if}
-				{/each}
-			</div>
-		{/if}
+			<button
+				type="button"
+				class="ai-send"
+				onclick={spoergLinnAi}
+				disabled={aiLoader || !aiInput.trim()}
+				aria-label="Spørg Linn AI"
+			>
+				<Icon name="sparkle" size={16} color="#fff" />
+			</button>
+		</div>
 	</section>
 {/snippet}
 
@@ -509,6 +536,17 @@
 		margin: 0 auto;
 	}
 
+	/* Chat-tilstand: siden fylder praecis skaermen mellem toppen og
+	   bundmenuen, saa det er samtalen der ruller — ikke hele siden.
+	   Bundmenuen ligger uden for .page og bliver derfor staaende. */
+	.page.chat {
+		height: 100%;
+		padding-bottom: 0;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
 	/* Titel og info-knap i samme raekke, saa knappen sidder samme sted paa
 	   hver side. */
 	.titel-rk {
@@ -591,24 +629,92 @@
 	}
 
 	.ai-card {
+		flex: 1 1 auto;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* Selve rullefeltet med samtalen. min-height: 0 er det der faar den til
+	   at rulle indeni i stedet for at skubbe skrivefeltet ned. */
+	.ai-rulle {
+		flex: 1 1 auto;
+		min-height: 0;
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+		padding-bottom: 8px;
+	}
+
+	/* Tom samtale: den lille praesentation staar midt paa fladen. */
+	.ai-velkomst {
 		background: var(--white);
 		border: 1px solid var(--terra);
 		border-radius: 14px;
-		padding: 16px 18px;
+		padding: 18px;
+		text-align: center;
 		display: flex;
 		flex-direction: column;
-		gap: 14px;
-		margin-bottom: 16px;
+		align-items: center;
+		gap: 8px;
 	}
 
-	.ai-header {
+	/* Skrivefeltet ligger fast i bunden, lige over bundmenuen. */
+	.ai-skrivelinje {
+		flex: 0 0 auto;
 		display: flex;
-		gap: 12px;
-		align-items: flex-start;
+		align-items: flex-end;
+		gap: 8px;
+		padding: 10px 0 12px;
+		background: var(--bg);
+		border-top: 1px solid var(--border);
+	}
+
+	.ai-felt {
+		flex: 1 1 auto;
+		min-width: 0;
+		resize: none;
+		max-height: 120px;
+		background: var(--white);
+		border: 1px solid var(--border2);
+		border-radius: 18px;
+		padding: 11px 14px;
+		font-family: var(--ff-b);
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		line-height: 1.5;
+		color: var(--text);
+	}
+
+	.ai-felt:focus {
+		outline: none;
+		border-color: var(--terra);
+	}
+
+	.ai-send {
+		flex: 0 0 auto;
+		width: 38px;
+		height: 38px;
+		border: none;
+		border-radius: 50%;
+		background: var(--terra);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+	}
+
+	.ai-send:disabled {
+		opacity: 0.4;
+		cursor: default;
+	}
+
+	.ai-taenker {
+		color: var(--text3);
+		font-size: calc(13px * var(--fs-scale, 1));
 	}
 
 	.ai-ikon {
 		flex: 0 0 auto;
+		margin-bottom: 2px;
 		width: 34px;
 		height: 34px;
 		border-radius: 10px;
@@ -635,9 +741,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
-		margin-top: 16px;
-		padding-top: 16px;
-		border-top: 1px solid var(--border);
 	}
 
 	.ai-besked {
