@@ -351,31 +351,30 @@ export interface StatusTal {
 	under: string;
 	rute: string;
 	/**
-	 * Fremhaevet i ploomme. KUN naar der er noget der venter paa hende.
-	 * Er alt i orden, er intet fremhaevet, og skaermen falder til ro. Det
-	 * er hele grunden til at fremhaevelsen betyder noget.
+	 * Fremhaevet. KUN naar der er noget der venter paa hende. Er alt i
+	 * orden, er intet fremhaevet, og skaermen falder til ro. Det er hele
+	 * grunden til at fremhaevelsen betyder noget.
 	 */
 	vigtig?: boolean;
-	/** Daempet honning. Noget der bør ses paa, men som ikke haster i dag. */
-	ro?: boolean;
 }
 
 export interface StatusInput {
 	ubesvarede: number | null;
-	holdUdenTraening: number | null;
-	ingredienserUdenKobling: number | null;
-	opskrifterIkkeGodkendt: number | null;
 	aeldsteSpoergsmaalDage: number | null;
-	holdNavn: string | null;
-	opskrifterIAlt: number | null;
 }
 
 /**
- * De fire tal, i den raekkefoelge Linn godkendte 1. september.
+ * Tallene oeverst paa forsiden.
  *
- * FELTET ER LAVET TIL AT VOKSE. Linns ord: gem fliserne til andre ting vi
- * finder. Der skal ikke laves om paa noget for at haenge et femte tal op,
- * der skal kun laegges en raekke til her.
+ * DER ER KUN ÉT TILBAGE. Linns beslutning 3. september 2026: de tre
+ * oevrige, altsaa hold uden traening, ingredienser uden kobling og
+ * opskrifter der mangler godkendelse, blev fjernet igen. De var mit gaet
+ * paa hvad hun kigger efter om morgenen, og svaret var spoergsmaal.
+ *
+ * PLADSEN GAAR TIL "DAGENS OPGAVER", som ikke er kodet endnu.
+ *
+ * Feltet er stadig lavet til at vokse: der skal kun laegges en raekke til
+ * her for at haenge et tal mere op.
  */
 export function byggStatus(i: StatusInput): StatusTal[] {
 	return [
@@ -388,35 +387,7 @@ export function byggStatus(i: StatusInput): StatusTal[] {
 					? `ældste er ${i.aeldsteSpoergsmaalDage} ${i.aeldsteSpoergsmaalDage === 1 ? 'dag' : 'dage'} gammelt`
 					: 'ingen venter lige nu',
 			rute: '/ny/admin/spoergsmaal',
-			// Kun naar der FAKTISK venter noget.
 			vigtig: (i.ubesvarede ?? 0) > 0
-		},
-		{
-			id: 'hold',
-			vaerdi: i.holdUdenTraening,
-			mrk: i.holdUdenTraening === 1 ? 'hold uden træning' : 'hold uden træning',
-			under: i.holdNavn ?? 'alle aktive hold har et program',
-			rute: '/ny/admin/traening/hold',
-			// Den farligste af dem alle: der kommer ingen fejl naar det
-			// glemmes, der kommer bare ingenting. Se 9.32.
-			ro: (i.holdUdenTraening ?? 0) > 0
-		},
-		{
-			id: 'kobling',
-			vaerdi: i.ingredienserUdenKobling,
-			mrk: 'ingredienser uden kobling',
-			under:
-				(i.ingredienserUdenKobling ?? 0) > 0
-					? 'tæller ikke med i nogen opskrift'
-					: 'alle er koblet',
-			rute: '/ny/admin/ingrediens-tal'
-		},
-		{
-			id: 'godkendt',
-			vaerdi: i.opskrifterIkkeGodkendt,
-			mrk: 'opskrifter ikke godkendt',
-			under: i.opskrifterIAlt ? `af ${i.opskrifterIAlt}` : '',
-			rute: '/app/admin/opskrifter'
 		}
 	];
 }

@@ -35,12 +35,6 @@
 		type StatusInput
 	} from '$lib/content/adminForside3';
 	import { hentAlleSpoergsmaal } from '$lib/firestore/spoergsmaal';
-	import { hentAlleOpskrifter } from '$lib/firestore/opskrifter';
-	import { hentAlleForlob } from '$lib/firestore/forlob';
-	import { hentTildelinger3 } from '$lib/firestore/traeningTildeling3';
-	import { hentKoblinger } from '$lib/firestore/ingrediensKobling3';
-	import { byggOversigt } from '$lib/content/ingrediensOversigt3';
-	import { normaliserKategorier } from '$lib/content/opskrifter';
 
 	const hentUser = getContext<() => User | null>('user');
 	const maaVaereHer = $derived(isAdmin(hentUser()));
@@ -60,22 +54,16 @@
 
 	// null betyder "hentes stadig". Se noten paa StatusTal: nul er en helt
 	// anden besked end at vi ikke ved det endnu.
-	let tal = $state<StatusInput>({
-		ubesvarede: null,
-		holdUdenTraening: null,
-		ingredienserUdenKobling: null,
-		opskrifterIkkeGodkendt: null,
-		aeldsteSpoergsmaalDage: null,
-		holdNavn: null,
-		opskrifterIAlt: null
-	});
+	// null betyder "hentes stadig". Se noten paa StatusTal: nul er en helt
+	// anden besked end at vi ikke ved det endnu.
+	let tal = $state<StatusInput>({ ubesvarede: null, aeldsteSpoergsmaalDage: null });
 
 	const nu = new Date();
 	const DAG = 86400000;
 
 	onMount(() => {
-		// Fire uafhaengige hentninger. Hver fejler for sig, saa ét tal der
-		// ikke kan hentes ikke tager de tre andre med sig.
+		// KUN ét tal hentes nu. De tre andre kort blev fjernet 3. september,
+		// og med dem faldt tre hentninger vaek. Forsiden aabner hurtigere.
 		void (async () => {
 			try {
 				const alle = await hentAlleSpoergsmaal();
@@ -85,88 +73,11 @@
 					return ms > 0 && (m === 0 || ms < m) ? ms : m;
 				}, 0);
 				tal = {
-					...tal,
 					ubesvarede: aabne.length,
 					aeldsteSpoergsmaalDage: aeldste ? Math.floor((Date.now() - aeldste) / DAG) : null
 				};
 			} catch (e) {
 				console.error('[admin] spørgsmål', e);
-			}
-		})();
-
-		void (async () => {
-			try {
-				const o = await hentAlleOpskrifter(false);
-				tal = {
-					...tal,
-					opskrifterIkkeGodkendt: o.filter((x) => !x.godkendt).length,
-					opskrifterIAlt: o.length
-				};
-			} catch (e) {
-				console.error('[admin] opskrifter', e);
-			}
-		})();
-
-		void (async () => {
-			try {
-				const [forlob, tildelinger] = await Promise.all([hentAlleForlob(), hentTildelinger3()]);
-				const nuMs = Date.now();
-				// Kun de hold der KOERER lige nu. Et afsluttet hold uden
-				// traening er ikke en opgave, det er historie.
-				const aktive = forlob.filter((f) => {
-					const start = f.startDato?.toMillis?.() ?? 0;
-					const dage = Number(f.antalDage) || 0;
-					if (!start || !dage) return false;
-					return nuMs >= start && nuMs <= start + (dage + 1) * DAG;
-				});
-				// En tildeling til ALLE daekker ogsaa et hold, saa saa er der
-				// ingen hold uden traening. Ellers er et hold daekket naar der
-				// findes en tildeling til netop det hold. Bemaerk at 'byg-eget'
-				// IKKE taeller: det er retten til at bygge sit eget program og
-				// ikke et program hun kan tage i morgen.
-				const rigtige = tildelinger.filter((t) => t.type === 'program');
-				const alleHarEt = rigtige.some((t) => t.modtagerType === 'alle');
-				const daekket = new Set(
-					rigtige.filter((t) => t.modtagerType === 'hold').map((t) => t.modtagerId)
-				);
-				const uden = alleHarEt ? [] : aktive.filter((f) => !daekket.has(f.id));
-				tal = {
-					...tal,
-					holdUdenTraening: uden.length,
-					holdNavn: uden.length === 1 ? uden[0].navn : uden.length > 1 ? `${uden.length} hold` : null
-				};
-			} catch (e) {
-				console.error('[admin] hold', e);
-			}
-		})();
-
-		void (async () => {
-			try {
-				// Foedevarerne hentes IKKE her. En manglende kobling kan ses
-				// uden dem, og de 2.268 raekker hoerer ikke hjemme paa en
-				// forside der skal aabne hurtigt.
-				const [opskrifter, kort] = await Promise.all([
-					hentAlleOpskrifter(false),
-					hentKoblinger()
-				]);
-				const enkel: Record<string, { foodId: string }> = {};
-				for (const [k, v] of Object.entries(kort)) enkel[k] = { foodId: v.foodId };
-				const raekker = byggOversigt(
-					opskrifter.map((o) => ({
-						id: o.id,
-						titel: o.titel,
-						kategorier: normaliserKategorier(o.kategorier),
-						ingredienser: o.ingredienser
-					})),
-					enkel,
-					new Map()
-				);
-				tal = {
-					...tal,
-					ingredienserUdenKobling: raekker.filter((r) => r.fejl === 'ingen kobling').length
-				};
-			} catch (e) {
-				console.error('[admin] koblinger', e);
 			}
 		})();
 	});
@@ -223,12 +134,21 @@
 			{:else if omraade === 'forside'}
 				<div class="af-status">
 					{#each status as s (s.id)}
-						<a class="af-kort" class:vigtig={s.vigtig} class:ro={s.ro} href={s.rute}>
+						<a class="af-kort" class:vigtig={s.vigtig} href={s.rute}>
 							<span class="tal">{vis(s.vaerdi)}</span>
 							<span class="mrk">{s.mrk}</span>
 							<span class="u">{s.under}</span>
 						</a>
 					{/each}
+
+					<!-- PLADSEN TIL DAGENS OPGAVER. Linns oenske 3. september: her
+					     skal alt det staa som hun skal naa i dag. Det er ikke
+					     kodet endnu, og feltet baerer derfor klassen 'skitse', saa
+					     der ikke er tvivl om hvad der virker. Se regel 7. -->
+					<div class="af-opgaver skitse">
+						<h2>Dagens opgaver</h2>
+						<p>Her kommer det du skal nå i dag. Det er ikke bygget endnu.</p>
+					</div>
 				</div>
 
 				<p class="af-grp-h">Det du bruger mest</p>
@@ -317,9 +237,11 @@
 	/* ── status. Skaermen viser tilstanden ──────────────────── */
 	.af-status {
 		display: grid;
-		grid-template-columns: repeat(4, 1fr);
+		/* ÉT tal og plads til dagens opgaver ved siden af. */
+		grid-template-columns: minmax(200px, 260px) 1fr;
 		gap: 11px;
 		margin-bottom: 8px;
+		align-items: stretch;
 	}
 
 	.af-kort {
@@ -331,15 +253,14 @@
 		color: inherit;
 	}
 
-	/* KUN naar der venter noget. Er alt i orden, er intet fremhaevet, og
-	   saa betyder fremhaevelsen noget naar den er der. */
+	/* FREMHAEVET MED KANT OG FARVE PAA TALLET, ikke med en fyldt ploomme
+	   flade. Foer var kortet ploomme med hvid tekst, og undertitlen laa paa
+	   62 procent hvid ovenpaa. Det var ikke til at laese, og Linn sagde det
+	   3. september. Lys flade med moerk tekst er den hoejeste kontrast vi
+	   har, og tallet alene baerer fremhaevelsen. */
 	.af-kort.vigtig {
-		background: var(--plum);
-		color: #fff;
-	}
-
-	.af-kort.ro {
-		background: var(--honey-tint);
+		background: var(--plum-tint);
+		box-shadow: inset 3px 0 0 var(--plum);
 	}
 
 	.af-kort .tal {
@@ -347,6 +268,11 @@
 		font-size: calc(32px * var(--fs-scale, 1));
 		line-height: 1.05;
 		letter-spacing: -0.02em;
+		color: var(--espresso);
+	}
+
+	.af-kort.vigtig .tal {
+		color: var(--plum-deep);
 	}
 
 	.af-kort .mrk {
@@ -354,14 +280,6 @@
 		margin-top: 6px;
 		font-size: calc(12.5px * var(--fs-scale, 1));
 		color: var(--ink-2);
-	}
-
-	.af-kort.vigtig .mrk {
-		color: rgba(255, 255, 255, 0.87);
-	}
-
-	.af-kort.ro .mrk {
-		color: var(--honey-deep);
 	}
 
 	.af-kort .u {
@@ -372,7 +290,28 @@
 	}
 
 	.af-kort.vigtig .u {
-		color: rgba(255, 255, 255, 0.62);
+		color: var(--plum-deep);
+	}
+
+	/* ── dagens opgaver. IKKE BYGGET ENDNU ───────────────────── */
+	.af-opgaver {
+		padding: 16px 17px;
+		background: var(--paper-2);
+		border-radius: 16px;
+		border: 1px dashed var(--line);
+	}
+
+	.af-opgaver h2 {
+		margin: 0;
+		font-size: calc(14.5px * var(--fs-scale, 1));
+		font-weight: 600;
+	}
+
+	.af-opgaver p {
+		margin: 5px 0 0;
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--ink-3);
+		line-height: 1.45;
 	}
 
 	/* ── vaerktoejerne ──────────────────────────────────────── */
@@ -439,7 +378,7 @@
 		}
 
 		.af-status {
-			grid-template-columns: 1fr 1fr;
+			grid-template-columns: 1fr;
 		}
 
 		/* Rakker frem for fliser. Tre fliser ved siden af hinanden bliver

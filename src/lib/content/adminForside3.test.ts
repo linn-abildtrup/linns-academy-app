@@ -10,15 +10,7 @@ import {
 	type StatusInput
 } from './adminForside3';
 
-const tomt: StatusInput = {
-	ubesvarede: 0,
-	holdUdenTraening: 0,
-	ingredienserUdenKobling: 0,
-	opskrifterIkkeGodkendt: 0,
-	aeldsteSpoergsmaalDage: null,
-	holdNavn: null,
-	opskrifterIAlt: 133
-};
+const tomt: StatusInput = { ubesvarede: 0, aeldsteSpoergsmaalDage: null };
 
 describe('VAERKTOEJER', () => {
 	it('har alle vaerktoejer fra begge apper', () => {
@@ -83,8 +75,9 @@ describe('iOmraade og oftestBrugte', () => {
 });
 
 describe('byggStatus', () => {
-	it('giver fire tal', () => {
-		expect(byggStatus(tomt)).toHaveLength(4);
+	it('giver ÉT tal. De tre andre blev fjernet 3. september', () => {
+		expect(byggStatus(tomt)).toHaveLength(1);
+		expect(byggStatus(tomt)[0].id).toBe('spoergsmaal');
 	});
 
 	it('FREMHAEVER KUN naar der faktisk venter noget', () => {
@@ -92,26 +85,8 @@ describe('byggStatus', () => {
 		expect(byggStatus({ ...tomt, ubesvarede: 3 })[0].vigtig).toBe(true);
 	});
 
-	it('faar skaermen til at falde til ro naar alt er i orden', () => {
-		const s = byggStatus(tomt);
-		expect(s.some((t) => t.vigtig || t.ro)).toBe(false);
-	});
-
-	it('markerer hold uden traening, som er den farligste', () => {
-		expect(byggStatus({ ...tomt, holdUdenTraening: 1, holdNavn: 'Kickstart August' })[1].ro).toBe(
-			true
-		);
-	});
-
-	it('skriver holdets navn naar der er ét', () => {
-		expect(
-			byggStatus({ ...tomt, holdUdenTraening: 1, holdNavn: 'Kickstart August' })[1].under
-		).toBe('Kickstart August');
-	});
-
 	it('siger noget beroligende naar der ikke er noget', () => {
-		expect(byggStatus(tomt)[1].under).toContain('alle aktive hold');
-		expect(byggStatus(tomt)[2].under).toContain('alle er koblet');
+		expect(byggStatus(tomt)[0].under).toContain('ingen venter');
 	});
 
 	it('BEHOLDER null mens tallet hentes, og laver det ikke om til nul', () => {
@@ -131,8 +106,8 @@ describe('byggStatus', () => {
 		);
 	});
 
-	it('peger hvert tal hen hvor det kan ordnes', () => {
-		for (const t of byggStatus(tomt)) expect(t.rute.startsWith('/')).toBe(true);
+	it('peger hen hvor det kan ordnes', () => {
+		expect(byggStatus(tomt)[0].rute.startsWith('/')).toBe(true);
 	});
 });
 
