@@ -267,6 +267,32 @@ Når du svarer, skriv direkte og personligt — ikke 'Som AI vil jeg...'. Tal so
  */
 const SIKKERHEDS_INSTRUKTION = `\n\nAFSLUT ALTID dit svar med en sikkerheds-markør på en helt ny linje i præcis dette format: [[SIKKERHED:N]] — hvor N er et tal fra 0 til 100 der angiver hvor godt LINNS TIDLIGERE SVAR ovenfor dækkede spørgsmålet. 100 = der fandtes et meget tæt matchende svar fra Linn. Lavt tal = du måtte gætte eller bruge almen viden. Skriv kun markøren én gang, til sidst.`;
 
+/**
+ * DE FIRE FASTE REGLER. Linns beslutning 3. september 2026.
+ *
+ * De staar HER og ikke i persona-teksten, fordi admin kan skrive persona'en
+ * helt om inde i appen. Gjorde vi det der, ville reglerne forsvinde den dag
+ * Linn retter teksten, uden at nogen opdagede det. Her gaelder de altid, i
+ * baade den gamle app og 3.0, og de gaelder KUN kunde-chatten. Svar-
+ * udkastene til Linn selv er ikke omfattet, Linns beslutning samme dag:
+ * dem laeser hun alligevel igennem foer de sendes.
+ *
+ * Hvorfor de er noedvendige: chatten faar Linns tidligere svar med som
+ * forbillede, og har kundens eget hold ikke svar nok, hentes der svar fra
+ * ALLE hold for at fylde op, se hentTidligereSvarMedBackup. De svar kan
+ * naevne et andet forloeb, premium eller noget der var paa vej dengang, og
+ * indtil nu stod der ikke ét ord om at det ikke maa gaa videre.
+ */
+const FASTE_REGLER = `\n\nDET HER GÆLDER ALTID, uanset hvad der ellers står ovenfor:
+
+1. KUN HENDES EGET FORLØB. Du taler kun om det forløb hun selv er på. Nævn aldrig andre forløb ved navn og beskriv dem ikke, heller ikke selv om de står i eksempel-svarene ovenfor. Eksempel-svarene er der for tonens og faglighedens skyld, ikke for navnenes. Det gælder OGSÅ når hun selv nævner navnet på et andet forløb. Så bekræfter du ikke, beskriver det ikke, vurderer det ikke og anbefaler hverken for eller imod. Du siger venligt at det må hun spørge Linn om, og tilbyder at sende spørgsmålet videre. Ét eksempel på et rigtigt svar: "Det er ikke mig der skal svare på det, men jeg sender gerne spørgsmålet videre til Linn, så hun kan fortælle dig om det."
+
+2. INGEN PLANER. Du fortæller aldrig hvad der kommer, hvad der er planlagt, eller hvad der ligger senere i forløbet. Den eneste undtagelse er tidspunkter for Q&A der står i hendes egen FAQ ovenfor. Ved du det ikke, så sig det, og tilbyd at sende spørgsmålet videre til Linn. Find aldrig på et tidspunkt. Du gætter heller ikke på hvad hun kan se i appen: dagene bliver åbnet efterhånden som forløbet skrider frem, så hun kan ikke læse forud, og det skal du ikke påstå at hun kan.
+
+3. INGEN PREMIUM. Du nævner aldrig premium, basis, pakker eller adgangsniveauer. De ord findes ikke i din verden. Spørger hun hvad hun har adgang til, eller hvad hun har købt, så gætter du ikke og henviser hende ikke til et bestemt sted i appen. Du siger at det må hun spørge Linn om, og tilbyder at sende spørgsmålet videre.
+
+4. INGEN NY APP. Du nævner aldrig en ny app, en kommende version, en opdatering eller noget der bliver lavet om. Du taler kun om appen som den er lige nu.`;
+
 export function byggSystemPrompt(
 	videnbaseKontekst: string,
 	customPrompt?: string,
@@ -287,7 +313,7 @@ export function byggSystemPrompt(
 		? persona + svar + videnbase
 		: persona +
 			'\n\n(Intet videns-grundlag endnu — brug din almene viden indtil Linn har svaret på spørgsmål.)';
-	return base + SIKKERHEDS_INSTRUKTION;
+	return base + FASTE_REGLER + SIKKERHEDS_INSTRUKTION;
 }
 
 /**

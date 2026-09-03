@@ -58,6 +58,33 @@ describe('quotaNoegle', () => {
 	});
 });
 
+describe('de fire faste regler', () => {
+	// De skal staa der ogsaa naar Linn har skrevet sin egen persona, for
+	// ellers forsvinder de den dag hun retter teksten inde i appen.
+	it('staar der baade med og uden egen persona', () => {
+		for (const p of [
+			byggSystemPrompt('noget viden'),
+			byggSystemPrompt('noget viden', 'Du er en bot.')
+		]) {
+			expect(p).toContain('KUN HENDES EGET FORLØB');
+			expect(p).toContain('INGEN PLANER');
+			expect(p).toContain('INGEN PREMIUM');
+			expect(p).toContain('INGEN NY APP');
+		}
+	});
+
+	it('holder doeren aaben for Q&A-tidspunkter og for at spoerge Linn', () => {
+		const p = byggSystemPrompt('');
+		expect(p).toContain('Q&A');
+		expect(p).toContain('spørge Linn om');
+	});
+
+	it('staar foer sikkerheds-markoeren, saa den stadig er det sidste', () => {
+		const p = byggSystemPrompt('');
+		expect(p.indexOf('INGEN NY APP')).toBeLessThan(p.indexOf('[[SIKKERHED:N]]'));
+	});
+});
+
 describe('byggSystemPrompt', () => {
 	it('inkluderer videnbase-kontekst', () => {
 		const p = byggSystemPrompt('Linns notater her');
@@ -104,10 +131,7 @@ describe('byggKontekst', () => {
 	});
 
 	it('sorterer dokumenter med flere keyword-match først', () => {
-		const docs = [
-			mkDoc('1', 'A', 'random tekst'),
-			mkDoc('2', 'B', 'protein protein protein')
-		];
+		const docs = [mkDoc('1', 'A', 'random tekst'), mkDoc('2', 'B', 'protein protein protein')];
 		const k = byggKontekst(docs, 'protein');
 		expect(k.indexOf('protein protein protein')).toBeLessThan(k.indexOf('random tekst'));
 	});
@@ -151,7 +175,10 @@ describe('dageSidenDestillering', () => {
 	it('giver null når destilleringen aldrig har kørt', () => {
 		expect(dageSidenDestillering([], NU)).toBeNull();
 		expect(
-			dageSidenDestillering([{ id: 'min-pdf', opdateretAt: dageSiden(1) }] as unknown as VidenbaseDokument[], NU)
+			dageSidenDestillering(
+				[{ id: 'min-pdf', opdateretAt: dageSiden(1) }] as unknown as VidenbaseDokument[],
+				NU
+			)
 		).toBeNull();
 	});
 });
