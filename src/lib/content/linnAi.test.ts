@@ -5,6 +5,7 @@ import {
 	byggSystemPrompt,
 	byggKontekst,
 	parseSikkerhed,
+	udenFormateringstegn,
 	boerMindesOmDestillering,
 	dageSidenDestillering,
 	destilleringAlderTekst,
@@ -202,5 +203,29 @@ describe('destilleringAlderTekst', () => {
 		expect(destilleringAlderTekst(0)).toBe('Sidst opdateret i dag');
 		expect(destilleringAlderTekst(1)).toBe('Sidst opdateret i går');
 		expect(destilleringAlderTekst(9)).toBe('Sidst opdateret for 9 dage siden');
+	});
+});
+
+describe('udenFormateringstegn', () => {
+	it('fjerner fed, kursiv og tre-stjerner', () => {
+		expect(udenFormateringstegn('Det ideelle er at **kombinere** det')).toBe(
+			'Det ideelle er at kombinere det'
+		);
+		expect(udenFormateringstegn('Hundeturen er ***ikke*** styrketræning')).toBe(
+			'Hundeturen er ikke styrketræning'
+		);
+		expect(udenFormateringstegn('Det er *vigtigt* for dig.')).toBe('Det er vigtigt for dig.');
+		expect(udenFormateringstegn('Det er _vigtigt_ for dig.')).toBe('Det er vigtigt for dig.');
+	});
+
+	it('fjerner overskrifter og gør stjerne-punkter til streger', () => {
+		expect(udenFormateringstegn('## Sådan gør du\n* Drik vand\n* Sov')).toBe(
+			'Sådan gør du\n- Drik vand\n- Sov'
+		);
+	});
+
+	it('rører ikke gangetegn eller almindelige bindestreger', () => {
+		expect(udenFormateringstegn('3 sæt af 2*3 gentagelser')).toBe('3 sæt af 2*3 gentagelser');
+		expect(udenFormateringstegn('- Drik vand')).toBe('- Drik vand');
 	});
 });

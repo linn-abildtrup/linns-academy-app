@@ -52,6 +52,7 @@
 		type SamtaleBesked3
 	} from '$lib/content/beskedside3';
 	import { delOpILinks } from '$lib/content/linkTekst3';
+	import { udenFormateringstegn } from '$lib/content/linnAi';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Lydbesked from '$lib/components/ny/Lydbesked.svelte';
 	import BilledeLag from '$lib/components/ny/BilledeLag.svelte';
@@ -247,6 +248,21 @@
 		rulle?.scrollTo({ top: rulle.scrollHeight, behavior: 'smooth' });
 	}
 
+	/**
+	 * Ruller til det nyeste svar, saa svarets FOERSTE linje staar oeverst.
+	 * Et langt svar fylder mere end skaermen; ruller vi til bunden, lander
+	 * hun i slutningen af svaret og skal selv rulle op for at laese det.
+	 */
+	async function rulTilSvarTop() {
+		await tick();
+		const el = rulle;
+		if (!el) return;
+		const svar = el.querySelectorAll('.boble.svar');
+		const sidste = svar[svar.length - 1] as HTMLElement | undefined;
+		if (!sidste) return void rulNed();
+		el.scrollTo({ top: Math.max(0, sidste.offsetTop - 10), behavior: 'smooth' });
+	}
+
 	async function send(tekst?: string) {
 		const u = user;
 		const besked = (tekst ?? input).trim();
@@ -292,7 +308,7 @@
 
 			const data = (await res.json()) as { svar: string; usikker: boolean };
 			beskeder = [...beskeder, { rolle: 'assistant', indhold: data.svar, ms: Date.now() }];
-			await rulNed();
+			await rulTilSvarTop();
 
 			// Gemmes efter at svaret staar paa skaermen. Fejler skrivningen,
 			// mister hun samtalen naeste gang hun aabner siden, men hun faar
@@ -607,7 +623,7 @@
 							<!-- Stumperne staar paa ÉN linje med vilje. Boblen bevarer
 							     linjeskift (white-space: pre-wrap), saa et linjeskift i
 							     selve markup ville blive til luft paa skaermen. -->
-							{#each delOpILinks(b.indhold) as d, di (di)}{#if d.slags === 'link'}<a
+							{#each delOpILinks(udenFormateringstegn(b.indhold)) as d, di (di)}{#if d.slags === 'link'}<a
 										class="besk-link"
 										href={d.url}
 										target="_blank"

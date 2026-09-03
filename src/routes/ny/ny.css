@@ -2101,6 +2101,8 @@ body:has(.ny-app) {
 }
 
 .bobler {
+	/* relative fordi rulTilSvarTop maaler boblens offsetTop mod den her. */
+	position: relative;
 	flex: 1;
 	min-height: 0;
 	overflow-y: auto;

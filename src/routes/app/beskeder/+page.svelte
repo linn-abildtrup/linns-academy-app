@@ -17,7 +17,7 @@
 	import { effektivState } from '$lib/utils/userAdgang';
 	import { harFeatureAdgang, type FeatureMatrix } from '$lib/content/features';
 	import { hentSamtaler, hentSamtale, opretSamtale, tilfojBeskeder } from '$lib/firestore/linnAi';
-	import type { AiBesked, AiSamtale } from '$lib/content/linnAi';
+	import { udenFormateringstegn, type AiBesked, type AiSamtale } from '$lib/content/linnAi';
 	import { Timestamp } from 'firebase/firestore';
 
 	const getUser = getContext<() => User | null>('user');
@@ -100,9 +100,21 @@
 
 	let tekst = $state('');
 	let gemmer = $state(false);
-	let kvittering = $state(false);
 	let fejl = $state<string | null>(null);
 	let mine = $state<KlientSpoergsmaal[]>([]);
+
+	// Fanen "Skriv til Linn" staar som en chat ligesom Linn AI. hentMineSpoergsmaal
+	// giver nyeste foerst (den gamle liste-visning); i en chat skal aeldste staa
+	// oeverst, saa vi vender den her og kun her.
+	const mineKronologisk = $derived([...mine].reverse());
+	let linnRulle = $state<HTMLDivElement | null>(null);
+
+	async function rulLinnTilNyeste(bloed = true) {
+		await tick();
+		const el = linnRulle;
+		if (!el) return;
+		el.scrollTo({ top: el.scrollHeight, behavior: bloed ? 'smooth' : 'auto' });
+	}
 
 	const tegnAntal = $derived(tekst.length);
 	// Send er disabled indtil forløbskontekst er afklaret (klar eller modul).
@@ -118,8 +130,11 @@
 		const u = user;
 		if (!u) return;
 		try {
+			const foersteHentning = mine.length === 0;
 			mine = await hentMineSpoergsmaal(u.uid);
 			void markerSpoergsmaalLaest(u.uid);
+			// Ved foerste visning skal hun bare staa nederst med det samme.
+			if (foersteHentning && mine.length > 0) void rulLinnTilNyeste(false);
 		} catch (e) {
 			console.warn('Kunne ikke hente egne spørgsmål', e);
 		}
@@ -140,8 +155,8 @@
 				kundeType: userState ?? undefined
 			});
 			tekst = '';
-			kvittering = true;
-			void genindlaesMine();
+			await genindlaesMine();
+			void rulLinnTilNyeste();
 		} catch (e) {
 			console.error(e);
 			fejl = 'Kunne ikke sende. Prøv igen om lidt.';
@@ -154,6 +169,29 @@
 		if (!t || !t.toDate) return '';
 		const d = t.toDate();
 		return d.toLocaleDateString('da-DK', { day: 'numeric', month: 'long' });
+	}
+
+	/** "I dag", "I går" eller datoen — maerket der staar over dagens beskeder. */
+	function dagMaerke(t: { toDate?: () => Date } | null | undefined): string {
+		if (!t || !t.toDate) return '';
+		const d = t.toDate();
+		const nu = new Date();
+		const dagAfstand = Math.round(
+			(new Date(nu.getFullYear(), nu.getMonth(), nu.getDate()).getTime() -
+				new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) /
+				86400000
+		);
+		if (dagAfstand === 0) return 'I dag';
+		if (dagAfstand === 1) return 'I går';
+		return formaterDato(t);
+	}
+
+	/** Skal der staa et dag-maerke over spoergsmaal nummer `i` i chatten. */
+	function visDagMaerke(i: number): boolean {
+		const naa = dagMaerke(mineKronologisk[i]?.oprettet);
+		if (!naa) return false;
+		if (i === 0) return true;
+		return naa !== dagMaerke(mineKronologisk[i - 1]?.oprettet);
 	}
 
 	// ====== Linn AI chat (kun for kunder med adgang) ======
@@ -171,13 +209,32 @@
 	// skrivefeltet staar fast i bunden. Derfor skal vi selv rulle til nyeste
 	// besked — baade naar samtalen hentes og hver gang der kommer et svar.
 	let aiRulle = $state<HTMLDivElement | null>(null);
-	const visChat = $derived(harLinnAi && aktivFane === 'ai');
+	// Begge faner staar som chat. Kun kunder helt uden adgang ser den gamle
+	// almindelige side (kortet "Beskeder er ikke tilgaengelig").
+	const visChat = $derived(harLinnAi || harBeskederTilLinn);
 
 	async function rulTilNyeste(bloed = true) {
 		await tick();
 		const el = aiRulle;
 		if (!el) return;
 		el.scrollTo({ top: el.scrollHeight, behavior: bloed ? 'smooth' : 'auto' });
+	}
+
+	/**
+	 * Ruller hen til det NYESTE svar, saa svarets foerste linje staar oeverst.
+	 * Et langt svar fylder mere end skaermen, og ruller vi bare til bunden,
+	 * lander hun midt i slutningen af svaret og skal selv rulle op for at
+	 * laese det fra en ende af.
+	 */
+	async function rulTilSvarTop() {
+		await tick();
+		const el = aiRulle;
+		if (!el) return;
+		const svar = el.querySelectorAll('.ai-assistant');
+		const sidste = svar[svar.length - 1] as HTMLElement | undefined;
+		if (!sidste) return void rulTilNyeste();
+		// 10px luft over boblen, saa den ikke klistrer til kanten.
+		el.scrollTo({ top: Math.max(0, sidste.offsetTop - 10), behavior: 'smooth' });
 	}
 
 	// Hent kundens seneste Linn AI-samtale naar hun har adgang.
@@ -245,7 +302,7 @@
 			};
 			await tilfojBeskeder(u.uid, samtale.id, [brugerBesked, aiBesked]);
 			aiSamtale = (await hentSamtale(u.uid, samtale.id)) ?? aiSamtale;
-			void rulTilNyeste();
+			void rulTilSvarTop();
 		} catch (e) {
 			console.error('Linn AI fejlede:', e);
 			aiFejl = harBeskederTilLinn
@@ -374,7 +431,7 @@
 							<div class="ai-besked ai-bruger">{b.indhold}</div>
 						{:else}
 							<div class="ai-besked ai-assistant">
-								<div class="ai-svar-tekst">{b.indhold}</div>
+								<div class="ai-svar-tekst">{udenFormateringstegn(b.indhold)}</div>
 								{#if b.sikkerhed !== null && b.sikkerhed !== undefined}
 									<div class="ai-sikkerhed" class:lav={b.sikkerhed < 60}>
 										<Icon
@@ -439,94 +496,81 @@
 {/snippet}
 
 {#snippet skrivTilLinnFane()}
-	<section class="card">
-		<p class="intro intro-overskrift">Skriv dit spørgsmål til mig 🌸</p>
-		<p class="intro">
-			Jeg samler løbende de spørgsmål, der kommer ind, og svarer på dem samlet. Du finder svarene på
-			forsiden af appen.
-		</p>
-		<p class="intro">
-			Alle spørgsmål deles anonymt, og på den måde kan vi alle få glæde af svarene – for der sidder
-			helt sikkert flere med nogle af de samme spørgsmål.
-		</p>
-		<p class="intro">
-			Du skal derfor ikke forvente et personligt svar her, men dit spørgsmål skal nok blive taget
-			med 🌸
-		</p>
-		<p class="intro intro-hilsen">Kh Linn</p>
-
-		<label class="felt">
-			<span class="felt-label">Dit spørgsmål</span>
-			<textarea
-				class="felt-input"
-				placeholder="Skriv dit spørgsmål her..."
-				maxlength={SPOERGSMAAL_MAX_LAENGDE}
-				rows="7"
-				bind:value={tekst}
-				disabled={gemmer || kvittering}
-			></textarea>
-			<div class="felt-meta">
-				<span>{tegnAntal} / {SPOERGSMAAL_MAX_LAENGDE} tegn</span>
-			</div>
-		</label>
-
-		{#if fejl}
-			<div class="status fejl">{fejl}</div>
-		{/if}
-
-		{#if kvittering}
-			<div class="status ok">Tak — dit spørgsmål er modtaget.</div>
-		{/if}
-
-		<button type="button" class="primary-knap" onclick={send} disabled={!kanSende}>
-			{#if gemmer}
-				Sender...
-			{:else if forlobStatus === 'venter' || forlobStatus === 'henter'}
-				Henter...
+	<!-- Samme chat-form som Linn AI: aeldste oeverst, nyeste nederst, og
+	     skrivefeltet fast over bundmenuen. Linns intro tager imod foerste
+	     gang; derefter staar den korte linje, og hele teksten ligger bag
+	     i-knappen foroven. -->
+	<section class="ai-card">
+		<div class="ai-rulle" bind:this={linnRulle}>
+			{#if mine.length === 0}
+				<div class="ai-velkomst linn-velkomst">
+					<div class="ai-ikon">
+						<Icon name="flower" size={18} color="#fff" />
+					</div>
+					<div class="ai-titel">Skriv dit spørgsmål til mig 🌸</div>
+					<div class="ai-sub">
+						Jeg samler løbende spørgsmålene og svarer på dem samlet — svarene finder du på forsiden
+						af appen. Alle spørgsmål deles anonymt, så vi alle får glæde af dem.
+					</div>
+					<div class="ai-sub">
+						Du skal derfor ikke forvente et personligt svar her, men dit spørgsmål skal nok blive
+						taget med 🌸
+					</div>
+					<div class="linn-hilsen">Kh Linn</div>
+				</div>
 			{:else}
-				Send spørgsmål
-			{/if}
-		</button>
-
-		{#if kvittering}
-			<button
-				type="button"
-				class="ghost-knap"
-				onclick={() => {
-					kvittering = false;
-				}}
-			>
-				Stil et nyt spørgsmål
-			</button>
-		{/if}
-	</section>
-
-	{#if mine.length > 0}
-		<section class="mine-section">
-			<div class="mine-eyebrow">Mine spørgsmål</div>
-			<div class="mine-liste">
-				{#each mine as q (q.id)}
-					<article class="mine-kort" class:besvaret={!!q.svar}>
-						<div class="mine-meta">
-							<span class="mine-dato">{formaterDato(q.oprettet)}</span>
-							{#if q.svar}
-								<span class="mine-pill">Besvaret</span>
-							{:else}
-								<span class="mine-pill mine-pill-venter">Afventer svar</span>
-							{/if}
-						</div>
-						<div class="mine-tekst">{q.spoergsmaal}</div>
-						{#if q.svar}
-							<div class="mine-svar">
-								<div class="mine-svar-label">Svar fra Linn</div>
-								<div class="mine-svar-tekst">{q.svar}</div>
-							</div>
+				<div class="linn-note">
+					Jeg svarer samlet, og svarene deles anonymt på forsiden. Tryk på <strong>i</strong> foroven
+					for hele forklaringen.
+				</div>
+				<div class="ai-traad linn-traad">
+					{#each mineKronologisk as q, i (q.id)}
+						{#if visDagMaerke(i)}
+							<div class="linn-dag">{dagMaerke(q.oprettet)}</div>
 						{/if}
-					</article>
-				{/each}
+						<div class="ai-besked ai-bruger">{q.spoergsmaal}</div>
+						{#if q.svar}
+							<div class="ai-besked ai-assistant">
+								<div class="linn-fra">Svar fra Linn</div>
+								<div class="ai-svar-tekst">{q.svar}</div>
+							</div>
+						{:else}
+							<div class="linn-venter">Afventer svar</div>
+						{/if}
+					{/each}
+				</div>
+			{/if}
+
+			{#if fejl}
+				<div class="status fejl">{fejl}</div>
+			{/if}
+		</div>
+
+		<div class="ai-skrivelinje linn-skrivelinje">
+			<div class="ai-skrivrk">
+				<textarea
+					class="ai-felt"
+					placeholder="Skriv dit spørgsmål..."
+					maxlength={SPOERGSMAAL_MAX_LAENGDE}
+					rows="1"
+					bind:value={tekst}
+					disabled={gemmer}
+				></textarea>
+				<button
+					type="button"
+					class="ai-send"
+					onclick={send}
+					disabled={!kanSende}
+					aria-label="Send spørgsmål"
+				>
+					<Icon name="arrow" size={16} color="#fff" />
+				</button>
 			</div>
-		</section>
-	{/if}
+			{#if tegnAntal >= 400}
+				<div class="linn-tegn">{tegnAntal} / {SPOERGSMAAL_MAX_LAENGDE} tegn</div>
+			{/if}
+		</div>
+	</section>
 {/snippet}
 
 <style>
@@ -638,11 +682,15 @@
 	/* Selve rullefeltet med samtalen. min-height: 0 er det der faar den til
 	   at rulle indeni i stedet for at skubbe skrivefeltet ned. */
 	.ai-rulle {
+		/* relative fordi rulTilSvarTop maaler boblens offsetTop mod den her. */
+		position: relative;
 		flex: 1 1 auto;
 		min-height: 0;
 		overflow-y: auto;
 		-webkit-overflow-scrolling: touch;
-		padding-bottom: 8px;
+		/* Lidt luft i hoejre side, saa boblerne ikke ligger under
+		   rullebjaelken paa en computer. */
+		padding: 0 6px 8px 0;
 	}
 
 	/* Tom samtale: den lille praesentation staar midt paa fladen. */
@@ -705,6 +753,71 @@
 	.ai-send:disabled {
 		opacity: 0.4;
 		cursor: default;
+	}
+
+	/* Skrivelinjen paa "Skriv til Linn" har en ekstra linje under sig til
+	   tegn-taelleren, derfor en kolonne om selve raekken. */
+	.linn-skrivelinje {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0;
+	}
+
+	.ai-skrivrk {
+		display: flex;
+		align-items: flex-end;
+		gap: 8px;
+	}
+
+	.linn-tegn {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		color: var(--text3);
+		text-align: right;
+		padding: 4px 4px 0;
+	}
+
+	.linn-hilsen {
+		font-family: var(--ff-d);
+		font-style: italic;
+		color: var(--terra);
+		font-size: calc(14px * var(--fs-scale, 1));
+	}
+
+	.linn-note {
+		background: var(--white);
+		border: 1px dashed var(--border2);
+		border-radius: 12px;
+		padding: 10px 12px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--text2);
+		line-height: 1.5;
+		margin-bottom: 12px;
+	}
+
+	.linn-dag {
+		align-self: center;
+		font-size: calc(10px * var(--fs-scale, 1));
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text3);
+		margin: 4px 0;
+	}
+
+	.linn-fra {
+		font-size: calc(10px * var(--fs-scale, 1));
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		font-weight: 600;
+		color: var(--terra);
+	}
+
+	/* Ubesvaret spoergsmaal. Staar i hoejre side under boblen, saa det
+	   hoerer tydeligt til det hun lige har sendt. */
+	.linn-venter {
+		align-self: flex-end;
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--gold);
 	}
 
 	.ai-taenker {
@@ -812,59 +925,13 @@
 		line-height: 1.55;
 	}
 
-	/* Teksten er flere afsnit nu, saa de skal have luft imellem sig. */
-	.intro + .intro {
-		margin-top: 10px;
-	}
 
-	.intro-overskrift {
-		font-family: var(--ff-d);
-		font-size: calc(18px * var(--fs-scale, 1));
-		color: var(--text);
-		line-height: 1.3;
-	}
 
-	.intro-hilsen {
-		color: var(--text);
-		font-weight: 500;
-	}
 
-	.felt {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
 
-	.felt-label {
-		font-size: calc(12px * var(--fs-scale, 1));
-		font-weight: 500;
-		color: var(--text2);
-	}
 
-	.felt-input {
-		font-family: var(--ff-b);
-		font-size: calc(16px * var(--fs-scale, 1));
-		line-height: 1.5;
-		padding: 12px 14px;
-		border-radius: 10px;
-		background: var(--bg2);
-		border: 1px solid var(--border);
-		color: var(--text);
-		outline: none;
-		resize: vertical;
-		min-height: 140px;
-	}
 
-	.felt-input:focus {
-		border-color: var(--terra);
-	}
 
-	.felt-meta {
-		display: flex;
-		justify-content: space-between;
-		font-size: calc(11px * var(--fs-scale, 1));
-		color: var(--text3);
-	}
 
 	.status {
 		padding: 10px 14px;
@@ -873,11 +940,6 @@
 		text-align: center;
 	}
 
-	.status.ok {
-		background: rgba(143, 168, 144, 0.18);
-		border: 1px solid rgba(143, 168, 144, 0.4);
-		color: var(--text);
-	}
 
 	.status.fejl {
 		background: #fbeeea;
@@ -885,22 +947,7 @@
 		color: #8a4a3e;
 	}
 
-	.primary-knap {
-		background: var(--terra);
-		color: var(--white);
-		border: none;
-		padding: 14px;
-		border-radius: 10px;
-		font-family: inherit;
-		font-size: calc(14px * var(--fs-scale, 1));
-		font-weight: 600;
-		cursor: pointer;
-	}
 
-	.primary-knap:disabled {
-		opacity: 0.45;
-		cursor: not-allowed;
-	}
 
 	.ghost-knap {
 		background: transparent;
@@ -914,94 +961,16 @@
 		cursor: pointer;
 	}
 
-	.mine-section {
-		margin-top: 24px;
-	}
 
-	.mine-eyebrow {
-		font-size: calc(10px * var(--fs-scale, 1));
-		font-weight: 600;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		color: var(--text3);
-		margin-bottom: 10px;
-	}
 
-	.mine-liste {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
 
-	.mine-kort {
-		background: var(--white);
-		border: 1px solid var(--border);
-		border-radius: 12px;
-		padding: 12px 14px;
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
 
-	.mine-kort.besvaret {
-		border-color: var(--terra);
-	}
 
-	.mine-meta {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 8px;
-	}
 
-	.mine-dato {
-		font-size: calc(11px * var(--fs-scale, 1));
-		color: var(--text3);
-	}
 
-	.mine-pill {
-		background: var(--terra);
-		color: var(--white);
-		font-size: calc(10px * var(--fs-scale, 1));
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		padding: 2px 8px;
-		border-radius: 99px;
-	}
 
-	.mine-pill-venter {
-		background: var(--bg2);
-		color: var(--text3);
-	}
 
-	.mine-tekst {
-		font-size: calc(13px * var(--fs-scale, 1));
-		color: var(--text);
-		line-height: 1.5;
-		white-space: pre-wrap;
-	}
 
-	.mine-svar {
-		background: var(--header);
-		border-left: 3px solid var(--terra);
-		padding: 10px 12px;
-		border-radius: 8px;
-	}
 
-	.mine-svar-label {
-		font-size: calc(10px * var(--fs-scale, 1));
-		font-weight: 600;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		color: var(--terra);
-		margin-bottom: 4px;
-	}
 
-	.mine-svar-tekst {
-		font-size: calc(13px * var(--fs-scale, 1));
-		color: var(--text);
-		line-height: 1.5;
-		white-space: pre-wrap;
-	}
 </style>

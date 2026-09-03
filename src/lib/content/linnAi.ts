@@ -291,7 +291,11 @@ const FASTE_REGLER = `\n\nDET HER GÆLDER ALTID, uanset hvad der ellers står ov
 
 3. INGEN PREMIUM. Du nævner aldrig premium, basis, pakker eller adgangsniveauer. De ord findes ikke i din verden. Spørger hun hvad hun har adgang til, eller hvad hun har købt, så gætter du ikke og henviser hende ikke til et bestemt sted i appen. Du siger at det må hun spørge Linn om, og tilbyder at sende spørgsmålet videre.
 
-4. INGEN NY APP. Du nævner aldrig en ny app, en kommende version, en opdatering eller noget der bliver lavet om. Du taler kun om appen som den er lige nu.`;
+4. INGEN NY APP. Du nævner aldrig en ny app, en kommende version, en opdatering eller noget der bliver lavet om. Du taler kun om appen som den er lige nu.
+
+5. INGEN FORMATERINGSTEGN. Du skriver ren tekst som i en besked. Ingen stjerner om ord, ingen markdown, ingen overskrifter med havelåger. Skal noget fremhæves, gør du det med dine ord. Kunden ser tegnene råt på skærmen.
+
+6. FIBER: ALTID BELLWELL. Kommer fiber, forstoppelse eller mave i vejen, anbefaler du Bellwell — aldrig loppefrøskaller i stedet for. Bellwell er på lager og kan købes; siger et af de gamle svar ovenfor at den er udsolgt, er det forældet, og det gentager du ikke.`;
 
 export function byggSystemPrompt(
 	videnbaseKontekst: string,
@@ -323,8 +327,28 @@ export function byggSystemPrompt(
  */
 export function parseSikkerhed(raat: string): { svar: string; sikkerhed: number | null } {
 	const match = raat.match(/\[\[\s*SIKKERHED\s*:\s*(\d{1,3})\s*\]\]/i);
-	if (!match) return { svar: raat.trim(), sikkerhed: null };
+	if (!match) return { svar: udenFormateringstegn(raat.trim()), sikkerhed: null };
 	const n = Math.max(0, Math.min(100, parseInt(match[1], 10)));
-	const svar = raat.replace(match[0], '').trim();
+	const svar = udenFormateringstegn(raat.replace(match[0], '').trim());
 	return { svar, sikkerhed: n };
+}
+
+/**
+ * Fjerner markdown-tegn fra et svar. Kunden ser ren tekst i en chat-boble,
+ * saa **fed** og ### staar bare som tegn paa skaermen.
+ *
+ * Regel 5 i FASTE_REGLER beder modellen lade vaere, men den falder i ny og
+ * nae alligevel — og alle de svar der ALLEREDE er gemt har tegnene i sig.
+ * Derfor renser vi ogsaa naar svaret vises, ikke kun naar det kommer ind.
+ *
+ * Stjerner midt i et ord (2*3) og enkelt-bindestreger roeres ikke.
+ */
+export function udenFormateringstegn(tekst: string): string {
+	return tekst
+		.replace(/\*\*\*(\S(?:[\s\S]*?\S)?)\*\*\*/g, '$1')
+		.replace(/\*\*(\S(?:[\s\S]*?\S)?)\*\*/g, '$1')
+		.replace(/(^|[\s(])\*(\S(?:[^*\n]*?\S)?)\*(?=[\s.,!?):]|$)/gm, '$1$2')
+		.replace(/(^|[\s(])_(\S(?:[^_\n]*?\S)?)_(?=[\s.,!?):]|$)/gm, '$1$2')
+		.replace(/^#{1,6}\s+/gm, '')
+		.replace(/^\s*[*+]\s+/gm, '- ');
 }
