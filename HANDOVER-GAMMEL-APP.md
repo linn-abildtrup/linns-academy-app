@@ -596,7 +596,9 @@ Linns fire svar, som ligger fast:
   stedet for de få. Den daglige pulje på 20 pr kunde er tilbage, og skal
   det lukkes til igen, findes nøglen `ai-opskrift` stadig i
   featureAdgang-skemaet
-- **Protein og fiber er tvungne.** En opskrift uden dem lægger NUL i
+- **Protein og fiber er tvungne.** OPHÆVET DAGEN EFTER, se punkt 1 under
+  "Rettet 2. og 3. september". Reglen spærrede for enhver ret uden fiber.
+  En opskrift uden dem lægger NUL i
   hendes dag hver gang hun bruger den, og det ser rigtigt ud. I et modul
   der hedder 30-30 er det den værst tænkelige fejl
 - **Hun spørges** om appen skal gætte tallene eller om hun selv vil skrive
@@ -666,6 +668,131 @@ System.** Fjern dem når Linn har brugt de nye i en uge.
 en farvebro i stilen. Retter du noget i den gamle udgave af dem, sker der
 ikke noget i den nye. Det er den pris der blev betalt for ikke at tegne
 9.000 linjer tal og tabeller forfra.
+
+---
+
+### Rettet 2. og 3. september 2026
+
+**Hele vejen rundt om kundens egne opskrifter, plus fire regler for hvad
+Linn AI ikke må tale om.** Alt sammen efter Linns ønske, alt sammen
+udrullet.
+
+#### 1. Protein og fiber er IKKE længere tvungne
+
+**Det her ophæver beslutningen fra dagen før**, se punkt 1 under "Rettet
+1. september, sent på dagen". Commit `3a6bfc7`.
+
+Reglen krævede at både protein og fiber var over nul, ellers kunne
+opskriften ikke gemmes. **En omelet med ost har nul fiber**, og den kunne
+dermed ikke gemmes overhovedet. Det er rigtigt at nul fiber er nul fiber.
+
+Nu spærrer vi kun når **alle fem tal** står på nul, altså når retten reelt
+vil tælle nul i hendes dag. Står fiber alene på nul, siger skærmen roligt
+at det er helt normalt. Bekymringen bag den gamle regel er den samme og
+er stadig gyldig, den er bare løst med en blødere hånd.
+
+#### 2. Opskriften oprettes i tre trin
+
+Commits `3a6bfc7` og `fc68726`. Én lang side blev til tre trin: retten,
+indholdet, tallene. En bjælke øverst viser hvor langt hun er.
+
+**Spørgsmålet om appen skal regne næringstallene stod før OVER
+ingredienserne**, altså på en skærm hvor der endnu ikke var noget at regne
+på. Det står nu efter dem. Kommer opskriften fra et billede, er de to
+første trin allerede udfyldt af AI'en, og hun lander direkte på tallene.
+
+Ingredienserne står på to linjer med navnet i fuld bredde. Det blev
+nødvendigt da enheden blev en liste: ordet "knivspids" skal kunne stå der,
+og så var der ikke plads til navnet på samme linje.
+
+#### 3. Beregningen af næringstal var i stykker på to måder
+
+Commit `eb7981f`. Begge fundet ved at køre rigtige opskrifter mod
+tjenesten, ikke ved at læse koden.
+
+**Havde kunden ikke skrevet en mængde, sendte vi "- 0 g Æg".** Modellen
+fik dermed at vide at der var nul gram æg, svarede helt korrekt at der
+ikke var noget at regne på, og kunden så en app der ikke kunne regne.
+Mængden skrives nu kun når den er der, og systemprompten antager så en
+almindelig portion. Samme omelet gik fra "ikke nok at regne på" til
+rigtige tal.
+
+**Svaret indeholder et regnestykke pr ingrediens**, og loftet på 2048
+tokens rakte kun cirka tredive ingredienser. Derover blev svaret afkortet
+midtvejs og kunne ikke læses. Loftet er 8192 nu, og 40 ingredienser fylder
+2245. Bliver et svar alligevel afkortet, siger tjenesten det i stedet for
+at fejle på et halvt svar.
+
+Dertil, commit `2d1f254`: begge skærme skrev "kunne ikke regne på
+opskriften" uanset grunden. Nu står serverens egen forklaring med, ellers
+fejlkoden. **Uden den kunne hverken kunden eller vi se hvad der skulle
+rettes**, og en fejlmelding fra Linn kostede en runde frem og tilbage.
+
+#### 4. Enheden vælges fra en liste, og listen er DELT med 3.0
+
+Commit `7b05eda`. **Her går en ny tråd fra den gamle app ind i en
+3.0-fil.** Listen ligger i `content/mineOpskrifter3.ts`, hvor 3.0 allerede
+havde den, og den gamle app henter den samme sted fra. Det er bevidst:
+ellers ville de to apper drive fra hinanden, og det er kun en læsning, så
+regel 2 er overholdt. **Retter du listen, rammer du begge apper.**
+
+Listen er udvidet med fem efter Linns ønske: fed, dåse, håndfuld,
+knivspids og bundt. Vælger hun "andet", åbner et skrivefelt hvor hun selv
+kan skrive. Det felt står også åbent hvis AI'en har læst en enhed ud af et
+billede som ikke er på listen, **så hendes opskrift ikke bliver lavet om
+bag om ryggen på hende**.
+
+**Fed og knivspids kendte vægt-tabellen i forvejen. De tre andre gjorde
+ikke**, og de faldt ned i styk-grenen og blev gættet som 100 g, altså en
+dåse hakkede tomater regnet som en fjerdedel af sig selv. De er lært nu i
+`content/enhedsvaegt3.ts`: dåse 400 g, håndfuld 30 g, bundt 25 g, med
+test. **Sætter du flere enheder på listen, så lær tabellen dem samtidig.**
+
+#### 5. Fremgangsmåden var usynlig
+
+Commit `a9e37e0`. Feltet kom til 1. september, men kunne **kun skrives ved
+oprettelsen**. Bagefter blev det hverken vist eller kunne rettes, så
+kundens tekst lå gemt uden vej ind til. Den står nu begge steder. Tom
+tekst skrives som tom, så hun også kan slette en fremgangsmåde hun har
+fortrudt. Uden det ville en tom værdi blive sprunget over ved gem, og den
+gamle tekst blive stående.
+
+Resten af redigerings-siden er bragt på højde med opret-siden: indholdet
+før tallene, samme enhedsliste, samme opstilling, tomme mængde-felter, og
+en tom mængde skrives ikke længere som "0 g" når hun læser opskriften. Hun
+kan nu også bede appen regne tallene ud herinde. **Før fandtes hjælpen kun
+ved oprettelsen**, så rettede hun en ingrediens bagefter, stod hun med
+regnestykket selv.
+
+Commit `8b29d98`: Linns eget opskrift-værktøj under admin har fået den
+samme liste og de samme tomme mængde-felter.
+
+#### 6. Fire faste regler for hvad Linn AI ikke taler om
+
+Commit `470f6c1`. Linns beslutning 3. september. Chatten må ikke tale om
+andre forløb end kundens eget, ikke fortælle hvad der er planlagt (på nær
+Q&A-tidspunkter fra hendes egen FAQ), ikke nævne premium eller
+adgangsniveauer, og ikke nævne en ny app eller kommende versioner.
+
+**REGLERNE STÅR UDEN FOR PERSONA-TEKSTEN**, i `content/linnAi.ts` samme
+sted som sikkerheds-markøren. Admin kan skrive persona'en helt om inde i
+appen, og lå reglerne der, ville de forsvinde den dag teksten blev rettet,
+uden at nogen opdagede det. De gælder derfor i **begge apper**.
+**Svar-udkastene til Linn selv er IKKE omfattet**, Linns beslutning samme
+dag: dem læser hun alligevel igennem før de sendes.
+
+**Hvorfor de var nødvendige.** Chatten får Linns tidligere svar med som
+forbillede, og har kundens eget hold ikke svar nok, hentes der svar fra
+ALLE hold for at fylde op, se `hentTidligereSvarMedBackup`. De svar kan
+nævne et andet forløb, premium eller noget der var på vej dengang, og der
+stod ikke ét ord om at det ikke måtte gå videre.
+
+**Reglerne er afprøvet mod modellen** med et forbillede-svar der med vilje
+nævnte Kropsro, premium og en ny app. Første udgave var for løs to steder:
+den beskrev det andet forløb da kunden selv nævnte navnet, og den gættede
+på hvad kunden kunne se i appen. Begge er skrevet skarpere. **Retter du i
+reglerne, så kør den prøve igen**, og husk at spørge om Q&A bagefter: den
+viser at reglerne ikke lukkede for meget.
 
 ---
 

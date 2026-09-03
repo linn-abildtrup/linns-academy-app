@@ -4568,6 +4568,52 @@ Ingenting i admin. Alle 27 skærme står i det nye udseende.
 
 ---
 
+### 9.63 DEN 2. OG 3. SEPTEMBER: TO TING DER OGSÅ RAMMER 3.0
+
+Arbejdet de to dage foregik i den gamle app, se afsnittet "Rettet 2. og 3.
+september" i `HANDOVER-GAMMEL-APP.md`. **To af ændringerne slår igennem
+her uden at der er rørt en fil i `/ny`.**
+
+#### 1. Enhedslisten er nu delt, og den er blevet længere
+
+`content/mineOpskrifter3.ts` er 3.0's fil, men **den gamle app henter nu
+enhedslisten derfra**, så de to apper ikke kan drive fra hinanden. Det er
+kun en læsning, så regel 2 er overholdt. **Retter du `ENHEDER`, rammer du
+begge apper.**
+
+Listen er gået fra syv til tolv: fed, dåse, håndfuld, knivspids og bundt
+er kommet til. De dukker derfor også op i opskrift-arket i 3.0.
+
+**Vægt-tabellen i `content/enhedsvaegt3.ts` er lært de tre nye der kostede
+noget.** Fed og knivspids kendte den, men dåse, håndfuld og bundt faldt
+ned i styk-grenen og blev gættet som 100 g, altså en dåse hakkede tomater
+regnet som en fjerdedel af sig selv. Nu er dåse 400 g, håndfuld 30 g og
+bundt 25 g, med test. **Sætter du flere enheder på listen, så lær tabellen
+dem i samme ombæring.**
+
+Arket i 3.0 har ikke det "andet"-felt den gamle app fik, hvor kunden selv
+kan skrive en enhed. Det er ikke et bevidst valg, det er bare ikke lavet
+endnu.
+
+#### 2. Linn AI har fået fire faste regler, og de gælder også `/api/ny-ai`
+
+Chatten må ikke tale om andre forløb end kundens eget, ikke fortælle hvad
+der er planlagt (på nær Q&A-tidspunkter fra hendes egen FAQ), ikke nævne
+premium eller adgangsniveauer, og ikke nævne en ny app eller kommende
+versioner. Linns beslutning 3. september.
+
+**Reglerne står i `content/linnAi.ts` uden for persona-teksten**, samme
+sted som sikkerheds-markøren, fordi admin kan skrive persona'en helt om
+inde i appen. Begge apper bygger deres system-prompt samme sted, så de
+gælder automatisk her. Svar-udkastene til Linn selv er ikke omfattet.
+
+**Punkt fire er værd at bide mærke i i lige netop denne fil:** AI'en må
+ikke fortælle kunderne at der er en ny app på vej. Bliver 3.0 rullet ud
+til et hold, skal reglen læses igennem igen, for så er den nye app ikke
+længere noget der kommer, men noget hun står i.
+
+---
+
 ## 10. Sådan arbejder Linn
 
 Det her er lige så vigtigt som koden.
