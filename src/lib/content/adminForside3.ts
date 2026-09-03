@@ -64,8 +64,8 @@ export const VAERKTOEJER: Vaerktoej[] = [
 	},
 	{
 		navn: 'Slå en kunde op',
-		under: 'Se hvad hun kan se, og hvorfor',
-		rute: '/ny/admin/traening/kunde',
+		under: 'Alt om én kunde, samlet ét sted',
+		rute: '/ny/admin/kunde',
 		omraade: 'kunder',
 		oftest: true
 	},
