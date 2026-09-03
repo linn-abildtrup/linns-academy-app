@@ -331,7 +331,7 @@ Linn samler løbende de spørgsmål der kommer ind, og svarer på dem samlet. Sv
 
 Du skal derfor ikke forvente et personligt svar her, men dit spørgsmål bliver taget med.
 
-Brug 'Stil et nyt spørgsmål'-knappen øverst. Du kan se alle dine tidligere spørgsmål i listen.`
+Beskeder står som en chat: skrivefeltet ligger fast nederst, og dine spørgsmål og Linns svar står som bobler med det nyeste nederst. Under et spørgsmål der ikke er besvaret endnu står der 'Afventer svar'. Har du adgang til Linn AI, ligger den som en fane ved siden af.`
 	},
 	{
 		titel: 'Bibliotek',
