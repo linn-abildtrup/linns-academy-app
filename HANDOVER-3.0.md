@@ -5321,3 +5321,35 @@ layoutet. Se `feedback_test_altid_i_chrome`.
 **Skrivefeltet ligger nu fast forneden**, og fanerne klæber øverst. Begge dele
 er Linns ønske og virker. **Alt er afprøvet af mig selv i Chrome som Kimmie**,
 ikke kun med tests.
+
+---
+
+### 9.77 UDVIKLING: TRE FEJL I KURVERNE, 4. september
+
+Alle tre fundet ved at måle i browseren, ikke ved at kigge i koden.
+
+**1. Symptom-kurven manglede de stiplede stykker.** To målinger stod uden noget
+imellem sig, og så ligner det at kurven er i stykker frem for at der ikke er
+målt. De to grafer bruger den SAMME `byggKurve`, så hullerne lå der allerede i
+data — de blev bare aldrig tegnet i symptom-grafen. Forglemmelse fra 18. august.
+
+**2. Aksens tal blev klippet af grafens venstre kant.** Tallene står
+højrestillet og blev tegnet 5 enheder inde, altså med højre kant på 8. Et
+tocifret tal fylder 11,3 ved 8,5 px, så "20" begyndte på **minus 3**.
+`akseBredde` er sat op fra 13 til 16, og springet fra 5 til 4.
+
+**DET VAR IKKE ET SKÆRMBREDDE-PROBLEM**, og det var min egen første mistanke
+der var forkert. Målene ligger i grafens eget koordinatsystem og skalerer med
+bredden, så en telefon rammer nøjagtig det samme. Det var kun tydeligere på en
+bred skærm.
+
+**3. X-aksen havde kun en slutdato.** Uden en startdato siger kurven ikke hvor
+lang en periode man kigger på, og så betyder formen ingenting. Startdatoen står
+nu venstrestillet ved første punkt. **De to vokser mod hinanden**, så den vises
+kun når der er plads, se `visStartDato3`. Ellers vinder slutdatoen, for den
+siger hvor frisk tallet er. Bredden regnes af tekstlængden og er ikke et fast
+tal, fordi datoen kan være både "1. sep" og "26. dec 2025".
+
+**Alle tre gælder BEGGE kurver på siden** — overskud og symptomer — fordi de
+deler `byggKurve` og `FLADE_UDVIKLING`. Retter du noget i den ene, så se efter
+om den anden har det samme.
