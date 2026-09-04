@@ -202,6 +202,20 @@ kunde skriver.
 Samme slags fælde som de manglende tildelinger i 3.0: den gør ingen larm, den
 gør bare ingenting.
 
+### 6.13 En opskrift har to tal, og de skal give samme svar
+
+En opskrift kan logges på to måder, og de spørger to forskellige steder.
+**"Log som måltid"** læser makro-linjen nederst i instruktioner-feltet.
+**"Tilføj ingredienser til byg-måltid"** ignorerer den linje og lægger
+ingredienserne sammen fra fødevaredatabasen.
+
+Retter du en ingrediens, en mængde eller en fødevares næringstal, flytter
+du kun det ene af de to tal. Makro-linjen skal skrives om bagefter, ellers
+ser kunden to forskellige svar på samme mad.
+
+Der er ingen kontrol der fanger det. Se afsnittet om 4. september for den
+gennemgang der bragte alle 130 i overensstemmelse.
+
 ---
 
 ## 7. Rettet i august 2026
@@ -1083,6 +1097,77 @@ enten slip knappen fri eller vis beskeden. Kig i `beskeder/+page.svelte`
 for det fulde eksempel med mærke, og i `moduler/traening/+page.svelte` for
 den korte udgave uden besked.
 
+### Rettet 4. september 2026: opskrifternes to tal gav to forskellige svar
+
+Under ventilen i regel 2, med Linns go. Commits `febfdfc` og `0b28f0d`,
+plus en række data-rettelser der ikke ligger i git.
+
+**Anledningen.** Linn spurgte hvorfor hendes egen morgenmad viste 32 g
+protein under "log som måltid" og 28,5 g under "tilføj ingredienser".
+Svaret var at fibertilskuddet var talt med i det ene tal uden at stå på
+ingredienslisten. Det viste sig at være toppen af noget større: **kun 15
+af 133 opskrifter var enige med sig selv.** Efter gennemgangen er det 130
+af 130.
+
+**Den største enkeltårsag var dubletter.** Berigelsen med DTU 6.1 den 24.
+august lagde en ekstra række ind for varer vi allerede havde. Dubletten
+uden `units` blev fundet i stedet for Linns egen med enheder, så "1 spsk
+olivenolie" talte som 1 gram og "1 skive rugbrød" som 1 gram. 31 varer fik
+enhederne kopieret over, 39 fik enheder de aldrig havde haft.
+
+**Omkring 70 ingredienser koblede til noget helt forkert**, uden at nogen
+fejl blev vist. Stavemåden "avokado" med k rammer Avokadoolie og gav 442
+kalorier i stedet for 78, i 13 opskrifter. "1 dl mælk" ramte
+mælkechokolade, "moden mango" ramte modermælk, og "200 g ovnbagte
+grøntsager" ramte en friturestegt forårsrulle til 528 kalorier. Se 6.13 og
+afsnittet nedenfor om ordet "eller".
+
+**Seks fødevarer havde tørvægtens tal på en kogt vare.** Kikærter kogte
+stod med 337 kalorier hvor det rette er omkring 130, og det ramte 23
+opskrifter. Samme fejl i mungbønner kogte, sojabønner kogte, brune ris
+kogte, hvid pasta kogt og omvendt i grønne linser tørrede. Protein og
+fiber var rigtige og blev ikke rørt. Alle seks er mærket `kildeType:
+'linn'` med en note om hvor de nye tal kommer fra, så det ikke ser ud som
+om DTU siger det.
+
+**Stegefedtet manglede helt på ingredienslisten i 34 opskrifter**, selvom
+fremgangsmåden stegte i det. Konventionen blev: 1 tsk hvor teksten selv
+siger "lidt" eller "en klat", ellers 1 spsk. Et skvæt ved servering tælles
+ikke med.
+
+**To opskrifter blandede en batch sammen med en portion.** Grove boller
+havde ingredienser til seks boller men stod som én portion, og tre
+modstridende makro-linjer i teksten. Sprøde grøntsager havde en hel dåse
+kikærter til hummus der holder fire til fem dage. Begge er nu sat op som
+én portion, med batch-versionen beskrevet i teksten. Konventionen er **én
+bolle, én kugle, én portion.**
+
+**Kode-rettelserne.** Ordet "eller" blev brugt som søgeord, og bogstaverne
+står inde i mange fødevarenavne, så "æble eller en håndfuld bær" ramte
+Kantareller. Bindeordene springes nu over. Dertil vælger opslaget nu den
+**første** mulighed i et valg, hvor det før tog det længste ord, så
+"valnødder eller hasselnødder" gav hasselnødder. Består første halvdel kun
+af beskrivende ord, som i "grønne eller røde druer", bruges den sidste.
+Begge rettelser blev målt mod alle 133 opskrifter før de gik ud, og
+afprøvet i browseren.
+
+**Det der blev prøvet og rullet tilbage.** At springe dubletter over via
+`pegerPaa` gjorde skade. Markeringen peger begge veje, så i halvdelen af
+parrene forsvandt den rigtige vare, og 55 opskrifter fik forkerte tal.
+Dubletterne er i stedet løst ved at give begge udgaver de samme enheder.
+Skal de fjernes rigtigt, skal markeringerne først vende samme vej.
+
+**Tre tomme kladder** der alle hed "Ny opskrift" er slettet. De var
+inaktive og uden henvisninger.
+
+**3.0 er ikke fulgt med.** Den har sit eget gemte øjebliksbillede af
+tallene, regnet 1. september, altså før oprydningen. De to versioner viser
+derfor forskellige tal lige nu. Linn skal ind på `/ny/admin/opskrift-makro`
+og regne om. Det er bevidst manuelt. Se `HANDOVER-3.0.md` 9.66.
+
+Sikkerhedskopier fra før gennemgangen ligger som `scripts/_backup-*.json`.
+De er git-ignorerede og findes kun på Linns maskine.
+
 ---
 
 ## 8. Beslutninger der ikke skal genopfindes
@@ -1239,6 +1324,24 @@ Kom ud af en gennemgang af hele kæden. **Intet af det er rettet.**
   forløbets begrænsninger, men **rækkerne står der stadig.** Måler du på holdet,
   så tæl ikke rækker
 - **`programValg` er tomt på KropsRo 16. aug**, se ovenfor. Stadig ikke fundet
+
+### Åbnet 4. september 2026: er portionerne blevet for store
+
+Efter gennemgangen af opskrifterne er tallene ærlige for det
+ingredienslisterne siger, men flere ligger højt. Gennemsnittet er 553
+kalorier pr. portion. I toppen ligger Krydret tomatpande med bønner og æg
+på 843, Warm bowl med ristede kikærter og tahini på 838, Kalkunfrikadeller
+med grønkålssalat på 783 og Oksegryde med rodfrugter på 774.
+
+Det er ikke et regnestykke der kan rettes. Det er et spørgsmål om
+portionerne skal skrues ned, og det er Linns faglige vurdering. Hun bad 4.
+september om at gemme det til senere.
+
+Tages den op, er første skridt en liste over alle opskrifter sorteret
+efter kalorier, så toppen kan gennemgås. Ændres en mængde, skal
+makro-linjen skrives om bagefter, se 6.13.
+
+---
 
 ### Fundet ved gennemgangen af mad-modulet, 23. og 24. august
 

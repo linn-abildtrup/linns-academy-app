@@ -5422,3 +5422,44 @@ Knappen findes fortsat i den gamle app under Din profil.
    siden 16. august og er nu det eneste der reelt spærrer
 2. Programmerne: to er tildelt Kickstart August fra dag 3 og verificeret.
    To andre er stadig kladder og kan ikke tildeles
+
+---
+
+### 9.66 DEN 4. SEPTEMBER: OPSKRIFTERNES TAL BLEV RETTET I DATA, OG 3.0's ØJEBLIKSBILLEDE ER NU FORÆLDET
+
+**Læs det her før du rører makrotallene i 3.0.**
+
+Den 4. september blev hele fødevare- og opskriftsgrundlaget ryddet op fra den
+gamle apps side. Se `HANDOVER-GAMMEL-APP.md`, afsnittet "Rettet 4. september
+2026: opskrifternes to tal gav to forskellige svar", for hele gennemgangen.
+Kort fortalt: omkring 70 ingredienser koblede til den forkerte fødevare, 70
+fødevarer manglede måleenheder efter DTU-berigelsen 24. august, seks fødevarer
+havde tørvægtens tal på en kogt vare, og stegefedtet manglede på 34
+ingredienslister. Alle 130 opskrifters makro-linje er skrevet om, og tre tomme
+kladder er slettet.
+
+**Konsekvensen for 3.0.** De beregnede tal i `ingrediensKobling/beregninger` er
+et bevidst øjebliksbillede, se `opskriftBeregning3.ts`. Det blev sidst regnet
+den **1. september**, altså før oprydningen. Det betyder to ting:
+
+- **Tallene i 3.0 og i den gamle app er forskellige lige nu.** Linns egen
+  morgenmad står gemt som 28,6 g protein og 4,8 g fiber i 3.0, hvor den rigtige
+  er 29,4 og 10,8. Snackbøtten står som 310 kalorier mod 375.
+- **Øjebliksbilledet indeholder stadig de tre slettede kladder**
+  `opskrift_mowzma5w`, `opskrift_mqb0b8ma` og `opskrift_msm5qc7m`.
+
+**Hvad der skal gøres.** Linn skal ind på `/ny/admin/opskrift-makro`, regne om
+og se listen igennem, præcis som arkitekturen er tænkt. Det er ikke noget der
+må ske automatisk, og det er ikke gjort 4. september.
+
+**Den åbne tråd fra 15. august er nu løst fra den anden ende.** Punkt 1 dér var
+at skrive 3.0's beregnede tal ud til den gamle app. Det er ikke længere
+nødvendigt: grundlaget er rettet i selve dataene, og den gamle apps makro-linjer
+er skrevet om ud fra samme regnestykke. Når 3.0 regner om, lander de to
+versioner på samme tal af sig selv.
+
+**Fælden der blev rettet i koden** rammer også 3.0, fordi begge apper bruger
+samme opslag. Ordet "eller" i en ingrediens blev brugt som søgeord, så "æble
+eller en håndfuld bær" ramte Kantareller. Og et valg giver nu den **første**
+mulighed, ikke den med det længste navn. Skriver du et nyt ingrediensnavn, så
+brug aldrig to kommaer: det læses som en liste og bliver splittet.
