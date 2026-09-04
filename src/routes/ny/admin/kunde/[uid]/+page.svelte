@@ -29,6 +29,7 @@
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import { hentAlleForlob } from '$lib/firestore/forlob';
 	import { hentTildelinger3 } from '$lib/firestore/traeningTildeling3';
+	import { hentForlobsProgrammer } from '$lib/firestore/mikrotraening';
 	import {
 		springerIOejnene,
 		maerkater,
@@ -78,6 +79,8 @@
 	let holdHarTraening = $state(false);
 	let ubesvarede = $state(0);
 	let sidstRegistreret = $state<number | null>(null);
+	// Om vi FIK LOV at se efter. Se noten i kundeOpslag3.KundeInput.
+	let aktivitetKendt = $state(false);
 	let harNoti = $state(false);
 
 	// Hver fane har sin egen tilstand. 'nej' betyder ikke hentet endnu.
@@ -122,18 +125,35 @@
 				}
 			})();
 
-			// Har hendes hold faaet et program? Det er den enkelte ting der
-			// oftest er glemt, se 9.32.
+			// Har hun traening at tage? Det er den enkelte ting der oftest er
+			// glemt, se 9.32.
+			//
+			// DER ER TO STEDER AT KIGGE. 3.0 tildeler programmer i en liste
+			// for sig. Kickstart og Kropsro har dem liggende paa selve
+			// holdet, hvor kunden vaelger sin variant ved opstarten. Kiggede
+			// man kun ét sted, fik hver eneste kunde paa den gamle app
+			// "ingen traening tildelt" selvom holdet havde begge programmer.
+			// Opdaget paa Randi 4. september.
 			const rigtige = tildelinger.filter((t) => t.type === 'program');
 			const alleHarEt = rigtige.some((t) => t.modtagerType === 'alle');
 			const daekket = new Set(
 				rigtige.filter((t) => t.modtagerType === 'hold').map((t) => t.modtagerId)
 			);
 			const hendes = (kunde as unknown as { forlobIds?: string[] }).forlobIds ?? [];
-			holdHarTraening =
+			const tildelt =
 				alleHarEt ||
 				rigtige.some((t) => t.modtagerType === 'kunde' && t.modtagerId === uid) ||
 				hendes.some((f) => daekket.has(f));
+
+			holdHarTraening = tildelt;
+			if (!tildelt) {
+				void (async () => {
+					const lister = await Promise.all(
+						hendes.map((f) => hentForlobsProgrammer(f).catch(() => []))
+					);
+					if (lister.some((l) => l.length > 0)) holdHarTraening = true;
+				})();
+			}
 
 			// De tre smaa ting overblikket har brug for. Hver fejler for sig,
 			// saa en manglende rettighed ét sted ikke tager hele siden.
@@ -160,8 +180,11 @@
 					const fraMad = dato ? new Date(`${dato}T12:00:00`).getTime() : 0;
 					const stempel = (kunde as unknown as { sidstAktiv3?: number })?.sidstAktiv3 ?? 0;
 					sidstRegistreret = Math.max(fraMad, stempel) || null;
+					aktivitetKendt = true;
 				} catch (e) {
+					// VI SIGER IKKE "ALDRIG" NAAR VI IKKE FIK LOV AT SE EFTER.
 					console.warn('[admin] seneste registrering', e);
+					aktivitetKendt = false;
 				}
 			})();
 
@@ -231,6 +254,7 @@
 		harSagtJaTilBeskeder: harNoti,
 		ubesvaredeSpoergsmaal: ubesvarede,
 		dageSidenAktiv: dageSiden(sidstRegistreret, nu),
+		aktivitetKendt,
 		adgangUdloeberOm: udloeberOm,
 		onboardet: (kunde as unknown as { onboardet3?: boolean })?.onboardet3 === true
 	});
@@ -370,9 +394,20 @@
 					<AdmKort>
 						<h3>Sidst i appen</h3>
 						<span class="ku-stor">
-							{#if input.dageSidenAktiv === null}Aldrig{:else if input.dageSidenAktiv === 0}I dag{:else if input.dageSidenAktiv === 1}I går{:else}{input.dageSidenAktiv} dage siden{/if}
+							{#if !aktivitetKendt}Ved ikke
+							{:else if input.dageSidenAktiv === null}Aldrig
+							{:else if input.dageSidenAktiv === 0}I dag
+							{:else if input.dageSidenAktiv === 1}I går
+							{:else}{input.dageSidenAktiv} dage siden{/if}
 						</span>
-						<span class="ku-u">Målt på hvornår hun sidst registrerede noget. Login-datoen lyver.</span>
+						<span class="ku-u">
+							{#if !aktivitetKendt}
+								Hendes registreringer kunne ikke hentes. Det er ikke det samme som at der ikke
+								er nogen.
+							{:else}
+								Målt på hvornår hun sidst registrerede noget. Login-datoen lyver.
+							{/if}
+						</span>
 					</AdmKort>
 					<AdmKort>
 						<h3>Dag i forløbet</h3>

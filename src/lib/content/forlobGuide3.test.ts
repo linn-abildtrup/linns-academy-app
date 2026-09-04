@@ -31,6 +31,7 @@ const FORLOB: GuideForlob = {
 const KLAR: Verden = {
 	forlob: FORLOB,
 	antalTraeningstildelinger: 2,
+	antalProgrammerPaaHoldet: 0,
 	dageMedLektion: Array.from({ length: 21 }, (_, i) => i + 1),
 	antalSmaaSkridt: 6,
 	antalFaq: 8,
@@ -152,6 +153,19 @@ describe('spaerringer', () => {
 		const s = spaerringer({ ...KLAR, antalTraeningstildelinger: 0 });
 		expect(s.some((x) => x.includes('Din træning er på vej'))).toBe(true);
 		expect(kanUdgives({ ...KLAR, antalTraeningstildelinger: 0 })).toBe(false);
+	});
+
+	it('SPAERRER IKKE NAAR PROGRAMMERNE LIGGER PAA SELVE HOLDET', () => {
+		// Kickstart og Kropsro tildeler ikke, de har programmerne liggende
+		// paa holdet. Opdaget paa Kickstart August 4. september.
+		const v = { ...KLAR, antalTraeningstildelinger: 0, antalProgrammerPaaHoldet: 2 };
+		expect(spaerringer(v)).toEqual([]);
+		expect(tjekTrin(v).find((x) => x.id === 'traening')?.status).toBe('klar');
+	});
+
+	it('spaerrer foerst naar der ikke er traening nogen af de to steder', () => {
+		const v = { ...KLAR, antalTraeningstildelinger: 0, antalProgrammerPaaHoldet: 0 };
+		expect(spaerringer(v).some((x) => x.includes('Din træning er på vej'))).toBe(true);
 	});
 
 	it('naevner ikke traening paa et hold der ikke har den', () => {

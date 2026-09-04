@@ -229,6 +229,16 @@ export interface Verden {
 	forlob: GuideForlob | null;
 	/** Tildelinger der rammer holdet, altsaa hold, medlemmer eller alle. */
 	antalTraeningstildelinger: number;
+	/**
+	 * Programmer der ligger paa selve holdet.
+	 *
+	 * DER ER TO STEDER AT KIGGE. 3.0 tildeler programmer i en liste for
+	 * sig, mens Kickstart og Kropsro har dem liggende paa holdet, hvor
+	 * kunden selv vaelger sin variant ved opstarten. Kiggede man kun ét
+	 * sted, spaerrede guiden for et hold der havde alt hvad det skulle
+	 * have. Opdaget paa Kickstart August 4. september.
+	 */
+	antalProgrammerPaaHoldet: number;
 	/** Dage i forloebet der har mindst én lektion. */
 	dageMedLektion: number[];
 	antalSmaaSkridt: number;
@@ -282,6 +292,7 @@ export function tjekTrin(v: Verden): TrinStatus[] {
 	}
 
 	const traening = harTraening(f);
+	const harProgram = v.antalTraeningstildelinger + v.antalProgrammerPaaHoldet > 0;
 	const spaerret = spaerringer(v);
 
 	const ud: TrinStatus[] = [
@@ -306,12 +317,14 @@ export function tjekTrin(v: Verden): TrinStatus[] {
 		},
 		{
 			id: 'traening',
-			status: !traening ? 'ikke-relevant' : v.antalTraeningstildelinger > 0 ? 'klar' : 'mangler',
+			status: !traening ? 'ikke-relevant' : harProgram ? 'klar' : 'mangler',
 			resume: !traening
 				? 'Holdet har ikke mikrotræning'
-				: v.antalTraeningstildelinger > 0
-					? `${v.antalTraeningstildelinger} ${v.antalTraeningstildelinger === 1 ? 'tildeling' : 'tildelinger'}, start dag ${f.traeningStartDag ?? 1}`
-					: 'Ingen programmer tildelt'
+				: v.antalProgrammerPaaHoldet > 0
+					? `${v.antalProgrammerPaaHoldet} programmer på holdet, start dag ${f.traeningStartDag ?? 1}`
+					: v.antalTraeningstildelinger > 0
+						? `${v.antalTraeningstildelinger} ${v.antalTraeningstildelinger === 1 ? 'tildeling' : 'tildelinger'}, start dag ${f.traeningStartDag ?? 1}`
+						: 'Ingen programmer tildelt'
 		},
 		{
 			id: 'lektioner',
@@ -371,7 +384,7 @@ export function spaerringer(v: Verden): string[] {
 	if (!f.startMs) ud.push('Der er ingen startdato, og så kan ingen dag regnes ud');
 	if (f.antalDage < 1) ud.push('Forløbet er nul dage langt');
 
-	if (harTraening(f) && v.antalTraeningstildelinger === 0) {
+	if (harTraening(f) && v.antalTraeningstildelinger + v.antalProgrammerPaaHoldet === 0) {
 		ud.push(
 			'Ingen træningsprogrammer er tildelt holdet. Kunderne ser "Din træning er på vej" i hele forløbet'
 		);

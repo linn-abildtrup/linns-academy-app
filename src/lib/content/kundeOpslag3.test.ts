@@ -22,6 +22,7 @@ const alt_ok: KundeInput = {
 	harSagtJaTilBeskeder: true,
 	ubesvaredeSpoergsmaal: 0,
 	dageSidenAktiv: 0,
+	aktivitetKendt: true,
 	adgangUdloeberOm: null,
 	onboardet: true
 };
@@ -91,6 +92,20 @@ describe('springerIOejnene', () => {
 		).toBe(false);
 	});
 
+	it('SIGER IKKE ALDRIG NAAR VI IKKE FIK LOV AT SE EFTER', () => {
+		// Randi, 4. september: der stod at hun aldrig havde registreret
+		// noget, mens hun havde tastet hele ugen. Opslaget blev afvist.
+		const ud = springerIOejnene({ ...alt_ok, aktivitetKendt: false, dageSidenAktiv: null });
+		expect(ud.some((x) => x.id === 'aldrig')).toBe(false);
+		expect(ud.some((x) => x.id === 'stille')).toBe(false);
+		expect(ud[0].id).toBe('ukendt-aktivitet');
+	});
+
+	it('siger heller ikke stille naar vi ikke ved noget', () => {
+		const ud = springerIOejnene({ ...alt_ok, aktivitetKendt: false, dageSidenAktiv: 40 });
+		expect(ud.some((x) => x.id === 'stille')).toBe(false);
+	});
+
 	it('siger HVAD der kan goeres ved hvert punkt', () => {
 		for (const p of springerIOejnene({ ...alt_ok, holdHarTraening: false, dageSidenAktiv: null })) {
 			expect(p.hvad.length).toBeGreaterThan(0);
@@ -115,6 +130,10 @@ describe('maerkater', () => {
 	it('skriver i dag og i går i stedet for nul og ét', () => {
 		expect(maerkater({ ...alt_ok, dageSidenAktiv: 0 })[1].tekst).toBe('Aktiv i dag');
 		expect(maerkater({ ...alt_ok, dageSidenAktiv: 1 })[1].tekst).toBe('Aktiv i går');
+	});
+
+	it('skriver ukendt i stedet for at gaette paa maerkaten', () => {
+		expect(maerkater({ ...alt_ok, aktivitetKendt: false })[1].tekst).toBe('Aktivitet ukendt');
 	});
 
 	it('markerer det naar der er gaaet for laenge', () => {

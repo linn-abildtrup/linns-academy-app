@@ -34,6 +34,7 @@
 	import { hentForlob, hentAlleForlob, gemForlob, hentForlobsdage, hentAllowedEmailsForForlob } from '$lib/firestore/forlob';
 	import { hentTildelinger3 } from '$lib/firestore/traeningTildeling3';
 	import { hentSmaaSkridt } from '$lib/firestore/smaaSkridt';
+	import { hentForlobsProgrammer } from '$lib/firestore/mikrotraening';
 	import { hentFaqItems } from '$lib/firestore/bibliotek';
 	import type { Forlob } from '$lib/content/forlobAdgang';
 	import { FEATURES } from '$lib/content/features';
@@ -61,6 +62,9 @@
 	let forlob = $state<Forlob | null>(null);
 	let alle = $state<Forlob[]>([]);
 	let tildelinger = $state(0);
+	// Programmerne der ligger paa selve holdet. Kickstart og Kropsro
+	// tildeler ikke, kunden vaelger sin variant ved opstarten.
+	let programmerPaaHoldet = $state(0);
 	let dageMedLektion = $state<number[]>([]);
 	let antalSkridt = $state(0);
 	let antalFaq = $state(0);
@@ -87,9 +91,10 @@
 			// De fem opslag koeres samtidig, og hvert af dem faar lov at
 			// fejle for sig. Guiden skal kunne vise de fire ting den ved,
 			// ogsaa naar det femte opslag bliver afvist.
-			const [andre, tild, dage, skridt, faq, kunder] = await Promise.all([
+			const [andre, tild, prog, dage, skridt, faq, kunder] = await Promise.all([
 				hentAlleForlob().catch(() => [] as Forlob[]),
 				hentTildelinger3().catch(() => []),
+				hentForlobsProgrammer(forlobId).catch(() => []),
 				hentForlobsdage(forlobId).catch(() => []),
 				hentSmaaSkridt(forlobId).catch(() => []),
 				hentFaqItems(forlobId).catch(() => []),
@@ -106,6 +111,7 @@
 						t.modtagerType === 'medlemmer' ||
 						t.modtagerType === 'alle')
 			).length;
+			programmerPaaHoldet = prog.length;
 			dageMedLektion = dage.filter((d) => (d.lektioner?.length ?? 0) > 0).map((d) => d.dagNummer);
 			antalSkridt = skridt.length;
 			antalFaq = faq.length;
@@ -141,6 +147,7 @@
 				}
 			: null,
 		antalTraeningstildelinger: tildelinger,
+		antalProgrammerPaaHoldet: programmerPaaHoldet,
 		dageMedLektion,
 		antalSmaaSkridt: antalSkridt,
 		antalFaq,
@@ -391,13 +398,22 @@
 				{#if traeningPaa}
 					<div class="sp">
 						<div class="q">Har holdet fået tildelt programmer?</div>
-						<div class="fast" class:advarsel={tildelinger === 0}>
-							{tildelinger === 0 ? 'Nej, ingen tildelinger' : `${tildelinger} ${tildelinger === 1 ? 'tildeling' : 'tildelinger'} rammer holdet`}
+						<div class="fast" class:advarsel={tildelinger + programmerPaaHoldet === 0}>
+							{#if programmerPaaHoldet > 0}
+								{programmerPaaHoldet} programmer ligger på holdet
+							{:else if tildelinger > 0}
+								{tildelinger} {tildelinger === 1 ? 'tildeling' : 'tildelinger'} rammer holdet
+							{:else}
+								Nej, hverken programmer eller tildelinger
+							{/if}
 						</div>
 						<div class="h">
-							<b>Det er den enkelte ting der oftest bliver glemt.</b> En tildeling gælder ét
-							bestemt hold, så et nyt hold starter altid på nul. Der skal være ét program pr slags
-							udstyr: har du kun kettlebell-programmet, ser en kunde uden kettlebell ingenting.
+							<b>Det er den enkelte ting der oftest bliver glemt.</b> Der er to måder: Kickstart
+							og Kropsro har programmerne liggende på selve holdet, hvor kunden vælger sin
+							variant. De byggede hold får dem tildelt, og en tildeling gælder ét bestemt hold,
+							så et nyt hold starter altid på nul. Uanset hvilken vej skal der være ét program pr
+							slags udstyr: har du kun kettlebell-programmet, ser en kunde uden kettlebell
+							ingenting.
 						</div>
 						<a class="knap" href="/ny/admin/forlob/{forlobId}/traening">Tildel programmer ›</a>
 					</div>

@@ -46,7 +46,16 @@ export interface Opmaerksomhed {
 export interface KundeInput {
 	harAktivtForlob: boolean;
 	forlobNavn: string;
-	/** Om hendes hold har faaet tildelt et traeningsprogram. */
+	/**
+	 * Om der er traening at give hende paa hendes hold.
+	 *
+	 * DER ER TO STEDER AT KIGGE, og den 4. september kiggede jeg kun ét.
+	 * 3.0 tildeler programmer i en liste for sig, mens et Kickstart- eller
+	 * Kropsro-hold i den gamle app har programmerne liggende paa selve
+	 * holdet, hvor kunden vaelger sin variant. Kun det foerste sted blev
+	 * tjekket, saa alle kunder paa den gamle app fik "ingen traening
+	 * tildelt" selvom deres hold havde begge programmer.
+	 */
 	holdHarTraening: boolean;
 	/** Om hun kan se 3.0. */
 	paaNyApp: boolean;
@@ -55,6 +64,15 @@ export interface KundeInput {
 	ubesvaredeSpoergsmaal: number;
 	/** Dage siden hun sidst registrerede noget. Null naar hun aldrig har. */
 	dageSidenAktiv: number | null;
+	/**
+	 * Om vi overhovedet FIK LOV at se hendes registreringer.
+	 *
+	 * VI MAA IKKE SIGE "ALDRIG" NAAR VI BARE IKKE KUNNE SE EFTER. Den 4.
+	 * september stod der at Randi aldrig havde registreret noget, mens hun
+	 * havde spist og tastet hele ugen. Opslaget blev afvist, og siden
+	 * meldte det vaerste. En status om et menneske maa ikke gaette.
+	 */
+	aktivitetKendt: boolean;
 	/** Hvornaar adgangen udloeber. Null er loebende. */
 	adgangUdloeberOm: number | null;
 	/** Om hun har gennemfoert opstarten i 3.0. */
@@ -111,7 +129,15 @@ export function springerIOejnene(i: KundeInput): Opmaerksomhed[] {
 		});
 	}
 
-	if (i.dageSidenAktiv === null) {
+	if (!i.aktivitetKendt) {
+		// Ingen paastand. Vi ved det ikke, og saa siger vi det.
+		ud.push({
+			id: 'ukendt-aktivitet',
+			alvor: 'se',
+			tekst: 'Vi kunne ikke se hvornår hun sidst var i appen',
+			hvad: 'Det er ikke det samme som at hun ikke har været der'
+		});
+	} else if (i.dageSidenAktiv === null) {
 		ud.push({
 			id: 'aldrig',
 			alvor: 'se',
@@ -158,7 +184,8 @@ export function maerkater(i: KundeInput): { tekst: string; alvor: Alvor }[] {
 			: { tekst: 'Intet aktivt forløb', alvor: 'se' }
 	);
 
-	if (i.dageSidenAktiv === null) ud.push({ tekst: 'Aldrig været i gang', alvor: 'se' });
+	if (!i.aktivitetKendt) ud.push({ tekst: 'Aktivitet ukendt', alvor: 'se' });
+	else if (i.dageSidenAktiv === null) ud.push({ tekst: 'Aldrig været i gang', alvor: 'se' });
 	else if (i.dageSidenAktiv === 0) ud.push({ tekst: 'Aktiv i dag', alvor: 'ok' });
 	else if (i.dageSidenAktiv === 1) ud.push({ tekst: 'Aktiv i går', alvor: 'ok' });
 	else ud.push({ tekst: `Sidst aktiv for ${i.dageSidenAktiv} dage siden`, alvor: i.dageSidenAktiv >= STILLE_DAGE ? 'se' : 'ok' });
