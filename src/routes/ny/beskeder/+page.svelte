@@ -132,7 +132,8 @@
 			samtaleId = aaben.id;
 			beskeder = aaben.beskeder;
 			antalTidligere = aaben.antalTidligere;
-			await rulNed();
+			// Ingen rulning her: effekten ovenfor saetter den i bunden UDEN
+			// animation, saa snart listen er tegnet.
 		} catch (e) {
 			console.error('[ny] kunne ikke hente samtalen', e);
 			fejl = 'Din samtale kunne ikke hentes. Du kan godt skrive alligevel.';
@@ -275,24 +276,41 @@
 	}
 
 	/**
-	 * Rul ned til det nye svar.
+	 * SAMTALEN STAAR I BUNDEN NAAR HUN AABNER DEN. Linns oenske 4.
+	 * september. Nyeste besked staar nederst, saa toppen er det aeldste
+	 * hun har skrevet, og det er ikke der hun skal begynde at laese.
 	 *
-	 * Kom hun fra en besked paa telefonen, staar det nye svar maaske
-	 * langt nede i listen. Uden det her moeder hun toppen af en liste og
-	 * skal selv lede efter det hun lige blev lovet.
+	 * UDEN ANIMATION. Den skal allerede VAERE i bunden, ikke rulle derned
+	 * mens hun kigger paa det.
 	 *
-	 * Kun ÉN gang: hun skal kunne rulle vaek fra det bagefter uden at
-	 * skaermen hiver hende tilbage. Linns valg 23. august.
+	 * ÉN GANG PR VISNING, ikke loebende: hun skal kunne rulle op og laese
+	 * gamle beskeder uden at skaermen hiver hende ned igen. Noeglen skifter
+	 * naar hun skifter fane eller aabner en tidligere samtale, for saa er
+	 * det en ny liste der bliver tegnet forfra.
+	 *
+	 * Den her erstatter en effekt der ledte efter '.traad[data-nyt]'. Den
+	 * selektor forsvandt da fanen blev til en samtale 4. september, saa
+	 * effekten havde ikke gjort noget siden.
 	 */
-	let harRullet = $state(false);
+	let sidstRullet = '';
 	$effect(() => {
-		if (harRullet || fane !== 'linn' || traade.length === 0) return;
-		const el = document.querySelector('.traad[data-nyt="ja"]');
+		const f = fane;
+		// Vent til der er noget at rulle i. Ellers er hoejden nul, og vi
+		// ruller til bunden af en tom liste.
+		const klar = f === 'linn' ? !henterTraade : !henterSamtale;
+		if (!klar) return;
+
+		const noegle = `${f}|${laesteSamtaleId ?? ''}|${viserTidligere}`;
+		if (sidstRullet === noegle) return;
+		sidstRullet = noegle;
+
+		const el = f === 'linn' ? linnRulle : rulle;
 		if (!el) return;
-		harRullet = true;
-		// Foerst naar skaermen er tegnet, ellers rulles der til den forkerte
-		// plads.
-		requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+		// Foerst naar skaermen er tegnet, ellers er scrollHeight for lille
+		// og vi lander et tilfaeldigt sted.
+		requestAnimationFrame(() => {
+			el.scrollTop = el.scrollHeight;
+		});
 	});
 
 	async function rulNed() {
