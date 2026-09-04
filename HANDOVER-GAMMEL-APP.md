@@ -1283,3 +1283,10 @@ videre til en anden side. **Det er med vilje**, så en kunde ikke får siden
 genindlæst midt i en video. Bed Linn lukke appen helt ned og åbne igen. Den
 udrullede version kan slås op med `_app/version.json` og holdes op mod
 tidspunktet på den seneste commit.
+
+**MEN VERSIONEN ER I UTC, OG GIT LOG ER I DANSK TID.** Om sommeren er der to
+timers forskel. Sammenligner du de to tal direkte, ser udrulningen ud til at
+være to timer bagud, selv om den lige er kommet ud. Det skete 4. september
+2026, hvor der blev meldt tre gange i træk at udrulningen haltede, og hvor
+Linn selv fangede fejlen. Det står i `svelte.config.js`. Læg to timer til
+versionen, eller sammenlign med `date -u`, før du konkluderer noget.
