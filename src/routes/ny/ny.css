@@ -15248,3 +15248,119 @@ a.tr-felt:focus-visible {
 	color: var(--honey-deep);
 	font-weight: 600;
 }
+
+/* ── Fanen Skriv til Linn, som en samtale ─────────────────────
+   Linns beslutning 4. september, forslag B: 3.0 skal virke som den gamle
+   app, hvor kunden skriver direkte til Linn. Fanen var en liste med kort
+   indtil da. Se mockups-beskeder-som-gammel.html. */
+
+/* Linns egen intro. Den staar kun foerste gang, og den skal laese som
+   hende og ikke som appen, derfor serif og hendes hilsen til sidst. */
+.besk-velkomst {
+	align-self: stretch;
+	text-align: center;
+	padding: 22px 16px 10px;
+}
+
+.besk-velkomst-ikon {
+	display: grid;
+	place-items: center;
+	width: 46px;
+	height: 46px;
+	margin: 0 auto 12px;
+	border-radius: 50%;
+	background: linear-gradient(140deg, var(--plum), var(--plum-deep));
+	color: #fff;
+	font-size: calc(19px * var(--fs-scale, 1));
+}
+
+.besk-velkomst h2 {
+	font-family: var(--serif);
+	font-size: calc(17px * var(--fs-scale, 1));
+	margin: 0 0 9px;
+	font-weight: 600;
+}
+
+.besk-velkomst p {
+	margin: 0 0 9px;
+	font-size: calc(13px * var(--fs-scale, 1));
+	line-height: 1.55;
+	color: var(--ink-2);
+}
+
+.besk-hilsen {
+	font-family: var(--serif);
+	color: var(--plum) !important;
+	margin-top: 13px !important;
+}
+
+/* Den korte udgave af intro'en, naar samtalen er i gang. Hele
+   forklaringen ligger bag i-knappen foroven, som i den gamle app. */
+.besk-note {
+	align-self: stretch;
+	margin: 0 0 4px;
+	padding: 10px 13px;
+	border-radius: 13px;
+	background: var(--honey-tint);
+	color: #6b4a22;
+	font-size: calc(12px * var(--fs-scale, 1));
+	line-height: 1.45;
+}
+
+/* Linns svar. Samme boble som AI'ens, men med hendes navn og prik
+   foroven, saa der aldrig er tvivl om hvem der taler. */
+.besk-linn {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+}
+
+.besk-linn.nyt {
+	box-shadow:
+		var(--shadow-soft),
+		0 0 0 2px var(--maerke);
+}
+
+.besk-linn-fra {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	font-size: calc(11px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.3px;
+	text-transform: uppercase;
+	color: var(--plum);
+}
+
+.besk-linn-tekst {
+	white-space: pre-wrap;
+}
+
+/* Baandet under svaret, ikke oven paa det. Oven paa daekkede det de
+   foerste ord naar svaret var kort. */
+.besk-nyt {
+	align-self: flex-start;
+	margin: -3px 0 0 4px;
+	font-size: calc(11px * var(--fs-scale, 1));
+	font-weight: 700;
+	letter-spacing: 0.3px;
+	text-transform: uppercase;
+	color: var(--maerke);
+}
+
+/* Under hendes egen boble, saa hun kan se at den er kommet frem og at
+   der bare ikke er svaret endnu. Den gamle apps ordlyd. */
+.besk-venter {
+	align-self: flex-end;
+	margin: -4px 4px 0;
+	font-size: calc(11px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}
+
+/* Tegn-taelleren. Staar foerst frem taet paa graensen, se TAEL_FRA. */
+.besk-tegn {
+	margin: -6px 14px 6px;
+	text-align: right;
+	font-size: calc(11px * var(--fs-scale, 1));
+	color: var(--ink-3);
+}

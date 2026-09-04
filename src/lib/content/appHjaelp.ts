@@ -331,7 +331,9 @@ Linn samler løbende de spørgsmål der kommer ind, og svarer på dem samlet. Sv
 
 Du skal derfor ikke forvente et personligt svar her, men dit spørgsmål bliver taget med.
 
-Beskeder står som en chat: skrivefeltet ligger fast nederst, og dine spørgsmål og Linns svar står som bobler med det nyeste nederst. Under et spørgsmål der ikke er besvaret endnu står der 'Afventer svar'. Har du adgang til Linn AI, ligger den som en fane ved siden af.`
+Beskeder står som en chat: skrivefeltet ligger fast nederst, og dine spørgsmål og Linns svar står som bobler med det nyeste nederst. Under et spørgsmål der ikke er besvaret endnu står der 'Afventer svar'. Har du adgang til Linn AI, ligger den som en fane ved siden af.
+
+Under hvert svar fra Linn AI står der hvor sikkert svaret er, fx '87 % sikker på at dette er som Linn ville svare'. Tallet siger hvor tæt svaret ligger på noget Linn selv har skrevet før — ikke om det er rigtigt eller forkert. Er tallet lavt, eller kan det ikke måles, foreslår appen at du sender spørgsmålet videre til Linn. Det gør du med knappen under svaret, og så lander det på fanen Linn.`
 	},
 	{
 		titel: 'Bibliotek',

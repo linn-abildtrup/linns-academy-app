@@ -29,7 +29,7 @@
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { Adgangsbillede } from '$lib/content/adgang3';
-	import { gemSpoergsmaal } from '$lib/firestore/spoergsmaal';
+	import { gemSpoergsmaal, SPOERGSMAAL_MAX_LAENGDE } from '$lib/firestore/spoergsmaal';
 	import {
 		aabenSamtale3,
 		gemUdveksling3,
@@ -48,6 +48,7 @@
 		dagLabel3,
 		erSendtVidere3,
 		grupperEfterDag3,
+		tilChatTraade3,
 		harNytSvar3,
 		kanSendeVidere3,
 		startFane3,
@@ -206,21 +207,44 @@
 		return () => document.removeEventListener('visibilitychange', naarSynlig);
 	});
 
-	/**
-	 * Hun svarer paa en besked Linn skrev foerst.
-	 *
-	 * Svaret bliver et helt almindeligt spoergsmaal, og lander derfor i
-	 * Linns egen liste hvor hun svarer som hun plejer. Der er ikke en ny
-	 * indbakke at holde oeje med. Se HANDOVER 9.43.
-	 */
-	let svarTekst = $state<Record<string, string>>({});
-	let svarerPaa = $state<string | null>(null);
+	// ── Hun skriver til Linn ────────────────────────────────────
+	//
+	// ÉT FELT FORNEDEN, som i den gamle app. Linns beslutning 4. september.
+	//
+	// Foer laa der et lille svarfelt inde i hver traad Linn selv havde
+	// startet, og INTET felt til et nyt spoergsmaal: vejen ind gik gennem
+	// AI'en. De to ting er nu det samme felt, og det er ikke en
+	// forenkling der koster noget: et svar paa Linns besked blev i
+	// forvejen gemt som et helt almindeligt spoergsmaal, saa det landede
+	// samme sted i hendes liste. Se HANDOVER 9.43.
 
-	async function svarLinn(traadId: string) {
+	/** Samme graense som den gamle app, 500 tegn. */
+	let nyTekst = $state('');
+	let senderNy = $state(false);
+	const tegnAntal = $derived(nyTekst.length);
+
+	/** Foerst naar hun naermer sig graensen. Den gamle apps tal. */
+	const TAEL_FRA = 400;
+
+	/** Traadene som en samtale, aeldst oeverst. Se content/beskedside3. */
+	const chatTraade = $derived(tilChatTraade3(traade, nuMs));
+
+	let linnRulle = $state<HTMLDivElement | null>(null);
+
+	function paaTastLinn(e: KeyboardEvent) {
+		// Enter sender, shift+enter giver en ny linje. Samme som AI-feltet,
+		// saa de to faner ikke opfoerer sig forskelligt under fingrene.
+		if (e.key === 'Enter' && !e.shiftKey) {
+			e.preventDefault();
+			void skrivTilLinn();
+		}
+	}
+
+	async function skrivTilLinn() {
 		const u = user;
-		const tekst = (svarTekst[traadId] ?? '').trim();
-		if (!u || !tekst || svarerPaa) return;
-		svarerPaa = traadId;
+		const tekst = nyTekst.trim();
+		if (!u || !tekst || senderNy) return;
+		senderNy = true;
 		fejl = '';
 		try {
 			await gemSpoergsmaal({
@@ -230,14 +254,24 @@
 				forlobId: aktivtForlob?.forlobId,
 				forlobNavn: aktivtForlob?.navn
 			});
-			svarTekst = { ...svarTekst, [traadId]: '' };
+			// Feltet toemmes FOERST naar skrivningen er gaaet igennem. Gaar
+			// den galt, staar hendes tekst der stadig, og hun skal ikke
+			// skrive det hele forfra.
+			nyTekst = '';
 			await indlaesTraade(u.uid);
+			await rulLinnNed();
 		} catch (e) {
-			console.error('[ny] kunne ikke svare Linn', e);
+			console.error('[ny] kunne ikke sende til Linn', e);
 			fejl = 'Det kunne ikke sendes. Prøv igen om lidt.';
 		} finally {
-			svarerPaa = null;
+			senderNy = false;
 		}
+	}
+
+	/** Nyeste staar nederst, saa vi ruller derned efter en ny besked. */
+	async function rulLinnNed() {
+		await tick();
+		if (linnRulle) linnRulle.scrollTop = linnRulle.scrollHeight;
 	}
 
 	/**
@@ -500,115 +534,122 @@
 	{/if}
 
 	{#if fane === 'linn'}
-		<div class="bobler">
+		<!-- FANEN ER EN SAMTALE, ikke en liste med kort. Linns beslutning
+		     4. september, forslag B i mockups-beskeder-som-gammel.html:
+		     3.0 skal virke som den gamle app, hvor kunden skriver direkte
+		     til Linn. Alt det 3.0 kunne i forvejen lever videre inde i
+		     boblerne: lyd, billeder, klikbare links, og at Linn kan skrive
+		     foerst. -->
+		<div class="bobler" bind:this={linnRulle}>
 			{#if henterTraade}
 				<div class="lektion-venter">
 					<Ventetegn variant="lille" />
 					<span>Henter</span>
 				</div>
-			{:else if traade.length === 0}
-				<div class="kort rolig">
-					Du har ikke sendt noget til mig endnu.
-					<br /><br />
-					Start med at spørge Linn AI. Er du ikke tilfreds med svaret, sender du det videre herind, og
-					så kigger jeg selv på det.
+			{:else if chatTraade.length === 0}
+				<!-- Linns egen intro, ordret fra den gamle app. Det er det
+				     foerste en kunde moeder her, og det skal lyde som hende
+				     og ikke som appen. -->
+				<div class="besk-velkomst">
+					<span class="besk-velkomst-ikon" aria-hidden="true">✿</span>
+					<h2>Skriv dit spørgsmål til mig 🌸</h2>
+					<p>
+						Jeg samler løbende spørgsmålene og svarer på dem samlet — svarene finder du på forsiden
+						af appen. Alle spørgsmål deles anonymt, så vi alle får glæde af dem.
+					</p>
+					<p>
+						Du skal derfor ikke forvente et personligt svar her, men dit spørgsmål skal nok blive
+						taget med 🌸
+					</p>
+					<p class="besk-hilsen">Kh Linn</p>
 				</div>
 			{:else}
-				<div class="traade">
-					{#each traade as t (t.id)}
-						{@const harNoget = harSvarIndhold3(t)}
-						{@const erNy = harNoget && !!t.besvaretMs && t.besvaretMs > senestLaest}
-						<article class="traad" class:nyt={erNy} data-nyt={erNy ? 'ja' : null}>
-							{#if erNy}
-								<!-- Baandet forsvinder naar hun har set det, se
-								     markerLaest nedenfor. Bliver det staaende,
-								     holder det op med at betyde noget. -->
-								<span class="traad-baand">Nyt svar</span>
+				<p class="besk-note">Jeg svarer samlet, og svarene deles anonymt på forsiden.</p>
+				{#each chatTraade as rk (rk.traad.id)}
+					{@const t = rk.traad}
+					{@const harNoget = harSvarIndhold3(t)}
+					{@const erNy = harNoget && !!t.besvaretMs && t.besvaretMs > senestLaest}
+					{#if rk.dagLabel}
+						<div class="besk-dato"><span>{rk.dagLabel}</span></div>
+					{/if}
+					<!-- Skrev Linn foerst, er der ingen boble ovenover: kunden har
+					     ikke spurgt om noget. Se HANDOVER 9.43. -->
+					{#if !t.fraLinn}
+						<div class="boble hende">{t.spoergsmaal}</div>
+					{/if}
+					{#if harNoget}
+						<div class="boble svar besk-linn" class:nyt={erNy}>
+							<span class="besk-linn-fra">
+								<span class="traad-ava" aria-hidden="true"></span>
+								{t.fraLinn ? 'Linn skrev til dig' : 'Svar fra Linn'}
+							</span>
+							{#if t.svar}
+								<span class="besk-linn-tekst"
+									>{#each delOpILinks(t.svar) as d, di (di)}{#if d.slags === 'link'}<a
+												class="besk-link"
+												href={d.url}
+												target="_blank"
+												rel="noopener noreferrer">{d.tekst}</a
+											>{:else}{d.tekst}{/if}{/each}</span
+								>
 							{/if}
-							<div class="traad-top">
-								<span class="traad-dato">{dato(t.sendtMs)}</span>
-								{#if t.fraLinn}
-									<!-- Ingen status. Der er ikke noget hun venter paa. -->
-								{:else if harNoget}
-									<span class="traad-status svaret">Besvaret</span>
-								{:else}
-									<span class="traad-status venter">Venter på svar</span>
-								{/if}
-							</div>
-							<!-- Skrev Linn foerst, er der ingen boble ovenover: kunden
-							     har ikke spurgt om noget. Se HANDOVER 9.43. -->
-							{#if !t.fraLinn}
-								<p class="traad-spm">{t.spoergsmaal}</p>
+							{#if t.lydUrl}
+								<span class="traad-lyd">
+									<Lydbesked url={t.lydUrl} sekunder={t.lydSekunder ?? 0} />
+								</span>
 							{/if}
-							{#if harNoget}
-								<div class="traad-svar">
-									<span class="traad-ava" aria-hidden="true"></span>
-									<div>
-										<div class="traad-fra">{t.fraLinn ? 'Linn skrev til dig' : 'Linn'}</div>
-										{#if t.svar}
-											<p>
-												{#each delOpILinks(t.svar) as d, di (di)}{#if d.slags === 'link'}<a
-															class="besk-link"
-															href={d.url}
-															target="_blank"
-															rel="noopener noreferrer">{d.tekst}</a
-														>{:else}{d.tekst}{/if}{/each}
-											</p>
-										{/if}
-										{#if t.lydUrl}
-											<div class="traad-lyd">
-												<Lydbesked url={t.lydUrl} sekunder={t.lydSekunder ?? 0} />
-											</div>
-										{/if}
-										{#if t.billedUrl}
-											<!-- Trykker hun paa billedet, aabner det i fuld skaerm.
-											     Laget portales ud i body, ellers ligger bundmenuen
-											     ovenpaa paa en iPhone. -->
-											<button
-												type="button"
-												class="traad-billede"
-												onclick={() =>
-													(stortBillede = { url: t.billedUrl ?? '', tekst: t.svar ?? '' })}
-											>
-												<img src={t.billedUrl} alt="Billede fra Linn" loading="lazy" />
-											</button>
-										{/if}
-									</div>
-								</div>
+							{#if t.billedUrl}
+								<!-- Trykker hun paa billedet, aabner det i fuld skaerm.
+								     Laget portales ud i body, ellers ligger bundmenuen
+								     ovenpaa paa en iPhone. -->
+								<button
+									type="button"
+									class="traad-billede"
+									onclick={() => (stortBillede = { url: t.billedUrl ?? '', tekst: t.svar ?? '' })}
+								>
+									<img src={t.billedUrl} alt="Billede fra Linn" loading="lazy" />
+								</button>
 							{/if}
-							{#if t.fraLinn}
-								<div class="traad-svarfelt">
-									<input
-										type="text"
-										placeholder="Skriv til Linn…"
-										value={svarTekst[t.id] ?? ''}
-										disabled={svarerPaa === t.id}
-										oninput={(e) =>
-											(svarTekst = {
-												...svarTekst,
-												[t.id]: (e.target as HTMLInputElement).value
-											})}
-										onkeydown={(e) => {
-											if (e.key === 'Enter') void svarLinn(t.id);
-										}}
-									/>
-									<button
-										disabled={svarerPaa === t.id || !(svarTekst[t.id] ?? '').trim()}
-										onclick={() => void svarLinn(t.id)}
-									>
-										{svarerPaa === t.id ? 'Sender' : 'Send'}
-									</button>
-								</div>
-							{/if}
-						</article>
-					{/each}
-				</div>
-				<p class="besk-fod">
-					Vil du spørge om noget nyt, så start i Linn AI. Kan hun ikke hjælpe, sender du spørgsmålet
-					videre herind.
-				</p>
+						</div>
+						{#if erNy}
+							<!-- Baandet forsvinder naar hun har set det, se
+							     markerLaest. Bliver det staaende, holder det op med
+							     at betyde noget. -->
+							<span class="besk-nyt">Nyt svar</span>
+						{/if}
+					{:else if !t.fraLinn}
+						<span class="besk-venter">Afventer svar</span>
+					{/if}
+				{/each}
 			{/if}
 		</div>
+
+		<div class="skrivelinje">
+			<textarea
+				class="felt"
+				bind:value={nyTekst}
+				onkeydown={paaTastLinn}
+				placeholder="Skriv dit spørgsmål …"
+				rows="1"
+				maxlength={SPOERGSMAAL_MAX_LAENGDE}
+				disabled={senderNy}
+			></textarea>
+			<button
+				class="send"
+				onclick={() => void skrivTilLinn()}
+				disabled={senderNy || nyTekst.trim().length === 0}
+				aria-label="Send spørgsmål"
+			>
+				↑
+			</button>
+		</div>
+		<!-- Taelleren staar foerst frem naar hun naermer sig graensen. Foer
+		     ville den staa og taelle fra det foerste tegn, og det laeser som
+		     en begraensning i stedet for en hjaelp. Samme graense som den
+		     gamle app. -->
+		{#if tegnAntal >= TAEL_FRA}
+			<p class="besk-tegn">{tegnAntal} / {SPOERGSMAAL_MAX_LAENGDE} tegn</p>
+		{/if}
 	{:else}
 		<div class="bobler" bind:this={rulle}>
 			{#if viserTidligere}

@@ -270,3 +270,44 @@ export function grupperEfterDag3(beskeder: SamtaleBesked3[], nuMs: number): Samt
 	}
 	return dage;
 }
+
+// ── Fanen Skriv til Linn, som en samtale ─────────────────────
+//
+// LINNS BESLUTNING 4. september, forslag B i
+// mockups-beskeder-som-gammel.html. Fanen var en liste med kort. Den
+// gamle app viser en samtale, og de to flader skal vise det samme.
+//
+// Traadene kommer NYESTE FOERST fra hentLinnTraade3, fordi kort-listen
+// havde brug for det. En samtale laeses den anden vej, aeldst oeverst,
+// saa det nyeste staar nederst lige over skrivefeltet. Derfor vendes
+// raekkefoelgen her og ikke i firestore-laget: den gamle raekkefoelge
+// bruges stadig af prikken paa fanen.
+
+/** En traad i samtalen, med det dag-maerke der skal staa foer den. */
+export interface ChatTraad3<T> {
+	traad: T;
+	/** "I dag", "I går", "3. september". Null naar dagen er den samme som forrige. */
+	dagLabel: string | null;
+}
+
+/**
+ * Traadene som en samtale: aeldst foerst, med et dag-maerke hver gang
+ * dagen skifter.
+ *
+ * Maerket kommer af hvornaar traaden BEGYNDTE, altsaa sendtMs. Et svar
+ * der lander tre dage senere flytter ikke traaden ned i samtalen, for
+ * saa ville hendes egne spoergsmaal hoppe rundt hver gang Linn svarede.
+ */
+export function tilChatTraade3<T extends { sendtMs: number }>(
+	traade: T[],
+	nuMs: number
+): ChatTraad3<T>[] {
+	const aeldstFoerst = [...traade].sort((a, b) => a.sendtMs - b.sendtMs);
+	let forrige: string | null = null;
+	return aeldstFoerst.map((traad) => {
+		const label = dagLabel3(traad.sendtMs, nuMs);
+		const dagLabel = label === forrige ? null : label;
+		forrige = label;
+		return { traad, dagLabel };
+	});
+}
