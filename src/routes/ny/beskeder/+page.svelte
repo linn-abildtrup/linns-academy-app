@@ -300,17 +300,39 @@
 		const klar = f === 'linn' ? !henterTraade : !henterSamtale;
 		if (!klar) return;
 
-		const noegle = `${f}|${laesteSamtaleId ?? ''}|${viserTidligere}`;
+		// ANTALLET SKAL MED I NOEGLEN. Foerste forsoeg 4. september saa kun
+		// paa fanen, og den blev brugt op i det oejeblik listen var hentet
+		// men endnu ikke tegnet. Saa var noeglen brændt, elementet var
+		// tomt, og der blev aldrig rullet. Det var derfor Linn stadig
+		// landede i toppen.
+		const antal = f === 'linn' ? chatTraade.length : beskeder.length;
+
+		// LAESES FOER noeglen bruges op, saa effekten koerer igen naar
+		// elementet dukker op. Samme fejl som ovenfor, bare den anden vej.
+		const el = f === 'linn' ? linnRulle : rulle;
+		if (!el || antal === 0) return;
+
+		const noegle = `${f}|${laesteSamtaleId ?? ''}|${viserTidligere}|${antal}`;
 		if (sidstRullet === noegle) return;
 		sidstRullet = noegle;
 
-		const el = f === 'linn' ? linnRulle : rulle;
-		if (!el) return;
-		// Foerst naar skaermen er tegnet, ellers er scrollHeight for lille
-		// og vi lander et tilfaeldigt sted.
-		requestAnimationFrame(() => {
+		const iBunden = () => {
 			el.scrollTop = el.scrollHeight;
-		});
+		};
+
+		// FIRE FORSOEG, og det er ikke overdrevet. Med det samme rammer den
+		// hvis alt allerede staar der. Naeste billede-tegning fanger det
+		// almindelige tilfaelde. De to sidste er til lydbeskeder og
+		// billeder: de har ingen hoejde foer de er hentet, og saa vokser
+		// listen UNDER hende bagefter, og bunden flytter sig.
+		iBunden();
+		requestAnimationFrame(iBunden);
+		const t1 = setTimeout(iBunden, 60);
+		const t2 = setTimeout(iBunden, 250);
+		return () => {
+			clearTimeout(t1);
+			clearTimeout(t2);
+		};
 	});
 
 	async function rulNed() {
