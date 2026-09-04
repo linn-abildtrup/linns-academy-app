@@ -346,6 +346,16 @@ const STK: Vaegttabel = {
 	fuldkornsbolle: 70,
 	'grov bolle eller froebroed': 70,
 	rugbroedskiks: 10,
+	// Tilfoejet 4. september 2026, efter oprydningen i opskrifterne.
+	// Uden dem regnes et ukendt styk som 100 g, og saa blev én maaleske
+	// fibertilskud til 76 g fiber. Vaegtene foelger tabellens egne
+	// naboer: et knaekbroed som en rugbroedskiks, en grov bolle som en
+	// fuldkornsbolle, en frisk chili som en roed chili. Maaleskeen paa
+	// 9 g staar paa selve varen i foedevaredatabasen.
+	rugknaekbroed: 10,
+	'bellwell gut balance': 9,
+	'grov bolle': 70,
+	'chili, frisk': 10,
 
 	// Koed og fisk
 	laksefilet: 150,

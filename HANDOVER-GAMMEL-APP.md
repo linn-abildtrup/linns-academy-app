@@ -1160,10 +1160,12 @@ Skal de fjernes rigtigt, skal markeringerne først vende samme vej.
 **Tre tomme kladder** der alle hed "Ny opskrift" er slettet. De var
 inaktive og uden henvisninger.
 
-**3.0 er ikke fulgt med.** Den har sit eget gemte øjebliksbillede af
-tallene, regnet 1. september, altså før oprydningen. De to versioner viser
-derfor forskellige tal lige nu. Linn skal ind på `/ny/admin/opskrift-makro`
-og regne om. Det er bevidst manuelt. Se `HANDOVER-3.0.md` 9.66.
+**3.0 blev regnet om samme dag**, efter at 12 manglende koblinger og fire
+manglende styk-vægte var rettet. Men de to apper viser stadig forskellige
+tal på 60 af de 130 opskrifter, nogle med op til 280 kalorier. De bruger
+to uafhængige regnestykker med hver sin vægttabel. Det er ikke en fejl der
+kan rettes i data, og det er ikke besluttet hvad der skal ske. Se
+`HANDOVER-3.0.md` 9.66.
 
 Sikkerhedskopier fra før gennemgangen ligger som `scripts/_backup-*.json`.
 De er git-ignorerede og findes kun på Linns maskine.

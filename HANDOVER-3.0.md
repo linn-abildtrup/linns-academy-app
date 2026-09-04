@@ -5452,11 +5452,32 @@ den **1. september**, altså før oprydningen. Det betyder to ting:
 og se listen igennem, præcis som arkitekturen er tænkt. Det er ikke noget der
 må ske automatisk, og det er ikke gjort 4. september.
 
-**Den åbne tråd fra 15. august er nu løst fra den anden ende.** Punkt 1 dér var
-at skrive 3.0's beregnede tal ud til den gamle app. Det er ikke længere
-nødvendigt: grundlaget er rettet i selve dataene, og den gamle apps makro-linjer
-er skrevet om ud fra samme regnestykke. Når 3.0 regner om, lander de to
-versioner på samme tal af sig selv.
+**Omregningen ER kørt, senere samme dag.** Øjebliksbilledet er nu 130
+opskrifter med fuld dækning på dem alle, og de tre kladder er væk. Undervejs
+skulle to ting rettes først, ellers ville omregningen have gjort 3.0 dårligere:
+
+- **12 koblinger manglede** efter dagens omdøbninger af ingredienser, blandt
+  andet letmælk, pastinak, rugknækbrød og fibertilskuddet. Dækningen faldt til
+  42 procent på den værste. De er lagt ind i `ingrediensKobling/koblinger`.
+- **Vægttabellen kendte ikke fire nye styk-varer.** Et ukendt styk regnes som
+  100 g, så én måleske fibertilskud blev til 76 g fiber og to knækbrød til 200
+  g. Vægtene i `enhedsvaegt3.ts` følger tabellens egne naboer.
+
+**Den åbne tråd fra 15. august er IKKE løst, og forventningen skal justeres.**
+Punkt 1 dér var at få samme tal i begge versioner. Efter omregningen er de to
+apper inden for 50 kalorier på **70 af 130** opskrifter. De øvrige 60 skiller
+sig, nogle med op til 280 kalorier, for eksempel Kylling-curry med kikærter
+hvor den gamle app siger 734 og 3.0 siger 452.
+
+Årsagen er at det er **to uafhængige regnestykker**. Den gamle app slår
+ingrediensen op i fødevaredatabasen og bruger varens egne `units`. 3.0 bruger
+sit eget koblingskort og sin egen vægttabel i `enhedsvaegt3.ts`. De vil aldrig
+give samme svar af sig selv, uanset hvor rent grundlaget er.
+
+Skal de to nogensinde vise det samme, er der to veje: enten skrive 3.0's
+beregnede tal ud i den gamle apps makro-linjer, som var den oprindelige plan,
+eller lade begge apper bruge det samme regnestykke. Ingen af delene er
+besluttet.
 
 **Fælden der blev rettet i koden** rammer også 3.0, fordi begge apper bruger
 samme opslag. Ordet "eller" i en ingrediens blev brugt som søgeord, så "æble
