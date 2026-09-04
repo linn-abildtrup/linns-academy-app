@@ -562,7 +562,11 @@
 	<Sidehoved
 		titel="Beskeder"
 		under={fane === 'linn'
-			? 'Det du har sendt videre til Linn, og hendes svar.'
+			? // Sagde 'Det du har sendt videre til Linn, og hendes svar'
+				// indtil 4. september. Det passede da fanen kun var en liste
+				// over det AI'en havde sendt videre. Nu kan hun skrive
+				// direkte, og saa beskrev den ikke laengere hvad siden goer.
+				'Skriv dit spørgsmål til mig.'
 			: 'Her kan du spørge om det der fylder. Jeg svarer ud fra Linns materialer, og jeg er ikke læge.'}
 	/>
 
