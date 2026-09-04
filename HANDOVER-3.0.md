@@ -5214,3 +5214,47 @@ titel der kun er et dagnummer beholder sig selv frem for at blive tom.
 hun har skrevet en, bliver rækken markant bedre, og det er hurtigere end at lave
 et billede. Lægger hun et rigtigt billede på, vinder det stadig over
 papir-flisen, så de to løsninger kan bruges side om side.
+
+---
+
+### 9.75 UDSTYR: ET PROGRAM ER SKJULT INDTIL HUN SIGER HUN HAR REDSKABERNE, 4. september
+
+Linn så at Kimmie fik tilbudt kettlebell-programmet uden at have valgt
+kettlebells.
+
+**FØR var en tom udstyrsliste et ja til ALT.** Begrundelsen dengang var at ingen
+måtte stå med en tom træningsside. Prisen var værre end problemet: en kvinde
+uden kettlebells kunne vælge programmet og nå flere træninger ind før det gik op
+for hende. **Og det var ikke et kant-tilfælde: 0 ud af 318 på Kickstart August
+havde valgt udstyr**, så hele holdet ville have fået det tilbudt.
+
+**Reglen er nu:** vis det der passer til hendes udstyr, plus det der aldrig
+kræver noget. Ikke andet. Vælger hun udstyret, kommer programmet frem i samme
+øjeblik.
+
+**DEN ANDEN VEJ ER MED VILJE UÆNDRET.** Har hun kettlebells, ser hun stadig
+kropsvægts-programmerne — har man en kettlebell, kan man også træne uden. Det er
+fluebenet `visesAltid` på kategorien Uden redskaber, og **det skal blive
+stående.** Den fjerde post på "det Linn selv skal gøre" om at slå det fra er
+dermed forkert og skal ikke udføres.
+
+**Den tomme side er stadig dækket, og bedre end før.** `mt-tom` skelnede
+allerede mellem "skjult af udstyr" og "intet tildelt". To tekster er skrevet om,
+for de sagde begge "det udstyr du har valgt" til en kunde der aldrig havde
+valgt noget. Det tilfælde kunne ikke opstå før, og er nu det almindelige.
+
+**Admin følger med automatisk**, fordi opslaget bruger nøjagtig samme funktion.
+Det viser nu "Hun har ikke valgt Kettlebells" i stedet for at påstå at
+programmet er synligt. Det betyder at opslaget viser flere kunder som "mangler
+noget" end før — **det er ikke en regression, det gamle billede løj.**
+
+**Teksten må kun nævne udstyr der findes.** Den stod først med opfundne
+eksempler, "kettlebells, elastikker eller andet", og Linn fangede det: der
+findes ingen elastik-kategori. Navnene kommer nu fra hendes egne kategorier, og
+kun fra dem der faktisk skjuler noget lige nu. Se `kategoriListeTekst3`.
+Reserven er ordet "redskaber", vagt med vilje: vagt slår forkert.
+
+**Åbent, ikke besluttet:** ingen på holdet har valgt udstyr, så alle vil kun se
+kropsvægts-programmet indtil de siger fra. Det er det rigtige, men det gør
+spørgsmålet "skal vi spørge dem én gang?" mere relevant den dag holdet flyttes.
+Forslaget er tegnet som B i `mockups-udstyr-og-programmer.html`.
