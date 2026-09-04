@@ -45,6 +45,22 @@
 		type MaaltidRaekke
 	} from '$lib/content/kundeOpslag3';
 	import AdmSide from '$lib/components/admin/AdmSide.svelte';
+	import {
+		MRS_ITEMS,
+		SUBSCALES,
+		SEVERITY,
+		SLIDER_SPORGSMAAL,
+		MAALEPUNKT_LABEL,
+		type MrsScore
+	} from '$lib/content/mrs';
+	import {
+		punkter,
+		linje,
+		udviklingTekst,
+		yAkse,
+		RAMME_TOTAL,
+		RAMME_SLIDER
+	} from '$lib/content/mrsGraf3';
 	import AdmKort from '$lib/components/admin/AdmKort.svelte';
 	import AdmKnap from '$lib/components/admin/AdmKnap.svelte';
 	import AdmTom from '$lib/components/admin/AdmTom.svelte';
@@ -90,7 +106,9 @@
 	let egneOpskrifter = $state(0);
 	let fasteMaaltider = $state(0);
 	let traening = $state<{ dato: string; programNavn?: string }[]>([]);
-	let symptomer = $state<{ total?: number; measurePoint?: string; timestamp?: number }[]>([]);
+	// Hele maalingen, ikke kun totalen. Sliderne og de elleve svar ligger
+	// i den, og Linn skal kunne se dem uden at spoerge kunden.
+	let symptomer = $state<MrsScore[]>([]);
 	let spoergsmaal = $state<{ spoergsmaal: string; svar?: string; oprettet?: { toMillis?: () => number } }[]>([]);
 	let vanedage = $state<Record<string, unknown>[]>([]);
 
@@ -265,6 +283,31 @@
 	const maal = $derived<Partial<DagligeMaal>>(kunde?.dagligeMaal ?? {});
 	const profil = $derived<Partial<BrugerProfil>>(kunde?.brugerProfil ?? {});
 
+	// De maalinger der faktisk har MRS-tal. En migreret raekke fra
+	// vaner-modulet har kun sliders og ville ellers tegne en total paa nul.
+	const mrsMaalinger = $derived(symptomer.filter((s) => s.kunSliders !== true));
+	const medSliders = $derived(symptomer.filter((s) => s.sliders !== undefined));
+	const sidsteMaaling = $derived(symptomer[symptomer.length - 1] ?? null);
+
+	const totalPunkter = $derived(
+		punkter(
+			mrsMaalinger.map((s) => ({ t: s.timestamp ?? 0, v: s.total ?? 0 })),
+			RAMME_TOTAL
+		)
+	);
+
+	/** Kurven for én slider. */
+	function sliderPunkter(id: keyof NonNullable<MrsScore['sliders']>) {
+		return punkter(
+			medSliders.map((s) => ({ t: s.timestamp ?? 0, v: s.sliders?.[id] ?? 1 })),
+			RAMME_SLIDER
+		);
+	}
+
+	function svarOrd(v: number | undefined): string {
+		return SEVERITY.find((x) => x.value === v)?.label ?? '—';
+	}
+
 	const dageMedTal = $derived(dagensTal(maaltider, maal.protein ?? 90));
 	const soejler = $derived(sidsteDage(14, nu).map((d) => dageMedTal.get(d) ?? null));
 	const snit = $derived(snitPrRegistreretDag([...dageMedTal.values()]));
@@ -292,7 +335,7 @@
 			} else if (id === 'symptomer') {
 				const s = await getDocs(collection(db, 'users', uid, 'mrs_scores'));
 				symptomer = s.docs
-					.map((d) => d.data() as { total?: number; measurePoint?: string; timestamp?: number })
+					.map((d) => ({ id: d.id, ...(d.data() as Omit<MrsScore, 'id'>) }))
 					.sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
 			} else if (id === 'beskeder') {
 				const s = await getDocs(query(collection(db, 'klientspoergsmaal'), where('uid', '==', uid)));
@@ -504,32 +547,128 @@
 					{/if}
 				</AdmKort>
 			{:else if fane === 'symptomer'}
-				<AdmKort>
-					<h3>Symptomtjek</h3>
-					{#if symptomer.length === 0}
+				{#if symptomer.length === 0}
+					<AdmKort>
+						<h3>Symptomtjek</h3>
 						<p class="ku-tom">Hun har ikke udfyldt et symptomtjek endnu.</p>
-					{:else}
-						<!-- Tallet gaar fra 0 til 44, hvor 0 er bedst. Det taeller
-						     omvendt af alt andet, se 9.26. Derfor staar der hvad
-						     der er godt. -->
-						<p class="ku-u">Tallet går fra 0 til 44, og et lavere tal er bedre.</p>
-						{#each symptomer as s, i (i)}
-							<div class="ku-l">
-								<b>{s.measurePoint ?? `Måling ${i + 1}`}</b>
-								<span>{s.total ?? '—'} · {dato(s.timestamp)}</span>
-							</div>
-						{/each}
-						{#if symptomer.length >= 2}
-							{@const f = symptomer[0].total ?? 0}
-							{@const s = symptomer[symptomer.length - 1].total ?? 0}
+					</AdmKort>
+				{:else}
+					<!-- TO SKALAER DER VENDER HVER SIN VEJ. MRS gaar 0 til 44 og
+					     lavt er bedst. Sliderne gaar 1 til 10 og hoejt er bedst.
+					     Derfor staar der ved hver kurve hvad der er den gode vej,
+					     saa ingen kommer til at laese den forkert. -->
+					{#if mrsMaalinger.length > 0}
+						<AdmKort>
+							<h3>Symptomer over tid</h3>
 							<p class="ku-u">
-								{#if s < f}Hun er gået fra {f} til {s}, altså færre gener.
-								{:else if s > f}Hun er gået fra {f} til {s}. Kroppen har haft en hårdere periode, og det siger ikke noget om hvor godt hun gør det.
-								{:else}Hun ligger på det samme som ved første måling.{/if}
+								Menopause Rating Scale, 0 til 44. <b>Et lavere tal er bedre</b>, altså færre
+								gener. En kurve der falder er et godt tegn.
 							</p>
-						{/if}
+							<div class="ku-graf-r">
+								<div class="ku-y">
+									{#each yAkse(RAMME_TOTAL, 5) as v (v)}<span>{v}</span>{/each}
+								</div>
+								<svg class="ku-svg" viewBox="0 0 {RAMME_TOTAL.bredde} {RAMME_TOTAL.hoejde}" preserveAspectRatio="none">
+									<line x1={RAMME_TOTAL.kant} y1={RAMME_TOTAL.kant} x2={RAMME_TOTAL.kant} y2={RAMME_TOTAL.hoejde - RAMME_TOTAL.kant} stroke="var(--line)" />
+									<line x1={RAMME_TOTAL.kant} y1={RAMME_TOTAL.hoejde - RAMME_TOTAL.kant} x2={RAMME_TOTAL.bredde - RAMME_TOTAL.kant} y2={RAMME_TOTAL.hoejde - RAMME_TOTAL.kant} stroke="var(--line)" />
+									<path d={linje(totalPunkter)} fill="none" stroke="var(--plum)" stroke-width="2.5" stroke-linejoin="round" />
+									{#each totalPunkter as p (p.t)}
+										<circle cx={p.x} cy={p.y} r="4" fill="var(--plum)" />
+									{/each}
+								</svg>
+							</div>
+							<div class="ku-x">
+								<span>{dato(mrsMaalinger[0].timestamp)}</span>
+								<span>{dato(mrsMaalinger[mrsMaalinger.length - 1].timestamp)}</span>
+							</div>
+							<p class="ku-u">
+								{udviklingTekst(
+									mrsMaalinger.map((s) => ({ t: s.timestamp ?? 0, v: s.total ?? 0 })),
+									true,
+									'Hendes samlede tal'
+								)}
+							</p>
+						</AdmKort>
+
+						<AdmKort>
+							<h3>Hver måling</h3>
+							<p class="ku-u">De tre delscorer viser hvor generne sidder.</p>
+							{#each [...mrsMaalinger].reverse() as m (m.id)}
+								<div class="ku-m">
+									<div class="ku-m-h">
+										<b>{MAALEPUNKT_LABEL[m.measurePoint] ?? m.measurePoint}</b>
+										<span>{dato(m.timestamp)}</span>
+										<em>{m.total ?? '—'} af 44</em>
+									</div>
+									<div class="ku-sub">
+										{#each Object.entries(SUBSCALES) as [noegle, def] (noegle)}
+											<span>
+												{def.label}
+												<b>{m.subscales?.[noegle as keyof typeof m.subscales] ?? '—'}</b>
+											</span>
+										{/each}
+									</div>
+								</div>
+							{/each}
+						</AdmKort>
 					{/if}
-				</AdmKort>
+
+					{#if medSliders.length > 0}
+						<AdmKort>
+							<h3>Hendes egen vurdering</h3>
+							<p class="ku-u">
+								De fem sliders hun sætter selv, 1 til 10. <b>Her er et højere tal bedre</b>, altså
+								modsat kurven ovenfor. Cravings tæller også den vej: 10 betyder ingen.
+							</p>
+							{#each SLIDER_SPORGSMAAL as spm (spm.id)}
+								{@const p = sliderPunkter(spm.id)}
+								<div class="ku-mini">
+									<div class="ku-mini-h">
+										<span>{spm.label}</span>
+										<b>{medSliders[medSliders.length - 1].sliders?.[spm.id] ?? '—'}</b>
+									</div>
+									<div class="ku-graf-r">
+										<div class="ku-y lille">
+											{#each yAkse(RAMME_SLIDER, 3) as v (v)}<span>{v}</span>{/each}
+										</div>
+										<svg class="ku-svg lille" viewBox="0 0 {RAMME_SLIDER.bredde} {RAMME_SLIDER.hoejde}" preserveAspectRatio="none">
+											<line x1={RAMME_SLIDER.kant} y1={RAMME_SLIDER.kant} x2={RAMME_SLIDER.kant} y2={RAMME_SLIDER.hoejde - RAMME_SLIDER.kant} stroke="var(--line)" />
+											<line x1={RAMME_SLIDER.kant} y1={RAMME_SLIDER.hoejde - RAMME_SLIDER.kant} x2={RAMME_SLIDER.bredde - RAMME_SLIDER.kant} y2={RAMME_SLIDER.hoejde - RAMME_SLIDER.kant} stroke="var(--line)" />
+											<path d={linje(p)} fill="none" stroke="var(--sage)" stroke-width="2" stroke-linejoin="round" />
+											{#each p as q (q.t)}
+												<circle cx={q.x} cy={q.y} r="3" fill="var(--sage)" />
+											{/each}
+										</svg>
+									</div>
+									<p class="ku-u">
+										{udviklingTekst(
+											medSliders.map((s) => ({ t: s.timestamp ?? 0, v: s.sliders?.[spm.id] ?? 1 })),
+											false,
+											'Tallet'
+										)}
+									</p>
+								</div>
+							{/each}
+							<div class="ku-x">
+								<span>{dato(medSliders[0].timestamp)}</span>
+								<span>{dato(medSliders[medSliders.length - 1].timestamp)}</span>
+							</div>
+						</AdmKort>
+					{/if}
+
+					{#if sidsteMaaling && sidsteMaaling.kunSliders !== true}
+						<AdmKort>
+							<h3>Seneste måling, spørgsmål for spørgsmål</h3>
+							<p class="ku-u">Udfyldt {dato(sidsteMaaling.timestamp)}.</p>
+							{#each MRS_ITEMS as item (item.id)}
+								<div class="ku-l">
+									<b>{item.da}</b>
+									<span>{svarOrd(sidsteMaaling.scores?.[item.id])}</span>
+								</div>
+							{/each}
+						</AdmKort>
+					{/if}
+				{/if}
 			{:else if fane === 'beskeder'}
 				<AdmKort>
 					<h3>Hvad hun har spurgt om</h3>
@@ -841,6 +980,111 @@
 		margin-top: 2px;
 		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--ink-2);
+	}
+
+	/* Kurverne. Y-aksen staar for sig, saa tallene ikke bliver traukket
+	   skaeve naar selve tegningen straekkes i bredden. */
+	.ku-graf-r {
+		display: flex;
+		align-items: stretch;
+		gap: 7px;
+		margin-top: 6px;
+	}
+
+	.ku-y {
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		padding: 8px 0;
+		font-size: calc(10px * var(--fs-scale, 1));
+		color: var(--ink-3);
+		text-align: right;
+		min-width: 18px;
+	}
+
+	.ku-svg {
+		flex: 1;
+		height: 130px;
+		width: 100%;
+	}
+
+	.ku-svg.lille {
+		height: 78px;
+	}
+
+	.ku-x {
+		display: flex;
+		justify-content: space-between;
+		padding-left: 25px;
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		color: var(--ink-3);
+	}
+
+	.ku-m {
+		padding: 10px 0;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.ku-m:last-child {
+		border-bottom: none;
+	}
+
+	.ku-m-h {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		flex-wrap: wrap;
+		font-size: calc(13px * var(--fs-scale, 1));
+	}
+
+	.ku-m-h span {
+		color: var(--ink-3);
+		font-size: calc(11.5px * var(--fs-scale, 1));
+	}
+
+	.ku-m-h em {
+		margin-left: auto;
+		font-style: normal;
+		font-weight: 600;
+		color: var(--plum);
+	}
+
+	.ku-sub {
+		display: flex;
+		gap: 7px;
+		flex-wrap: wrap;
+		margin-top: 6px;
+	}
+
+	.ku-sub span {
+		padding: 4px 11px;
+		background: var(--paper);
+		border-radius: 99px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--ink-2);
+	}
+
+	.ku-sub b {
+		margin-left: 5px;
+		color: var(--espresso);
+	}
+
+	.ku-mini {
+		margin-bottom: 14px;
+	}
+
+	.ku-mini-h {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 10px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--ink-2);
+	}
+
+	.ku-mini-h b {
+		font-size: calc(15px * var(--fs-scale, 1));
+		color: var(--sage-tekst);
 	}
 
 	.ku-sp {
