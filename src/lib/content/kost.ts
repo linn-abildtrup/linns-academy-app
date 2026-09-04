@@ -528,6 +528,14 @@ export function renseIngrediensNavn(navn: string): string {
 }
 
 /**
+ * Bindeord der aldrig maa staa alene som soegeord. Ordet 'eller' er det
+ * vigtige: en ingrediens som "æble eller en håndfuld bær" faldt tilbage
+ * paa ordet 'eller' og ramte 'Kantareller', fordi bogstaverne staar inde
+ * i navnet. Se HANDOVER-GAMMEL-APP.md.
+ */
+const BINDEORD = new Set(['eller', 'samt', 'evt', 'plus', 'eventuelt']);
+
+/**
  * Finder den bedst matchende fødevare for en ingrediens-streng.
  *
  * Forsøger først eksakt/start-match med det rå navn. Hvis intet match,
@@ -583,7 +591,7 @@ export function findFodevareForIngrediens(
 	// ellers ville falde tilbage til kun "peber" og matche "Peber, hvid"
 	// fordi "rød" er < 4 tegn og dermed udelukket fra single-word fallback.
 	// "Peberfrugt, rød" matcher begge ord og vinder.
-	const ordTilMulti = (renset || raa).split(/\s+/).filter((w) => w.length >= 3);
+	const ordTilMulti = (renset || raa).split(/\s+/).filter((w) => w.length >= 3 && !BINDEORD.has(w));
 	if (ordTilMulti.length >= 2) {
 		const flerords = foods
 			.filter((f) => {
@@ -598,7 +606,7 @@ export function findFodevareForIngrediens(
 	// — fanger sammensatte navne som "fed hvidløg" → "hvidløg" når
 	// renseIngrediensNavn ikke har fjernet 'fed'.
 	const baseString = renset || raa;
-	const ord = baseString.split(/\s+/).filter((w) => w.length >= 4);
+	const ord = baseString.split(/\s+/).filter((w) => w.length >= 4 && !BINDEORD.has(w));
 	const sorteret = [...ord].sort((a, b) => b.length - a.length);
 	for (const o of sorteret) {
 		const m = findMatch(o);

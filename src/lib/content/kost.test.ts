@@ -432,6 +432,36 @@ describe('findFodevareForIngrediens multi-word', () => {
 	});
 });
 
+describe('findFodevareForIngrediens og ordet eller', () => {
+	// Bogstaverne i 'eller' staar inde i mange foedevarenavne. Foer
+	// rettelsen faldt hele strengen tilbage paa ordet og ramte
+	// Kantareller, Kaellingetand og lignende.
+	const kantareller: Fodevare = { id: 'kantareller', name: 'Kantareller', cat: 'gront', p: 2, f: 3.5 };
+	const aeble: Fodevare = { id: 'aeble', name: 'Æble', cat: 'baer', p: 0.3, f: 2.2 };
+	const kokosflager: Fodevare = { id: 'kokosflage', name: 'Kokosflager', cat: 'noedder', p: 6, f: 15 };
+	const havregryn: Fodevare = { id: 'havregryn', name: 'Havregryn', cat: 'korn', p: 13, f: 10 };
+	const foods = [kantareller, aeble, kokosflager, havregryn];
+
+	it('"æble eller en håndfuld bær" rammer Æble, ikke Kantareller', () => {
+		expect(findFodevareForIngrediens('æble eller en håndfuld bær', foods)?.id).toBe('aeble');
+	});
+
+	it('vaelger den foerste mulighed naar begge findes', () => {
+		expect(findFodevareForIngrediens('kokosflager eller ristede havregryn', foods)?.id).toBe(
+			'kokosflage'
+		);
+	});
+
+	it('kantareller kan stadig findes naar de rent faktisk staar der', () => {
+		expect(findFodevareForIngrediens('kantareller', foods)?.id).toBe('kantareller');
+	});
+
+	it('falder ikke tilbage paa bindeordet naar intet andet passer', () => {
+		// Foer rettelsen returnerede den her Kantareller.
+		expect(findFodevareForIngrediens('vissevasse eller pjattefims', foods)).toBeNull();
+	});
+});
+
 describe('splitListeIngrediens', () => {
 	it('returnerer null for enkelt ingrediens', () => {
 		expect(splitListeIngrediens('Æble')).toBeNull();
