@@ -5178,3 +5178,39 @@ vente-skærm at fjerne.
 **En detalje der er let at overse:** står der allerede noget fra sidst, og den
 friske hentning fejler, lader vi det stå i stedet for at lægge en fejlbesked
 oven på en side der virker. Det gælder Træning og 30-30.
+
+---
+
+### 9.74 SKRIFTLIGE LEKTIONER FIK EN FLISE DER LIGNER EN SIDE, 4. september
+
+Linn om dag 5 på Kickstart August: "Få øje på dine #wins" så dumt ud, hvor
+flisen bare var lilla med en stjerne.
+
+**DET VAR IKKE ÉN FLISE.** 23 af de 42 lektioner i Kickstart August har intet
+billede, 19 har. Alle 23 fik den samme lilla flade og den samme stjerne, så to
+helt forskellige lektioner var umulige at skelne. På dag 5 gjaldt det både
+wins-lektionen og Fibertilskud.
+
+**Fem veje blev tegnet** i `mockups-skriftlige-lektioner.html`, og Linn valgte
+A. De fravalgte: droppe firkanten helt for tekst, vise de første ord af selve
+teksten (dyrt, kræver at hver lektion hentes), et emne-ikon pr lektion (kræver
+at hun vælger et), og at hun selv lægger 23 billeder op.
+
+**To ændringer.** En skriftlig lektion uden billede får nu en papir-flise med
+sin egen titel på, uden "Dag 5, " foran. Og **beskrivelsen, som lå ubrugt i
+data**, vises nu under titlen. Flere lektioner har allerede en, fx Fibertilskud
+med "Det fibertilskud jeg selv bruger + 15 % rabat", og appen viste den ikke.
+
+**Video og lyd er ikke rørt.** Video uden billede beholder sit ▶, lyd har Linns
+eget billede i lilla tone.
+
+**Det du skal passe på:** `.medie-thumb.side` skal blive stående EFTER
+`.medie-thumb.tekst` i `ny.css`, ellers vinder den lilla gradient. Og reglen om
+"Dag 5, " ligger i `content/lektionFlise3.ts`, ikke i komponenten, så den kan
+testes. De vigtigste tests er at **"Dagens vaner" ikke bliver ædt**, og at en
+titel der kun er et dagnummer beholder sig selv frem for at blive tom.
+
+**Til Linn, og det er nyt:** beskrivelsesfeltet er nu synligt for kunden. Hvor
+hun har skrevet en, bliver rækken markant bedre, og det er hurtigere end at lave
+et billede. Lægger hun et rigtigt billede på, vinder det stadig over
+papir-flisen, så de to løsninger kan bruges side om side.
