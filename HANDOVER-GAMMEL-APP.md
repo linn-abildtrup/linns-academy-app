@@ -209,12 +209,14 @@ En opskrift kan logges på to måder, og de spørger to forskellige steder.
 **"Tilføj ingredienser til byg-måltid"** ignorerer den linje og lægger
 ingredienserne sammen fra fødevaredatabasen.
 
-Retter du en ingrediens, en mængde eller en fødevares næringstal, flytter
-du kun det ene af de to tal. Makro-linjen skal skrives om bagefter, ellers
-ser kunden to forskellige svar på samme mad.
+**Det er lukket 4. september 2026.** Siden viser nu de beregnede tal fra
+3.0, og makro-linjen skrives om af sig selv hver gang der regnes om. Se
+afsnittet nedenfor.
 
-Der er ingen kontrol der fanger det. Se afsnittet om 4. september for den
-gennemgang der bragte alle 130 i overensstemmelse.
+Fælden er værd at kende alligevel, for den lever videre ét sted: laver du
+en NY opskrift, står dens makro-linje som du skriver den, indtil nogen
+regner om i 3.0. Indtil da er linjen det eneste tal, og den er ikke
+kontrolleret mod ingredienserne.
 
 ---
 
@@ -1160,6 +1162,8 @@ Skal de fjernes rigtigt, skal markeringerne først vende samme vej.
 **Tre tomme kladder** der alle hed "Ny opskrift" er slettet. De var
 inaktive og uden henvisninger.
 
+**Den gamle app bruger nu 3.0's regnestykke.** Se afsnittet lige nedenfor.
+
 **3.0 blev regnet om samme dag**, efter at 12 manglende koblinger og fire
 manglende styk-vægte var rettet. Men de to apper viser stadig forskellige
 tal på 60 af de 130 opskrifter, nogle med op til 280 kalorier. De bruger
@@ -1169,6 +1173,49 @@ kan rettes i data, og det er ikke besluttet hvad der skal ske. Se
 
 Sikkerhedskopier fra før gennemgangen ligger som `scripts/_backup-*.json`.
 De er git-ignorerede og findes kun på Linns maskine.
+
+### Rettet 4. september 2026, sent: de to apper viser nu det samme
+
+Under ventilen i regel 2, med Linns go. Commits `a5f7b8f` og `0e60a24`.
+
+**Linns ord**, ordret: uanset hvilken ingrediens eller opskrift man slår op i
+den nye eller den gamle app, skal det vise det samme. Både beskrivelsen,
+makrotallene forneden og beregningen.
+
+**To af de tre var ens i forvejen.** Teksten, fordi begge apper læser det
+samme dokument. Opslag på en enkelt fødevare, fordi begge bruger
+`gramForEnhed` og `effektivKcal`. Slår kunden hytteost op, får hun allerede
+samme tal begge steder.
+
+**Det eneste der skilte sig var opskrift-regnestykket**, og forskellen var
+ikke lille. Rød linsesuppe stod til 631 kcal i den gamle app og 368 i 3.0.
+Hele forskellen var én linje: "200 g Tomater" ramte Soltørrede tomater med
+282 kcal pr 100 g i stedet for friske med 21. Samme fejl på passerede tomater
+i tre andre retter, og "røget eller varmrøget laks" blev til røget ål.
+
+**Opskrift-siden bruger nu 3.0's svar.** `content/opskriftTal3.ts` er broen.
+Siden henter `ingrediensKobling/beregninger` og `koblinger`, vælger tallet med
+`visMakro` præcis som 3.0 gør, og bygger byg-måltid af 3.0's linjer. Kan intet
+hentes, eller dækker beregningen ikke retten, falder den tilbage på
+makro-linjen i teksten.
+
+**Tallene er flyttet ud af teksten og op i deres egen boks** samme sted på
+siden, med "Regnet på ingredienserne" så kunden kan se hvor de kommer fra.
+Linn så og godkendte en tegning først.
+
+**Enheden beholdes kun når den giver samme vægt.** Kunden ser stadig "1 spsk
+olivenolie". Men 3.0's tabel siger 55 g pr æg hvor varen selv siger 58, og
+beholdt vi enheden dér, ville byg-måltid vise 29,7 g protein hvor opskriften
+siger 28,6. Er de to uenige, vinder gram.
+
+**Makro-linjen skriver sig selv om.** Den bliver stående i teksten som
+sikkerhedsnet, men `regnOpskrifterOm` opdaterer den i samme kørsel som
+beregningen. Det bryder med reglen fra 13. august om at opskrifterne aldrig
+må røres, og Linn ophævede den bevidst. Begrundelsen står i koden.
+
+**Det betyder også noget nyt:** fra i dag afhænger den gamle apps tal af 3.0's
+koblingskort og vægttabel. Rettes en kobling eller en styk-vægt i 3.0, flytter
+tallene sig begge steder.
 
 ---
 
@@ -1339,9 +1386,27 @@ Det er ikke et regnestykke der kan rettes. Det er et spørgsmål om
 portionerne skal skrues ned, og det er Linns faglige vurdering. Hun bad 4.
 september om at gemme det til senere.
 
-Tages den op, er første skridt en liste over alle opskrifter sorteret
-efter kalorier, så toppen kan gennemgås. Ændres en mængde, skal
-makro-linjen skrives om bagefter, se 6.13.
+**Det er undersøgt samme dag, og Linn valgte at lade det ligge.** Skriv det
+ikke op igen uden at kende det her:
+
+72 af 113 morgenmader og hovedmåltider ligger over 35 g protein. Kun 30
+ligger mellem 25 og 35. Det er ikke udskridere, det er sådan basen er
+skrevet. Fødevaretallene blev tjekket og er i orden, så tallene er ægte.
+
+At skære i den største proteinkilde virker ikke. Cremet kikærte- og
+linsegryde skulle have kyllingen fra 120 til 10 g for at ramme 30, fordi
+resten kommer fra kikærter og linser. At lade opskriften række til én
+portion mere virker kun i 11 af de 72, for resten falder under 25.
+
+Forholdsmæssig nedskalering af alle ingredienser VIRKER teknisk. Alle 72
+rammer 25 til 35, med en skalering på 50 til 85 procent, og gennemsnittet
+falder fra 631 til 449 kcal. Det kræver tre regler: krydderier og pynt
+under 15 kcal røres ikke, æg tælles i hele, og en mængde må aldrig blive
+større af at blive skaleret ned.
+
+Grunden til at det ikke blev gjort er ikke teknisk. Det ville ændre 72
+opskrifter som kunderne læser og laver, og 40 af dem ville lande UNDER de
+30 g protein som hele konceptet bygger på.
 
 ---
 

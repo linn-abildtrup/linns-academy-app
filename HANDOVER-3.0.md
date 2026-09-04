@@ -5425,7 +5425,7 @@ Knappen findes fortsat i den gamle app under Din profil.
 
 ---
 
-### 9.66 DEN 4. SEPTEMBER: OPSKRIFTERNES TAL BLEV RETTET I DATA, OG 3.0's ØJEBLIKSBILLEDE ER NU FORÆLDET
+### 9.67 DEN 4. SEPTEMBER: OPSKRIFTERNES TAL BLEV RETTET, OG BEGGE APPER BRUGER NU 3.0's REGNESTYKKE
 
 **Læs det her før du rører makrotallene i 3.0.**
 
@@ -5484,3 +5484,33 @@ samme opslag. Ordet "eller" i en ingrediens blev brugt som søgeord, så "æble
 eller en håndfuld bær" ramte Kantareller. Og et valg giver nu den **første**
 mulighed, ikke den med det længste navn. Skriver du et nyt ingrediensnavn, så
 brug aldrig to kommaer: det læses som en liste og bliver splittet.
+
+#### Senere samme dag: den gamle app bruger nu 3.0's regnestykke
+
+Linns beslutning, ordret: uanset hvilken ingrediens eller opskrift man slår op
+i den nye eller den gamle app, skal det vise det samme. Både beskrivelsen,
+makrotallene forneden og beregningen.
+
+To af de tre var ens i forvejen. Teksten, fordi begge apper læser det samme
+dokument. Opslag på en enkelt fødevare, fordi begge bruger `gramForEnhed` og
+`effektivKcal`. Det eneste der skilte sig var opskrift-regnestykket.
+
+`content/opskriftTal3.ts` er broen. Den gamle apps opskrift-side henter nu
+`ingrediensKobling/beregninger` og `koblinger`, vælger tallet med `visMakro`
+præcis som 3.0 gør, og bygger byg-måltid af 3.0's linjer. Kan intet hentes,
+falder den tilbage på makro-linjen i teksten.
+
+**Enheden beholdes kun når den giver samme vægt.** 3.0's tabel siger 55 g pr
+æg, varen selv siger 58. Beholdt vi enheden dér, ville byg-måltid vise 29,7 g
+protein hvor opskriften siger 28,6. Er de to uenige, vinder gram.
+
+**REGLEN FRA 13. AUGUST OM AT OPSKRIFTERNE ALDRIG MÅ RØRES ER OPHÆVET.** Linn
+ændrede den 4. september. `regnOpskrifterOm` skriver nu makro-linjen om i samme
+kørsel som beregningen, så det skrevne og det viste altid står ens. Kun de fem
+tal røres, og rækkefølgen er: gem beregningen først, skriv teksten bagefter.
+Går skrivningen galt, står beregningen stadig rigtigt, og det er den kunden
+ser. Kvitteringen i `admin/ingrediens-tal` siger hvor mange linjer der blev
+skrevet om.
+
+Begrundelsen står i koden ved siden af, så den ikke bliver rullet tilbage af en
+der kun kender den gamle regel.
