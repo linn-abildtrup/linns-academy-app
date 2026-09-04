@@ -536,6 +536,22 @@ export function renseIngrediensNavn(navn: string): string {
 const BINDEORD = new Set(['eller', 'samt', 'evt', 'plus', 'eventuelt']);
 
 /**
+ * Ord der kun beskriver en foedevare og aldrig staar for den selv. De
+ * bruges til at se bort fra et valg som "grønne eller røde druer", hvor
+ * foerste halvdel er en farve og ikke en vare. Uden listen ville
+ * 'grønne' blive slaaet op alene og ramme Groenne boenner.
+ */
+const MODIFIKATORER = new Set([
+	'grøn', 'grønne', 'rød', 'røde', 'gul', 'gule', 'hvid', 'hvide',
+	'sort', 'sorte', 'brun', 'brune', 'lys', 'lyse', 'mørk', 'mørke',
+	'stor', 'store', 'lille', 'små', 'halv', 'halve', 'hel', 'hele',
+	'frisk', 'friske', 'frossen', 'frosne', 'tørret', 'tørrede',
+	'hakket', 'hakkede', 'revet', 'revne', 'kogt', 'kogte', 'rå',
+	'moden', 'modne', 'varm', 'varme', 'kold', 'kolde', 'tynd', 'tynde',
+	'grov', 'grove', 'fin', 'fine', 'let', 'lette', 'mager', 'magre'
+]);
+
+/**
  * Finder den bedst matchende fødevare for en ingrediens-streng.
  *
  * Forsøger først eksakt/start-match med det rå navn. Hvis intet match,
@@ -579,6 +595,23 @@ export function findFodevareForIngrediens(
 
 	const direkte = findMatch(raa);
 	if (direkte) return direkte;
+
+	// Giver ingrediensen et valg, er den foerste mulighed den der taeller.
+	// "valnødder eller hasselnødder" skal give valnoedder, ikke
+	// hasselnoedder, som ellers vandt fordi ordet er laengere.
+	// Bestaar foerste halvdel kun af beskrivende ord, springes den over.
+	const muligheder = raa.split(/\s+eller\s+/i).map((x) => x.trim());
+	if (muligheder.length > 1) {
+		const kunBeskrivende = (x: string) =>
+			x.split(/\s+/).every((w) => MODIFIKATORER.has(w.replace(/[^a-zæøå]/g, '')));
+		// Er foerste halvdel kun en farve, som i "grønne eller røde druer",
+		// staar varen i den sidste halvdel. Ellers er det foerste der taeller.
+		const valgt = kunBeskrivende(muligheder[0]) ? muligheder[muligheder.length - 1] : muligheder[0];
+		if (valgt && valgt !== raa) {
+			const viaValgt = findFodevareForIngrediens(valgt, foods);
+			if (viaValgt) return viaValgt;
+		}
+	}
 
 	const renset = renseIngrediensNavn(ingrediensNavn);
 	if (renset && renset !== raa) {

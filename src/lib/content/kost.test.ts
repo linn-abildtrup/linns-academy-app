@@ -456,6 +456,24 @@ describe('findFodevareForIngrediens og ordet eller', () => {
 		expect(findFodevareForIngrediens('kantareller', foods)?.id).toBe('kantareller');
 	});
 
+	it('vaelger den foerste mulighed, ikke den med det laengste navn', () => {
+		const valnoedder: Fodevare = { id: 'valnod', name: 'Valnødder', cat: 'noedder', p: 14, f: 6 };
+		const hasselnoedder: Fodevare = { id: 'hassel', name: 'Hasselnødder', cat: 'noedder', p: 13, f: 9 };
+		// 'hasselnødder' er det laengste ord og vandt foer rettelsen.
+		expect(
+			findFodevareForIngrediens('valnødder eller hasselnødder', [valnoedder, hasselnoedder])?.id
+		).toBe('valnod');
+	});
+
+	it('springer foerste halvdel over naar den kun er en farve', () => {
+		const boenner: Fodevare = { id: 'bonn_g', name: 'Grønne bønner', cat: 'gront', p: 1.8, f: 3 };
+		const druer: Fodevare = { id: 'drue', name: 'Vindrue', cat: 'baer', p: 0.6, f: 0.9 };
+		// "grønne" alene er ikke en vare, saa den maa ikke slaa Groenne
+		// boenner op paa egen haand.
+		const r = findFodevareForIngrediens('grønne eller røde druer', [boenner, druer]);
+		expect(r?.id).toBe('drue');
+	});
+
 	it('falder ikke tilbage paa bindeordet naar intet andet passer', () => {
 		// Foer rettelsen returnerede den her Kantareller.
 		expect(findFodevareForIngrediens('vissevasse eller pjattefims', foods)).toBeNull();
