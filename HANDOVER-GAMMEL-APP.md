@@ -1072,6 +1072,11 @@ ud, ikke om at få en kvittering.
 Båndet og den grønne kvittering virker overalt. Selve gem-behandlingen
 mangler stadig på: symptomchecken, egne opskrifter, at lægge en opskrift i
 dagbogen, biblioteket, Linn AI, opsætningen af vaner og profil-siden.
+
+**Linn valgte 4. september bevidst ikke at tage dem med.** Hun fik listen og
+sagde nej. Gå ikke i gang med dem af dig selv, heller ikke selv om det ser ud
+som en oplagt oprydning. Spørg først.
+
 **Mønsteret er det samme hver gang**: `meldSkrivningIGang()`, pak
 skrivningen i `gemMedVentetid`, kast videre ved `fejl`, og ved `venter`
 enten slip knappen fri eller vis beskeden. Kig i `beskeder/+page.svelte`
