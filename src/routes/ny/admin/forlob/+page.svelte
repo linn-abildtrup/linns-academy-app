@@ -11,6 +11,11 @@
 	// LOGIKKEN ER FLYTTET, IKKE SKREVET OM. Samme opretForlob, gemForlob og
 	// kopierForlobIndhold, og id'et laves med praecis den samme regel.
 	//
+	// FELTERNE BYGGES I forlobGuide3.forlobFelter, som guiden ogsaa bruger.
+	// Der er to veje ind til et nyt hold, den hurtige her og guiden, og de
+	// skal gemme det samme. Ellers opfoerer ét hold sig anderledes end alle
+	// andre, og det opdages foerst en maaned senere.
+	//
 	// TO TING DER ER DYRE AT GENOPDAGE, og som staar ordret som foer:
 	//  - forloeb starter kl 00:01, saa det daekker kalenderdagene rent og
 	//    udloebet lander ved midnat efter sidste dag
@@ -34,6 +39,10 @@
 		opretForlob
 	} from '$lib/firestore/forlob';
 	import { FEATURES } from '$lib/content/features';
+	// SAMME BYGGER SOM GUIDEN. To steder der opretter et forloeb hver paa
+	// sin maade er den slags forskel man foerst opdager en maaned senere,
+	// naar ét hold opfoerer sig anderledes end alle andre.
+	import { forlobFelter, idAf } from '$lib/content/forlobGuide3';
 	import AdmSide from '$lib/components/admin/AdmSide.svelte';
 	import AdmKort from '$lib/components/admin/AdmKort.svelte';
 	import AdmKnap from '$lib/components/admin/AdmKnap.svelte';
@@ -89,19 +98,6 @@
 		setTimeout(() => {
 			if (besked === t) besked = '';
 		}, 2600);
-	}
-
-	/** Samme regel som foer. Id'et er dokumentets navn og kan ikke aendres. */
-	function idAf(navn: string): string {
-		return navn
-			.toLowerCase()
-			.normalize('NFD')
-			.replace(/[̀-ͯ]/g, '')
-			.replace(/æ/g, 'ae')
-			.replace(/ø/g, 'oe')
-			.replace(/å/g, 'aa')
-			.replace(/[^a-z0-9]+/g, '_')
-			.replace(/^_|_$/g, '');
 	}
 
 	function aabnOpret() {
@@ -169,40 +165,28 @@
 
 		opretter = true;
 		try {
-			// KL 00:01. Saa daekker forloebet kalenderdagene rent, og udloebet
-			// lander ved midnat efter sidste dag i stedet for at arve et
-			// skaevt klokkeslaet.
-			const start = new Date(fStart + 'T00:01:00');
-
-			if (fBygget) {
-				// Bygget forloeb: eget dataspor via produktNoegle, ingen type,
-				// og altid 'basis' internt. Alt synligt styres af fluebenene.
-				await opretForlob(id, {
-					navn,
-					startDato: Timestamp.fromDate(start),
-					antalDage: fDage,
-					vaneProgramId: null,
-					aktiv: fAktiv,
-					byggetForlob: true,
-					produktNoegle: id,
-					adgangsNiveau: 'basis',
-					features: { ...fFeatures },
-					harBuddy: fBuddy,
-					harFacebookGruppe: fFacebook,
-					harTraening: fTraening,
-					nulDagePulje: Math.max(0, Math.min(365, fNulPulje))
-				});
-			} else {
-				await opretForlob(id, {
-					navn,
-					startDato: Timestamp.fromDate(start),
-					antalDage: fDage,
-					vaneProgramId: null,
-					aktiv: fAktiv,
-					type: fType,
-					...(fPremium ? { adgangsNiveau: 'premium' as const } : {})
-				});
-			}
+			// Felterne bygges i forlobGuide3.forlobFelter, saa den hurtige
+			// vej her og guiden gemmer praecis det samme. Datoen kommer
+			// tilbage som et tal, fordi den fil ikke kender Firestore.
+			const { startMs, ...felter } = forlobFelter({
+				navn,
+				id,
+				startDato: fStart,
+				antalDage: fDage,
+				bygget: fBygget,
+				type: fType,
+				premium: fPremium,
+				harTraening: fTraening,
+				harBuddy: fBuddy,
+				harFacebookGruppe: fFacebook,
+				nulDagePulje: fNulPulje,
+				features: fFeatures,
+				aktiv: fAktiv
+			});
+			await opretForlob(id, {
+				...felter,
+				startDato: Timestamp.fromMillis(startMs)
+			} as unknown as Omit<Forlob, 'id' | 'oprettet'>);
 
 			if (fKopierFra) {
 				try {
@@ -255,7 +239,12 @@
 		bred
 	>
 		{#snippet handling()}
-			<AdmKnap slags="primaer" onclick={aabnOpret}>Nyt forløb</AdmKnap>
+			<!-- GUIDEN ER DEN ANBEFALEDE VEJ. Den hurtige findes stadig, for
+			     et hold man har bygget hundrede gange skal ikke tage ni trin. -->
+			<AdmKnap slags="primaer" onclick={() => goto('/ny/admin/forlob/nyt')}>
+				Nyt hold med guiden
+			</AdmKnap>
+			<AdmKnap onclick={aabnOpret}>Den hurtige vej</AdmKnap>
 		{/snippet}
 
 		{#if besked}<div class="fo-besked">{besked}</div>{/if}
@@ -263,7 +252,12 @@
 
 		{#if opretAaben}
 			<AdmKort>
-				<h2 class="fo-h">Nyt forløb</h2>
+				<h2 class="fo-h">Nyt forløb, den hurtige vej</h2>
+				<p class="fo-led">
+					Her oprettes holdet på ét skærmbillede. Guiden spørger derimod om alle ni ting der
+					skal være på plads, og spærrer for at udgive indtil de er det. Er det længe siden du
+					har bygget et hold, så tag guiden.
+				</p>
 
 				<div class="fo-raek">
 					<label class="fo-felt bred">
@@ -412,6 +406,11 @@
 							>
 								Åbn forløbet
 							</AdmKnap>
+							<!-- Et hold der ikke er udgivet er som regel et man er midt
+							     i at bygge. Saa er guiden den vej man skal tilbage ad. -->
+							<AdmKnap onclick={() => goto(`/ny/admin/forlob/${f.id}/guide`)}>
+								{f.aktiv === false ? 'Fortsæt guiden' : 'Tjek holdet igennem'}
+							</AdmKnap>
 						{/if}
 
 						{#if laasId === f.id}
@@ -461,6 +460,13 @@
 	.fo-fejl {
 		background: var(--ler-tint, #f4e6de);
 		color: var(--ler-tekst, #8a5439);
+	}
+
+	.fo-led {
+		margin: 0 0 14px;
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		color: var(--ink-3);
+		line-height: 1.55;
 	}
 
 	.fo-h {

@@ -126,6 +126,12 @@ export const VAERKTOEJER: Vaerktoej[] = [
 		oftest: true
 	},
 	{
+		navn: 'Byg et nyt hold',
+		under: 'Guiden spørger om alt, og spærrer indtil det er på plads',
+		rute: '/ny/admin/forlob/nyt',
+		omraade: 'forlob'
+	},
+	{
 		navn: 'Forløb, gammel udgave',
 		under: 'Vejen tilbage hvis den nye driller',
 		rute: '/app/admin/forlob',

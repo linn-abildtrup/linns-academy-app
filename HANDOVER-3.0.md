@@ -4614,6 +4614,110 @@ længere noget der kommer, men noget hun står i.
 
 ---
 
+### 9.64 DEN 3. SEPTEMBER: SLÅ EN KUNDE OP
+
+Linns ønske: **"alt information om kunden skal fremgå. Alt simpelthen."**
+Før den dag viste kunde-opslaget kun hendes træning, og resten lå spredt
+over syv admin-sider.
+
+**To skærme.** `/ny/admin/kunde` henter kundelisten én gang og søger
+lokalt med `klientSoegeMatch`, altså den samme fuzzy-søgning som resten af
+admin. `/ny/admin/kunde/[uid]` er profilen med syv faner: Overblik,
+Forløb, Mad, Træning, Symptomer, Beskeder og Konto.
+
+**Hver fane henter først når den åbnes.** Fire af dem læser
+undersamlinger, så alt på én gang ville være langsomt og dyrt på en kunde
+Linn kun ville se overblikket for. Toppen med navn, mail og de fire
+mærkater bliver stående når man skifter fane, så man aldrig kigger på den
+forkerte kunde.
+
+**Reglerne ligger i `content/kundeOpslag3.ts` med 29 tests**, ikke i
+skærmen. Det vigtigste er `springerIOejnene`, som samler det der er galt
+ét sted. Rækkefølgen er bevidst: **et hold uden tildelt træning står
+øverst**, fordi der ikke kommer nogen fejl når det glemmes. Er listen tom,
+står der at alt ser fint ud. En tom boks ligner en side der ikke virker.
+
+**To ting der er lette at få galt i halsen:**
+
+- **En dag uden registrering får ingen række**, ikke et nul. Et nul ser ud
+  som om hun ikke spiste.
+- **Snittet deles med de dage hun HAR tastet.** Ellers læser en status som
+  en anklage mod en kunde der har haft en stille uge.
+
+**Sidste aktivitet er det seneste af vores eget stempel (`sidstAktiv3`) og
+hendes sidste måltid**, aldrig login-datoen. Den lyver for kunder med
+appen på hjemmeskærmen, se 9.42.
+
+**Siden skriver ingenting.** Alt der kan ændres ligger på de sider der er
+bygget til det, og knapperne øverst peger derhen. Menupunktet "Slå en
+kunde op" peger nu her i stedet for på træningssiden, som stadig findes på
+`/ny/admin/traening/kunde`.
+
+---
+
+### 9.65 DEN 4. SEPTEMBER: GUIDEN DER SPÆRRER FOR AT UDGIVE ET HOLD
+
+Skærm 4 i `mockups-admin.html`, tegnet 1. september og bygget nu. **Det er
+den vigtigste af de nye admin-skærme**, og grunden står allerede i denne
+fil: når noget bliver glemt ved en holdstart, kommer der ingen fejl. Der
+kommer bare ingenting.
+
+**To ruter.** `/ny/admin/forlob/nyt` er trin 1 og 2, altså navn, slags,
+længde og startdato. Så snart der er trykket, findes holdet, og resten kan
+gemmes undervejs. `/ny/admin/forlob/[id]/guide` er de ni trin.
+
+**Holdet oprettes ALTID lukket.** Det åbnes først på trin 9, og kun når
+der ikke er noget der spærrer. Guiden lukker aldrig et hold der er åbnet
+igen, for så kunne en kunde midt i sit forløb miste adgangen ved et uheld.
+
+**Den tjekker virkeligheden, ikke fluebenene.** Der er ingen "jeg har
+husket det"-afkrydsning nogen steder. Guiden ser efter om tildelingen,
+lektionen og skridtet ligger i databasen. Et flueben man sætter selv er
+lige så nemt at sætte forkert som at glemme det oprindelige.
+
+**Reglerne ligger i `content/forlobGuide3.ts` med 41 tests.** Skellet
+mellem `spaerringer` og `bemaerkninger` er skarpt med vilje: spærrer alt,
+spærrer ingenting, fordi så begynder man at lede efter vejen udenom.
+
+**Det der SPÆRRER:**
+
+- intet navn, ingen startdato, nul dage
+- holdet har mikrotræning, men **ingen tildeling rammer det**
+- træningen starter på en dag der ligger efter forløbets sidste
+- ingen lektioner på nogen dag
+- ingen små skridt
+- Facebook-gruppen er slået til uden et link
+- **et andet åbent hold står på det samme Simplero-nummer.** Så lander nye
+  køb på det hold der starter senest, og det er ikke nødvendigvis det nye.
+  Se `content/forlobKoeb.ts`
+
+**Det der kun bemærkes:** ingen FAQ (Linn AI kan så ikke svare på hvornår
+der er Q&A), huller i dagene, en startdato der er passeret, og et hold
+uden både kunder og Simplero-kobling.
+
+**Guiden er ikke et nyt sted at gemme data.** De små felter der bor på
+selve holdet gemmes med den samme `gemForlob` som alle andre steder, og
+alt det store, altså træning, lektioner, små skridt og biblioteket, åbnes
+på de sider der allerede findes.
+
+**Felterne til et nyt hold bygges nu ét sted.** `forlobGuide3.forlobFelter`
+bruges både af guiden og af den hurtige vej på forløbs-listen. Der er to
+veje ind til et nyt hold, og de skal gemme det samme, ellers opfører ét
+hold sig anderledes end alle andre. `idAf` er flyttet med, uændret,
+inklusive den lille skævhed at å bliver til a og ikke aa. Det er sådan de
+eksisterende holds id'er er lavet, og et id kan ikke ændres bagefter.
+
+**Trin 8 hedder Funktioner og ikke Velkomst.** Tegningen sagde Velkomst
+med velkomstvideoer pr kundetype, men **den datamodel findes ikke**, og
+guiden må ikke opfinde et sted at gemme noget. Skal velkomstvideoer
+bygges, er det en opgave for sig, og så får guiden et trin mere.
+
+**Ikke afprøvet som indlogget admin.** Skærmene svarer og bygger, men
+begge kræver login, og jeg indtaster ikke Linns kode. De skal klikkes
+igennem ved gennemgangen.
+
+---
+
 ## 10. Sådan arbejder Linn
 
 Det her er lige så vigtigt som koden.
