@@ -23,6 +23,7 @@
 	import type { User } from 'firebase/auth';
 	import { isAdmin } from '$lib/admin';
 	import { collection, doc, getDoc, getDocs, orderBy, query, where, limit } from 'firebase/firestore';
+	import { hentAllowedEmail } from '$lib/firestore/forlob';
 	import { db } from '$lib/firebase';
 	import type { BrugerProfil, DagligeMaal, UserDoc } from '$lib/types';
 	import type { Forlob } from '$lib/content/forlobAdgang';
@@ -37,6 +38,7 @@
 		initialer,
 		fuldtNavn,
 		dageSiden,
+		navnMedListen,
 		type DagTal,
 		type KundeInput,
 		type MaaltidRaekke
@@ -70,6 +72,9 @@
 	let fejl = $state('');
 
 	let alleForlob = $state<Forlob[]>([]);
+	// Efternavnet fra koebslisten. To tredjedele af kunderne har det ikke
+	// paa selve kontoen, se kundeOpslag3.navnMedListen.
+	let navnFraListen = $state<string | undefined>(undefined);
 	let holdHarTraening = $state(false);
 	let ubesvarede = $state(0);
 	let sidstRegistreret = $state<number | null>(null);
@@ -103,6 +108,19 @@
 			}
 			kunde = snap.data() as UserDoc & { lastName?: string; sidstAktiv3?: number };
 			alleForlob = forlob;
+
+			// HENDES EGEN RAEKKE, ikke hele koebslisten. Soegesiden henter alle
+			// navne, fordi den skal kunne soege i dem. Her er der ét navn at
+			// bruge, og saa er 900 opslag spild.
+			void (async () => {
+				try {
+					const r = await hentAllowedEmail(kunde?.email ?? '');
+					const n = `${r?.firstName ?? ''} ${r?.lastName ?? ''}`.trim();
+					if (n) navnFraListen = n;
+				} catch (e) {
+					console.warn('[admin] navn fra købslisten', e);
+				}
+			})();
 
 			// Har hendes hold faaet et program? Det er den enkelte ting der
 			// oftest er glemt, se 9.32.
@@ -165,6 +183,10 @@
 			henter = false;
 		}
 	}
+
+	const navn = $derived(
+		navnMedListen(kunde?.firstName ?? '', kunde?.lastName ?? '', navnFraListen)
+	);
 
 	const forlobIds = $derived((kunde as unknown as { forlobIds?: string[] })?.forlobIds ?? []);
 	const afsluttede = $derived(
@@ -293,7 +315,7 @@
 </script>
 
 <svelte:head>
-	<title>{kunde ? fuldtNavn(kunde.firstName ?? '', kunde.lastName ?? '', kunde.email ?? '') : 'Kunde'} · Admin</title>
+	<title>{kunde ? fuldtNavn(navn.fornavn, navn.efternavn, kunde.email ?? '') : 'Kunde'} · Admin</title>
 </svelte:head>
 
 {#if !maaVaereHer}
@@ -313,9 +335,9 @@
 		<!-- TOPPEN STAAR FAST naar du skifter fane. Et navn der forsvinder
 		     goer at man kommer til at kigge paa den forkerte kunde. -->
 		<header class="ku-top">
-			<span class="ku-ini">{initialer(kunde.firstName ?? '', kunde.lastName ?? '', kunde.email ?? '')}</span>
+			<span class="ku-ini">{initialer(navn.fornavn, navn.efternavn, kunde.email ?? '')}</span>
 			<div class="ku-hvem">
-				<h1>{fuldtNavn(kunde.firstName ?? '', kunde.lastName ?? '', kunde.email ?? '')}</h1>
+				<h1>{fuldtNavn(navn.fornavn, navn.efternavn, kunde.email ?? '')}</h1>
 				<p class="ku-mail">
 					{kunde.email}
 					{#if kunde.createdAt}· kunde siden {dato(kunde.createdAt)}{/if}

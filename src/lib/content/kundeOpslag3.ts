@@ -224,6 +224,56 @@ export function snitPrRegistreretDag(dage: DagTal[]): { protein: number; fiber: 
 	};
 }
 
+
+/**
+ * Efternavnet, fundet hvor det nu staar.
+ *
+ * TO TREDJEDELE AF KUNDERNE HAR IKKE ET EFTERNAVN PAA KONTOEN. Maalt 4.
+ * september 2026: 602 af 934 konti havde kun et fornavn, fordi feltet kun
+ * bliver sat naar koebet fra Simplero havde det med. Navnet staar til
+ * gengaeld naesten altid i koebslisten, og for 596 af de 602 er der et
+ * efternavn at hente der.
+ *
+ * Uden det her finder en soegning paa efternavn kun hver tredje kunde, og
+ * det ligner en soegning der er i stykker.
+ *
+ * KONTOENS EGET NAVN VINDER. Har hun selv rettet sit fornavn, er det
+ * hendes. Listen fylder kun det tomme ud.
+ */
+export function navnMedListen(
+	fornavn: string,
+	efternavn: string,
+	fraListen: string | undefined
+): { fornavn: string; efternavn: string } {
+	const f = (fornavn ?? '').trim();
+	const e = (efternavn ?? '').trim();
+	if (f && e) return { fornavn: f, efternavn: e };
+
+	const dele = (fraListen ?? '').trim().split(/\s+/).filter(Boolean);
+	if (dele.length === 0) return { fornavn: f, efternavn: e };
+
+	return {
+		fornavn: f || dele[0],
+		efternavn: e || (dele.length > 1 ? dele.slice(1).join(' ') : '')
+	};
+}
+
+/**
+ * Det der soeges i. Baade kontoens navn, koebslistens navn og mailen, saa
+ * et efternavn der kun staar ét af stederne stadig kan findes.
+ */
+export function soegeTekst(
+	fornavn: string,
+	efternavn: string,
+	email: string,
+	fraListen: string | undefined
+): string {
+	return [fornavn, efternavn, fraListen ?? '', email]
+		.map((x) => (x ?? '').trim())
+		.filter(Boolean)
+		.join(' ');
+}
+
 /** Initialerne til feltet i toppen. */
 export function initialer(fornavn: string, efternavn: string, email: string): string {
 	const f = (fornavn ?? '').trim();

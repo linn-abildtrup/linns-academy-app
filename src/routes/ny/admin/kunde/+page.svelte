@@ -10,6 +10,11 @@
 	//
 	// Soegningen er klientSoegeMatch, altsaa den samme som resten af admin.
 	// Den taaler ae, oe og aa, flere ord og en slaafejl.
+	//
+	// EFTERNAVNET HENTES OGSAA I KOEBSLISTEN. To tredjedele af kunderne har
+	// kun et fornavn paa deres konto, fordi feltet kun bliver sat naar
+	// koebet fra Simplero havde det med. Uden det opslag finder en soegning
+	// paa efternavn kun hver tredje kunde. Linn 4. september.
 	// ============================================================
 
 	import { getContext, onMount } from 'svelte';
@@ -17,9 +22,16 @@
 	import { isAdmin } from '$lib/admin';
 	import { collection, getDocs } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
+	import { hentNavnePerEmail } from '$lib/firestore/forlob';
 	import type { UserDoc } from '$lib/types';
 	import { klientSoegeMatch } from '$lib/utils/klientSoegning';
-	import { fuldtNavn, initialer, dageSiden } from '$lib/content/kundeOpslag3';
+	import {
+		fuldtNavn,
+		initialer,
+		dageSiden,
+		navnMedListen,
+		soegeTekst
+	} from '$lib/content/kundeOpslag3';
 	import AdmSide from '$lib/components/admin/AdmSide.svelte';
 	import AdmKnap from '$lib/components/admin/AdmKnap.svelte';
 	import AdmSoeg from '$lib/components/admin/AdmSoeg.svelte';
@@ -33,6 +45,8 @@
 		email: string;
 		fornavn: string;
 		efternavn: string;
+		/** Kontoens navn, koebslistens navn og mailen samlet. */
+		soeg: string;
 		forlobIds: string[];
 		sidstAktiv: number | null;
 	};
@@ -50,15 +64,27 @@
 		henter = true;
 		fejl = '';
 		try {
-			const snap = await getDocs(collection(db, 'users'));
+			// Koebslisten maa gerne fejle for sig. Saa er der stadig en
+			// soegning, den finder bare faerre efternavne.
+			const [snap, navne] = await Promise.all([
+				getDocs(collection(db, 'users')),
+				hentNavnePerEmail().catch((e) => {
+					console.warn('[admin] navne fra købslisten', e);
+					return new Map<string, string>();
+				})
+			]);
 			alle = snap.docs
 				.map((d) => {
 					const x = d.data() as UserDoc & { lastName?: string; sidstAktiv3?: number };
+					const email = x.email ?? '';
+					const fraListen = navne.get(email.toLowerCase());
+					const navn = navnMedListen(x.firstName ?? '', x.lastName ?? '', fraListen);
 					return {
 						uid: d.id,
-						email: x.email ?? '',
-						fornavn: x.firstName ?? '',
-						efternavn: x.lastName ?? '',
+						email,
+						fornavn: navn.fornavn,
+						efternavn: navn.efternavn,
+						soeg: soegeTekst(x.firstName ?? '', x.lastName ?? '', email, fraListen),
 						forlobIds: (x as unknown as { forlobIds?: string[] }).forlobIds ?? [],
 						sidstAktiv: typeof x.sidstAktiv3 === 'number' ? x.sidstAktiv3 : null
 					};
@@ -77,7 +103,7 @@
 	const traeffer = $derived.by<Raekke[]>(() => {
 		if (soeg.trim().length < 2) return [];
 		return alle
-			.filter((r) => klientSoegeMatch(`${r.fornavn} ${r.efternavn} ${r.email}`, soeg))
+			.filter((r) => klientSoegeMatch(r.soeg, soeg))
 			.slice(0, 40);
 	});
 
@@ -97,14 +123,14 @@
 {:else}
 	<AdmSide
 		titel="Slå en kunde op"
-		under="Søg efter navn eller mail, og se alt hvad appen ved om hende."
+		under="Søg på fornavn, efternavn eller mail, og se alt hvad appen ved om hende."
 		bred
 	>
 		{#snippet handling()}
 			<AdmKnap onclick={indlaes}>Hent igen</AdmKnap>
 		{/snippet}
 
-		<AdmSoeg bind:vaerdi={soeg} placeholder="Søg efter navn eller mail…" />
+		<AdmSoeg bind:vaerdi={soeg} placeholder="Fornavn, efternavn eller mail…" />
 
 		{#if henter}
 			<AdmTom tekst="Henter kunderne…" />

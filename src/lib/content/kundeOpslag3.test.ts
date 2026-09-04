@@ -8,6 +8,8 @@ import {
 	initialer,
 	fuldtNavn,
 	dageSiden,
+	navnMedListen,
+	soegeTekst,
 	STILLE_DAGE,
 	type KundeInput
 } from './kundeOpslag3';
@@ -174,6 +176,54 @@ describe('snitPrRegistreretDag', () => {
 
 	it('klarer at der ikke er nogen dage', () => {
 		expect(snitPrRegistreretDag([]).antal).toBe(0);
+	});
+});
+
+describe('navnMedListen', () => {
+	it('lader kontoens eget navn staa naar det er helt', () => {
+		expect(navnMedListen('Mette', 'Hansen', 'Anden Person')).toEqual({
+			fornavn: 'Mette',
+			efternavn: 'Hansen'
+		});
+	});
+
+	it('HENTER EFTERNAVNET I KOEBSLISTEN. To tredjedele mangler det paa kontoen', () => {
+		expect(navnMedListen('Camilla', '', 'Camilla Stemann')).toEqual({
+			fornavn: 'Camilla',
+			efternavn: 'Stemann'
+		});
+	});
+
+	it('beholder kontoens fornavn ogsaa naar listen siger noget andet', () => {
+		expect(navnMedListen('Mette', '', 'Grethe Hansen').fornavn).toBe('Mette');
+		expect(navnMedListen('Mette', '', 'Grethe Hansen').efternavn).toBe('Hansen');
+	});
+
+	it('tager hele navnet fra listen naar kontoen er tom', () => {
+		expect(navnMedListen('', '', 'Anne Sofie Møller Bak')).toEqual({
+			fornavn: 'Anne',
+			efternavn: 'Sofie Møller Bak'
+		});
+	});
+
+	it('finder ikke paa noget naar listen kun har ét ord', () => {
+		expect(navnMedListen('Heidi', '', 'Heidi')).toEqual({ fornavn: 'Heidi', efternavn: '' });
+	});
+
+	it('klarer at der slet ikke er noget i listen', () => {
+		expect(navnMedListen('Heidi', '', undefined)).toEqual({ fornavn: 'Heidi', efternavn: '' });
+	});
+});
+
+describe('soegeTekst', () => {
+	it('leder i baade kontoens navn, listens navn og mailen', () => {
+		const t = soegeTekst('Camilla', '', 'camilla@x.dk', 'Camilla Stemann');
+		expect(t).toContain('Stemann');
+		expect(t).toContain('camilla@x.dk');
+	});
+
+	it('springer det tomme over i stedet for at lave dobbelte mellemrum', () => {
+		expect(soegeTekst('Mette', '', 'm@e.dk', undefined)).toBe('Mette m@e.dk');
 	});
 });
 
