@@ -19,6 +19,9 @@
 	import Loading from '$lib/components/Loading.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 	import AdminKlientBanner from '$lib/components/AdminKlientBanner.svelte';
+	import ForbindelseBaand from '$lib/components/ForbindelseBaand.svelte';
+	import { lytTilForbindelse } from '$lib/firestore/forbindelse';
+	import { setBrowserOnline } from '$lib/state/forbindelseState.svelte';
 	import IngenAdgangScreen from '$lib/components/IngenAdgangScreen.svelte';
 	import { ryAdminKlientMode } from '$lib/userDoc';
 	import { setAktivKlientForlobId } from '$lib/state/adminKlientState.svelte';
@@ -264,6 +267,16 @@
 
 		let userDocUnsubscribe: (() => void) | null = null;
 		let allowedEmailUnsubscribe: (() => void) | null = null;
+		let forbindelseUnsubscribe: (() => void) | null = null;
+
+		// Telefonens eget signal. Hurtigt, men det luerer, saa det er kun det
+		// ene af to ben baandet staar paa. Det andet er Firestores eget svar,
+		// se lytTilForbindelse.
+		const paaOnline = () => setBrowserOnline(true);
+		const paaOffline = () => setBrowserOnline(false);
+		setBrowserOnline(navigator.onLine);
+		window.addEventListener('online', paaOnline);
+		window.addEventListener('offline', paaOffline);
 
 		// Sidste gang vi koerte synkronisering. Bruges af visibility-change-
 		// listeneren til at undgaa for hyppige re-syncs (smaa skift mellem
@@ -305,6 +318,8 @@
 				userDocUnsubscribe = null;
 				allowedEmailUnsubscribe?.();
 				allowedEmailUnsubscribe = null;
+				forbindelseUnsubscribe?.();
+				forbindelseUnsubscribe = null;
 				await goto('/login');
 				return;
 			}
@@ -433,6 +448,11 @@
 				})
 				.catch((e) => console.warn('Kunne ikke hente feature-matrix:', e));
 
+			// Lytteren der afgoer om appen kan naa serveren. Skal staa efter at
+			// vi ved hvem kunden er, for den lytter paa hendes eget dokument.
+			forbindelseUnsubscribe?.();
+			forbindelseUnsubscribe = lytTilForbindelse(u.uid);
+
 			// Start live-listener så ændringer (fx markerSpoergsmaalLaest)
 			// propageres uden manuel reload
 			userDocUnsubscribe?.();
@@ -470,8 +490,11 @@
 			authUnsubscribe();
 			userDocUnsubscribe?.();
 			allowedEmailUnsubscribe?.();
+			forbindelseUnsubscribe?.();
 			document.removeEventListener('visibilitychange', onVisibility);
 			window.removeEventListener('beforeinstallprompt', paaInstaller);
+			window.removeEventListener('online', paaOnline);
+			window.removeEventListener('offline', paaOffline);
 			clearTimeout(vagtUr);
 			clearTimeout(aerligUr);
 		};
@@ -508,6 +531,7 @@
 	<HjemmeskaermScreen {installer} faerdig={hjemmeskaermFaerdig} />
 {:else}
 	<div class="app-shell">
+		<ForbindelseBaand />
 		{#if userDoc?.adminKlientMode || userDoc?.adminKlientForlobId}
 			<AdminKlientBanner
 				mode={userDoc.adminKlientMode}

@@ -77,6 +77,16 @@ export interface GemtMaaltid {
 	totalKh?: number; // udvidet næring
 	totalFedt?: number; // udvidet næring
 	totalKcal?: number; // udvidet næring
+	/**
+	 * True hvis maaltidet endnu ikke er kvitteret af serveren, altsa kun
+	 * ligger i telefonens lokale kopi. Saettes ved laesning ud fra Firestores
+	 * eget metadata, gemmes ALDRIG i databasen.
+	 *
+	 * Uden det her ser et maaltid der ikke er naaet frem noejagtig ud som et
+	 * der er, og det var praecis den faelde en kunde faldt i 1. og 2.
+	 * september 2026. Se forbindelseState.svelte.ts.
+	 */
+	ikkeSendt?: boolean;
 }
 
 /**

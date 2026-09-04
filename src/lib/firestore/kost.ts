@@ -278,7 +278,11 @@ export async function hentMaaltiderForDato(
 ): Promise<GemtMaaltid[]> {
 	const q = query(maaltiderCollection(uid), where('dato', '==', dato));
 	const snap = await getDocs(q);
-	return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GemtMaaltid);
+	// hasPendingWrites er sandt saa laenge maaltidet kun ligger i telefonens
+	// lokale kopi. Det er det maerket i dagbogen bygger paa.
+	return snap.docs.map(
+		(d) => ({ id: d.id, ...d.data(), ikkeSendt: d.metadata.hasPendingWrites }) as GemtMaaltid
+	);
 }
 
 /**

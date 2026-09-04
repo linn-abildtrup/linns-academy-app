@@ -48,6 +48,8 @@
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
 	import FavoritNavnAdvarsel from '$lib/components/FavoritNavnAdvarsel.svelte';
 	import { findFavoritMedNavn } from '$lib/content/favoritNavn';
+	import { gemMedVentetid } from '$lib/content/gemVentetid';
+	import { erNetopSendt, meldSkrivningIGang } from '$lib/state/forbindelseState.svelte';
 	import type { FavoritMaaltid } from '$lib/content/kost';
 	import {
 		ALLE_DIET_TAGS,
@@ -347,6 +349,10 @@
 		eksisterende: FavoritMaaltid;
 	} | null>(null);
 	let favoritAdvarselArbejder = $state(false);
+
+	// Vises naar et gem ikke naaede frem inden for ventetiden. Se
+	// gemVentetid.ts for hvorfor der ikke staar 'Proev igen' paa den.
+	let ikkeSendtBesked = $state(false);
 
 	// Kort kvittering forneden. Bruges kun i favorit-flowet, hvor arket
 	// lukker og kunden ellers ikke ville fa at vide hvad der skete.
@@ -776,6 +782,15 @@
 			console.warn('Kunne ikke beregne måltids-fokus:', e);
 		}
 	}
+
+	// Naar alt netop er naaet frem, hentes dagbogen igen saa maerkerne
+	// "Venter paa at blive sendt" forsvinder af sig selv. Uden det ville de
+	// blive staaende til hun skiftede fane, og saa lyver de.
+	$effect(() => {
+		if (erNetopSendt() && dagbogMaaltider.some((m) => m.ikkeSendt)) {
+			void indlaesDagbog();
+		}
+	});
 
 	function visKvittering(tekst: string) {
 		kvittering = tekst;
@@ -1436,43 +1451,68 @@
 		// KRITISK del: skriv måltidet til Firestore. Kun hvis dette fejler,
 		// viser vi 'Kunne ikke gemme'-besked og lader kunden prøve igen. Alt
 		// efter denne blok kan fejle uden datatab — måltidet er allerede gemt.
-		try {
-			if (redigererMaaltid) {
-				await opdaterMaaltid(u.uid, redigererMaaltid.id, data);
-				redigererMaaltid = null;
-			} else {
-				await gemMaaltid(u.uid, data);
-				if (gemSomFavorit) {
-					// Har hun allerede en favorit med praecis det navn, saa
-					// spoerg i stedet for stiltiende at lave en dublet. Vi
-					// kopierer varerne ud her, fordi 'maaltid' bliver tomt
-					// et par linjer laengere nede.
-					const dublet = findFavoritMedNavn(favoritter, navn);
-					if (dublet) {
-						ventendeAdvarsel = {
-							navn,
-							items: maaltid.map((i) => ({ ...i })),
-							eksisterende: dublet
-						};
-					} else {
-						try {
-							await gemFavorit(u.uid, { navn, items: maaltid });
-							await indlaesFavoritter();
-						} catch (e) {
-							console.warn('Kunne ikke gemme som favorit:', e);
-						}
+		//
+		// UDEN FORBINDELSE fejler den ikke. Den bliver bare haengende, se
+		// gemVentetid.ts. Derfor melder vi skrivningen til den faelles
+		// forbindelses-tilstand foerst, saa baandet og maerket i dagbogen ved
+		// at der ligger noget der ikke er sendt.
+		meldSkrivningIGang();
+
+		// True hvis skrivningen stadig ligger i koe efter ventetiden. Ikke en
+		// fejl: maaltidet ER gemt paa telefonen og bliver sendt af sig selv.
+		let ikkeNaaetFrem = false;
+
+		if (redigererMaaltid) {
+			const svar = await gemMedVentetid(opdaterMaaltid(u.uid, redigererMaaltid.id, data));
+			if (svar.status === 'fejl') {
+				console.error('Kunne ikke gemme måltidet:', svar.fejl);
+				gemBesked = { tekst: 'Kunne ikke gemme måltidet. Prøv igen.', type: 'fejl' };
+				gemmer = false;
+				return;
+			}
+			ikkeNaaetFrem = svar.status === 'venter';
+			redigererMaaltid = null;
+		} else {
+			const svar = await gemMedVentetid(gemMaaltid(u.uid, data));
+			if (svar.status === 'fejl') {
+				console.error('Kunne ikke gemme måltidet:', svar.fejl);
+				gemBesked = { tekst: 'Kunne ikke gemme måltidet. Prøv igen.', type: 'fejl' };
+				gemmer = false;
+				return;
+			}
+			ikkeNaaetFrem = svar.status === 'venter';
+
+			if (gemSomFavorit) {
+				// Har hun allerede en favorit med praecis det navn, saa
+				// spoerg i stedet for stiltiende at lave en dublet. Vi
+				// kopierer varerne ud her, fordi 'maaltid' bliver tomt
+				// et par linjer laengere nede.
+				const dublet = findFavoritMedNavn(favoritter, navn);
+				if (ikkeNaaetFrem) {
+					// Uden forbindelse springer vi favorit-arket over. Hun har
+					// allerede én besked at forholde sig til, og et ark der
+					// spoerger om noget der alligevel foerst sker senere er
+					// stoej. Favoritten laegges i koe som alt det andet.
+					if (!dublet) void gemFavorit(u.uid, { navn, items: maaltid });
+				} else if (dublet) {
+					ventendeAdvarsel = {
+						navn,
+						items: maaltid.map((i) => ({ ...i })),
+						eksisterende: dublet
+					};
+				} else {
+					const favSvar = await gemMedVentetid(gemFavorit(u.uid, { navn, items: maaltid }));
+					if (favSvar.status === 'fejl') {
+						console.warn('Kunne ikke gemme som favorit:', favSvar.fejl);
 					}
+					await indlaesFavoritter().catch(() => {});
 				}
 			}
-		} catch (e) {
-			console.error('Kunne ikke gemme måltidet:', e);
-			gemBesked = { tekst: 'Kunne ikke gemme måltidet. Prøv igen.', type: 'fejl' };
-			gemmer = false;
-			return;
 		}
 
-		// Hvis vi når hertil ER måltidet gemt paa serveren. Resten er
-		// kosmetik: t0m UI-state, luk modal, skift til dagbog-fanen.
+		// Hvis vi når hertil er måltidet gemt, enten paa serveren eller i
+		// telefonens lokale kopi. Resten er kosmetik: t0m UI-state, luk
+		// modal, skift til dagbog-fanen.
 		maaltid = [];
 		pendingMaaltidsNavn = null;
 		localStorage.setItem(STORAGE_KEY, '[]');
@@ -1482,7 +1522,13 @@
 		skiftTab('dagbog');
 		gemmer = false;
 
-		if (ventendeAdvarsel) {
+		if (ikkeNaaetFrem) {
+			// Den staar i dagbogen bagved, med maerket paa. Beskeden her
+			// forklarer hvorfor. Der er BEVIDST ingen 'Proev igen': trykker
+			// hun gem en gang til, laegger hun skrivning nummer to i koe og
+			// faar to ens maaltider naar forbindelsen kommer tilbage.
+			ikkeSendtBesked = true;
+		} else if (ventendeAdvarsel) {
 			favoritAdvarsel = ventendeAdvarsel;
 		}
 
@@ -2453,6 +2499,11 @@
 											<span>·</span>
 											<span>{m.items.length} ingredienser</span>
 										</div>
+										{#if m.ikkeSendt}
+											<div class="venter-maerke">
+												<span aria-hidden="true">⏱</span> Venter på at blive sendt
+											</div>
+										{/if}
 									</div>
 								{/each}
 							</div>
@@ -2866,6 +2917,16 @@
 	<BarcodeScanner onDetected={efterScan} onClose={() => (viserScanner = false)} />
 {/if}
 
+{#if ikkeSendtBesked}
+	<BekraeftModal
+		titel="Det er ikke gemt endnu"
+		beskrivelse="Din telefon kan ikke få fat i appen lige nu. Måltidet ligger klar hos dig, og vi sender det af sig selv så snart du har forbindelse igen. Du behøver ikke taste det ind en gang til. Luk ikke appen helt ned."
+		bekraeftTekst="OK"
+		onlyOk
+		onBekraeft={() => (ikkeSendtBesked = false)}
+	/>
+{/if}
+
 {#if favoritAdvarsel}
 	<FavoritNavnAdvarsel
 		navn={favoritAdvarsel.eksisterende.navn}
@@ -3270,6 +3331,22 @@
 		color: var(--text2);
 		margin: 8px 0 0;
 		line-height: 1.45;
+	}
+
+	/* Maerket paa et maaltid der kun ligger i telefonens lokale kopi.
+	   Uden det ser et maaltid der ikke er naaet frem noejagtig ud som et
+	   der er, og saa er advarslen ingenting vaerd. */
+	.venter-maerke {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		margin-top: 7px;
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: #8a6a2e;
+		background: #f6eeda;
+		border-radius: 6px;
+		padding: 3px 8px;
 	}
 
 	/* Kort kvittering forneden efter favorit-advarslen. Ligger over

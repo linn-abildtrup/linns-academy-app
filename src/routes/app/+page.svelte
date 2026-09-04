@@ -4,6 +4,8 @@
 	import { goto, replaceState } from '$app/navigation';
 	import { doc as doc_ref, updateDoc } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
+	import { gemMedVentetid } from '$lib/content/gemVentetid';
+	import { meldSkrivningIGang } from '$lib/state/forbindelseState.svelte';
 	import type { User } from 'firebase/auth';
 	import { KICKSTART_PRODUCT_ID, KROPSRO_PRODUCT_ID, type UserDoc } from '$lib/types';
 	import type { Forlob } from '$lib/content/forlobAdgang';
@@ -1085,7 +1087,14 @@
 		modulbrugerVanedag = { ...aktuel, checks: nyChecks };
 		try {
 			// Skriv KUN det specifikke felt, så note/andre vaner ikke overskrives.
-			await opdaterAboVaneSvar(u.uid, modulbrugerAktivDato, vaneId, svar);
+			// gemMedVentetid slipper knappen fri igen hvis skrivningen bliver
+			// haengende uden forbindelse. Baandet oeverst siger hvorfor, saa
+			// her skal der ikke ogsaa en besked op ved hvert flueben.
+			meldSkrivningIGang();
+			const svarUdfald = await gemMedVentetid(
+				opdaterAboVaneSvar(u.uid, modulbrugerAktivDato, vaneId, svar)
+			);
+			if (svarUdfald.status === 'fejl') throw svarUdfald.fejl;
 		} catch (e) {
 			console.error('Kunne ikke gemme vane-svar:', e);
 		} finally {
@@ -1111,7 +1120,9 @@
 		};
 		modulbrugerVanedag = ny;
 		try {
-			await gemAboVanedag(u.uid, ny);
+			meldSkrivningIGang();
+			const bonusUdfald = await gemMedVentetid(gemAboVanedag(u.uid, ny));
+			if (bonusUdfald.status === 'fejl') throw bonusUdfald.fejl;
 		} catch (e) {
 			console.error('Kunne ikke gemme bonus-svar:', e);
 		} finally {
@@ -1548,7 +1559,11 @@
 			// Skriv KUN det specifikke felt. Bug 7/6 2026: tidligere sendte vi
 			// hele entry-objektet, inkl. en stale 'note: ""' der overskrev
 			// klientens refleksioner gemt fra refleksions-siden.
-			await opdaterVaneSvar(u.uid, aktivProduktType, n, vaneId, svar);
+			meldSkrivningIGang();
+			const fvUdfald = await gemMedVentetid(
+				opdaterVaneSvar(u.uid, aktivProduktType, n, vaneId, svar)
+			);
+			if (fvUdfald.status === 'fejl') throw fvUdfald.fejl;
 		} catch (e) {
 			console.error('Kunne ikke gemme forløbs-vane-svar:', e);
 		} finally {
@@ -1574,7 +1589,11 @@
 		else nyBonus[bonusId] = svar;
 		forlobVanedag = { ...aktuel, bonus: nyBonus };
 		try {
-			await opdaterBonusSvar(u.uid, aktivProduktType, n, bonusId, svar);
+			meldSkrivningIGang();
+			const fbUdfald = await gemMedVentetid(
+				opdaterBonusSvar(u.uid, aktivProduktType, n, bonusId, svar)
+			);
+			if (fbUdfald.status === 'fejl') throw fbUdfald.fejl;
 		} catch (e) {
 			console.error('Kunne ikke gemme forløbs-bonus-svar:', e);
 		} finally {
