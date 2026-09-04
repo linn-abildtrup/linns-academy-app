@@ -5066,12 +5066,24 @@ nødbremse.**
 
 #### Det der IKKE er fundet
 
-**Hvad der udløser ombygningen på Linns egen konto, ved vi ikke.** Ingen af de
-seks hentninger skriver til bruger-dokumentet, og hverken forsiden eller
-skallen var rørt siden 27. august. Rettelsen går på mekanismen, ikke på
-udløseren. Siden kan nu ikke hænge uanset hvad der sætter det i gang, men
-**bliver forsiden mærkbart langsom igen, er det dét spor der skal tages op.**
-Kandidaten er noget der skriver til `users/{uid}` mens forsiden henter.
+**FUNDET TIL SIDST, da det viste sig hvilken konto det var.** Linn testede som
+`kickstart-aug-2026@linnsacademy.dk`, altså Kimmie, og ikke som sig selv. Den
+konto er helt sund: aktivt Kickstart-forløb, `ny-app` sat, intet skævt i data.
+
+Udløseren er ikke én fejl, men **helt normale skrivninger til `users/{uid}`**.
+`stempleAktiv3` skriver at hun har været inde, og Beskeder-siden skriver
+`senestSpoergsmaalLaestAt` når hun har set et svar. Skallen lytter løbende på
+det dokument med `lytTilUserDoc`, så hver af dem byggede adgangsbilledet om, og
+hver ombygning gav forsiden en fuld genhentning.
+
+**Der skal altså ingen uendelig løkke til.** Der skal bare komme skrivninger
+oftere end hentningen når at blive færdig. Og fordi nødbremsen lå inde i
+hentningen, blev uret stillet tilbage hver gang, så siden aldrig gav op.
+Det er derfor fejlen så uregelmæssig ud og var svær at ramme.
+
+**Læren:** alt hvad der skrives til bruger-dokumentet under normal brug er en
+genhentning et andet sted i appen, hvis nogen læser adgangsbilledet i en
+hentende effekt. Se reglen nederst i afsnittet.
 
 Udelukket undervejs, så det ikke skal gøres om: Firestore-reglerne fra samme
 formiddag (`isAdmin()` slår intet op, den læser mailen i tokenet, så den koster
