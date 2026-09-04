@@ -4810,7 +4810,7 @@ tråde om AI'ens grundlag står ét sted, i `HANDOVER-GAMMEL-APP.md` under
 
 ---
 
-### 9.67 DEN 4. SEPTEMBER: EN OVERDRAGELSE OM KUNDEOPLEVELSEN
+### 9.68 DEN 4. SEPTEMBER: EN OVERDRAGELSE OM KUNDEOPLEVELSEN
 
 `HANDOVER-KUNDEOPLEVELSE.md` er kommet til. Den handler ikke om hvad der
 er bygget, men om hvad der sker hos kunden, og den bygger på målinger på
@@ -4826,6 +4826,40 @@ på hjemmeskærmen.
 telefonen" stod på alle 315 kunder, fordi beskeder på telefonen kun
 findes i 3.0. Punktet vises nu kun for kunder på den nye app. **Et punkt
 der aldrig kan være falsk, er støj.**
+
+---
+
+### 9.69 DEN 4. SEPTEMBER: SYMPTOMTJEKKET I KUNDE-OPSLAGET
+
+Commit `059a911`, Linns ønske samme dag. Fanen viste kun totalen som en
+række tal. Nu er der fire ting: kurven over MRS-totalen, hver målings tre
+delscorer, de fem sliders med hver sin kurve og seneste værdi, og seneste
+målings elleve svar skrevet i ord.
+
+**SAMME KURVE SOM KUNDEN SELV SER.** Regnestykket er flyttet til
+`content/mrsGraf3.ts` fra symptomcheck-siden i den gamle app, ikke skrevet
+om. Ellers kunne Linns skærm og kundens skærm vise hver sin udvikling af
+det samme, og så er samtalen tabt på forhånd. Filen tegner ikke, den regner
+kun koordinater ud, så kurven kan prøves uden en browser.
+
+**TO SKALAER DER VENDER HVER SIN VEJ**, og det er den nemmeste fejl at lave
+her. MRS går 0 til 44 og LAVT er bedst. Sliderne går 1 til 10 og HØJT er
+bedst. Derfor tager `retning` altid stilling til hvilken vej der er den
+gode i stedet for at gætte på tallet, og der står ved hver kurve hvad man
+skal håbe på.
+
+Sætningen under kurven roser ikke og bebrejder ikke. Et symptomtjek der går
+den forkerte vej siger noget om en krop i en hård periode, ikke om en kunde
+der ikke gør sit arbejde.
+
+**Migrerede rækker fra vaner-modulet har kun sliders.** De tæller med i
+slider-kurverne og holdes ude af MRS-kurven, hvor de ellers ville tegne en
+total på nul.
+
+19 tests. **Kurven er ikke set med rigtige øjne endnu:** siden kræver
+login, og der er kun én måling på de kunder der kunne slås op, så
+flerpunkts-kurven mangler at blive set. Står den skævt, er det dét der
+skal ses på først.
 
 ---
 
