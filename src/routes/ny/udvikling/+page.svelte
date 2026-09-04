@@ -689,6 +689,30 @@
 										{/if}
 									{/each}
 
+									<!-- STIPLEDE STYKKER HEN OVER PAUSERNE. Manglede indtil
+									     4. september, hvor Linn saa det: to maalinger stod uden
+									     noget imellem sig, og saa ligner det at kurven er
+									     i stykker frem for at der ikke er maalt.
+
+									     Overskuds-kurven lige ovenfor har haft dem hele tiden.
+									     De to grafer bruger den SAMME byggKurve, saa hullerne
+									     laa der allerede, de blev bare ikke tegnet her.
+
+									     Samme neutrale farve som overskuddet og ikke symptom-
+									     groen: en stiplet streg betyder "her er ikke maalt", og
+									     den skal ikke laese som en maaling. -->
+									{#each symptomGraf.huller as h, i (i)}
+										<path
+											d={h}
+											fill="none"
+											stroke="var(--ink-3)"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-dasharray="3 5"
+											opacity="0.6"
+										/>
+									{/each}
+
 									<defs>
 										<linearGradient id="sym-fyld" x1="0" y1="0" x2="0" y2="1">
 											<stop offset="0%" stop-color="var(--sage-tekst)" stop-opacity="0.24" />
