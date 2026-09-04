@@ -11,6 +11,7 @@
 	import type { LektionItem } from '$lib/content/forlob';
 	import { detekterGuideType, erLydLektion, videoThumbnail } from '$lib/content/bibliotek';
 	import { alleSet3, erSet3 } from '$lib/content/lektionSet3';
+	import { fliseTitel3 } from '$lib/content/lektionFlise3';
 	import Fluebe from './Fluebe.svelte';
 
 	interface Props {
@@ -58,6 +59,25 @@
 		if (l.varighedMin) dele.push(`${l.varighedMin} min`);
 		return dele.join(' · ');
 	}
+
+	/**
+	 * Er det en skriftlig lektion UDEN billede.
+	 *
+	 * De faar en flise der ligner et stykke papir med titlen paa, i stedet
+	 * for den lilla flade med en stjerne. Linn 4. september: to
+	 * forskellige lektioner lignede hinanden fuldstaendig, og firkanten
+	 * lovede et billede der ikke var der. 23 af de 42 lektioner i
+	 * Kickstart August har intet billede, saa det er ikke en enkelt flise.
+	 *
+	 * Video og lyd roeres IKKE. Video uden billede beholder sit ▶, for
+	 * pilen siger allerede hvad det er, og lyd har Linns eget billede.
+	 */
+	function erSide(l: LektionItem): boolean {
+		return art(l) === 'tekst' && !billede(l);
+	}
+
+	// Titlen paa flisen ligger i content/lektionFlise3.ts, saa reglen om
+	// "Dag 5, " kan testes uden browser. Se testene der.
 </script>
 
 <section>
@@ -79,7 +99,7 @@
 				<!-- Hele raekken aabner lektionen. Ingen knap, for hun trykker
 				     alligevel paa billedet eller titlen. -->
 				<a class="medie-raekke" class:set={erKlaret} href={`/ny/lektion/${dagNummer}/${l.id}`}>
-					<span class="medie-thumb {art(l)}">
+					<span class="medie-thumb {art(l)}" class:side={erSide(l)}>
 						<!-- Billedet bliver staaende naar hun har set lektionen, og
 						     fluebenet laegger sig i hjoernet. Foer 22. august
 						     ERSTATTEDE fluebenet billedet, og saa kunne hun ikke
@@ -88,6 +108,12 @@
 						{#if billede(l)}
 							<img class="medie-foto" src={billede(l)} alt="" loading="lazy" />
 							<span class="medie-play" aria-hidden="true">{IKON[art(l)]}</span>
+						{:else if erSide(l)}
+							<!-- Titlen staar paa flisen, saa to skriftlige lektioner
+							     ikke ligner hinanden. Skjult for oplaesning: den
+							     staar ordret igen i raekken ved siden af. -->
+							<span class="side-titel" aria-hidden="true">{fliseTitel3(l.titel)}</span>
+							<span class="side-streger" aria-hidden="true"><i></i><i></i></span>
 						{:else}
 							<span class="medie-glyph" aria-hidden="true">{IKON[art(l)]}</span>
 						{/if}
@@ -98,6 +124,14 @@
 
 					<span class="medie-tekst">
 						<span class="medie-t">{l.titel}</span>
+						<!-- BESKRIVELSEN LAA UBRUGT. Den staar allerede paa flere
+						     lektioner i Linns data, og appen viste den ikke. Den
+						     er det der for alvor adskiller to raekker fra
+						     hinanden, og den koster ingen hentning. Linns valg
+						     4. september, se mockups-skriftlige-lektioner.html. -->
+						{#if l.beskrivelse}
+							<span class="medie-beskr">{l.beskrivelse}</span>
+						{/if}
 						<span class="medie-m">
 							{#if erKlaret}<span class="klar-tekst">Set</span> · se igen{:else}{meta(l)}{/if}
 						</span>
