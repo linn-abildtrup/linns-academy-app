@@ -58,7 +58,7 @@
 	} from '$lib/content/beskedside3';
 	import { delOpILinks } from '$lib/content/linkTekst3';
 	import { sikkerhedsLinje3 } from '$lib/content/aiSikkerhed3';
-	import { rullendeElement3, tilBunden3 } from '$lib/utils/rulning3';
+	import { rullendeElement3 } from '$lib/utils/rulning3';
 	import { udenFormateringstegn } from '$lib/content/linnAi';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Lydbesked from '$lib/components/ny/Lydbesked.svelte';
@@ -293,6 +293,33 @@
 	 * selektor forsvandt da fanen blev til en samtale 4. september, saa
 	 * effekten havde ikke gjort noget siden.
 	 */
+	/**
+	 * Hvor hun stod paa hver fane, saa et fane-skift ikke hopper.
+	 *
+	 * NAAR HUN SKIFTER TIL LINN bliver indholdet kort, og browseren
+	 * klamper positionen mod toppen. Skifter hun tilbage, staar
+	 * AI-samtalen derfor oeverst, og saa rullede vi den ned bagefter. DET
+	 * var hoppet Linn saa: rettelsen der arbejdede, ikke en fejl i sig
+	 * selv.
+	 *
+	 * Positionen gemmes derfor FOER skiftet og gendannes bagefter. Har hun
+	 * ikke vaeret paa fanen i det her besoeg, gaar den i bunden som foer.
+	 */
+	const gemtPosition: Record<string, number> = {};
+
+	/** Taelles op ved hvert klik, saa der altid maales igen efter et skift. */
+	let faneSkift = $state(0);
+
+	function skiftTil(ny: BeskedFane3) {
+		if (ny === fane) return;
+		const el = rullendeElement3(fane === 'linn' ? linnRulle : rulle);
+		// fane kan i teorien vaere null foer adgangen er hentet. Tom streng
+		// er en gyldig noegle og rammer ingen rigtig fane.
+		if (el) gemtPosition[fane ?? ''] = el.scrollTop;
+		valgtFane = ny;
+		faneSkift += 1;
+	}
+
 	let sidstRullet = '';
 	$effect(() => {
 		const f = fane;
@@ -313,9 +340,14 @@
 		const el = f === 'linn' ? linnRulle : rulle;
 		if (!el || antal === 0) return;
 
-		const noegle = `${f}|${laesteSamtaleId ?? ''}|${viserTidligere}|${antal}`;
+		const noegle = `${f}|${faneSkift}|${laesteSamtaleId ?? ''}|${viserTidligere}|${antal}`;
 		if (sidstRullet === noegle) return;
 		sidstRullet = noegle;
+
+		// Har hun staaet paa fanen foer i det her besoeg, saetter vi hende
+		// tilbage praecis hvor hun slap. Det er baade uden hop og bedre end
+		// bunden: hun mister ikke det sted hun var ved at laese.
+		const gemt = gemtPosition[f ?? ''];
 
 		// RUL DET DER FAKTISK RULLER. Boble-listen har selv overflow-y:auto,
 		// men den ligger i skallens .ny-scroll, som ikke er en
@@ -324,7 +356,11 @@
 		// scrollTop paa listen gjorde altsaa ingenting, og det var den
 		// rigtige grund til at Linn blev ved med at lande i toppen.
 		// Se utils/rulning3.ts.
-		const iBunden = () => tilBunden3(el);
+		const iBunden = () => {
+			const s = rullendeElement3(el);
+			if (!s) return;
+			s.scrollTop = gemt === undefined ? s.scrollHeight : Math.min(gemt, s.scrollHeight);
+		};
 
 		// FIRE FORSOEG, og det er ikke overdrevet. Med det samme rammer den
 		// hvis alt allerede staar der. Naeste billede-tegning fanger det
@@ -586,7 +622,7 @@
 					role="tab"
 					aria-selected={fane === 'ai'}
 					class:paa={fane === 'ai'}
-					onclick={() => (valgtFane = 'ai')}
+					onclick={() => skiftTil('ai')}
 				>
 					Linn AI
 				</button>
@@ -595,7 +631,7 @@
 					role="tab"
 					aria-selected={fane === 'linn'}
 					class:paa={fane === 'linn'}
-					onclick={() => (valgtFane = 'linn')}
+					onclick={() => skiftTil('linn')}
 				>
 					Linn
 					{#if nytSvar}<span class="besk-prik" aria-label="Nyt svar"></span>{/if}
