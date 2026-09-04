@@ -333,12 +333,12 @@
 		// listen UNDER hende bagefter, og bunden flytter sig.
 		iBunden();
 		requestAnimationFrame(iBunden);
-		const t1 = setTimeout(iBunden, 60);
-		const t2 = setTimeout(iBunden, 250);
-		return () => {
-			clearTimeout(t1);
-			clearTimeout(t2);
-		};
+		// Det sidste forsoeg ligger sent med vilje: et billede fra Linn har
+		// ingen hoejde foer det er hentet, og paa en telefon paa mobildata
+		// kan det tage et halvt sekund. Uden det lander hun naesten i
+		// bunden, og det ligner en tilfaeldig fejl.
+		const ure = [60, 250, 600].map((ms) => setTimeout(iBunden, ms));
+		return () => ure.forEach(clearTimeout);
 	});
 
 	async function rulNed() {
@@ -695,32 +695,39 @@
 			{/if}
 		</div>
 
-		<div class="skrivelinje">
-			<textarea
-				class="felt"
-				bind:value={nyTekst}
-				onkeydown={paaTastLinn}
-				placeholder="Skriv dit spørgsmål …"
-				rows="1"
-				maxlength={SPOERGSMAAL_MAX_LAENGDE}
-				disabled={senderNy}
-			></textarea>
-			<button
-				class="send"
-				onclick={() => void skrivTilLinn()}
-				disabled={senderNy || nyTekst.trim().length === 0}
-				aria-label="Send spørgsmål"
-			>
-				↑
-			</button>
-		</div>
-		<!-- Taelleren staar foerst frem naar hun naermer sig graensen. Foer
+		<!-- SKRIVEFELTET LIGGER FAST FORNEDEN. Linns oenske 4. september:
+		     trykker hun paa en fane, skal feltet vaere fremme med det samme.
+		     Foer rullede det med indholdet, og i en lang samtale laa det
+		     langt nede. Samme som den gamle app, hvor feltet er fast over
+		     bundmenuen. -->
+		<div class="besk-bund">
+			<div class="skrivelinje">
+				<textarea
+					class="felt"
+					bind:value={nyTekst}
+					onkeydown={paaTastLinn}
+					placeholder="Skriv dit spørgsmål …"
+					rows="1"
+					maxlength={SPOERGSMAAL_MAX_LAENGDE}
+					disabled={senderNy}
+				></textarea>
+				<button
+					class="send"
+					onclick={() => void skrivTilLinn()}
+					disabled={senderNy || nyTekst.trim().length === 0}
+					aria-label="Send spørgsmål"
+				>
+					↑
+				</button>
+			</div>
+			<!-- Taelleren staar foerst frem naar hun naermer sig graensen. Foer
 		     ville den staa og taelle fra det foerste tegn, og det laeser som
 		     en begraensning i stedet for en hjaelp. Samme graense som den
 		     gamle app. -->
-		{#if tegnAntal >= TAEL_FRA}
-			<p class="besk-tegn">{tegnAntal} / {SPOERGSMAAL_MAX_LAENGDE} tegn</p>
-		{/if}
+			{#if tegnAntal >= TAEL_FRA}
+				<p class="besk-tegn">{tegnAntal} / {SPOERGSMAAL_MAX_LAENGDE} tegn</p>
+			{/if}
+		</div>
 	{:else}
 		<div class="bobler" bind:this={rulle}>
 			{#if viserTidligere}
@@ -815,23 +822,25 @@
 		</div>
 
 		{#if !viserTidligere}
-			<div class="skrivelinje">
-				<textarea
-					class="felt"
-					bind:value={input}
-					onkeydown={paaTast}
-					placeholder="Skriv hvad der fylder …"
-					rows="1"
-					disabled={sender}
-				></textarea>
-				<button
-					class="send"
-					onclick={() => send()}
-					disabled={sender || input.trim().length === 0}
-					aria-label="Send"
-				>
-					↑
-				</button>
+			<div class="besk-bund">
+				<div class="skrivelinje">
+					<textarea
+						class="felt"
+						bind:value={input}
+						onkeydown={paaTast}
+						placeholder="Skriv hvad der fylder …"
+						rows="1"
+						disabled={sender}
+					></textarea>
+					<button
+						class="send"
+						onclick={() => send()}
+						disabled={sender || input.trim().length === 0}
+						aria-label="Send"
+					>
+						↑
+					</button>
+				</div>
 			</div>
 		{/if}
 	{/if}

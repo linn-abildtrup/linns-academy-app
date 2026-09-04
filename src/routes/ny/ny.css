@@ -2188,6 +2188,25 @@ body:has(.ny-app) {
 	min-height: 44px;
 }
 
+/* SKRIVEFELTET LIGGER FAST FORNEDEN. Linns oenske 4. september: trykker
+   hun paa en fane, skal feltet vaere fremme med det samme. Foer rullede
+   det med indholdet, og i en lang samtale laa det langt nede.
+
+   sticky maales mod det element der RULLER, og det er skallens
+   .ny-scroll. Se utils/rulning3.ts. Bunden er derfor 0, altsaa bunden af
+   rulleomraadet, og bundmenuen ligger uden for det og bliver staaende
+   som den skal.
+
+   Wrapperen baerer baade feltet og tegn-taelleren, saa taelleren ikke
+   bliver haengende under feltet og ruller for sig selv. */
+.besk-bund {
+	position: sticky;
+	bottom: 0;
+	z-index: 5;
+	background: var(--oat);
+	flex-shrink: 0;
+}
+
 .skrivelinje {
 	display: flex;
 	align-items: flex-end;
