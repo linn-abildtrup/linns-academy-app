@@ -4718,6 +4718,61 @@ igennem ved gennemgangen.
 
 ---
 
+### 9.66 DEN 4. SEPTEMBER: KUNDE-OPSLAGET LØJ, OG HVORFOR
+
+Linn slog Randi Frandsen op og fik en side der sagde to forkerte ting.
+**Begge fejl er værd at kende, fordi de er nemme at lave igen.**
+
+#### 1. Admin måtte slet ikke læse hendes tal
+
+Reglerne sagde `request.auth.uid == uid` på måltider, faste måltider,
+egne opskrifter, træningshistorik, symptomtjek og produkter. Altså kun
+kunden selv. Siden fik nej på hvert opslag, fangede fejlen, og meldte så
+**"Hun har aldrig registreret noget i appen"** om en kunde der havde
+tastet hele ugen.
+
+**`firestore.rules` er udvidet 4. september:** admin må nu LÆSE de seks
+steder, aldrig skrive. Samme mønster som `vanedage` og `pushTelefon3`,
+der har haft admin-læsning længe. `mrs_scores` kan stadig ikke opdateres
+af nogen, heller ikke admin, fordi en udfyldt måling er forskningsdata.
+
+**Reglerne tager op mod et minut om at slå igennem.** Første verifikation
+efter deploy viste `mrs_scores` som afvist, anden viste den som virkende,
+uden at der var rettet noget. Tjek to gange før du leder efter fejlen.
+
+#### 2. "Ingen træning tildelt" om et hold der havde begge programmer
+
+**Der er to steder at kigge efter træning, og koden kiggede kun ét.**
+
+- 3.0 tildeler programmer i `traeningTildelinger3`
+- Kickstart og Kropsro har dem liggende i
+  `forlob/{id}/mikrotraeningProgrammer`, hvor kunden vælger sin variant
+  ved opstarten. Ingen tildeling er nødvendig
+
+Kunde-opslaget og **guidens spærring** kiggede begge kun i den første.
+Resultatet var at hver eneste kunde på den gamle app fik "ingen træning
+tildelt", og at guiden ville have spærret for at udgive et Kickstart-hold
+der ikke fejlede noget. Begge ser nu begge steder.
+
+#### Reglen der kom ud af det
+
+**En status om et menneske må aldrig gætte.** Kan et tal ikke hentes, skal
+der stå at det ikke kunne hentes, ikke det værste. `KundeInput` har derfor
+`aktivitetKendt`, og er den falsk, tier listen "det der springer i
+øjnene" om aktivitet i stedet for at sige "aldrig".
+
+#### Reglerne deployes nu med et script
+
+`scripts/deploy-regler.sh` lægger `firestore.rules` og `storage.rules` ud.
+Der ligger et script i stedet for én lang kommando, så tilladelsen kan
+gives til præcis den handling. **Firebase-værktøjet skal være `@latest`:**
+version 13 kræver Node 18, 20 eller 22, og maskinen kører Node 24. Det er
+grunden til at CLI'en så ud til at være forsvundet.
+
+**Reglerne skal altid vises til Linn og godkendes før scriptet køres.**
+
+---
+
 ## 10. Sådan arbejder Linn
 
 Det her er lige så vigtigt som koden.

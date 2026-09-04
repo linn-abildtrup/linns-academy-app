@@ -28,9 +28,12 @@ service cloud.firestore {
 					'testerFeatures'
 				]);
 
-			// Bruger-produkter (køb, fremgang, valg): kun egen bruger
+			// Bruger-produkter (køb, fremgang, valg): kun egen bruger må
+			// skrive. Admin må LÆSE, så kunde-opslaget kan vise hvornår
+			// hendes forløb startede og hvor langt hun er. Se noten ved
+			// maaltider.
 			match /products/{productId} {
-				allow read: if request.auth != null && request.auth.uid == uid;
+				allow read: if request.auth != null && (isAdmin() || request.auth.uid == uid);
 				// A-Z #8 (5. juni 2026): begraens egneVaner-listen til max 3
 				// elementer. UI'en haandhaever det allerede, men en kunde med
 				// DevTools kunne ellers skrive vilkaarligt mange — og kunne
@@ -58,14 +61,24 @@ service cloud.firestore {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
 			}
 
-			// Dagbog — gemte måltider fra 30-30-3-beregneren: kun egen bruger
+			// Dagbog — gemte måltider fra 30-30-3-beregneren.
+			//
+			// ADMIN MÅ LÆSE, ALDRIG SKRIVE. Kunde-opslaget i 3.0 samler alt om
+			// én kunde ét sted, og uden det her står halvdelen af siden tom
+			// uden at sige hvorfor: siden får nej og melder så "aldrig
+			// registreret noget" om en kunde der har spist hele ugen.
+			// Samme mønster som vanedage og pushTelefon3, der har haft
+			// admin-læsning længe. Linns beslutning 4. september 2026.
 			match /maaltider/{mealId} {
-				allow read, write: if request.auth != null && request.auth.uid == uid;
+				allow read: if request.auth != null && (isAdmin() || request.auth.uid == uid);
+				allow write: if request.auth != null && request.auth.uid == uid;
 			}
 
-			// Favoritmåltider — skabeloner til hurtig genbrug: kun egen bruger
+			// Favoritmåltider — skabeloner til hurtig genbrug. Admin må læse,
+			// se noten ved maaltider.
 			match /favoritmaaltider/{favId} {
-				allow read, write: if request.auth != null && request.auth.uid == uid;
+				allow read: if request.auth != null && (isAdmin() || request.auth.uid == uid);
+				allow write: if request.auth != null && request.auth.uid == uid;
 			}
 
 			// Egne fødevarer — kundens private fødevarer (fra scanner eller
@@ -130,9 +143,11 @@ service cloud.firestore {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
 			}
 
-			// Private opskrifter — klientens egne opskrifter med makro fra AI-vision
+			// Private opskrifter — klientens egne opskrifter med makro fra
+			// AI-vision. Admin må læse, se noten ved maaltider.
 			match /privateOpskrifter/{opskriftId} {
-				allow read, write: if request.auth != null && request.auth.uid == uid;
+				allow read: if request.auth != null && (isAdmin() || request.auth.uid == uid);
+				allow write: if request.auth != null && request.auth.uid == uid;
 			}
 
 			// Mine programmer — kundens egne træningsprogrammer bygget med custom-builder
@@ -155,9 +170,11 @@ service cloud.firestore {
 				allow read, write: if request.auth != null && request.auth.uid == uid;
 			}
 
-			// Træning-historik — én entry pr gennemført træning, gemt pr dato
+			// Træning-historik — én entry pr gennemført træning, gemt pr dato.
+			// Admin må læse, se noten ved maaltider.
 			match /traeningHistorik/{entryId} {
-				allow read, write: if request.auth != null && request.auth.uid == uid;
+				allow read: if request.auth != null && (isAdmin() || request.auth.uid == uid);
+				allow write: if request.auth != null && request.auth.uid == uid;
 			}
 
 			// Fremgang i 3.0's træningsprogrammer — ét dokument pr program.
@@ -195,8 +212,10 @@ service cloud.firestore {
 			// efter udfyldelse). Delete er åbnet for ejeren så klienten kan
 			// fortryde en lige-udfyldt symptomcheck — UI'en viser dog kun slet
 			// på den nyeste udfyldelse for at bevare historik til sammenligning.
+			// Admin må LÆSE dem til kunde-opslaget. Update er stadig spærret
+			// for alle, også admin: en udfyldt måling må ikke ændres bagefter.
 			match /mrs_scores/{scoreId} {
-				allow read: if request.auth != null && request.auth.uid == uid;
+				allow read: if request.auth != null && (isAdmin() || request.auth.uid == uid);
 				allow create: if request.auth != null && request.auth.uid == uid;
 				allow update: if false;
 				allow delete: if request.auth != null && request.auth.uid == uid;
