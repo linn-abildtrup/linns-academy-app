@@ -201,6 +201,14 @@
 		kategorier.length === 0 ? 'Vælg det udstyr du har' : udstyrTekst3(kontekst.udstyr, kategorier)
 	);
 
+	/**
+	 * Har hun overhovedet sagt hvad hun har.
+	 *
+	 * Styrer ordlyden to steder: hun skal ikke have at vide at noget "ikke
+	 * passer til det udstyr du har valgt", hvis hun aldrig har valgt.
+	 */
+	const harValgtUdstyr = $derived(kontekst.udstyr.length > 0);
+
 	const udstyrNavne = $derived(
 		kontekst.udstyr
 			.map((id) => kategoriNavn3(id, kategorier))
@@ -294,7 +302,19 @@
 		<!-- Ingenting at vise. Der er to helt forskellige grunde, og hun
 		     skal vide hvilken, for den ene kan hun selv rette. -->
 		<div class="mt-tom">
-			{#if skjultAfUdstyr > 0}
+			{#if skjultAfUdstyr > 0 && !harValgtUdstyr}
+				<!-- Hun har ikke valgt endnu, saa hun kan ikke have valgt
+				     forkert. Spoerg i stedet for at forklare. -->
+				<strong>Fortæl mig hvad du har at træne med.</strong>
+				<p>
+					{skjultAfUdstyr === 1
+						? 'Der ligger et program'
+						: `Der ligger ${skjultAfUdstyr} programmer`}
+					til dig, men {skjultAfUdstyr === 1 ? 'det kræver' : 'de kræver'} redskaber. Siger du hvad du
+					har derhjemme, viser jeg {skjultAfUdstyr === 1 ? 'det' : 'dem'} med det samme.
+				</p>
+				<a class="mt-byg" href="/ny/traening/udstyr">Vælg dit udstyr</a>
+			{:else if skjultAfUdstyr > 0}
 				<strong>Der er ikke noget til {udstyrNavne || 'det udstyr du har valgt'} endnu.</strong>
 				<p>
 					Du har valgt det under "Sådan træner jeg". Vælger du mere udstyr, eller slår det hele fra,
@@ -370,11 +390,22 @@
 			</div>
 		</section>
 
+		<!-- TO ORDLYDE, for hun skal ikke have at vide at noget "ikke passer
+		     til det udstyr du har valgt" hvis hun aldrig har valgt noget.
+		     Foer 4. september kunne det ikke ske, fordi en tom liste var et
+		     ja til alt. Nu er det den almindelige tilstand: 0 ud af 318 paa
+		     Kickstart August havde valgt udstyr. -->
 		{#if skjultAfUdstyr > 0}
 			<p class="mt-udstyr">
-				{skjultAfUdstyr === 1 ? 'Ét program mere' : `${skjultAfUdstyr} programmer mere`} passer ikke til
-				det udstyr du har valgt.
-				<a href="/ny/traening/udstyr">Skift dit udstyr</a>
+				{#if harValgtUdstyr}
+					{skjultAfUdstyr === 1 ? 'Ét program mere' : `${skjultAfUdstyr} programmer mere`} passer ikke
+					til det udstyr du har valgt.
+					<a href="/ny/traening/udstyr">Skift dit udstyr</a>
+				{:else}
+					Har du kettlebells, elastikker eller andet derhjemme?
+					<a href="/ny/traening/udstyr">Fortæl hvad du har</a>, så viser jeg
+					{skjultAfUdstyr === 1 ? 'ét program mere' : `${skjultAfUdstyr} programmer mere`}.
+				{/if}
 			</p>
 		{/if}
 

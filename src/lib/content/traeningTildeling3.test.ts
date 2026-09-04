@@ -132,9 +132,9 @@ describe('tildelingStatus3, datoer', () => {
 
 	it('er aktiv paa selve slutdatoen og slut dagen efter', () => {
 		expect(tildelingStatus3(tildeling({ ...person, tilDato: IDAG }), { idag: IDAG })).toBe('aktiv');
-		expect(
-			tildelingStatus3(tildeling({ ...person, tilDato: '2026-08-14' }), { idag: IDAG })
-		).toBe('slut');
+		expect(tildelingStatus3(tildeling({ ...person, tilDato: '2026-08-14' }), { idag: IDAG })).toBe(
+			'slut'
+		);
 	});
 });
 
@@ -149,10 +149,12 @@ describe('periodeTekst3', () => {
 		const p = { modtagerType: 'alle' as const, modtagerId: '' };
 		expect(periodeTekst3(tildeling(p))).toBe('Med det samme');
 		expect(periodeTekst3(tildeling({ ...p, fraDato: '2026-10-01' }))).toBe('Fra 1. oktober 2026');
-		expect(periodeTekst3(tildeling({ ...p, tilDato: '2026-10-01' }))).toBe('Indtil 1. oktober 2026');
-		expect(
-			periodeTekst3(tildeling({ ...p, fraDato: '2026-06-01', tilDato: '2026-06-30' }))
-		).toBe('1. juni 2026 til 30. juni 2026');
+		expect(periodeTekst3(tildeling({ ...p, tilDato: '2026-10-01' }))).toBe(
+			'Indtil 1. oktober 2026'
+		);
+		expect(periodeTekst3(tildeling({ ...p, fraDato: '2026-06-01', tilDato: '2026-06-30' }))).toBe(
+			'1. juni 2026 til 30. juni 2026'
+		);
 	});
 });
 
@@ -202,8 +204,21 @@ describe('rammerKunde3', () => {
 });
 
 describe('maaSesMedUdstyr3', () => {
-	it('siger ja til alt naar hun ikke har valgt endnu', () => {
-		expect(maaSesMedUdstyr3(program(), KATEGORIER, [])).toBe(true);
+	// LINNS BESLUTNING 4. september. Foer var en tom liste et ja til alt, og
+	// saa fik en kvinde uden kettlebells tilbudt et kettlebell-program.
+	it('skjuler et program der kraever redskaber naar hun ikke har valgt endnu', () => {
+		expect(maaSesMedUdstyr3(program({ kategoriId: 'kb' }), KATEGORIER, [])).toBe(false);
+	});
+
+	it('viser stadig kropsvaegt naar hun ikke har valgt endnu', () => {
+		// Hun maa aldrig staa uden noget hun kan gaa i gang med.
+		expect(maaSesMedUdstyr3(program({ kategoriId: 'krop' }), KATEGORIER, [])).toBe(true);
+	});
+
+	it('lukker programmet op i samme oejeblik hun vaelger udstyret', () => {
+		const p = program({ kategoriId: 'kb' });
+		expect(maaSesMedUdstyr3(p, KATEGORIER, [])).toBe(false);
+		expect(maaSesMedUdstyr3(p, KATEGORIER, ['kb'])).toBe(true);
 	});
 
 	it('siger ja til hendes egen kategori', () => {
@@ -230,7 +245,12 @@ describe('programmerForKunde3', () => {
 	});
 
 	it('skjuler en kladde', () => {
-		const r = programmerForKunde3([program({ klar: false })], [tildeling()], KATEGORIER, kunde())[0];
+		const r = programmerForKunde3(
+			[program({ klar: false })],
+			[tildeling()],
+			KATEGORIER,
+			kunde()
+		)[0];
 		expect(r.vises).toBe(false);
 		expect(r.afvisning).toBe('kladde');
 	});
@@ -281,7 +301,12 @@ describe('programmerForKunde3', () => {
 
 	it('foretraekker at sige venter frem for slut', () => {
 		const sluttet = tildeling({ id: 'a', fraDag: 1, tilDag: 5 });
-		const venter = tildeling({ id: 'b', modtagerType: 'kunde', modtagerId: 'u1', fraDato: '2026-12-01' });
+		const venter = tildeling({
+			id: 'b',
+			modtagerType: 'kunde',
+			modtagerId: 'u1',
+			fraDato: '2026-12-01'
+		});
 		const r = programmerForKunde3([p], [sluttet, venter], KATEGORIER, kunde())[0];
 		expect(r.afvisning).toBe('venter');
 	});

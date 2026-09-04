@@ -177,17 +177,31 @@ function kontekstFor(t: Traeningstildeling3, kunde: KundeKontekst3): StatusKonte
 /**
  * Maa programmet ses med kundens udstyr.
  *
- * TOM UDSTYRSLISTE BETYDER JA TIL ALT. Hun har ikke valgt endnu, og
- * indtil valget findes i bid 3 har ingen kunde valgt noget. Skjulte vi
- * alt for dem, ville admin-opslaget vise at 700 kunder ingen traening
- * har, og det passer ikke.
+ * ET PROGRAM DER KRAEVER REDSKABER ER SKJULT INDTIL HUN HAR SAGT AT HUN
+ * HAR DEM. Vaelger hun udstyret, kommer det frem og kan vaelges. Linns
+ * beslutning 4. september.
+ *
+ * FOER var en tom udstyrsliste et ja til alt. Begrundelsen dengang var at
+ * ingen maatte staa med en tom traeningsside. Men prisen var vaerre end
+ * problemet: en kvinde uden kettlebells fik tilbudt et kettlebell-program
+ * og kunne naa flere traeninger ind foer det gik op for hende. Og det var
+ * ikke et kant-tilfaelde: 0 ud af 318 paa Kickstart August havde valgt
+ * udstyr, saa hele holdet ville have faaet det tilbudt.
+ *
+ * DEN TOMME SIDE ER STADIG DAEKKET, og bedre end foer. Skjuler vi noget,
+ * faar hun at vide hvorfor og en knap til at rette det, se mt-tom paa
+ * traeningssiden. En forklaring hun kan handle paa slaar et program hun
+ * ikke kan bruge.
+ *
+ * DEN ANDEN VEJ ER MED VILJE UAENDRET: har hun kettlebells, ser hun
+ * stadig kropsvaegts-programmerne. Har man en kettlebell, kan man ogsaa
+ * traene uden. Det er fluebenet visesAltid paa kategorien.
  */
 export function maaSesMedUdstyr3(
 	program: Traeningsprogram3,
 	kategorier: TraeningKategori3[],
 	udstyr: string[]
 ): boolean {
-	if (udstyr.length === 0) return true;
 	const kategori = kategorier.find((k) => k.id === program.kategoriId);
 	if (kategori?.visesAltid) return true;
 	return udstyr.includes(program.kategoriId);
@@ -297,10 +311,7 @@ export function programmerForKunde3(
 }
 
 /** Maa kunden bygge sit eget program lige nu. */
-export function maaByggeEget3(
-	tildelinger: Traeningstildeling3[],
-	kunde: KundeKontekst3
-): boolean {
+export function maaByggeEget3(tildelinger: Traeningstildeling3[], kunde: KundeKontekst3): boolean {
 	return tildelinger.some(
 		(t) =>
 			t.type === 'byg-eget' &&
@@ -334,9 +345,7 @@ export function daekning3(
 		tildelinger
 			.filter(
 				(t) =>
-					t.type === 'program' &&
-					t.modtagerType === modtager.type &&
-					t.modtagerId === modtager.id
+					t.type === 'program' && t.modtagerType === modtager.type && t.modtagerId === modtager.id
 			)
 			.map((t) => t.programId)
 	);
