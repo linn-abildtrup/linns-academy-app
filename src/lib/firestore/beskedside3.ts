@@ -43,7 +43,10 @@ function tilSamtaleBesked3(b: AiBesked): SamtaleBesked3 {
 		indhold: b.indhold,
 		// Aeldre beskeder kan mangle tidspunkt. Falder de tilbage paa 0,
 		// ville datolinjen sige 1970, saa de faar dagen i dag i stedet.
-		ms: b.tidspunkt?.toDate?.().getTime() ?? Date.now()
+		ms: b.tidspunkt?.toDate?.().getTime() ?? Date.now(),
+		// Kunden ser tallet fra 4. september. Aeldre beskeder i 3.0 har
+		// det ikke gemt, og saa staar der den forsigtige linje uden tal.
+		sikkerhed: b.sikkerhed ?? null
 	};
 }
 
@@ -128,12 +131,16 @@ export async function gemUdveksling3(
 	samtaleId: string,
 	spoergsmaal: string,
 	svar: string,
-	erFoerste: boolean
+	erFoerste: boolean,
+	sikkerhed: number | null = null
 ): Promise<void> {
 	const nu = Timestamp.now();
 	await tilfojBeskeder(uid, samtaleId, [
 		{ rolle: 'user', indhold: spoergsmaal, tidspunkt: nu },
-		{ rolle: 'assistant', indhold: svar, tidspunkt: nu }
+		// Sikkerheden gemmes MED, saa linjen ogsaa staar der naeste gang hun
+		// aabner samtalen. Foer 4. september blev tallet kastet vaek her, og
+		// saa kunne 3.0 kun vise det i det oejeblik svaret kom ind.
+		{ rolle: 'assistant', indhold: svar, tidspunkt: nu, sikkerhed }
 	]);
 	if (erFoerste) {
 		const titel = spoergsmaal.slice(0, TITEL_LAENGDE).trim();

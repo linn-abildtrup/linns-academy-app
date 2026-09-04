@@ -200,8 +200,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	// Alt grundlaget hentes paa én gang. Fejler noget af det, svarer AI'en
 	// paa det den har i stedet for slet ikke.
-	const forlobId =
-		(userDoc as unknown as { forlobIds?: string[] })?.forlobIds?.slice(-1)[0] ?? '';
+	const forlobId = (userDoc as unknown as { forlobIds?: string[] })?.forlobIds?.slice(-1)[0] ?? '';
 	const [viden, tidligereSvar, kundeHistorik] = await Promise.all([
 		hentForlobViden(uid, userDoc),
 		hentTidligereSvarMedBackup(forlobId).catch(() => []),
@@ -223,12 +222,12 @@ export const POST: RequestHandler = async ({ request }) => {
 	// opdagede det. Bygges det en dag, laa regnestykket i
 	// content/kundeTal3.ts, slettet samme dag. Se git-historikken.
 	const egetBlok =
-		(kundeHistorik.length > 0
+		kundeHistorik.length > 0
 			? `HUN HAR SPURGT DIG OM DET HER FOER, og du svarede saadan. Gentag ikke dig selv ordret:\n${kundeHistorik
 					.slice(0, 5)
 					.map((h, i) => `--- ${i + 1} ---\nHun spurgte: ${h.spoergsmaal}\nDu svarede: ${h.svar}`)
 					.join('\n\n')}\n\n---\n`
-			: '');
+			: '';
 
 	const grundlag = await byggGrundlag(
 		besked,
@@ -272,9 +271,16 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	return json({
 		svar,
-		// Sikkerheds-procenten er KUN til Linn og gaar aldrig til kunden.
-		// Klienten faar kun at vide OM den er usikker, saa vi kan tilbyde
-		// at sende spoergsmaalet videre.
+		// KUNDEN SER TALLET, fra 4. september. Linns beslutning: 3.0 skal
+		// sige det samme som den gamle app, hvor de 925 kunder har set det
+		// hele tiden. Her stod foer at procenten aldrig gik til kunden.
+		//
+		// null betyder at modellen glemte at saette markoeren paa, eller at
+		// svaret blev klippet. Det sker i knap hvert tiende svar, og saa
+		// siges det med ord i stedet for et tal.
+		sikkerhed,
+		// Beholdt selv om tallet nu sendes med: usikker er ÉT sted at
+		// aendre graensen, og klienten skal ikke kende til de 60.
 		// Mangler tallet, regner vi det som usikkert. Saa hellere tilbyde
 		// hende Linn én gang for meget end at lade et tvivlsomt svar staa
 		// som om det var sikkert.

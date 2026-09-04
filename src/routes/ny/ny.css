@@ -10348,6 +10348,34 @@ a.ch-knap {
 
 /* Send videre. Staar under hvert svar fra AI'en, diskret og ikke som
    en stor knap, se Linns beslutning 16. august. */
+/* SIKKERHEDS-LINJEN under et AI-svar. Linns beslutning 4. september:
+   3.0 skal sige det samme som den gamle app, hvor kunden har set
+   procenten hele tiden.
+
+   Den ligger UDEN for boblen med vilje, saa den laeser som en note til
+   svaret og ikke som en del af det Linn ville have sagt. Groen naar
+   svaret ligger taet paa noget Linn selv har skrevet, honning naar det
+   er usikkert eller ikke kan maales. */
+.besk-sikker {
+	align-self: flex-start;
+	display: flex;
+	align-items: flex-start;
+	gap: 6px;
+	margin: -2px 0 0 2px;
+	padding: 5px 9px;
+	border-radius: 10px;
+	max-width: 88%;
+	font-size: calc(11.5px * var(--fs-scale, 1));
+	line-height: 1.4;
+	background: var(--sage-tint);
+	color: var(--sage-tekst);
+}
+
+.besk-sikker.lav {
+	background: var(--honey-tint);
+	color: var(--honey-deep);
+}
+
 .besk-videre {
 	align-self: flex-start;
 	margin: -5px 0 0 2px;

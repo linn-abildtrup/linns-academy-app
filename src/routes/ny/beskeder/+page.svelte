@@ -17,7 +17,10 @@
 	// 3. Samtalen GEMMES. Uden det stod hendes spoergsmaal og forsvandt,
 	//    mens Linns svar blev liggende, paa den samme skaerm.
 	//
-	// Kunden ser ALDRIG sikkerheds-procenten. Den er kun til Linn.
+	// SIKKERHEDS-PROCENTEN VISES TIL KUNDEN, fra 4. september. Her stod
+	// foer det modsatte. Linns beslutning: 3.0 skal sige det samme som den
+	// gamle app, hvor de 925 kunder har set tallet hele tiden.
+	// Ordlyden ligger i content/aiSikkerhed3.ts.
 	// ============================================================
 
 	import { getContext, onMount, tick } from 'svelte';
@@ -53,6 +56,7 @@
 		type SamtaleBesked3
 	} from '$lib/content/beskedside3';
 	import { delOpILinks } from '$lib/content/linkTekst3';
+	import { sikkerhedsLinje3 } from '$lib/content/aiSikkerhed3';
 	import { udenFormateringstegn } from '$lib/content/linnAi';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Lydbesked from '$lib/components/ny/Lydbesked.svelte';
@@ -320,17 +324,34 @@
 				return;
 			}
 
-			const data = (await res.json()) as { svar: string; usikker: boolean };
-			beskeder = [...beskeder, { rolle: 'assistant', indhold: data.svar, ms: Date.now() }];
+			const data = (await res.json()) as {
+				svar: string;
+				usikker: boolean;
+				sikkerhed: number | null;
+			};
+			beskeder = [
+				...beskeder,
+				{
+					rolle: 'assistant',
+					indhold: data.svar,
+					ms: Date.now(),
+					sikkerhed: data.sikkerhed ?? null
+				}
+			];
 			await rulTilSvarTop();
 
 			// Gemmes efter at svaret staar paa skaermen. Fejler skrivningen,
 			// mister hun samtalen naeste gang hun aabner siden, men hun faar
 			// da sit svar nu. Det omvendte ville vaere at lade hende vente.
 			if (samtaleId) {
-				await gemUdveksling3(u.uid, samtaleId, besked, data.svar, erFoerste).catch((e) =>
-					console.error('[ny] kunne ikke gemme samtalen', e)
-				);
+				await gemUdveksling3(
+					u.uid,
+					samtaleId,
+					besked,
+					data.svar,
+					erFoerste,
+					data.sikkerhed ?? null
+				).catch((e) => console.error('[ny] kunne ikke gemme samtalen', e));
 			}
 		} catch (e) {
 			console.error('[ny] beskeder fejlede', e);
@@ -644,6 +665,17 @@
 										rel="noopener noreferrer">{d.tekst}</a
 									>{:else}{d.tekst}{/if}{/each}
 						</div>
+						<!-- SIKKERHEDS-LINJEN, som i den gamle app. Linns beslutning
+						     4. september. Den staar UDEN for boblen, saa den laeser
+						     som en note til svaret og ikke som en del af det Linn
+						     ville have sagt. Ordlyden ligger i aiSikkerhed3. -->
+						{#if b.rolle === 'assistant'}
+							{@const linje = sikkerhedsLinje3(b.sikkerhed, adgang.linn)}
+							<span class="besk-sikker" class:lav={linje.lav}>
+								<span aria-hidden="true">{linje.lav ? '💡' : '✓'}</span>
+								{linje.tekst}
+							</span>
+						{/if}
 						{#if erSendt(i)}
 							<span class="besk-videre sendt">
 								<span class="rund-fluebe" aria-hidden="true"><Fluebe /></span>

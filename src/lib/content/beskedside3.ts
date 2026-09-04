@@ -102,10 +102,7 @@ export interface SvarKilde3 {
  * felt den gamle app bruger. Derfor foelges de to flader ad: har hun
  * laest svaret i den gamle app, er prikken ogsaa vaek her.
  */
-export function nyesteUlaesteSvar3(
-	traade: SvarKilde3[],
-	senestLaestMs: number
-): SvarKilde3 | null {
+export function nyesteUlaesteSvar3(traade: SvarKilde3[], senestLaestMs: number): SvarKilde3 | null {
 	const ulaeste = traade.filter(
 		(t) => t.svar && t.besvaretMs !== undefined && t.besvaretMs > senestLaestMs
 	);
@@ -239,6 +236,19 @@ export interface SamtaleBesked3 {
 	indhold: string;
 	/** Hvornaar den blev skrevet, i ms. */
 	ms: number;
+	/**
+	 * Hvor godt Linns tidligere svar daekkede spoergsmaalet, 0 til 100.
+	 *
+	 * KUNDEN SER DEN. Linns beslutning 4. september: 3.0 skal sige det
+	 * samme som den gamle app, hvor de 925 kunder har set tallet hele
+	 * tiden. Foer stod der i den her fil at procenten aldrig gik til
+	 * kunden, og det er nu omgjort.
+	 *
+	 * null eller undefined betyder at modellen glemte at saette den paa.
+	 * Det sker i knap hvert tiende svar, og saa siges det med ord i
+	 * stedet, se den gamle apps ordlyd.
+	 */
+	sikkerhed?: number | null;
 }
 
 export interface SamtaleDag3 {
