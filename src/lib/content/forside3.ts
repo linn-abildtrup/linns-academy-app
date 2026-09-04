@@ -208,8 +208,21 @@ export const FLADE_UDVIKLING: Flade = {
 	baandTekstY: 106,
 	datoY: 118,
 	akse: true,
-	// Plads til "10" til venstre for kurven.
-	akseBredde: 13,
+	/**
+	 * Plads til aksens tal til venstre for kurven.
+	 *
+	 * SAT OP FRA 13 TIL 16 den 4. september. Tallene staar hoejrestillet
+	 * og blev tegnet 5 enheder inde, altsaa med hoejre kant paa 8. Et
+	 * tocifret tal fylder 11,3 ved 8,5 px, saa "20" begyndte paa MINUS 3
+	 * og blev klippet af grafens venstre kant. Det gjaldt begge kurver paa
+	 * siden og alle skaermbredder, ogsaa telefon: maalene er i grafens
+	 * eget koordinatsystem og skalerer med.
+	 *
+	 * Maalt i browseren. Med 16 og et spring paa 4 begynder "20" paa 0,7
+	 * og der er stadig luft ned til gitterlinjen. Roeres den her, saa hold
+	 * springet i takt, og husk at kurven selv begynder ved xVenstre 17.
+	 */
+	akseBredde: 16,
 	baandMinBredde: 12,
 	baandKantVenstre: 13,
 	baandKantHoejre: 285

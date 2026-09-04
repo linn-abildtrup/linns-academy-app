@@ -377,13 +377,13 @@
 										stroke="var(--line)"
 										stroke-width="1"
 									/>
-									<text class="udv-v-akse" x={kurve.flade.akseBredde - 5} y={kurve.flade.yTop + 3}>
+									<text class="udv-v-akse" x={kurve.flade.akseBredde - 4} y={kurve.flade.yTop + 3}>
 										{kurve.akse.hoej}
 									</text>
-									<text class="udv-v-akse" x={kurve.flade.akseBredde - 5} y={yMidt + 3}>
+									<text class="udv-v-akse" x={kurve.flade.akseBredde - 4} y={yMidt + 3}>
 										{kurve.akse.midt}
 									</text>
-									<text class="udv-v-akse" x={kurve.flade.akseBredde - 5} y={kurve.flade.yBund + 3}>
+									<text class="udv-v-akse" x={kurve.flade.akseBredde - 4} y={kurve.flade.yBund + 3}>
 										{kurve.akse.lav}
 									</text>
 								{/if}
@@ -651,15 +651,15 @@
 										/>
 										<text
 											class="udv-v-akse"
-											x={symptomGraf.flade.akseBredde - 5}
+											x={symptomGraf.flade.akseBredde - 4}
 											y={symptomGraf.flade.yTop + 3}>{symptomGraf.akse.hoej}</text
 										>
-										<text class="udv-v-akse" x={symptomGraf.flade.akseBredde - 5} y={yM + 3}
+										<text class="udv-v-akse" x={symptomGraf.flade.akseBredde - 4} y={yM + 3}
 											>{symptomGraf.akse.midt}</text
 										>
 										<text
 											class="udv-v-akse"
-											x={symptomGraf.flade.akseBredde - 5}
+											x={symptomGraf.flade.akseBredde - 4}
 											y={symptomGraf.flade.yBund + 3}>{symptomGraf.akse.lav}</text
 										>
 									{/if}
