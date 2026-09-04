@@ -102,10 +102,7 @@ export function flytKategori3(
  * staa uden kategori, og saa kan kunden ikke se dem nogen steder.
  * Returnerer en besked Linn kan laese, eller null hvis den maa slettes.
  */
-export function kategoriKanSlettes3(
-	id: string,
-	programmer: Traeningsprogram3[]
-): string | null {
+export function kategoriKanSlettes3(id: string, programmer: Traeningsprogram3[]): string | null {
 	const antal = programmer.filter((p) => p.kategoriId === id).length;
 	if (antal === 0) return null;
 	return antal === 1
@@ -196,7 +193,6 @@ export function filtrerOevelserTilKategori(
 	return aktive.filter((e) => kraeverIntetUdstyr(e) || (e.udstyr ?? []).includes(udstyrTag));
 }
 
-
 /**
  * Alle de oevelser kunden kan bruge, ud fra det udstyr hun har valgt.
  *
@@ -231,4 +227,26 @@ export function oevelserTilKunde3(
 	}
 	// Samme raekkefoelge som banken, saa listen ikke hopper rundt.
 	return aktive.filter((e) => set.has(e.id));
+}
+
+/**
+ * Kategori-navne skrevet som en saetning: "kettlebells", "kettlebells
+ * eller elastikker", "kettlebells, elastikker eller bolde".
+ *
+ * HVORFOR DEN FINDES. Spoergsmaalet til kunden om hvad hun har derhjemme
+ * stod foerst med opfundne eksempler, og Linn fangede det 4. september:
+ * der fandtes ingen elastik-kategori. En tekst der naevner udstyr appen
+ * ikke kender, kan kun blive forkert naar Linn aendrer kategorierne.
+ * Navnene kommer derfor fra hendes egne kategorier.
+ *
+ * Skrives med lille, fordi den altid staar inde i en saetning.
+ */
+export function kategoriListeTekst3(navne: string[]): string {
+	const rene = navne
+		.map((n) => n.trim())
+		.filter(Boolean)
+		.map((n) => n.toLowerCase());
+	if (rene.length === 0) return '';
+	if (rene.length === 1) return rene[0];
+	return `${rene.slice(0, -1).join(', ')} eller ${rene[rene.length - 1]}`;
 }

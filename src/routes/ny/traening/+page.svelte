@@ -35,6 +35,7 @@
 	import type { Adgangsbillede, ForlobKilde } from '$lib/content/adgang3';
 	import {
 		kategoriNavn3,
+		kategoriListeTekst3,
 		rensUdstyr3,
 		udstyrFra,
 		udstyrTekst3,
@@ -209,6 +210,25 @@
 	 */
 	const harValgtUdstyr = $derived(kontekst.udstyr.length > 0);
 
+	/**
+	 * Navnene paa det udstyr der faktisk skjuler noget for hende lige nu.
+	 *
+	 * Teksten spurgte foerst "har du kettlebells, elastikker eller andet",
+	 * og Linn fangede 4. september at der ikke findes en elastik-kategori.
+	 * Navnene kommer nu fra hendes egne kategorier, saa spoergsmaalet altid
+	 * naevner noget der findes.
+	 */
+	const skjulteUdstyrNavne = $derived(
+		kategoriListeTekst3([
+			...new Set(
+				programmerForKunde3(programmer, tildelinger, kategorier, kontekst)
+					.filter((x) => x.afvisning === 'udstyr')
+					.map((x) => kategoriNavn3(x.program.kategoriId, kategorier))
+					.filter(Boolean)
+			)
+		])
+	);
+
 	const udstyrNavne = $derived(
 		kontekst.udstyr
 			.map((id) => kategoriNavn3(id, kategorier))
@@ -310,8 +330,9 @@
 					{skjultAfUdstyr === 1
 						? 'Der ligger et program'
 						: `Der ligger ${skjultAfUdstyr} programmer`}
-					til dig, men {skjultAfUdstyr === 1 ? 'det kræver' : 'de kræver'} redskaber. Siger du hvad du
-					har derhjemme, viser jeg {skjultAfUdstyr === 1 ? 'det' : 'dem'} med det samme.
+					til dig, men {skjultAfUdstyr === 1 ? 'det kræver' : 'de kræver'}
+					{skjulteUdstyrNavne || 'redskaber'}. Har du det derhjemme, viser jeg
+					{skjultAfUdstyr === 1 ? 'det' : 'dem'} med det samme.
 				</p>
 				<a class="mt-byg" href="/ny/traening/udstyr">Vælg dit udstyr</a>
 			{:else if skjultAfUdstyr > 0}
@@ -402,7 +423,7 @@
 					til det udstyr du har valgt.
 					<a href="/ny/traening/udstyr">Skift dit udstyr</a>
 				{:else}
-					Har du kettlebells, elastikker eller andet derhjemme?
+					Har du {skjulteUdstyrNavne || 'redskaber'} derhjemme?
 					<a href="/ny/traening/udstyr">Fortæl hvad du har</a>, så viser jeg
 					{skjultAfUdstyr === 1 ? 'ét program mere' : `${skjultAfUdstyr} programmer mere`}.
 				{/if}
