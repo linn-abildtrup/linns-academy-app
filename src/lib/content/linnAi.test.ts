@@ -6,6 +6,7 @@ import {
 	byggKontekst,
 	parseSikkerhed,
 	udenFormateringstegn,
+	afrundKlippetSvar,
 	boerMindesOmDestillering,
 	dageSidenDestillering,
 	destilleringAlderTekst,
@@ -227,5 +228,20 @@ describe('udenFormateringstegn', () => {
 	it('rører ikke gangetegn eller almindelige bindestreger', () => {
 		expect(udenFormateringstegn('3 sæt af 2*3 gentagelser')).toBe('3 sæt af 2*3 gentagelser');
 		expect(udenFormateringstegn('- Drik vand')).toBe('- Drik vand');
+	});
+});
+
+describe('afrundKlippetSvar', () => {
+	it('klipper tilbage til sidste hele sætning og siger det', () => {
+		const ud = afrundKlippetSvar('Spis mere protein. Prøv fx skyr til morgen. Du kan også ta');
+		expect(ud).toContain('Prøv fx skyr til morgen.');
+		expect(ud).not.toContain('Du kan også ta');
+		expect(ud).toContain('afbrudt');
+	});
+
+	it('giver kun beskeden når der ikke er en hel sætning', () => {
+		expect(afrundKlippetSvar('Det kommer helt an på hvor meget du')).toBe(
+			'Jeg blev afbrudt her — spørg endelig videre, så tager jeg den derfra 🌸'
+		);
 	});
 });

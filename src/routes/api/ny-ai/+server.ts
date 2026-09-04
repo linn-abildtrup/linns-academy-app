@@ -21,14 +21,22 @@ import { PUBLIC_FIREBASE_API_KEY } from '$env/static/public';
 import { hentAlleDocs, hentDoc, gemDocMerge } from '$lib/server/firestoreRest';
 import { hentTidligereSvarMedBackup, hentKundeHistorik } from '$lib/server/svarViden';
 import { byggTidligereSvarTekst } from '$lib/content/svarUdkast';
-import { byggKontekst, byggSystemPrompt, parseSikkerhed, quotaNoegle } from '$lib/content/linnAi';
+import {
+	afrundKlippetSvar,
+	byggKontekst,
+	byggSystemPrompt,
+	parseSikkerhed,
+	quotaNoegle
+} from '$lib/content/linnAi';
 import type { VidenbaseDokument } from '$lib/content/linnAi';
 import { byggForlobKontekst } from '$lib/content/forlobKontekst3';
 import { hentForlobViden } from '$lib/server/forlobViden';
 import type { UserDoc } from '$lib/types';
 
 const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
-const MAX_TOKENS_SAMTALE = 1024;
+// Se kommentaren i api/linn-ai: maalt paa de gemte svar, ingen ramte det
+// gamle loft, men der skal vaere plads til et langt svar.
+const MAX_TOKENS_SAMTALE = 2048;
 
 /** Samme daglige graense som Linn AI. Besluttet af Linn 6. august 2026. */
 const MAX_SAMTALER_PR_DAG = 20;
@@ -70,7 +78,7 @@ async function spoerg(
 	system: string,
 	beskeder: Array<{ role: 'user' | 'assistant'; content: string }>,
 	maxTokens: number
-): Promise<string> {
+): Promise<{ tekst: string; klippet: boolean }> {
 	const res = await fetch('https://api.anthropic.com/v1/messages', {
 		method: 'POST',
 		headers: {
@@ -90,11 +98,15 @@ async function spoerg(
 		console.error('[ny-ai] Anthropic-fejl:', res.status, tekst);
 		throw error(502, 'AI-tjenesten svarer ikke lige nu. Prøv igen om lidt.');
 	}
-	const data = (await res.json()) as { content: Array<{ type: string; text?: string }> };
-	return data.content
+	const data = (await res.json()) as {
+		content: Array<{ type: string; text?: string }>;
+		stop_reason?: string;
+	};
+	const tekst = data.content
 		.filter((c) => c.type === 'text')
 		.map((c) => c.text ?? '')
 		.join('');
+	return { tekst, klippet: data.stop_reason === 'max_tokens' };
 }
 
 /**
@@ -234,7 +246,12 @@ export const POST: RequestHandler = async ({ request }) => {
 		[...historik, { role: 'user', content: besked }],
 		MAX_TOKENS_SAMTALE
 	);
-	const { svar, sikkerhed } = parseSikkerhed(raat);
+	const parset = parseSikkerhed(raat.tekst);
+	// Ramte svaret loftet, stoppede den midt i en saetning. Rund af og sig
+	// det, i stedet for at gemme en halv linje i hendes samtale.
+	if (raat.klippet) console.warn('[ny-ai] Svaret ramte loftet paa svarlaengden.');
+	const svar = raat.klippet ? afrundKlippetSvar(parset.svar) : parset.svar;
+	const sikkerhed = raat.klippet ? null : parset.sikkerhed;
 
 	await gemDocMerge(quotaSti, { antal: brugt + 1, sidste: Date.now() });
 	await log({
@@ -258,7 +275,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		// Sikkerheds-procenten er KUN til Linn og gaar aldrig til kunden.
 		// Klienten faar kun at vide OM den er usikker, saa vi kan tilbyde
 		// at sende spoergsmaalet videre.
-		usikker: sikkerhed !== null && sikkerhed < USIKKER_UNDER,
+		// Mangler tallet, regner vi det som usikkert. Saa hellere tilbyde
+		// hende Linn én gang for meget end at lade et tvivlsomt svar staa
+		// som om det var sikkert.
+		usikker: sikkerhed === null || sikkerhed < USIKKER_UNDER,
 		brugtIDag: brugt + 1,
 		maksIDag: MAX_SAMTALER_PR_DAG
 	});

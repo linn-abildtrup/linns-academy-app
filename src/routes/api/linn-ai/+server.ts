@@ -18,6 +18,7 @@ import {
 	byggKontekst,
 	byggSystemPrompt,
 	parseSikkerhed,
+	afrundKlippetSvar,
 	MAX_QUERIES_PR_DAG,
 	quotaNoegle
 } from '$lib/content/linnAi';
@@ -34,7 +35,12 @@ import { aktivtForlobId } from '$lib/utils/traeningsvariant';
 import type { UserDoc } from '$lib/types';
 
 const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
-const MAX_TOKENS = 1024;
+// Loftet paa svarlaengden. Maalt 4. september 2026 paa 105 gemte svar: det
+// laengste fyldte under halvdelen af det gamle loft paa 1024, saa ingen svar
+// var blevet klippet endnu. Fordoblet alligevel, saa der er plads den dag en
+// kunde beder om noget langt (en madplan for en uge). Der betales kun for den
+// tekst der faktisk skrives, saa et hoejere loft koster ikke i sig selv.
+const MAX_TOKENS = 2048;
 
 interface IndkommendeBesked {
 	rolle: 'user' | 'assistant';
@@ -202,13 +208,22 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	const anthropicData = (await anthropicRes.json()) as {
 		content: Array<{ type: string; text?: string }>;
+		stop_reason?: string;
 	};
 	const raat = anthropicData.content
 		.filter((c) => c.type === 'text')
 		.map((c) => c.text ?? '')
 		.join('');
 	// Udtraek sikkerheds-markoeren saa den ikke vises til brugeren.
-	const { svar, sikkerhed } = parseSikkerhed(raat);
+	const parset = parseSikkerhed(raat);
+	// Ramte svaret loftet, stoppede den midt i en saetning. Saa runder vi af
+	// og siger det, i stedet for at gemme en halv linje i hendes samtale.
+	// Markoeren staar allersidst, saa den er ogsaa vaek — sikkerhed bliver
+	// null, og kunden ser den forsigtige linje.
+	const klippet = anthropicData.stop_reason === 'max_tokens';
+	if (klippet) console.warn('Linn AI ramte loftet paa svarlaengden — svaret er rundet af.');
+	const svar = klippet ? afrundKlippetSvar(parset.svar) : parset.svar;
+	const sikkerhed = klippet ? null : parset.sikkerhed;
 
 	// Opdater quota efter succesfuld kald (så fejlede kald ikke tæller)
 	await gemDocMerge(quotaPath, { antal: antalIDag + 1, sidste: Date.now() });

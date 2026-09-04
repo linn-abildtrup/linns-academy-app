@@ -334,6 +334,29 @@ export function parseSikkerhed(raat: string): { svar: string; sikkerhed: number 
 }
 
 /**
+ * Runder et svar af der ramte loftet paa svarlaengden.
+ *
+ * Rammer modellen loftet, stopper den midt i en saetning. Vi klipper
+ * tilbage til sidste hele saetning og siger det aabent i stedet for at
+ * lade kunden staa med en halv linje. Er der ingen hel saetning at
+ * falde tilbage paa, faar hun kun beskeden.
+ */
+export function afrundKlippetSvar(tekst: string): string {
+	const NOTE = 'Jeg blev afbrudt her — spørg endelig videre, så tager jeg den derfra 🌸';
+	const renset = tekst.trimEnd();
+	// Sidste sted der ligner en afsluttet saetning. Emoji taeller med, for
+	// Linns svar ender tit paa et.
+	const punktum = Math.max(
+		renset.lastIndexOf('.'),
+		renset.lastIndexOf('!'),
+		renset.lastIndexOf('?'),
+		renset.lastIndexOf('…')
+	);
+	const helt = punktum > 0 ? renset.slice(0, punktum + 1).trimEnd() : '';
+	return helt ? `${helt}\n\n${NOTE}` : NOTE;
+}
+
+/**
  * Fjerner markdown-tegn fra et svar. Kunden ser ren tekst i en chat-boble,
  * saa **fed** og ### staar bare som tegn paa skaermen.
  *

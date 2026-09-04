@@ -446,6 +446,19 @@
 												: ''}
 										</span>
 									</div>
+								{:else}
+									<!-- Tallet mangler i knap hvert tiende svar, fordi modellen
+									     glemmer at saette det paa. Foer stod der saa ingenting,
+									     og et svar uden linje saa mere sikkert ud end et med.
+									     Nu vises den forsigtige udgave uden procent. -->
+									<div class="ai-sikkerhed lav">
+										<Icon name="lightbulb" size={12} color="currentColor" />
+										<span>
+											Jeg kan ikke måle hvor tæt det her er på Linns eget svar{harBeskederTilLinn
+												? ' — spørg Linn hvis det er vigtigt'
+												: ''}
+										</span>
+									</div>
 								{/if}
 								{#if harBeskederTilLinn}
 									{#if aiSendtIndex.has(i)}
