@@ -796,6 +796,79 @@ viser at reglerne ikke lukkede for meget.
 
 ---
 
+### Rettet 3. og 4. september 2026
+
+**Beskeder er lavet om til en chat, og Linn AI har fået tre rettelser der
+alle kom af noget Linn opdagede undervejs.** Alt sammen efter hendes ønske,
+alt sammen udrullet.
+
+#### 1. BESKEDER STÅR NU SOM EN CHAT, begge faner
+
+Commits `7100576` (Linn AI) og `02605bc` (Skriv til Linn). Skrivefeltet lå
+øverst og samtalen voksede nedad, så efter et par spørgsmål lå det nyeste
+svar nederst og kunden skulle rulle op igen for at skrive det næste. Linns
+ord: "det er lidt bøvlet at scrolle ned hver gang."
+
+Nu fylder samtalen skærmen mellem fanerne og bundmenuen, den ruller for sig
+selv, og skrivefeltet ligger fast nederst. `.page` får klassen `chat` når
+en af de to faner vises, og det er den der giver siden fast højde. **Uden
+`position: relative` på rullefeltet måler rulningen forkert**, fordi den
+regner boblens plads ud i forhold til det.
+
+På fanen **Skriv til Linn** er listen "Mine spørgsmål" og kvitteringsboksen
+væk. Spørgsmålene står som bobler med ældste øverst, dag-mærke over dagens
+beskeder, og "Afventer svar" under et ubesvaret spørgsmål. `hentMineSpoergsmaal`
+giver stadig nyeste først, og rækkefølgen vendes **kun i visningen**.
+Linns intro tager imod første gang, derefter står den korte linje, og hele
+teksten ligger bag i-knappen.
+
+Tegn-tælleren vises først fra 400 af de 500 tegn. Grænsen er uændret.
+
+`content/appHjaelp.ts` er rettet i samme ombæring, commit `af7d30f`, den
+beskrev knappen og listen der ikke findes mere.
+
+#### 2. LINN AI SKREV MED STJERNER. To steder, så det holder
+
+Commit `02605bc`. Kunden så `**kombinere**` råt på skærmen. Rettet begge
+veje: **regel 5 i `FASTE_REGLER`** siger ren tekst uden markdown, og
+`udenFormateringstegn` renser svaret **når det vises**, fordi alle de svar
+der allerede er gemt, har tegnene i sig. Gangetegn som `2*3` og
+bindestreger røres ikke, der er test på det. Gælder begge apper.
+
+#### 3. BELLWELL, og hvor problemet i virkeligheden lå
+
+Commit `02605bc` lagde **regel 6** ind: ved fiber, forstoppelse og mave
+anbefales Bellwell, aldrig loppefrøskaller i stedet, og den er ikke
+udsolgt.
+
+**Men kilden siger stadig det modsatte.** Gennemgangen dagen efter fandt
+det: `Kickstart-FAQ.pdf (del 8/10)` i videnbasen indeholder ordret
+spørgsmålet "Fibertilskuddet, du anbefaler, er udsolgt. Hvad gør jeg?" med
+svaret at loppefrøskaller gør samme gavn. Del 3 anbefaler dem også.
+AI'en gjorde altså præcis hvad der stod. **Reglen er et sikkerhedsnet,
+ikke en løsning.** Se de åbne tråde.
+
+#### 4. KLIPPEDE SVAR, målt før der blev rettet
+
+Commit `75c7537`. Påstanden var at lange svar blev klippet midt i en
+sætning. **Målingen viste det modsatte:** ingen af de 105 gemte svar var
+klippet, og det længste fyldte under halvdelen af loftet. Måle-scriptet
+ligger som `scripts/_diagnose-klippede-svar.ts`, så målingen kan gentages
+når der er flere samtaler.
+
+Det der derimod fejlede: **sikkerheds-tallet manglede i 10 af de 105
+svar.** Ikke fordi svaret var klippet, men fordi modellen glemmer at sætte
+markøren på, især ved korte svar og hilsener. Før forsvandt linjen helt, så
+et umålt svar så **mere** sikkert ud end et målt. Nu står den forsigtige
+udgave uden procent.
+
+Loftet er hævet fra 1024 til 2048, og `stop_reason` læses nu. Rammer et
+svar loftet, klipper `afrundKlippetSvar` tilbage til sidste hele sætning og
+skriver at hun blev afbrudt. Der betales kun for den tekst der faktisk
+skrives, så det hævede loft koster ikke i sig selv.
+
+---
+
 ## 8. Beslutninger der ikke skal genopfindes
 
 To beslutninger truffet 24. august 2026. Begge er den slags der bliver bygget igen om et halvt år hvis de ikke står skrevet ned.
@@ -835,6 +908,49 @@ Se "Rettet 1. september" i afsnit 7.
 - **Merete (transam78mp@icloud.com)** har et ubesvaret dublet-spørgsmål i `klientspoergsmaal`. Hun sendte det samme spørgsmål to gange, og kun det første blev besvaret.
 - **Baseline-dagen i vaner-modulet** siger "vi starter med et baseline-tjek" og viser så ét fritekstfelt uden at nævne symptomchecken. Det var teksten der satte Meretes spørgsmål i gang. Ikke rettet.
 - **Forløbskøb sker manuelt.** Der er ingen Simplero-webhook for forløb endnu, kun for abonnementer. **Delvist løst 30. august:** nye køb kan nu lande på holdet af sig selv, se afsnit 7, men fluebenet skal flyttes i hånden ved hver holdstart, se 6.12.
+
+### Åbnet 4. september 2026: alt om Linn AI's grundlag
+
+Kom ud af en gennemgang af hele kæden. **Intet af det er rettet.**
+
+- **FAQ-teksten i videnbasen har fem tomme pladser.** Der står
+  `[UDFYLD: ...]` i del 4 (vegetarisk, proteinguide), del 7 (kettlebell-vægte),
+  og tre steder i del 8 (fibertilskud, kreatin-mærker, tilskudsliste med
+  doseringer). AI'en læser dem hver gang. Kettlebell-svaret er det værste:
+  teksten lover et konkret tal og leverer en tom plads, så modellen kan
+  finde på at digte et
+- **Samme FAQ modsiger regel 6.** Se punkt 3 ovenfor. Rettelsen hører hjemme
+  i FAQ-teksten, ikke i reglerne. **De seks destillerede dokumenter kan
+  ikke rettes varigt**, de skrives om hver gang "Lær af alle svar" køres,
+  fordi de udledes af de gamle svar der stadig siger udsolgt
+- **FAQ'en lover et personligt svar, appen gør ikke.** Tre steder står der
+  at kunden skal skrive til Linn, og at de så kigger på det sammen.
+  Beskeder-siden siger at spørgsmål besvares samlet og anonymt. AI'en læser
+  FAQ'en. Kræver Linns beslutning om hvad der er sandt
+- **Videnbasen er FÆLLES, men FAQ'en er skrevet til Kickstart.** Der står
+  Kickstart i hver sidefod, "de 21 dage", og den slutter med "jeg håber vi
+  ses på forløbet". En Kropsro-kunde får den altså med i sit grundlag, og
+  det kolliderer med regel 1. Ikke akut, fordi der kun er ét sæt
+  dokumenter. **Bliver akut den dag der lægges en FAQ nummer to ind.** Et
+  dokument bør kunne høre til et forløb
+- **Del 9 siger "det tager vi hul på efter Kickstart".** En antydning af
+  hvad der kommer, altså i modstrid med regel 2
+- **Kunde-chatten får de 30 NYESTE svar, ikke de mest relevante.**
+  `vaelgRelevanteSvar` bruges kun af admin-svar-udkastene. Arkivet er 453
+  besvarede spørgsmål plus 300 redigerede udkast, så chatten ser under en
+  tiendedel, uanset emne. **Det er den enkeltting der ville løfte
+  fagligheden mest**
+- **Linn overvejede 200 svar i stedet for 30.** Målt: 30 svar fylder cirka
+  5.800 tokens, 200 fylder cirka 40.200, videnbasen cirka 11.400. Prisen pr
+  spørgsmål går fra cirka 0,15 kr til cirka 0,40 kr, altså fra cirka 280 kr
+  til cirka 760 kr om måneden ved 2.000 spørgsmål. **Lagt på hylden**, fordi
+  syv gange så mange gamle svar også er syv gange så mange chancer for at
+  gentage noget forældet. Relevans først
+- **DEN HER APP LOGGER IKKE HVAD AI'EN SVARER.** 3.0 skriver hvert svar til
+  `nyAiLog` med det grundlag det byggede på, og der er en admin-side til
+  det. `/api/linn-ai` skriver ingenting. Linn kan altså kun læse med der
+  hvor kunderne ikke er endnu. Alt hvad vi ellers laver ved AI'en, kan
+  derfor ikke måles
 
 ### Åbnet 27. til 31. august 2026
 

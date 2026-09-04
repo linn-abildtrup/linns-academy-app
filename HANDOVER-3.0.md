@@ -4773,6 +4773,43 @@ grunden til at CLI'en så ud til at være forsvundet.
 
 ---
 
+### 9.67 DEN 3. OG 4. SEPTEMBER: LINN AI, TRE TING DER OGSÅ RAMMER HER
+
+Arbejdet foregik i den gamle app, se "Rettet 3. og 4. september" i
+`HANDOVER-GAMMEL-APP.md`. **Tre af ændringerne slår igennem her.** To af
+dem rørte `/ny/beskeder` og `ny.css`, den sidste kommer af den delte motor.
+
+#### 1. Svarets FØRSTE linje står nu øverst, ikke bunden
+
+Før rullede vi til bunden når svaret kom, så hun landede i slutningen af et
+langt svar og skulle selv rulle op for at læse det. `rulTilSvarTop` finder
+den sidste svar-boble og stiller dens top øverst. **`.bobler` har fået
+`position: relative`**, ellers måler den forkert, fordi boblens plads
+regnes i forhold til den. `rulNed` bruges stadig ved hendes egen besked og
+ved åbning.
+
+#### 2. Stjernerne renses når svaret vises
+
+`udenFormateringstegn` lægger sig om `delOpILinks`, så `**fed**` ikke står
+råt i boblen. Det er nødvendigt her og ikke kun på serveren, fordi de svar
+der allerede er gemt, har tegnene i sig.
+
+#### 3. Manglende sikkerheds-tal tæller nu som usikkert
+
+`/api/ny-ai` sendte `usikker: false` når markøren manglede, og markøren
+mangler i cirka hvert tiende svar. Nu er `null` det samme som usikker.
+**Feltet bruges ikke af siden endnu**, `visSend` tilbyder Linn ved hvert
+svar, så det er kun rigtigt for rigtighedens skyld indtil videre.
+
+Loftet på svarlængden er hævet fra 1024 til 2048 i begge apper, og
+`stop_reason` læses nu, se den gamle overdragelse for målingen bag.
+
+**Videnbasen og de faste regler er FÆLLES med den gamle app.** Alle de åbne
+tråde om AI'ens grundlag står ét sted, i `HANDOVER-GAMMEL-APP.md` under
+"Åbnet 4. september". Læs dem før du rører AI'en her.
+
+---
+
 ## 10. Sådan arbejder Linn
 
 Det her er lige så vigtigt som koden.
