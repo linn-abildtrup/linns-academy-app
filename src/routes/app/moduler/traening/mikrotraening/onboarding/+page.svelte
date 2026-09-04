@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { gemMedVentetid } from '$lib/content/gemVentetid';
+	import { meldSkrivningIGang } from '$lib/state/forbindelseState.svelte';
 	import type { User } from 'firebase/auth';
 	import { KICKSTART_PRODUCT_ID, type ForlobProduct, type UserDoc } from '$lib/types';
 	import type { TrainingProgram, UserProduct } from '$lib/content/mikrotraening';
@@ -91,7 +93,13 @@
 					})
 				);
 			}
-			await Promise.all(opgaver);
+			// Uden forbindelse melder gemmet ALDRIG fejl, det bliver bare
+			// haengende, og saa kom hun aldrig videre fra valget. Se
+			// gemVentetid.ts. Valget ligger i koe, saa vi lader hende gaa
+			// videre. Baandet oeverst siger hvorfor.
+			meldSkrivningIGang();
+			const udfald = await gemMedVentetid(Promise.all(opgaver));
+			if (udfald.status === 'fejl') throw udfald.fejl;
 			goto('/app/moduler/traening/mikrotraening');
 		} catch (e) {
 			console.error(e);

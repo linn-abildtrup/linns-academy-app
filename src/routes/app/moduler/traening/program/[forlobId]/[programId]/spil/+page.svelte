@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getContext, onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { meldSkrivningIGang } from '$lib/state/forbindelseState.svelte';
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import type { DayExercise, Exercise, TrainingDay } from '$lib/content/mikrotraening';
@@ -621,6 +622,10 @@
 		const u = user;
 		if (!u) return;
 		traeningGennemfoert = true;
+		// Skrivningerne her sendes uden at vente, saa de kan ikke laase
+		// skaermen. De skal alligevel meldes, saa baandet og den groenne
+		// kvittering ved at der ligger noget der ikke er sendt.
+		meldSkrivningIGang();
 		void sletSpilPause(u.uid, 'tildelt', programId, forlobId).catch(() => undefined);
 		void tilfoejGennemfoersel(u.uid, 'tildelt', programId, forlobId, aktuelDagNummer).catch((e) =>
 			console.warn('Kunne ikke gemme gennemførsel:', e)

@@ -76,6 +76,19 @@ Nye kunder bliver spurgt om det, første gang de logger ind. Sprang du over deng
 Klik på et modul-kort eller en knap for at åbne den. Brug 'Tilbage'-pilen øverst til venstre på undersider for at komme tilbage.`
 	},
 	{
+		titel: 'Når appen ikke har forbindelse',
+		visFor: ALLE_PRODUKTER,
+		indhold: `Mister din telefon forbindelsen, lægger der sig et rødt bånd øverst på skærmen: "Ingen forbindelse". Det bliver stående til forbindelsen er tilbage, og det kan ikke lukkes. Det er med vilje, så du altid kan se det inden du begynder at taste.
+
+Du kan godt taste videre imens. Det du skriver bliver gemt på din telefon og sendt af sig selv, så snart du er på nettet igen.
+
+Alt det der endnu ikke er sendt bærer mærket "Venter på at blive sendt". Du finder det på måltider i dagbogen og på dine beskeder til Linn. Når mærket er væk, er det nået frem.
+
+Gemmer du noget der ikke kan komme igennem, får du en besked om at det ikke er gemt endnu. Du skal ikke taste det ind en gang til. Gør du det, kan det ende med at stå to gange når forbindelsen kommer tilbage. Lad det ligge, og luk ikke appen helt ned.
+
+Når alt er sendt, skifter båndet til grønt og siger "Forbindelsen er tilbage". Så forsvinder det af sig selv.`
+	},
+	{
 		titel: 'Forsiden — modulbrugere',
 		visFor: MODULBRUGERE,
 		indhold: `Forsiden viser:

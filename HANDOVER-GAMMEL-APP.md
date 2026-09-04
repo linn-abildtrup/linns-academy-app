@@ -986,6 +986,89 @@ favorit-måltider før.
 
 ---
 
+### Rettet 4. september 2026: appen siger nu fra når den ikke kan komme igennem
+
+Under ventilen i regel 2, med Linns go. Commits `2866d7d` og `6a8678a`.
+
+**LÆS DET HER FØR DU FEJLSØGER "MINE DATA FORSVANDT".** Det er den
+mekanisme der kostede en kunde to hele dage, og den er ikke intuitiv.
+
+**Årsagen er ikke en fejl i koden.** Den er indbygget i den måde Firestore
+arbejder på. Gemmer kunden noget uden forbindelse, sker der to ting på én
+gang:
+
+1. Ændringen skrives i telefonens lokale kopi **med det samme**, så den ser
+   gemt ud på skærmen. Læser man tilbage, får man den serveret fra den
+   lokale kopi og tror alt er i orden.
+2. Selve anmodningen til serveren går i stå og bliver stående. **Den melder
+   ALDRIG fejl.** Løftet bliver bare aldrig indfriet, om så det er i dagevis.
+
+Konsekvensen: hvert eneste `try/catch` omkring et gem i hele appen var
+uden virkning uden forbindelse, og hver eneste gem-knap blev stående og
+arbejdede i det uendelige. Kunden lagde telefonen fra sig i god tro.
+
+#### Delene, og hvor de ligger
+
+- **`src/lib/state/forbindelseState.svelte.ts`** er den eneste sandhed om
+  forbindelsen. Ingen side må selv gætte. Den står på to ben: browserens
+  `online`/`offline`-hændelser, som er hurtige men lyver på et hotelnet der
+  ikke slipper noget igennem, og **Firestores eget `fromCache`-flag**, som
+  er det pålidelige. Sidstnævnte kommer fra `lytTilForbindelse` i
+  `src/lib/firestore/forbindelse.ts`, som lytter på kundens eget dokument
+  med `includeMetadataChanges`. Begge sættes fra `app/+layout.svelte`.
+- **`ForbindelseBaand.svelte`** ligger i `app/+layout.svelte` og virker
+  derfor på **alle** sider på én gang. Rødt bånd mens forbindelsen er væk,
+  grøn kvittering når alt er nået frem. **Båndet kan ikke lukkes.** Linns
+  beslutning: et bånd hun kan klikke væk, klikker hun væk.
+- **`src/lib/content/gemVentetid.ts`** holder op med at VENTE efter otte
+  sekunder. Den giver ikke op på skrivningen, som stadig ligger i kø.
+- **`meldSkrivningIGang()`** kaldes før hvert gem. Den bruger Firestores
+  `waitForPendingWrites` til at vide hvornår ALT er kvitteret, og det er
+  dét der udløser den grønne kvittering.
+- **Mærket "Venter på at blive sendt"** kommer fra `hasPendingWrites` på
+  det enkelte dokument, sat ved læsning i `hentMaaltiderForDato` og
+  `hentMineSpoergsmaal`. Feltet hedder `ikkeSendt` og **gemmes aldrig i
+  databasen**.
+
+#### To ting du ikke må lave om
+
+**Der må ALDRIG stå "Prøv igen" på de her beskeder.** Skrivningen ligger
+allerede i kø. Trykker kunden gem en gang til, lægger hun nummer to i kø,
+og når forbindelsen kommer tilbage får hun to ens måltider eller sender
+den samme besked to gange. Det stod på den oprindelige tegning og blev
+rettet inden der blev kodet.
+
+**Mærket er ikke pynt.** Uden det ser en indtastning der ikke er nået frem
+nøjagtig ud som en der er, og så er hele advarslen ingenting værd. I
+Beskeder var det værst: en besked der aldrig blev sendt stod som "Afventer
+svar", så kunden gik og ventede på et svar Linn aldrig havde set.
+
+#### Hvad der er gennemgået
+
+Mad, forsidens vaner og bonus, refleksionsdagen for både forløb og
+abonnenter, egne små skridt, Beskeder inklusive "send til Linn" fra Linn
+AI, og træningen: fremgang på forløb og abonnement, valg af program,
+onboarding-valget, samt oprettelse, redigering og sletning af eget program.
+
+**Den værste fælde lå i træningen.** `stopOgForlad` og `startForfra`
+ventede på at pausen var gemt FØR de forlod skærmen. Uden forbindelse blev
+kunden dermed **fanget på træningsskærmen og kunne ikke komme ud**. De to
+har en kortere ventetid på tre sekunder, for der handler det om at slippe
+ud, ikke om at få en kvittering.
+
+#### Hvad der MANGLER
+
+Båndet og den grønne kvittering virker overalt. Selve gem-behandlingen
+mangler stadig på: symptomchecken, egne opskrifter, at lægge en opskrift i
+dagbogen, biblioteket, Linn AI, opsætningen af vaner og profil-siden.
+**Mønsteret er det samme hver gang**: `meldSkrivningIGang()`, pak
+skrivningen i `gemMedVentetid`, kast videre ved `fejl`, og ved `venter`
+enten slip knappen fri eller vis beskeden. Kig i `beskeder/+page.svelte`
+for det fulde eksempel med mærke, og i `moduler/traening/+page.svelte` for
+den korte udgave uden besked.
+
+---
+
 ## 8. Beslutninger der ikke skal genopfindes
 
 To beslutninger truffet 24. august 2026. Begge er den slags der bliver bygget igen om et halvt år hvis de ikke står skrevet ned.
@@ -1025,7 +1108,7 @@ Se "Rettet 1. september" i afsnit 7.
 - **Merete (transam78mp@icloud.com)** har et ubesvaret dublet-spørgsmål i `klientspoergsmaal`. Hun sendte det samme spørgsmål to gange, og kun det første blev besvaret.
 - **Baseline-dagen i vaner-modulet** siger "vi starter med et baseline-tjek" og viser så ét fritekstfelt uden at nævne symptomchecken. Det var teksten der satte Meretes spørgsmål i gang. Ikke rettet.
 - **Forløbskøb sker manuelt.** Der er ingen Simplero-webhook for forløb endnu, kun for abonnementer. **Delvist løst 30. august:** nye køb kan nu lande på holdet af sig selv, se afsnit 7, men fluebenet skal flyttes i hånden ved hver holdstart, se 6.12.
-- **Appen siger ikke fra når en indtastning ikke kommer igennem.** Åbnet 4. september 2026 og **ikke rettet**. En kunde på Kickstart August mistede to hele dage, mad, vaner og noter, uden at hun fik det at vide. Firestore har den lokale kopi slået til, så et gem uden forbindelse ser rigtigt ud på skærmen mens knappen står og arbejder i det uendelige, og kunden lægger telefonen fra sig i god tro. Diagnosen står i afsnit 7 under 4. september. **Det her er større end favorit-navnene:** det rammer alle sider der gemmer noget, ikke kun maden, og en kunde der oplever at data forsvinder holder op med at stole på appen. Linn er orienteret og har ikke prioriteret det endnu.
+- **Appen siger ikke fra når en indtastning ikke kommer igennem.** Åbnet og **løst 4. september 2026**, se "Rettet 4. september: appen siger nu fra" i afsnit 7. Der er stadig sider der gemmer noget uden at være gennemgået, se samme afsnit for hvad der mangler.
 
 ### Åbnet 3. september 2026: den sorte skærm der forsvandt ved at logge ind igen
 

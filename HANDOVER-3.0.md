@@ -323,6 +323,19 @@ Adgang til `/ny` gives til admin og til kunder hvor `harTestAdgang(userDoc, 'ny-
 
 **Attrap mærkes.** Indhold der endnu ikke er koblet til rigtige data får klassen `skitse`, så der aldrig er tvivl om hvad der virker.
 
+**Et gem uden forbindelse melder ALDRIG fejl. Byg det ikke forkert i 3.0.** Firestore skriver ændringen i telefonens lokale kopi med det samme, så den ser gemt ud, og lader anmodningen til serveren stå og vente uden nogensinde at fejle. Et almindeligt `try/catch` omkring et gem fanger derfor ingenting, og gem-knappen bliver stående og arbejder i det uendelige. Det kostede en kunde i den gamle app to hele dage, mad, vaner og noter, uden at hun fik det at vide. 1. og 2. september 2026.
+
+Delene ligger klar i `src/lib/` og er **ikke** bundet til den gamle app, så genbrug dem i stedet for at finde på noget nyt:
+
+- `state/forbindelseState.svelte.ts`: den eneste sandhed om forbindelsen. Ingen side må selv gætte.
+- `firestore/forbindelse.ts`: lytteren der bruger Firestores `fromCache` som det pålidelige signal. Browserens eget `navigator.onLine` lyver på et net der ikke slipper noget igennem.
+- `content/gemVentetid.ts`: holder op med at VENTE efter otte sekunder, men giver ikke op på skrivningen.
+- `components/ForbindelseBaand.svelte`: båndet. Det er lavet til den gamle apps udseende, så **3.0 skal have sin egen udgave** med `ny.css`-tokens. Logikken bagved er den samme.
+
+**Der må ALDRIG stå "Prøv igen" på sådan en besked.** Skrivningen ligger allerede i kø, så et tryk mere sender det samme to gange. Hele beskrivelsen står i `HANDOVER-GAMMEL-APP.md` under "Rettet 4. september 2026: appen siger nu fra".
+
+**Intet af det er koblet på `/ny` endnu.** Det er en åben opgave, og den bør laves inden det første hold flyttes over.
+
 ---
 
 ## 7. Fælder vi allerede er faldet i

@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
+	import { gemMedVentetid } from '$lib/content/gemVentetid';
+	import { meldSkrivningIGang } from '$lib/state/forbindelseState.svelte';
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
@@ -49,6 +52,10 @@
 	let fejl = $state<string | null>(null);
 	let gemmer = $state(false);
 	let gemFejl = $state<string | null>(null);
+
+	// Vises naar gemmet ikke naaede frem inden for ventetiden. Ingen
+	// 'Proev igen': skrivningen ligger i koe, se gemVentetid.ts.
+	let ikkeSendtBesked = $state(false);
 	let editMode = $state(false);
 
 	const harGemt = $derived(oprindeligEntry !== null);
@@ -184,15 +191,27 @@
 		gemmer = true;
 		try {
 			const bonusEntry = aktuelBonus;
-			await gemAboVanedag(u.uid, {
-				dato,
-				checks,
-				bonus: bonusEntry,
-				checkin,
-				note
-			});
+			// Uden forbindelse melder gemmet ALDRIG fejl, det bliver bare
+			// haengende, og saa stod knappen laast paa "Gemmer". Se
+			// gemVentetid.ts. Vi bliver staaende paa siden og siger det.
+			meldSkrivningIGang();
+			const udfald = await gemMedVentetid(
+				gemAboVanedag(u.uid, {
+					dato,
+					checks,
+					bonus: bonusEntry,
+					checkin,
+					note
+				})
+			);
+			if (udfald.status === 'fejl') throw udfald.fejl;
 			oprindeligEntry = { dato, checks, bonus: bonusEntry, checkin, note };
 			editMode = false;
+			if (udfald.status === 'venter') {
+				ikkeSendtBesked = true;
+				gemmer = false;
+				return;
+			}
 			goto('/app/moduler/vaner');
 		} catch (e) {
 			console.error(e);
@@ -642,3 +661,13 @@
 		margin-bottom: 10px;
 	}
 </style>
+
+{#if ikkeSendtBesked}
+	<BekraeftModal
+		titel="Det er ikke gemt endnu"
+		beskrivelse="Din telefon kan ikke få fat i appen lige nu. Det du skrev ligger klar hos dig, og vi sender det af sig selv så snart du har forbindelse igen. Du behøver ikke skrive det en gang til. Luk ikke appen helt ned."
+		bekraeftTekst="OK"
+		onlyOk
+		onBekraeft={() => (ikkeSendtBesked = false)}
+	/>
+{/if}
