@@ -909,11 +909,18 @@ igennem, skal filerne have nye navne, og så skal hver øvelse i databasen
 pege det nye sted hen. Det er fravalgt som for stort et indgreb til
 gevinsten.
 
-**Værktøjerne ligger i `scripts/`:** `_tjek-video-pakning.ts` går hele
-lageret igennem og siger hvilke filer der er pakket forkert, og
-`_pak-om-video.ts` lægger en ompakket fil op med tokenet bevaret.
-**Kør tjekket når der kommer nye videoer**, ellers sniger det sig ind igen.
-Ompakningen selv er `ffmpeg -c copy -movflags +faststart`.
+**Tjek-værktøjet ligger i `scripts/_tjek-video-pakning.ts`.** Det går hele
+lageret igennem og siger hvilke filer der er pakket forkert. **Kør det når
+der kommer nye videoer**, ellers sniger det sig ind igen. Kørt 4. september
+2026: alle 62 filer i `exercises/` er pakket rigtigt.
+
+**Ompaknings-værktøjet findes ikke længere.** `_pak-om-video.ts` og
+`_hent-video.ts` blev slettet ved en oprydning 4. september 2026, fordi de
+så ud som engangs-scripts. De var aldrig lagt ind i projektet og kan derfor
+ikke hentes tilbage. Er der en fil der skal pakkes om igen, skal de skrives
+forfra. Det de gjorde: hentede filen ned, og lagde den ompakkede udgave op
+igen **med det gamle token bevaret**, se afsnittet ovenfor om hvorfor det er
+afgørende. Ompakningen selv er `ffmpeg -c copy -movflags +faststart`.
 
 #### 2. ØVELSESVIDEOERNE HAR SLET INGEN LYD, og det er ikke en fejl
 
@@ -936,6 +943,46 @@ lageret. Fundet under diagnosen af lydbeskeder til én kunde.
 Tokenet hentes nu inde i `uploadLydFil` og ikke på de tre sider der kalder
 den, så ingen af siderne skulle røres, og ingen af dem kan glemme det.
 Kunderne mærker ingenting: døren bruges kun af admin i forvejen.
+
+---
+
+### Rettet 4. september 2026: favoritter der alle hedder det samme
+
+Under ventilen i regel 2, med Linns go. Commits `6bbdd18` og `d3f894e`.
+
+**Anledningen.** En kunde på Kickstart August skrev at hendes morgenmad ikke
+blev gemt tirsdag og onsdag. Diagnosen viste at hun havde ret, men også at
+det ikke var mad-modulets skyld: der lå **intet** fra hende de to dage,
+heller ikke vanedage eller noter, og hun udfyldte dag 2 og 3 bagud om
+torsdagen. Resten af holdet loggede normalt de dage, 386 og 336 måltider.
+Altså hendes forbindelse, ikke appen. **Den sag er ikke løst**, se 9-afsnittet.
+
+**Det diagnosen fandt undervejs** var noget andet og reelt: hun havde fire
+favoritter der alle hed "Morgenmad", hvoraf tre var den samme ret. Navnet i
+gem-modalen foreslås ud fra måltidstypen, så en kunde der sætter flueben i
+"Gem også som favorit" hver dag ender med en liste hun ikke kan læse.
+
+**Løsningen.** `src/lib/content/favoritNavn.ts` afgør om navnet er optaget,
+uden hensyn til store bogstaver og mellemrum. Er det, viser
+`FavoritNavnAdvarsel.svelte` et ark med tre valg: opdater den favorit hun
+har, gem en ny under et navn hun selv skriver, eller lad favoritterne være.
+
+**Rækkefølgen er det vigtigste at forstå.** Måltidet skrives i dagbogen
+FØR arket vises, og arket åbnes først når gem-modalen er lukket og
+dagbog-fanen er valgt, så maden står synligt bagved. Teksten siger det
+højt. Lukker hun arket, sker der ingenting med favoritterne. Uden den
+sikkerhed ville hun trykke gem igen og lave dubletter, hvilket er præcis
+den fejl der er rettet før i det her modul.
+
+**Navnefeltet starter tomt og forudfyldes bevidst ikke med "Morgenmad 2".**
+Det ville rydde listen teknisk og efterlade hende med navne hun stadig ikke
+kan læse.
+
+**De kunder der allerede har dubletter beholder dem.** Linns beslutning 4.
+september. Vi kan ikke gætte hvilken de vil have.
+
+App-hjælpen er opdateret med samme runde. Mad-afsnittet nævnte slet ikke
+favorit-måltider før.
 
 ---
 
@@ -978,6 +1025,7 @@ Se "Rettet 1. september" i afsnit 7.
 - **Merete (transam78mp@icloud.com)** har et ubesvaret dublet-spørgsmål i `klientspoergsmaal`. Hun sendte det samme spørgsmål to gange, og kun det første blev besvaret.
 - **Baseline-dagen i vaner-modulet** siger "vi starter med et baseline-tjek" og viser så ét fritekstfelt uden at nævne symptomchecken. Det var teksten der satte Meretes spørgsmål i gang. Ikke rettet.
 - **Forløbskøb sker manuelt.** Der er ingen Simplero-webhook for forløb endnu, kun for abonnementer. **Delvist løst 30. august:** nye køb kan nu lande på holdet af sig selv, se afsnit 7, men fluebenet skal flyttes i hånden ved hver holdstart, se 6.12.
+- **Appen siger ikke fra når en indtastning ikke kommer igennem.** Åbnet 4. september 2026 og **ikke rettet**. En kunde på Kickstart August mistede to hele dage, mad, vaner og noter, uden at hun fik det at vide. Firestore har den lokale kopi slået til, så et gem uden forbindelse ser rigtigt ud på skærmen mens knappen står og arbejder i det uendelige, og kunden lægger telefonen fra sig i god tro. Diagnosen står i afsnit 7 under 4. september. **Det her er større end favorit-navnene:** det rammer alle sider der gemmer noget, ikke kun maden, og en kunde der oplever at data forsvinder holder op med at stole på appen. Linn er orienteret og har ikke prioriteret det endnu.
 
 ### Åbnet 3. september 2026: den sorte skærm der forsvandt ved at logge ind igen
 

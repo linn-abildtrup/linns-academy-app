@@ -529,8 +529,12 @@ magen til `storage.rules`, og reglen er afprøvet i virkeligheden, se 9.70.
 **Der ligger ingen uudgivet regel.**
 
 Regler lægges ud med `./scripts/deploy-regler.sh storage` eller `firestore`.
-Vis altid Linn ændringen og få et ja først. Vil du bare SE hvad der ligger
-live lige nu, uden at røre noget, gør `scripts/_storage-regler.ts` det.
+Vis altid Linn ændringen og få et ja først.
+
+`scripts/_storage-regler.ts`, der kunne vise de udgivne regler uden at røre
+noget, blev slettet ved en oprydning 4. september 2026 og kan ikke hentes
+tilbage. Det var et levn fra dengang Firebases eget værktøj ikke lå på
+maskinen. Det gør det nu, og `deploy-regler.sh` bruger det.
 
 **DER ER ARBEJDET PÅ 3.0 IGEN DEN 1. SEPTEMBER, se 9.61.** Ugen 27. til 31.
 august gik med den gamle app, hvor nu 925 kunder er i drift. Se toppen af
