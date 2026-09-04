@@ -102,6 +102,13 @@
 	/* Toppens hoejde, UDEN telefonens sikkerhedszone foroven. Samme regel
 	   som --nav-h: den staar her og kun her. */
 	--top-h: 46px;
+
+	/* Luften i bunden af rulleomraadet, saa det sidste indhold ikke
+	   klistrer op ad bundmenuen. Den staar her og kun her, for alt der
+	   klaeber til bunden med position:sticky skal kunne regne den ud:
+	   sticky lander OVER polstringen, og saa staar der et hul under, hvor
+	   indholdet ruller forbi. Set paa Beskeder 4. september. */
+	--scroll-bund: 24px;
 	background: var(--oat);
 	color: var(--espresso);
 	font-family: var(--sans);
@@ -200,7 +207,7 @@ body.traening-stor .ny-top {
 	min-height: 0;
 	overflow-y: auto;
 	-webkit-overflow-scrolling: touch;
-	padding-bottom: 24px;
+	padding-bottom: var(--scroll-bund);
 	/* Rullet bliver herinde. Uden den sendes det videre til dokumentet
 	   naar hun rammer bunden, og saa gynger hele skallen med bundmenuen.
 	   Menuen er hendes eneste faste holdepunkt og skal staa stille. */
@@ -2203,8 +2210,19 @@ body:has(.ny-app) {
 	position: sticky;
 	bottom: 0;
 	z-index: 5;
-	background: var(--oat);
+	/* Samme farve som selve feltet, saa det laeser som ét felt hele vejen
+	   ned til menuen og ikke som en stribe under det. */
+	background: var(--paper);
 	flex-shrink: 0;
+
+	/* DAEKKER HULLET UNDER FELTET. Rulleomraadet har luft i bunden, og
+	   sticky lander OVER den luft. Uden de her to linjer stod der en
+	   stribe mellem feltet og bundmenuen, hvor samtalen kunne ses rulle
+	   forbi. Linn saa det 4. september.
+	   Den negative margin trækker feltet helt ned, og polstringen fylder
+	   det ud igen, saa selve skrivelinjen bliver staaende hvor den var. */
+	margin-bottom: calc(-1 * var(--scroll-bund));
+	padding-bottom: var(--scroll-bund);
 }
 
 .skrivelinje {
