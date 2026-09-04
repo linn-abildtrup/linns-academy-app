@@ -558,7 +558,7 @@
 
 <svelte:head><title>Beskeder</title></svelte:head>
 
-<div class="hjaelp-side">
+<div class="hjaelp-side besk-fuld">
 	<Sidehoved
 		titel="Beskeder"
 		under={fane === 'linn'

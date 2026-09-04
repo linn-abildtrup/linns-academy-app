@@ -10373,6 +10373,20 @@ a.ch-knap {
    Wrapperen baerer baggrunden i fuld bredde. Uden den ville samtalen
    kunne ses glide forbi til hoejre og venstre for fane-pillen, som har
    luft i siderne. */
+/* SIDEN FYLDER HELE RULLEHOEJDEN, saa skrivefeltet ligger i bunden ogsaa
+   naar samtalen er kort. Uden den hang feltet midt paa skaermen med 64 px
+   luft ned til menuen, foerste gang en kunde aabner fanen og der endnu
+   ikke staar noget. Maalt i browseren 4. september.
+
+   .ny-scroll er ikke en flex-container, saa .hjaelp-side's flex:1 goer
+   ingenting. min-height virker, fordi forældrens hoejde er kendt.
+
+   Kun paa Beskeder. hjaelp-side bruges ogsaa af Spoerg-siden, og den har
+   ikke noget der skal ligge i bunden. */
+.besk-fuld {
+	min-height: 100%;
+}
+
 .besk-faner-fast {
 	position: sticky;
 	top: 0;
