@@ -81,6 +81,16 @@ describe('springerIOejnene', () => {
 		).toBe(false);
 	});
 
+	it('TIER OM BESKEDER PAA DEN GAMLE APP, hvor de slet ikke findes', () => {
+		// Ellers stod alle 315 paa Kickstart August som "kan ikke naas",
+		// og et punkt der altid er sandt betyder ingenting.
+		expect(
+			springerIOejnene({ ...alt_ok, paaNyApp: false, harSagtJaTilBeskeder: false }).some(
+				(x) => x.id === 'ingen-noti'
+			)
+		).toBe(false);
+	});
+
 	it('naevner manglende opstart KUN for dem der er paa den nye app', () => {
 		expect(
 			springerIOejnene({ ...alt_ok, onboardet: false }).some((x) => x.id === 'ikke-onboardet')

@@ -4810,6 +4810,25 @@ tråde om AI'ens grundlag står ét sted, i `HANDOVER-GAMMEL-APP.md` under
 
 ---
 
+### 9.67 DEN 4. SEPTEMBER: EN OVERDRAGELSE OM KUNDEOPLEVELSEN
+
+`HANDOVER-KUNDEOPLEVELSE.md` er kommet til. Den handler ikke om hvad der
+er bygget, men om hvad der sker hos kunden, og den bygger på målinger på
+Kickstart August på dag 5 af 21.
+
+**Læs den før du bygger noget der handler om hvordan kunden har det.**
+De vigtigste tal: 53 af 323 der købte, kom aldrig ind. 63 af 315 har
+aldrig tastet et måltid. 1 ud af 315 har sat sine egne mål. 23 af 121
+spørgsmål handler om appen selv, og det største enkelttema er at få den
+på hjemmeskærmen.
+
+**En fejl blev fundet undervejs og rettet:** "Hun kan ikke nås på
+telefonen" stod på alle 315 kunder, fordi beskeder på telefonen kun
+findes i 3.0. Punktet vises nu kun for kunder på den nye app. **Et punkt
+der aldrig kan være falsk, er støj.**
+
+---
+
 ## 10. Sådan arbejder Linn
 
 Det her er lige så vigtigt som koden.

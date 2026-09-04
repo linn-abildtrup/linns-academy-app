@@ -153,7 +153,11 @@ export function springerIOejnene(i: KundeInput): Opmaerksomhed[] {
 		});
 	}
 
-	if (i.harAktivtForlob && !i.harSagtJaTilBeskeder) {
+	// KUN PAA DEN NYE APP. Beskeder paa telefonen findes slet ikke i den
+	// gamle, saa punktet var sandt for hver eneste kunde og betoed
+	// ingenting. Opdaget 4. september, da alle 315 paa Kickstart August
+	// stod som "kan ikke naas".
+	if (i.paaNyApp && i.harAktivtForlob && !i.harSagtJaTilBeskeder) {
 		ud.push({
 			id: 'ingen-noti',
 			alvor: 'se',
