@@ -5092,3 +5092,38 @@ på den forrige. Det er fjerde eller femte gang. `version.json` mod commit-tiden
 er ikke nok i sig selv: **buildet kan være i gang, og så svarer den gamle
 version stadig.** Se på Deployments-listen i Cloudflare, ikke kun på svaret fra
 serveren.
+
+#### Den samme ring fem steder mere, samme dag
+
+Linn meldte 30-30 kort efter forsiden var rettet. Hele `/ny` er derfor
+gennemgået, og der var **fem steder i alt**.
+
+**SÅDAN FINDER DU DEM IGEN.** Tag hver `$effect` der henter, og se hvad den
+læser SYNKRONT, altså før og med argumenterne til første `await`. Læser den
+`userDoc`, `adgang`, `aktivtForlob`, `forlobKilder` eller noget udledt af dem,
+kører den forfra hver gang adgangsbilledet bygges om. **Argumenterne til det
+første await tæller med** — det var derfor 30-30 slap gennem første søgning,
+hvor `userDoc` står som argument i `hentDagen(uid, d, userDoc, ...)`.
+
+**30-30, den alvorlige.** Effekten læste `userDoc` og `fokus`. `fokus` er en
+`$derived.by` der bygger et NYT objekt hver gang, så hver ombygning startede
+hentningen forfra og satte `henter` til sand igen. **Udvejen fra 25. august,
+to forsøg og så en fejlskærm med Prøv igen, nåede aldrig frem**, fordi den blev
+afbrudt af næste genstart. Og der er ingen nødbremse på den side, så den kunne
+hænge for evigt. Kører nu på en nøgle af rene værdier: uid, dato, forsøg og
+`fokus.dagNummer`.
+
+**Fire steder mere, som ikke kunne hænge, men hentede unødigt forfra:**
+nærings-adgangen og svar-fra-Linn på forsiden, forsidebeskeden, og
+skridt-flisen på Din side. Alle fire læste et helt objekt for at få én enkelt
+værdi ud af det. De læser nu værdien gennem en `$derived`, så de kun kører når
+den faktisk skifter. Ingen synlig ændring, bare færre kald.
+
+**Gennemgået og frikendt:** de øvrige 20 sider under `/ny` med hentende
+effekter. `profil/beskeder` så ud som en træffer, men den SKRIVER `tilstand` og
+læser den ikke, så der er ingen ring.
+
+**REGLEN, så det ikke sker igen:** en hentende effekt skal køre på en nøgle af
+rene værdier, aldrig på objekter fra adgangsbilledet. Skal den bruge et objekt,
+læses det i `untrack`. Adgangsbilledet bygges om hver gang bruger-dokumentet
+ændrer sig, og skallen lytter løbende på det dokument.
