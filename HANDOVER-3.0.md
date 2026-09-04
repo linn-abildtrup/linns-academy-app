@@ -5025,3 +5025,70 @@ Det her er ikke teori. Det er hvad der faktisk har fungeret, og hvad der ikke ha
 **Skærmbillederne ligger i `Projekter/v3 app/Screenshots v3/`**, ikke i repoets `screenshots`-mappe.
 
 **Efter hver udrulning skal hun lukke fanen helt.** Appen gemmer en kopi af sig selv, og den viser gerne den gamle udgave. Det har fire gange lignet en fejl i koden.
+
+---
+
+### 9.72 FORSIDEN STOD OG HENTEDE I RING, 4. september
+
+**Symptomet.** Linn åbnede 3.0, og appen blev stående på vente-skærmen. Tallet
+sprang mellem 0 og 100 procent og forfra, og siden blev aldrig færdig. Det
+skete flere steder, ikke kun på én enhed.
+
+**Det var ikke ventetid på udrulningen.** Den var ude, og serveren svarede på
+under et sekund. Velkomstskærmen på `/ny` kom frem med det samme uden login, så
+appen som sådan fejlede ikke.
+
+**FIGUREN DER SVINGER ER NORMAL.** Det er `Ventetegn`, altså logoet med tegnet
+der løber. Den sagde intet om fejlen, og den kostede tid at udelukke.
+
+#### To fejl der forstærkede hinanden
+
+**1. Hentningen startede forfra på for lidt.** Effekten på forsiden skulle køre
+på `noegle`, altså ny kunde, ny dag eller nyt forløb. Men mens den stillede de
+seks kald op, læste den også `userDoc`, `adgang.aktiveForlob`, `forlobKilder()`,
+`aktivtForlob` og `nu`, og alt det blev dermed noget den holdt øje med.
+Adgangsbilledet bygges om hver gang bruger-dokumentet ændrer sig, og skallen
+lytter løbende på det dokument med `lytTilUserDoc`. **Hver ombygning giver NYE
+objekter, også når indholdet er præcis det samme**, og så begyndte hentningen
+forfra. Alt andet end nøglen læses nu i `untrack`.
+
+**2. Sikkerhedslinen lå inde i hentningen.** Den skulle vise siden efter tolv
+sekunder uanset hvad, men den blev ryddet i effektens cleanup og sat op igen
+ved hver genstart. Uret blev altså stillet tilbage hver gang, og de tolv
+sekunder løb aldrig ud. Uret ligger nu udenfor i `onMount` og starter én gang
+pr besøg. Har det først vist siden, kommer vente-skærmen ikke igen: hentninger
+der lander bagefter fylder stille resten ud, styret af `harGivetOp`.
+
+**Fejl 2 er den alvorlige.** Uden den ville fejl 1 kun have været en
+forsinkelse på nogle sekunder. Det er den slags fælde der er værd at kende
+generelt: **en nødbremse der kan nulstilles af det den skal bremse, er ingen
+nødbremse.**
+
+#### Det der IKKE er fundet
+
+**Hvad der udløser ombygningen på Linns egen konto, ved vi ikke.** Ingen af de
+seks hentninger skriver til bruger-dokumentet, og hverken forsiden eller
+skallen var rørt siden 27. august. Rettelsen går på mekanismen, ikke på
+udløseren. Siden kan nu ikke hænge uanset hvad der sætter det i gang, men
+**bliver forsiden mærkbart langsom igen, er det dét spor der skal tages op.**
+Kandidaten er noget der skriver til `users/{uid}` mens forsiden henter.
+
+Udelukket undervejs, så det ikke skal gøres om: Firestore-reglerne fra samme
+formiddag (`isAdmin()` slår intet op, den læser mailen i tokenet, så den koster
+ikke tid), opstartsvagten (den findes kun i den gamle app), og datamængde
+(kontoen har 4 måltider).
+
+#### Set undervejs, ikke rørt
+
+**Linns egen konto har hverken `forlobIds` eller `products`**, men bærer stadig
+`aktivtTraeningsprogram` tildelt `kickstart_august`. Altså et træningsprogram
+der peger på et forløb hun ikke står på. Forelagt Linn, ikke ændret.
+
+#### Fælden der kostede tid, igen
+
+**Linn meldte "det virker fortsat ikke" mens Cloudflare stadig byggede.**
+Skærmbilledet fra dashboardet viste commit'en med spinner og produktion stadig
+på den forrige. Det er fjerde eller femte gang. `version.json` mod commit-tiden
+er ikke nok i sig selv: **buildet kan være i gang, og så svarer den gamle
+version stadig.** Se på Deployments-listen i Cloudflare, ikke kun på svaret fra
+serveren.
