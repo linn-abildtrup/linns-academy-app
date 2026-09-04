@@ -12,7 +12,7 @@
 	// staar den aaben resten af dagen (gemt i sessionStorage pr dato).
 	// ============================================================
 
-	import { getContext, onMount } from 'svelte';
+	import { getContext, onMount, untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { isAdmin } from '$lib/admin';
 	import { skalOnboardes3 } from '$lib/content/onboarding3';
@@ -187,8 +187,7 @@
 		function naarSynlig() {
 			if (typeof document !== 'undefined' && document.visibilityState === 'visible') hent();
 		}
-		if (typeof document !== 'undefined')
-			document.addEventListener('visibilitychange', naarSynlig);
+		if (typeof document !== 'undefined') document.addEventListener('visibilitychange', naarSynlig);
 
 		return () => {
 			afbrudt = true;
@@ -227,26 +226,63 @@
 	let henter = $state(true);
 	const trinTekst = $derived(TRIN[Math.min(hentet, TRIN.length - 1)]);
 
+	// ── Sikkerhedslinen ─────────────────────────────────────────
+	//
+	// Den laa FOER inde i hentningen, og det var det der lod forsiden
+	// haenge i det uendelige 4. september: startede hentningen forfra,
+	// blev uret stillet tilbage til nul, og de tolv sekunder loeb aldrig
+	// ud. Vente-skaermen stod og talte 0 % til 100 % og forfra.
+	//
+	// Nu er der ÉT ur pr besoeg, og det kan ingen genstart roere. Naar det
+	// loeber ud, viser vi siden med det vi har. Hentninger der kommer
+	// bagefter fylder stille resten ud, uden at vente-skaermen vender
+	// tilbage — se hentIGang nedenfor.
+	const NOEDBREMSE_MS = 12000;
+	let harGivetOp = false;
+	onMount(() => {
+		const id = setTimeout(() => {
+			harGivetOp = true;
+			henter = false;
+		}, NOEDBREMSE_MS);
+		return () => clearTimeout(id);
+	});
+
 	const noegle = $derived(
 		[user?.uid ?? '', iDag, aktivtForlob?.forlobId ?? '', aktivtForlob?.dagNummer ?? -1].join('|')
 	);
 
+	// HENTNINGEN MAA KUN STARTE FORFRA NAAR NOEGLEN SKIFTER, altsaa ved ny
+	// kunde, ny dag eller nyt forloeb.
+	//
+	// Foer laeste den ogsaa userDoc, adgangen, forloebene og uret mens den
+	// stillede kaldene op, og alt det blev dermed noget den holdt oeje med.
+	// Adgangsbilledet bygges om hver gang bruger-dokumentet aendrer sig, og
+	// hver ombygning giver NYE objekter, ogsaa naar indholdet er praecis
+	// det samme. Saa startede hentningen forfra, og med den gamle
+	// sikkerhedsline inde i sig selv naaede de tolv sekunder aldrig at
+	// loebe ud. Det var ringen 4. september.
+	//
+	// Alt andet end noeglen laeses derfor i untrack. Vaerdierne er de samme
+	// som foer, de bliver bare ikke laengere til anledninger til at hente
+	// alt igen.
 	$effect(() => {
-		const uid = user?.uid;
 		const n = noegle;
-		if (!uid || !n) return;
+		if (!n) return;
+		return untrack(() => hentForsiden());
+	});
+
+	function hentForsiden(): () => void {
+		const uid = user?.uid;
+		if (!uid) return () => {};
 		let afbrudt = false;
 
-		// Sikkerhedsline: har vi ikke alt efter tolv sekunder, viser vi
-		// siden med det vi har. Bedre en halv forside end en der staar og
-		// venter i det uendelige paa en daarlig forbindelse.
-		const noedbremse = setTimeout(() => {
-			if (!afbrudt) henter = false;
-		}, 12000);
-
 		(async () => {
-			henter = true;
-			hentet = 0;
+			// Har sikkerhedslinen allerede vist siden, henter vi stille
+			// videre i baggrunden. Vente-skaermen maa ikke komme igen.
+			if (!harGivetOp) {
+				henter = true;
+				hentet = 0;
+			}
 			const tael = () => {
 				if (!afbrudt) hentet += 1;
 			};
@@ -323,9 +359,8 @@
 
 		return () => {
 			afbrudt = true;
-			clearTimeout(noedbremse);
 		};
-	});
+	}
 
 	// ── Challenge ───────────────────────────────────────────────
 	//
