@@ -5353,3 +5353,38 @@ tal, fordi datoen kan være både "1. sep" og "26. dec 2025".
 **Alle tre gælder BEGGE kurver på siden** — overskud og symptomer — fordi de
 deler `byggKurve` og `FLADE_UDVIKLING`. Retter du noget i den ene, så se efter
 om den anden har det samme.
+
+---
+
+### 9.78 TRE BESLUTNINGER FRA LINN, 4. september
+
+**1. TRÆNINGEN VENTER PÅ KUNDEN I 3.0.** Ikke kalender. Næste træning er den
+laveste hun ikke har taget, og springer hun en dag over, forsvinder den ikke.
+
+**Det her punkt har blokeret for at flytte et hold siden 22. august, og det
+kostede nul kode.** Verificeret efter beslutningen: `naesteTraening3` gør det
+allerede, og der findes ingen kalender-tekst nogen steder i træningen — hverken
+"I dag, tirsdag" eller ugedage. Teksterne er "Vælg din træning", "Du er
+igennem X" og "Træning 7 af 21", som alle er sande uanset.
+
+**DE TO APPER GØR NU BEVIDST NOGET FORSKELLIGT.** Den gamle apps kravspec fra
+9. juni siger fast kalender-plan, programdag = forløbsdag 1:1. **Den gælder kun
+den gamle app.** Første hold i 3.0 er et Kickstart-hold, så reglen skifter under
+netop de kunder, og det er med vilje. Se `project_kickstart_traening_krav`, som
+er mærket med det.
+
+**2. HENSYN VENTER.** Halvdelen der virker er stadig den halvdel ingen kan se:
+admin-siden og reglen findes, men kunden kan ikke bede om et hensyn, og
+**0 ud af 62 øvelser har et mærke**, så et hensyn ville alligevel ikke filtrere
+noget fra. Linns beslutning: det venter. Byg ikke videre på det uden et nyt go.
+
+**3. "NULSTIL APPEN PÅ DENNE ENHED" SKAL IKKE I 3.0.** Punktet har stået på
+listen siden 26. august, hvor Linn selv sad fast uden den. Det er nu droppet.
+Knappen findes fortsat i den gamle app under Din profil.
+
+#### Hvad der så er tilbage før et hold kan flyttes
+
+1. **De fire velkomstvideoer.** Indhold fra Linn, ikke kode. Har stået øverst
+   siden 16. august og er nu det eneste der reelt spærrer
+2. Programmerne: to er tildelt Kickstart August fra dag 3 og verificeret.
+   To andre er stadig kladder og kan ikke tildeles
