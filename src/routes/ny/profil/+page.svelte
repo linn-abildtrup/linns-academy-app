@@ -126,14 +126,19 @@
 		adgang.aktiveForlob.length > 0 ? 'Dine egne små skridt' : 'Dine små skridt'
 	);
 
+	// Primitiv, saa flisen ikke hentes forfra hver gang adgangsbilledet
+	// bygges om. Adgangen er et nyt objekt hver gang, ogsaa naar det er
+	// noejagtig det samme forloeb. Se HANDOVER 9.72.
+	const aktivtProdukt = $derived(adgang.aktiveForlob[0]?.produkt ?? null);
+
 	$effect(() => {
 		const uid = hentUser()?.uid;
 		if (!uid) return;
-		const f = adgang.aktiveForlob[0] ?? null;
+		const produkt = aktivtProdukt;
 		let afbrudt = false;
 
 		(async () => {
-			const d = await hentSkridtValg3(uid, f ? { produkt: f.produkt } : null);
+			const d = await hentSkridtValg3(uid, produkt ? { produkt } : null);
 			if (afbrudt) return;
 			mineSkridt = d.valgte;
 			skridtHentet = true;

@@ -10,7 +10,7 @@
 	// foerst. Laeg ikke soegning, opskrifter eller genveje her.
 	// ============================================================
 
-	import { getContext } from 'svelte';
+	import { getContext, untrack } from 'svelte';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { Adgangsbillede, ForlobKilde } from '$lib/content/adgang3';
@@ -100,12 +100,33 @@
 	/** Tael op naar hun trykker Prøv igen, saa effekten koerer forfra. */
 	let forsoeg = $state(0);
 
+	/**
+	 * Alt der maa starte hentningen forfra, og INTET andet.
+	 *
+	 * Ny kunde, ny dato, et tryk paa Prøv igen, eller en ny dag i forloebet.
+	 * Bemaerk at det er `fokus.dagNummer` og ikke `fokus` selv: fokus bygges
+	 * om hver gang adgangsbilledet bygges om, og giver et nyt objekt ogsaa
+	 * naar dagnummeret er praecis det samme. Se noeglen paa forsiden og
+	 * HANDOVER 9.72.
+	 */
+	const noegle = $derived([user?.uid ?? '', dato, forsoeg, fokus?.dagNummer ?? -1].join('|'));
+
+	// DEN SAMME RING SOM PAA FORSIDEN, 4. september. Effekten laeste userDoc
+	// og fokus mens den stillede kaldet op, og saa startede hentningen
+	// forfra hver gang adgangsbilledet blev bygget om. Skaermen satte sig
+	// fast paa "henter", for udvejen nedenfor naaede aldrig frem foer den
+	// blev afbrudt af naeste genstart. Alt andet end noeglen laeses nu i
+	// untrack.
 	$effect(() => {
+		const n = noegle;
+		if (!n) return;
+		return untrack(() => hentDagenForfra());
+	});
+
+	function hentDagenForfra(): () => void {
 		const uid = user?.uid;
+		if (!uid) return () => {};
 		const d = dato;
-		// Laeses saa effekten koerer igen naar hun trykker Prøv igen.
-		forsoeg;
-		if (!uid) return;
 		let afbrudt = false;
 		henter = true;
 		fejl = false;
@@ -142,7 +163,7 @@
 		return () => {
 			afbrudt = true;
 		};
-	});
+	}
 </script>
 
 <svelte:head><title>30-30 beregner</title></svelte:head>

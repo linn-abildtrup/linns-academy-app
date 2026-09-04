@@ -132,10 +132,16 @@
 	let naeringAdgang = $state<NaeringAdgang3 | null>(null);
 	const visUdvidetTal = $derived(visUdvidet3(naeringAdgang, userDoc?.visUdvidetNaering));
 
+	// Primitiv, saa effekten nedenfor kun koerer naar forloebet FAKTISK
+	// skifter. Laeser den aktivtForlob selv, koerer den hver gang
+	// adgangsbilledet bygges om, ogsaa naar det er det samme forloeb. Se
+	// HANDOVER 9.72.
+	const aktivtForlobId = $derived(aktivtForlob?.forlobId ?? null);
+
 	$effect(() => {
 		const uid = user?.uid;
 		if (!uid) return;
-		const fid = aktivtForlob?.forlobId ?? null;
+		const fid = aktivtForlobId;
 		let afbrudt = false;
 		hentNaeringAdgang3(uid, fid)
 			.then((a) => {
@@ -161,8 +167,12 @@
 	// content/forsidebesked3.ts for hvem der ser hvad.
 	let forsidebesked = $state<Forsidebesked3 | null>(null);
 
+	// De aktive forloeb som én streng. Samme grund som aktivtForlobId
+	// ovenfor: adgangen selv er et nyt objekt hver gang den bygges om.
+	const aktiveForlobIdsNoegle = $derived(adgang.aktiveForlob.map((f) => f.forlobId).join(','));
+
 	$effect(() => {
-		const a = adgang;
+		const ids = aktiveForlobIdsNoegle ? aktiveForlobIdsNoegle.split(',') : [];
 		if (!user) return;
 		let afbrudt = false;
 
@@ -170,11 +180,7 @@
 			hentForsidebeskeder3()
 				.then((liste) => {
 					if (afbrudt) return;
-					forsidebesked = beskedTil3(
-						liste,
-						{ aktiveForlobIds: a.aktiveForlob.map((f) => f.forlobId) },
-						Date.now()
-					);
+					forsidebesked = beskedTil3(liste, { aktiveForlobIds: ids }, Date.now());
 				})
 				.catch((e) => console.warn('[ny] kunne ikke hente forsidebesked', e));
 		}
@@ -449,12 +455,16 @@
 
 	// ── Til dig lige nu ─────────────────────────────────────────
 	// Ulaeste svar fra Linn hentes for sig selv, IKKE sammen med resten.
+	// Primitiv af samme grund som ovenfor: ellers henter vi svarene igen
+	// hver gang bruger-dokumentet aendrer sig, uanset om tallet skifter.
+	const senestSvarLaestAt = $derived(userDoc?.senestSpoergsmaalLaestAt ?? 0);
+
 	// Forsiden skal ikke staa og vente paa dem, og kommer svaret et halvt
 	// sekund senere, glider linjen bare ind oeverst.
 	$effect(() => {
 		const uid = user?.uid;
 		if (!uid) return;
-		const senest = userDoc?.senestSpoergsmaalLaestAt ?? 0;
+		const senest = senestSvarLaestAt;
 		let afbrudt = false;
 
 		hentMineSpoergsmaal(uid)
