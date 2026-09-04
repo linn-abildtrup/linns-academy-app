@@ -238,6 +238,14 @@ Paa selve opskrift-listen vises et lille stjerne-maerke i hjoernet af hver opskr
 - Opskrifter: bladrer i opskriftsbiblioteket. Klik en opskrift for at se ingredienser og næring.
 - Dagbog: se dine gemte måltider for en valgt dato. Brug pile/dato-input til at skifte dag. Klik 'Byg måltid for denne dag' for at oprette et måltid på en specifik dato (i stedet for dagens dato).
 
+Favorit-måltider: spiser du ofte det samme, kan du gemme måltidet som favorit i stedet for at bygge det forfra hver gang. Sæt flueben i 'Gem også som favorit' når du gemmer måltidet i dagbogen.
+
+Dine favoritter ligger under 'Mine favoritter' på Byg måltid-fanen. Klik på en favorit for at lægge alle dens ingredienser ind i måltidet, og gem det så på den dag du er i gang med. Du kan også omdøbe eller slette en favorit derinde.
+
+Navnet på måltidet foreslås automatisk ud fra måltidstypen, altså 'Morgenmad', 'Frokost' og så videre. Gemmer du favorit hver dag, ender du derfor let med flere der hedder det samme. Derfor spørger appen, hvis du gemmer en favorit med et navn du allerede bruger. Du kan vælge at opdatere den favorit du har, at gemme en ny under et navn du selv skriver, eller at lade dine favoritter være.
+
+Måltidet er altid gemt i dagbogen inden det spørgsmål kommer. Vælger du at lukke det, står maden der stadig. Spørgsmålet handler kun om favoritten.
+
 Målet med 30-30 er minimum 30g protein pr måltid og 30g fiber i alt over dagen.
 
 Er du på et forløb der bygger op ét måltid ad gangen, følger dit mål med. I den uge hvor kun morgenmaden tæller, er målet 30g protein og 10g fiber. Når frokosten kommer til, er det 60g og 20g, og når alle tre måltider er med, er du på de fulde 90g og 30g. Det står øverst i mad-modulet, hvilken uge du er i.
