@@ -5139,3 +5139,42 @@ læser den ikke, så der er ingen ring.
 rene værdier, aldrig på objekter fra adgangsbilledet. Skal den bruge et objekt,
 læses det i `untrack`. Adgangsbilledet bygges om hver gang bruger-dokumentet
 ændrer sig, og skallen lytter løbende på det dokument.
+
+---
+
+### 9.73 BUNDMENUEN HENTER IKKE LÆNGERE FORFRA, 4. september
+
+Linn: hver fane stod og loadede et kort sekund ved hvert skift. Årsagen var at
+**hver fane hentede sine ting forfra hver eneste gang.** Træning henter fem
+ting, forsiden seks, Udvikling tre. Frem og tilbage mellem to faner ti gange
+gav ti hentninger af det samme. Mad-delen har haft en hukommelse længe, se
+`fodevarer3` og `opskrifter3`, de øvrige faner havde ingen.
+
+**Linn fik tre veje forelagt og valgte "husk hvad fanen viste".** De to fravalgte
+var at cache kun det der sjældent ændrer sig, og at hente fanerne på forhånd
+i baggrunden. Den sidste blev fravalgt fordi den koster kald til faner kunden
+måske aldrig åbner, og vi er på Blaze.
+
+**Ny fil `content/sidehukommelse3.ts`.** Vis det fanen viste sidst med det
+samme, hent friskt i baggrunden. Vente-skærmen kommer nu kun første gang en
+fane åbnes i et besøg. Prisen, som Linn er forelagt: har hun lige tastet noget
+på en anden fane, kan hun se det gamle tal et halvt sekund.
+
+**EJERSKABET ER DET VIGTIGSTE I DEN FIL.** Alt er bundet til ét uid, og
+hukommelsen ryddes helt før der udleveres noget hvis brugeren har skiftet.
+Det gælder både opslag og gemning, så der ikke findes en vej udenom. Dertil
+`glemAlt()` ved logout i skallen. **Rører du filen, så lad de to tests om
+bruger-skifte være i fred.** En delt telefon er ikke en teoretisk situation.
+
+**Hukommelsen lever kun så længe appen er åben.** Der skrives intet til
+telefonen, med vilje: en kopi der overlevede kunne vise tal fra i går, og den
+slags har vi allerede haft fingrene i med den hurtige opstart. **Nøglerne bærer
+det der skifter** — forsiden bruger sin fulde nøgle med dag og forløb, 30-30
+bruger datoen — så en ny dag aldrig kan vise gårsdagens tal.
+
+**Fire faner plus trådene i Beskeder.** Din side er ikke rørt, den har ingen
+vente-skærm at fjerne.
+
+**En detalje der er let at overse:** står der allerede noget fra sidst, og den
+friske hentning fejler, lader vi det stå i stedet for at lægge en fejlbesked
+oven på en side der virker. Det gælder Træning og 30-30.
