@@ -2,6 +2,16 @@
 
 Sidst opdateret 4. september 2026.
 
+**HANDLER DET OM AT NOGET IKKE BLEV GEMT, SÅ LÆS "Rettet 4. september 2026:
+appen siger nu fra" i afsnit 7 FØR DU GØR NOGET SOM HELST ANDET.** Et gem
+uden forbindelse melder ALDRIG fejl i den her app, og ændringen ser gemt ud
+på skærmen alligevel. Det kostede en kunde to hele dage. Mekanismen er ikke
+til at gætte sig til, og afsnittet forklarer den.
+
+**KIGGER DU PÅ OM EN UDRULNING ER NÅET FREM: versionen er i UTC, git log er
+i dansk tid.** To timers forskel om sommeren. Se afsnit 11. Den fælde kostede
+tre forkerte meldinger på én aften den 4. september.
+
 **LEDER DU EFTER NOGET OM VIDEO ELLER LYD PÅ TRÆNINGEN, så læs "Rettet 2. til
 4. september" i afsnit 7 og de to nye åbne tråde fra 3. september i afsnit 9.**
 Alle 62 øvelsesvideoer er pakket om, øvelsesvideoerne har slet ingen lyd, og
@@ -988,7 +998,8 @@ favorit-måltider før.
 
 ### Rettet 4. september 2026: appen siger nu fra når den ikke kan komme igennem
 
-Under ventilen i regel 2, med Linns go. Commits `2866d7d` og `6a8678a`.
+Under ventilen i regel 2, med Linns go. Commits `2866d7d`, `6a8678a` og
+`767a2df`.
 
 **LÆS DET HER FØR DU FEJLSØGER "MINE DATA FORSVANDT".** Det er den
 mekanisme der kostede en kunde to hele dage, og den er ikke intuitiv.

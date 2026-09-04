@@ -2,6 +2,15 @@
 
 Sidst opdateret 4. september 2026.
 
+**3.0 SIGER IKKE FRA NÅR APPEN IKKE KAN KOMME IGENNEM. Det skal på plads
+inden det første hold flyttes over.** Et gem uden forbindelse melder ALDRIG
+fejl, og ændringen ser gemt ud på skærmen alligevel. Det kostede en kunde i
+den gamle app to hele dage, mad, vaner og noter, uden at hun fik det at vide.
+Den gamle app fik løsningen 4. september 2026, og delene ligger i `src/lib/`
+og kan genbruges. Se konventionen i afsnit 6, og hele beskrivelsen i
+`HANDOVER-GAMMEL-APP.md`. **Flytter du et hold til `/ny` uden det her, giver
+du de kunder præcis den fælde vi lige har lukket for de andre.**
+
 **LÆS DEN HER FØRST HVIS DU LEDER EFTER DEN SIDSTE UGES ARBEJDE.** Mellem 27.
 og 31. august blev der lavet 39 ting, og **næsten alle ligger i den GAMLE app**,
 ikke i 3.0. Login i to trin, hjemmeskærms-skærmen, Kickstarts startdag og
@@ -598,6 +607,14 @@ hele admin om. Se 9.61 og 9.62.
 
 **Det der spærrer for at flytte et hold har ikke flyttet sig siden 22. august,
 og det er stadig indhold og tildelinger fra Linn, ikke kode.**
+
+**Nyt 4. september, og det er kode, ikke indhold: advarslen om manglende
+forbindelse findes ikke i 3.0.** Den gamle app fik den samme dag, efter at en
+kunde havde mistet to hele dage uden at få det at vide. Delene ligger i
+`src/lib/` og kan genbruges, men båndet skal have sin egen udgave med
+`ny.css`-tokens, og hvert gem i 3.0 skal igennem `gemMedVentetid`. Se
+konventionen i afsnit 6. **Det bør på plads før et hold flyttes**, for ellers
+arver de nye kunder den fælde vi lige har lukket for de gamle.
 
 **De fire nye ting fra 26. august**, i den rækkefølge jeg ville tage dem, se
 9.60:
