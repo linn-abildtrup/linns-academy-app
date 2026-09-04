@@ -5258,3 +5258,66 @@ Reserven er ordet "redskaber", vagt med vilje: vagt slår forkert.
 kropsvægts-programmet indtil de siger fra. Det er det rigtige, men det gør
 spørgsmålet "skal vi spørge dem én gang?" mere relevant den dag holdet flyttes.
 Forslaget er tegnet som B i `mockups-udstyr-og-programmer.html`.
+
+---
+
+### 9.76 BESKEDER GJORT SOM I DEN GAMLE APP, 4. september
+
+Linn: "beskedfunktionen skal rettes til så løsningen skal være det samme som på
+den gamle app, men med det nye design." Fire forslag blev tegnet i
+`mockups-beskeder-som-gammel.html`, og hun valgte **B: den gamle app plus det
+3.0 allerede kunne**.
+
+#### Hvad der var forskelligt, fundet ved at gennemgå begge sider blok for blok
+
+**Den store forskel var ikke udseendet, det var en regel.** I den gamle app kan
+kunden skrive direkte til Linn. I 3.0 fandtes der intet skrivefelt på fanen
+Linn: vejen ind gik gennem AI'en, og feltet fandtes kun som svar på en besked
+Linn selv havde startet. Dertil manglede Linns intro-tekst, noten om anonyme
+svar, dag-mærker, tegn-tælleren, sikkerheds-procenten, og selve chat-formen.
+
+#### Det der er bygget
+
+**Fanen er en samtale**, ældst øverst. Linns egen ordlyd første gang, med
+"Kh Linn". Dag-mærker, "Afventer svar", tegn-tæller ved 400 af 500. **Ét
+skrivefelt forneden** i stedet for et pr tråd: et svar på Linns besked blev
+allerede gemt som et helt almindeligt spørgsmål, så Linn ser det samme som før.
+
+**Alt 3.0's eget lever videre inde i boblerne**, og det var hele pointen med B:
+lyd, billeder, klikbare links, at Linn kan skrive først, og "Nyt svar".
+
+**Sikkerheds-procenten vises nu til kunden.** Det omgør en regel der stod to
+steder i koden. Tallet blev kastet væk tre steder på vejen og bæres nu hele
+vejen, se `content/aiSikkerhed3.ts`. **Gamle beskeder har intet tal gemt** og
+viser derfor den forsigtige linje uden procent. Det er korrekt, ikke en fejl.
+
+#### RULNING OG LAYOUT: læs det her før du rører noget der klæber
+
+Fire fejl i træk samme dag, og alle af samme grund. **Det er ikke boble-listen
+der ruller, det er skallens `.ny-scroll`.** Listen har selv `overflow-y: auto`,
+men `.ny-scroll` er ikke en flex-container, så listens `flex: 1` bider ikke.
+
+1. **`rulNed()` har aldrig virket.** Den har stået der siden 23. august og sat
+   scrollTop på et element der ikke ruller. Ingen opdagede det, fordi en kort
+   samtale ikke fylder mere end skærmen. Se `utils/rulning3.ts`, som leder
+   opad efter det der faktisk ruller
+2. **Nøglen blev brugt op før elementet blev læst**, så var listen ikke tegnet
+   endnu, blev der aldrig rullet
+3. **Striben under skrivefeltet: feltet er i TO tilstande.** Klæbende når hun
+   er rullet op, og helt almindelig når hun er rullet til bunden. `bottom`
+   dækker den første, `margin-bottom` den anden. **Negativ margin plus
+   polstring virker IKKE**: et klæbende element holder sin bund fast, så
+   polstringen vokser opad og gør feltet højere
+4. **Fane-skift hoppede.** Skiftet til Linn gør indholdet kort, browseren
+   klamper positionen mod toppen, og ved skift tilbage stod samtalen øverst og
+   blev rullet ned bagefter. Positionen gemmes nu før skiftet og gendannes
+
+**Lære, og den kostede en time af Linns tid:** mål i browseren i stedet for at
+gætte på timing. De tre første forsøg gik alle på timing, mens fejlen lå i
+layoutet. Se `feedback_test_altid_i_chrome`.
+
+#### Åbent
+
+**Skrivefeltet ligger nu fast forneden**, og fanerne klæber øverst. Begge dele
+er Linns ønske og virker. **Alt er afprøvet af mig selv i Chrome som Kimmie**,
+ikke kun med tests.
