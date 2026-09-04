@@ -58,6 +58,7 @@
 	} from '$lib/content/beskedside3';
 	import { delOpILinks } from '$lib/content/linkTekst3';
 	import { sikkerhedsLinje3 } from '$lib/content/aiSikkerhed3';
+	import { rullendeElement3, tilBunden3 } from '$lib/utils/rulning3';
 	import { udenFormateringstegn } from '$lib/content/linnAi';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Lydbesked from '$lib/components/ny/Lydbesked.svelte';
@@ -316,9 +317,14 @@
 		if (sidstRullet === noegle) return;
 		sidstRullet = noegle;
 
-		const iBunden = () => {
-			el.scrollTop = el.scrollHeight;
-		};
+		// RUL DET DER FAKTISK RULLER. Boble-listen har selv overflow-y:auto,
+		// men den ligger i skallens .ny-scroll, som ikke er en
+		// flex-container. Derfor bider listens flex:1 ikke, den vokser med
+		// sit indhold, og rullet sker i .ny-scroll udenfor. At saette
+		// scrollTop paa listen gjorde altsaa ingenting, og det var den
+		// rigtige grund til at Linn blev ved med at lande i toppen.
+		// Se utils/rulning3.ts.
+		const iBunden = () => tilBunden3(el);
 
 		// FIRE FORSOEG, og det er ikke overdrevet. Med det samme rammer den
 		// hvis alt allerede staar der. Naeste billede-tegning fanger det
@@ -337,7 +343,10 @@
 
 	async function rulNed() {
 		await tick();
-		rulle?.scrollTo({ top: rulle.scrollHeight, behavior: 'smooth' });
+		// Samme fejl som ovenfor: .bobler ruller ikke selv, det goer
+		// skallens .ny-scroll udenom. Se utils/rulning3.ts.
+		const el = rullendeElement3(rulle);
+		el?.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
 	}
 
 	/**
@@ -347,12 +356,20 @@
 	 */
 	async function rulTilSvarTop() {
 		await tick();
-		const el = rulle;
-		if (!el) return;
-		const svar = el.querySelectorAll('.boble.svar');
+		if (!rulle) return;
+		const svar = rulle.querySelectorAll('.boble.svar');
 		const sidste = svar[svar.length - 1] as HTMLElement | undefined;
 		if (!sidste) return void rulNed();
-		el.scrollTo({ top: Math.max(0, sidste.offsetTop - 10), behavior: 'smooth' });
+
+		// Det element der ruller er skallens .ny-scroll og ikke .bobler,
+		// saa boblens offsetTop skal maales mod DEN og ikke mod listen.
+		// Foer stod der offsetTop mod .bobler, og saa landede rulningen for
+		// hoejt oppe med praecis afstanden fra toppen af skaermen og ned til
+		// listen. Se utils/rulning3.ts.
+		const el = rullendeElement3(rulle);
+		if (!el) return;
+		const top = sidste.getBoundingClientRect().top - el.getBoundingClientRect().top;
+		el.scrollTo({ top: Math.max(0, el.scrollTop + top - 10), behavior: 'smooth' });
 	}
 
 	async function send(tekst?: string) {
