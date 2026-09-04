@@ -2245,11 +2245,24 @@ body:has(.ny-app) {
 	   forbi. Maalt i browseren 4. september: feltets bund laa paa 537,
 	   rulleomraadets paa 561.
 
-	   FOERSTE FORSOEG VAR FORKERT og er vaerd at kende: negativ margin
-	   plus polstring. Et klaebende element holder sin BUND fast, saa
-	   polstringen voksede opad i stedet for at skubbe feltet ned, og
-	   striben blev staaende. Loesningen er at flytte selve klaebe-punktet. */
+	   DER SKAL TO LINJER TIL, fordi feltet er i to forskellige tilstande:
+
+	   `bottom` daekker den KLAEBENDE tilstand, altsaa naar hun er rullet op
+	   i samtalen. Uden den stopper feltet over polstringen.
+
+	   `margin-bottom` daekker den NATURLIGE tilstand, altsaa naar hun er
+	   rullet helt til bunden. Der klaeber feltet ikke laengere, det ligger
+	   bare sidst i indholdet, og saa er polstringen under det. Det var den
+	   tilstand Linn saa striben i, og det er derfor mine to foerste
+	   rettelser ikke virkede: jeg maalte mens jeg var rullet op, hvor
+	   `bottom` alene saa ud til at vaere nok.
+
+	   FORSOEG DER VAR FORKERT, saa det ikke proeves igen: negativ margin
+	   plus polstring i samme hoejde. Et klaebende element holder sin BUND
+	   fast, saa polstringen voksede OPAD og gjorde feltet hoejere, mens
+	   striben blev staaende. Polstring loeser det ikke. */
 	bottom: calc(-1 * var(--scroll-bund));
+	margin-bottom: calc(-1 * var(--scroll-bund));
 	z-index: 5;
 	/* Samme farve som selve feltet, saa det laeser som ét felt hele vejen
 	   ned til menuen og ikke som en stribe under det. */
