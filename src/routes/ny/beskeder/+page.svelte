@@ -567,26 +567,36 @@
 	/>
 
 	{#if visFaner}
-		<div class="besk-faner" role="tablist">
-			<button
-				type="button"
-				role="tab"
-				aria-selected={fane === 'ai'}
-				class:paa={fane === 'ai'}
-				onclick={() => (valgtFane = 'ai')}
-			>
-				Linn AI
-			</button>
-			<button
-				type="button"
-				role="tab"
-				aria-selected={fane === 'linn'}
-				class:paa={fane === 'linn'}
-				onclick={() => (valgtFane = 'linn')}
-			>
-				Linn
-				{#if nytSvar}<span class="besk-prik" aria-label="Nyt svar"></span>{/if}
-			</button>
+		<!-- FANERNE BLIVER STAAENDE naar hun ruller. Linns oenske 4.
+		     september: skiftet mellem Linn AI og Linn skal vaere ét tryk
+		     vaek, ogsaa midt i en lang samtale. Foer rullede de vaek med
+		     titlen, og saa skulle hun helt op i toppen foerst.
+
+		     Wrapperen findes fordi selve fane-pillen har luft i siderne.
+		     Uden den ville indholdet kunne ses glide forbi til hoejre og
+		     venstre for pillen, mens den klaeber. -->
+		<div class="besk-faner-fast">
+			<div class="besk-faner" role="tablist">
+				<button
+					type="button"
+					role="tab"
+					aria-selected={fane === 'ai'}
+					class:paa={fane === 'ai'}
+					onclick={() => (valgtFane = 'ai')}
+				>
+					Linn AI
+				</button>
+				<button
+					type="button"
+					role="tab"
+					aria-selected={fane === 'linn'}
+					class:paa={fane === 'linn'}
+					onclick={() => (valgtFane = 'linn')}
+				>
+					Linn
+					{#if nytSvar}<span class="besk-prik" aria-label="Nyt svar"></span>{/if}
+				</button>
+			</div>
 		</div>
 	{/if}
 

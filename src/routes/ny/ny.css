@@ -10281,13 +10281,35 @@ a.ch-knap {
 /* Lagt sammen 16. august 2026. Samtalen med Linn AI og spoergsmaalene til Linn er
    én side med to faner, se routes/ny/beskeder/+page.svelte. */
 
+/* FANERNE BLIVER STAAENDE naar hun ruller. Linns oenske 4. september:
+   skiftet mellem Linn AI og Linn skal vaere ét tryk vaek, ogsaa midt i en
+   lang samtale. Foer rullede de vaek sammen med titlen.
+
+   sticky maales mod det element der RULLER, og det er skallens
+   .ny-scroll og ikke beskedsiden. Se utils/rulning3.ts for hele
+   forklaringen paa hvorfor det er .ny-scroll.
+
+   Wrapperen baerer baggrunden i fuld bredde. Uden den ville samtalen
+   kunne ses glide forbi til hoejre og venstre for fane-pillen, som har
+   luft i siderne. */
+.besk-faner-fast {
+	position: sticky;
+	top: 0;
+	z-index: 5;
+	background: var(--oat);
+	padding: 4px 17px 10px;
+	flex-shrink: 0;
+}
+
 .besk-faner {
 	display: flex;
 	gap: 4px;
 	background: var(--paper-2);
 	border-radius: 16px;
 	padding: 4px;
-	margin: 0 17px 10px;
+	/* Luften i siderne ligger nu paa wrapperen, saa baggrunden naar helt
+	   ud til kanten mens den klaeber. */
+	margin: 0;
 	flex-shrink: 0;
 }
 
