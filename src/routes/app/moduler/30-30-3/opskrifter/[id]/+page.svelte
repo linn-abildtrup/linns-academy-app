@@ -25,10 +25,28 @@
 		type MaaltidsItem,
 		type Maaltidstype
 	} from '$lib/content/kost';
+	import { visMakro } from '$lib/content/opskriftMakro3';
+	import type { KoblingsOpslag } from '$lib/content/opskriftMakro3';
+	import { delInstruktioner, byggeItemsFraBeregning } from '$lib/content/opskriftTal3';
+	import { hentBeregninger, type Beregninger } from '$lib/firestore/opskriftBeregning3';
+	import { hentKoblinger } from '$lib/firestore/ingrediensKobling3';
 	import Icon from '$lib/components/Icon.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 
 	const STORAGE_KEY = 'la_30303_maaltid_v1';
+
+	/** Dansk komma. Makro-linjen i teksten har altid haft komma. */
+	function tal(v: number | null): string {
+		if (v === null || !Number.isFinite(v)) return '—';
+		return String(Math.round(v * 10) / 10).replace('.', ',');
+	}
+
+	// 3.0's regnestykke. Linns beslutning 4. september 2026: de to apper
+	// skal vise det samme, og 3.0's maade er den rigtige. Kan tallene
+	// ikke hentes, falder siden tilbage paa makro-linjen i teksten,
+	// praecis som 3.0 selv goer. Se content/opskriftTal3.ts.
+	let beregninger = $state<Beregninger>({});
+	let koblinger = $state<Record<string, KoblingsOpslag>>({});
 
 	const getUser = getContext<() => User | null>('user');
 	const user = $derived(getUser());
@@ -104,7 +122,15 @@
 	}>(
 		opskrift
 			? (() => {
-					const m = parseOpskriftMakro(opskrift.instruktioner);
+					// Tallet kommer fra 3.0's beregning naar den daekker retten,
+					// ellers fra makro-linjen i teksten. visMakro afgoer det, saa
+					// begge apper vaelger ens.
+					const m = visMakro(
+						opskrift.id,
+						opskrift.instruktioner,
+						beregninger,
+						parseOpskriftMakro(opskrift.instruktioner)
+					);
 					const p = Math.max(0.01, maaltidPortioner);
 					// MAKROEN ER PR PORTION og ganges KUN med det antal hun spiste.
 					// defaultPortioner fortæller hvor mange portioner
@@ -196,10 +222,17 @@
 
 	onMount(async () => {
 		try {
-			const [o, allFoods] = await Promise.all([
+			// Beregningen og koblingskortet er to smaa dokumenter, og de maa
+			// aldrig kunne spaerre for at opskriften vises. Fejler de, staar
+			// de tomme, og siden bruger makro-linjen i teksten.
+			const [o, allFoods, b, k] = await Promise.all([
 				hentOpskrift(opskriftId),
-				hentAlleFodevarer()
+				hentAlleFodevarer(),
+				hentBeregninger().catch(() => ({}) as Beregninger),
+				hentKoblinger().catch(() => ({}))
 			]);
+			beregninger = b;
+			koblinger = k as Record<string, KoblingsOpslag>;
 			if (!o) {
 				fejl = 'Opskriften blev ikke fundet.';
 				loading = false;
@@ -237,11 +270,22 @@
 		tilfoejer = true;
 		tilfoejBesked = null;
 		try {
-			const skaleredeIngredienser = opskrift.ingredienser.map((ing) => ({
-				...ing,
-				maengde: skalerMaengde(ing.maengde, opskrift!.defaultPortioner, portioner)
-			}));
-			const { items, ikkeMatchede } = matchIngredienserMaltid(skaleredeIngredienser, foods);
+			// 3.0's regnestykke naar koblingskortet er hentet, ellers den
+			// gamle vej. Se content/opskriftTal3.ts for hvorfor.
+			const varer = new Map(foods.map((f) => [f.id, f]));
+			const brug30 = Object.keys(koblinger).length > 0;
+			const { items, ikkeMatchede } = brug30
+				? (() => {
+						const r = byggeItemsFraBeregning(opskrift!, koblinger, varer, portioner);
+						return { items: r.items, ikkeMatchede: r.ikkeKoblede.map((navn) => ({ navn })) };
+					})()
+				: (() => {
+						const skaleredeIngredienser = opskrift!.ingredienser.map((ing) => ({
+							...ing,
+							maengde: skalerMaengde(ing.maengde, opskrift!.defaultPortioner, portioner)
+						}));
+						return matchIngredienserMaltid(skaleredeIngredienser, foods);
+					})();
 
 			let nuvaerende: MaaltidsItem[] = [];
 			try {
@@ -394,9 +438,39 @@
 		{/if}
 
 		{#if opskrift.instruktioner.trim()}
+			{@const delt = delInstruktioner(opskrift.instruktioner)}
 			<section class="card">
 				<div class="section-label">Fremgangsmåde</div>
-				<div class="instruktioner">{opskrift.instruktioner}</div>
+				<div class="instruktioner">{delt.broedtekst}</div>
+
+				<!-- Tallene staar i deres egen boks i stedet for inde i teksten,
+				     saa der kun er ét sted at laese dem. Linns valg 4. september. -->
+				{#if visMakro(opskrift.id, opskrift.instruktioner, beregninger, parseOpskriftMakro(opskrift.instruktioner)).protein !== null}
+					{@const mk = visMakro(
+						opskrift.id,
+						opskrift.instruktioner,
+						beregninger,
+						parseOpskriftMakro(opskrift.instruktioner)
+					)}
+					<div class="makro-boks">
+						<div class="makro-boks-top">
+							<span class="makro-boks-titel">Pr. portion</span>
+							<span class="makro-boks-kilde">
+								{mk.beregnet ? 'Regnet på ingredienserne' : 'Vejledende'}
+							</span>
+						</div>
+						<div class="makro-boks-grid">
+							<div><strong>{tal(mk.protein)}</strong><span>Protein</span></div>
+							<div><strong>{tal(mk.fiber)}</strong><span>Fiber</span></div>
+							<div><strong>{tal(mk.kh)}</strong><span>Kulhydrat</span></div>
+							<div><strong>{tal(mk.fedt)}</strong><span>Fedt</span></div>
+							<div><strong>{mk.kalorier === null ? '—' : Math.round(mk.kalorier)}</strong><span>Kcal</span></div>
+						</div>
+						{#if delt.tid}
+							<div class="makro-boks-tid">Tid: {delt.tid}</div>
+						{/if}
+					</div>
+				{/if}
 			</section>
 		{/if}
 
@@ -745,6 +819,55 @@
 
 	.ing-navn {
 		color: var(--text);
+	}
+
+	.makro-boks {
+		margin-top: 18px;
+		border: 1px solid var(--line, #e8ddd2);
+		border-radius: 12px;
+		padding: 14px 16px;
+		background: #fdfaf6;
+	}
+	.makro-boks-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 10px;
+		margin-bottom: 12px;
+	}
+	.makro-boks-titel {
+		font-size: calc(11px * var(--fs-scale, 1));
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--text2);
+		font-weight: 600;
+	}
+	.makro-boks-kilde {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--text2);
+	}
+	.makro-boks-grid {
+		display: grid;
+		grid-template-columns: repeat(5, 1fr);
+		gap: 8px;
+		text-align: center;
+	}
+	.makro-boks-grid strong {
+		display: block;
+		font-family: var(--serif, Georgia, serif);
+		font-size: calc(18px * var(--fs-scale, 1));
+		font-weight: 400;
+		color: var(--text);
+	}
+	.makro-boks-grid span {
+		font-size: calc(10px * var(--fs-scale, 1));
+		color: var(--text2);
+		letter-spacing: 0.04em;
+	}
+	.makro-boks-tid {
+		margin-top: 12px;
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--text2);
 	}
 
 	.instruktioner {
