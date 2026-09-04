@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getContext, onMount } from 'svelte';
+	import { getContext, onDestroy, onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { replaceState, goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
@@ -46,6 +46,8 @@
 	import BarcodeScanner from '$lib/components/BarcodeScanner.svelte';
 	import TilfoejFodevareDialog from '$lib/components/TilfoejFodevareDialog.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
+	import FavoritNavnAdvarsel from '$lib/components/FavoritNavnAdvarsel.svelte';
+	import { findFavoritMedNavn } from '$lib/content/favoritNavn';
 	import type { FavoritMaaltid } from '$lib/content/kost';
 	import {
 		ALLE_DIET_TAGS,
@@ -334,6 +336,22 @@
 	let kopierType = $state<Maaltidstype>('morgenmad');
 	let kopierer = $state(false);
 	let kopierBesked = $state<{ tekst: string; type: 'ok' | 'fejl' } | null>(null);
+
+	// Advarsel om ens favorit-navne. Aabnes NAAR maaltidet allerede er gemt,
+	// se udforGem, og handler udelukkende om favoritten. Se favoritNavn.ts
+	// for baggrunden: navnefeltet foreslaar maaltidstypen, sa kunder der
+	// gemmer favorit hver dag ender med fem der alle hedder "Morgenmad".
+	let favoritAdvarsel = $state<{
+		navn: string;
+		items: MaaltidsItem[];
+		eksisterende: FavoritMaaltid;
+	} | null>(null);
+	let favoritAdvarselArbejder = $state(false);
+
+	// Kort kvittering forneden. Bruges kun i favorit-flowet, hvor arket
+	// lukker og kunden ellers ikke ville fa at vide hvad der skete.
+	let kvittering = $state<string | null>(null);
+	let kvitteringTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// Favoritter
 	let favoritter = $state<FavoritMaaltid[]>([]);
@@ -757,6 +775,67 @@
 		} catch (e) {
 			console.warn('Kunne ikke beregne måltids-fokus:', e);
 		}
+	}
+
+	function visKvittering(tekst: string) {
+		kvittering = tekst;
+		if (kvitteringTimer) clearTimeout(kvitteringTimer);
+		kvitteringTimer = setTimeout(() => (kvittering = null), 5000);
+	}
+
+	onDestroy(() => {
+		if (kvitteringTimer) clearTimeout(kvitteringTimer);
+	});
+
+	// Erstat indholdet i den favorit der allerede baerer navnet. Antallet af
+	// favoritter er uaendret, og det er det de fleste vil.
+	async function opdaterEksisterendeFavorit() {
+		const u = user;
+		const a = favoritAdvarsel;
+		if (!u || !a || favoritAdvarselArbejder) return;
+		favoritAdvarselArbejder = true;
+		try {
+			await opdaterFavorit(u.uid, a.eksisterende.id, {
+				navn: a.eksisterende.navn,
+				items: a.items
+			});
+			await indlaesFavoritter();
+			visKvittering(`Måltidet er gemt, og din favorit "${a.eksisterende.navn}" er opdateret.`);
+		} catch (e) {
+			// Maaltidet er gemt uanset hvad. Kun favoritten fejlede, og det
+			// siger vi praecist, sa hun ikke tror maden er vaek.
+			console.warn('Kunne ikke opdatere favoritten:', e);
+			visKvittering('Måltidet er gemt, men favoritten kunne ikke opdateres. Prøv igen senere.');
+		} finally {
+			favoritAdvarselArbejder = false;
+			favoritAdvarsel = null;
+		}
+	}
+
+	// Gem en ny favorit under det navn kunden selv skrev.
+	async function gemNyFavoritMedNavn(nytNavn: string) {
+		const u = user;
+		const a = favoritAdvarsel;
+		if (!u || !a || favoritAdvarselArbejder) return;
+		favoritAdvarselArbejder = true;
+		try {
+			await gemFavorit(u.uid, { navn: nytNavn, items: a.items });
+			await indlaesFavoritter();
+			visKvittering(`Måltidet er gemt, og "${nytNavn}" ligger nu under Mine favoritter.`);
+		} catch (e) {
+			console.warn('Kunne ikke gemme den nye favorit:', e);
+			visKvittering('Måltidet er gemt, men favoritten kunne ikke gemmes. Prøv igen senere.');
+		} finally {
+			favoritAdvarselArbejder = false;
+			favoritAdvarsel = null;
+		}
+	}
+
+	// Luk uden at roere favoritterne.
+	function lukFavoritAdvarsel() {
+		if (favoritAdvarselArbejder) return;
+		favoritAdvarsel = null;
+		visKvittering('Måltidet er gemt. Din favorit står som den var.');
 	}
 
 	async function indlaesFavoritter() {
@@ -1333,6 +1412,15 @@
 		gemmer = true;
 		gemBesked = null;
 
+		// Sat hvis favorit-navnet er optaget. Arket aabnes foerst nederst i
+		// funktionen, naar gem-modalen er lukket og dagbogen er valgt, saa
+		// maaltidet staar synligt bag arket mens hun laeser teksten.
+		let ventendeAdvarsel: {
+			navn: string;
+			items: MaaltidsItem[];
+			eksisterende: FavoritMaaltid;
+		} | null = null;
+
 		const data = {
 			navn,
 			type: gemType,
@@ -1355,11 +1443,24 @@
 			} else {
 				await gemMaaltid(u.uid, data);
 				if (gemSomFavorit) {
-					try {
-						await gemFavorit(u.uid, { navn, items: maaltid });
-						await indlaesFavoritter();
-					} catch (e) {
-						console.warn('Kunne ikke gemme som favorit:', e);
+					// Har hun allerede en favorit med praecis det navn, saa
+					// spoerg i stedet for stiltiende at lave en dublet. Vi
+					// kopierer varerne ud her, fordi 'maaltid' bliver tomt
+					// et par linjer laengere nede.
+					const dublet = findFavoritMedNavn(favoritter, navn);
+					if (dublet) {
+						ventendeAdvarsel = {
+							navn,
+							items: maaltid.map((i) => ({ ...i })),
+							eksisterende: dublet
+						};
+					} else {
+						try {
+							await gemFavorit(u.uid, { navn, items: maaltid });
+							await indlaesFavoritter();
+						} catch (e) {
+							console.warn('Kunne ikke gemme som favorit:', e);
+						}
 					}
 				}
 			}
@@ -1380,6 +1481,10 @@
 		dagbogDato = gemDato;
 		skiftTab('dagbog');
 		gemmer = false;
+
+		if (ventendeAdvarsel) {
+			favoritAdvarsel = ventendeAdvarsel;
+		}
 
 		// Genindlæs dagbogen + 'Seneste'-fanen i baggrunden. Hvis dette
 		// fejler (fx WiFi-tab efter selve gemmen lykkedes), undgaar vi
@@ -2761,6 +2866,21 @@
 	<BarcodeScanner onDetected={efterScan} onClose={() => (viserScanner = false)} />
 {/if}
 
+{#if favoritAdvarsel}
+	<FavoritNavnAdvarsel
+		navn={favoritAdvarsel.eksisterende.navn}
+		{favoritter}
+		arbejder={favoritAdvarselArbejder}
+		onOpdater={() => void opdaterEksisterendeFavorit()}
+		onGemNy={(nytNavn) => void gemNyFavoritMedNavn(nytNavn)}
+		onAnnuller={lukFavoritAdvarsel}
+	/>
+{/if}
+
+{#if kvittering}
+	<div class="kvittering" role="status" use:portalToBody>{kvittering}</div>
+{/if}
+
 {#if bekraeft}
 	<BekraeftModal
 		titel={bekraeft.titel}
@@ -3150,6 +3270,26 @@
 		color: var(--text2);
 		margin: 8px 0 0;
 		line-height: 1.45;
+	}
+
+	/* Kort kvittering forneden efter favorit-advarslen. Ligger over
+	   indholdet, men OVER bundmenuen i hoejden, saa den ikke daekker for
+	   navigationen mens den staar fremme. Forsvinder af sig selv. */
+	.kvittering {
+		position: fixed;
+		left: 14px;
+		right: 14px;
+		bottom: calc(76px + env(safe-area-inset-bottom));
+		max-width: 520px;
+		margin: 0 auto;
+		z-index: 690;
+		background: #3f5d4a;
+		color: #fff;
+		border-radius: 12px;
+		padding: 12px 14px;
+		font-size: calc(13px * var(--fs-scale, 1));
+		line-height: 1.45;
+		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
 	}
 
 	.status-besked {
