@@ -1,6 +1,6 @@
 # Overdragelse: Linns Academy 3.0
 
-Sidst opdateret 1. september 2026.
+Sidst opdateret 4. september 2026.
 
 **LÆS DEN HER FØRST HVIS DU LEDER EFTER DEN SIDSTE UGES ARBEJDE.** Mellem 27.
 og 31. august blev der lavet 39 ting, og **næsten alle ligger i den GAMLE app**,
@@ -27,6 +27,12 @@ læs 9.61 først.**
 **Rører du Mad, så læs 9.56 først, og derefter 9.50 og 9.52 til 9.55.** 9.56 er
 at hendes egne madvarer, de scannede varer og hjertet er samlet til ét begreb
 der hedder Mine favoritter. 9.50 er at alle fødevarers næringstal kommer fra Den Danske Fødevaredatabase, skrevet ud til BEGGE apper 24. august. 9.52 til 9.55 er 25. august: kunden kan rette i Linns opskrifter, søgningen er lagt om to gange, salaterne var forsvundet, og en blank skærm i 30-30 er rettet. 9.49 er gennemgangen af fødevare-kilderne der førte til det. Se 9.39 til 9.48 for hele beskedsystemet, bygget 23. august.
+
+**DEN 1. TIL 4. SEPTEMBER: LYD OG BILLEDE TIL ÉN KUNDE, se 9.70, OG EN SIDE
+DER SPØRGER TELEFONEN, se 9.71.** Linn kan nu sende en lydbesked eller et
+billede til én kunde, og filen ligger i kundens egen mappe, hvor ingen anden
+kunde kan læse den. Storage-reglen bag det er udgivet OG afprøvet i
+virkeligheden. **Rører du beskederne eller Storage, så læs 9.70 først.**
 
 **Denne fil handler kun om 3.0.** Den gamle app i drift på `/app` har sin egen overdragelse i `HANDOVER-GAMMEL-APP.md`, og de to må ikke blandes sammen.
 
@@ -513,11 +519,18 @@ Data-scripts mod rigtige kunder skrives som `scripts/_navn.ts`, køres med `npx 
 
 ## 9. Hvor vi står, og hvad der er næste skridt
 
-Opdateret 31. august 2026. **Alt er kodet, committet og pushet, og `main` er i
-sync.** Firestore-reglerne er udgivet og verificeret mod det der kører, senest
-24. august, hvor de scannede varer fik deres egen samling. Der ligger ingen
-uudgivet regel. **Der er ikke udgivet regler siden**, alt derefter var kode og
-data.
+Opdateret 4. september 2026. **Alt er kodet, committet og pushet, og `main` er
+i sync.** Firestore-reglerne er udgivet og verificeret mod det der kører,
+senest 24. august, hvor de scannede varer fik deres egen samling.
+
+**Storage-reglerne er udgivet 3. september klokken 22.01**, med mappen til
+beskeder til én kunde. De live regler er hentet ned bagefter og er ord for ord
+magen til `storage.rules`, og reglen er afprøvet i virkeligheden, se 9.70.
+**Der ligger ingen uudgivet regel.**
+
+Regler lægges ud med `./scripts/deploy-regler.sh storage` eller `firestore`.
+Vis altid Linn ændringen og få et ja først. Vil du bare SE hvad der ligger
+live lige nu, uden at røre noget, gør `scripts/_storage-regler.ts` det.
 
 **DER ER ARBEJDET PÅ 3.0 IGEN DEN 1. SEPTEMBER, se 9.61.** Ugen 27. til 31.
 august gik med den gamle app, hvor nu 925 kunder er i drift. Se toppen af
@@ -4860,6 +4873,118 @@ total på nul.
 login, og der er kun én måling på de kunder der kunne slås op, så
 flerpunkts-kurven mangler at blive set. Står den skævt, er det dét der
 skal ses på først.
+
+---
+
+---
+
+### 9.70 DEN 1. OG 2. SEPTEMBER: LYD OG BILLEDE TIL ÉN KUNDE
+
+Commits `dc61326`, `f2e8405`, `30a1469`, `c894ce8`, `d44e0dd`. Linns ønske
+1. september, tegnet som mockup og godkendt før der blev kodet.
+
+**Beskeden fra Linn til én kunde kan nu bære ÉN lydbesked eller ÉT billede
+ved siden af teksten.** Det er den samme besked, det samme sted, den samme
+tråd. Der er ikke bygget en ny indbakke, og der er ikke to systemer.
+
+**Hun optager direkte på skærmen** under Admin, Skriv til en kunde. Tiden
+løber, den stopper selv ved fem minutter, og det hun har sagt indtil da
+bliver liggende. Bagefter hører hun optagelsen igennem, og først da bliver
+Send aktiv. **Beskeden kan ikke kaldes tilbage, så hun skal have hørt
+præcis det kunden får.** Siger browseren nej til mikrofonen, skifter
+knappen til at vælge en lydfil, og der står hvorfor. Hun skal aldrig stå i
+en blindgyde.
+
+**FILERNE LIGGER I KUNDENS EGEN MAPPE**, `/beskeder/{uid}/`. Det er den
+eneste mappe i hele lageret hvor andre kunder ikke må kigge med: alt andet
+indhold er det samme for alle, og derfor står der `request.auth != null` på
+resten. Reglen er udgivet 3. september klokken 22.01 **og afprøvet i
+virkeligheden**, ikke kun læst igennem: en opdigtet kunde kunne hente sin
+egen fil, en anden kunde blev afvist, og uden login blev man afvist.
+Testfilen og de to opdigtede kunder blev slettet bagefter.
+
+**Serveren tjekker at adressen peger på netop DEN kundes mappe**,
+`erVoresBeskedFil` i `content/beskedFil3.ts`. Det er ikke en mistanke til
+Linn, men en spærre mod en tastefejl der ellers ville lande i en kundes
+besked og ikke kunne kaldes tilbage.
+
+**Billedet skrumpes i browseren før det sendes**, med den samme klods som
+opskrift-billederne, `skalerTil(img, 'stor')`. Kun én størrelse: et billede
+i en besked vises ét sted. Et telefonbillede på 2,4 MB bliver til omkring
+60 KB.
+
+**Afspilleren er ÉN klods, brugt to steder.** `components/ny/Lydbesked.svelte`
+står både i Linns forhåndsvisning og i kundens tråd, så det hun hørte er
+det kunden får. Det er med vilje IKKE den store `Lydafspiller` fra
+lektionerne: den har plade, farter og hukommelse for hvor man slap, fordi
+en lektion er tyve minutter man vender tilbage til. En besked er ét minut
+man hører én gang.
+
+**Billedet kan trykkes op i fuld skærm.** `BilledeLag.svelte` portales ud i
+body. Uden det ligger bundmenuen ovenpå på en iPhone, og den regel har vi
+betalt for at lære én gang.
+
+**Prikket på telefonen siger hvad det er**, `medFilNoti3`: "Linn har sendt
+dig en lydbesked" eller "et billede". Før sagde den altid "Linn har skrevet
+til dig", og er der ingen tekst, leder kunden efter ord der ikke findes.
+
+Grænserne: fem minutter lyd, 20 MB i Storage-reglen, og **én fil pr
+besked**. Vælger hun et billede, ryger lyden, og omvendt. Skal der begge
+dele til, er det to beskeder.
+
+**Kunden kan ikke sende lyd eller billeder tilbage.** Hun svarer med tekst
+som før. Det er et bevidst valg og ikke en mangel: det ville kræve at
+kunder må skrive filer, og det ville give Linn en indbakke af filer.
+
+Skriv til en kunde er i samme ombæring **den tyvende admin-side i det nye
+udseende**. Den så ud som en telefonskærm med sidehoved og tilbage-pil midt
+i en menu der står til venstre. Intet er ændret i hvad den gør.
+
+`content/appHjaelp3.ts` har fået et afsnit om det, så App-hjælp kan svare
+kunden om play-knappen og billedet. Videnbasen er håndholdt og ved kun det
+vi fortæller den.
+
+**DET MANGLER AT BLIVE PRØVET AF SOM KUNDE.** Linn skal sende en lydbesked
+og et billede til en testbruger, logge ind som hende og se at begge dele
+kan åbnes. Reglen er afprøvet på filniveau, men hele vejen gennem skærmen
+er den ikke set endnu.
+
+Låsen på upload-døren til R2, `dc61326`, hører til den gamle app og står i
+dens overdragelse.
+
+---
+
+### 9.71 DEN 2. OG 3. SEPTEMBER: TJEK VIDEO, EN SIDE DER SPØRGER TELEFONEN
+
+Commit `6190fcf`. Ligger under Admin, System, "Tjek video", på
+`/ny/admin/tjek-video`.
+
+**Hvorfor den findes:** kunder meldte om træningsvideo uden lyd, der hakker
+eller er sort. Linn havde det selv på én iPhone 12 Pro Max, mens en anden
+iPhone var fin i samme øjeblik. Lydkontakten, strømsparetilstanden, en
+genstart, Safari uden om ikonet, pladsen på telefonen og lavdatatilstanden
+blev alle afprøvet uden held. **Så holder gætteriet op med at være
+nyttigt**, og telefonen må selv sige det.
+
+**Siden viser BÅDE billede og tal.** Testvideoen kører synligt øverst ved
+siden af målingerne. Det afgørende spørgsmål er, om telefonen TROR den
+spiller mens ruden er sort: står der at billedet bevæger sig, og er ruden
+alligevel sort, ligger fejlen i det telefonen tegner, ikke i det den
+henter.
+
+**Den kører først UDEN et tryk**, præcis som træningsskærmen gør, og kan
+derefter køres igen MED et tryk. Er den første blokeret og den anden fin,
+er det browserens regel om at starte af sig selv, og så ved vi hvad der
+skal rettes. Til sidst er der en Kopier-knap, så svaret kan sendes videre.
+
+Den måler også filens pakning. `mp4Pakning` i `content/tjekVideo3.ts` er et
+rent modul og er prøvet af mod to rigtige filer, én af hver slags.
+
+**Selve sagen er ikke løst.** Den hører til den gamle app, og den står som
+åben tråd i `HANDOVER-GAMMEL-APP.md`. Det korte: fejlen forsvandt da Linn
+loggede ud og ind igen, altså bygger den sig op i den kopi af appen der
+kører på telefonen. **Næste gang den viser sig, skal tjek-siden åbnes FØR
+der logges ud.** Log ud sletter beviset.
 
 ---
 

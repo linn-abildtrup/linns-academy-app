@@ -1,6 +1,11 @@
 # Overdragelse: den gamle app
 
-Sidst opdateret 1. september 2026, sent på dagen.
+Sidst opdateret 4. september 2026.
+
+**LEDER DU EFTER NOGET OM VIDEO ELLER LYD PÅ TRÆNINGEN, så læs "Rettet 2. til
+4. september" i afsnit 7 og de to nye åbne tråde fra 3. september i afsnit 9.**
+Alle 62 øvelsesvideoer er pakket om, øvelsesvideoerne har slet ingen lyd, og
+den sorte skærm på Linns egen iPhone er stadig uforklaret.
 
 **UGEN 27. TIL 31. AUGUST VAR NÆSTEN UDELUKKENDE DEN HER APP.** 39 ændringer,
 og de er samlet i afsnit 7. Det er den travleste uge i den gamle app siden 3.0
@@ -869,6 +874,71 @@ skrives, så det hævede loft koster ikke i sig selv.
 
 ---
 
+### Rettet 2. til 4. september 2026: træningsvideoerne og upload-døren
+
+#### 1. ALLE 62 ØVELSESVIDEOER ER PAKKET OM
+
+Kunder meldte om træningsvideo der hakker eller viser en sort skærm i
+starten. **50 af de 62 videoer i `exercises/` havde indholdsfortegnelsen
+bagerst i filen.** En videofil består af billederne og en fortegnelse over
+hvor hvert billede ligger, og telefonen skal bruge fortegnelsen først.
+Ligger den bagerst, er telefonen nødt til at hente HELE filen før den kan
+vise det allerførste billede. Det er den sorte skærm, og det er hakket i
+starten. Det ramte alle kunder lidt, og værst på de store: kettlebell swing
+fylder 5,1 MB, single leg deadlift 4,6 MB.
+
+Alle 50 er pakket om og lagt op igen, og hele lageret er gennemgået
+bagefter: **alle 62 svarer nu "fortegnelsen forrest".**
+
+**BILLEDERNE ER IKKE RØRT.** Filerne er pakket om, ikke komprimeret om.
+Lyd- og billeddata er kontrolleret bit for bit på hver eneste fil før den
+blev lagt op. Kvaliteten er præcis den samme.
+
+**TOKENET ER BEVARET PÅ HVER FIL, og det er det vigtigste at vide, hvis du
+skal gøre det samme igen.** Adressen kunderne har fået udleveret indeholder
+et token. Lægger man filen op uden det, laver Firebase et nyt, og så holder
+de udleverede adresser op med at virke, også hos en kunde der står midt i
+en træning i det øjeblik. `scripts/_pak-om-video.ts` læser det gamle token
+og sætter det på den nye fil.
+
+**Det retter IKKE noget for en kunde der allerede har set øvelsen.**
+Adressen er den samme, og filerne har `max-age` på et år, så telefonen kan
+have den gamle udgave liggende i op til et år. Hun får rettelsen på det hun
+ikke har set før, og på resten når telefonen rydder op. Vil man tvinge det
+igennem, skal filerne have nye navne, og så skal hver øvelse i databasen
+pege det nye sted hen. Det er fravalgt som for stort et indgreb til
+gevinsten.
+
+**Værktøjerne ligger i `scripts/`:** `_tjek-video-pakning.ts` går hele
+lageret igennem og siger hvilke filer der er pakket forkert, og
+`_pak-om-video.ts` lægger en ompakket fil op med tokenet bevaret.
+**Kør tjekket når der kommer nye videoer**, ellers sniger det sig ind igen.
+Ompakningen selv er `ffmpeg -c copy -movflags +faststart`.
+
+#### 2. ØVELSESVIDEOERNE HAR SLET INGEN LYD, og det er ikke en fejl
+
+Værd at vide inden man leder efter en lydfejl der ikke findes. **23 af de
+24 filer der ligger i projektet har intet lydspor overhovedet**, og under
+selve træningen er videoen desuden sat til lydløs med vilje, fordi den
+kører i ring bag ved timeren.
+
+Den lyd der findes under en træning er **baggrundsmusikken og
+nedtællingen**, som er tre separate filer i `audio/`. Siger en kunde at der
+ikke er lyd på træningen, er det dem hun mangler, ikke video-lyd.
+
+#### 3. LÅSEN PÅ UPLOAD-DØREN TIL R2
+
+Commit `dc61326`. Noten øverst i `/api/r2-upload-url` sagde at serveren
+tjekkede at kalderen var logget ind og admin. **Det gjorde den ikke.**
+Enhver der kendte adressen kunne bede om en upload-adresse og lægge filer i
+lageret. Fundet under diagnosen af lydbeskeder til én kunde.
+
+Tokenet hentes nu inde i `uploadLydFil` og ikke på de tre sider der kalder
+den, så ingen af siderne skulle røres, og ingen af dem kan glemme det.
+Kunderne mærker ingenting: døren bruges kun af admin i forvejen.
+
+---
+
 ## 8. Beslutninger der ikke skal genopfindes
 
 To beslutninger truffet 24. august 2026. Begge er den slags der bliver bygget igen om et halvt år hvis de ikke står skrevet ned.
@@ -908,6 +978,58 @@ Se "Rettet 1. september" i afsnit 7.
 - **Merete (transam78mp@icloud.com)** har et ubesvaret dublet-spørgsmål i `klientspoergsmaal`. Hun sendte det samme spørgsmål to gange, og kun det første blev besvaret.
 - **Baseline-dagen i vaner-modulet** siger "vi starter med et baseline-tjek" og viser så ét fritekstfelt uden at nævne symptomchecken. Det var teksten der satte Meretes spørgsmål i gang. Ikke rettet.
 - **Forløbskøb sker manuelt.** Der er ingen Simplero-webhook for forløb endnu, kun for abonnementer. **Delvist løst 30. august:** nye køb kan nu lande på holdet af sig selv, se afsnit 7, men fluebenet skal flyttes i hånden ved hver holdstart, se 6.12.
+
+### Åbnet 3. september 2026: den sorte skærm der forsvandt ved at logge ind igen
+
+**Ikke fundet. Det her er den vigtigste åbne sag om træningen.**
+
+Kunder melder træningsvideo der hakker eller er sort. Linn havde det selv
+på **én iPhone 12 Pro Max**, mens en anden iPhone var fin i samme øjeblik,
+med de samme filer fra det samme sted.
+
+**Det er udelukket:** lydkontakten på siden af telefonen, strømsparetilstanden,
+en genstart af appen, kopien bag ikonet på hjemmeskærmen (samme fejl i
+Safari uden om ikonet), pladsen på telefonen (78 GB ledig), telefonens alder
+og iOS-versionen (den fejlende var på den NYESTE, iOS 26.6.1), samt
+lavdatatilstanden og automatisk afspilning af videoeksempler.
+
+**Det er heller ikke serveren eller kvoten.** Var det trækket udefra, ville
+begge telefoner fejle samtidig, og fejlen ville hedde `quota-exceeded`. Det
+er set før, 26. juli.
+
+**Fejlen forsvandt da Linn loggede ud og ind igen**, og blev derefter ved
+med at være væk, også som en anden bruger. Det peger på noget der bygger
+sig op i den kopi af appen der kører på telefonen, og som en frisk start
+rydder. Det passer med kundernes ord: "nogle gange" og "i går virkede det".
+
+**SÅDAN FANGES DEN NÆSTE GANG, og det er det eneste der mangler for at
+kunne rette den:** åbn `/ny/admin/tjek-video` på telefonen MENS skærmen
+stadig er sort, og tryk Kopier. **Log ikke ud først. Log ud sletter
+beviset.** Siden siger om afspilningen blev blokeret og hvorfor, om filen
+kom hjem og hvor hurtigt, og om uret på videoen tikker mens ruden er sort.
+Se 9.71 i overdragelsen for 3.0.
+
+Værd at vide til den kunde der ringer: luk appen helt, altså swipe den væk
+fra listen over åbne apps, og åbn den igen. Hjælper det ikke, ligger
+"Nulstil appen på denne enhed" under Din side.
+
+### Åbnet 3. september 2026: to ting om video og lyd der ikke er rettet
+
+Fundet under diagnosen ovenfor. **Ingen af dem er årsagen til den sorte
+skærm på Linns egen telefon, og ingen af dem er rettet.**
+
+- **Biblioteket starter øvelsesvideoen af sig selv MED lyd slået til**,
+  `<video controls autoplay playsinline>` uden `muted`. Det blokerer alle
+  browsere, og resultatet er en sort firkant indtil kunden selv trykker på
+  play. Det er ikke en fejl der kommer og går, det er sådan siden er bygget.
+- **Musikken under træningen startes af skærmen og ikke af kundens tryk.**
+  Browsere afviser lyd der starter af sig selv, og om det lykkes afhænger
+  af hvad den enkelte browser har lært om appen i forvejen. Derfor hører
+  nogle kunder musik og andre ikke. **Og går det galt, siger appen det
+  ikke:** den skriver en advarsel i udviklerkonsollen, mens lyd-knappen på
+  skærmen bliver ved med at se tændt ud. Foreslået rettelse: start musikken
+  på kundens tryk på Start og Fortsæt, og lad knappen vise sig som slukket
+  hvis telefonen sagde nej, så hun selv kan tænde.
 
 ### Åbnet 4. september 2026: alt om Linn AI's grundlag
 
