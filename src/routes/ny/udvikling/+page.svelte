@@ -30,6 +30,7 @@
 		FLADE_UDVIKLING,
 		formaterKortDato,
 		maalingStatus,
+		visStartDato3,
 		type Kurve
 	} from '$lib/content/forside3';
 	import {
@@ -111,6 +112,19 @@
 	}
 
 	const nu = Date.now();
+
+	/** Sidste punkts plads paa x-aksen. Bruges til at se om der er plads
+	 *  til baade en start- og en slutdato. */
+	function sidsteX(k: Kurve): number {
+		const sidste = k.punkter[k.punkter.length - 1];
+		return sidste ? sidste.x : 0;
+	}
+
+	/** Slutdatoen som den staar paa skaermen, saa dens laengde kan maales. */
+	function sidsteDato(k: Kurve): string {
+		const sidste = k.punkter[k.punkter.length - 1];
+		return sidste ? formaterKortDato(sidste.ms, nu) : '';
+	}
 
 	/** YYYY-MM-DD i lokal tid. Samme form som historikken bruger. */
 	function isoDag(d: Date): string {
@@ -484,6 +498,15 @@
 											{formatTal(p.vaerdi)}
 										</text>
 									{/if}
+									<!-- STARTDATOEN. Kurven viste kun slutdatoen indtil 4.
+									     september. Uden en startdato siger den ikke hvor lang en
+									     periode man kigger paa, og saa betyder formen ingenting.
+									     Den staar kun naar der er plads, se visStartDato3. -->
+									{#if i === 0 && visStartDato3(p.x, sidsteX(kurve), formaterKortDato(p.ms, nu), sidsteDato(kurve))}
+										<text class="udv-v-lab" x={p.x} y={kurve.flade.datoY} text-anchor="start">
+											{formaterKortDato(p.ms, nu)}
+										</text>
+									{/if}
 									{#if p.erSidste}
 										<text class="udv-v-lab" x={p.x} y={kurve.flade.datoY} text-anchor="end">
 											{formaterKortDato(p.ms, nu)}
@@ -746,6 +769,15 @@
 										{#if i === 0}
 											<text class="udv-v-tal" x={p.x} y={p.y - 9} text-anchor="start"
 												>{formatTal(p.vaerdi)}</text
+											>
+										{/if}
+										<!-- Startdatoen, se noten ved overskuds-kurven ovenfor. -->
+										{#if i === 0 && visStartDato3(p.x, sidsteX(symptomGraf), formaterKortDato(p.ms, nu), sidsteDato(symptomGraf))}
+											<text
+												class="udv-v-lab"
+												x={p.x}
+												y={symptomGraf.flade.datoY}
+												text-anchor="start">{formaterKortDato(p.ms, nu)}</text
 											>
 										{/if}
 										{#if p.erSidste}

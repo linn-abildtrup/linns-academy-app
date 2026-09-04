@@ -685,3 +685,33 @@ function formaterNaeste(ms: number, nu: number): string {
 	if (dage <= 21) return `om ${dage} dage`;
 	return `den ${formaterKortDato(ms, nu)}`;
 }
+
+/**
+ * Er der plads til BAADE en startdato og en slutdato paa x-aksen.
+ *
+ * Kurven viste kun slutdatoen indtil 4. september, hvor Linn spurgte om
+ * der ikke ogsaa burde staa en startdato. Det burde der: uden den siger
+ * kurven ikke hvor lang en periode man kigger paa, og saa betyder
+ * formen ingenting.
+ *
+ * MEN DE TO MAA IKKE RENDE SAMMEN. Startdatoen staar venstrestillet ved
+ * foerste punkt og slutdatoen hoejrestillet ved det sidste, saa de vokser
+ * mod hinanden. Ligger to maalinger taet, er der ikke plads, og saa
+ * vinder slutdatoen: den er den vigtigste, for den siger hvor frisk
+ * tallet er.
+ *
+ * Bredden regnes ud af tekstlaengden, fordi datoen kan vaere baade
+ * "1. sep" og "26. dec 2025". 3,8 enheder pr tegn er maalt i browseren
+ * paa 8,5 px skrift, som er den .udv-v-lab bruger.
+ */
+export function visStartDato3(
+	foersteX: number,
+	sidsteX: number,
+	startTekst: string,
+	slutTekst: string
+): boolean {
+	const BREDDE_PR_TEGN = 3.8;
+	const LUFT = 6;
+	const plads = sidsteX - foersteX;
+	return plads >= (startTekst.length + slutTekst.length) * BREDDE_PR_TEGN + LUFT;
+}
