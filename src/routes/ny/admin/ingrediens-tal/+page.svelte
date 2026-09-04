@@ -94,7 +94,9 @@
 	let note = $state('');
 	let gemmer = $state(false);
 	let gemFejl = $state('');
-	let kvittering = $state<{ navn: string; aendrede: Aendring[] } | null>(null);
+	let kvittering = $state<{ navn: string; aendrede: Aendring[]; linjerSkrevet: number } | null>(
+		null
+	);
 
 	let soeg = $state('');
 	let valgteKategorier = $state<OpskriftKategori[]>([]);
@@ -231,7 +233,7 @@
 				hentUser()?.uid ?? 'admin'
 			);
 			byggForfra();
-			kvittering = { navn: v.name, aendrede: res.aendrede };
+			kvittering = { navn: v.name, aendrede: res.aendrede, linjerSkrevet: res.linjerSkrevet };
 			retter = '';
 		} catch (e) {
 			console.error('[admin] kunne ikke rette tallet', e);
@@ -259,7 +261,7 @@
 				hentUser()?.uid ?? 'admin'
 			);
 			byggForfra();
-			if (res) kvittering = { navn: v.name, aendrede: res.aendrede };
+			if (res) kvittering = { navn: v.name, aendrede: res.aendrede, linjerSkrevet: res.linjerSkrevet };
 			retter = '';
 		} catch (e) {
 			console.error('[admin] kunne ikke fortryde', e);
@@ -335,6 +337,13 @@
 							</li>
 						{/each}
 					</ul>
+				{/if}
+				{#if kvittering.linjerSkrevet > 0}
+					<p class="it-kvit-linjer">
+						Makro-linjen i teksten er skrevet om i {kvittering.linjerSkrevet}
+						{kvittering.linjerSkrevet === 1 ? 'opskrift' : 'opskrifter'}, så den gamle app og 3.0
+						står ens.
+					</p>
 				{/if}
 				<button type="button" class="it-kvit-luk" onclick={() => (kvittering = null)}>Luk</button>
 			</div>
@@ -867,6 +876,12 @@
 	.it-kvit-liste {
 		margin: 6px 0 0;
 		padding-left: 18px;
+	}
+
+	.it-kvit-linjer {
+		margin: 10px 0 0;
+		font-size: calc(13px * var(--fs-scale, 1));
+		color: var(--text2);
 	}
 
 	.it-kvit-luk {

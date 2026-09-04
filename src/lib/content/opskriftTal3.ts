@@ -124,3 +124,42 @@ function kendtEnhed(
 function rund2(n: number): number {
 	return Math.round(n * 100) / 100;
 }
+
+/**
+ * Bygger den makro-linje der skal staa nederst i instruktioner-teksten,
+ * ud fra 3.0's beregning.
+ *
+ * Returnerer null naar teksten allerede er rigtig, saa kalderen kan
+ * lade vaere med at skrive.
+ *
+ * HVORFOR VI OVERHOVEDET SKRIVER I OPSKRIFTERNE
+ * Regnemaskinen blev bygget 13. august med den regel at opskrifterne
+ * aldrig maa roeres. Linn aendrede den 4. september 2026: linjen skal
+ * skrives om automatisk, saa det skrevne og det viste altid staar ens.
+ * Uden det driver de to fra hinanden, hver gang en foedevare bliver
+ * rettet, og saa er der igen to tal for den samme mad.
+ *
+ * Kun de fem tal roeres. Tid-delen varierer fra opskrift til opskrift
+ * og staar altid sidst.
+ */
+export function nyMakroLinje(
+	instruktioner: string,
+	beregnet: { protein: number; fiber: number; kh: number; fedt: number; kalorier: number }
+): string | null {
+	const t = instruktioner ?? '';
+	// Mellemrummet foran skal med, ellers klistrer tiden op ad kcal.
+	const tid = t.match(/\s*\|\s*Tid:[^\n|]*/)?.[0] ?? '';
+	const linje =
+		`Protein: ${komma(beregnet.protein)} g | Fiber: ${komma(beregnet.fiber)} g | ` +
+		`Kulhydrater: ${komma(beregnet.kh)} g | Fedt: ${komma(beregnet.fedt)} g | ` +
+		`Kalorier: ${Math.round(beregnet.kalorier)} kcal${tid}`;
+	const ny = t.replace(
+		/Protein:\s*[\d.,]+\s*g\s*\|\s*Fiber:\s*[\d.,]+\s*g\s*\|\s*Kulhydrater?:\s*[\d.,]+\s*g\s*\|\s*Fedt:\s*[\d.,]+\s*g\s*\|\s*Kalorier:\s*[\d.,]+\s*kcal(\s*\|\s*Tid:[^\n|]*)?/,
+		linje
+	);
+	return ny === t ? null : ny;
+}
+
+function komma(n: number): string {
+	return (Math.round(n * 10) / 10).toString().replace('.', ',');
+}

@@ -18,7 +18,7 @@
 // udgives i Firebase.
 // ============================================================
 
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { Fodevare } from '$lib/content/kost';
 import type { Opskrift } from '$lib/content/opskrifter';
@@ -31,6 +31,7 @@ import {
 	type RettedeTal
 } from '$lib/content/ingrediensRettelse3';
 import { afrund, regnOpskrift, type KoblingsOpslag } from '$lib/content/opskriftMakro3';
+import { nyMakroLinje } from '$lib/content/opskriftTal3';
 import { ryFodevarer3Cache } from './fodevarer3';
 import {
 	gemBeregninger,
@@ -51,6 +52,43 @@ async function skrivVare(id: string, felter: Record<string, unknown>): Promise<v
 export interface OmregningResultat {
 	aendrede: Aendring[];
 	antalOpskrifter: number;
+	/** Hvor mange makro-linjer i opskrifternes tekst der blev skrevet om. */
+	linjerSkrevet: number;
+}
+
+/**
+ * Skriver de nye tal ind i makro-linjen nederst i opskrifternes tekst.
+ *
+ * Regnemaskinen blev bygget 13. august med den regel at opskrifterne
+ * aldrig maa roeres. LINN AENDREDE DEN 4. SEPTEMBER 2026. Den gamle app
+ * viser nu de beregnede tal, men linjen bliver staaende som
+ * sikkerhedsnet, og staar den med gamle tal, er der igen to svar paa den
+ * samme mad. Derfor skrives den om i samme koersel som beregningen.
+ *
+ * Kun de fem tal roeres. Resten af teksten, ogsaa Tid-delen, staar som
+ * Linn har skrevet den.
+ *
+ * Fejler en enkelt skrivning, stopper vi ikke. Beregningen er allerede
+ * gemt, og en linje der halter er bedre end en halv omregning.
+ */
+async function skrivMakroLinjer(
+	opskrifter: Opskrift[],
+	nyt: Beregninger
+): Promise<number> {
+	let n = 0;
+	for (const o of opskrifter) {
+		const b = nyt[o.id];
+		if (!b) continue;
+		const tekst = nyMakroLinje(o.instruktioner ?? '', b);
+		if (!tekst) continue;
+		try {
+			await updateDoc(doc(db, 'opskrifter', o.id), { instruktioner: tekst });
+			n++;
+		} catch (e) {
+			console.warn('[3.0] kunne ikke skrive makro-linjen paa', o.id, e);
+		}
+	}
+	return n;
 }
 
 /**
@@ -89,7 +127,10 @@ export async function regnOpskrifterOm(
 	const aendrede = opgoerAendringer(foer, nyt, titler);
 	await gemBeregninger(nyt, af);
 	ryBeregningerCache();
-	return { aendrede, antalOpskrifter: opskrifter.length };
+	// Teksten skrives om EFTER beregningen er gemt. Gaar det galt her,
+	// staar beregningen stadig rigtigt, og den er den kunden ser.
+	const linjerSkrevet = await skrivMakroLinjer(opskrifter, nyt);
+	return { aendrede, antalOpskrifter: opskrifter.length, linjerSkrevet };
 }
 
 /**

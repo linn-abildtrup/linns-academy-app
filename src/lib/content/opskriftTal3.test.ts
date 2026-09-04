@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { delInstruktioner, byggeItemsFraBeregning } from './opskriftTal3';
+import { delInstruktioner, byggeItemsFraBeregning, nyMakroLinje } from './opskriftTal3';
 import type { Fodevare } from './kost';
 import type { Opskrift } from './opskrifter';
 import type { KoblingsOpslag } from './opskriftMakro3';
@@ -111,5 +111,31 @@ describe('byggeItemsFraBeregning', () => {
 		const { items } = byggeItemsFraBeregning(opskrift, koblinger, varer, 2);
 		expect(items.find((i) => i.foodId === 'tomat')?.portion).toBe(400);
 		expect(items.find((i) => i.foodId === 'olivenolie')?.portion).toBe(2);
+	});
+});
+
+describe('nyMakroLinje', () => {
+	const b = { protein: 28.6, fiber: 11.7, kh: 29.2, fedt: 35.5, kalorier: 573 };
+
+	it('skriver de fem tal om og lader tiden staa', () => {
+		const t =
+			'Bland det.\n\nProtein: 29,4 g | Fiber: 10,8 g | Kulhydrater: 24,7 g | Fedt: 31,8 g | Kalorier: 572 kcal | Tid: 10 minutter';
+		expect(nyMakroLinje(t, b)).toBe(
+			'Bland det.\n\nProtein: 28,6 g | Fiber: 11,7 g | Kulhydrater: 29,2 g | Fedt: 35,5 g | Kalorier: 573 kcal | Tid: 10 minutter'
+		);
+	});
+
+	it('bruger dansk komma', () => {
+		const t = 'X\n\nProtein: 1 g | Fiber: 1 g | Kulhydrater: 1 g | Fedt: 1 g | Kalorier: 1 kcal';
+		expect(nyMakroLinje(t, b)).toContain('Protein: 28,6 g');
+	});
+
+	it('returnerer null naar linjen allerede er rigtig', () => {
+		const t = 'X\n\nProtein: 28,6 g | Fiber: 11,7 g | Kulhydrater: 29,2 g | Fedt: 35,5 g | Kalorier: 573 kcal';
+		expect(nyMakroLinje(t, b)).toBeNull();
+	});
+
+	it('returnerer null naar der ingen makro-linje er at skrive om', () => {
+		expect(nyMakroLinje('Bare en fremgangsmaade.', b)).toBeNull();
 	});
 });
