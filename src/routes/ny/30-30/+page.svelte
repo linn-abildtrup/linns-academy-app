@@ -11,6 +11,7 @@
 	// ============================================================
 
 	import { getContext, untrack } from 'svelte';
+	import { husk, husket } from '$lib/content/sidehukommelse3';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { Adgangsbillede, ForlobKilde } from '$lib/content/adgang3';
@@ -128,7 +129,14 @@
 		if (!uid) return () => {};
 		const d = dato;
 		let afbrudt = false;
-		henter = true;
+
+		// NOEGLEN BAERER DATOEN, saa en anden dag aldrig viser dagens tal.
+		// Se content/sidehukommelse3.ts.
+		const hukommelse = `30-30|${d}`;
+		const gemt = husket<DagsOpgoerelse>(uid, hukommelse);
+		if (gemt) dag = gemt;
+
+		henter = !gemt;
 		fejl = false;
 
 		/**
@@ -145,6 +153,7 @@
 					const r = await hentDagen(uid, d, userDoc, fokus ?? undefined);
 					if (afbrudt) return;
 					dag = r;
+					husk<DagsOpgoerelse>(uid, hukommelse, r);
 					henter = false;
 					return;
 				} catch (e) {
@@ -156,7 +165,10 @@
 				}
 			}
 			if (afbrudt) return;
-			fejl = true;
+			// STAAR DAGEN ALLEREDE PAA SKAERMEN fra sidst, saa lad den staa.
+			// En fejlskaerm oven paa tal hun lige kunne se ville vaere et
+			// tilbageskridt.
+			if (!gemt) fejl = true;
 			henter = false;
 		})();
 

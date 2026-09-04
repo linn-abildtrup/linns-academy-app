@@ -20,6 +20,7 @@
 	// ============================================================
 
 	import { getContext } from 'svelte';
+	import { husk, husket } from '$lib/content/sidehukommelse3';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { ForlobKilde } from '$lib/content/adgang3';
@@ -116,6 +117,15 @@
 		return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 	}
 
+	/** Det fanen skal kunne staa med med det samme naeste gang. */
+	interface HusketUdvikling {
+		maalinger: MaalingKilde[];
+		symptomer: SymptomKilde[];
+		traeninger: TraeningKilde[];
+		maaltider: MaaltidKilde[];
+	}
+	const HUKOMMELSE = 'udvikling';
+
 	$effect(() => {
 		const uid = user?.uid;
 		if (!uid) {
@@ -123,9 +133,20 @@
 			return;
 		}
 
+		// Har hun set fanen i det her besoeg, staar kurverne der med det
+		// samme, og vi henter friskt nedenfor. Se sidehukommelse3.ts.
+		const gemt = husket<HusketUdvikling>(uid, HUKOMMELSE);
+		if (gemt) {
+			maalinger = gemt.maalinger;
+			symptomer = gemt.symptomer;
+			traeninger = gemt.traeninger;
+			maaltider = gemt.maaltider;
+			henter = false;
+		}
+
 		let afbrudt = false;
 		(async () => {
-			henter = true;
+			if (!gemt) henter = true;
 			// Traeningen maa gerne fejle for sig. Kan vi ikke naa den, staar
 			// maalingerne der stadig.
 			const seksMaanederSiden = new Date(nu);
@@ -156,6 +177,7 @@
 				totalP: x.totalP,
 				totalF: x.totalF
 			}));
+			husk<HusketUdvikling>(uid, HUKOMMELSE, { maalinger, symptomer, traeninger, maaltider });
 
 			henter = false;
 		})().catch((e) => {

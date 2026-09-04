@@ -28,6 +28,7 @@
 	// ============================================================
 
 	import { getContext, onMount } from 'svelte';
+	import { husk, husket } from '$lib/content/sidehukommelse3';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
@@ -207,12 +208,35 @@
 			.join(' og ')
 	);
 
+	/** Det fanen skal kunne staa med med det samme naeste gang. */
+	interface HusketTraening {
+		kategorier: TraeningKategori3[];
+		programmer: Traeningsprogram3[];
+		tildelinger: Traeningstildeling3[];
+		fremgang: Map<string, Traeningsfremgang3>;
+		mine3: MinTraening3[];
+	}
+	const HUKOMMELSE = 'traening';
+
 	onMount(async () => {
 		const uid = user?.uid;
 		if (!uid) {
 			henter = false;
 			return;
 		}
+
+		// Har hun set fanen i det her besoeg, staar den der med det samme,
+		// og vi henter friskt nedenfor. Se content/sidehukommelse3.ts.
+		const gemt = husket<HusketTraening>(uid, HUKOMMELSE);
+		if (gemt) {
+			kategorier = gemt.kategorier;
+			programmer = gemt.programmer;
+			tildelinger = gemt.tildelinger;
+			fremgang = gemt.fremgang;
+			mine3 = gemt.mine3;
+			henter = false;
+		}
+
 		try {
 			const [k, p, t, f, egneRaa] = await Promise.all([
 				hentKategorier3(),
@@ -231,9 +255,19 @@
 			tildelinger = t;
 			fremgang = f;
 			mine3 = egneRaa;
+			husk<HusketTraening>(uid, HUKOMMELSE, {
+				kategorier: k,
+				programmer: p,
+				tildelinger: t,
+				fremgang: f,
+				mine3: egneRaa
+			});
 		} catch (e) {
 			console.error('[ny] kunne ikke hente traeningen', e);
-			fejl = 'Din træning kunne ikke hentes lige nu. Prøv igen om lidt.';
+			// STAAR DER ALLEREDE NOGET PAA SKAERMEN, saa lad det staa. En
+			// fejlbesked oven paa en side der virker ville vaere et
+			// tilbageskridt: hun kunne se sin traening lige foer.
+			if (!gemt) fejl = 'Din træning kunne ikke hentes lige nu. Prøv igen om lidt.';
 		} finally {
 			henter = false;
 		}

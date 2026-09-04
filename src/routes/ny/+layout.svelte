@@ -26,6 +26,7 @@
 	import Maerke from '$lib/components/ny/Maerke.svelte';
 	import NotiStribe from '$lib/components/ny/NotiStribe.svelte';
 	import { stempleAktiv3 } from '$lib/firestore/notifikation3';
+	import { glemAlt } from '$lib/content/sidehukommelse3';
 	import { bonusBaandTekst, maaSeIBonus, naadeTekst, BONUS_START } from '$lib/content/spaerring3';
 	import { opstartsBillede, maaAabnePaaKopi3 } from '$lib/content/hurtigStart3';
 	import { hentOpstartFraCache } from '$lib/firestore/hurtigStart3';
@@ -161,6 +162,9 @@
 			if (!u) {
 				userDocUnsubscribe?.();
 				userDocUnsubscribe = null;
+				// Der maa ikke ligge kundedata i hukommelsen paa en skaerm
+				// hvor der staar Log ind. Se content/sidehukommelse3.ts.
+				glemAlt();
 				// 3.0 har sin egen login-side. Den gamle /login er delt med den
 				// app der er i drift og bliver staaende uroert. Login-siden
 				// ligger BEVIDST uden for det her layout, se filnavnet

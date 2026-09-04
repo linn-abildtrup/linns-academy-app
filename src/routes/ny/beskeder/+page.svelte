@@ -21,6 +21,7 @@
 	// ============================================================
 
 	import { getContext, onMount, tick } from 'svelte';
+	import { husk, husket } from '$lib/content/sidehukommelse3';
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
@@ -135,14 +136,27 @@
 		}
 	}
 
+	const HUKOMMELSE_TRAADE = 'beskeder-traade';
+
 	async function indlaesTraade(uid: string) {
 		if (!adgang.linn) {
 			henterTraade = false;
 			return;
 		}
+
+		// Har hun set fanen i det her besoeg, staar traadene der med det
+		// samme, og vi henter friskt nedenfor. Se sidehukommelse3.ts.
+		const gemt = husket<LinnTraad3[]>(uid, HUKOMMELSE_TRAADE);
+		if (gemt) {
+			traade = gemt;
+			sendteTekster = gemt.map((t) => t.spoergsmaal);
+			henterTraade = false;
+		}
+
 		try {
 			traade = await hentLinnTraade3(uid);
 			sendteTekster = traade.map((t) => t.spoergsmaal);
+			husk<LinnTraad3[]>(uid, HUKOMMELSE_TRAADE, traade);
 		} catch (e) {
 			console.error('[ny] kunne ikke hente dine spoergsmaal til Linn', e);
 		} finally {

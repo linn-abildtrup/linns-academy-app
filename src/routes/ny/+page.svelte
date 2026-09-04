@@ -13,6 +13,7 @@
 	// ============================================================
 
 	import { getContext, onMount, untrack } from 'svelte';
+	import { husk, husket } from '$lib/content/sidehukommelse3';
 	import { goto } from '$app/navigation';
 	import { isAdmin } from '$lib/admin';
 	import { skalOnboardes3 } from '$lib/content/onboarding3';
@@ -277,15 +278,48 @@
 		return untrack(() => hentForsiden());
 	});
 
+	/** Det forsiden skal kunne staa med med det samme naeste gang. */
+	interface HusketForside {
+		kurve: Kurve | null;
+		status: MaalingStatus | null;
+		skridtData: SmaaSkridtIDag | null;
+		aktiveDage: Set<string>;
+		klaret: Set<string>;
+		traening: DagensTraening3 | null;
+		tal: DagensTal | null;
+		lektioner: LektionItem[];
+		noteFraLinn: string;
+		naesteHold: NaesteHoldType | null;
+	}
+
 	function hentForsiden(): () => void {
 		const uid = user?.uid;
 		if (!uid) return () => {};
 		let afbrudt = false;
 
+		// NOEGLEN BAERER DAGEN OG FORLOEBET, saa en ny dag aldrig kan vise
+		// gaarsdagens forside. Se content/sidehukommelse3.ts.
+		const hukommelse = `forside|${noegle}`;
+		const gemt = husket<HusketForside>(uid, hukommelse);
+		if (gemt) {
+			kurve = gemt.kurve;
+			status = gemt.status;
+			skridtData = gemt.skridtData;
+			aktiveDage = gemt.aktiveDage;
+			klaret = gemt.klaret;
+			traening = gemt.traening;
+			tal = gemt.tal;
+			lektioner = gemt.lektioner;
+			noteFraLinn = gemt.noteFraLinn;
+			naesteHold = gemt.naesteHold;
+			henter = false;
+		}
+
 		(async () => {
-			// Har sikkerhedslinen allerede vist siden, henter vi stille
-			// videre i baggrunden. Vente-skaermen maa ikke komme igen.
-			if (!harGivetOp) {
+			// Har sikkerhedslinen allerede vist siden, eller staar der noget
+			// fra sidst, henter vi stille videre i baggrunden.
+			// Vente-skaermen maa ikke komme igen.
+			if (!harGivetOp && !gemt) {
 				henter = true;
 				hentet = 0;
 			}
@@ -357,7 +391,21 @@
 			// alle der har appen, saa et medlem uden forloeb kan ogsaa
 			// have en. Er der ingen i gang, staar blokken der bare ikke.
 			await hentChallenge(uid);
-			if (!afbrudt) henter = false;
+			if (!afbrudt) {
+				husk<HusketForside>(uid, hukommelse, {
+					kurve,
+					status,
+					skridtData,
+					aktiveDage,
+					klaret,
+					traening,
+					tal,
+					lektioner,
+					noteFraLinn,
+					naesteHold
+				});
+				henter = false;
+			}
 		})().catch((e) => {
 			console.error('[ny] kunne ikke hente forsiden', e);
 			henter = false;
