@@ -2,6 +2,8 @@
 	import { getContext, onMount, onDestroy } from 'svelte';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { gemMedVentetid } from '$lib/content/gemVentetid';
+	import { meldSkrivningIGang } from '$lib/state/forbindelseState.svelte';
 	import type { User } from 'firebase/auth';
 	import type {
 		DayExercise,
@@ -602,8 +604,12 @@
 		stopTimer();
 		const u = user;
 		if (u && programId && phase !== 'done' && !traeningGennemfort) {
-			try {
-				await gemPause(u.uid, {
+			// Maa ALDRIG kunne haenge. Uden forbindelse blev kunden foer
+			// fanget paa traeningsskaermen og kunne ikke komme ud, fordi
+			// gemmet af pausen aldrig blev faerdigt. Se gemVentetid.ts.
+			meldSkrivningIGang();
+			const udfald = await gemMedVentetid(
+				gemPause(u.uid, {
 					productId: produktType,
 					elementAlias: 'mikrotraening',
 					programId,
@@ -612,9 +618,11 @@
 					currentSet: si,
 					phase,
 					rem: Math.max(0, rem)
-				});
-			} catch (e) {
-				console.warn('Kunne ikke gemme pause ved stop:', e);
+				}),
+				3000
+			);
+			if (udfald.status === 'fejl') {
+				console.warn('Kunne ikke gemme pause ved stop:', udfald.fejl);
 			}
 		}
 		goto(`/app/moduler/traening/mikrotraening/${dagNummer}`);
@@ -623,10 +631,12 @@
 	async function startForfra() {
 		const u = user;
 		if (u && programId) {
-			try {
-				await sletPause(u.uid, programId, dagNummer);
-			} catch (e) {
-				console.warn('Kunne ikke slette gemt pause:', e);
+			// Samme grund som i stopOgForlad: hun skal kunne starte forfra
+			// ogsaa uden forbindelse.
+			meldSkrivningIGang();
+			const udfald = await gemMedVentetid(sletPause(u.uid, programId, dagNummer), 3000);
+			if (udfald.status === 'fejl') {
+				console.warn('Kunne ikke slette gemt pause:', udfald.fejl);
 			}
 		}
 		ei = 0;
@@ -653,7 +663,16 @@
 		gemFejl = null;
 		try {
 			const opdateret = markerDagSomGennemfort(huidigFremgang(), dagNummer);
-			await gemMikrotraeningFremgang(u.uid, produktType, opdateret);
+			// Uden forbindelse melder gemmet ALDRIG fejl, det bliver bare
+			// haengende, og saa stod knappen laast efter en gennemfoert
+			// traening. Se gemVentetid.ts. Fremgangen ligger i koe og bliver
+			// sendt af sig selv, saa vi lader hende komme videre. Baandet
+			// oeverst siger hvorfor.
+			meldSkrivningIGang();
+			const udfald = await gemMedVentetid(
+				gemMikrotraeningFremgang(u.uid, produktType, opdateret)
+			);
+			if (udfald.status === 'fejl') throw udfald.fejl;
 			if (userProduct) {
 				userProduct = {
 					...userProduct,

@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { getContext, onMount } from 'svelte';
 	import { page } from '$app/state';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
+	import { gemMedVentetid } from '$lib/content/gemVentetid';
+	import { meldSkrivningIGang } from '$lib/state/forbindelseState.svelte';
 	import type { User } from 'firebase/auth';
 	import type { UserProduct } from '$lib/content/mikrotraening';
 	import type { Forlob } from '$lib/content/forlobAdgang';
@@ -54,6 +57,10 @@
 	let fejl = $state<string | null>(null);
 	let gemmer = $state(false);
 	let gemFejl = $state<string | null>(null);
+
+	// Vises naar gemmet ikke naaede frem inden for ventetiden. Ingen
+	// 'Proev igen': skrivningen ligger i koe, se gemVentetid.ts.
+	let ikkeSendtBesked = $state(false);
 
 	// Pre 7/6 2026: vi havde et editMode-flow hvor felter blev disabled
 	// efter gem. Klienter (Dorthe 7/6) misforstod det og troede deres
@@ -250,18 +257,27 @@
 		gemFejl = null;
 		gemmer = true;
 		try {
-			await gemVanedag(
-				u.uid,
-				{
-					dagNummer,
-					checks,
-					bonus,
-					checkin,
-					note
-				},
-				produktType
+			// Uden forbindelse melder gemmet ALDRIG fejl, det bliver bare
+			// haengende, og saa stod knappen laast paa "Gemmer". Se
+			// gemVentetid.ts. Refleksionen ligger i koe og bliver sendt af
+			// sig selv, saa vi siger det og lader hende gaa videre.
+			meldSkrivningIGang();
+			const udfald = await gemMedVentetid(
+				gemVanedag(
+					u.uid,
+					{
+						dagNummer,
+						checks,
+						bonus,
+						checkin,
+						note
+					},
+					produktType
+				)
 			);
+			if (udfald.status === 'fejl') throw udfald.fejl;
 			oprindeligEntry = { dagNummer, checks, bonus, checkin, note };
+			if (udfald.status === 'venter') ikkeSendtBesked = true;
 		} catch (e) {
 			console.error(e);
 			gemFejl = 'Kunne ikke gemme. Prøv igen.';
@@ -753,3 +769,13 @@
 		cursor: not-allowed;
 	}
 </style>
+
+{#if ikkeSendtBesked}
+	<BekraeftModal
+		titel="Det er ikke gemt endnu"
+		beskrivelse="Din telefon kan ikke få fat i appen lige nu. Det du skrev ligger klar hos dig, og vi sender det af sig selv så snart du har forbindelse igen. Du behøver ikke skrive det en gang til. Luk ikke appen helt ned."
+		bekraeftTekst="OK"
+		onlyOk
+		onBekraeft={() => (ikkeSendtBesked = false)}
+	/>
+{/if}

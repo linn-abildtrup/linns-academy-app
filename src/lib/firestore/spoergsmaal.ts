@@ -47,6 +47,17 @@ export interface KlientSpoergsmaal {
 	// Linn AI's svar, hvis spørgsmålet blev sendt videre fra Linn AI (kunden
 	// var ikke tilfreds med AI-svaret). Ren information til admin. Etape 4.
 	aiSvar?: string;
+
+	/**
+	 * True hvis spoergsmaalet endnu ikke er kvitteret af serveren, altsa kun
+	 * ligger i telefonens lokale kopi. Saettes ved laesning ud fra Firestores
+	 * eget metadata, gemmes ALDRIG i databasen.
+	 *
+	 * Uden det her staar en besked der ikke er naaet frem noejagtig som en
+	 * der er sendt, og kunden gaar og venter paa et svar Linn aldrig har
+	 * set. Se forbindelseState.svelte.ts.
+	 */
+	ikkeSendt?: boolean;
 }
 
 export const SPOERGSMAAL_MAX_LAENGDE = 500;
@@ -215,6 +226,9 @@ export async function hentMineSpoergsmaal(uid: string): Promise<KlientSpoergsmaa
 		const data = d.data();
 		return {
 			id: d.id,
+			// hasPendingWrites er sandt saa laenge beskeden kun ligger i
+			// telefonens lokale kopi. Det er det maerket i listen bygger paa.
+			ikkeSendt: d.metadata.hasPendingWrites,
 			uid: data.uid ?? '',
 			email: data.email ?? '',
 			spoergsmaal: data.spoergsmaal ?? '',

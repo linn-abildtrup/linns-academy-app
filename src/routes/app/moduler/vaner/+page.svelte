@@ -47,6 +47,8 @@
 	import { effektivtUnlocket, getPreviewDag } from '$lib/utils/forlobPreview';
 	import { isAdmin } from '$lib/admin';
 	import Icon from '$lib/components/Icon.svelte';
+	import { gemMedVentetid } from '$lib/content/gemVentetid';
+	import { meldSkrivningIGang } from '$lib/state/forbindelseState.svelte';
 	import SideInfoKnap from '$lib/components/SideInfoKnap.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import PreviewBanner from '$lib/components/PreviewBanner.svelte';
@@ -304,7 +306,19 @@
 		gemmerEgenVane = true;
 		egenVaneFejl = null;
 		try {
-			const res = await tilfoejEgenVane(u.uid, aktivProduktType, label, MAX_EGNE_VANER);
+			// Uden forbindelse melder gemmet ALDRIG fejl, det bliver bare
+			// haengende, og saa stod knappen laast. Se gemVentetid.ts.
+			meldSkrivningIGang();
+			const udfald = await gemMedVentetid(
+				tilfoejEgenVane(u.uid, aktivProduktType, label, MAX_EGNE_VANER)
+			);
+			if (udfald.status === 'fejl') throw udfald.fejl;
+			if (udfald.status === 'venter') {
+				egenVaneFejl = 'Du har ikke forbindelse. Dit lille skridt bliver gemt af sig selv når du er på nettet igen.';
+				gemmerEgenVane = false;
+				return;
+			}
+			const res = udfald.vaerdi;
 			if (res.ok) {
 				egneVaner = [...egneVaner, res.vane];
 				nyEgenVaneLabel = '';

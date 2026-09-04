@@ -5,6 +5,8 @@
 	import { goto } from '$app/navigation';
 	import { harTestAdgang } from '$lib/utils/userAdgang';
 	import Icon from '$lib/components/Icon.svelte';
+	import { gemMedVentetid } from '$lib/content/gemVentetid';
+	import { meldSkrivningIGang } from '$lib/state/forbindelseState.svelte';
 	import { hentAlleExercises } from '$lib/firestore/mikrotraening';
 	import {
 		filtrerOvelserTilProgram,
@@ -124,7 +126,12 @@
 			// behøver at trykke 'Vælg' i træningslisten først
 			if (ny.id) {
 				try {
-					await gemAktivtTraeningsprogram(u.uid, { kilde: 'eget', programId: ny.id });
+					// Maa ikke kunne haenge og blokere for at hun kommer videre
+					// til sit nye program. Se gemVentetid.ts.
+					meldSkrivningIGang();
+					await gemMedVentetid(
+						gemAktivtTraeningsprogram(u.uid, { kilde: 'eget', programId: ny.id })
+					);
 				} catch (e) {
 					console.warn('Kunne ikke markere som aktivt program:', e);
 				}

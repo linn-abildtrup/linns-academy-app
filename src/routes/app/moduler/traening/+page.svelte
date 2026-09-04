@@ -3,6 +3,8 @@
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
+	import { gemMedVentetid } from '$lib/content/gemVentetid';
+	import { meldSkrivningIGang } from '$lib/state/forbindelseState.svelte';
 	import SideInfoKnap from '$lib/components/SideInfoKnap.svelte';
 	import TesterBadge from '$lib/components/TesterBadge.svelte';
 	import { erForlobsklient, erModulbruger, harPremium } from '$lib/utils/userAdgang';
@@ -88,11 +90,19 @@
 		if (!user || gemmerAktiv) return;
 		gemmerAktiv = true;
 		try {
-			await gemAktivtTraeningsprogram(user.uid, {
-				kilde,
-				...(programId ? { programId } : {}),
-				...(forlobId ? { forlobId } : {})
-			});
+			// Uden forbindelse melder gemmet ALDRIG fejl, det bliver bare
+			// haengende, og saa stod hele listen laast. Se gemVentetid.ts.
+			// Valget ligger i koe. Baandet oeverst siger hvorfor, saa her
+			// skal der ikke ogsaa en besked op.
+			meldSkrivningIGang();
+			const udfald = await gemMedVentetid(
+				gemAktivtTraeningsprogram(user.uid, {
+					kilde,
+					...(programId ? { programId } : {}),
+					...(forlobId ? { forlobId } : {})
+				})
+			);
+			if (udfald.status === 'fejl') throw udfald.fejl;
 		} catch (e) {
 			console.error('Kunne ikke gemme aktivt program:', e);
 		} finally {

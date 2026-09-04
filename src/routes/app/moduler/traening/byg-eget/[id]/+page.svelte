@@ -2,6 +2,8 @@
 	import { getContext, onMount } from 'svelte';
 	import type { User } from 'firebase/auth';
 	import { goto } from '$app/navigation';
+	import { gemMedVentetid } from '$lib/content/gemVentetid';
+	import { meldSkrivningIGang } from '$lib/state/forbindelseState.svelte';
 	import { page } from '$app/state';
 	import Icon from '$lib/components/Icon.svelte';
 	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
@@ -36,6 +38,10 @@
 	let indlaeser = $state(true);
 	let gemmer = $state(false);
 	let fejl = $state<string | null>(null);
+
+	// Vises naar gemmet ikke naaede frem inden for ventetiden. Ingen
+	// 'Proev igen': skrivningen ligger i koe, se gemVentetid.ts.
+	let ikkeSendtBesked = $state(false);
 
 	const flerdagesProgram = $derived.by(() => {
 		if (!program) return null;
@@ -150,17 +156,39 @@
 		gemmer = true;
 		fejl = null;
 		try {
+			// Uden forbindelse melder gemmet ALDRIG fejl, det bliver bare
+			// haengende, og saa stod knappen laast paa "Gemmer". Se
+			// gemVentetid.ts. Vi bliver staaende paa siden og siger det, i
+			// stedet for at sende hende videre til et program der endnu ikke
+			// findes noget sted.
+			meldSkrivningIGang();
 			if (erNyt) {
-				const ny = await opretMitProgram(user.uid, {
-					navn: navn.trim(),
-					oevelser
-				});
-				goto(`/app/moduler/traening/byg-eget/${ny.id}`, { replaceState: true });
+				const udfald = await gemMedVentetid(
+					opretMitProgram(user.uid, {
+						navn: navn.trim(),
+						oevelser
+					})
+				);
+				if (udfald.status === 'fejl') throw udfald.fejl;
+				if (udfald.status === 'venter') {
+					ikkeSendtBesked = true;
+					gemmer = false;
+					return;
+				}
+				goto(`/app/moduler/traening/byg-eget/${udfald.vaerdi.id}`, { replaceState: true });
 			} else {
-				await opdaterMitProgram(user.uid, programId, {
-					navn: navn.trim(),
-					oevelser
-				});
+				const udfald = await gemMedVentetid(
+					opdaterMitProgram(user.uid, programId, {
+						navn: navn.trim(),
+						oevelser
+					})
+				);
+				if (udfald.status === 'fejl') throw udfald.fejl;
+				if (udfald.status === 'venter') {
+					ikkeSendtBesked = true;
+					gemmer = false;
+					return;
+				}
 				goto('/app/moduler/traening/byg-eget');
 			}
 		} catch (e) {
@@ -181,7 +209,14 @@
 		viserSletBekraeft = false;
 		gemmer = true;
 		try {
-			await sletMitProgram(user.uid, programId);
+			meldSkrivningIGang();
+			const udfald = await gemMedVentetid(sletMitProgram(user.uid, programId));
+			if (udfald.status === 'fejl') throw udfald.fejl;
+			if (udfald.status === 'venter') {
+				ikkeSendtBesked = true;
+				gemmer = false;
+				return;
+			}
 			goto('/app/moduler/traening/byg-eget');
 		} catch (e) {
 			console.error(e);
@@ -953,3 +988,13 @@
 		font-size: calc(13px * var(--fs-scale, 1));
 	}
 </style>
+
+{#if ikkeSendtBesked}
+	<BekraeftModal
+		titel="Det er ikke gemt endnu"
+		beskrivelse="Din telefon kan ikke få fat i appen lige nu. Dit program ligger klar hos dig, og vi sender det af sig selv så snart du har forbindelse igen. Du behøver ikke bygge det en gang til. Luk ikke appen helt ned."
+		bekraeftTekst="OK"
+		onlyOk
+		onBekraeft={() => (ikkeSendtBesked = false)}
+	/>
+{/if}

@@ -4,6 +4,9 @@
 	import type { UserDoc } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import SideInfoKnap from '$lib/components/SideInfoKnap.svelte';
+	import BekraeftModal from '$lib/components/BekraeftModal.svelte';
+	import { gemMedVentetid } from '$lib/content/gemVentetid';
+	import { meldSkrivningIGang } from '$lib/state/forbindelseState.svelte';
 	import {
 		gemSpoergsmaal,
 		hentMineSpoergsmaal,
@@ -103,6 +106,11 @@
 	let fejl = $state<string | null>(null);
 	let mine = $state<KlientSpoergsmaal[]>([]);
 
+	// Vises naar afsendelsen ikke naaede frem inden for ventetiden. Beskeden
+	// ligger i koe og bliver sendt af sig selv, saa der staar BEVIDST ikke
+	// 'Proev igen': et tryk mere ville sende den samme besked to gange.
+	let ikkeSendtBesked = $state(false);
+
 	// Fanen "Skriv til Linn" staar som en chat ligesom Linn AI. hentMineSpoergsmaal
 	// giver nyeste foerst (den gamle liste-visning); i en chat skal aeldste staa
 	// oeverst, saa vi vender den her og kun her.
@@ -146,15 +154,24 @@
 		gemmer = true;
 		try {
 			const email = user.email ?? userDoc?.email ?? '';
-			await gemSpoergsmaal({
-				uid: user.uid,
-				email,
-				spoergsmaal: tekst,
-				forlobId: aktivtForlobId ?? undefined,
-				forlobNavn: aktivtForlobNavn ?? undefined,
-				kundeType: userState ?? undefined
-			});
+			// Uden forbindelse melder afsendelsen ALDRIG fejl, den bliver bare
+			// haengende, og saa stod send-knappen laast for evigt. Se
+			// gemVentetid.ts. Beskeden ligger i koe og bliver sendt af sig
+			// selv, saa vi toemmer feltet og maerker den i samtalen i stedet.
+			meldSkrivningIGang();
+			const udfald = await gemMedVentetid(
+				gemSpoergsmaal({
+					uid: user.uid,
+					email,
+					spoergsmaal: tekst,
+					forlobId: aktivtForlobId ?? undefined,
+					forlobNavn: aktivtForlobNavn ?? undefined,
+					kundeType: userState ?? undefined
+				})
+			);
+			if (udfald.status === 'fejl') throw udfald.fejl;
 			tekst = '';
+			if (udfald.status === 'venter') ikkeSendtBesked = true;
 			await genindlaesMine();
 			void rulLinnTilNyeste();
 		} catch (e) {
@@ -332,15 +349,20 @@
 		if (!svarBesked || svarBesked.rolle !== 'assistant' || !spoergsmaalBesked) return;
 		try {
 			const email = u.email ?? userDoc?.email ?? '';
-			await gemSpoergsmaal({
-				uid: u.uid,
-				email,
-				spoergsmaal: spoergsmaalBesked.indhold,
-				forlobId: aktivtForlobId ?? undefined,
-				forlobNavn: aktivtForlobNavn ?? undefined,
-				kundeType: userState ?? undefined,
-				aiSvar: svarBesked.indhold
-			});
+			meldSkrivningIGang();
+			const udfald = await gemMedVentetid(
+				gemSpoergsmaal({
+					uid: u.uid,
+					email,
+					spoergsmaal: spoergsmaalBesked.indhold,
+					forlobId: aktivtForlobId ?? undefined,
+					forlobNavn: aktivtForlobNavn ?? undefined,
+					kundeType: userState ?? undefined,
+					aiSvar: svarBesked.indhold
+				})
+			);
+			if (udfald.status === 'fejl') throw udfald.fejl;
+			if (udfald.status === 'venter') ikkeSendtBesked = true;
 			aiSendtIndex = new Set([...aiSendtIndex, assistantIndex]);
 			// Skift til "Skriv til Linn"-fanen saa kunden ser at spoergsmaalet
 			// er landet i hendes korrespondance med Linn.
@@ -547,6 +569,8 @@
 								<div class="linn-fra">Svar fra Linn</div>
 								<div class="ai-svar-tekst">{q.svar}</div>
 							</div>
+						{:else if q.ikkeSendt}
+							<div class="linn-usendt">⏱ Venter på at blive sendt</div>
 						{:else}
 							<div class="linn-venter">Afventer svar</div>
 						{/if}
@@ -585,6 +609,16 @@
 		</div>
 	</section>
 {/snippet}
+
+{#if ikkeSendtBesked}
+	<BekraeftModal
+		titel="Din besked er ikke sendt endnu"
+		beskrivelse="Din telefon kan ikke få fat i appen lige nu. Beskeden ligger klar hos dig, og den bliver sendt af sig selv så snart du har forbindelse igen. Du behøver ikke skrive den en gang til. Den står som Venter på at blive sendt indtil Linn har fået den."
+		bekraeftTekst="OK"
+		onlyOk
+		onBekraeft={() => (ikkeSendtBesked = false)}
+	/>
+{/if}
 
 <style>
 	.page {
@@ -823,6 +857,20 @@
 		text-transform: uppercase;
 		font-weight: 600;
 		color: var(--terra);
+	}
+
+	/* Beskeden ligger kun i telefonens lokale kopi. Den maa IKKE staa som
+	   "Afventer svar", for saa gaar kunden og venter paa et svar Linn
+	   aldrig har set. */
+	.linn-usendt {
+		align-self: flex-end;
+		margin: 2px 2px 8px;
+		font-size: calc(11px * var(--fs-scale, 1));
+		font-weight: 600;
+		color: #8a6a2e;
+		background: #f6eeda;
+		border-radius: 6px;
+		padding: 3px 8px;
 	}
 
 	/* Ubesvaret spoergsmaal. Staar i hoejre side under boblen, saa det

@@ -2,6 +2,8 @@
 	import { getContext, onMount, onDestroy } from 'svelte';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { gemMedVentetid } from '$lib/content/gemVentetid';
+	import { meldSkrivningIGang } from '$lib/state/forbindelseState.svelte';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
 	import type { DayExercise, Exercise, TrainingDay } from '$lib/content/mikrotraening';
@@ -652,10 +654,18 @@
 			}
 			const runde = Math.floor((nyTotal - 1) / antalDage) + 1;
 
-			await Promise.all([
-				gemAboFremgang(u.uid, nyTotal, aboFremgang?.feedback ?? {}),
-				gemAboTraening(u.uid, dato, dagNummer, runde)
-			]);
+			// Uden forbindelse melder gemmet ALDRIG fejl, det bliver bare
+			// haengende, og saa stod knappen laast efter en gennemfoert
+			// traening. Se gemVentetid.ts. Fremgangen ligger i koe og bliver
+			// sendt af sig selv. Baandet oeverst siger hvorfor.
+			meldSkrivningIGang();
+			const udfald = await gemMedVentetid(
+				Promise.all([
+					gemAboFremgang(u.uid, nyTotal, aboFremgang?.feedback ?? {}),
+					gemAboTraening(u.uid, dato, dagNummer, runde)
+				])
+			);
+			if (udfald.status === 'fejl') throw udfald.fejl;
 			aboFremgang = {
 				totalGennemforte: nyTotal,
 				feedback: aboFremgang?.feedback ?? {}
