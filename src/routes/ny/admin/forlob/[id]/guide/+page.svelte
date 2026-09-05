@@ -673,7 +673,7 @@
 	.g-kun {
 		padding: 24px 18px;
 		color: var(--ink-2);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.g-ramme {
@@ -706,14 +706,14 @@
 
 	.g-trin-h b {
 		display: block;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
 	.g-trin-h span {
 		display: block;
 		margin-top: 2px;
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 	}
 
@@ -758,7 +758,7 @@
 		place-items: center;
 		background: var(--line);
 		border-radius: 99px;
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		color: var(--ink-2);
 	}
@@ -774,14 +774,14 @@
 
 	.g-t {
 		min-width: 0;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
 	.g-t small {
 		display: block;
 		margin-top: 1px;
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 400;
 		color: var(--ink-3);
 		line-height: 1.4;
@@ -791,7 +791,7 @@
 		display: block;
 		margin-top: 10px;
 		padding: 8px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--plum);
 		text-decoration: none;
 	}
@@ -809,13 +809,13 @@
 
 	.g-hoved h1 {
 		margin: 0 0 4px;
-		font-size: calc(25px * var(--fs-scale, 1));
+		font-size: calc(25px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 	}
 
 	.g-gem {
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 	}
 
@@ -829,7 +829,7 @@
 
 	.led {
 		margin: 0 0 16px;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2);
 		line-height: 1.6;
 	}
@@ -842,14 +842,14 @@
 	}
 
 	.q {
-		font-size: calc(14.5px * var(--fs-scale, 1));
+		font-size: calc(14.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		margin-bottom: 8px;
 	}
 
 	.h {
 		margin-top: 8px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		line-height: 1.55;
 	}
@@ -863,7 +863,7 @@
 		padding: 7px 14px;
 		background: var(--paper);
 		border-radius: 99px;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.fast.advarsel {
@@ -882,7 +882,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 11px;
 		color: var(--espresso, #382c2a);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		box-sizing: border-box;
 	}
@@ -899,7 +899,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 99px;
 		color: var(--ink-2);
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		font-weight: 600;
 		cursor: pointer;
@@ -919,7 +919,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 99px;
 		color: var(--espresso, #382c2a);
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		text-decoration: none;
 	}
@@ -934,7 +934,7 @@
 	}
 
 	.fl li {
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 	}
 
@@ -958,7 +958,7 @@
 	}
 
 	.spaerre .t {
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		color: var(--ler-tekst);
 		margin-bottom: 6px;
@@ -972,7 +972,7 @@
 
 	.spaerre li,
 	.note li {
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.6;
 		color: var(--ink-2);
 	}
@@ -982,7 +982,7 @@
 		background: var(--honey-tint);
 		border-radius: 14px;
 		margin-bottom: 12px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.6;
 		color: var(--ink-2);
 	}
@@ -1004,7 +1004,7 @@
 	.klar-boks b,
 	.udgivet b {
 		display: block;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--sage-tekst);
 	}
 
@@ -1012,14 +1012,14 @@
 	.udgivet span {
 		display: block;
 		margin-top: 3px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2);
 		line-height: 1.55;
 	}
 
 	.ufejl {
 		margin: 10px 0;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ler-tekst);
 	}
 
@@ -1042,7 +1042,7 @@
 	}
 
 	.venstre {
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 	}
 

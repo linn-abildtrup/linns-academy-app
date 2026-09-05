@@ -477,7 +477,7 @@
 	.ns-kun {
 		padding: 24px 18px;
 		color: var(--ink-2);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.ns-fejl {
@@ -486,7 +486,7 @@
 		border-radius: 12px;
 		background: var(--ler-tint, #f4e6de);
 		color: var(--ler-tekst, #8a5439);
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
@@ -514,25 +514,25 @@
 
 	.ns-pil {
 		color: var(--ink-3, #a3948a);
-		font-size: calc(17px * var(--fs-scale, 1));
+		font-size: calc(17px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.ns-navn {
 		display: block;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--espresso, #382c2a);
 	}
 
 	.ns-hold {
 		display: block;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
 	.ns-hint {
 		margin: 12px 0 0;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
@@ -557,7 +557,7 @@
 		border-radius: 13px;
 		color: var(--espresso, #382c2a);
 		font-family: inherit;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.5;
 		resize: vertical;
 		box-sizing: border-box;
@@ -569,7 +569,7 @@
 		background: var(--honey-tint, #f7ecd7);
 		border-radius: 13px;
 		color: var(--honey-deep, #b47f3e);
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.5;
 	}
 
@@ -588,7 +588,7 @@
 		border-radius: 13px;
 		background: var(--paper, #fbf8f2);
 		color: var(--plum, #7c4f63);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		text-align: center;
 		cursor: pointer;
@@ -637,7 +637,7 @@
 	}
 
 	.ns-optager-status {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -655,7 +655,7 @@
 	}
 
 	.ns-tid {
-		font-size: calc(32px * var(--fs-scale, 1));
+		font-size: calc(32px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: 0.03em;
 		color: var(--plum-deep, #5e3a4b);
@@ -684,7 +684,7 @@
 
 	.ns-graense {
 		margin: 9px 0 0;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
@@ -694,7 +694,7 @@
 
 	.ns-filfejl {
 		margin: 10px 0 0;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ler-tekst, #8a5439);
 		font-weight: 600;
 	}
@@ -712,7 +712,7 @@
 		background: var(--sage-tint, #e7efe5);
 		border-radius: 13px;
 		color: var(--sage-tekst, #46603f);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 </style>

@@ -1473,16 +1473,7 @@
 <style>
 	/* Bredt med vilje. Admin bruges paa en iMac, saa den smalle
 	   520px-ramme fra kunde-siderne gaelder ikke her. */
-	/* ÉT TAL FOR HELE SIDEN. Linn 5. september: teksten er for stor.
-	   Alle stoerrelser paa siden og i de to fane-dele ganges med det her,
-	   saa forholdet mellem dem bevares og der kun er ét sted at dreje.
-
-	   Det ganges OVEN PAA kundens egen tekstskalering, saa den stadig
-	   virker. Admin er ikke et sted man laeser laenge: her er det
-	   overblikket der taeller, og pladsen er knap paa en bred, lav
-	   skaerm. */
 	.side {
-		--de-skala: 0.85;
 		padding: 16px 18px 24px;
 		max-width: 1560px;
 		margin: 0 auto;
@@ -1502,14 +1493,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: calc(12px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2);
 		text-decoration: none;
 	}
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: calc(21px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(21px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 0;
@@ -1518,7 +1509,7 @@
 	}
 
 	.side-sub {
-		font-size: calc(12.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2);
 		margin: 0;
 	}
@@ -1545,7 +1536,7 @@
 		border: none;
 		background: transparent;
 		font-family: inherit;
-		font-size: calc(12.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		padding: 8px 18px;
 		border-radius: 8px;
@@ -1563,7 +1554,7 @@
 	.fu-kun {
 		padding: 24px 18px;
 		color: var(--ink-2);
-		font-size: calc(14px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.besked {
@@ -1572,7 +1563,7 @@
 		border: 1px solid var(--line);
 		border-radius: 12px;
 		color: var(--ink-2);
-		font-size: calc(13px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		text-align: center;
 	}
 
@@ -1665,7 +1656,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 8px;
-		font-size: calc(10.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.11em;
 		text-transform: uppercase;
@@ -1684,7 +1675,7 @@
 	}
 
 	.de-hjaelp {
-		font-size: calc(11.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		line-height: 1.5;
 		margin: 0 0 9px;
@@ -1697,7 +1688,7 @@
 		gap: 7px;
 		padding: 6px 9px;
 		border-radius: 8px;
-		font-size: calc(12.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2);
 		text-decoration: none;
 		margin-bottom: 2px;
@@ -1713,7 +1704,7 @@
 
 	.dag-tal {
 		margin-left: auto;
-		font-size: calc(10px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 	}
 
@@ -1757,7 +1748,7 @@
 		border-radius: 50%;
 		background: var(--oat);
 		color: var(--ink-2);
-		font-size: calc(11px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		display: grid;
 		place-items: center;
@@ -1781,7 +1772,7 @@
 
 	.li-t {
 		display: block;
-		font-size: calc(13.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		line-height: 1.3;
 		color: var(--text);
@@ -1789,14 +1780,14 @@
 
 	.li-m {
 		display: block;
-		font-size: calc(11px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		margin-top: 2px;
 	}
 
 	.li-badge {
 		display: inline-block;
-		font-size: calc(10px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		padding: 2px 7px;
 		border-radius: 99px;
@@ -1823,7 +1814,7 @@
 		border-radius: 6px;
 		width: 22px;
 		height: 18px;
-		font-size: calc(10px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2);
 		cursor: pointer;
 		padding: 0;
@@ -1836,7 +1827,7 @@
 	}
 
 	.chip {
-		font-size: calc(10px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		padding: 3px 8px;
 		border-radius: 99px;
@@ -1853,7 +1844,7 @@
 		border-radius: 10px;
 		padding: 9px 16px;
 		font-family: inherit;
-		font-size: calc(13px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--ink-2);
 		cursor: pointer;
@@ -1874,7 +1865,7 @@
 
 	.knap.lille {
 		padding: 7px 13px;
-		font-size: calc(12px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.knap.fyldt {
@@ -1901,7 +1892,7 @@
 		border: none;
 		background: transparent;
 		font-family: inherit;
-		font-size: calc(11px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--maerke);
 		cursor: pointer;
@@ -1923,7 +1914,7 @@
 
 	.felt-navn {
 		display: block;
-		font-size: calc(11px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--ink-2);
 		margin-bottom: 4px;
@@ -1947,7 +1938,7 @@
 		border: 1px solid var(--line);
 		border-radius: 9px;
 		padding: 9px 11px;
-		font-size: calc(13.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		color: var(--text);
 		background: var(--paper-2);
@@ -1980,7 +1971,7 @@
 
 	.slip b {
 		display: block;
-		font-size: calc(13.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2);
 		font-weight: 600;
 		margin-bottom: 8px;
@@ -2014,7 +2005,7 @@
 		background: var(--white, #fff);
 		border-radius: 9px;
 		padding: 7px 13px;
-		font-size: calc(12px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--ink-2);
 		cursor: pointer;
@@ -2080,14 +2071,14 @@
 
 	.thumb-tom b {
 		display: block;
-		font-size: calc(13px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--ink-2);
 	}
 
 	.thumb-tom span {
 		display: block;
-		font-size: calc(11.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		margin-top: 3px;
 	}
@@ -2162,7 +2153,7 @@
 
 	.tids-fejl,
 	.tids-resume {
-		font-size: calc(12px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		border-radius: 9px;
 		padding: 8px 11px;
 		margin-bottom: 8px;
@@ -2205,7 +2196,7 @@
 		padding: 40px 16px;
 		text-align: center;
 		color: var(--ink-3);
-		font-size: calc(13px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	/* ── Gem-bjaelken ───────────────────────────────────────────────── */
@@ -2214,13 +2205,13 @@
 		align-items: center;
 		gap: 9px;
 		flex-wrap: wrap;
-		font-size: calc(12.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ler-tekst);
 	}
 
 	.de-kvit {
 		margin-left: auto;
-		font-size: calc(12.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--sage-tekst);
 	}

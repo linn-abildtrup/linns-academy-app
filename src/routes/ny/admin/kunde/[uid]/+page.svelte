@@ -875,7 +875,7 @@
 	.ku-kun {
 		padding: 24px 18px;
 		color: var(--ink-2);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.ku {
@@ -901,7 +901,7 @@
 		background: var(--plum-tint);
 		border-radius: 16px;
 		color: var(--plum);
-		font-size: calc(21px * var(--fs-scale, 1));
+		font-size: calc(21px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
@@ -912,14 +912,14 @@
 
 	.ku-hvem h1 {
 		margin: 0;
-		font-size: calc(24px * var(--fs-scale, 1));
+		font-size: calc(24px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 	}
 
 	.ku-mail {
 		margin: 2px 0 0;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 	}
 
@@ -935,7 +935,7 @@
 		border-radius: 99px;
 		background: var(--sage-tint);
 		color: var(--sage-tekst);
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 	}
 
@@ -966,7 +966,7 @@
 		border: 1px solid var(--line);
 		border-radius: 99px;
 		color: var(--ink-2);
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		font-weight: 600;
 		cursor: pointer;
@@ -990,7 +990,7 @@
 
 	.ku-krop :global(h3) {
 		margin: 0 0 9px;
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -999,13 +999,13 @@
 
 	.ku-stor {
 		display: block;
-		font-size: calc(27px * var(--fs-scale, 1));
+		font-size: calc(27px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.05;
 		letter-spacing: -0.02em;
 	}
 
 	.ku-stor em {
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		font-style: normal;
 	}
@@ -1013,7 +1013,7 @@
 	.ku-u {
 		display: block;
 		margin-top: 5px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		line-height: 1.45;
 	}
@@ -1057,7 +1057,7 @@
 		gap: 12px;
 		padding: 6px 0;
 		border-bottom: 1px solid var(--line);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.ku-l:last-child {
@@ -1076,14 +1076,14 @@
 
 	.ku-ok {
 		margin: 0;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--sage-tekst);
 		font-weight: 600;
 	}
 
 	.ku-tom {
 		margin: 0;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		font-style: italic;
 	}
@@ -1101,7 +1101,7 @@
 
 	.ku-op-t {
 		display: block;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--honey-deep);
 	}
@@ -1113,7 +1113,7 @@
 	.ku-op-h {
 		display: block;
 		margin-top: 2px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2);
 	}
 
@@ -1131,7 +1131,7 @@
 		flex-direction: column;
 		justify-content: space-between;
 		padding: 8px 0;
-		font-size: calc(10px * var(--fs-scale, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		text-align: right;
 		min-width: 18px;
@@ -1151,7 +1151,7 @@
 		display: flex;
 		justify-content: space-between;
 		padding-left: 25px;
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 	}
 
@@ -1169,12 +1169,12 @@
 		align-items: baseline;
 		gap: 8px;
 		flex-wrap: wrap;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.ku-m-h span {
 		color: var(--ink-3);
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.ku-m-h em {
@@ -1195,7 +1195,7 @@
 		padding: 4px 11px;
 		background: var(--paper);
 		border-radius: 99px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2);
 	}
 
@@ -1213,12 +1213,12 @@
 		align-items: baseline;
 		justify-content: space-between;
 		gap: 10px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2);
 	}
 
 	.ku-mini-h b {
-		font-size: calc(15px * var(--fs-scale, 1));
+		font-size: calc(15px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--sage-tekst);
 	}
 
@@ -1230,14 +1230,14 @@
 	}
 
 	.ku-sp-m {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		margin-bottom: 3px;
 	}
 
 	.ku-sp p {
 		margin: 0;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.5;
 		white-space: pre-wrap;
 	}
@@ -1250,7 +1250,7 @@
 
 	.ku-sp-s b {
 		display: block;
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
@@ -1260,14 +1260,14 @@
 
 	.ku-sp-venter {
 		margin-top: 7px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ler-tekst);
 		font-weight: 600;
 	}
 
 	.ku-fod {
 		margin: 22px 0 0;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 	}
 

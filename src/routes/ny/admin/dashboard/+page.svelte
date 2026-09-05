@@ -1460,7 +1460,7 @@
 	}
 	h1 {
 		font-family: var(--ff-d);
-		font-size: calc(28px * var(--fs-scale, 1));
+		font-size: calc(28px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -1468,7 +1468,7 @@
 		color: var(--text);
 	}
 	.page-sub {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
 		line-height: 1.4;
@@ -1478,14 +1478,14 @@
 		background: var(--surface2, #f4f1ec);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 	.hint-kort {
 		margin-top: 12px;
 		padding: 14px 16px;
 		background: var(--surface2, #f4f1ec);
 		border-radius: 12px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		line-height: 1.5;
 	}
@@ -1512,7 +1512,7 @@
 		border: none;
 		background: transparent;
 		border-radius: 9px;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text2);
 		cursor: pointer;
@@ -1527,7 +1527,7 @@
 		margin-bottom: 8px;
 	}
 	.faner.maaletype .fane {
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		padding: 11px 12px;
 	}
 	.faner.maaletype .fane.aktiv {
@@ -1548,7 +1548,7 @@
 		background: var(--surface2, transparent);
 		color: var(--text2);
 		border-radius: 8px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		cursor: pointer;
 	}
 	.rejse-toggle button.aktiv {
@@ -1577,7 +1577,7 @@
 		border: 1px solid var(--border, #e7e2d9);
 		border-radius: 12px;
 		background: var(--white, #fff);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text);
 		margin-bottom: 14px;
 	}
@@ -1601,18 +1601,18 @@
 	}
 	.kpi-tal {
 		font-family: var(--ff-d);
-		font-size: calc(24px * var(--fs-scale, 1));
+		font-size: calc(24px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text);
 		line-height: 1;
 	}
 	.kpi-label {
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		margin-top: 4px;
 	}
 	.kpi-sub {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
@@ -1626,7 +1626,7 @@
 		margin-bottom: 14px;
 	}
 	.kort-titel {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text);
 		margin-bottom: 14px;
@@ -1637,7 +1637,7 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: baseline;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text2);
 		margin: 18px 0 8px;
@@ -1657,7 +1657,7 @@
 	.ci-tabel {
 		width: 100%;
 		border-collapse: collapse;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 	.ci-tabel th {
 		text-align: right;
@@ -1706,7 +1706,7 @@
 		border: none;
 		background: transparent;
 		border-radius: 9px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text2);
 		cursor: pointer;
@@ -1741,7 +1741,7 @@
 		border: 1px solid var(--border, #e7e2d9);
 		border-radius: 9px;
 		background: var(--white, #fff);
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text);
 		cursor: pointer;
 		white-space: nowrap;
@@ -1759,7 +1759,7 @@
 		padding: 6px;
 	}
 	.linje-divider {
-		font-size: calc(10px * var(--fs-scale, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -1772,7 +1772,7 @@
 		gap: 8px;
 		padding: 7px 8px;
 		border-radius: 7px;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text);
 		cursor: pointer;
 	}
@@ -1808,7 +1808,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 	}
 	.legende-prik {
@@ -1822,17 +1822,17 @@
 		flex-wrap: wrap;
 		gap: 4px 14px;
 		margin-top: 8px;
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 	}
 	.skala-note {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		margin: 10px 0 0;
 	}
 	/* Kort, dynamisk forklaring under en figur-titel — så intet misforstås. */
 	.figur-note {
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		line-height: 1.5;
 		margin: -6px 0 12px;
@@ -1856,21 +1856,21 @@
 		flex-wrap: wrap;
 	}
 	.akt-navn {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
 	.akt-email {
 		font-weight: 400;
 		color: var(--text2);
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		margin-left: 4px;
 	}
 	.akt-meta {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 	.akt-forlob {
 		color: var(--text3);
@@ -1908,7 +1908,7 @@
 	}
 	.ai-fejl {
 		color: var(--danger, #b04a4a);
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		margin: 10px 0 0;
 	}
 	.ai-resultat {
@@ -1925,14 +1925,14 @@
 	.ai-tekst {
 		white-space: pre-wrap;
 		line-height: 1.55;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text);
 		margin-top: 6px;
 	}
 	.refl-akse {
 		display: flex;
 		justify-content: space-between;
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
@@ -1950,15 +1950,15 @@
 		border-bottom: none;
 	}
 	.svaer-navn {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text);
 	}
 	.svaer-interval {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 	}
 	.svaer-antal {
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		text-align: right;
 	}
@@ -2001,7 +2001,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 	}
 	.fb-prik {
@@ -2035,14 +2035,14 @@
 		border-bottom: none;
 	}
 	.sub-navn {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text);
 	}
 	.sub-tal {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 	}
 	.sub-aendring {
@@ -2060,7 +2060,7 @@
 		flex-direction: column;
 		gap: 4px;
 		margin-top: 18px;
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 	}
 	.opdateret-rad {
@@ -2084,7 +2084,7 @@
 		border-radius: 9px;
 		background: var(--accent, #b87b6e);
 		color: var(--white, #fff);
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		cursor: pointer;
 		white-space: nowrap;
@@ -2141,6 +2141,6 @@
 	.da-kun {
 		padding: 24px 18px;
 		color: #6f5f57;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 </style>

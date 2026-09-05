@@ -740,7 +740,7 @@
 	.ro-kun {
 		padding: 24px 18px;
 		color: var(--ink-2);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.ro-kvit,
@@ -748,7 +748,7 @@
 		margin-bottom: 12px;
 		padding: 11px 15px;
 		border-radius: 12px;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 	.ro-kvit {
@@ -762,7 +762,7 @@
 
 	.ro-h {
 		margin: 0 0 4px;
-		font-size: calc(16px * var(--fs-scale, 1));
+		font-size: calc(16px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 	.ro-h-raek {
@@ -772,7 +772,7 @@
 		gap: 10px;
 	}
 	.ro-antal {
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
@@ -792,14 +792,14 @@
 		flex-basis: 100%;
 	}
 	.ro-felt span {
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--ink-3, #a3948a);
 	}
 	.ro-felt em {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 		font-style: normal;
 		line-height: 1.4;
@@ -811,7 +811,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 11px;
 		color: var(--espresso, #382c2a);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		line-height: 1.55;
 		box-sizing: border-box;
@@ -827,7 +827,7 @@
 		align-items: center;
 		gap: 9px;
 		margin: 2px 0 0;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 	.ro-chips {
 		display: flex;
@@ -842,7 +842,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 99px;
 		color: var(--ink-2, #6f5f57);
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		font-weight: 600;
 		cursor: pointer;
@@ -855,7 +855,7 @@
 
 	.ro-hint {
 		margin: 6px 0 11px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 		line-height: 1.5;
 	}
@@ -874,7 +874,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 10px;
 		color: var(--espresso, #382c2a);
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		box-sizing: border-box;
 		min-width: 0;
@@ -898,7 +898,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 9px;
 		color: var(--ink-2, #6f5f57);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		cursor: pointer;
 	}
@@ -916,7 +916,7 @@
 		padding: 6px 9px;
 		background: var(--paper, #fbf8f2);
 		border-radius: 9px;
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2, #6f5f57);
 		line-height: 1.4;
 	}
@@ -950,7 +950,7 @@
 		border-radius: 12px;
 	}
 	.ro-sum-h {
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
@@ -967,18 +967,18 @@
 	}
 	.ro-sum-navn {
 		display: block;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 	.ro-sum-tal {
 		display: block;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2, #6f5f57);
 		line-height: 1.45;
 	}
 	.ro-daekning {
 		margin-top: 8px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2, #6f5f57);
 		line-height: 1.45;
 	}
@@ -990,7 +990,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 2px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2, #6f5f57);
 	}
 
@@ -1000,12 +1000,12 @@
 		background: var(--honey-tint, #f7ecd7);
 		border-radius: 11px;
 		color: var(--honey-deep, #b47f3e);
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 	.ro-advarsel-linje,
 	.ro-tal-fejl {
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ler-tekst, #8a5439);
 		font-weight: 600;
 	}
@@ -1019,7 +1019,7 @@
 		background: var(--paper, #fbf8f2);
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 10px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--espresso, #382c2a);
 		word-break: break-word;
 		line-height: 1.5;

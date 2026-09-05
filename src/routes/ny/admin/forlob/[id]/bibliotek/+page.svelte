@@ -953,14 +953,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
 
 	.eyebrow {
-		font-size: calc(10px * var(--fs-scale, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -969,7 +969,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: calc(26px * var(--fs-scale, 1));
+		font-size: calc(26px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -978,7 +978,7 @@
 	}
 
 	.page-sub {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
 		line-height: 1.4;
@@ -990,7 +990,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		text-align: center;
 		margin-bottom: 14px;
 	}
@@ -1014,7 +1014,7 @@
 
 	.form-titel {
 		font-family: var(--ff-d);
-		font-size: calc(16px * var(--fs-scale, 1));
+		font-size: calc(16px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
@@ -1027,7 +1027,7 @@
 
 	.ny-kat-rad input {
 		padding: 10px 12px;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		border-radius: 10px;
 		border: 1px solid var(--border);
 		background: var(--bg2);
@@ -1065,7 +1065,7 @@
 	.kat-navn {
 		flex: 1;
 		font-family: var(--ff-d);
-		font-size: calc(16px * var(--fs-scale, 1));
+		font-size: calc(16px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 500;
 		font-style: italic;
 		color: var(--text);
@@ -1073,7 +1073,7 @@
 	}
 
 	.kat-tael {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		padding: 3px 8px;
 		background: var(--bg2);
@@ -1090,7 +1090,7 @@
 	.kat-edit-input {
 		flex: 1;
 		padding: 8px 10px;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		border-radius: 8px;
 		border: 1px solid var(--terra);
 		background: var(--white);
@@ -1106,7 +1106,7 @@
 		border: 1px solid var(--border);
 		background: var(--white);
 		color: var(--text2);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		cursor: pointer;
 		display: flex;
 		align-items: center;
@@ -1149,13 +1149,13 @@
 
 	.item-q {
 		flex: 1;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text);
 		line-height: 1.4;
 	}
 
 	.badge {
-		font-size: calc(9px * var(--fs-scale, 1));
+		font-size: calc(9px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -1178,7 +1178,7 @@
 
 	.form-knap {
 		padding: 12px;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		border-radius: 10px;
 		border: none;
@@ -1252,7 +1252,7 @@
 	}
 
 	.felt-label {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
@@ -1263,7 +1263,7 @@
 	.felt select,
 	.felt textarea {
 		padding: 10px 12px;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		border-radius: 10px;
 		border: 1px solid var(--border);
 		background: var(--bg2);
@@ -1288,7 +1288,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		cursor: pointer;
 	}
@@ -1304,7 +1304,7 @@
 		background: #fbeeea;
 		border: 1px solid #f0d6cf;
 		border-radius: 8px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: #8a4a3e;
 	}
 
@@ -1330,7 +1330,7 @@
 
 	.tab-knap {
 		padding: 10px 6px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		border-radius: 8px;
 		border: none;
@@ -1355,7 +1355,7 @@
 	}
 
 	.item-meta {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		letter-spacing: 0.04em;
 	}
@@ -1368,7 +1368,7 @@
 
 	.type-chip {
 		padding: 8px 14px;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: var(--ff-b);
 		border-radius: 999px;
 		border: 1px solid var(--border2);
@@ -1401,7 +1401,7 @@
 		display: inline-flex;
 		align-items: center;
 		padding: 7px 12px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 500;
 		border-radius: 8px;
 		border: 1px dashed var(--border);
@@ -1434,7 +1434,7 @@
 	}
 
 	.html-upload-hint {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		font-style: italic;
 	}
@@ -1471,6 +1471,6 @@
 	.fu-kun {
 		padding: 24px 18px;
 		color: #6f5f57;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 </style>

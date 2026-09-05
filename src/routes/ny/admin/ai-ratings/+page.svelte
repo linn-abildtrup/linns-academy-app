@@ -209,7 +209,7 @@
 	.ar-kun {
 		padding: 24px 18px;
 		color: var(--ink-2);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.ar-tal {
@@ -228,7 +228,7 @@
 
 	.ar-t-kort .v {
 		display: block;
-		font-size: calc(30px * var(--fs-scale, 1));
+		font-size: calc(30px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.05;
 		letter-spacing: -0.02em;
 	}
@@ -236,13 +236,13 @@
 	.ar-t-kort .m {
 		display: block;
 		margin-top: 5px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2, #6f5f57);
 	}
 
 	.ar-t-kort .u {
 		display: block;
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
@@ -268,7 +268,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 99px;
 		color: var(--ink-2, #6f5f57);
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		font-weight: 600;
 		cursor: pointer;
@@ -282,7 +282,7 @@
 
 	.ar-antal {
 		margin: 0 0 12px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
@@ -295,7 +295,7 @@
 	}
 
 	.ar-stj {
-		font-size: calc(15px * var(--fs-scale, 1));
+		font-size: calc(15px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--honey-deep, #b47f3e);
 		letter-spacing: 0.06em;
 	}
@@ -306,13 +306,13 @@
 
 	.ar-meta {
 		margin-top: 2px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
 	.ar-sp {
 		margin: 0 0 10px;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.5;
 		white-space: pre-wrap;
 	}
@@ -327,7 +327,7 @@
 	.ar-svar-mrk {
 		display: block;
 		margin-bottom: 4px;
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
@@ -336,7 +336,7 @@
 
 	.ar-svar p {
 		margin: 0;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.5;
 		white-space: pre-wrap;
 	}

@@ -452,7 +452,7 @@
 	.fo-kun {
 		padding: 24px 18px;
 		color: var(--ink-2);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.fo-besked,
@@ -460,7 +460,7 @@
 		margin-bottom: 12px;
 		padding: 11px 15px;
 		border-radius: 12px;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		line-height: 1.45;
 	}
@@ -477,14 +477,14 @@
 
 	.fo-led {
 		margin: 0 0 14px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		line-height: 1.55;
 	}
 
 	.fo-h {
 		margin: 0 0 12px;
-		font-size: calc(16px * var(--fs-scale, 1));
+		font-size: calc(16px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
@@ -507,7 +507,7 @@
 	}
 
 	.fo-felt span {
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -521,7 +521,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 11px;
 		color: var(--espresso, #382c2a);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		box-sizing: border-box;
 	}
@@ -531,12 +531,12 @@
 		align-items: center;
 		gap: 9px;
 		margin: 2px 0 11px;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.fo-hint {
 		margin: 0 0 11px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 		line-height: 1.5;
 	}
@@ -555,7 +555,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 99px;
 		color: var(--ink-2, #6f5f57);
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		font-weight: 600;
 		cursor: pointer;
@@ -576,7 +576,7 @@
 
 	.fo-antal {
 		margin: 0 0 10px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
@@ -589,19 +589,19 @@
 	}
 
 	.fo-navn {
-		font-size: calc(15px * var(--fs-scale, 1));
+		font-size: calc(15px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
 	.fo-meta {
 		margin-top: 2px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2, #6f5f57);
 	}
 
 	.fo-id {
 		margin-top: 2px;
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
@@ -615,7 +615,7 @@
 
 	.fo-laast-tekst,
 	.fo-advarsel {
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ler-tekst, #8a5439);
 		font-weight: 600;
 	}

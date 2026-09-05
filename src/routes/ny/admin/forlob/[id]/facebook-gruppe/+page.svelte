@@ -195,14 +195,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
 
 	.eyebrow {
-		font-size: calc(10px * var(--fs-scale, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -211,7 +211,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: calc(26px * var(--fs-scale, 1));
+		font-size: calc(26px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -220,7 +220,7 @@
 	}
 
 	.page-sub {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
 		line-height: 1.5;
@@ -232,7 +232,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		text-align: center;
 	}
 
@@ -259,26 +259,26 @@
 	}
 
 	.card-titel {
-		font-size: calc(15px * var(--fs-scale, 1));
+		font-size: calc(15px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text);
 		margin-bottom: 12px;
 	}
 
 	.card-titel.sub {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 	}
 
 	.card-sub {
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		margin: 0 0 12px;
 		line-height: 1.4;
 	}
 
 	.hint {
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		margin: 0;
 		line-height: 1.5;
@@ -309,13 +309,13 @@
 	}
 
 	.rad-navn {
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
 
 	.rad-sub {
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
@@ -345,14 +345,14 @@
 
 	.stat-tal {
 		font-family: var(--ff-d);
-		font-size: calc(24px * var(--fs-scale, 1));
+		font-size: calc(24px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text);
 		line-height: 1;
 	}
 
 	.stat-label {
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		margin-top: 4px;
 		letter-spacing: 0.04em;
@@ -364,7 +364,7 @@
 
 	.ikke-spurgt-detail summary {
 		cursor: pointer;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--terra);
 		font-weight: 500;
 		padding: 4px 0;
@@ -410,6 +410,6 @@
 	.fu-kun {
 		padding: 24px 18px;
 		color: #6f5f57;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 </style>

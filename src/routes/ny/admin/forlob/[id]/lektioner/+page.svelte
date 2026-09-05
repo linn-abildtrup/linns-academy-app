@@ -338,14 +338,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
 
 	.eyebrow {
-		font-size: calc(10px * var(--fs-scale, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -354,7 +354,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: calc(26px * var(--fs-scale, 1));
+		font-size: calc(26px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -363,7 +363,7 @@
 	}
 
 	.page-sub {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
 		line-height: 1.4;
@@ -375,7 +375,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		text-align: center;
 	}
 
@@ -396,7 +396,7 @@
 	}
 
 	.tael {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 	}
 
@@ -412,7 +412,7 @@
 
 	.vk-knap {
 		font-family: inherit;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text2);
 		background: var(--white);
@@ -454,7 +454,7 @@
 	}
 
 	.uge-label {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text3);
 	}
@@ -465,7 +465,7 @@
 
 	.ugedag-label {
 		text-align: center;
-		font-size: calc(10px * var(--fs-scale, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
@@ -484,7 +484,7 @@
 		color: var(--text);
 		font-family: var(--ff-d);
 		font-weight: 700;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		text-decoration: none;
 		min-width: 0;
 	}
@@ -587,7 +587,7 @@
 	}
 
 	.baseline-titel {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
@@ -598,7 +598,7 @@
 	}
 
 	.baseline-sub {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
@@ -615,7 +615,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 	}
 
@@ -627,7 +627,7 @@
 	}
 
 	.tom-chip {
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text2);
 		background: var(--white);
@@ -673,6 +673,6 @@
 	.fu-kun {
 		padding: 24px 18px;
 		color: #6f5f57;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 </style>

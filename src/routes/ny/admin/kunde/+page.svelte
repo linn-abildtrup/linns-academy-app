@@ -165,13 +165,13 @@
 	.ks-kun {
 		padding: 24px 18px;
 		color: var(--ink-2);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.ks-hint,
 	.ks-antal {
 		margin: 14px 0 10px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 	}
 
@@ -201,7 +201,7 @@
 		background: var(--plum-tint);
 		border-radius: 11px;
 		color: var(--plum);
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
@@ -212,13 +212,13 @@
 
 	.ks-navn {
 		display: block;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
 	.ks-meta {
 		display: block;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 	}
 

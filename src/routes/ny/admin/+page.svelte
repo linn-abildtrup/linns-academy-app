@@ -186,7 +186,7 @@
 	.af-tom {
 		padding: 24px 18px;
 		color: var(--ink-2);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	/* Skinnen ligger i +layout.svelte. Forsiden er kun indhold. */
@@ -210,14 +210,14 @@
 
 	.af-top h1 {
 		margin: 0;
-		font-size: calc(25px * var(--fs-scale, 1));
+		font-size: calc(25px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 	}
 
 	.af-dato {
 		margin: 3px 0 0;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 	}
 
@@ -229,7 +229,7 @@
 		border: 1px solid var(--line);
 		border-radius: 99px;
 		color: var(--espresso);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		box-sizing: border-box;
 	}
@@ -265,7 +265,7 @@
 
 	.af-kort .tal {
 		display: block;
-		font-size: calc(32px * var(--fs-scale, 1));
+		font-size: calc(32px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.05;
 		letter-spacing: -0.02em;
 		color: var(--espresso);
@@ -278,14 +278,14 @@
 	.af-kort .mrk {
 		display: block;
 		margin-top: 6px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2);
 	}
 
 	.af-kort .u {
 		display: block;
 		margin-top: 2px;
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 	}
 
@@ -303,13 +303,13 @@
 
 	.af-opgaver h2 {
 		margin: 0;
-		font-size: calc(14.5px * var(--fs-scale, 1));
+		font-size: calc(14.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
 	.af-opgaver p {
 		margin: 5px 0 0;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		line-height: 1.45;
 	}
@@ -317,7 +317,7 @@
 	/* ── vaerktoejerne ──────────────────────────────────────── */
 	.af-grp-h {
 		margin: 24px 0 10px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.13em;
 		text-transform: uppercase;
@@ -343,12 +343,12 @@
 	}
 
 	.af-flise .n {
-		font-size: calc(14.5px * var(--fs-scale, 1));
+		font-size: calc(14.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
 	.af-flise .u {
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		line-height: 1.4;
 	}
@@ -360,13 +360,13 @@
 		border-radius: 99px;
 		background: var(--plum-tint);
 		color: var(--plum-deep);
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 	}
 
 	.af-ingen,
 	.af-fod {
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		margin: 18px 0 0;
 	}

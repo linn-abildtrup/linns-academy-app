@@ -30,7 +30,7 @@
 		padding: 10px 18px;
 		border-radius: 99px;
 		border: 1px solid transparent;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		font-weight: 600;
 		cursor: pointer;

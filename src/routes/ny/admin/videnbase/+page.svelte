@@ -485,7 +485,7 @@
 	.vb-kun {
 		padding: 24px 18px;
 		color: var(--ink-2);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.vb-besked,
@@ -493,7 +493,7 @@
 		margin-bottom: 12px;
 		padding: 11px 15px;
 		border-radius: 12px;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
@@ -521,7 +521,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 99px;
 		color: var(--ink-2, #6f5f57);
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		font-weight: 600;
 		cursor: pointer;
@@ -549,20 +549,20 @@
 
 	.vb-t-kort .v {
 		display: block;
-		font-size: calc(24px * var(--fs-scale, 1));
+		font-size: calc(24px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.05;
 	}
 
 	.vb-t-kort .m {
 		display: block;
 		margin-top: 4px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
 	.vb-hint {
 		margin: 0 0 11px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2, #6f5f57);
 		line-height: 1.5;
 	}
@@ -573,12 +573,12 @@
 		background: var(--ler-tint, #f4e6de);
 		border-radius: 11px;
 		color: var(--ler-tekst, #8a5439);
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.5;
 	}
 
 	.vb-advarsel {
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ler-tekst, #8a5439);
 		font-weight: 600;
 	}
@@ -592,7 +592,7 @@
 
 	.vb-kvit,
 	.vb-kvit-linje {
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--sage-tekst, #46603f);
 		font-weight: 600;
 	}
@@ -604,7 +604,7 @@
 
 	.vb-fejl-linje {
 		margin: 10px 0 0;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ler-tekst, #8a5439);
 		font-weight: 600;
 	}
@@ -625,7 +625,7 @@
 
 	.vb-slip p {
 		margin: 0 0 10px;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2, #6f5f57);
 	}
 
@@ -635,7 +635,7 @@
 		background: var(--plum, #7c4f63);
 		border-radius: 99px;
 		color: #fff;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		cursor: pointer;
 	}
@@ -654,7 +654,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 12px;
 		color: var(--espresso, #382c2a);
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		line-height: 1.55;
 		box-sizing: border-box;
@@ -670,7 +670,7 @@
 	.vb-felt span {
 		display: block;
 		margin-bottom: 4px;
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -679,7 +679,7 @@
 
 	.vb-antal {
 		margin: 10px 0;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
@@ -692,19 +692,19 @@
 	}
 
 	.vb-navn {
-		font-size: calc(14.5px * var(--fs-scale, 1));
+		font-size: calc(14.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
 	.vb-meta {
 		margin-top: 2px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
 	.vb-uddrag {
 		margin: 0 0 11px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2, #6f5f57);
 		line-height: 1.5;
 	}

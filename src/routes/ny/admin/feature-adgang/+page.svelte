@@ -346,7 +346,7 @@
 	.fa-kun {
 		padding: 24px 18px;
 		color: var(--ink-2);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.fa-besked,
@@ -354,7 +354,7 @@
 		margin-bottom: 12px;
 		padding: 11px 15px;
 		border-radius: 12px;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
@@ -374,7 +374,7 @@
 		background: var(--honey-tint, #f7ecd7);
 		border-radius: 12px;
 		color: var(--honey-deep, #b47f3e);
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.5;
 	}
 
@@ -396,7 +396,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 99px;
 		color: var(--ink-2, #6f5f57);
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		font-weight: 600;
 		cursor: pointer;
@@ -426,7 +426,7 @@
 	.fa-r.fa-hoved {
 		background: none;
 		padding-bottom: 2px;
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -440,14 +440,14 @@
 
 	.fa-f-navn b {
 		display: block;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
 	.fa-f-navn em {
 		display: block;
 		margin-top: 2px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 		font-style: normal;
 		line-height: 1.45;
@@ -460,7 +460,7 @@
 		border-radius: 99px;
 		background: var(--honey-tint, #f7ecd7);
 		color: var(--honey-deep, #b47f3e);
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 	}
 
@@ -476,7 +476,7 @@
 		background: var(--paper, #fbf8f2);
 		border: 1px solid var(--line, #e8dfd1);
 		color: var(--sage-tekst, #46603f);
-		font-size: calc(15px * var(--fs-scale, 1));
+		font-size: calc(15px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		cursor: pointer;
 	}
@@ -496,7 +496,7 @@
 	}
 
 	.fa-ugemt {
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--honey-deep, #b47f3e);
 		font-weight: 600;
 	}
@@ -514,7 +514,7 @@
 	}
 
 	.fa-felt span {
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -528,13 +528,13 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 11px;
 		color: var(--espresso, #382c2a);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		box-sizing: border-box;
 	}
 
 	.fa-felt em {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 		font-style: normal;
 	}

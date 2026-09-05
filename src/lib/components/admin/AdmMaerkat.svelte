@@ -14,7 +14,7 @@
 		display: inline-block;
 		padding: 2px 9px;
 		border-radius: 99px;
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.03em;
 		white-space: nowrap;

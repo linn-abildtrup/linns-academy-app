@@ -63,7 +63,23 @@
 {/if}
 
 <style>
+	/* ============================================================
+	   ÉT TAL FOR HELE ADMIN.
+	
+	   Linn 5. september: teksten er for stor. Admin er ikke et sted man
+	   laeser laenge. Her taeller overblikket, og pladsen er knap paa en
+	   bred, lav skaerm.
+	
+	   Alle stoerrelser paa alle admin-sider ganges med det her, saa
+	   forholdet mellem dem bevares og der kun er ét sted at dreje.
+	
+	   Det ganges OVEN PAA kundens egen tekstskalering, saa den stadig
+	   virker for den der har brug for stoerre skrift. Kunde-dele der
+	   vises inde i admin, som forhaandsvisningen paa dag-editoren,
+	   roeres ikke: de skal se ud praecis som kunden ser dem.
+	   ============================================================ */
 	.al {
+		--adm-skala: 0.85;
 		display: grid;
 		/* Skinnen foerst, indholdet efter. Se noten i toppen. */
 		grid-template-columns: 208px 1fr;
@@ -91,7 +107,7 @@
 		border-radius: 12px;
 		color: var(--espresso);
 		text-decoration: none;
-		font-size: calc(14.5px * var(--fs-scale, 1));
+		font-size: calc(14.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.al-punkt.paa {
@@ -103,7 +119,7 @@
 	.al-ud {
 		margin-top: 14px;
 		color: var(--ink-3);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	/* iPad paa hoejkant og telefon. Skinnen bliver en raekke der ruller, og

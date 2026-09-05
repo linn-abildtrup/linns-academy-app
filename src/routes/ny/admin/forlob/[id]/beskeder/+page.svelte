@@ -602,7 +602,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
@@ -616,7 +616,7 @@
 	}
 
 	.eyebrow {
-		font-size: calc(10px * var(--fs-scale, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -625,7 +625,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: calc(26px * var(--fs-scale, 1));
+		font-size: calc(26px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 4px;
@@ -640,7 +640,7 @@
 	}
 
 	.page-sub {
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		margin: 0;
 	}
@@ -666,7 +666,7 @@
 		border: 1px solid var(--border);
 		border-radius: 10px;
 		font-family: var(--ff-b);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text);
 		background: var(--bg2);
 	}
@@ -678,7 +678,7 @@
 		border-radius: 99px;
 		padding: 6px 12px;
 		font-family: inherit;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 500;
 		cursor: pointer;
 	}
@@ -696,14 +696,14 @@
 		padding: 12px 14px;
 		border-radius: 10px;
 		font-family: inherit;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		cursor: pointer;
 	}
 
 	.primary-knap.sm {
 		padding: 8px 12px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.primary-knap:disabled {
@@ -718,13 +718,13 @@
 		padding: 8px 12px;
 		border-radius: 8px;
 		font-family: inherit;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		cursor: pointer;
 	}
 
 	.ghost-knap.sm {
 		padding: 6px 10px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.ghost-knap.danger {
@@ -742,7 +742,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text3);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		text-align: center;
 	}
 
@@ -776,7 +776,7 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		flex-wrap: wrap;
 	}
@@ -789,7 +789,7 @@
 	.spq-pill {
 		padding: 2px 8px;
 		border-radius: 99px;
-		font-size: calc(10px * var(--fs-scale, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
@@ -816,7 +816,7 @@
 	}
 
 	.spq-tekst {
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text);
 		line-height: 1.5;
 		white-space: pre-wrap;
@@ -836,7 +836,7 @@
 	}
 
 	.svar-label {
-		font-size: calc(10px * var(--fs-scale, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -846,7 +846,7 @@
 	}
 
 	.svar-tekst {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text);
 		line-height: 1.5;
 		white-space: pre-wrap;
@@ -860,7 +860,7 @@
 
 	.svar-input {
 		font-family: var(--ff-b);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.5;
 		padding: 10px 12px;
 		border-radius: 8px;
@@ -899,7 +899,7 @@
 
 	.ai-kilde {
 		margin: 6px 0 0;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		opacity: 0.7;
 	}
 
@@ -910,7 +910,7 @@
 	}
 
 	.ai-label {
-		font-size: calc(10px * var(--fs-scale, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
@@ -919,7 +919,7 @@
 	}
 
 	.ai-badge-lav {
-		font-size: calc(10px * var(--fs-scale, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		background: #f3e3d3;
 		color: #8a4a3e;
@@ -948,14 +948,14 @@
 	}
 
 	.ai-udkast-tekst {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text);
 		line-height: 1.55;
 		white-space: pre-wrap;
 	}
 
 	.ai-skip-tekst {
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		font-style: italic;
 	}
@@ -978,7 +978,7 @@
 	}
 
 	.ai-fejl {
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: #8a4a3e;
 		background: #fbeeea;
 		border: 1px solid #f0d6cf;
@@ -995,7 +995,7 @@
 		color: var(--white);
 		padding: 10px 16px;
 		border-radius: 99px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		z-index: 200;
 	}
 
@@ -1031,6 +1031,6 @@
 	.fu-kun {
 		padding: 24px 18px;
 		color: #6f5f57;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 </style>

@@ -514,7 +514,7 @@
 	.sp-kun {
 		padding: 24px 18px;
 		color: var(--ink-2);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.sp-besked {
@@ -523,7 +523,7 @@
 		background: var(--sage-tint, #e7efe5);
 		border-radius: 12px;
 		color: var(--sage-tekst, #46603f);
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
@@ -544,7 +544,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 99px;
 		color: var(--ink-2, #6f5f57);
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		font-weight: 600;
 		cursor: pointer;
@@ -561,7 +561,7 @@
 		border-radius: 99px;
 		background: var(--honey, #d6a15e);
 		color: #fff;
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.sp-chip.paa .sp-tal {
@@ -586,13 +586,13 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 99px;
 		color: var(--espresso, #382c2a);
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 	}
 
 	.sp-antal {
 		margin: 0 0 12px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
@@ -609,7 +609,7 @@
 		background: none;
 		border: none;
 		color: var(--espresso, #382c2a);
-		font-size: calc(14.5px * var(--fs-scale, 1));
+		font-size: calc(14.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		font-weight: 600;
 		cursor: pointer;
@@ -618,13 +618,13 @@
 
 	.sp-meta {
 		margin-top: 2px;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 	}
 
 	.sp-tekst {
 		margin: 0 0 10px;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.5;
 		white-space: pre-wrap;
 	}
@@ -638,7 +638,7 @@
 
 	.sp-svar-mrk {
 		display: block;
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
@@ -648,14 +648,14 @@
 
 	.sp-svar p {
 		margin: 0;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.5;
 		white-space: pre-wrap;
 	}
 
 	.sp-ai-svar {
 		margin-bottom: 10px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2, #6f5f57);
 	}
 
@@ -685,7 +685,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.09em;
 		text-transform: uppercase;
@@ -695,7 +695,7 @@
 
 	.sp-udkast p {
 		margin: 0;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		line-height: 1.5;
 		white-space: pre-wrap;
 	}
@@ -711,14 +711,14 @@
 	.sp-skip,
 	.sp-henter {
 		margin: 8px 0 0;
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 		line-height: 1.45;
 	}
 
 	.sp-ai-fejl {
 		margin: 8px 0;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ler-tekst, #8a5439);
 		font-weight: 600;
 	}
@@ -732,7 +732,7 @@
 		border: 1px solid var(--line, #e8dfd1);
 		border-radius: 12px;
 		color: var(--espresso, #382c2a);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-family: inherit;
 		line-height: 1.5;
 		box-sizing: border-box;
@@ -762,7 +762,7 @@
 
 	.sp-samtale-top h2 {
 		margin: 0;
-		font-size: calc(16px * var(--fs-scale, 1));
+		font-size: calc(16px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 

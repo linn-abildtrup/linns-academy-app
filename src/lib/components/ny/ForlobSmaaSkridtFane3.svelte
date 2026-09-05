@@ -91,7 +91,7 @@
 	}
 
 	.sp-t {
-		font-size: calc(10.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.11em;
 		text-transform: uppercase;
@@ -99,7 +99,7 @@
 	}
 
 	.ret {
-		font-size: calc(12.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--plum);
 		text-decoration: none;
@@ -110,7 +110,7 @@
 		background: var(--paper-2);
 		border-radius: 12px;
 		color: var(--ink-2);
-		font-size: calc(13px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		text-align: center;
 	}
 
@@ -120,7 +120,7 @@
 	}
 
 	.de-hjaelp {
-		font-size: calc(13px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 		line-height: 1.55;
 		margin: 0;
@@ -141,13 +141,13 @@
 	}
 
 	.rad-navn {
-		font-size: calc(13.5px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
 
 	.rad-plan {
-		font-size: calc(12px * var(--fs-scale, 1) * var(--de-skala, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3);
 	}
 </style>

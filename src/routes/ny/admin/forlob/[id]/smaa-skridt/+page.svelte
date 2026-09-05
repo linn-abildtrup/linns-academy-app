@@ -458,14 +458,14 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		text-decoration: none;
 		margin-bottom: 12px;
 	}
 
 	.eyebrow {
-		font-size: calc(10px * var(--fs-scale, 1));
+		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -474,7 +474,7 @@
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: calc(26px * var(--fs-scale, 1));
+		font-size: calc(26px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 0;
@@ -483,7 +483,7 @@
 	}
 
 	.page-sub {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		margin: 6px 0 0;
 		line-height: 1.4;
@@ -495,7 +495,7 @@
 		border: 1px solid var(--border);
 		border-radius: 12px;
 		color: var(--text2);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		text-align: center;
 	}
 
@@ -520,7 +520,7 @@
 
 	.form-titel {
 		font-family: var(--ff-d);
-		font-size: calc(16px * var(--fs-scale, 1));
+		font-size: calc(16px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
@@ -532,7 +532,7 @@
 	}
 
 	.form-tael {
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		font-variant-numeric: tabular-nums;
 	}
@@ -544,7 +544,7 @@
 	}
 
 	.felt-label {
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
@@ -553,7 +553,7 @@
 
 	.felt input {
 		padding: 10px 12px;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		border-radius: 10px;
 		border: 1px solid var(--border);
 		background: var(--bg2);
@@ -580,7 +580,7 @@
 
 	.mode-knap {
 		padding: 9px 6px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		border-radius: 10px;
 		border: 1px solid var(--border);
@@ -608,7 +608,7 @@
 
 	.chip {
 		padding: 8px 12px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		border-radius: 99px;
 		border: 1px solid var(--border);
@@ -643,7 +643,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		cursor: pointer;
 	}
@@ -659,7 +659,7 @@
 	}
 
 	.preview {
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		background: var(--bg2);
 		border-radius: 10px;
@@ -676,7 +676,7 @@
 		background: #fbeeea;
 		border: 1px solid #f0d6cf;
 		border-radius: 8px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: #8a4a3e;
 	}
 
@@ -688,7 +688,7 @@
 	.form-knap {
 		flex: 1;
 		padding: 12px;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		border-radius: 10px;
 		border: none;
@@ -714,7 +714,7 @@
 	}
 
 	.muted {
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		margin: 0;
 		font-style: italic;
@@ -747,13 +747,13 @@
 	}
 
 	.rad-label {
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text);
 	}
 
 	.rad-plan {
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		margin-top: 2px;
 	}
@@ -770,7 +770,7 @@
 		border: 1px solid var(--border);
 		color: var(--text2);
 		border-radius: 8px;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		cursor: pointer;
 		font-family: var(--ff-b);
 	}
@@ -800,14 +800,14 @@
 
 	.publish-titel {
 		font-family: var(--ff-d);
-		font-size: calc(16px * var(--fs-scale, 1));
+		font-size: calc(16px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		color: var(--text);
 		margin-bottom: 4px;
 	}
 
 	.publish-sub {
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text3);
 		line-height: 1.5;
 		margin: 0;
@@ -817,7 +817,7 @@
 		padding: 8px 12px;
 		background: var(--sdim);
 		border-radius: 8px;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--sage);
 		text-align: center;
 	}
@@ -854,6 +854,6 @@
 	.fu-kun {
 		padding: 24px 18px;
 		color: #6f5f57;
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 </style>

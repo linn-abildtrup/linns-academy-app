@@ -3630,7 +3630,7 @@ body:has(.ny-app) {
 	gap: 10px;
 	padding: 30px 0;
 	color: var(--ink-2);
-	font-size: calc(14px * var(--fs-scale, 1));
+	font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 }
 
 .adm-besked {
@@ -3638,7 +3638,7 @@ body:has(.ny-app) {
 	border-radius: 12px;
 	padding: 11px 14px;
 	margin: 0;
-	font-size: calc(13.5px * var(--fs-scale, 1));
+	font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	color: var(--espresso);
 }
 
@@ -3656,7 +3656,7 @@ body:has(.ny-app) {
 .adm-kort h2,
 .adm-liste h2 {
 	font-family: var(--serif);
-	font-size: calc(18px * var(--fs-scale, 1));
+	font-size: calc(18px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	font-weight: 600;
 	color: var(--espresso);
 	margin: 0;
@@ -3679,7 +3679,7 @@ body:has(.ny-app) {
 
 .adm-felt > span,
 .adm-felt legend {
-	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	font-weight: 600;
 	color: var(--ink-2);
 	padding: 0;
@@ -3690,7 +3690,7 @@ body:has(.ny-app) {
 .adm-felt input[type='number'],
 .adm-felt textarea {
 	font-family: var(--sans);
-	font-size: calc(15px * var(--fs-scale, 1));
+	font-size: calc(15px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	color: var(--espresso);
 	background: var(--paper-2);
 	border: 1px solid var(--line);
@@ -3726,7 +3726,7 @@ body:has(.ny-app) {
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	font-size: calc(14px * var(--fs-scale, 1));
+	font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	color: var(--espresso);
 	/* Maalgruppen skal ikke ramme en lille firkant. */
 	min-height: 42px;
@@ -3741,14 +3741,14 @@ body:has(.ny-app) {
 }
 
 .adm-hjaelp {
-	font-size: calc(12.5px * var(--fs-scale, 1));
+	font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	color: var(--ink-2);
 	line-height: 1.5;
 	margin: -6px 0 0;
 }
 
 .adm-fejl {
-	font-size: calc(13px * var(--fs-scale, 1));
+	font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	color: var(--plum-deep);
 	margin: 0;
 }
@@ -3767,12 +3767,12 @@ body:has(.ny-app) {
 	display: flex;
 	align-items: baseline;
 	gap: 9px;
-	font-size: calc(15px * var(--fs-scale, 1));
+	font-size: calc(15px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	color: var(--espresso);
 }
 
 .adm-mrk {
-	font-size: calc(11px * var(--fs-scale, 1));
+	font-size: calc(11px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	color: var(--honey-deep);
@@ -3782,12 +3782,12 @@ body:has(.ny-app) {
 }
 
 .adm-raekke-s {
-	font-size: calc(13px * var(--fs-scale, 1));
+	font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	color: var(--ink-2);
 }
 
 .adm-tom {
-	font-size: calc(14px * var(--fs-scale, 1));
+	font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	color: var(--ink-2);
 	margin: 0;
 }
@@ -8646,7 +8646,7 @@ button.tm-r-t:focus-visible {
 
 .adm-felt select {
 	font-family: var(--sans);
-	font-size: calc(15px * var(--fs-scale, 1));
+	font-size: calc(15px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	color: var(--espresso);
 	background: var(--paper-2);
 	border: 1px solid var(--line);
@@ -8938,7 +8938,7 @@ button.tm-r-t:focus-visible {
 /* Overskrift over en gruppe paa admin-forsiden. */
 .adm-gruppe {
 	font-family: var(--serif);
-	font-size: calc(17px * var(--fs-scale, 1));
+	font-size: calc(17px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	font-weight: 600;
 	color: var(--espresso);
 	margin: 10px 0 -8px;

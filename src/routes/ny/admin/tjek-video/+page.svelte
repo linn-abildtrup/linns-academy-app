@@ -419,7 +419,7 @@
 	.tv-kun {
 		padding: 24px 18px;
 		color: var(--ink-2);
-		font-size: calc(14px * var(--fs-scale, 1));
+		font-size: calc(14px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.tv-ramme {
@@ -438,7 +438,7 @@
 
 	.tv-under {
 		margin: 10px 0 0;
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-3, #a3948a);
 		line-height: 1.5;
 	}
@@ -452,7 +452,7 @@
 
 	.tv-titel {
 		margin: 0 0 10px;
-		font-size: calc(15px * var(--fs-scale, 1));
+		font-size: calc(15px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 	}
 
@@ -462,7 +462,7 @@
 		gap: 12px;
 		padding: 8px 0;
 		border-top: 1px solid var(--line, #e8dfd1);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	}
 
 	.tv-linje:first-of-type {

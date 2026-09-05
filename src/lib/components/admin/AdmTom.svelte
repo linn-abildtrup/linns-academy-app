@@ -33,7 +33,7 @@
 
 	.at p {
 		margin: 0;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--ink-2, #6f5f57);
 		line-height: 1.5;
 	}
