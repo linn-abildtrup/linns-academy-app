@@ -342,6 +342,33 @@ Adgang til `/ny` gives til admin og til kunder hvor `harTestAdgang(userDoc, 'ny-
 
 ## 6. Konventioner der ikke må brydes
 
+### Admin bygges til en iMac, kunde-siderne til en telefon
+
+Bygget 5. september 2026. Linn arbejder i admin på en stor, men lav skærm, typisk omkring 1400 gange 740 punkter. Kunderne er på telefon. **De to flader har derfor ikke samme regler**, og det er den vigtigste ting at forstå, før du retter noget under `/ny/admin/`.
+
+**De fem principper:**
+
+1. **Bredt.** Ingen 520-punkters ramme. Sider ligger på 1040 eller 1240 punkter, tabeller på 1560.
+2. **Slank top.** Tilbage-link, titel, undertekst, faner og handlinger står på **én linje**. På en lav skærm er højden det knappe. Den lille grå "Admin · et-eller-andet" over overskriften er fjernet overalt: den sagde det samme som overskriften, og menuen til venstre viser i forvejen hvor man står.
+3. **Handlinger i toppen**, ikke i en svævende bjælke i bunden. Den lagde sig hen over indholdet.
+4. **Lister i søjler**, ikke én stribe. `repeat(auto-fill, minmax(NNNpx, 1fr))`, så det bliver én søjle af sig selv på en smal skærm. Ingen faste grænser at ramme forkert.
+5. **Ét tal for alle størrelser.** `--adm-skala`, sat til 0.85 i `src/routes/ny/admin/+layout.svelte`. Alle admin-størrelser skrives som `calc(NNpx * var(--fs-scale, 1) * var(--adm-skala, 1))`.
+
+### Fælden: de fælles klasser deles med kunderne
+
+`Sidehoved` bruges af 22 kunde-sider og 20 admin-sider. `.adm-felt`, `.adm-liste`, `.ch-knap` og `.adm-kort` bruges også begge steder, trods navnet. **Retter du dem direkte, ændrer du kundernes app uden at nogen har bedt om det** — og du gør tilbage-knappen for lille til en tommelfinger på en telefon.
+
+Derfor står alle admin-tilpasninger under `.al` i `ny.css`, som kun findes i admin-layoutet. Kunde-siderne falder tilbage på de oprindelige værdier, og `--adm-skala` findes slet ikke for dem, så den bliver 1.
+
+**Før du retter en fælles klasse: kør `grep -rl 'klassenavn' src/routes/ny --include='*.svelte' | grep -v /admin/` og se om kunderne bruger den.**
+
+### Klassenavne kolliderer med ny.css
+
+En `<style>`-blok i en komponent er ikke isoleret fra `ny.css`. Deler du navn, vinder arket, og intet fejler: `svelte-check`, build og tests går alle igennem. Det kan kun ses i en browser.
+
+Fanget på dag-editoren, hvor `.mini` (et ikon på 44 gange 44) klemte alle hjælpetekster ned i en 44 punkter bred søjle, og `.kvit` (et fastlåst bånd) ville have lagt "Gemt" hen over hele appen. **Tjek nye klassenavne mod `ny.css`, før du skriver stilen.** Brug et præfiks der hører til siden, som dag-editorens `de-`.
+
+
 **Tekstskalering.** Alle skriftstørrelser skrives som `calc(NNpx * var(--fs-scale, 1))`. Uden det virker kundens valg af tekststørrelse ikke, og målgruppen er kvinder i 40erne og opefter. Det er ikke pynt.
 
 **CSS er scoped under `.ny-app`.** Tokens ligger bevidst ikke på `:root`. Ville de det, kunne de overskrive `src/app.css` og ændre udseendet i den gamle app for alle kunder. Der ligger en token-bro nederst i `ny.css`, så genbrugte gamle komponenter automatisk får den nye flades farver.
