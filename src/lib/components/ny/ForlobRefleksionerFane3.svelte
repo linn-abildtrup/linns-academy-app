@@ -217,7 +217,7 @@
 	}
 
 	.sp-t {
-		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-size: calc(10.5px * var(--fs-scale, 1) * var(--de-skala, 1));
 		font-weight: 700;
 		letter-spacing: 0.11em;
 		text-transform: uppercase;
@@ -234,7 +234,7 @@
 		background: var(--paper-2);
 		border-radius: 12px;
 		color: var(--ink-2);
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--de-skala, 1));
 		text-align: center;
 	}
 
@@ -250,7 +250,7 @@
 
 	.felt-navn {
 		display: block;
-		font-size: calc(11px * var(--fs-scale, 1));
+		font-size: calc(11px * var(--fs-scale, 1) * var(--de-skala, 1));
 		font-weight: 600;
 		color: var(--ink-2);
 		margin-bottom: 4px;
@@ -268,7 +268,7 @@
 		border: 1px solid var(--line);
 		border-radius: 9px;
 		padding: 9px 11px;
-		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-size: calc(13.5px * var(--fs-scale, 1) * var(--de-skala, 1));
 		font-family: inherit;
 		color: var(--text);
 		background: var(--paper-2);
@@ -284,7 +284,7 @@
 	}
 
 	.de-hjaelp {
-		font-size: calc(11.5px * var(--fs-scale, 1));
+		font-size: calc(11.5px * var(--fs-scale, 1) * var(--de-skala, 1));
 		color: var(--ink-3);
 		line-height: 1.5;
 		margin: 0;
@@ -332,7 +332,7 @@
 		border: none;
 		background: transparent;
 		font-family: inherit;
-		font-size: calc(12px * var(--fs-scale, 1));
+		font-size: calc(12px * var(--fs-scale, 1) * var(--de-skala, 1));
 		font-weight: 600;
 		color: var(--maerke);
 		cursor: pointer;
@@ -345,7 +345,7 @@
 		border-radius: 10px;
 		padding: 9px 16px;
 		font-family: inherit;
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(13px * var(--fs-scale, 1) * var(--de-skala, 1));
 		font-weight: 600;
 		color: var(--ink-2);
 		cursor: pointer;
@@ -379,12 +379,12 @@
 	}
 
 	.gem-fejl {
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--de-skala, 1));
 		color: var(--ler-tekst);
 	}
 
 	.de-kvit {
-		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1) * var(--de-skala, 1));
 		font-weight: 600;
 		color: var(--sage-tekst);
 	}
