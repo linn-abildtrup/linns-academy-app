@@ -13,7 +13,7 @@
 
 	import { getContext, tick } from 'svelte';
 	import type { User } from 'firebase/auth';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	interface Besked {
@@ -133,7 +133,7 @@
 
 		{#if sender}
 			<div class="boble svar taenker">
-				<Ventetegn variant="lille" />
+				<Venter tekst="Henter svaret" />
 				<span>Tænker</span>
 			</div>
 		{/if}

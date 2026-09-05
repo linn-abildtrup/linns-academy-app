@@ -32,11 +32,7 @@
 	import { hentFodevarer3 } from '$lib/firestore/fodevarer3';
 	import { hentKoblinger } from '$lib/firestore/ingrediensKobling3';
 	import type { Fodevare } from '$lib/content/kost';
-	import {
-		ALLE_KATEGORIER,
-		KATEGORI_LABELS,
-		type OpskriftKategori
-	} from '$lib/content/opskrifter';
+	import { ALLE_KATEGORIER, KATEGORI_LABELS, type OpskriftKategori } from '$lib/content/opskrifter';
 	import {
 		byggOversigt,
 		filtrerOversigt,
@@ -261,7 +257,8 @@
 				hentUser()?.uid ?? 'admin'
 			);
 			byggForfra();
-			if (res) kvittering = { navn: v.name, aendrede: res.aendrede, linjerSkrevet: res.linjerSkrevet };
+			if (res)
+				kvittering = { navn: v.name, aendrede: res.aendrede, linjerSkrevet: res.linjerSkrevet };
 			retter = '';
 		} catch (e) {
 			console.error('[admin] kunne ikke fortryde', e);
@@ -312,9 +309,8 @@
 				</div>
 			</div>
 			<p class="it-note">
-				En ingrediens står kun én gang, uanset hvor mange opskrifter den er i. Retter du tallet
-				her, gælder det dem alle. Tør og kogt står hver for sig, for tallene ligger langt fra
-				hinanden.
+				En ingrediens står kun én gang, uanset hvor mange opskrifter den er i. Retter du tallet her,
+				gælder det dem alle. Tør og kogt står hver for sig, for tallene ligger langt fra hinanden.
 			</p>
 		</div>
 
@@ -518,12 +514,12 @@
 									{#if retter === r.kerne}
 										<div class="it-form">
 											<p class="it-form-advarsel">
-												Tallene hører til madvaren <strong>{r.varenavn}</strong>, ikke kun til
-												denne ingrediens. Retter du dem, gælder de i alle
+												Tallene hører til madvaren <strong>{r.varenavn}</strong>, ikke kun til denne
+												ingrediens. Retter du dem, gælder de i alle
 												{r.antalOpskrifter}
-												{r.antalOpskrifter === 1 ? 'opskrift' : 'opskrifter'} der bruger den, og
-												kunderne får det nye tal når de taster varen ind fremover. Det de
-												allerede har registreret ændrer sig ikke.
+												{r.antalOpskrifter === 1 ? 'opskrift' : 'opskrifter'} der bruger den, og kunderne
+												får det nye tal når de taster varen ind fremover. Det de allerede har registreret
+												ændrer sig ikke.
 											</p>
 
 											<div class="it-felter">
@@ -544,8 +540,8 @@
 												{/each}
 											</div>
 											<p class="it-form-hint">
-												Alle tal er pr 100 gram. Kulhydrat, fedt og kalorier må stå tomme. Lad
-												dem hellere være tomme end at skrive nul, for nul betyder at varen ikke
+												Alle tal er pr 100 gram. Kulhydrat, fedt og kalorier må stå tomme. Lad dem
+												hellere være tomme end at skrive nul, for nul betyder at varen ikke
 												indeholder noget.
 											</p>
 
@@ -614,8 +610,8 @@
 		{/if}
 
 		<p class="it-fod">
-			Tallene kommer fra Den Danske Fødevaredatabase fra DTU Fødevareinstituttet, undtagen dem
-			der står med Egne tal. Kunden ser aldrig hvor tallet kommer fra, kun selve tallet.
+			Tallene kommer fra Den Danske Fødevaredatabase fra DTU Fødevareinstituttet, undtagen dem der
+			står med Egne tal. Kunden ser aldrig hvor tallet kommer fra, kun selve tallet.
 		</p>
 	{/if}
 </div>

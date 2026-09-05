@@ -99,50 +99,50 @@
 {#if !maaVaereHer}
 	<p class="fu-kun">Siden er kun for admin.</p>
 {:else}
-<div class="page">
-	<header class="page-header">
-		<a class="back" href="/ny/admin/forlob/{forlobId}">
-			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>{forlob?.navn ?? 'Forløb'}</span>
-		</a>
-		<div class="eyebrow">Admin · {forlob?.navn ?? forlobId} · Challenges</div>
-		<h1>Challenges</h1>
-		<p class="page-sub">
-			Tidsbegrænsede konkurrencer der vises på forsiden for klienterne i den valgte periode.
-		</p>
-	</header>
+	<div class="page">
+		<header class="page-header">
+			<a class="back" href="/ny/admin/forlob/{forlobId}">
+				<Icon name="arrow-l" size={14} color="var(--text2)" />
+				<span>{forlob?.navn ?? 'Forløb'}</span>
+			</a>
+			<div class="eyebrow">Admin · {forlob?.navn ?? forlobId} · Challenges</div>
+			<h1>Challenges</h1>
+			<p class="page-sub">
+				Tidsbegrænsede konkurrencer der vises på forsiden for klienterne i den valgte periode.
+			</p>
+		</header>
 
-	<button class="opret-knap" type="button" onclick={opretNy} disabled={opretter}>
-		{opretter ? 'Opretter...' : '+ Opret ny challenge'}
-	</button>
+		<button class="opret-knap" type="button" onclick={opretNy} disabled={opretter}>
+			{opretter ? 'Opretter...' : '+ Opret ny challenge'}
+		</button>
 
-	{#if loading}
-		<div class="status-besked">Henter...</div>
-	{:else if fejl}
-		<div class="status-besked fejl">{fejl}</div>
-	{:else if challenges.length === 0}
-		<div class="status-besked">Ingen challenges endnu — opret den første ovenfor.</div>
-	{:else}
-		<div class="liste">
-			{#each challenges as c (c.id)}
-				{@const s = status(c)}
-				<a class="row" href="/ny/admin/forlob/{forlobId}/challenges/{c.id}">
-					<div class="row-ikon"><Icon name="leaf" size={18} color="var(--sage)" /></div>
-					<div class="tekst">
-						<div class="navn">
-							{c.navn}
-							<span class="status-pille {s.klasse}">{s.tekst}</span>
+		{#if loading}
+			<div class="status-besked">Henter...</div>
+		{:else if fejl}
+			<div class="status-besked fejl">{fejl}</div>
+		{:else if challenges.length === 0}
+			<div class="status-besked">Ingen challenges endnu — opret den første ovenfor.</div>
+		{:else}
+			<div class="liste">
+				{#each challenges as c (c.id)}
+					{@const s = status(c)}
+					<a class="row" href="/ny/admin/forlob/{forlobId}/challenges/{c.id}">
+						<div class="row-ikon"><Icon name="leaf" size={18} color="var(--sage)" /></div>
+						<div class="tekst">
+							<div class="navn">
+								{c.navn}
+								<span class="status-pille {s.klasse}">{s.tekst}</span>
+							</div>
+							<div class="sub">
+								{formatDato(c.startDato)} – {formatDato(c.slutDato)}
+							</div>
 						</div>
-						<div class="sub">
-							{formatDato(c.startDato)} – {formatDato(c.slutDato)}
-						</div>
-					</div>
-					<Icon name="chevron-r" size={14} color="var(--text3)" />
-				</a>
-			{/each}
-		</div>
-	{/if}
-</div>
+						<Icon name="chevron-r" size={14} color="var(--text3)" />
+					</a>
+				{/each}
+			</div>
+		{/if}
+	</div>
 {/if}
 
 <style>

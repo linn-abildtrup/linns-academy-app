@@ -196,7 +196,12 @@
 				<div class="ml-raek">
 					<label class="ml-felt">
 						<span>Slags</span>
-						<input type="text" placeholder="Video, Lyd, Læsestof…" bind:value={redigerer.format} disabled={gemmer} />
+						<input
+							type="text"
+							placeholder="Video, Lyd, Læsestof…"
+							bind:value={redigerer.format}
+							disabled={gemmer}
+						/>
 					</label>
 					<label class="ml-felt">
 						<span>Varighed i minutter</span>

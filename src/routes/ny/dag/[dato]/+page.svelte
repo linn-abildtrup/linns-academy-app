@@ -30,7 +30,7 @@
 		type SmaaSkridtIDag,
 		type DagensTal
 	} from '$lib/firestore/forside3';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 	import Ugestrimmel from '$lib/components/ny/Ugestrimmel.svelte';
 	import SmaaSkridt from '$lib/components/ny/SmaaSkridt.svelte';
@@ -67,7 +67,6 @@
 			afbrudt = true;
 		};
 	});
-
 
 	const dato = $derived(page.params.dato ?? '');
 	const iDag = $derived(datoNoegle(new Date()));
@@ -254,10 +253,7 @@
 	{#if erFremtid}
 		<div class="kort rolig">Den dag er der ikke åbnet for endnu.</div>
 	{:else if henter}
-		<div class="lektion-venter">
-			<Ventetegn variant="lille" />
-			<span>Henter dagen</span>
-		</div>
+		<Venter tekst="Henter dagen" />
 	{:else}
 		<Ugestrimmel aktivDato={dato} {aktiveDage} {iDag} nulDage={adgang.nulDatoer} />
 

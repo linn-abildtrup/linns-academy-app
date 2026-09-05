@@ -31,7 +31,13 @@
 	import type { User } from 'firebase/auth';
 	import { isAdmin } from '$lib/admin';
 	import { Timestamp } from 'firebase/firestore';
-	import { hentForlob, hentAlleForlob, gemForlob, hentForlobsdage, hentAllowedEmailsForForlob } from '$lib/firestore/forlob';
+	import {
+		hentForlob,
+		hentAlleForlob,
+		gemForlob,
+		hentForlobsdage,
+		hentAllowedEmailsForForlob
+	} from '$lib/firestore/forlob';
 	import { hentTildelinger3 } from '$lib/firestore/traeningTildeling3';
 	import { hentSmaaSkridt } from '$lib/firestore/smaaSkridt';
 	import { hentForlobsProgrammer } from '$lib/firestore/mikrotraening';
@@ -260,7 +266,9 @@
 			<div class="g-trin-h">
 				<b>{forlob.navn}</b>
 				<span>Trin {nr + 1} af 9 · {naaet.klar} af {naaet.ialt} på plads</span>
-				<div class="g-bar"><i style="width:{Math.round((naaet.klar / naaet.ialt) * 100)}%"></i></div>
+				<div class="g-bar">
+					<i style="width:{Math.round((naaet.klar / naaet.ialt) * 100)}%"></i>
+				</div>
 			</div>
 
 			{#each TRIN as t (t.id)}
@@ -273,7 +281,9 @@
 					class:ude={s?.status === 'ikke-relevant'}
 					onclick={() => gaaTil(t.id)}
 				>
-					<span class="g-k">{s?.status === 'klar' ? '✓' : s?.status === 'ikke-relevant' ? '–' : t.nr}</span>
+					<span class="g-k"
+						>{s?.status === 'klar' ? '✓' : s?.status === 'ikke-relevant' ? '–' : t.nr}</span
+					>
 					<span class="g-t">
 						{t.navn}
 						<small>{s?.resume ?? t.under}</small>
@@ -293,12 +303,20 @@
 			</div>
 
 			{#if paaTrin === 'navn'}
-				<p class="led">Navnet ser kunderne. Længden bestemmer hvor mange dage der skal have indhold.</p>
+				<p class="led">
+					Navnet ser kunderne. Længden bestemmer hvor mange dage der skal have indhold.
+				</p>
 
 				<div class="sp">
 					<div class="q">Hvad hedder holdet?</div>
-					<input type="text" value={forlob.navn} onchange={(e) => gem({ navn: e.currentTarget.value.trim() })} />
-					<div class="h">Skriv måneden med. Ellers kan to hold ikke skelnes fra hinanden i admin.</div>
+					<input
+						type="text"
+						value={forlob.navn}
+						onchange={(e) => gem({ navn: e.currentTarget.value.trim() })}
+					/>
+					<div class="h">
+						Skriv måneden med. Ellers kan to hold ikke skelnes fra hinanden i admin.
+					</div>
 				</div>
 
 				<div class="sp">
@@ -308,18 +326,27 @@
 						min="1"
 						max="365"
 						value={forlob.antalDage}
-						onchange={(e) => gem({ antalDage: Math.max(1, Math.min(365, Number(e.currentTarget.value) || 1)) })}
+						onchange={(e) =>
+							gem({ antalDage: Math.max(1, Math.min(365, Number(e.currentTarget.value) || 1)) })}
 					/>
 					<div class="h">
-						<b>Tallet afgør hvor mange dage der skal have lektioner.</b> Gør du forløbet længere
-						senere, står de nye dage tomme indtil du fylder dem.
+						<b>Tallet afgør hvor mange dage der skal have lektioner.</b> Gør du forløbet længere senere,
+						står de nye dage tomme indtil du fylder dem.
 					</div>
 				</div>
 
 				<div class="sp">
 					<div class="q">Hvilken slags hold er det?</div>
-					<div class="fast">{forlob.byggetForlob ? 'Bygget selv, med sin egen dataskuffe' : forlob.type === 'kropsro' ? 'Kropsro' : 'Kickstart'}</div>
-					<div class="h">Slagsen kan ikke laves om. Skal den være en anden, skal holdet oprettes igen.</div>
+					<div class="fast">
+						{forlob.byggetForlob
+							? 'Bygget selv, med sin egen dataskuffe'
+							: forlob.type === 'kropsro'
+								? 'Kropsro'
+								: 'Kickstart'}
+					</div>
+					<div class="h">
+						Slagsen kan ikke laves om. Skal den være en anden, skal holdet oprettes igen.
+					</div>
 				</div>
 			{:else if paaTrin === 'start'}
 				<p class="led">
@@ -331,13 +358,15 @@
 					<div class="q">Hvornår begynder holdet?</div>
 					<input type="date" value={startFelt} onchange={(e) => saetStart(e.currentTarget.value)} />
 					<div class="h">
-						<b>Datoen er den sværeste at rette bagefter.</b> Alle kundernes dage flytter sig med,
-						også dem der allerede er svaret på.
+						<b>Datoen er den sværeste at rette bagefter.</b> Alle kundernes dage flytter sig med, også
+						dem der allerede er svaret på.
 					</div>
 				</div>
 
 				{#if verden.forlob && verden.forlob.startMs && verden.forlob.startMs < Date.now()}
-					<div class="note">Startdatoen er allerede passeret. Er det med vilje, er alt i orden.</div>
+					<div class="note">
+						Startdatoen er allerede passeret. Er det med vilje, er alt i orden.
+					</div>
 				{/if}
 			{:else if paaTrin === 'hvem'}
 				<p class="led">
@@ -354,8 +383,8 @@
 						onchange={(e) => gem({ simpleroProduktId: e.currentTarget.value.trim() || undefined })}
 					/>
 					<div class="h">
-						Står nummeret her, <b>og</b> er holdet udgivet, lander nye køb på holdet af sig selv.
-						Du sælger hvert hold under det samme produkt, så koblingen kan ikke stå i koden.
+						Står nummeret her, <b>og</b> er holdet udgivet, lander nye køb på holdet af sig selv. Du sælger
+						hvert hold under det samme produkt, så koblingen kan ikke stå i koden.
 					</div>
 				</div>
 
@@ -364,9 +393,9 @@
 						<div class="t">Det her går galt</div>
 						<ul>
 							<li>
-								{verden.andreAktivePaaSammeProdukt.join(' og ')} står på det samme nummer og er
-								stadig udgivet. Nye køb lander på det hold der starter senest, og det er ikke
-								nødvendigvis det her. Luk det gamle hold først.
+								{verden.andreAktivePaaSammeProdukt.join(' og ')} står på det samme nummer og er stadig
+								udgivet. Nye køb lander på det hold der starter senest, og det er ikke nødvendigvis det
+								her. Luk det gamle hold først.
 							</li>
 						</ul>
 					</div>
@@ -375,22 +404,33 @@
 				<div class="sp">
 					<div class="q">Hvem er på holdet nu?</div>
 					<div class="fast">{antalKunder === 0 ? 'Ingen endnu' : `${antalKunder} kunder`}</div>
-					<div class="h">Du kan altid sætte enkelte kunder på i hånden, også efter holdet er åbnet.</div>
+					<div class="h">
+						Du kan altid sætte enkelte kunder på i hånden, også efter holdet er åbnet.
+					</div>
 					<a class="knap" href="/ny/admin/forlob/{forlobId}">Åbn kundelisten ›</a>
 				</div>
 			{:else if paaTrin === 'traening'}
 				<p class="led">
-					<b>Det her trin er der guiden findes for.</b> Bliver det sprunget over, starter holdet
-					uden træning, og der kommer ingen fejl. Forsiden siger bare "Din træning er på vej", helt
-					til forløbet er slut.
+					<b>Det her trin er der guiden findes for.</b> Bliver det sprunget over, starter holdet uden
+					træning, og der kommer ingen fejl. Forsiden siger bare "Din træning er på vej", helt til forløbet
+					er slut.
 				</p>
 
 				{#if forlob.byggetForlob}
 					<div class="sp">
 						<div class="q">Skal holdet overhovedet have mikrotræning?</div>
 						<div class="valg">
-							<button type="button" class:valgt={forlob.harTraening === true} onclick={() => gem({ harTraening: true })}>Ja</button>
-							<button type="button" class:valgt={forlob.harTraening !== true} onclick={() => gem({ harTraening: false })}>Nej, træning kommer som lektioner</button>
+							<button
+								type="button"
+								class:valgt={forlob.harTraening === true}
+								onclick={() => gem({ harTraening: true })}>Ja</button
+							>
+							<button
+								type="button"
+								class:valgt={forlob.harTraening !== true}
+								onclick={() => gem({ harTraening: false })}
+								>Nej, træning kommer som lektioner</button
+							>
 						</div>
 					</div>
 				{/if}
@@ -408,12 +448,11 @@
 							{/if}
 						</div>
 						<div class="h">
-							<b>Det er den enkelte ting der oftest bliver glemt.</b> Der er to måder: Kickstart
-							og Kropsro har programmerne liggende på selve holdet, hvor kunden vælger sin
-							variant. De byggede hold får dem tildelt, og en tildeling gælder ét bestemt hold,
-							så et nyt hold starter altid på nul. Uanset hvilken vej skal der være ét program pr
-							slags udstyr: har du kun kettlebell-programmet, ser en kunde uden kettlebell
-							ingenting.
+							<b>Det er den enkelte ting der oftest bliver glemt.</b> Der er to måder: Kickstart og Kropsro
+							har programmerne liggende på selve holdet, hvor kunden vælger sin variant. De byggede hold
+							får dem tildelt, og en tildeling gælder ét bestemt hold, så et nyt hold starter altid på
+							nul. Uanset hvilken vej skal der være ét program pr slags udstyr: har du kun kettlebell-programmet,
+							ser en kunde uden kettlebell ingenting.
 						</div>
 						<a class="knap" href="/ny/admin/forlob/{forlobId}/traening">Tildel programmer ›</a>
 					</div>
@@ -425,11 +464,12 @@
 							min="1"
 							max={forlob.antalDage}
 							value={forlob.traeningStartDag ?? 1}
-							onchange={(e) => gem({ traeningStartDag: Math.max(1, Number(e.currentTarget.value) || 1) })}
+							onchange={(e) =>
+								gem({ traeningStartDag: Math.max(1, Number(e.currentTarget.value) || 1) })}
 						/>
 						<div class="h">
-							Kickstart starter på dag 3, fordi de to første dage handler om mad og små skridt.
-							Står der 1, begynder træningen med det samme.
+							Kickstart starter på dag 3, fordi de to første dage handler om mad og små skridt. Står
+							der 1, begynder træningen med det samme.
 						</div>
 					</div>
 				{:else}
@@ -439,7 +479,9 @@
 					</div>
 				{/if}
 			{:else if paaTrin === 'lektioner'}
-				<p class="led">Lektionerne er det hun ser på forsiden hver dag. En dag uden lektioner er en tom dag.</p>
+				<p class="led">
+					Lektionerne er det hun ser på forsiden hver dag. En dag uden lektioner er en tom dag.
+				</p>
 
 				<div class="sp">
 					<div class="q">Hvor mange dage har indhold?</div>
@@ -448,8 +490,9 @@
 					</div>
 					{#if huller.length > 0}
 						<div class="h">
-							Der mangler indhold på dag {huller.slice(0, 12).join(', ')}{huller.length > 12 ? ' og flere' : ''}.
-							Det er ikke nødvendigvis en fejl, men det er værd at se på.
+							Der mangler indhold på dag {huller.slice(0, 12).join(', ')}{huller.length > 12
+								? ' og flere'
+								: ''}. Det er ikke nødvendigvis en fejl, men det er værd at se på.
 						</div>
 					{/if}
 					<a class="knap" href="/ny/admin/forlob/{forlobId}/lektioner">Åbn lektionerne ›</a>
@@ -461,12 +504,15 @@
 						{dageMedLektion.includes(1) ? 'Ja' : 'Nej, første dag er tom'}
 					</div>
 					<div class="h">
-						<b>Dag 1 er den eneste dag alle ser.</b> Er den tom, tror hun appen ikke virker, og så
-						skriver hun til dig.
+						<b>Dag 1 er den eneste dag alle ser.</b> Er den tom, tror hun appen ikke virker, og så skriver
+						hun til dig.
 					</div>
 				</div>
 			{:else if paaTrin === 'skridt'}
-				<p class="led">De små skridt er det hun går i gang med. Uden dem har forsiden ikke noget at bede hende om.</p>
+				<p class="led">
+					De små skridt er det hun går i gang med. Uden dem har forsiden ikke noget at bede hende
+					om.
+				</p>
 
 				<div class="sp">
 					<div class="q">Hvor mange små skridt har holdet?</div>
@@ -491,8 +537,8 @@
 						{antalFaq === 0 ? 'Der er ingen FAQ' : `${antalFaq} spørgsmål`}
 					</div>
 					<div class="h">
-						<b>Linn AI svarer ud fra holdets egen FAQ.</b> Står datoerne ikke der, kan den ikke
-						svare på hvornår der er Q&amp;A, og spørgsmålet lander hos dig i stedet.
+						<b>Linn AI svarer ud fra holdets egen FAQ.</b> Står datoerne ikke der, kan den ikke svare
+						på hvornår der er Q&amp;A, og spørgsmålet lander hos dig i stedet.
 					</div>
 					<a class="knap" href="/ny/admin/forlob/{forlobId}/bibliotek">Åbn biblioteket ›</a>
 				</div>
@@ -506,9 +552,9 @@
 						onchange={(e) => gem({ facebookUrl: e.currentTarget.value.trim() || undefined })}
 					/>
 					<div class="h">
-						<b>Linket er selv kontakten.</b> Er feltet tomt, bliver hun slet ikke spurgt om
-						gruppen, og så kan et hold aldrig komme til at sende kunderne til den forkerte gruppe.
-						Tilbuddet er blødt, aldrig et krav.
+						<b>Linket er selv kontakten.</b> Er feltet tomt, bliver hun slet ikke spurgt om gruppen, og
+						så kan et hold aldrig komme til at sende kunderne til den forkerte gruppe. Tilbuddet er blødt,
+						aldrig et krav.
 					</div>
 				</div>
 			{:else if paaTrin === 'funktioner'}
@@ -530,7 +576,9 @@
 				{:else}
 					<div class="sp">
 						<div class="q">Hvilke funktioner er tændt?</div>
-						<div class="fast">Følger reglerne for {forlob.type === 'kropsro' ? 'Kropsro' : 'Kickstart'}</div>
+						<div class="fast">
+							Følger reglerne for {forlob.type === 'kropsro' ? 'Kropsro' : 'Kickstart'}
+						</div>
 						<div class="h">
 							Kickstart og Kropsro har faste funktioner, så der er ikke noget at vælge her. Vil du
 							bestemme hver enkelt funktion selv, skal holdet være bygget selv.
@@ -543,7 +591,9 @@
 					<div class="fast">
 						{forlob.nulDagePulje ?? (forlob.type === 'kropsro' ? 21 : 14)} dage
 					</div>
-					<div class="h">En pausedag forlænger forløbet i stedet for at æde en dag. Rettes på holdets egen side.</div>
+					<div class="h">
+						En pausedag forlænger forløbet i stedet for at æde en dag. Rettes på holdets egen side.
+					</div>
 				</div>
 			{:else if paaTrin === 'udgiv'}
 				{#if forlob.aktiv}
@@ -571,7 +621,10 @@
 					{:else}
 						<div class="klar-boks">
 							<b>Alt det der plejer at blive glemt er på plads.</b>
-							<span>Der er træning tildelt, indhold på dagene, små skridt, og ingen anden åben hold på det samme Simplero-nummer.</span>
+							<span
+								>Der er træning tildelt, indhold på dagene, små skridt, og ingen anden åben hold på
+								det samme Simplero-nummer.</span
+							>
 						</div>
 					{/if}
 
@@ -602,7 +655,9 @@
 			{/if}
 
 			<div class="gbund">
-				<div class="venstre">Alt bliver gemt med det samme. Du kan lukke siden og komme tilbage.</div>
+				<div class="venstre">
+					Alt bliver gemt med det samme. Du kan lukke siden og komme tilbage.
+				</div>
 				<div class="knapper">
 					{#if nr > 0}<AdmKnap onclick={forrige}>Tilbage</AdmKnap>{/if}
 					{#if nr < TRIN.length - 1}

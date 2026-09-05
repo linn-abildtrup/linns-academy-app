@@ -57,7 +57,7 @@
 	import NaesteHoldKort from '$lib/components/ny/NaesteHold.svelte';
 	import Refleksion from '$lib/components/ny/Refleksion.svelte';
 	import FoldetRaekke from '$lib/components/ny/FoldetRaekke.svelte';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import Ugestrimmel from '$lib/components/ny/Ugestrimmel.svelte';
 	import TilDig from '$lib/components/ny/TilDig.svelte';
 	import { alleSet3 } from '$lib/content/lektionSet3';
@@ -690,10 +690,7 @@
 	     Bjaelken blev bygget dengang forsiden var langsom. Efter
 	     sidehukommelsen 4. september ses vente-skaermen kun FOERSTE gang i
 	     et besoeg, saa der er endnu mindre at holde oeje med. -->
-	<div class="lektion-venter">
-		<Ventetegn variant="lille" />
-		<span>Henter dine ting</span>
-	</div>
+	<Venter tekst="Henter dine ting" />
 {:else}
 	<div class="ny-pad" style="margin-top:16px">
 		<!-- Datostrimlen staar OEVERST og ALTID. Linns oenske 18. august.

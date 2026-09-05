@@ -282,253 +282,253 @@
 {#if !maaVaereHer}
 	<p class="fu-kun">Siden er kun for admin.</p>
 {:else}
-<div class="page">
-	<header class="page-header">
-		<a class="back" href="/ny/admin/forlob/{forlobId}">
-			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>Forløb</span>
-		</a>
-		<div class="eyebrow">Admin · Træning</div>
-		<h1>Træning</h1>
-		<p class="page-sub">
-			Programmer og tildelinger for {forlob?.navn ?? 'dette forløb'}.
-		</p>
-	</header>
-
-	{#if fejl}
-		<div class="status-besked fejl">{fejl}</div>
-	{/if}
-
-	{#if loading}
-		<div class="status-besked">Henter data…</div>
-	{:else}
-		<section class="sektion">
-			<div class="sektion-titel">Programmer</div>
-			<p class="sektion-sub">
-				Programmer specifikke for {forlob?.navn ?? 'dette forløb'}. Klienten vælger imellem dem ved
-				onboarding.
+	<div class="page">
+		<header class="page-header">
+			<a class="back" href="/ny/admin/forlob/{forlobId}">
+				<Icon name="arrow-l" size={14} color="var(--text2)" />
+				<span>Forløb</span>
+			</a>
+			<div class="eyebrow">Admin · Træning</div>
+			<h1>Træning</h1>
+			<p class="page-sub">
+				Programmer og tildelinger for {forlob?.navn ?? 'dette forløb'}.
 			</p>
+		</header>
 
-			<button class="primary-knap full" type="button" onclick={aabnDialog}>+ Nyt program</button>
+		{#if fejl}
+			<div class="status-besked fejl">{fejl}</div>
+		{/if}
 
-			{#if programmer.length === 0}
-				<div class="status-besked">Ingen programmer endnu. Opret det første ovenfor.</div>
-			{:else}
-				<div class="program-liste">
-					{#each programmer as p (p.id)}
-						<div class="program-row">
-							<a class="program-info" href="/ny/admin/forlob/{forlobId}/traening/{p.id}">
-								<div class="program-icon">
-									<Icon name="flame" size={16} color="#fff" />
+		{#if loading}
+			<div class="status-besked">Henter data…</div>
+		{:else}
+			<section class="sektion">
+				<div class="sektion-titel">Programmer</div>
+				<p class="sektion-sub">
+					Programmer specifikke for {forlob?.navn ?? 'dette forløb'}. Klienten vælger imellem dem
+					ved onboarding.
+				</p>
+
+				<button class="primary-knap full" type="button" onclick={aabnDialog}>+ Nyt program</button>
+
+				{#if programmer.length === 0}
+					<div class="status-besked">Ingen programmer endnu. Opret det første ovenfor.</div>
+				{:else}
+					<div class="program-liste">
+						{#each programmer as p (p.id)}
+							<div class="program-row">
+								<a class="program-info" href="/ny/admin/forlob/{forlobId}/traening/{p.id}">
+									<div class="program-icon">
+										<Icon name="flame" size={16} color="#fff" />
+									</div>
+									<div class="program-tekst">
+										<div class="program-navn">
+											{p.navn}
+											{#if !p.aktiv}
+												<span class="badge inaktiv">Inaktiv</span>
+											{/if}
+										</div>
+										<div class="program-sub">
+											{p.antalDage} dage · {p.udstyr.join(', ')}
+										</div>
+									</div>
+									<Icon name="chevron-r" size={14} color="var(--text3)" />
+								</a>
+								<button
+									class="slet-mini"
+									type="button"
+									onclick={() => aabnSletBekraeft(p)}
+									aria-label="Slet program"
+									title="Slet program"
+								>
+									×
+								</button>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</section>
+
+			<section class="sektion">
+				<div class="sektion-titel">Tildelinger til hele forløbet</div>
+				<p class="sektion-sub">
+					Tildelinger her gælder alle {deltagere.length} deltager{deltagere.length === 1 ? '' : 'e'} på
+					forløbet.
+				</p>
+
+				{#if forlobsProgramTildelinger.length === 0}
+					<p class="hint">Ingen programmer tildelt forløbet endnu.</p>
+				{:else}
+					<div class="liste">
+						{#each forlobsProgramTildelinger as t (t.id)}
+							<div class="rad">
+								<div class="rad-tekst">
+									<div class="rad-navn">{programNavn(t.forlobId, t.programId)}</div>
+									<div class="rad-sub">Fra {forlobNavnFor(t.forlobId)}</div>
 								</div>
-								<div class="program-tekst">
-									<div class="program-navn">
-										{p.navn}
-										{#if !p.aktiv}
-											<span class="badge inaktiv">Inaktiv</span>
-										{/if}
-									</div>
-									<div class="program-sub">
-										{p.antalDage} dage · {p.udstyr.join(', ')}
-									</div>
+								<button
+									type="button"
+									class="fjern-knap"
+									onclick={() => fjernProgTildeling(t.id!)}
+									disabled={tildelingsGemmer}
+								>
+									Fjern
+								</button>
+							</div>
+						{/each}
+					</div>
+				{/if}
+
+				<div class="tildel-form">
+					<label class="felt">
+						<span class="felt-label">Tildel et program til hele forløbet</span>
+						<select class="felt-input" bind:value={valgtProgramKey} disabled={tildelingsGemmer}>
+							<option value="">Vælg et program…</option>
+							{#each alleProgrammerPaaTvaers as p (`${p.forlobId}::${p.program.id}`)}
+								<option value={`${p.forlobId}::${p.program.id}`}>
+									{p.program.navn} ({p.forlobNavn})
+								</option>
+							{/each}
+						</select>
+					</label>
+					<button
+						type="button"
+						class="primary-knap full"
+						onclick={tildelValgtProgramTilForlob}
+						disabled={!valgtProgramKey || tildelingsGemmer}
+					>
+						{tildelingsGemmer ? 'Gemmer…' : 'Tildel til hele forløbet'}
+					</button>
+				</div>
+			</section>
+
+			<section class="sektion">
+				<div class="sektion-titel">Deltagere ({deltagere.length})</div>
+				<p class="sektion-sub">
+					Klik på en deltager for at se og redigere hendes individuelle tildelinger.
+				</p>
+
+				{#if deltagere.length === 0}
+					<p class="hint">Ingen deltagere på dette forløb endnu.</p>
+				{:else}
+					<div class="liste">
+						{#each deltagere as d (d.uid)}
+							{@const navn = `${d.firstName} ${d.lastName}`.trim()}
+							<a class="rad" href={`/app/admin/forlob/${forlobId}/traening/kunde/${d.uid}`}>
+								<div class="rad-tekst">
+									<div class="rad-navn">{navn || '(uden navn)'}</div>
+									<div class="rad-sub">{d.email}</div>
 								</div>
 								<Icon name="chevron-r" size={14} color="var(--text3)" />
 							</a>
-							<button
-								class="slet-mini"
-								type="button"
-								onclick={() => aabnSletBekraeft(p)}
-								aria-label="Slet program"
-								title="Slet program"
-							>
-								×
-							</button>
-						</div>
-					{/each}
-				</div>
-			{/if}
-		</section>
-
-		<section class="sektion">
-			<div class="sektion-titel">Tildelinger til hele forløbet</div>
-			<p class="sektion-sub">
-				Tildelinger her gælder alle {deltagere.length} deltager{deltagere.length === 1 ? '' : 'e'} på
-				forløbet.
-			</p>
-
-			{#if forlobsProgramTildelinger.length === 0}
-				<p class="hint">Ingen programmer tildelt forløbet endnu.</p>
-			{:else}
-				<div class="liste">
-					{#each forlobsProgramTildelinger as t (t.id)}
-						<div class="rad">
-							<div class="rad-tekst">
-								<div class="rad-navn">{programNavn(t.forlobId, t.programId)}</div>
-								<div class="rad-sub">Fra {forlobNavnFor(t.forlobId)}</div>
-							</div>
-							<button
-								type="button"
-								class="fjern-knap"
-								onclick={() => fjernProgTildeling(t.id!)}
-								disabled={tildelingsGemmer}
-							>
-								Fjern
-							</button>
-						</div>
-					{/each}
-				</div>
-			{/if}
-
-			<div class="tildel-form">
-				<label class="felt">
-					<span class="felt-label">Tildel et program til hele forløbet</span>
-					<select class="felt-input" bind:value={valgtProgramKey} disabled={tildelingsGemmer}>
-						<option value="">Vælg et program…</option>
-						{#each alleProgrammerPaaTvaers as p (`${p.forlobId}::${p.program.id}`)}
-							<option value={`${p.forlobId}::${p.program.id}`}>
-								{p.program.navn} ({p.forlobNavn})
-							</option>
 						{/each}
-					</select>
-				</label>
-				<button
-					type="button"
-					class="primary-knap full"
-					onclick={tildelValgtProgramTilForlob}
-					disabled={!valgtProgramKey || tildelingsGemmer}
-				>
-					{tildelingsGemmer ? 'Gemmer…' : 'Tildel til hele forløbet'}
+					</div>
+				{/if}
+			</section>
+		{/if}
+	</div>
+
+	{#if viserDialog}
+		<div
+			class="dialog-overlay"
+			role="button"
+			tabindex="0"
+			onclick={lukDialog}
+			onkeydown={(e) => e.key === 'Escape' && lukDialog()}
+		></div>
+		<div class="dialog" role="dialog" aria-modal="true">
+			<header class="dialog-head">
+				<div class="form-titel">Nyt træningsprogram</div>
+				<button class="ikon-knap" type="button" onclick={lukDialog} aria-label="Luk">×</button>
+			</header>
+
+			<label class="felt">
+				<span class="felt-label">ID (snake_case)</span>
+				<input
+					type="text"
+					bind:value={dlgId}
+					placeholder="fx traening_kettlebell"
+					disabled={dlgGemmer}
+				/>
+			</label>
+
+			<label class="felt">
+				<span class="felt-label">Navn</span>
+				<input
+					type="text"
+					bind:value={dlgNavn}
+					placeholder="Træning med kettlebell"
+					disabled={dlgGemmer}
+				/>
+			</label>
+
+			<label class="felt">
+				<span class="felt-label">Beskrivelse</span>
+				<textarea bind:value={dlgBeskrivelse} rows="2" disabled={dlgGemmer}></textarea>
+			</label>
+
+			<label class="felt">
+				<span class="felt-label">Antal dage</span>
+				<input type="number" min="1" max="365" bind:value={dlgAntalDage} disabled={dlgGemmer} />
+			</label>
+
+			<div class="felt">
+				<span class="felt-label">Udstyr</span>
+				<div class="chip-row">
+					{#each UDSTYR as u (u.id)}
+						<button
+							class="chip"
+							class:aktiv={dlgUdstyr.includes(u.id)}
+							type="button"
+							onclick={() => toggleUdstyr(u.id)}
+							disabled={dlgGemmer}
+						>
+							{u.label}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			<div class="felt">
+				<span class="felt-label">Niveau</span>
+				<div class="chip-row">
+					{#each NIVEAUER as n (n.id)}
+						<button
+							class="chip"
+							class:aktiv={dlgNiveau === n.id}
+							type="button"
+							onclick={() => (dlgNiveau = n.id)}
+							disabled={dlgGemmer}
+						>
+							{n.label}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			{#if dlgFejl}
+				<div class="fejl-besked">{dlgFejl}</div>
+			{/if}
+
+			<div class="dialog-knapper">
+				<button class="form-knap primary" type="button" onclick={opret} disabled={dlgGemmer}>
+					{dlgGemmer ? 'Opretter...' : 'Opret'}
 				</button>
 			</div>
-		</section>
-
-		<section class="sektion">
-			<div class="sektion-titel">Deltagere ({deltagere.length})</div>
-			<p class="sektion-sub">
-				Klik på en deltager for at se og redigere hendes individuelle tildelinger.
-			</p>
-
-			{#if deltagere.length === 0}
-				<p class="hint">Ingen deltagere på dette forløb endnu.</p>
-			{:else}
-				<div class="liste">
-					{#each deltagere as d (d.uid)}
-						{@const navn = `${d.firstName} ${d.lastName}`.trim()}
-						<a class="rad" href={`/app/admin/forlob/${forlobId}/traening/kunde/${d.uid}`}>
-							<div class="rad-tekst">
-								<div class="rad-navn">{navn || '(uden navn)'}</div>
-								<div class="rad-sub">{d.email}</div>
-							</div>
-							<Icon name="chevron-r" size={14} color="var(--text3)" />
-						</a>
-					{/each}
-				</div>
-			{/if}
-		</section>
+		</div>
 	{/if}
-</div>
 
-{#if viserDialog}
-	<div
-		class="dialog-overlay"
-		role="button"
-		tabindex="0"
-		onclick={lukDialog}
-		onkeydown={(e) => e.key === 'Escape' && lukDialog()}
-	></div>
-	<div class="dialog" role="dialog" aria-modal="true">
-		<header class="dialog-head">
-			<div class="form-titel">Nyt træningsprogram</div>
-			<button class="ikon-knap" type="button" onclick={lukDialog} aria-label="Luk">×</button>
-		</header>
-
-		<label class="felt">
-			<span class="felt-label">ID (snake_case)</span>
-			<input
-				type="text"
-				bind:value={dlgId}
-				placeholder="fx traening_kettlebell"
-				disabled={dlgGemmer}
-			/>
-		</label>
-
-		<label class="felt">
-			<span class="felt-label">Navn</span>
-			<input
-				type="text"
-				bind:value={dlgNavn}
-				placeholder="Træning med kettlebell"
-				disabled={dlgGemmer}
-			/>
-		</label>
-
-		<label class="felt">
-			<span class="felt-label">Beskrivelse</span>
-			<textarea bind:value={dlgBeskrivelse} rows="2" disabled={dlgGemmer}></textarea>
-		</label>
-
-		<label class="felt">
-			<span class="felt-label">Antal dage</span>
-			<input type="number" min="1" max="365" bind:value={dlgAntalDage} disabled={dlgGemmer} />
-		</label>
-
-		<div class="felt">
-			<span class="felt-label">Udstyr</span>
-			<div class="chip-row">
-				{#each UDSTYR as u (u.id)}
-					<button
-						class="chip"
-						class:aktiv={dlgUdstyr.includes(u.id)}
-						type="button"
-						onclick={() => toggleUdstyr(u.id)}
-						disabled={dlgGemmer}
-					>
-						{u.label}
-					</button>
-				{/each}
-			</div>
-		</div>
-
-		<div class="felt">
-			<span class="felt-label">Niveau</span>
-			<div class="chip-row">
-				{#each NIVEAUER as n (n.id)}
-					<button
-						class="chip"
-						class:aktiv={dlgNiveau === n.id}
-						type="button"
-						onclick={() => (dlgNiveau = n.id)}
-						disabled={dlgGemmer}
-					>
-						{n.label}
-					</button>
-				{/each}
-			</div>
-		</div>
-
-		{#if dlgFejl}
-			<div class="fejl-besked">{dlgFejl}</div>
-		{/if}
-
-		<div class="dialog-knapper">
-			<button class="form-knap primary" type="button" onclick={opret} disabled={dlgGemmer}>
-				{dlgGemmer ? 'Opretter...' : 'Opret'}
-			</button>
-		</div>
-	</div>
-{/if}
-
-{#if sletProgram}
-	<BekraeftModal
-		titel={'Slet "' + sletProgram.navn + '"?'}
-		beskrivelse="Programmet og alle dets dage slettes permanent og kan ikke gendannes."
-		bekraeftTekst="Slet"
-		destruktiv
-		arbejder={sletter}
-		onBekraeft={() => void bekraeftSlet()}
-		onAnnuller={() => (sletProgram = null)}
-	/>
-{/if}
+	{#if sletProgram}
+		<BekraeftModal
+			titel={'Slet "' + sletProgram.navn + '"?'}
+			beskrivelse="Programmet og alle dets dage slettes permanent og kan ikke gendannes."
+			bekraeftTekst="Slet"
+			destruktiv
+			arbejder={sletter}
+			onBekraeft={() => void bekraeftSlet()}
+			onAnnuller={() => (sletProgram = null)}
+		/>
+	{/if}
 {/if}
 
 <style>

@@ -20,7 +20,7 @@
 	import { kunUdgivne, sorterItems, sorterKategorier } from '$lib/content/bibliotek';
 	import { fletHjaelp, hjaelpKilder, visKildeNavn, type HjaelpGruppe } from '$lib/content/hjaelp3';
 	import { hentFaqItems, hentFaqKategorier } from '$lib/firestore/bibliotek';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
@@ -87,10 +87,7 @@
 	/>
 
 	{#if henter}
-		<div class="lektion-venter">
-			<Ventetegn variant="lille" />
-			<span>Henter spørgsmålene</span>
-		</div>
+		<Venter tekst="Henter spørgsmålene" />
 	{:else if grupper.length === 0}
 		<div class="kort rolig">
 			Der er ikke lagt spørgsmål ind endnu.

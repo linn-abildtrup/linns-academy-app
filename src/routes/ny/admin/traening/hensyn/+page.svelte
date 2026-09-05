@@ -155,8 +155,8 @@
 			</div>
 			{#if !nokTilbage3(alleSamlet)}
 				<p class="adm-hjaelp">
-					Under {MIN_OEVELSER3} øvelser kan der ikke bygges et program der er værd at have. Beder en
-					kunde om alle hensyn på én gang, får hun besked om at skrive til dig i stedet.
+					Under {MIN_OEVELSER3} øvelser kan der ikke bygges et program der er værd at have. Beder en kunde
+					om alle hensyn på én gang, får hun besked om at skrive til dig i stedet.
 				</p>
 			{/if}
 		</section>

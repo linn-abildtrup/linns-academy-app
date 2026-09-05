@@ -26,7 +26,7 @@
 	import { hentNaeringRegler3, hentNaeringUndtagelse3 } from '$lib/firestore/naeringAdgang3';
 	import { gemNaeringsindstillinger } from '$lib/userDoc';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -115,7 +115,10 @@
 	async function saetMaal(felt: keyof typeof maal, raa: string) {
 		if (!maaRette) return;
 		const n = Number(raa.replace(',', '.'));
-		maal = { ...maal, [felt]: Number.isFinite(n) && n > 0 ? Math.round(n) : STANDARD_DAGLIGE_MAL[felt] };
+		maal = {
+			...maal,
+			[felt]: Number.isFinite(n) && n > 0 ? Math.round(n) : STANDARD_DAGLIGE_MAL[felt]
+		};
 		await gem();
 	}
 
@@ -132,10 +135,7 @@
 	/>
 
 	{#if henter}
-		<div class="lektion-venter">
-			<Ventetegn variant="lille" />
-			<span>Henter dine mål</span>
-		</div>
+		<Venter tekst="Henter dine mål" />
 	{:else}
 		{#if fejl}
 			<div class="kort rolig nm-fejl">{fejl}</div>
@@ -187,7 +187,12 @@
 
 		{#if maaVise}
 			<section class="kort">
-				<button class="nm-kontakt" onclick={skiftUdvidet} disabled={gemmer} aria-pressed={visUdvidet}>
+				<button
+					class="nm-kontakt"
+					onclick={skiftUdvidet}
+					disabled={gemmer}
+					aria-pressed={visUdvidet}
+				>
 					<span class="nm-kontakt-tekst">
 						<span class="nm-kontakt-t">Vis også kulhydrater, fedt og kalorier</span>
 						<span class="nm-kontakt-s">

@@ -33,7 +33,7 @@
 	import type { Exercise } from '$lib/content/mikrotraening';
 	import { hentAlleExercises } from '$lib/firestore/mikrotraening';
 	import { getVideoUrl } from '$lib/utils/storage';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import OevelsesArk from '$lib/components/ny/OevelsesArk.svelte';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
@@ -193,10 +193,7 @@
 	{/if}
 
 	{#if henter}
-		<div class="lektion-venter">
-			<Ventetegn variant="lille" />
-			<span>Henter øvelserne</span>
-		</div>
+		<Venter tekst="Henter øvelserne" />
 	{:else if fejl}
 		<p class="kort rolig">{fejl}</p>
 	{:else}

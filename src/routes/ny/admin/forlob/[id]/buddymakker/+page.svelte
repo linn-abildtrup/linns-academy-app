@@ -83,85 +83,85 @@
 {#if !maaVaereHer}
 	<p class="fu-kun">Siden er kun for admin.</p>
 {:else}
-<div class="page">
-	<header class="page-header">
-		<a class="back" href="/ny/admin/forlob/{forlobId}">
-			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>Forløb</span>
-		</a>
-		<div class="eyebrow">Admin · Buddy-gruppe</div>
-		<h1>Buddy-gruppe-matches</h1>
-		<p class="page-sub">
-			Liste over deltagere på {forlob?.navn ?? 'forløbet'} der vil være med i en buddy-gruppe på 4-5 personer.
-			Ved første login bliver kunderne spurgt, og svaret gemmes på deres userDoc. Du sætter grupperne
-			sammen manuelt og kontakter dem på mail.
-		</p>
-	</header>
+	<div class="page">
+		<header class="page-header">
+			<a class="back" href="/ny/admin/forlob/{forlobId}">
+				<Icon name="arrow-l" size={14} color="var(--text2)" />
+				<span>Forløb</span>
+			</a>
+			<div class="eyebrow">Admin · Buddy-gruppe</div>
+			<h1>Buddy-gruppe-matches</h1>
+			<p class="page-sub">
+				Liste over deltagere på {forlob?.navn ?? 'forløbet'} der vil være med i en buddy-gruppe på 4-5
+				personer. Ved første login bliver kunderne spurgt, og svaret gemmes på deres userDoc. Du sætter
+				grupperne sammen manuelt og kontakter dem på mail.
+			</p>
+		</header>
 
-	{#if fejl}
-		<div class="status-besked fejl">{fejl}</div>
-	{:else if loading}
-		<div class="status-besked">Henter…</div>
-	{:else}
-		<section class="card">
-			<div class="card-titel">Vil være med i buddy-gruppe ({onskerBuddy.length})</div>
-			{#if onskerBuddy.length === 0}
-				<p class="hint">
-					Ingen deltagere har sagt ja til en buddy-gruppe endnu. De skal være logget ind mindst én
-					gang for at have svaret.
-				</p>
-			{:else}
-				<div class="liste">
-					{#each onskerBuddy as d (d.uid)}
-						{@const navn = `${d.firstName} ${d.lastName}`.trim()}
-						<div class="rad">
-							<div class="rad-tekst">
-								<div class="rad-navn">{navn || '(uden navn)'}</div>
-								<div class="rad-sub">
-									<a href="mailto:{d.email}">{d.email}</a>
-								</div>
-							</div>
-						</div>
-					{/each}
-				</div>
-			{/if}
-		</section>
-
-		<section class="card sekundaer">
-			<div class="card-titel sub">Status for hele forløbet</div>
-			<div class="stat-grid">
-				<div class="stat">
-					<div class="stat-tal">{onskerBuddy.length}</div>
-					<div class="stat-label">Vil have</div>
-				</div>
-				<div class="stat">
-					<div class="stat-tal">{onskerIkke.length}</div>
-					<div class="stat-label">Vil ikke</div>
-				</div>
-				<div class="stat">
-					<div class="stat-tal">{ikkeSpurgt.length}</div>
-					<div class="stat-label">Endnu ikke svaret</div>
-				</div>
-			</div>
-			{#if ikkeSpurgt.length > 0}
-				<details class="ikke-spurgt-detail">
-					<summary>Vis deltagere der endnu ikke har svaret</summary>
-					<div class="liste sekundaer-liste">
-						{#each ikkeSpurgt as d (d.uid)}
+		{#if fejl}
+			<div class="status-besked fejl">{fejl}</div>
+		{:else if loading}
+			<div class="status-besked">Henter…</div>
+		{:else}
+			<section class="card">
+				<div class="card-titel">Vil være med i buddy-gruppe ({onskerBuddy.length})</div>
+				{#if onskerBuddy.length === 0}
+					<p class="hint">
+						Ingen deltagere har sagt ja til en buddy-gruppe endnu. De skal være logget ind mindst én
+						gang for at have svaret.
+					</p>
+				{:else}
+					<div class="liste">
+						{#each onskerBuddy as d (d.uid)}
 							{@const navn = `${d.firstName} ${d.lastName}`.trim()}
 							<div class="rad">
 								<div class="rad-tekst">
 									<div class="rad-navn">{navn || '(uden navn)'}</div>
-									<div class="rad-sub">{d.email}</div>
+									<div class="rad-sub">
+										<a href="mailto:{d.email}">{d.email}</a>
+									</div>
 								</div>
 							</div>
 						{/each}
 					</div>
-				</details>
-			{/if}
-		</section>
-	{/if}
-</div>
+				{/if}
+			</section>
+
+			<section class="card sekundaer">
+				<div class="card-titel sub">Status for hele forløbet</div>
+				<div class="stat-grid">
+					<div class="stat">
+						<div class="stat-tal">{onskerBuddy.length}</div>
+						<div class="stat-label">Vil have</div>
+					</div>
+					<div class="stat">
+						<div class="stat-tal">{onskerIkke.length}</div>
+						<div class="stat-label">Vil ikke</div>
+					</div>
+					<div class="stat">
+						<div class="stat-tal">{ikkeSpurgt.length}</div>
+						<div class="stat-label">Endnu ikke svaret</div>
+					</div>
+				</div>
+				{#if ikkeSpurgt.length > 0}
+					<details class="ikke-spurgt-detail">
+						<summary>Vis deltagere der endnu ikke har svaret</summary>
+						<div class="liste sekundaer-liste">
+							{#each ikkeSpurgt as d (d.uid)}
+								{@const navn = `${d.firstName} ${d.lastName}`.trim()}
+								<div class="rad">
+									<div class="rad-tekst">
+										<div class="rad-navn">{navn || '(uden navn)'}</div>
+										<div class="rad-sub">{d.email}</div>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</details>
+				{/if}
+			</section>
+		{/if}
+	</div>
 {/if}
 
 <style>

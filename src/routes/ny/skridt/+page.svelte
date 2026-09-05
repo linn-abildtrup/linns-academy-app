@@ -43,7 +43,7 @@
 		tilfoejEgetSkridt3,
 		type SkridtValg3
 	} from '$lib/firestore/vaelgSkridt3';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 
@@ -228,10 +228,7 @@
 	/>
 
 	{#if henter}
-		<div class="lektion-venter">
-			<Ventetegn variant="lille" />
-			<span>Henter dine skridt</span>
-		</div>
+		<Venter tekst="Henter dine skridt" />
 	{:else}
 		<div class="vs-taeller" class:fuld={!plads}>
 			<span class="vs-t">

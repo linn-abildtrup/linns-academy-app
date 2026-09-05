@@ -174,11 +174,7 @@
 		publicerer = true;
 		publResultat = null;
 		try {
-			const r = await synkSmaaSkridtTilDage(
-				forlobId,
-				forlob.antalDage,
-				forlob.startDato.toDate()
-			);
+			const r = await synkSmaaSkridtTilDage(forlobId, forlob.antalDage, forlob.startDato.toDate());
 			const fjernetTekst = r.fjernede
 				? ` Fjernede ${r.fjernede} slettet${r.fjernede === 1 ? '' : 'e'} skridt fra dagene.`
 				: '';
@@ -235,216 +231,216 @@
 {#if !maaVaereHer}
 	<p class="fu-kun">Siden er kun for admin.</p>
 {:else}
-<div class="page">
-	<header class="page-header">
-		<a class="back" href="/ny/admin/forlob/{forlobId}">
-			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>{forlob?.navn ?? 'Forløb'}</span>
-		</a>
-		<div class="eyebrow">Admin · {forlob?.navn ?? forlobId} · Små skridt</div>
-		<h1>Små skridt</h1>
-		<p class="page-sub">
-			Tilføj et lille skridt og vælg hvilke dage det gælder. Det samme værktøj dækker både daglige
-			vaner (alle dage) og uge-baserede skridt.
-		</p>
-	</header>
+	<div class="page">
+		<header class="page-header">
+			<a class="back" href="/ny/admin/forlob/{forlobId}">
+				<Icon name="arrow-l" size={14} color="var(--text2)" />
+				<span>{forlob?.navn ?? 'Forløb'}</span>
+			</a>
+			<div class="eyebrow">Admin · {forlob?.navn ?? forlobId} · Små skridt</div>
+			<h1>Små skridt</h1>
+			<p class="page-sub">
+				Tilføj et lille skridt og vælg hvilke dage det gælder. Det samme værktøj dækker både daglige
+				vaner (alle dage) og uge-baserede skridt.
+			</p>
+		</header>
 
-	{#if loading}
-		<div class="status-besked">Henter...</div>
-	{:else if fejl}
-		<div class="status-besked fejl">{fejl}</div>
-	{:else if forlob}
-		<!-- Form: ny / rediger -->
-		<section class="form-card">
-			<div class="form-titel">{redigererId ? 'Rediger lille skridt' : 'Nyt lille skridt'}</div>
+		{#if loading}
+			<div class="status-besked">Henter...</div>
+		{:else if fejl}
+			<div class="status-besked fejl">{fejl}</div>
+		{:else if forlob}
+			<!-- Form: ny / rediger -->
+			<section class="form-card">
+				<div class="form-titel">{redigererId ? 'Rediger lille skridt' : 'Nyt lille skridt'}</div>
 
-			<label class="felt">
-				<span class="felt-label">Tekst</span>
-				<input
-					type="text"
-					bind:value={formLabel}
-					placeholder="Fx 'Protein til morgenmad'"
-					maxlength="120"
-					disabled={gemmer}
-				/>
-			</label>
-
-			<div class="felt">
-				<span class="felt-label">Gælder</span>
-				<div class="mode-toggle">
-					{#each [['alle', 'Alle dage'], ['uger', 'Hele uger'], ['interval', 'Interval'], ['ugedage', 'Ugedage'], ['dage', 'Bestemte dage']] as [m, t] (m)}
-						<button
-							type="button"
-							class="mode-knap"
-							class:aktiv={formMode === m}
-							onclick={() => (formMode = m as typeof formMode)}
-							disabled={gemmer}
-						>
-							{t}
-						</button>
-					{/each}
-				</div>
-			</div>
-
-			{#if formMode === 'uger'}
-				<div class="chip-rad">
-					{#each Array.from({ length: antalUger }, (_, i) => i + 1) as u (u)}
-						<button
-							type="button"
-							class="chip"
-							class:aktiv={formUger.includes(u)}
-							onclick={() => (formUger = toggle(formUger, u))}
-							disabled={gemmer}
-						>
-							Uge {u}
-						</button>
-					{/each}
-				</div>
-			{:else if formMode === 'ugedage'}
-				<div class="chip-rad">
-					{#each UGEDAGS_NAVNE as navn, i (navn)}
-						<button
-							type="button"
-							class="chip"
-							class:aktiv={formUgedage.includes(i + 1)}
-							onclick={() => (formUgedage = toggle(formUgedage, i + 1))}
-							disabled={gemmer}
-						>
-							{navn}
-						</button>
-					{/each}
-				</div>
-			{:else if formMode === 'interval'}
-				<div class="interval-rad">
-					<label class="felt felt-lille">
-						<span class="felt-label">Fra dag</span>
-						<input
-							type="number"
-							min="1"
-							max={forlob.antalDage}
-							bind:value={formFra}
-							disabled={gemmer}
-						/>
-					</label>
-					<label class="felt felt-lille">
-						<span class="felt-label">Til dag</span>
-						<input
-							type="number"
-							min="1"
-							max={forlob.antalDage}
-							bind:value={formTil}
-							disabled={gemmer || formTilSlut}
-						/>
-					</label>
-					<label class="checkbox-rad til-slut">
-						<input type="checkbox" bind:checked={formTilSlut} disabled={gemmer} />
-						<span>Til forløbets slut</span>
-					</label>
-				</div>
-			{:else if formMode === 'dage'}
 				<label class="felt">
-					<span class="felt-label">Dagnumre (adskilt af komma)</span>
+					<span class="felt-label">Tekst</span>
 					<input
 						type="text"
-						bind:value={formDageTekst}
-						placeholder="Fx 5, 8, 12"
+						bind:value={formLabel}
+						placeholder="Fx 'Protein til morgenmad'"
+						maxlength="120"
 						disabled={gemmer}
 					/>
 				</label>
-			{/if}
 
-			<div class="preview">
-				Rammer <strong>{ramteDage.length}</strong> dag{ramteDage.length === 1 ? '' : 'e'}
-				{#if ramteDage.length > 0 && ramteDage.length <= 14}
-					· {ramteDage.map((d) => `dag ${d}`).join(', ')}
+				<div class="felt">
+					<span class="felt-label">Gælder</span>
+					<div class="mode-toggle">
+						{#each [['alle', 'Alle dage'], ['uger', 'Hele uger'], ['interval', 'Interval'], ['ugedage', 'Ugedage'], ['dage', 'Bestemte dage']] as [m, t] (m)}
+							<button
+								type="button"
+								class="mode-knap"
+								class:aktiv={formMode === m}
+								onclick={() => (formMode = m as typeof formMode)}
+								disabled={gemmer}
+							>
+								{t}
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				{#if formMode === 'uger'}
+					<div class="chip-rad">
+						{#each Array.from({ length: antalUger }, (_, i) => i + 1) as u (u)}
+							<button
+								type="button"
+								class="chip"
+								class:aktiv={formUger.includes(u)}
+								onclick={() => (formUger = toggle(formUger, u))}
+								disabled={gemmer}
+							>
+								Uge {u}
+							</button>
+						{/each}
+					</div>
+				{:else if formMode === 'ugedage'}
+					<div class="chip-rad">
+						{#each UGEDAGS_NAVNE as navn, i (navn)}
+							<button
+								type="button"
+								class="chip"
+								class:aktiv={formUgedage.includes(i + 1)}
+								onclick={() => (formUgedage = toggle(formUgedage, i + 1))}
+								disabled={gemmer}
+							>
+								{navn}
+							</button>
+						{/each}
+					</div>
+				{:else if formMode === 'interval'}
+					<div class="interval-rad">
+						<label class="felt felt-lille">
+							<span class="felt-label">Fra dag</span>
+							<input
+								type="number"
+								min="1"
+								max={forlob.antalDage}
+								bind:value={formFra}
+								disabled={gemmer}
+							/>
+						</label>
+						<label class="felt felt-lille">
+							<span class="felt-label">Til dag</span>
+							<input
+								type="number"
+								min="1"
+								max={forlob.antalDage}
+								bind:value={formTil}
+								disabled={gemmer || formTilSlut}
+							/>
+						</label>
+						<label class="checkbox-rad til-slut">
+							<input type="checkbox" bind:checked={formTilSlut} disabled={gemmer} />
+							<span>Til forløbets slut</span>
+						</label>
+					</div>
+				{:else if formMode === 'dage'}
+					<label class="felt">
+						<span class="felt-label">Dagnumre (adskilt af komma)</span>
+						<input
+							type="text"
+							bind:value={formDageTekst}
+							placeholder="Fx 5, 8, 12"
+							disabled={gemmer}
+						/>
+					</label>
 				{/if}
-			</div>
 
-			{#if formFejl}
-				<div class="fejl-besked">{formFejl}</div>
-			{/if}
+				<div class="preview">
+					Rammer <strong>{ramteDage.length}</strong> dag{ramteDage.length === 1 ? '' : 'e'}
+					{#if ramteDage.length > 0 && ramteDage.length <= 14}
+						· {ramteDage.map((d) => `dag ${d}`).join(', ')}
+					{/if}
+				</div>
 
-			<div class="form-knapper">
-				{#if redigererId}
-					<button class="form-knap ghost" type="button" onclick={nulstilForm} disabled={gemmer}>
-						Annuller
+				{#if formFejl}
+					<div class="fejl-besked">{formFejl}</div>
+				{/if}
+
+				<div class="form-knapper">
+					{#if redigererId}
+						<button class="form-knap ghost" type="button" onclick={nulstilForm} disabled={gemmer}>
+							Annuller
+						</button>
+					{/if}
+					<button
+						class="form-knap primary"
+						type="button"
+						onclick={gem}
+						disabled={gemmer || !formLabel.trim()}
+					>
+						{gemmer ? 'Gemmer...' : redigererId ? 'Gem ændringer' : 'Tilføj lille skridt'}
 					</button>
-				{/if}
-				<button
-					class="form-knap primary"
-					type="button"
-					onclick={gem}
-					disabled={gemmer || !formLabel.trim()}
-				>
-					{gemmer ? 'Gemmer...' : redigererId ? 'Gem ændringer' : 'Tilføj lille skridt'}
+				</div>
+			</section>
+
+			<section class="publish-card">
+				<div class="publish-tekst">
+					<div class="publish-titel">Publicér til appen</div>
+					<p class="publish-sub">
+						Dine ændringer her er kun gemt som kladde. Først når du publicerer, skrives de små
+						skridt ind på de rigtige dage og bliver synlige for kunderne (besvares Ja/Delvist/Nej).
+						Det gælder også når du sletter et skridt. Det forsvinder først hos kunderne når du
+						publicerer.
+					</p>
+				</div>
+				<button class="form-knap primary" type="button" onclick={publicer} disabled={publicerer}>
+					{publicerer ? 'Publicerer…' : 'Publicér til appen'}
 				</button>
-			</div>
-		</section>
+				{#if publResultat}
+					<div class="kvit-besked">{publResultat}</div>
+				{/if}
+			</section>
 
-		<section class="publish-card">
-			<div class="publish-tekst">
-				<div class="publish-titel">Publicér til appen</div>
-				<p class="publish-sub">
-					Dine ændringer her er kun gemt som kladde. Først når du publicerer, skrives de små skridt
-					ind på de rigtige dage og bliver synlige for kunderne (besvares Ja/Delvist/Nej). Det
-					gælder også når du sletter et skridt. Det forsvinder først hos kunderne når du
-					publicerer.
-				</p>
-			</div>
-			<button class="form-knap primary" type="button" onclick={publicer} disabled={publicerer}>
-				{publicerer ? 'Publicerer…' : 'Publicér til appen'}
-			</button>
-			{#if publResultat}
-				<div class="kvit-besked">{publResultat}</div>
-			{/if}
-		</section>
+			<!-- Liste -->
+			<section class="liste-card">
+				<div class="form-head">
+					<div class="form-titel">På dette forløb</div>
+					<div class="form-tael">{skridt.length}</div>
+				</div>
 
-		<!-- Liste -->
-		<section class="liste-card">
-			<div class="form-head">
-				<div class="form-titel">På dette forløb</div>
-				<div class="form-tael">{skridt.length}</div>
-			</div>
-
-			{#if skridt.length === 0}
-				<p class="muted">Ingen små skridt endnu. Tilføj det første ovenfor.</p>
-			{:else}
-				<div class="liste">
-					{#each skridt as s (s.id)}
-						<div class="rad" class:aktiv={redigererId === s.id}>
-							<div class="rad-tekst">
-								<div class="rad-label">{s.label}</div>
-								<div class="rad-plan">
-									{planTekst(s.plan)} · {antalDageForSkridt(s)} dage
+				{#if skridt.length === 0}
+					<p class="muted">Ingen små skridt endnu. Tilføj det første ovenfor.</p>
+				{:else}
+					<div class="liste">
+						{#each skridt as s (s.id)}
+							<div class="rad" class:aktiv={redigererId === s.id}>
+								<div class="rad-tekst">
+									<div class="rad-label">{s.label}</div>
+									<div class="rad-plan">
+										{planTekst(s.plan)} · {antalDageForSkridt(s)} dage
+									</div>
+								</div>
+								<div class="rad-knapper">
+									<button type="button" class="mini-knap" onclick={() => startRediger(s)}>
+										Rediger
+									</button>
+									<button type="button" class="mini-knap fare" onclick={() => (sletKandidat = s)}>
+										Slet
+									</button>
 								</div>
 							</div>
-							<div class="rad-knapper">
-								<button type="button" class="mini-knap" onclick={() => startRediger(s)}>
-									Rediger
-								</button>
-								<button type="button" class="mini-knap fare" onclick={() => (sletKandidat = s)}>
-									Slet
-								</button>
-							</div>
-						</div>
-					{/each}
-				</div>
-			{/if}
-		</section>
-	{/if}
-</div>
+						{/each}
+					</div>
+				{/if}
+			</section>
+		{/if}
+	</div>
 
-{#if sletKandidat}
-	<BekraeftModal
-		titel={'Slet "' + sletKandidat.label + '"?'}
-		beskrivelse="Skridtet forsvinder fra listen med det samme. Hos kunderne forsvinder det først når du trykker Publicér til appen."
-		bekraeftTekst="Slet"
-		destruktiv
-		arbejder={sletter}
-		onBekraeft={() => void slet()}
-		onAnnuller={() => (sletKandidat = null)}
-	/>
-{/if}
+	{#if sletKandidat}
+		<BekraeftModal
+			titel={'Slet "' + sletKandidat.label + '"?'}
+			beskrivelse="Skridtet forsvinder fra listen med det samme. Hos kunderne forsvinder det først når du trykker Publicér til appen."
+			bekraeftTekst="Slet"
+			destruktiv
+			arbejder={sletter}
+			onBekraeft={() => void slet()}
+			onAnnuller={() => (sletKandidat = null)}
+		/>
+	{/if}
 {/if}
 
 <style>

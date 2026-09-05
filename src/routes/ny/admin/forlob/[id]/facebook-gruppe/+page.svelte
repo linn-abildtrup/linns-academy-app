@@ -83,101 +83,101 @@
 {#if !maaVaereHer}
 	<p class="fu-kun">Siden er kun for admin.</p>
 {:else}
-<div class="page">
-	<header class="page-header">
-		<a class="back" href="/ny/admin/forlob/{forlobId}">
-			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>Forløb</span>
-		</a>
-		<div class="eyebrow">Admin · Facebook-gruppe</div>
-		<h1>Facebook-gruppe-status</h1>
-		<p class="page-sub">
-			Overblik over deltagere på {forlob?.navn ?? 'forløbet'} der er kommet ind i forløbets Facebook-gruppe.
-			Spørgsmålet stilles første gang kunden logger ind på dag 0 eller senere.
-		</p>
-	</header>
+	<div class="page">
+		<header class="page-header">
+			<a class="back" href="/ny/admin/forlob/{forlobId}">
+				<Icon name="arrow-l" size={14} color="var(--text2)" />
+				<span>Forløb</span>
+			</a>
+			<div class="eyebrow">Admin · Facebook-gruppe</div>
+			<h1>Facebook-gruppe-status</h1>
+			<p class="page-sub">
+				Overblik over deltagere på {forlob?.navn ?? 'forløbet'} der er kommet ind i forløbets Facebook-gruppe.
+				Spørgsmålet stilles første gang kunden logger ind på dag 0 eller senere.
+			</p>
+		</header>
 
-	{#if fejl}
-		<div class="status-besked fejl">{fejl}</div>
-	{:else if loading}
-		<div class="status-besked">Henter…</div>
-	{:else}
-		<section class="card highlight">
-			<div class="card-titel">Mangler at komme ind ({ikkeInde.length})</div>
-			{#if ikkeInde.length === 0}
-				<p class="hint">Ingen har sagt "ikke endnu" — alt godt herfra.</p>
-			{:else}
-				<p class="card-sub">
-					Disse deltagere har sagt "ikke endnu". Du kan sende dem linket til Facebook-gruppen
-					manuelt.
-				</p>
-				<div class="liste">
-					{#each ikkeInde as d (d.uid)}
-						{@const navn = `${d.firstName} ${d.lastName}`.trim()}
-						<div class="rad">
-							<div class="rad-tekst">
-								<div class="rad-navn">{navn || '(uden navn)'}</div>
-								<div class="rad-sub">
-									<a href="mailto:{d.email}">{d.email}</a>
+		{#if fejl}
+			<div class="status-besked fejl">{fejl}</div>
+		{:else if loading}
+			<div class="status-besked">Henter…</div>
+		{:else}
+			<section class="card highlight">
+				<div class="card-titel">Mangler at komme ind ({ikkeInde.length})</div>
+				{#if ikkeInde.length === 0}
+					<p class="hint">Ingen har sagt "ikke endnu" — alt godt herfra.</p>
+				{:else}
+					<p class="card-sub">
+						Disse deltagere har sagt "ikke endnu". Du kan sende dem linket til Facebook-gruppen
+						manuelt.
+					</p>
+					<div class="liste">
+						{#each ikkeInde as d (d.uid)}
+							{@const navn = `${d.firstName} ${d.lastName}`.trim()}
+							<div class="rad">
+								<div class="rad-tekst">
+									<div class="rad-navn">{navn || '(uden navn)'}</div>
+									<div class="rad-sub">
+										<a href="mailto:{d.email}">{d.email}</a>
+									</div>
 								</div>
 							</div>
+						{/each}
+					</div>
+				{/if}
+			</section>
+
+			<section class="card sekundaer">
+				<div class="card-titel sub">Status for hele forløbet</div>
+				<div class="stat-grid">
+					<div class="stat">
+						<div class="stat-tal">{erInde.length}</div>
+						<div class="stat-label">Er inde</div>
+					</div>
+					<div class="stat">
+						<div class="stat-tal">{ikkeInde.length}</div>
+						<div class="stat-label">Ikke endnu</div>
+					</div>
+					<div class="stat">
+						<div class="stat-tal">{ikkeSpurgt.length}</div>
+						<div class="stat-label">Endnu ikke spurgt</div>
+					</div>
+				</div>
+				{#if erInde.length > 0}
+					<details class="ikke-spurgt-detail">
+						<summary>Vis deltagere der er inde i gruppen</summary>
+						<div class="liste sekundaer-liste">
+							{#each erInde as d (d.uid)}
+								{@const navn = `${d.firstName} ${d.lastName}`.trim()}
+								<div class="rad">
+									<div class="rad-tekst">
+										<div class="rad-navn">{navn || '(uden navn)'}</div>
+										<div class="rad-sub">{d.email}</div>
+									</div>
+								</div>
+							{/each}
 						</div>
-					{/each}
-				</div>
-			{/if}
-		</section>
-
-		<section class="card sekundaer">
-			<div class="card-titel sub">Status for hele forløbet</div>
-			<div class="stat-grid">
-				<div class="stat">
-					<div class="stat-tal">{erInde.length}</div>
-					<div class="stat-label">Er inde</div>
-				</div>
-				<div class="stat">
-					<div class="stat-tal">{ikkeInde.length}</div>
-					<div class="stat-label">Ikke endnu</div>
-				</div>
-				<div class="stat">
-					<div class="stat-tal">{ikkeSpurgt.length}</div>
-					<div class="stat-label">Endnu ikke spurgt</div>
-				</div>
-			</div>
-			{#if erInde.length > 0}
-				<details class="ikke-spurgt-detail">
-					<summary>Vis deltagere der er inde i gruppen</summary>
-					<div class="liste sekundaer-liste">
-						{#each erInde as d (d.uid)}
-							{@const navn = `${d.firstName} ${d.lastName}`.trim()}
-							<div class="rad">
-								<div class="rad-tekst">
-									<div class="rad-navn">{navn || '(uden navn)'}</div>
-									<div class="rad-sub">{d.email}</div>
+					</details>
+				{/if}
+				{#if ikkeSpurgt.length > 0}
+					<details class="ikke-spurgt-detail">
+						<summary>Vis deltagere der endnu ikke er spurgt</summary>
+						<div class="liste sekundaer-liste">
+							{#each ikkeSpurgt as d (d.uid)}
+								{@const navn = `${d.firstName} ${d.lastName}`.trim()}
+								<div class="rad">
+									<div class="rad-tekst">
+										<div class="rad-navn">{navn || '(uden navn)'}</div>
+										<div class="rad-sub">{d.email}</div>
+									</div>
 								</div>
-							</div>
-						{/each}
-					</div>
-				</details>
-			{/if}
-			{#if ikkeSpurgt.length > 0}
-				<details class="ikke-spurgt-detail">
-					<summary>Vis deltagere der endnu ikke er spurgt</summary>
-					<div class="liste sekundaer-liste">
-						{#each ikkeSpurgt as d (d.uid)}
-							{@const navn = `${d.firstName} ${d.lastName}`.trim()}
-							<div class="rad">
-								<div class="rad-tekst">
-									<div class="rad-navn">{navn || '(uden navn)'}</div>
-									<div class="rad-sub">{d.email}</div>
-								</div>
-							</div>
-						{/each}
-					</div>
-				</details>
-			{/if}
-		</section>
-	{/if}
-</div>
+							{/each}
+						</div>
+					</details>
+				{/if}
+			</section>
+		{/if}
+	</div>
 {/if}
 
 <style>

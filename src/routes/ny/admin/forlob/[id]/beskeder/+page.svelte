@@ -317,274 +317,274 @@
 {#if !maaVaereHer}
 	<p class="fu-kun">Siden er kun for admin.</p>
 {:else}
-<div class="page">
-	<header class="page-header">
-		<a class="back" href="/ny/admin/forlob/{forlobId}">
-			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>{forlobNavn || 'Forløb'}</span>
-		</a>
-		<div class="head-row">
-			<div>
-				<div class="eyebrow">Admin · {forlobNavn || 'Forløb'}</div>
-				<h1>Beskeder fra <em>klienter</em></h1>
-				<p class="page-sub">
-					{forlobSpoergsmaal.length} spørgsmål, {ubesvaretAntal} ubesvarede
-				</p>
-			</div>
-			<button type="button" class="ghost-knap sm" onclick={genindlaes} disabled={loading}>
-				{loading ? 'Henter...' : 'Opdater'}
-			</button>
-		</div>
-	</header>
-
-	<section class="filter-card">
-		<div class="filter-rad">
-			{#each FILTRE as f (f.id)}
-				<button
-					type="button"
-					class="filter-chip"
-					class:aktiv={aktivtFilter === f.id}
-					onclick={() => (aktivtFilter = f.id)}
-				>
-					{f.label}
+	<div class="page">
+		<header class="page-header">
+			<a class="back" href="/ny/admin/forlob/{forlobId}">
+				<Icon name="arrow-l" size={14} color="var(--text2)" />
+				<span>{forlobNavn || 'Forløb'}</span>
+			</a>
+			<div class="head-row">
+				<div>
+					<div class="eyebrow">Admin · {forlobNavn || 'Forløb'}</div>
+					<h1>Beskeder fra <em>klienter</em></h1>
+					<p class="page-sub">
+						{forlobSpoergsmaal.length} spørgsmål, {ubesvaretAntal} ubesvarede
+					</p>
+				</div>
+				<button type="button" class="ghost-knap sm" onclick={genindlaes} disabled={loading}>
+					{loading ? 'Henter...' : 'Opdater'}
 				</button>
-			{/each}
-		</div>
-		<input
-			class="klient-soeg"
-			type="search"
-			placeholder="Søg en klient frem (navn eller email)..."
-			bind:value={klientSoeg}
-		/>
-	</section>
+			</div>
+		</header>
 
-	{#if loading}
-		<div class="status-besked">Henter...</div>
-	{:else if fejl}
-		<div class="status-besked fejl">{fejl}</div>
-	{:else if filtreret.length === 0}
-		<div class="status-besked">
-			{forlobSpoergsmaal.length === 0
-				? 'Ingen spørgsmål fra klienter på dette forløb endnu.'
-				: 'Ingen spørgsmål i dette filter.'}
-		</div>
-	{:else}
-		<div class="liste">
-			{#each filtreret as q (q.id)}
-				<article class="spq-kort spq-status-{q.status}">
-					<div class="spq-meta">
-						<span class="spq-pill spq-pill-{q.status}">{STATUS_LABELS[q.status]}</span>
-						<span>·</span>
-						<span class="spq-email">{q.email || 'ukendt'}</span>
-						<span>·</span>
-						<span>{formaterDato(q.oprettet)}</span>
-					</div>
-					<div class="spq-tekst">{q.spoergsmaal}</div>
+		<section class="filter-card">
+			<div class="filter-rad">
+				{#each FILTRE as f (f.id)}
+					<button
+						type="button"
+						class="filter-chip"
+						class:aktiv={aktivtFilter === f.id}
+						onclick={() => (aktivtFilter = f.id)}
+					>
+						{f.label}
+					</button>
+				{/each}
+			</div>
+			<input
+				class="klient-soeg"
+				type="search"
+				placeholder="Søg en klient frem (navn eller email)..."
+				bind:value={klientSoeg}
+			/>
+		</section>
 
-					{#if q.svar && aabenSvarId !== q.id}
-						<div class="svar-vist">
-							<div class="svar-label">Svar fra Linn</div>
-							<div class="svar-tekst">{q.svar}</div>
+		{#if loading}
+			<div class="status-besked">Henter...</div>
+		{:else if fejl}
+			<div class="status-besked fejl">{fejl}</div>
+		{:else if filtreret.length === 0}
+			<div class="status-besked">
+				{forlobSpoergsmaal.length === 0
+					? 'Ingen spørgsmål fra klienter på dette forløb endnu.'
+					: 'Ingen spørgsmål i dette filter.'}
+			</div>
+		{:else}
+			<div class="liste">
+				{#each filtreret as q (q.id)}
+					<article class="spq-kort spq-status-{q.status}">
+						<div class="spq-meta">
+							<span class="spq-pill spq-pill-{q.status}">{STATUS_LABELS[q.status]}</span>
+							<span>·</span>
+							<span class="spq-email">{q.email || 'ukendt'}</span>
+							<span>·</span>
+							<span>{formaterDato(q.oprettet)}</span>
 						</div>
-					{/if}
+						<div class="spq-tekst">{q.spoergsmaal}</div>
 
-					{#if aabenSvarId === q.id}
-						<div class="svar-form">
-							{#if aiUdkast[q.id] && !aiUdkastSkjult[q.id]}
-								{#if aiUdkast[q.id].skip}
-									<div class="ai-boks ai-boks-skip">
-										<div class="ai-boks-head">
-											<span class="ai-label">AI foreslår: spring over</span>
-											<button
-												type="button"
-												class="ai-knap-x"
-												onclick={() => skjulUdkast(q.id)}
-												aria-label="Skjul"
-											>
-												×
-											</button>
+						{#if q.svar && aabenSvarId !== q.id}
+							<div class="svar-vist">
+								<div class="svar-label">Svar fra Linn</div>
+								<div class="svar-tekst">{q.svar}</div>
+							</div>
+						{/if}
+
+						{#if aabenSvarId === q.id}
+							<div class="svar-form">
+								{#if aiUdkast[q.id] && !aiUdkastSkjult[q.id]}
+									{#if aiUdkast[q.id].skip}
+										<div class="ai-boks ai-boks-skip">
+											<div class="ai-boks-head">
+												<span class="ai-label">AI foreslår: spring over</span>
+												<button
+													type="button"
+													class="ai-knap-x"
+													onclick={() => skjulUdkast(q.id)}
+													aria-label="Skjul"
+												>
+													×
+												</button>
+											</div>
+											<div class="ai-skip-tekst">
+												{aiUdkast[q.id].skipBegrundelse ??
+													'Beskeden kræver ikke nødvendigvis et substantielt svar.'}
+											</div>
+											<div class="ai-knapper">
+												<button
+													type="button"
+													class="ghost-knap sm"
+													onclick={() => void genererUdkast(q, true)}
+													disabled={aiUdkastLoader[q.id]}
+												>
+													{aiUdkastLoader[q.id] ? 'Genererer...' : 'Generér alligevel'}
+												</button>
+											</div>
 										</div>
-										<div class="ai-skip-tekst">
-											{aiUdkast[q.id].skipBegrundelse ??
-												'Beskeden kræver ikke nødvendigvis et substantielt svar.'}
-										</div>
-										<div class="ai-knapper">
-											<button
-												type="button"
-												class="ghost-knap sm"
-												onclick={() => void genererUdkast(q, true)}
-												disabled={aiUdkastLoader[q.id]}
-											>
-												{aiUdkastLoader[q.id] ? 'Genererer...' : 'Generér alligevel'}
-											</button>
-										</div>
-									</div>
-								{:else}
-									<div class="ai-boks">
-										<div class="ai-boks-head">
-											<span class="ai-label">AI-udkast</span>
-											{#if aiUdkast[q.id].lavSikkerhed}
-												<span class="ai-badge-lav">Lav sikkerhed</span>
+									{:else}
+										<div class="ai-boks">
+											<div class="ai-boks-head">
+												<span class="ai-label">AI-udkast</span>
+												{#if aiUdkast[q.id].lavSikkerhed}
+													<span class="ai-badge-lav">Lav sikkerhed</span>
+												{/if}
+												<button
+													type="button"
+													class="ai-knap-x"
+													onclick={() => skjulUdkast(q.id)}
+													aria-label="Skjul"
+												>
+													×
+												</button>
+											</div>
+											<div class="ai-udkast-tekst">{aiUdkast[q.id].udkast}</div>
+											{#if aiUdkast[q.id].grundlag}
+												<UdkastGrundlagVisning grundlag={aiUdkast[q.id].grundlag} />
 											{/if}
-											<button
-												type="button"
-												class="ai-knap-x"
-												onclick={() => skjulUdkast(q.id)}
-												aria-label="Skjul"
-											>
-												×
-											</button>
+											<div class="ai-knapper">
+												<button
+													type="button"
+													class="primary-knap sm"
+													onclick={() => brugUdkast(q.id)}
+												>
+													Brug udkast
+												</button>
+												<button
+													type="button"
+													class="ghost-knap sm"
+													onclick={() => void genererUdkast(q)}
+													disabled={aiUdkastLoader[q.id]}
+												>
+													{aiUdkastLoader[q.id] ? 'Genererer...' : 'Generér igen'}
+												</button>
+											</div>
 										</div>
-										<div class="ai-udkast-tekst">{aiUdkast[q.id].udkast}</div>
-										{#if aiUdkast[q.id].grundlag}
-											<UdkastGrundlagVisning grundlag={aiUdkast[q.id].grundlag} />
-										{/if}
-										<div class="ai-knapper">
-											<button
-												type="button"
-												class="primary-knap sm"
-												onclick={() => brugUdkast(q.id)}
-											>
-												Brug udkast
-											</button>
-											<button
-												type="button"
-												class="ghost-knap sm"
-												onclick={() => void genererUdkast(q)}
-												disabled={aiUdkastLoader[q.id]}
-											>
-												{aiUdkastLoader[q.id] ? 'Genererer...' : 'Generér igen'}
-											</button>
-										</div>
-									</div>
+									{/if}
 								{/if}
-							{/if}
 
-							{#if aiUdkastFejl[q.id]}
-								<div class="ai-fejl">{aiUdkastFejl[q.id]}</div>
-							{/if}
+								{#if aiUdkastFejl[q.id]}
+									<div class="ai-fejl">{aiUdkastFejl[q.id]}</div>
+								{/if}
 
-							<label class="svar-label" for="svar-{q.id}">Svar til klienten</label>
-							<textarea
-								id="svar-{q.id}"
-								class="svar-input"
-								rows="4"
-								placeholder="Skriv dit svar her..."
-								bind:value={svarUdkast[q.id]}
-								disabled={svarSender === q.id}
-							></textarea>
-							<div class="svar-knapper">
-								<button
-									type="button"
-									class="primary-knap sm"
-									onclick={() => sendSvar(q.id)}
+								<label class="svar-label" for="svar-{q.id}">Svar til klienten</label>
+								<textarea
+									id="svar-{q.id}"
+									class="svar-input"
+									rows="4"
+									placeholder="Skriv dit svar her..."
+									bind:value={svarUdkast[q.id]}
 									disabled={svarSender === q.id}
-								>
-									{svarSender === q.id ? 'Sender...' : q.svar ? 'Opdater svar' : 'Send svar'}
-								</button>
-								{#if !aiUdkast[q.id] && !aiUdkastLoader[q.id]}
+								></textarea>
+								<div class="svar-knapper">
 									<button
 										type="button"
-										class="ghost-knap sm ai-trigger"
-										onclick={() => void genererUdkast(q)}
+										class="primary-knap sm"
+										onclick={() => sendSvar(q.id)}
 										disabled={svarSender === q.id}
 									>
-										<span class="ai-trigger-sparkle">✦</span> Generér AI-udkast
+										{svarSender === q.id ? 'Sender...' : q.svar ? 'Opdater svar' : 'Send svar'}
 									</button>
-								{:else if aiUdkastLoader[q.id]}
-									<button type="button" class="ghost-knap sm" disabled> AI tænker... </button>
-								{:else if aiUdkastSkjult[q.id]}
+									{#if !aiUdkast[q.id] && !aiUdkastLoader[q.id]}
+										<button
+											type="button"
+											class="ghost-knap sm ai-trigger"
+											onclick={() => void genererUdkast(q)}
+											disabled={svarSender === q.id}
+										>
+											<span class="ai-trigger-sparkle">✦</span> Generér AI-udkast
+										</button>
+									{:else if aiUdkastLoader[q.id]}
+										<button type="button" class="ghost-knap sm" disabled> AI tænker... </button>
+									{:else if aiUdkastSkjult[q.id]}
+										<button
+											type="button"
+											class="ghost-knap sm"
+											onclick={() => (aiUdkastSkjult[q.id] = false)}
+										>
+											Vis AI-udkast igen
+										</button>
+									{/if}
 									<button
 										type="button"
 										class="ghost-knap sm"
-										onclick={() => (aiUdkastSkjult[q.id] = false)}
+										onclick={lukSvar}
+										disabled={svarSender === q.id}
 									>
-										Vis AI-udkast igen
+										Annullér
+									</button>
+								</div>
+							</div>
+						{/if}
+
+						<div class="spq-knapper">
+							{#if aabenSvarId !== q.id}
+								<button type="button" class="primary-knap sm" onclick={() => aabnSvar(q)}>
+									{q.svar ? 'Rediger svar' : 'Svar klienten'}
+								</button>
+								{#if !q.svar}
+									<button
+										type="button"
+										class="ghost-knap sm ai-trigger"
+										onclick={() => void aabnSvarOgGenerer(q)}
+									>
+										<span class="ai-trigger-sparkle">✦</span> AI-udkast
 									</button>
 								{/if}
+							{/if}
+							{#if q.status !== 'laest'}
 								<button
 									type="button"
 									class="ghost-knap sm"
-									onclick={lukSvar}
-									disabled={svarSender === q.id}
+									onclick={() => aendreStatus(q.id, 'laest')}
 								>
-									Annullér
-								</button>
-							</div>
-						</div>
-					{/if}
-
-					<div class="spq-knapper">
-						{#if aabenSvarId !== q.id}
-							<button type="button" class="primary-knap sm" onclick={() => aabnSvar(q)}>
-								{q.svar ? 'Rediger svar' : 'Svar klienten'}
-							</button>
-							{#if !q.svar}
-								<button
-									type="button"
-									class="ghost-knap sm ai-trigger"
-									onclick={() => void aabnSvarOgGenerer(q)}
-								>
-									<span class="ai-trigger-sparkle">✦</span> AI-udkast
+									Markér som læst
 								</button>
 							{/if}
-						{/if}
-						{#if q.status !== 'laest'}
+							{#if q.status !== 'besvaret'}
+								<button
+									type="button"
+									class="ghost-knap sm"
+									onclick={() => aendreStatus(q.id, 'besvaret')}
+								>
+									Markér som besvaret
+								</button>
+							{/if}
+							{#if q.status !== 'brugt'}
+								<button
+									type="button"
+									class="ghost-knap sm"
+									onclick={() => aendreStatus(q.id, 'brugt')}
+								>
+									Markér som brugt
+								</button>
+							{/if}
 							<button
 								type="button"
-								class="ghost-knap sm"
-								onclick={() => aendreStatus(q.id, 'laest')}
+								class="ghost-knap sm danger"
+								onclick={() => aabnSletBekraeft(q.id)}
 							>
-								Markér som læst
+								Slet
 							</button>
-						{/if}
-						{#if q.status !== 'besvaret'}
-							<button
-								type="button"
-								class="ghost-knap sm"
-								onclick={() => aendreStatus(q.id, 'besvaret')}
-							>
-								Markér som besvaret
-							</button>
-						{/if}
-						{#if q.status !== 'brugt'}
-							<button
-								type="button"
-								class="ghost-knap sm"
-								onclick={() => aendreStatus(q.id, 'brugt')}
-							>
-								Markér som brugt
-							</button>
-						{/if}
-						<button
-							type="button"
-							class="ghost-knap sm danger"
-							onclick={() => aabnSletBekraeft(q.id)}
-						>
-							Slet
-						</button>
-					</div>
-				</article>
-			{/each}
-		</div>
-	{/if}
+						</div>
+					</article>
+				{/each}
+			</div>
+		{/if}
 
-	{#if toast}
-		<div class="toast" role="status">{toast}</div>
-	{/if}
-</div>
+		{#if toast}
+			<div class="toast" role="status">{toast}</div>
+		{/if}
+	</div>
 
-{#if sletId}
-	<BekraeftModal
-		titel="Slet spørgsmålet?"
-		beskrivelse="Spørgsmålet slettes permanent og kan ikke gendannes."
-		bekraeftTekst="Slet"
-		destruktiv
-		arbejder={sletter}
-		onBekraeft={() => void slet()}
-		onAnnuller={() => (sletId = null)}
-	/>
-{/if}
+	{#if sletId}
+		<BekraeftModal
+			titel="Slet spørgsmålet?"
+			beskrivelse="Spørgsmålet slettes permanent og kan ikke gendannes."
+			bekraeftTekst="Slet"
+			destruktiv
+			arbejder={sletter}
+			onBekraeft={() => void slet()}
+			onAnnuller={() => (sletId = null)}
+		/>
+	{/if}
 {/if}
 
 <style>

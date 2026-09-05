@@ -62,7 +62,7 @@
 	import { visUdvidet3 } from '$lib/content/naeringAdgang3';
 	import { gemTekstSkala3, markerOnboardet3 } from '$lib/firestore/onboarding3';
 	import UdstyrValg from '$lib/components/ny/UdstyrValg.svelte';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -281,7 +281,7 @@
 
 <div class="ny-pad ob-side">
 	{#if henter}
-		<div class="adm-venter"><Ventetegn variant="lille" /><span>Et øjeblik</span></div>
+		<Venter tekst="Et øjeblik, jeg gør klar" />
 	{:else if faerdig}
 		<!-- Slut aldrig paa en tak-skaerm. Ét konkret foerste skridt er
 		     forskellen paa at have set appen og at have brugt den. -->
@@ -353,9 +353,7 @@
 			{/if}
 		{:else if aktueltSpoergsmaal === 'hjemmeskaerm'}
 			<h1 class="ob-titel">Læg appen på din hjemmeskærm</h1>
-			<p class="ob-under">
-				Så åbner den med ét tryk, og jeg kan sige til når der sker noget.
-			</p>
+			<p class="ob-under">Så åbner den med ét tryk, og jeg kan sige til når der sker noget.</p>
 			<div class="ob-valg">
 				{#each hjemmeskaerm.trin as t, i (t)}
 					<div class="ob-raekke tal"><span><b>{i + 1}.</b> {t}</span></div>
@@ -369,9 +367,7 @@
 			     galt den dag et rigtigt svar aldrig kom frem. -->
 			{#if notiSvar === 'venter'}
 				<h1 class="ob-titel">Må jeg sige til?</h1>
-				<p class="ob-under">
-					Så hører du fra mig når der er noget, også når appen er lukket.
-				</p>
+				<p class="ob-under">Så hører du fra mig når der er noget, også når appen er lukket.</p>
 				<div class="ob-valg">
 					<div class="ob-raekke"><span>Når jeg svarer på dit spørgsmål</span></div>
 					<div class="ob-raekke"><span>Når dagen er klar</span></div>

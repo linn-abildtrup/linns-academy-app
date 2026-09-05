@@ -67,7 +67,11 @@
 	const antalSkaeve = $derived(varer.filter(skaev).length);
 
 	async function fjern(v: Vare3) {
-		if (!confirm(`Fjern "${v.name}" fra søgningen? Den bliver stående i de måltider hvor den er brugt.`))
+		if (
+			!confirm(
+				`Fjern "${v.name}" fra søgningen? Den bliver stående i de måltider hvor den er brugt.`
+			)
+		)
 			return;
 		fjerner = v.id;
 		try {
@@ -90,9 +94,10 @@
 	{:else}
 		<h1 class="sc-h">Scannede varer</h1>
 		<p class="sc-p">
-			Kunderne har fotograferet varedeklarationen, og varerne er delt med alle med det
-			samme. <b>Du godkender ikke, du fjerner.</b> Fjerner du en, forsvinder den fra
-			søgningen hos alle, men bliver stående i de måltider hvor den er brugt.
+			Kunderne har fotograferet varedeklarationen, og varerne er delt med alle med det samme. <b
+				>Du godkender ikke, du fjerner.</b
+			> Fjerner du en, forsvinder den fra søgningen hos alle, men bliver stående i de måltider hvor den
+			er brugt.
 		</p>
 
 		{#if henter}
@@ -141,9 +146,15 @@
 								{/if}
 							</div>
 							<div class="sc-meta">
-												{#if !(v as { billedeUrl?: string }).billedeUrl}<span class="sc-uden">uden billede</span> · {/if}
-								{#if v.barcode}{v.barcode} · {/if}
-								scannet {new Date((v as { scannetDen?: string }).scannetDen ?? '').toLocaleDateString('da-DK') || 'ukendt dato'}
+								{#if !(v as { billedeUrl?: string }).billedeUrl}<span class="sc-uden"
+										>uden billede</span
+									> ·
+								{/if}
+								{#if v.barcode}{v.barcode} ·
+								{/if}
+								scannet {new Date(
+									(v as { scannetDen?: string }).scannetDen ?? ''
+								).toLocaleDateString('da-DK') || 'ukendt dato'}
 							</div>
 							{#if skaev(v)}
 								<div class="sc-advarsel-linje">

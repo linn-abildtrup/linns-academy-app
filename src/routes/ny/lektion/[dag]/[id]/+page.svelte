@@ -29,7 +29,7 @@
 	import { erSet3, setNoegler3 } from '$lib/content/lektionSet3';
 	import { gemLektionNote, hentLektionNote } from '$lib/firestore/lektionNoter';
 	import Lydafspiller from '$lib/components/ny/Lydafspiller.svelte';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 	import LektionNote from '$lib/components/ny/LektionNote.svelte';
 
@@ -209,10 +209,7 @@
 	</header>
 
 	{#if henter}
-		<div class="lektion-venter">
-			<Ventetegn variant="lille" />
-			<span>Henter lektionen</span>
-		</div>
+		<Venter tekst="Henter lektionen" />
 	{:else if ikkeFundet || !lektion}
 		<div class="kort rolig">
 			Lektionen findes ikke længere, eller den er ikke åben endnu.

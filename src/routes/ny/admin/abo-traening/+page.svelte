@@ -212,7 +212,12 @@
 
 		<div class="at-faner">
 			{#each [['basis', 'Basis'], ['premium', 'Premium']] as [id, navn] (id)}
-				<button type="button" class="at-chip" class:paa={type === id} onclick={() => (type = id as Type)}>
+				<button
+					type="button"
+					class="at-chip"
+					class:paa={type === id}
+					onclick={() => (type = id as Type)}
+				>
 					{navn}
 				</button>
 			{/each}
@@ -309,16 +314,16 @@
 					{Math.max(
 						1,
 						Math.round((config.antalOvelser * config.sets * (config.workSec + config.restSec)) / 60)
-					)} minutter om dagen. Indstillingerne bliver gemt på programmet, så næste gang starter du
-					samme sted.
+					)} minutter om dagen. Indstillingerne bliver gemt på programmet, så næste gang starter du samme
+					sted.
 				</p>
 
 				{#if bekraefter}
 					<!-- Der bekraeftes, fordi ALLE dagene bliver skrevet over. Har
 					     du rettet en enkelt dag i haanden, er den vaek bagefter. -->
 					<div class="at-advarsel">
-						Alle {ABO_MIKROTRAENING_DAGE} dage bliver lavet om. Har du rettet en enkelt dag i hånden, forsvinder
-						den.
+						Alle {ABO_MIKROTRAENING_DAGE} dage bliver lavet om. Har du rettet en enkelt dag i hånden,
+						forsvinder den.
 					</div>
 					<div class="at-knapper">
 						<AdmKnap slags="fare" disabled={arbejder} onclick={generer}>

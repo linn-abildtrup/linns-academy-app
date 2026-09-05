@@ -401,8 +401,7 @@
 			guideDialogType = 'audio';
 		} catch (err) {
 			console.error(err);
-			guideDialogFejl =
-				err instanceof Error ? `Upload fejlede: ${err.message}` : 'Upload fejlede.';
+			guideDialogFejl = err instanceof Error ? `Upload fejlede: ${err.message}` : 'Upload fejlede.';
 		} finally {
 			guideDialogUploaderLyd = false;
 			input.value = '';
@@ -474,397 +473,469 @@
 {#if !maaVaereHer}
 	<p class="fu-kun">Siden er kun for admin.</p>
 {:else}
-<div class="page">
-	<header class="page-header">
-		<a class="back" href="/ny/admin/forlob/{forlobId}">
-			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>Forløb</span>
-		</a>
-		<div class="eyebrow">Admin · Bibliotek</div>
-		<h1>Bibliotek</h1>
-		<p class="page-sub">
-			Opret kategorier og indhold til FAQ og links for dette forløb.
-		</p>
-	</header>
-
-	<div class="tabs">
-		<button
-			class="tab-knap"
-			class:aktiv={aktivTab === 'faq'}
-			type="button"
-			onclick={() => skiftTab('faq')}
-		>
-			FAQ
-		</button>
-		<button
-			class="tab-knap"
-			class:aktiv={aktivTab === 'guides'}
-			type="button"
-			onclick={() => skiftTab('guides')}
-		>
-			Links
-		</button>
-	</div>
-
-	{#if loading}
-		<div class="status-besked">Henter...</div>
-	{:else if fejl}
-		<div class="status-besked fejl">{fejl}</div>
-	{:else if aktivTab === 'faq'}
-		<div class="form-card">
-			<div class="form-titel">Ny kategori</div>
-			<div class="ny-kat-rad">
-				<input
-					type="text"
-					placeholder="Navn på ny kategori..."
-					bind:value={nyFaqKatNavn}
-					maxlength="60"
-					disabled={opretterKategori}
-					onkeydown={(e) => e.key === 'Enter' && tilfoejFaqKategori()}
-				/>
-				<button
-					class="form-knap primary"
-					type="button"
-					onclick={tilfoejFaqKategori}
-					disabled={!nyFaqKatNavn.trim() || opretterKategori}
-				>
-					+ Tilføj
-				</button>
-			</div>
-		</div>
-
-		{#if sorteredeFaqKats.length === 0}
-			<div class="status-besked">
-				Ingen kategorier endnu. Opret den første ovenfor.
-			</div>
-		{:else}
-			<div class="kat-liste">
-				{#each sorteredeFaqKats as kat (kat.id)}
-					{@const t = faqTael(kat.id)}
-					<section class="kat-card">
-						<header class="kat-head">
-							{#if redigererKategoriId === kat.id}
-								<input
-									type="text"
-									class="kat-edit-input"
-									bind:value={redigeringNavn}
-									maxlength="60"
-									onkeydown={(e) => {
-										if (e.key === 'Enter') gemKategoriNavn();
-										if (e.key === 'Escape') annullerRedigerKategori();
-									}}
-								/>
-								<div class="kat-head-knapper">
-									<button class="ikon-knap" type="button" title="Gem" onclick={gemKategoriNavn} aria-label="Gem">
-										<Icon name="check" size={14} color="var(--sage)" />
-									</button>
-									<button class="ikon-knap" type="button" title="Annuller" onclick={annullerRedigerKategori} aria-label="Annuller">✕</button>
-								</div>
-							{:else}
-								<h2 class="kat-navn">{kat.navn}</h2>
-								<span class="kat-tael">{t.udgivet}/{t.total}</span>
-								<div class="kat-head-knapper">
-									<button class="ikon-knap" type="button" title="Omdøb" onclick={() => startRedigerKategori(kat.navn, kat.id)} aria-label="Omdøb">✎</button>
-									<button
-										class="ikon-knap fare"
-										type="button"
-										title={bekraeftKategoriId === kat.id ? 'Klik igen for at bekræfte' : 'Slet kategori'}
-										onclick={() => bekraeftSletKategori(kat.id)}
-										aria-label="Slet"
-									>
-										{bekraeftKategoriId === kat.id ? '!' : '×'}
-									</button>
-								</div>
-							{/if}
-						</header>
-
-						{#if faqForKategori(kat.id).length > 0}
-							<div class="item-liste">
-								{#each faqForKategori(kat.id) as it (it.id)}
-									<button class="item-row" type="button" onclick={() => aabnRedigerFaq(it)}>
-										<span class="item-q">{it.spoergsmaal}</span>
-										{#if !it.udgivet}
-											<span class="badge kladde">Kladde</span>
-										{:else}
-											<span class="badge udgivet">Udgivet</span>
-										{/if}
-									</button>
-								{/each}
-							</div>
-						{/if}
-
-						<button
-							class="form-knap ghost"
-							type="button"
-							onclick={() => aabnNytFaq(kat.id)}
-							style="border-style: dashed;"
-						>
-							+ Nyt spørgsmål
-						</button>
-					</section>
-				{/each}
-			</div>
-		{/if}
-	{:else}
-		<div class="form-card">
-			<div class="form-titel">Ny kategori</div>
-			<div class="ny-kat-rad">
-				<input
-					type="text"
-					placeholder="Navn på ny kategori (fx Kost, Træning, Søvn)..."
-					bind:value={nyGuideKatNavn}
-					maxlength="60"
-					disabled={opretterKategori}
-					onkeydown={(e) => e.key === 'Enter' && tilfoejGuideKategori()}
-				/>
-				<button
-					class="form-knap primary"
-					type="button"
-					onclick={tilfoejGuideKategori}
-					disabled={!nyGuideKatNavn.trim() || opretterKategori}
-				>
-					+ Tilføj
-				</button>
-			</div>
-		</div>
-
-		{#if sorteredeGuideKats.length === 0}
-			<div class="status-besked">
-				Ingen kategorier endnu. Opret den første ovenfor.
-			</div>
-		{:else}
-			<div class="kat-liste">
-				{#each sorteredeGuideKats as kat (kat.id)}
-					{@const t = guideTael(kat.id)}
-					<section class="kat-card">
-						<header class="kat-head">
-							{#if redigererKategoriId === kat.id}
-								<input
-									type="text"
-									class="kat-edit-input"
-									bind:value={redigeringNavn}
-									maxlength="60"
-									onkeydown={(e) => {
-										if (e.key === 'Enter') gemKategoriNavn();
-										if (e.key === 'Escape') annullerRedigerKategori();
-									}}
-								/>
-								<div class="kat-head-knapper">
-									<button class="ikon-knap" type="button" title="Gem" onclick={gemKategoriNavn} aria-label="Gem">
-										<Icon name="check" size={14} color="var(--sage)" />
-									</button>
-									<button class="ikon-knap" type="button" title="Annuller" onclick={annullerRedigerKategori} aria-label="Annuller">✕</button>
-								</div>
-							{:else}
-								<h2 class="kat-navn">{kat.navn}</h2>
-								<span class="kat-tael">{t.udgivet}/{t.total}</span>
-								<div class="kat-head-knapper">
-									<button class="ikon-knap" type="button" title="Omdøb" onclick={() => startRedigerKategori(kat.navn, kat.id)} aria-label="Omdøb">✎</button>
-									<button
-										class="ikon-knap fare"
-										type="button"
-										title={bekraeftKategoriId === kat.id ? 'Klik igen for at bekræfte' : 'Slet kategori'}
-										onclick={() => bekraeftSletKategori(kat.id)}
-										aria-label="Slet"
-									>
-										{bekraeftKategoriId === kat.id ? '!' : '×'}
-									</button>
-								</div>
-							{/if}
-						</header>
-
-						{#if guidesForKategori(kat.id).length > 0}
-							<div class="item-liste">
-								{#each guidesForKategori(kat.id) as it (it.id)}
-									<button class="item-row" type="button" onclick={() => aabnRedigerGuide(it)}>
-										<div class="item-info">
-											<div class="item-q">{it.titel}</div>
-											<div class="item-meta">{GUIDE_TYPE_LABELS[it.type]}{it.dato ? ' · ' + it.dato : ''}</div>
-										</div>
-										{#if !it.udgivet}
-											<span class="badge kladde">Kladde</span>
-										{:else}
-											<span class="badge udgivet">Udgivet</span>
-										{/if}
-									</button>
-								{/each}
-							</div>
-						{/if}
-
-						<button
-							class="form-knap ghost"
-							type="button"
-							onclick={() => aabnNytGuide(kat.id)}
-							style="border-style: dashed;"
-						>
-							+ Nyt link
-						</button>
-					</section>
-				{/each}
-			</div>
-		{/if}
-	{/if}
-</div>
-
-{#if viserFaqDialog}
-	<div
-		class="dialog-overlay"
-		role="button"
-		tabindex="0"
-		onclick={lukFaqDialog}
-		onkeydown={(e) => e.key === 'Escape' && lukFaqDialog()}
-	></div>
-	<div class="dialog" role="dialog" aria-modal="true">
-		<header class="dialog-head">
-			<div class="form-titel">{faqDialogItemId ? 'Rediger spørgsmål' : 'Nyt spørgsmål'}</div>
-			<button class="ikon-knap" type="button" onclick={lukFaqDialog} aria-label="Luk">×</button>
+	<div class="page">
+		<header class="page-header">
+			<a class="back" href="/ny/admin/forlob/{forlobId}">
+				<Icon name="arrow-l" size={14} color="var(--text2)" />
+				<span>Forløb</span>
+			</a>
+			<div class="eyebrow">Admin · Bibliotek</div>
+			<h1>Bibliotek</h1>
+			<p class="page-sub">Opret kategorier og indhold til FAQ og links for dette forløb.</p>
 		</header>
 
-		<label class="felt">
-			<span class="felt-label">Kategori</span>
-			<select bind:value={faqDialogKategoriId} disabled={faqDialogGemmer}>
-				{#each sorteredeFaqKats as kat (kat.id)}
-					<option value={kat.id}>{kat.navn}</option>
-				{/each}
-			</select>
-		</label>
-
-		<label class="felt">
-			<span class="felt-label">Spørgsmål</span>
-			<input type="text" bind:value={faqDialogSpoergsmaal} maxlength="200" disabled={faqDialogGemmer} />
-		</label>
-
-		<label class="felt">
-			<span class="felt-label">Svar</span>
-			<textarea bind:value={faqDialogSvar} rows="6" disabled={faqDialogGemmer}></textarea>
-		</label>
-
-		<label class="checkbox-rad">
-			<input type="checkbox" bind:checked={faqDialogUdgivet} disabled={faqDialogGemmer} />
-			<span>Udgivet (synligt for klienterne)</span>
-		</label>
-
-		{#if faqDialogFejl}
-			<div class="fejl-besked">{faqDialogFejl}</div>
-		{/if}
-
-		<div class="dialog-knapper">
-			{#if faqDialogItemId}
-				<button class="form-knap danger" type="button" onclick={sletFaqDialogItem} disabled={faqDialogGemmer}>Slet</button>
-			{/if}
-			<button class="form-knap primary" type="button" onclick={gemFaq} disabled={faqDialogGemmer}>
-				{faqDialogGemmer ? 'Gemmer...' : 'Gem'}
+		<div class="tabs">
+			<button
+				class="tab-knap"
+				class:aktiv={aktivTab === 'faq'}
+				type="button"
+				onclick={() => skiftTab('faq')}
+			>
+				FAQ
+			</button>
+			<button
+				class="tab-knap"
+				class:aktiv={aktivTab === 'guides'}
+				type="button"
+				onclick={() => skiftTab('guides')}
+			>
+				Links
 			</button>
 		</div>
-	</div>
-{/if}
 
-{#if viserGuideDialog}
-	<div
-		class="dialog-overlay"
-		role="button"
-		tabindex="0"
-		onclick={lukGuideDialog}
-		onkeydown={(e) => e.key === 'Escape' && lukGuideDialog()}
-	></div>
-	<div class="dialog" role="dialog" aria-modal="true">
-		<header class="dialog-head">
-			<div class="form-titel">{guideDialogItemId ? 'Rediger link' : 'Nyt link'}</div>
-			<button class="ikon-knap" type="button" onclick={lukGuideDialog} aria-label="Luk">×</button>
-		</header>
-
-		<label class="felt">
-			<span class="felt-label">Kategori</span>
-			<select bind:value={guideDialogKategoriId} disabled={guideDialogGemmer}>
-				{#each sorteredeGuideKats as kat (kat.id)}
-					<option value={kat.id}>{kat.navn}</option>
-				{/each}
-			</select>
-		</label>
-
-		<label class="felt">
-			<span class="felt-label">URL</span>
-			<input
-				type="url"
-				bind:value={guideDialogUrl}
-				placeholder="https://..."
-				disabled={guideDialogGemmer}
-				onblur={autoDetektType}
-			/>
-			<div class="html-upload-rad">
-				<label class="html-upload-knap" class:disabled={guideDialogGemmer || guideDialogUploaderHtml || guideDialogUploaderLyd}>
-					{guideDialogUploaderHtml ? 'Uploader...' : '📎 HTML-fil'}
+		{#if loading}
+			<div class="status-besked">Henter...</div>
+		{:else if fejl}
+			<div class="status-besked fejl">{fejl}</div>
+		{:else if aktivTab === 'faq'}
+			<div class="form-card">
+				<div class="form-titel">Ny kategori</div>
+				<div class="ny-kat-rad">
 					<input
-						type="file"
-						accept=".html,.htm,text/html"
-						onchange={haandterGuideHtmlUpload}
-						disabled={guideDialogGemmer || guideDialogUploaderHtml || guideDialogUploaderLyd}
+						type="text"
+						placeholder="Navn på ny kategori..."
+						bind:value={nyFaqKatNavn}
+						maxlength="60"
+						disabled={opretterKategori}
+						onkeydown={(e) => e.key === 'Enter' && tilfoejFaqKategori()}
 					/>
-				</label>
-				<label class="html-upload-knap" class:disabled={guideDialogGemmer || guideDialogUploaderHtml || guideDialogUploaderLyd}>
-					{guideDialogUploaderLyd ? 'Uploader...' : '🎵 Lydfil'}
-					<input
-						type="file"
-						accept=".mp3,.m4a,.wav,.aac,.ogg,audio/*"
-						onchange={haandterGuideLydUpload}
-						disabled={guideDialogGemmer || guideDialogUploaderHtml || guideDialogUploaderLyd}
-					/>
-				</label>
-				<span class="html-upload-hint">eller indsæt URL ovenfor</span>
-			</div>
-		</label>
-
-		<div class="felt">
-			<span class="felt-label">Type</span>
-			<div class="type-chips">
-				{#each GUIDE_TYPER as t (t)}
 					<button
-						class="type-chip"
-						class:aktiv={guideDialogType === t}
+						class="form-knap primary"
 						type="button"
-						onclick={() => (guideDialogType = t)}
-						disabled={guideDialogGemmer}
+						onclick={tilfoejFaqKategori}
+						disabled={!nyFaqKatNavn.trim() || opretterKategori}
 					>
-						{GUIDE_TYPE_LABELS[t]}
+						+ Tilføj
 					</button>
-				{/each}
+				</div>
+			</div>
+
+			{#if sorteredeFaqKats.length === 0}
+				<div class="status-besked">Ingen kategorier endnu. Opret den første ovenfor.</div>
+			{:else}
+				<div class="kat-liste">
+					{#each sorteredeFaqKats as kat (kat.id)}
+						{@const t = faqTael(kat.id)}
+						<section class="kat-card">
+							<header class="kat-head">
+								{#if redigererKategoriId === kat.id}
+									<input
+										type="text"
+										class="kat-edit-input"
+										bind:value={redigeringNavn}
+										maxlength="60"
+										onkeydown={(e) => {
+											if (e.key === 'Enter') gemKategoriNavn();
+											if (e.key === 'Escape') annullerRedigerKategori();
+										}}
+									/>
+									<div class="kat-head-knapper">
+										<button
+											class="ikon-knap"
+											type="button"
+											title="Gem"
+											onclick={gemKategoriNavn}
+											aria-label="Gem"
+										>
+											<Icon name="check" size={14} color="var(--sage)" />
+										</button>
+										<button
+											class="ikon-knap"
+											type="button"
+											title="Annuller"
+											onclick={annullerRedigerKategori}
+											aria-label="Annuller">✕</button
+										>
+									</div>
+								{:else}
+									<h2 class="kat-navn">{kat.navn}</h2>
+									<span class="kat-tael">{t.udgivet}/{t.total}</span>
+									<div class="kat-head-knapper">
+										<button
+											class="ikon-knap"
+											type="button"
+											title="Omdøb"
+											onclick={() => startRedigerKategori(kat.navn, kat.id)}
+											aria-label="Omdøb">✎</button
+										>
+										<button
+											class="ikon-knap fare"
+											type="button"
+											title={bekraeftKategoriId === kat.id
+												? 'Klik igen for at bekræfte'
+												: 'Slet kategori'}
+											onclick={() => bekraeftSletKategori(kat.id)}
+											aria-label="Slet"
+										>
+											{bekraeftKategoriId === kat.id ? '!' : '×'}
+										</button>
+									</div>
+								{/if}
+							</header>
+
+							{#if faqForKategori(kat.id).length > 0}
+								<div class="item-liste">
+									{#each faqForKategori(kat.id) as it (it.id)}
+										<button class="item-row" type="button" onclick={() => aabnRedigerFaq(it)}>
+											<span class="item-q">{it.spoergsmaal}</span>
+											{#if !it.udgivet}
+												<span class="badge kladde">Kladde</span>
+											{:else}
+												<span class="badge udgivet">Udgivet</span>
+											{/if}
+										</button>
+									{/each}
+								</div>
+							{/if}
+
+							<button
+								class="form-knap ghost"
+								type="button"
+								onclick={() => aabnNytFaq(kat.id)}
+								style="border-style: dashed;"
+							>
+								+ Nyt spørgsmål
+							</button>
+						</section>
+					{/each}
+				</div>
+			{/if}
+		{:else}
+			<div class="form-card">
+				<div class="form-titel">Ny kategori</div>
+				<div class="ny-kat-rad">
+					<input
+						type="text"
+						placeholder="Navn på ny kategori (fx Kost, Træning, Søvn)..."
+						bind:value={nyGuideKatNavn}
+						maxlength="60"
+						disabled={opretterKategori}
+						onkeydown={(e) => e.key === 'Enter' && tilfoejGuideKategori()}
+					/>
+					<button
+						class="form-knap primary"
+						type="button"
+						onclick={tilfoejGuideKategori}
+						disabled={!nyGuideKatNavn.trim() || opretterKategori}
+					>
+						+ Tilføj
+					</button>
+				</div>
+			</div>
+
+			{#if sorteredeGuideKats.length === 0}
+				<div class="status-besked">Ingen kategorier endnu. Opret den første ovenfor.</div>
+			{:else}
+				<div class="kat-liste">
+					{#each sorteredeGuideKats as kat (kat.id)}
+						{@const t = guideTael(kat.id)}
+						<section class="kat-card">
+							<header class="kat-head">
+								{#if redigererKategoriId === kat.id}
+									<input
+										type="text"
+										class="kat-edit-input"
+										bind:value={redigeringNavn}
+										maxlength="60"
+										onkeydown={(e) => {
+											if (e.key === 'Enter') gemKategoriNavn();
+											if (e.key === 'Escape') annullerRedigerKategori();
+										}}
+									/>
+									<div class="kat-head-knapper">
+										<button
+											class="ikon-knap"
+											type="button"
+											title="Gem"
+											onclick={gemKategoriNavn}
+											aria-label="Gem"
+										>
+											<Icon name="check" size={14} color="var(--sage)" />
+										</button>
+										<button
+											class="ikon-knap"
+											type="button"
+											title="Annuller"
+											onclick={annullerRedigerKategori}
+											aria-label="Annuller">✕</button
+										>
+									</div>
+								{:else}
+									<h2 class="kat-navn">{kat.navn}</h2>
+									<span class="kat-tael">{t.udgivet}/{t.total}</span>
+									<div class="kat-head-knapper">
+										<button
+											class="ikon-knap"
+											type="button"
+											title="Omdøb"
+											onclick={() => startRedigerKategori(kat.navn, kat.id)}
+											aria-label="Omdøb">✎</button
+										>
+										<button
+											class="ikon-knap fare"
+											type="button"
+											title={bekraeftKategoriId === kat.id
+												? 'Klik igen for at bekræfte'
+												: 'Slet kategori'}
+											onclick={() => bekraeftSletKategori(kat.id)}
+											aria-label="Slet"
+										>
+											{bekraeftKategoriId === kat.id ? '!' : '×'}
+										</button>
+									</div>
+								{/if}
+							</header>
+
+							{#if guidesForKategori(kat.id).length > 0}
+								<div class="item-liste">
+									{#each guidesForKategori(kat.id) as it (it.id)}
+										<button class="item-row" type="button" onclick={() => aabnRedigerGuide(it)}>
+											<div class="item-info">
+												<div class="item-q">{it.titel}</div>
+												<div class="item-meta">
+													{GUIDE_TYPE_LABELS[it.type]}{it.dato ? ' · ' + it.dato : ''}
+												</div>
+											</div>
+											{#if !it.udgivet}
+												<span class="badge kladde">Kladde</span>
+											{:else}
+												<span class="badge udgivet">Udgivet</span>
+											{/if}
+										</button>
+									{/each}
+								</div>
+							{/if}
+
+							<button
+								class="form-knap ghost"
+								type="button"
+								onclick={() => aabnNytGuide(kat.id)}
+								style="border-style: dashed;"
+							>
+								+ Nyt link
+							</button>
+						</section>
+					{/each}
+				</div>
+			{/if}
+		{/if}
+	</div>
+
+	{#if viserFaqDialog}
+		<div
+			class="dialog-overlay"
+			role="button"
+			tabindex="0"
+			onclick={lukFaqDialog}
+			onkeydown={(e) => e.key === 'Escape' && lukFaqDialog()}
+		></div>
+		<div class="dialog" role="dialog" aria-modal="true">
+			<header class="dialog-head">
+				<div class="form-titel">{faqDialogItemId ? 'Rediger spørgsmål' : 'Nyt spørgsmål'}</div>
+				<button class="ikon-knap" type="button" onclick={lukFaqDialog} aria-label="Luk">×</button>
+			</header>
+
+			<label class="felt">
+				<span class="felt-label">Kategori</span>
+				<select bind:value={faqDialogKategoriId} disabled={faqDialogGemmer}>
+					{#each sorteredeFaqKats as kat (kat.id)}
+						<option value={kat.id}>{kat.navn}</option>
+					{/each}
+				</select>
+			</label>
+
+			<label class="felt">
+				<span class="felt-label">Spørgsmål</span>
+				<input
+					type="text"
+					bind:value={faqDialogSpoergsmaal}
+					maxlength="200"
+					disabled={faqDialogGemmer}
+				/>
+			</label>
+
+			<label class="felt">
+				<span class="felt-label">Svar</span>
+				<textarea bind:value={faqDialogSvar} rows="6" disabled={faqDialogGemmer}></textarea>
+			</label>
+
+			<label class="checkbox-rad">
+				<input type="checkbox" bind:checked={faqDialogUdgivet} disabled={faqDialogGemmer} />
+				<span>Udgivet (synligt for klienterne)</span>
+			</label>
+
+			{#if faqDialogFejl}
+				<div class="fejl-besked">{faqDialogFejl}</div>
+			{/if}
+
+			<div class="dialog-knapper">
+				{#if faqDialogItemId}
+					<button
+						class="form-knap danger"
+						type="button"
+						onclick={sletFaqDialogItem}
+						disabled={faqDialogGemmer}>Slet</button
+					>
+				{/if}
+				<button class="form-knap primary" type="button" onclick={gemFaq} disabled={faqDialogGemmer}>
+					{faqDialogGemmer ? 'Gemmer...' : 'Gem'}
+				</button>
 			</div>
 		</div>
+	{/if}
 
-		<label class="felt">
-			<span class="felt-label">Titel</span>
-			<input type="text" bind:value={guideDialogTitel} maxlength="140" disabled={guideDialogGemmer} />
-		</label>
+	{#if viserGuideDialog}
+		<div
+			class="dialog-overlay"
+			role="button"
+			tabindex="0"
+			onclick={lukGuideDialog}
+			onkeydown={(e) => e.key === 'Escape' && lukGuideDialog()}
+		></div>
+		<div class="dialog" role="dialog" aria-modal="true">
+			<header class="dialog-head">
+				<div class="form-titel">{guideDialogItemId ? 'Rediger link' : 'Nyt link'}</div>
+				<button class="ikon-knap" type="button" onclick={lukGuideDialog} aria-label="Luk">×</button>
+			</header>
 
-		<label class="felt">
-			<span class="felt-label">Beskrivelse (valgfri)</span>
-			<textarea bind:value={guideDialogBeskrivelse} rows="3" maxlength="400" disabled={guideDialogGemmer}></textarea>
-		</label>
+			<label class="felt">
+				<span class="felt-label">Kategori</span>
+				<select bind:value={guideDialogKategoriId} disabled={guideDialogGemmer}>
+					{#each sorteredeGuideKats as kat (kat.id)}
+						<option value={kat.id}>{kat.navn}</option>
+					{/each}
+				</select>
+			</label>
 
-		<label class="felt">
-			<span class="felt-label">Dato (valgfri, bruges til sortering)</span>
-			<input type="date" bind:value={guideDialogDato} disabled={guideDialogGemmer} />
-		</label>
+			<label class="felt">
+				<span class="felt-label">URL</span>
+				<input
+					type="url"
+					bind:value={guideDialogUrl}
+					placeholder="https://..."
+					disabled={guideDialogGemmer}
+					onblur={autoDetektType}
+				/>
+				<div class="html-upload-rad">
+					<label
+						class="html-upload-knap"
+						class:disabled={guideDialogGemmer || guideDialogUploaderHtml || guideDialogUploaderLyd}
+					>
+						{guideDialogUploaderHtml ? 'Uploader...' : '📎 HTML-fil'}
+						<input
+							type="file"
+							accept=".html,.htm,text/html"
+							onchange={haandterGuideHtmlUpload}
+							disabled={guideDialogGemmer || guideDialogUploaderHtml || guideDialogUploaderLyd}
+						/>
+					</label>
+					<label
+						class="html-upload-knap"
+						class:disabled={guideDialogGemmer || guideDialogUploaderHtml || guideDialogUploaderLyd}
+					>
+						{guideDialogUploaderLyd ? 'Uploader...' : '🎵 Lydfil'}
+						<input
+							type="file"
+							accept=".mp3,.m4a,.wav,.aac,.ogg,audio/*"
+							onchange={haandterGuideLydUpload}
+							disabled={guideDialogGemmer || guideDialogUploaderHtml || guideDialogUploaderLyd}
+						/>
+					</label>
+					<span class="html-upload-hint">eller indsæt URL ovenfor</span>
+				</div>
+			</label>
 
-		<label class="checkbox-rad">
-			<input type="checkbox" bind:checked={guideDialogUdgivet} disabled={guideDialogGemmer} />
-			<span>Udgivet (synligt for klienterne)</span>
-		</label>
+			<div class="felt">
+				<span class="felt-label">Type</span>
+				<div class="type-chips">
+					{#each GUIDE_TYPER as t (t)}
+						<button
+							class="type-chip"
+							class:aktiv={guideDialogType === t}
+							type="button"
+							onclick={() => (guideDialogType = t)}
+							disabled={guideDialogGemmer}
+						>
+							{GUIDE_TYPE_LABELS[t]}
+						</button>
+					{/each}
+				</div>
+			</div>
 
-		{#if guideDialogFejl}
-			<div class="fejl-besked">{guideDialogFejl}</div>
-		{/if}
+			<label class="felt">
+				<span class="felt-label">Titel</span>
+				<input
+					type="text"
+					bind:value={guideDialogTitel}
+					maxlength="140"
+					disabled={guideDialogGemmer}
+				/>
+			</label>
 
-		<div class="dialog-knapper">
-			{#if guideDialogItemId}
-				<button class="form-knap danger" type="button" onclick={sletGuideDialogItem} disabled={guideDialogGemmer}>Slet</button>
+			<label class="felt">
+				<span class="felt-label">Beskrivelse (valgfri)</span>
+				<textarea
+					bind:value={guideDialogBeskrivelse}
+					rows="3"
+					maxlength="400"
+					disabled={guideDialogGemmer}
+				></textarea>
+			</label>
+
+			<label class="felt">
+				<span class="felt-label">Dato (valgfri, bruges til sortering)</span>
+				<input type="date" bind:value={guideDialogDato} disabled={guideDialogGemmer} />
+			</label>
+
+			<label class="checkbox-rad">
+				<input type="checkbox" bind:checked={guideDialogUdgivet} disabled={guideDialogGemmer} />
+				<span>Udgivet (synligt for klienterne)</span>
+			</label>
+
+			{#if guideDialogFejl}
+				<div class="fejl-besked">{guideDialogFejl}</div>
 			{/if}
-			<button class="form-knap primary" type="button" onclick={gemGuide} disabled={guideDialogGemmer}>
-				{guideDialogGemmer ? 'Gemmer...' : 'Gem'}
-			</button>
+
+			<div class="dialog-knapper">
+				{#if guideDialogItemId}
+					<button
+						class="form-knap danger"
+						type="button"
+						onclick={sletGuideDialogItem}
+						disabled={guideDialogGemmer}>Slet</button
+					>
+				{/if}
+				<button
+					class="form-knap primary"
+					type="button"
+					onclick={gemGuide}
+					disabled={guideDialogGemmer}
+				>
+					{guideDialogGemmer ? 'Gemmer...' : 'Gem'}
+				</button>
+			</div>
 		</div>
-	</div>
-{/if}
+	{/if}
 {/if}
 
 <style>

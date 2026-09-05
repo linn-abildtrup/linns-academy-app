@@ -225,7 +225,12 @@
 		</div>
 		<section class="kort">
 			{#if !valgt}
-				<input class="na-soeg" type="search" placeholder="Søg efter en kunde…" bind:value={soegeord} />
+				<input
+					class="na-soeg"
+					type="search"
+					placeholder="Søg efter en kunde…"
+					bind:value={soegeord}
+				/>
 				{#each fundne as k (k.uid)}
 					<button class="nt-fund" onclick={() => (valgt = k)}>
 						<span>

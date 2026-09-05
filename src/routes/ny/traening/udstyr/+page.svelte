@@ -10,7 +10,7 @@
 	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import UdstyrValg from '$lib/components/ny/UdstyrValg.svelte';
 	import {
 		rensUdstyr3,
@@ -82,7 +82,7 @@
 	/>
 
 	{#if henter}
-		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
+		<Venter tekst="Henter dit udstyr" />
 	{:else if kategorier.length === 0}
 		<p class="kort rolig">Der er ikke noget at vælge imellem endnu.</p>
 	{:else}

@@ -417,7 +417,12 @@
 				</label>
 				<label class="ro-felt bred">
 					<span>Billede</span>
-					<input type="text" placeholder="Adressen på billedet" bind:value={formBilledeUrl} disabled={gemmer} />
+					<input
+						type="text"
+						placeholder="Adressen på billedet"
+						bind:value={formBilledeUrl}
+						disabled={gemmer}
+					/>
 				</label>
 			</div>
 
@@ -425,7 +430,13 @@
 				<span>Madtype</span>
 				<div class="ro-chips">
 					{#each ALLE_KATEGORIER as k (k)}
-						<button type="button" class="ro-chip" class:paa={formKategorier.includes(k)} disabled={gemmer} onclick={() => toggleKategori(k)}>
+						<button
+							type="button"
+							class="ro-chip"
+							class:paa={formKategorier.includes(k)}
+							disabled={gemmer}
+							onclick={() => toggleKategori(k)}
+						>
 							{KATEGORI_LABELS[k]}
 						</button>
 					{/each}
@@ -436,7 +447,13 @@
 				<span>Mærkater</span>
 				<div class="ro-chips">
 					{#each ALLE_DIET_TAGS as t (t)}
-						<button type="button" class="ro-chip" class:paa={formDietTags.includes(t)} disabled={gemmer} onclick={() => toggleDietTag(t)}>
+						<button
+							type="button"
+							class="ro-chip"
+							class:paa={formDietTags.includes(t)}
+							disabled={gemmer}
+							onclick={() => toggleDietTag(t)}
+						>
 							{DIET_LABELS[t]}
 						</button>
 					{/each}
@@ -446,7 +463,13 @@
 			<div class="ro-raek">
 				<label class="ro-felt">
 					<span>Ingredienslisten rækker til</span>
-					<input type="number" min="1" max="20" bind:value={formDefaultPortioner} disabled={gemmer} />
+					<input
+						type="number"
+						min="1"
+						max="20"
+						bind:value={formDefaultPortioner}
+						disabled={gemmer}
+					/>
 					<em>portioner. Mængderne skaleres ud fra det tal, makroen gør ikke.</em>
 				</label>
 			</div>
@@ -467,12 +490,50 @@
 			{#each formIngredienser as ing, i (i)}
 				<div class="ro-ing">
 					<div class="ro-ing-raek">
-						<input class="ro-m" type="number" min="0" step="0.5" placeholder="0" bind:value={formIngredienser[i].maengde} disabled={gemmer} />
-						<input class="ro-e" type="text" placeholder="g" bind:value={formIngredienser[i].enhed} disabled={gemmer} />
-						<input class="ro-n" type="text" placeholder="navn" bind:value={formIngredienser[i].navn} disabled={gemmer} />
-						<button type="button" class="ro-ikon" disabled={gemmer || i === 0} onclick={() => flytIngrediens(i, -1)} aria-label="Flyt op">↑</button>
-						<button type="button" class="ro-ikon" disabled={gemmer || i === formIngredienser.length - 1} onclick={() => flytIngrediens(i, 1)} aria-label="Flyt ned">↓</button>
-						<button type="button" class="ro-ikon" disabled={gemmer} onclick={() => fjernIngrediens(i)} aria-label="Fjern">×</button>
+						<input
+							class="ro-m"
+							type="number"
+							min="0"
+							step="0.5"
+							placeholder="0"
+							bind:value={formIngredienser[i].maengde}
+							disabled={gemmer}
+						/>
+						<input
+							class="ro-e"
+							type="text"
+							placeholder="g"
+							bind:value={formIngredienser[i].enhed}
+							disabled={gemmer}
+						/>
+						<input
+							class="ro-n"
+							type="text"
+							placeholder="navn"
+							bind:value={formIngredienser[i].navn}
+							disabled={gemmer}
+						/>
+						<button
+							type="button"
+							class="ro-ikon"
+							disabled={gemmer || i === 0}
+							onclick={() => flytIngrediens(i, -1)}
+							aria-label="Flyt op">↑</button
+						>
+						<button
+							type="button"
+							class="ro-ikon"
+							disabled={gemmer || i === formIngredienser.length - 1}
+							onclick={() => flytIngrediens(i, 1)}
+							aria-label="Flyt ned">↓</button
+						>
+						<button
+							type="button"
+							class="ro-ikon"
+							disabled={gemmer}
+							onclick={() => fjernIngrediens(i)}
+							aria-label="Fjern">×</button
+						>
 					</div>
 
 					{#if henterTal}
@@ -487,8 +548,11 @@
 									Protein {etTal(l.makro.protein)} g · Fiber {etTal(l.makro.fiber)} g · Kulhydrat
 									{etTal(l.makro.kh)} g · Fedt {etTal(l.makro.fedt)} g · {etTal(l.makro.kalorier)} kcal
 								</span>
-								{#if l.mangel === 'varen mangler tal'}<span class="ro-mangel">Varen mangler kalorietal</span>{/if}
-								{#if l.vaegtSikkerhed !== 'tabel'}<span class="ro-usikker">Vægten er et skøn</span>{/if}
+								{#if l.mangel === 'varen mangler tal'}<span class="ro-mangel"
+										>Varen mangler kalorietal</span
+									>{/if}
+								{#if l.vaegtSikkerhed !== 'tabel'}<span class="ro-usikker">Vægten er et skøn</span
+									>{/if}
 							</div>
 						{:else}
 							<div class="ro-tal tom">{mangelTekst(l)}</div>
@@ -507,8 +571,9 @@
 					<div class="ro-sum-raek">
 						<span class="ro-sum-navn">{flerePortioner ? 'Hele retten' : 'I alt'}</span>
 						<span class="ro-sum-tal">
-							Protein {etTal(ialt.protein)} g · Fiber {etTal(ialt.fiber)} g · Kulhydrat {etTal(ialt.kh)} g ·
-							Fedt {etTal(ialt.fedt)} g · {etTal(ialt.kalorier)} kcal
+							Protein {etTal(ialt.protein)} g · Fiber {etTal(ialt.fiber)} g · Kulhydrat {etTal(
+								ialt.kh
+							)} g · Fedt {etTal(ialt.fedt)} g · {etTal(ialt.kalorier)} kcal
 						</span>
 					</div>
 					{#if flerePortioner}
@@ -516,7 +581,9 @@
 							<span class="ro-sum-navn">Pr portion</span>
 							<span class="ro-sum-tal">
 								Protein {etTal(prPortion.protein)} g · Fiber {etTal(prPortion.fiber)} g · Kulhydrat
-								{etTal(prPortion.kh)} g · Fedt {etTal(prPortion.fedt)} g · {etTal(prPortion.kalorier)} kcal
+								{etTal(prPortion.kh)} g · Fedt {etTal(prPortion.fedt)} g · {etTal(
+									prPortion.kalorier
+								)} kcal
 							</span>
 						</div>
 						<p class="ro-hint">
@@ -527,12 +594,13 @@
 					<div class="ro-daekning" class:advarsel={tilliden(beregning.daekning) !== 'god'}>
 						Der er gjort rede for {Math.round(beregning.daekning)} % af rettens vægt.
 						{#if beregning.antalMangler > 0}
-							{beregning.antalMangler} {beregning.antalMangler === 1 ? 'ingrediens mangler' : 'ingredienser mangler'} en
-							kobling og tæller ikke med, så tallene er for lave.
+							{beregning.antalMangler}
+							{beregning.antalMangler === 1 ? 'ingrediens mangler' : 'ingredienser mangler'} en kobling
+							og tæller ikke med, så tallene er for lave.
 						{/if}
 						{#if !beregning.kalorierPaalidelige}
-							En eller flere varer mangler kalorietal, så kalorier, kulhydrat og fedt kan ikke bruges.
-							Protein og fiber er stadig rigtige.
+							En eller flere varer mangler kalorietal, så kalorier, kulhydrat og fedt kan ikke
+							bruges. Protein og fiber er stadig rigtige.
 						{/if}
 					</div>
 					{#if afvig}
@@ -560,15 +628,64 @@
 				viser appen en streg i stedet for at gætte.
 			</p>
 			<div class="ro-raek">
-				<label class="ro-felt"><span>Protein</span><input type="number" min="0" step="0.1" bind:value={formProtein} disabled={gemmer} /></label>
-				<label class="ro-felt"><span>Fiber</span><input type="number" min="0" step="0.1" bind:value={formFiber} disabled={gemmer} /></label>
-				<label class="ro-felt"><span>Kulhydrat</span><input type="number" min="0" step="0.1" bind:value={formKh} disabled={gemmer} /></label>
-				<label class="ro-felt"><span>Fedt</span><input type="number" min="0" step="0.1" bind:value={formFedt} disabled={gemmer} /></label>
-				<label class="ro-felt"><span>Kalorier</span><input type="number" min="0" step="1" bind:value={formKalorier} disabled={gemmer} /></label>
-				<label class="ro-felt"><span>Tid</span><input type="text" placeholder="fx 15 minutter" bind:value={formTid} disabled={gemmer} /></label>
+				<label class="ro-felt"
+					><span>Protein</span><input
+						type="number"
+						min="0"
+						step="0.1"
+						bind:value={formProtein}
+						disabled={gemmer}
+					/></label
+				>
+				<label class="ro-felt"
+					><span>Fiber</span><input
+						type="number"
+						min="0"
+						step="0.1"
+						bind:value={formFiber}
+						disabled={gemmer}
+					/></label
+				>
+				<label class="ro-felt"
+					><span>Kulhydrat</span><input
+						type="number"
+						min="0"
+						step="0.1"
+						bind:value={formKh}
+						disabled={gemmer}
+					/></label
+				>
+				<label class="ro-felt"
+					><span>Fedt</span><input
+						type="number"
+						min="0"
+						step="0.1"
+						bind:value={formFedt}
+						disabled={gemmer}
+					/></label
+				>
+				<label class="ro-felt"
+					><span>Kalorier</span><input
+						type="number"
+						min="0"
+						step="1"
+						bind:value={formKalorier}
+						disabled={gemmer}
+					/></label
+				>
+				<label class="ro-felt"
+					><span>Tid</span><input
+						type="text"
+						placeholder="fx 15 minutter"
+						bind:value={formTid}
+						disabled={gemmer}
+					/></label
+				>
 			</div>
 			{#if makroMangler}
-				<div class="ro-advarsel">Der mangler tal. Kunden ser en streg for de felter der står tomme.</div>
+				<div class="ro-advarsel">
+					Der mangler tal. Kunden ser en streg for de felter der står tomme.
+				</div>
 			{/if}
 			<!-- FORHAANDSVISNINGEN AF LINJEN SKAL BLIVE STAAENDE. Den er den
 			     eneste maade at se hvad der faktisk bliver skrevet ned i
@@ -579,7 +696,8 @@
 
 		<AdmKort>
 			<h2 class="ro-h">Fremgangsmåde</h2>
-			<textarea class="ro-tekst" rows="10" bind:value={formInstruktioner} disabled={gemmer}></textarea>
+			<textarea class="ro-tekst" rows="10" bind:value={formInstruktioner} disabled={gemmer}
+			></textarea>
 			<p class="ro-hint">
 				Makro-linjen bliver skrevet nederst automatisk når du gemmer. Du skal ikke skrive den selv.
 			</p>
@@ -602,7 +720,11 @@
 
 		<div class="ro-godkend" class:sat={godkendt}>
 			<AdmKnap disabled={gemmerGodkendt} onclick={toggleGodkendt}>
-				{gemmerGodkendt ? 'Gemmer…' : godkendt ? 'Godkendt. Tryk for at fjerne' : 'Marker som godkendt'}
+				{gemmerGodkendt
+					? 'Gemmer…'
+					: godkendt
+						? 'Godkendt. Tryk for at fjerne'
+						: 'Marker som godkendt'}
 			</AdmKnap>
 			{#if godkendt}<AdmMaerkat farve="klar">Set igennem</AdmMaerkat>{/if}
 			<p class="ro-hint">
@@ -615,111 +737,317 @@
 {/if}
 
 <style>
-	.ro-kun { padding: 24px 18px; color: var(--ink-2); font-size: calc(14px * var(--fs-scale, 1)); }
-
-	.ro-kvit, .ro-fejl {
-		margin-bottom: 12px; padding: 11px 15px; border-radius: 12px;
-		font-size: calc(13.5px * var(--fs-scale, 1)); font-weight: 600;
+	.ro-kun {
+		padding: 24px 18px;
+		color: var(--ink-2);
+		font-size: calc(14px * var(--fs-scale, 1));
 	}
-	.ro-kvit { background: var(--sage-tint, #e7efe5); color: var(--sage-tekst, #46603f); }
-	.ro-fejl { background: var(--ler-tint, #f4e6de); color: var(--ler-tekst, #8a5439); }
 
-	.ro-h { margin: 0 0 4px; font-size: calc(16px * var(--fs-scale, 1)); font-weight: 600; }
-	.ro-h-raek { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-	.ro-antal { font-size: calc(12px * var(--fs-scale, 1)); color: var(--ink-3, #a3948a); }
+	.ro-kvit,
+	.ro-fejl {
+		margin-bottom: 12px;
+		padding: 11px 15px;
+		border-radius: 12px;
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-weight: 600;
+	}
+	.ro-kvit {
+		background: var(--sage-tint, #e7efe5);
+		color: var(--sage-tekst, #46603f);
+	}
+	.ro-fejl {
+		background: var(--ler-tint, #f4e6de);
+		color: var(--ler-tekst, #8a5439);
+	}
 
-	.ro-raek { display: flex; gap: 10px; flex-wrap: wrap; }
-	.ro-felt { display: flex; flex-direction: column; gap: 4px; flex: 1 1 120px; margin-bottom: 11px; }
-	.ro-felt.bred { flex-basis: 100%; }
+	.ro-h {
+		margin: 0 0 4px;
+		font-size: calc(16px * var(--fs-scale, 1));
+		font-weight: 600;
+	}
+	.ro-h-raek {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 10px;
+	}
+	.ro-antal {
+		font-size: calc(12px * var(--fs-scale, 1));
+		color: var(--ink-3, #a3948a);
+	}
+
+	.ro-raek {
+		display: flex;
+		gap: 10px;
+		flex-wrap: wrap;
+	}
+	.ro-felt {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		flex: 1 1 120px;
+		margin-bottom: 11px;
+	}
+	.ro-felt.bred {
+		flex-basis: 100%;
+	}
 	.ro-felt span {
-		font-size: calc(10.5px * var(--fs-scale, 1)); font-weight: 700; letter-spacing: 0.08em;
-		text-transform: uppercase; color: var(--ink-3, #a3948a);
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--ink-3, #a3948a);
 	}
-	.ro-felt em { font-size: calc(11px * var(--fs-scale, 1)); color: var(--ink-3, #a3948a); font-style: normal; line-height: 1.4; }
-	.ro-felt input, .ro-tekst {
-		padding: 11px 13px; background: var(--paper, #fbf8f2); border: 1px solid var(--line, #e8dfd1);
-		border-radius: 11px; color: var(--espresso, #382c2a); font-size: calc(14px * var(--fs-scale, 1));
-		font-family: inherit; line-height: 1.55; box-sizing: border-box; resize: vertical;
+	.ro-felt em {
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--ink-3, #a3948a);
+		font-style: normal;
+		line-height: 1.4;
 	}
-	.ro-tekst { display: block; width: 100%; }
+	.ro-felt input,
+	.ro-tekst {
+		padding: 11px 13px;
+		background: var(--paper, #fbf8f2);
+		border: 1px solid var(--line, #e8dfd1);
+		border-radius: 11px;
+		color: var(--espresso, #382c2a);
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-family: inherit;
+		line-height: 1.55;
+		box-sizing: border-box;
+		resize: vertical;
+	}
+	.ro-tekst {
+		display: block;
+		width: 100%;
+	}
 
-	.ro-flueben { display: flex; align-items: center; gap: 9px; margin: 2px 0 0; font-size: calc(13.5px * var(--fs-scale, 1)); }
-	.ro-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+	.ro-flueben {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		margin: 2px 0 0;
+		font-size: calc(13.5px * var(--fs-scale, 1));
+	}
+	.ro-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
 
 	/* Baggrunden staar eksplicit, se noten i AdmKnap. */
 	.ro-chip {
-		padding: 8px 14px; background: var(--paper, #fbf8f2); border: 1px solid var(--line, #e8dfd1);
-		border-radius: 99px; color: var(--ink-2, #6f5f57); font-size: calc(12.5px * var(--fs-scale, 1));
-		font-family: inherit; font-weight: 600; cursor: pointer;
+		padding: 8px 14px;
+		background: var(--paper, #fbf8f2);
+		border: 1px solid var(--line, #e8dfd1);
+		border-radius: 99px;
+		color: var(--ink-2, #6f5f57);
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-family: inherit;
+		font-weight: 600;
+		cursor: pointer;
 	}
-	.ro-chip.paa { background: var(--plum, #7c4f63); border-color: var(--plum, #7c4f63); color: #fff; }
+	.ro-chip.paa {
+		background: var(--plum, #7c4f63);
+		border-color: var(--plum, #7c4f63);
+		color: #fff;
+	}
 
-	.ro-hint { margin: 6px 0 11px; font-size: calc(11.5px * var(--fs-scale, 1)); color: var(--ink-3, #a3948a); line-height: 1.5; }
+	.ro-hint {
+		margin: 6px 0 11px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--ink-3, #a3948a);
+		line-height: 1.5;
+	}
 
-	.ro-ing { margin-bottom: 9px; }
-	.ro-ing-raek { display: flex; gap: 6px; align-items: center; }
+	.ro-ing {
+		margin-bottom: 9px;
+	}
+	.ro-ing-raek {
+		display: flex;
+		gap: 6px;
+		align-items: center;
+	}
 	.ro-ing-raek input {
-		padding: 10px 12px; background: var(--paper, #fbf8f2); border: 1px solid var(--line, #e8dfd1);
-		border-radius: 10px; color: var(--espresso, #382c2a); font-size: calc(13.5px * var(--fs-scale, 1));
-		font-family: inherit; box-sizing: border-box; min-width: 0;
+		padding: 10px 12px;
+		background: var(--paper, #fbf8f2);
+		border: 1px solid var(--line, #e8dfd1);
+		border-radius: 10px;
+		color: var(--espresso, #382c2a);
+		font-size: calc(13.5px * var(--fs-scale, 1));
+		font-family: inherit;
+		box-sizing: border-box;
+		min-width: 0;
 	}
-	.ro-m { width: 74px; flex-shrink: 0; }
-	.ro-e { width: 62px; flex-shrink: 0; }
-	.ro-n { flex: 1; }
+	.ro-m {
+		width: 74px;
+		flex-shrink: 0;
+	}
+	.ro-e {
+		width: 62px;
+		flex-shrink: 0;
+	}
+	.ro-n {
+		flex: 1;
+	}
 	.ro-ikon {
-		width: 34px; height: 38px; flex-shrink: 0; background: var(--paper, #fbf8f2);
-		border: 1px solid var(--line, #e8dfd1); border-radius: 9px; color: var(--ink-2, #6f5f57);
-		font-size: calc(14px * var(--fs-scale, 1)); font-family: inherit; cursor: pointer;
+		width: 34px;
+		height: 38px;
+		flex-shrink: 0;
+		background: var(--paper, #fbf8f2);
+		border: 1px solid var(--line, #e8dfd1);
+		border-radius: 9px;
+		color: var(--ink-2, #6f5f57);
+		font-size: calc(14px * var(--fs-scale, 1));
+		font-family: inherit;
+		cursor: pointer;
 	}
-	.ro-ikon:disabled { opacity: 0.4; cursor: not-allowed; }
+	.ro-ikon:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
 
 	.ro-tal {
-		display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 4px;
-		padding: 6px 9px; background: var(--paper, #fbf8f2); border-radius: 9px;
-		font-size: calc(11px * var(--fs-scale, 1)); color: var(--ink-2, #6f5f57); line-height: 1.4;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 4px 8px;
+		margin-top: 4px;
+		padding: 6px 9px;
+		background: var(--paper, #fbf8f2);
+		border-radius: 9px;
+		font-size: calc(11px * var(--fs-scale, 1));
+		color: var(--ink-2, #6f5f57);
+		line-height: 1.4;
 	}
-	.ro-tal.tom, .ro-tal.henter { color: var(--ink-3, #a3948a); font-style: italic; }
-	.ro-vare { font-weight: 600; color: var(--espresso, #382c2a); }
-	.ro-gram, .ro-usikker { color: var(--ink-3, #a3948a); }
-	.ro-makro { flex-basis: 100%; }
+	.ro-tal.tom,
+	.ro-tal.henter {
+		color: var(--ink-3, #a3948a);
+		font-style: italic;
+	}
+	.ro-vare {
+		font-weight: 600;
+		color: var(--espresso, #382c2a);
+	}
+	.ro-gram,
+	.ro-usikker {
+		color: var(--ink-3, #a3948a);
+	}
+	.ro-makro {
+		flex-basis: 100%;
+	}
 	/* En manglende oplysning skal SES. Et stille nul er den fejl hvor en ret
 	   ser ud til at have mindre protein end den har. */
-	.ro-mangel { color: var(--ler-tekst, #8a5439); font-weight: 600; }
-
-	.ro-sum { margin-top: 14px; padding: 13px 15px; background: var(--paper, #fbf8f2); border-radius: 12px; }
-	.ro-sum-h {
-		font-size: calc(10.5px * var(--fs-scale, 1)); font-weight: 700; letter-spacing: 0.1em;
-		text-transform: uppercase; color: var(--ink-3, #a3948a); margin-bottom: 8px;
+	.ro-mangel {
+		color: var(--ler-tekst, #8a5439);
+		font-weight: 600;
 	}
-	.ro-sum-h.andet { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line, #e8dfd1); }
-	.ro-sum-raek { margin-bottom: 6px; }
-	.ro-sum-navn { display: block; font-size: calc(12px * var(--fs-scale, 1)); font-weight: 600; }
-	.ro-sum-tal { display: block; font-size: calc(11.5px * var(--fs-scale, 1)); color: var(--ink-2, #6f5f57); line-height: 1.45; }
-	.ro-daekning { margin-top: 8px; font-size: calc(11.5px * var(--fs-scale, 1)); color: var(--ink-2, #6f5f57); line-height: 1.45; }
-	.ro-daekning.advarsel { color: var(--ler-tekst, #8a5439); font-weight: 600; }
-	.ro-afvig { display: flex; flex-direction: column; gap: 2px; font-size: calc(11.5px * var(--fs-scale, 1)); color: var(--ink-2, #6f5f57); }
+
+	.ro-sum {
+		margin-top: 14px;
+		padding: 13px 15px;
+		background: var(--paper, #fbf8f2);
+		border-radius: 12px;
+	}
+	.ro-sum-h {
+		font-size: calc(10.5px * var(--fs-scale, 1));
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--ink-3, #a3948a);
+		margin-bottom: 8px;
+	}
+	.ro-sum-h.andet {
+		margin-top: 12px;
+		padding-top: 12px;
+		border-top: 1px solid var(--line, #e8dfd1);
+	}
+	.ro-sum-raek {
+		margin-bottom: 6px;
+	}
+	.ro-sum-navn {
+		display: block;
+		font-size: calc(12px * var(--fs-scale, 1));
+		font-weight: 600;
+	}
+	.ro-sum-tal {
+		display: block;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--ink-2, #6f5f57);
+		line-height: 1.45;
+	}
+	.ro-daekning {
+		margin-top: 8px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--ink-2, #6f5f57);
+		line-height: 1.45;
+	}
+	.ro-daekning.advarsel {
+		color: var(--ler-tekst, #8a5439);
+		font-weight: 600;
+	}
+	.ro-afvig {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--ink-2, #6f5f57);
+	}
 
 	.ro-advarsel {
-		margin: 4px 0 10px; padding: 10px 13px; background: var(--honey-tint, #f7ecd7);
-		border-radius: 11px; color: var(--honey-deep, #b47f3e);
-		font-size: calc(12.5px * var(--fs-scale, 1)); font-weight: 600;
+		margin: 4px 0 10px;
+		padding: 10px 13px;
+		background: var(--honey-tint, #f7ecd7);
+		border-radius: 11px;
+		color: var(--honey-deep, #b47f3e);
+		font-size: calc(12.5px * var(--fs-scale, 1));
+		font-weight: 600;
 	}
-	.ro-advarsel-linje, .ro-tal-fejl {
-		font-size: calc(11.5px * var(--fs-scale, 1)); color: var(--ler-tekst, #8a5439); font-weight: 600;
+	.ro-advarsel-linje,
+	.ro-tal-fejl {
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--ler-tekst, #8a5439);
+		font-weight: 600;
 	}
-	.ro-tal-fejl { margin: 8px 0 0; }
+	.ro-tal-fejl {
+		margin: 8px 0 0;
+	}
 
 	.ro-linje {
-		display: block; padding: 11px 13px; background: var(--paper, #fbf8f2);
-		border: 1px solid var(--line, #e8dfd1); border-radius: 10px;
-		font-size: calc(11.5px * var(--fs-scale, 1)); color: var(--espresso, #382c2a);
-		word-break: break-word; line-height: 1.5;
+		display: block;
+		padding: 11px 13px;
+		background: var(--paper, #fbf8f2);
+		border: 1px solid var(--line, #e8dfd1);
+		border-radius: 10px;
+		font-size: calc(11.5px * var(--fs-scale, 1));
+		color: var(--espresso, #382c2a);
+		word-break: break-word;
+		line-height: 1.5;
 	}
 
-	.ro-knapper { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+	.ro-knapper {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+		margin-top: 14px;
+	}
 
-	.ro-godkend { margin-top: 14px; padding: 13px 15px; background: var(--paper-2, #f6f0e7); border-radius: 14px;
-		display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-	.ro-godkend.sat { background: var(--sage-tint, #e7efe5); }
-	.ro-godkend .ro-hint { flex-basis: 100%; margin: 0; }
+	.ro-godkend {
+		margin-top: 14px;
+		padding: 13px 15px;
+		background: var(--paper-2, #f6f0e7);
+		border-radius: 14px;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		flex-wrap: wrap;
+	}
+	.ro-godkend.sat {
+		background: var(--sage-tint, #e7efe5);
+	}
+	.ro-godkend .ro-hint {
+		flex-basis: 100%;
+		margin: 0;
+	}
 </style>

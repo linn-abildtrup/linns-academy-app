@@ -87,7 +87,10 @@
 
 	async function skiftMedlem(felt: keyof NaeringRegel3) {
 		if (gemmer) return;
-		const ny = { ...regler, medlemmer: { ...regler.medlemmer, [felt]: !vaerdi(regler.medlemmer, felt) } };
+		const ny = {
+			...regler,
+			medlemmer: { ...regler.medlemmer, [felt]: !vaerdi(regler.medlemmer, felt) }
+		};
 		await skriv(ny);
 	}
 
@@ -234,7 +237,12 @@
 
 		<div class="lab"><h2>Undtagelser</h2></div>
 		<section class="kort">
-			<input class="na-soeg" type="search" placeholder="Søg efter en kunde…" bind:value={soegeord} />
+			<input
+				class="na-soeg"
+				type="search"
+				placeholder="Søg efter en kunde…"
+				bind:value={soegeord}
+			/>
 
 			{#each fundne as k (k.uid)}
 				<div class="na-fund">

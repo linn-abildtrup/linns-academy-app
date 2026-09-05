@@ -384,548 +384,558 @@
 {#if !maaVaereHer}
 	<p class="fu-kun">Siden er kun for admin.</p>
 {:else}
-<div class="page">
-	<header class="page-header">
-		<a class="back" href="/ny/admin/forlob">
-			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>Forløb</span>
-		</a>
-		<div class="eyebrow">Admin · Forløb</div>
-		<h1>{forlob?.navn ?? forlobId}</h1>
-	</header>
+	<div class="page">
+		<header class="page-header">
+			<a class="back" href="/ny/admin/forlob">
+				<Icon name="arrow-l" size={14} color="var(--text2)" />
+				<span>Forløb</span>
+			</a>
+			<div class="eyebrow">Admin · Forløb</div>
+			<h1>{forlob?.navn ?? forlobId}</h1>
+		</header>
 
-	{#if loading}
-		<div class="status-besked">Henter forløb...</div>
-	{:else if fejl}
-		<div class="status-besked fejl">{fejl}</div>
-	{:else if forlob}
-		<div class="form-card">
-			<div class="form-titel">Indstillinger</div>
-			<label class="felt">
-				<span class="felt-label">Navn</span>
-				<input type="text" bind:value={formNavn} disabled={gemmer} />
-			</label>
-			<div class="felt-rad">
+		{#if loading}
+			<div class="status-besked">Henter forløb...</div>
+		{:else if fejl}
+			<div class="status-besked fejl">{fejl}</div>
+		{:else if forlob}
+			<div class="form-card">
+				<div class="form-titel">Indstillinger</div>
 				<label class="felt">
-					<span class="felt-label">Startdato</span>
-					<input type="date" bind:value={formStartDato} disabled={gemmer} />
+					<span class="felt-label">Navn</span>
+					<input type="text" bind:value={formNavn} disabled={gemmer} />
 				</label>
-				<label class="felt">
-					<span class="felt-label">Antal dage</span>
-					<input type="number" min="1" max="365" bind:value={formAntalDage} disabled={gemmer} />
-				</label>
-			</div>
-			{#if adgangsVindue}
-				<div class="adgangs-vindue">
-					<div class="adgangs-rad">
-						<span class="adgangs-label">Adgang åbner</span>
-						<span class="adgangs-vaerdi">{adgangsVindue.aabner}</span>
-					</div>
-					<div class="adgangs-rad">
-						<span class="adgangs-label">Mister adgang efter</span>
-						<span class="adgangs-vaerdi">{adgangsVindue.mister}</span>
-					</div>
-					<div class="adgangs-note">
-						Kunderne har materialet til og med sidste forløbsdag kl. 23.59. Pause-dage (nul-dage)
-						kan udskyde lukningen pr. kunde.
-					</div>
+				<div class="felt-rad">
+					<label class="felt">
+						<span class="felt-label">Startdato</span>
+						<input type="date" bind:value={formStartDato} disabled={gemmer} />
+					</label>
+					<label class="felt">
+						<span class="felt-label">Antal dage</span>
+						<input type="number" min="1" max="365" bind:value={formAntalDage} disabled={gemmer} />
+					</label>
 				</div>
-			{/if}
-			<label class="checkbox-rad">
-				<input type="checkbox" bind:checked={formAktiv} disabled={gemmer} />
-				<span>
-					Aktivt forløb
-					{#if formSimpleroId.trim()}
-						(nye køb i Simplero lander på dette hold)
-					{:else}
-						(sæt Simplero-nummeret nedenfor, hvis nye køb skal lande her)
-					{/if}
-				</span>
-			</label>
-
-			<label class="felt">
-				<span class="felt-label">Simplero-produkt (nummer)</span>
-				<input
-					type="text"
-					inputmode="numeric"
-					bind:value={formSimpleroId}
-					placeholder="fx 253807"
-					disabled={gemmer}
-				/>
-				<span class="felt-hint">
-					{#if !formSimpleroId.trim()}
-						Tomt felt betyder, at køb i Simplero ikke kommer med her af sig selv. Så skal du hente
-						købslisten ind manuelt, som du plejer.
-					{:else if !formAktiv}
-						Nummeret står her, men holdet er ikke sat som aktivt. Derfor lander nye køb ikke her.
-						Sæt fluebenet ovenfor.
-					{:else}
-						Nye køb af det produkt lander på dette hold med det samme. Når du åbner næste hold,
-						flytter du fluebenet ovenfor derover.
-					{/if}
-				</span>
-				{#if andreMedSammeNummer.length > 0}
-					<!-- To hold der begge er aktive paa samme nummer ville slaas om
-					     koeberne. Vi vaelger det nyeste, men Linn skal vide det. -->
-					<span class="felt-advarsel">
-						{#if andreMedSammeNummer.some((h) => h.aktiv) && formAktiv}
-							Pas på: {andreMedSammeNummer.filter((h) => h.aktiv).map((h) => h.navn).join(', ')}
-							står med samme nummer og er også aktivt. Nye køb lander på det hold, der starter
-							senest. Fjern fluebenet på det gamle hold.
+				{#if adgangsVindue}
+					<div class="adgangs-vindue">
+						<div class="adgangs-rad">
+							<span class="adgangs-label">Adgang åbner</span>
+							<span class="adgangs-vaerdi">{adgangsVindue.aabner}</span>
+						</div>
+						<div class="adgangs-rad">
+							<span class="adgangs-label">Mister adgang efter</span>
+							<span class="adgangs-vaerdi">{adgangsVindue.mister}</span>
+						</div>
+						<div class="adgangs-note">
+							Kunderne har materialet til og med sidste forløbsdag kl. 23.59. Pause-dage (nul-dage)
+							kan udskyde lukningen pr. kunde.
+						</div>
+					</div>
+				{/if}
+				<label class="checkbox-rad">
+					<input type="checkbox" bind:checked={formAktiv} disabled={gemmer} />
+					<span>
+						Aktivt forløb
+						{#if formSimpleroId.trim()}
+							(nye køb i Simplero lander på dette hold)
 						{:else}
-							Samme nummer står også på: {andreMedSammeNummer.map((h) => h.navn).join(', ')}. Det
-							er i orden, så længe kun ét af dem er aktivt.
+							(sæt Simplero-nummeret nedenfor, hvis nye køb skal lande her)
 						{/if}
 					</span>
-				{/if}
-			</label>
+				</label>
 
-			<div class="felt">
-				<span class="felt-label">Forløbs-type</span>
-				{#if erBygget}
-					<div class="bygget-tag">Fleksibelt forløb</div>
-				{:else}
-					<div class="type-toggle">
-						<button
-							type="button"
-							class="type-knap"
-							class:aktiv={formType === 'kickstart'}
-							onclick={() => (formType = 'kickstart')}
-							disabled={gemmer}
-						>
-							<div class="type-titel">Kickstart</div>
-							<div class="type-sub">21 dage · basis-niveau</div>
-						</button>
-						<button
-							type="button"
-							class="type-knap"
-							class:aktiv={formType === 'kropsro'}
-							onclick={() => (formType = 'kropsro')}
-							disabled={gemmer}
-						>
-							<div class="type-titel">Kropsro</div>
-							<div class="type-sub">12 uger · med buddy-gruppe</div>
-						</button>
-					</div>
-				{/if}
-			</div>
+				<label class="felt">
+					<span class="felt-label">Simplero-produkt (nummer)</span>
+					<input
+						type="text"
+						inputmode="numeric"
+						bind:value={formSimpleroId}
+						placeholder="fx 253807"
+						disabled={gemmer}
+					/>
+					<span class="felt-hint">
+						{#if !formSimpleroId.trim()}
+							Tomt felt betyder, at køb i Simplero ikke kommer med her af sig selv. Så skal du hente
+							købslisten ind manuelt, som du plejer.
+						{:else if !formAktiv}
+							Nummeret står her, men holdet er ikke sat som aktivt. Derfor lander nye køb ikke her.
+							Sæt fluebenet ovenfor.
+						{:else}
+							Nye køb af det produkt lander på dette hold med det samme. Når du åbner næste hold,
+							flytter du fluebenet ovenfor derover.
+						{/if}
+					</span>
+					{#if andreMedSammeNummer.length > 0}
+						<!-- To hold der begge er aktive paa samme nummer ville slaas om
+					     koeberne. Vi vaelger det nyeste, men Linn skal vide det. -->
+						<span class="felt-advarsel">
+							{#if andreMedSammeNummer.some((h) => h.aktiv) && formAktiv}
+								Pas på: {andreMedSammeNummer
+									.filter((h) => h.aktiv)
+									.map((h) => h.navn)
+									.join(', ')}
+								står med samme nummer og er også aktivt. Nye køb lander på det hold, der starter senest.
+								Fjern fluebenet på det gamle hold.
+							{:else}
+								Samme nummer står også på: {andreMedSammeNummer.map((h) => h.navn).join(', ')}. Det
+								er i orden, så længe kun ét af dem er aktivt.
+							{/if}
+						</span>
+					{/if}
+				</label>
 
-			<label class="felt">
-				<span class="felt-label">Facebook-gruppe (link)</span>
-				<input
-					type="url"
-					bind:value={formFacebookUrl}
-					placeholder="https://www.facebook.com/groups/..."
-					disabled={gemmer}
-				/>
-				<span class="felt-hint">
-					{formFacebookUrl.trim()
-						? 'Kunden bliver spurgt én gang, om hun er med i gruppen, og kan trykke sig direkte derover.'
-						: 'Tomt felt betyder at vi slet ikke spørger om Facebook på dette hold.'}
-				</span>
-			</label>
-
-			<label class="felt">
-				<span class="felt-label">Træningen starter på dag</span>
-				<input
-					type="number"
-					min="0"
-					max={formAntalDage}
-					bind:value={formTraeningStart}
-					disabled={gemmer}
-				/>
-				<span class="felt-hint">
-					{formTraeningStart <= 1
-						? 'Træningen er med fra dag 1. Sådan kører Kropsro.'
-						: `Ingen træning før dag ${formTraeningStart}. Den dag giver træning 1, dagen efter træning 2, og så fremdeles. Kickstart bruger dag 3.`}
-				</span>
-			</label>
-
-			{#if erBygget}
 				<div class="felt">
-					<span class="felt-label">Funktioner (frit pr forløb)</span>
-					<div class="feature-liste">
-						{#each FEATURES as f (f.key)}
-							<label class="checkbox-rad">
+					<span class="felt-label">Forløbs-type</span>
+					{#if erBygget}
+						<div class="bygget-tag">Fleksibelt forløb</div>
+					{:else}
+						<div class="type-toggle">
+							<button
+								type="button"
+								class="type-knap"
+								class:aktiv={formType === 'kickstart'}
+								onclick={() => (formType = 'kickstart')}
+								disabled={gemmer}
+							>
+								<div class="type-titel">Kickstart</div>
+								<div class="type-sub">21 dage · basis-niveau</div>
+							</button>
+							<button
+								type="button"
+								class="type-knap"
+								class:aktiv={formType === 'kropsro'}
+								onclick={() => (formType = 'kropsro')}
+								disabled={gemmer}
+							>
+								<div class="type-titel">Kropsro</div>
+								<div class="type-sub">12 uger · med buddy-gruppe</div>
+							</button>
+						</div>
+					{/if}
+				</div>
+
+				<label class="felt">
+					<span class="felt-label">Facebook-gruppe (link)</span>
+					<input
+						type="url"
+						bind:value={formFacebookUrl}
+						placeholder="https://www.facebook.com/groups/..."
+						disabled={gemmer}
+					/>
+					<span class="felt-hint">
+						{formFacebookUrl.trim()
+							? 'Kunden bliver spurgt én gang, om hun er med i gruppen, og kan trykke sig direkte derover.'
+							: 'Tomt felt betyder at vi slet ikke spørger om Facebook på dette hold.'}
+					</span>
+				</label>
+
+				<label class="felt">
+					<span class="felt-label">Træningen starter på dag</span>
+					<input
+						type="number"
+						min="0"
+						max={formAntalDage}
+						bind:value={formTraeningStart}
+						disabled={gemmer}
+					/>
+					<span class="felt-hint">
+						{formTraeningStart <= 1
+							? 'Træningen er med fra dag 1. Sådan kører Kropsro.'
+							: `Ingen træning før dag ${formTraeningStart}. Den dag giver træning 1, dagen efter træning 2, og så fremdeles. Kickstart bruger dag 3.`}
+					</span>
+				</label>
+
+				{#if erBygget}
+					<div class="felt">
+						<span class="felt-label">Funktioner (frit pr forløb)</span>
+						<div class="feature-liste">
+							{#each FEATURES as f (f.key)}
+								<label class="checkbox-rad">
+									<input
+										type="checkbox"
+										checked={formFeatures[f.key] ?? false}
+										onchange={(e) => (formFeatures[f.key] = e.currentTarget.checked)}
+										disabled={gemmer}
+									/>
+									<span>{f.navn}</span>
+								</label>
+							{/each}
+						</div>
+
+						{#if formFeatures['nul-dage']}
+							<label class="felt" style="margin-top: 12px;">
+								<span class="felt-label">Pause-dage-pulje (max antal)</span>
 								<input
-									type="checkbox"
-									checked={formFeatures[f.key] ?? false}
-									onchange={(e) => (formFeatures[f.key] = e.currentTarget.checked)}
+									type="number"
+									min="0"
+									max="365"
+									bind:value={formNulPulje}
 									disabled={gemmer}
 								/>
-								<span>{f.navn}</span>
+								<span class="felt-hint">
+									Hvor mange dage kunden i alt må sætte på pause i forløbet.
+								</span>
 							</label>
-						{/each}
+						{/if}
 					</div>
 
-					{#if formFeatures['nul-dage']}
-						<label class="felt" style="margin-top: 12px;">
-							<span class="felt-label">Pause-dage-pulje (max antal)</span>
-							<input type="number" min="0" max="365" bind:value={formNulPulje} disabled={gemmer} />
-							<span class="felt-hint">
-								Hvor mange dage kunden i alt må sætte på pause i forløbet.
-							</span>
+					<div class="felt">
+						<span class="felt-label">Fællesskab</span>
+						<label class="checkbox-rad">
+							<input type="checkbox" bind:checked={formBuddy} disabled={gemmer} />
+							<span>Buddy-makker (kunden spørges ved første login)</span>
 						</label>
-					{/if}
-				</div>
+						<label class="checkbox-rad">
+							<input type="checkbox" bind:checked={formFacebook} disabled={gemmer} />
+							<span>Facebook-gruppe (kunden spørges om hun er kommet ind)</span>
+						</label>
+					</div>
 
-				<div class="felt">
-					<span class="felt-label">Fællesskab</span>
-					<label class="checkbox-rad">
-						<input type="checkbox" bind:checked={formBuddy} disabled={gemmer} />
-						<span>Buddy-makker (kunden spørges ved første login)</span>
-					</label>
-					<label class="checkbox-rad">
-						<input type="checkbox" bind:checked={formFacebook} disabled={gemmer} />
-						<span>Facebook-gruppe (kunden spørges om hun er kommet ind)</span>
-					</label>
-				</div>
+					<div class="felt">
+						<span class="felt-label">Træning</span>
+						<label class="checkbox-rad">
+							<input type="checkbox" bind:checked={formTraening} disabled={gemmer} />
+							<span>Mikrotræning (kunden vælger kettlebell/uden)</span>
+						</label>
+						<span class="felt-hint">
+							{formTraening
+								? 'Husk at bygge to programmer (med/uden kettlebell) under Træning-siden nedenfor.'
+								: 'Uden mikrotræning leveres træning bare som lektioner/videoer.'}
+						</span>
+					</div>
+				{/if}
 
-				<div class="felt">
-					<span class="felt-label">Træning</span>
-					<label class="checkbox-rad">
-						<input type="checkbox" bind:checked={formTraening} disabled={gemmer} />
-						<span>Mikrotræning (kunden vælger kettlebell/uden)</span>
-					</label>
-					<span class="felt-hint">
-						{formTraening
-							? 'Husk at bygge to programmer (med/uden kettlebell) under Træning-siden nedenfor.'
-							: 'Uden mikrotræning leveres træning bare som lektioner/videoer.'}
-					</span>
-				</div>
-			{/if}
+				{#if gemFejl}
+					<div class="fejl-besked">{gemFejl}</div>
+				{/if}
+				{#if gemKvit}
+					<div class="kvit-besked">Gemt ✓</div>
+				{/if}
 
-			{#if gemFejl}
-				<div class="fejl-besked">{gemFejl}</div>
-			{/if}
-			{#if gemKvit}
-				<div class="kvit-besked">Gemt ✓</div>
-			{/if}
-
-			<button class="form-knap primary" type="button" onclick={gem} disabled={gemmer}>
-				{gemmer ? 'Gemmer...' : 'Gem ændringer'}
-			</button>
-		</div>
-
-		<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/lektioner">
-			<div class="indhold-icon" style="background: #9D6358;">
-				<Icon name="path" size={16} color="#fff" />
+				<button class="form-knap primary" type="button" onclick={gem} disabled={gemmer}>
+					{gemmer ? 'Gemmer...' : 'Gem ændringer'}
+				</button>
 			</div>
-			<div class="indhold-tekst">
-				<div class="indhold-navn">Dagligt indhold</div>
-				<div class="indhold-sub">Lektioner, refleksioner og små skridt — dag for dag</div>
-			</div>
-			<Icon name="chevron-r" size={14} color="var(--text3)" />
-		</a>
 
-		<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/smaa-skridt">
-			<div class="indhold-icon" style="background: #7E9BB3;">
-				<Icon name="flower" size={16} color="#fff" />
-			</div>
-			<div class="indhold-tekst">
-				<div class="indhold-navn">Små skridt</div>
-				<div class="indhold-sub">Daglige små skridt — vælg hvilke dage de gælder</div>
-			</div>
-			<Icon name="chevron-r" size={14} color="var(--text3)" />
-		</a>
-
-		<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/challenges">
-			<div class="indhold-icon" style="background: #6F9E7E;">
-				<Icon name="leaf" size={16} color="#fff" />
-			</div>
-			<div class="indhold-tekst">
-				<div class="indhold-navn">Challenges</div>
-				<div class="indhold-sub">Tidsbegrænsede konkurrencer som frugt/grønt-uge</div>
-			</div>
-			<Icon name="chevron-r" size={14} color="var(--text3)" />
-		</a>
-
-		{#if forlob?.harBuddy ?? forlob?.type === 'kropsro'}
-			<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/buddymakker">
+			<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/lektioner">
 				<div class="indhold-icon" style="background: #9D6358;">
-					<Icon name="user" size={16} color="#fff" />
+					<Icon name="path" size={16} color="#fff" />
 				</div>
 				<div class="indhold-tekst">
-					<div class="indhold-navn">Buddy-gruppe</div>
-					<div class="indhold-sub">Deltagere der vil være med i en buddy-gruppe</div>
+					<div class="indhold-navn">Dagligt indhold</div>
+					<div class="indhold-sub">Lektioner, refleksioner og små skridt — dag for dag</div>
 				</div>
 				<Icon name="chevron-r" size={14} color="var(--text3)" />
 			</a>
-		{/if}
 
-		{#if forlob?.harFacebookGruppe ?? forlob?.type === 'kropsro'}
-			<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/facebook-gruppe">
-				<div class="indhold-icon" style="background: #4267B2;">
-					<Icon name="community" size={16} color="#fff" />
+			<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/smaa-skridt">
+				<div class="indhold-icon" style="background: #7E9BB3;">
+					<Icon name="flower" size={16} color="#fff" />
 				</div>
 				<div class="indhold-tekst">
-					<div class="indhold-navn">Facebook-gruppe</div>
-					<div class="indhold-sub">Hvem er kommet ind og hvem mangler</div>
+					<div class="indhold-navn">Små skridt</div>
+					<div class="indhold-sub">Daglige små skridt — vælg hvilke dage de gælder</div>
 				</div>
 				<Icon name="chevron-r" size={14} color="var(--text3)" />
 			</a>
-		{/if}
 
-		<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/traening">
-			<div class="indhold-icon" style="background: #C9A07A;">
-				<Icon name="flame" size={16} color="#fff" />
-			</div>
-			<div class="indhold-tekst">
-				<div class="indhold-navn">Træning</div>
-				<div class="indhold-sub">
-					Programmer, tildelinger og custom-builder for forløbets deltagere
+			<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/challenges">
+				<div class="indhold-icon" style="background: #6F9E7E;">
+					<Icon name="leaf" size={16} color="#fff" />
 				</div>
-			</div>
-			<Icon name="chevron-r" size={14} color="var(--text3)" />
-		</a>
-
-		<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/bibliotek">
-			<div class="indhold-icon" style="background: var(--terra);">
-				<Icon name="book" size={16} color="#fff" />
-			</div>
-			<div class="indhold-tekst">
-				<div class="indhold-navn">Bibliotek</div>
-				<div class="indhold-sub">FAQ og links for forløbet</div>
-			</div>
-			<Icon name="chevron-r" size={14} color="var(--text3)" />
-		</a>
-
-		<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/beskeder">
-			<div class="indhold-icon" style="background: #5C7A8C;">
-				<Icon name="mail" size={16} color="#fff" />
-			</div>
-			<div class="indhold-tekst">
-				<div class="indhold-navn">Beskeder</div>
-				<div class="indhold-sub">Spørgsmål fra klienter på dette forløb</div>
-			</div>
-			<Icon name="chevron-r" size={14} color="var(--text3)" />
-		</a>
-
-		<div class="form-card">
-			<div class="form-titel">Tilføj én kunde manuelt</div>
-			<p class="csv-hint">
-				Indsæt klientens email, fornavn og efternavn. Hun bliver automatisk tilknyttet dette forløb
-				med korrekt adgang.
-			</p>
-			<form
-				class="manuel-form"
-				onsubmit={(e) => {
-					e.preventDefault();
-					void tilfoejManuel();
-				}}
-			>
-				<input
-					type="email"
-					class="manuel-input"
-					placeholder="Email"
-					bind:value={nyEmail}
-					disabled={tilfoejer}
-					autocomplete="email"
-				/>
-				<div class="manuel-row">
-					<input
-						type="text"
-						class="manuel-input"
-						placeholder="Fornavn"
-						bind:value={nyFornavn}
-						disabled={tilfoejer}
-						autocomplete="given-name"
-					/>
-					<input
-						type="text"
-						class="manuel-input"
-						placeholder="Efternavn"
-						bind:value={nyEfternavn}
-						disabled={tilfoejer}
-						autocomplete="family-name"
-					/>
+				<div class="indhold-tekst">
+					<div class="indhold-navn">Challenges</div>
+					<div class="indhold-sub">Tidsbegrænsede konkurrencer som frugt/grønt-uge</div>
 				</div>
-				<button
-					type="submit"
-					class="form-knap primary"
-					disabled={tilfoejer || !nyEmail.trim() || !nyFornavn.trim()}
+				<Icon name="chevron-r" size={14} color="var(--text3)" />
+			</a>
+
+			{#if forlob?.harBuddy ?? forlob?.type === 'kropsro'}
+				<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/buddymakker">
+					<div class="indhold-icon" style="background: #9D6358;">
+						<Icon name="user" size={16} color="#fff" />
+					</div>
+					<div class="indhold-tekst">
+						<div class="indhold-navn">Buddy-gruppe</div>
+						<div class="indhold-sub">Deltagere der vil være med i en buddy-gruppe</div>
+					</div>
+					<Icon name="chevron-r" size={14} color="var(--text3)" />
+				</a>
+			{/if}
+
+			{#if forlob?.harFacebookGruppe ?? forlob?.type === 'kropsro'}
+				<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/facebook-gruppe">
+					<div class="indhold-icon" style="background: #4267B2;">
+						<Icon name="community" size={16} color="#fff" />
+					</div>
+					<div class="indhold-tekst">
+						<div class="indhold-navn">Facebook-gruppe</div>
+						<div class="indhold-sub">Hvem er kommet ind og hvem mangler</div>
+					</div>
+					<Icon name="chevron-r" size={14} color="var(--text3)" />
+				</a>
+			{/if}
+
+			<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/traening">
+				<div class="indhold-icon" style="background: #C9A07A;">
+					<Icon name="flame" size={16} color="#fff" />
+				</div>
+				<div class="indhold-tekst">
+					<div class="indhold-navn">Træning</div>
+					<div class="indhold-sub">
+						Programmer, tildelinger og custom-builder for forløbets deltagere
+					</div>
+				</div>
+				<Icon name="chevron-r" size={14} color="var(--text3)" />
+			</a>
+
+			<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/bibliotek">
+				<div class="indhold-icon" style="background: var(--terra);">
+					<Icon name="book" size={16} color="#fff" />
+				</div>
+				<div class="indhold-tekst">
+					<div class="indhold-navn">Bibliotek</div>
+					<div class="indhold-sub">FAQ og links for forløbet</div>
+				</div>
+				<Icon name="chevron-r" size={14} color="var(--text3)" />
+			</a>
+
+			<a class="indhold-row" href="/ny/admin/forlob/{forlobId}/beskeder">
+				<div class="indhold-icon" style="background: #5C7A8C;">
+					<Icon name="mail" size={16} color="#fff" />
+				</div>
+				<div class="indhold-tekst">
+					<div class="indhold-navn">Beskeder</div>
+					<div class="indhold-sub">Spørgsmål fra klienter på dette forløb</div>
+				</div>
+				<Icon name="chevron-r" size={14} color="var(--text3)" />
+			</a>
+
+			<div class="form-card">
+				<div class="form-titel">Tilføj én kunde manuelt</div>
+				<p class="csv-hint">
+					Indsæt klientens email, fornavn og efternavn. Hun bliver automatisk tilknyttet dette
+					forløb med korrekt adgang.
+				</p>
+				<form
+					class="manuel-form"
+					onsubmit={(e) => {
+						e.preventDefault();
+						void tilfoejManuel();
+					}}
 				>
-					{tilfoejer ? 'Tilføjer...' : 'Tilføj kunde'}
-				</button>
-			</form>
-			{#if tilfoejResultat}
-				<div class="kvit-besked">{tilfoejResultat}</div>
-			{/if}
-			{#if tilfoejFejl}
-				<div class="fejl-besked">{tilfoejFejl}</div>
-			{/if}
-		</div>
+					<input
+						type="email"
+						class="manuel-input"
+						placeholder="Email"
+						bind:value={nyEmail}
+						disabled={tilfoejer}
+						autocomplete="email"
+					/>
+					<div class="manuel-row">
+						<input
+							type="text"
+							class="manuel-input"
+							placeholder="Fornavn"
+							bind:value={nyFornavn}
+							disabled={tilfoejer}
+							autocomplete="given-name"
+						/>
+						<input
+							type="text"
+							class="manuel-input"
+							placeholder="Efternavn"
+							bind:value={nyEfternavn}
+							disabled={tilfoejer}
+							autocomplete="family-name"
+						/>
+					</div>
+					<button
+						type="submit"
+						class="form-knap primary"
+						disabled={tilfoejer || !nyEmail.trim() || !nyFornavn.trim()}
+					>
+						{tilfoejer ? 'Tilføjer...' : 'Tilføj kunde'}
+					</button>
+				</form>
+				{#if tilfoejResultat}
+					<div class="kvit-besked">{tilfoejResultat}</div>
+				{/if}
+				{#if tilfoejFejl}
+					<div class="fejl-besked">{tilfoejFejl}</div>
+				{/if}
+			</div>
 
-		<div class="form-card">
-			<div class="form-titel">Importér emails fra Simplero</div>
-			<p class="csv-hint">
-				Upload din Simplero-eksport som CSV-fil eller paste indholdet ind. Klienter med "Canceled
-				at" udfyldt springes automatisk over.
-			</p>
+			<div class="form-card">
+				<div class="form-titel">Importér emails fra Simplero</div>
+				<p class="csv-hint">
+					Upload din Simplero-eksport som CSV-fil eller paste indholdet ind. Klienter med "Canceled
+					at" udfyldt springes automatisk over.
+				</p>
 
-			<label class="csv-fil-knap" class:disabled={importerer}>
-				📎 Vælg CSV-fil
-				<input
-					type="file"
-					accept=".csv,text/csv,text/plain"
-					onchange={laesCsvFil}
+				<label class="csv-fil-knap" class:disabled={importerer}>
+					📎 Vælg CSV-fil
+					<input
+						type="file"
+						accept=".csv,text/csv,text/plain"
+						onchange={laesCsvFil}
+						disabled={importerer}
+					/>
+				</label>
+
+				<div class="csv-eller">eller indsæt manuelt</div>
+
+				<textarea
+					class="csv-textarea"
+					placeholder="Paste CSV-indhold her..."
+					bind:value={csvIndhold}
 					disabled={importerer}
-				/>
-			</label>
+					rows="6"
+				></textarea>
 
-			<div class="csv-eller">eller indsæt manuelt</div>
+				<div class="csv-knapper">
+					<button
+						class="form-knap ghost"
+						type="button"
+						onclick={previewCsv}
+						disabled={!csvIndhold.trim() || importerer}
+					>
+						Forhåndsvis
+					</button>
+					<button
+						class="form-knap primary"
+						type="button"
+						onclick={importer}
+						disabled={!parsResultat || parsResultat.rows.length === 0 || importerer}
+					>
+						{importerer ? 'Importerer...' : 'Importér'}
+					</button>
+				</div>
 
-			<textarea
-				class="csv-textarea"
-				placeholder="Paste CSV-indhold her..."
-				bind:value={csvIndhold}
-				disabled={importerer}
-				rows="6"
-			></textarea>
-
-			<div class="csv-knapper">
-				<button
-					class="form-knap ghost"
-					type="button"
-					onclick={previewCsv}
-					disabled={!csvIndhold.trim() || importerer}
-				>
-					Forhåndsvis
-				</button>
-				<button
-					class="form-knap primary"
-					type="button"
-					onclick={importer}
-					disabled={!parsResultat || parsResultat.rows.length === 0 || importerer}
-				>
-					{importerer ? 'Importerer...' : 'Importér'}
-				</button>
-			</div>
-
-			{#if parsResultat}
-				{#if parsResultat.fejl}
-					<div class="fejl-besked">{parsResultat.fejl}</div>
-				{:else}
-					<div class="csv-preview">
-						<div class="csv-preview-tael">
-							<strong>{parsResultat.rows.length}</strong> gyldige emails klar til import
+				{#if parsResultat}
+					{#if parsResultat.fejl}
+						<div class="fejl-besked">{parsResultat.fejl}</div>
+					{:else}
+						<div class="csv-preview">
+							<div class="csv-preview-tael">
+								<strong>{parsResultat.rows.length}</strong> gyldige emails klar til import
+							</div>
+							{#if parsResultat.skippedCanceled > 0}
+								<div class="csv-preview-info">
+									{parsResultat.skippedCanceled} annullerede sprunget over
+								</div>
+							{/if}
+							{#if parsResultat.skippedInvalid > 0}
+								<div class="csv-preview-info">
+									{parsResultat.skippedInvalid} ugyldige rækker sprunget over
+								</div>
+							{/if}
 						</div>
-						{#if parsResultat.skippedCanceled > 0}
-							<div class="csv-preview-info">
-								{parsResultat.skippedCanceled} annullerede sprunget over
-							</div>
-						{/if}
-						{#if parsResultat.skippedInvalid > 0}
-							<div class="csv-preview-info">
-								{parsResultat.skippedInvalid} ugyldige rækker sprunget over
-							</div>
+					{/if}
+				{/if}
+
+				{#if importResultat}
+					<div class="kvit-besked">
+						Import færdig — {importResultat.tilfoejet} tilføjet · {importResultat.opdateret} opdateret
+						·
+						{importResultat.uaendret} uændret
+						{#if importResultat.fejl > 0}
+							· {importResultat.fejl} fejl
 						{/if}
 					</div>
 				{/if}
-			{/if}
 
-			{#if importResultat}
-				<div class="kvit-besked">
-					Import færdig — {importResultat.tilfoejet} tilføjet · {importResultat.opdateret} opdateret ·
-					{importResultat.uaendret} uændret
-					{#if importResultat.fejl > 0}
-						· {importResultat.fejl} fejl
-					{/if}
-				</div>
-			{/if}
-
-			{#if importFejl}
-				<div class="fejl-besked">{importFejl}</div>
-			{/if}
-		</div>
-
-		<div class="emails-card">
-			<div class="emails-head">
-				<div class="form-titel">Tilmeldte emails</div>
-				<div class="emails-tael">
-					{#if soegning.trim() && filtreredeEmails.length !== emails.length}
-						{filtreredeEmails.length} af {emails.length}
-					{:else}
-						{emails.length}
-					{/if}
-				</div>
+				{#if importFejl}
+					<div class="fejl-besked">{importFejl}</div>
+				{/if}
 			</div>
 
-			{#if emails.length > 0}
-				<div class="soeg-rad">
-					<input
-						type="search"
-						class="soeg-input"
-						placeholder="Søg på navn eller email..."
-						bind:value={soegning}
-					/>
-					{#if soegning}
-						<button
-							class="soeg-ryd"
-							type="button"
-							onclick={() => (soegning = '')}
-							aria-label="Ryd søgning"
-						>
-							×
-						</button>
-					{/if}
+			<div class="emails-card">
+				<div class="emails-head">
+					<div class="form-titel">Tilmeldte emails</div>
+					<div class="emails-tael">
+						{#if soegning.trim() && filtreredeEmails.length !== emails.length}
+							{filtreredeEmails.length} af {emails.length}
+						{:else}
+							{emails.length}
+						{/if}
+					</div>
 				</div>
-			{/if}
 
-			{#if emails.length === 0}
-				<div class="status-besked" style="margin: 0;">
-					Ingen emails tilknyttet endnu. Importér en CSV-fil ovenfor for at komme i gang.
-				</div>
-			{:else if filtreredeEmails.length === 0}
-				<div class="status-besked" style="margin: 0;">
-					Ingen match for "{soegning}".
-				</div>
-			{:else}
-				<div class="emails-liste">
-					{#each filtreredeEmails as e (e.email)}
-						<div class="email-row">
-							<div class="email-info">
-								<div class="email-adresse">{e.email}</div>
-								{#if e.firstName || e.lastName}
-									<div class="email-navn">{e.firstName} {e.lastName}</div>
-								{/if}
-								<div class="email-version">{appVersionTekst(e.email)}</div>
+				{#if emails.length > 0}
+					<div class="soeg-rad">
+						<input
+							type="search"
+							class="soeg-input"
+							placeholder="Søg på navn eller email..."
+							bind:value={soegning}
+						/>
+						{#if soegning}
+							<button
+								class="soeg-ryd"
+								type="button"
+								onclick={() => (soegning = '')}
+								aria-label="Ryd søgning"
+							>
+								×
+							</button>
+						{/if}
+					</div>
+				{/if}
+
+				{#if emails.length === 0}
+					<div class="status-besked" style="margin: 0;">
+						Ingen emails tilknyttet endnu. Importér en CSV-fil ovenfor for at komme i gang.
+					</div>
+				{:else if filtreredeEmails.length === 0}
+					<div class="status-besked" style="margin: 0;">
+						Ingen match for "{soegning}".
+					</div>
+				{:else}
+					<div class="emails-liste">
+						{#each filtreredeEmails as e (e.email)}
+							<div class="email-row">
+								<div class="email-info">
+									<div class="email-adresse">{e.email}</div>
+									{#if e.firstName || e.lastName}
+										<div class="email-navn">{e.firstName} {e.lastName}</div>
+									{/if}
+									<div class="email-version">{appVersionTekst(e.email)}</div>
+								</div>
+								<span class="badge {e.status === 'registered' ? 'aktiv' : 'inaktiv'}">
+									{statusLabel(e.status)}
+								</span>
 							</div>
-							<span class="badge {e.status === 'registered' ? 'aktiv' : 'inaktiv'}">
-								{statusLabel(e.status)}
-							</span>
-						</div>
-					{/each}
-				</div>
-			{/if}
-		</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
 
-		<div class="slet-omraade">
-			{#if !bekraefter}
-				<button class="slet-knap" type="button" onclick={slet}>Slet forløb</button>
-			{:else}
-				<div class="slet-bekraeft">
-					<div class="slet-tekst">
-						Slet forløbet permanent? Tilknyttede allowedEmails forbliver i Firestore.
+			<div class="slet-omraade">
+				{#if !bekraefter}
+					<button class="slet-knap" type="button" onclick={slet}>Slet forløb</button>
+				{:else}
+					<div class="slet-bekraeft">
+						<div class="slet-tekst">
+							Slet forløbet permanent? Tilknyttede allowedEmails forbliver i Firestore.
+						</div>
+						<div class="slet-knapper">
+							<button
+								class="form-knap ghost"
+								type="button"
+								onclick={() => (bekraefter = false)}
+								disabled={sletter}
+							>
+								Annuller
+							</button>
+							<button class="form-knap danger" type="button" onclick={slet} disabled={sletter}>
+								{sletter ? 'Sletter...' : 'Ja, slet'}
+							</button>
+						</div>
 					</div>
-					<div class="slet-knapper">
-						<button
-							class="form-knap ghost"
-							type="button"
-							onclick={() => (bekraefter = false)}
-							disabled={sletter}
-						>
-							Annuller
-						</button>
-						<button class="form-knap danger" type="button" onclick={slet} disabled={sletter}>
-							{sletter ? 'Sletter...' : 'Ja, slet'}
-						</button>
-					</div>
-				</div>
-			{/if}
-		</div>
-	{/if}
-</div>
+				{/if}
+			</div>
+		{/if}
+	</div>
 {/if}
 
 <style>

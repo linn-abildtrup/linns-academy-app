@@ -18,11 +18,11 @@
 	import type { Fodevare, GemtMaaltid, Maaltidstype } from '$lib/content/kost';
 	import { MAALTIDSTYPER, MAALTIDSTYPE_LABELS, PROTEIN_MAALTIDS_MAAL } from '$lib/content/kost';
 	import {
-	soegFodevarer,
-	foerstISoegning,
-	mineScanninger,
-	MAKS_TRAEF
-} from '$lib/content/fodevareSoeg3';
+		soegFodevarer,
+		foerstISoegning,
+		mineScanninger,
+		MAKS_TRAEF
+	} from '$lib/content/fodevareSoeg3';
 	import { LABELS, harProteinMaal } from '$lib/content/maaltider3';
 	import { formatPortion, naeringFor } from '$lib/content/maengde3';
 	import type { PlejerPost } from '$lib/content/plejer3';
@@ -73,7 +73,7 @@
 	} from '$lib/firestore/opskriftAendring3';
 	import type { Opskrift } from '$lib/content/opskrifter';
 	import { gemSammensat } from '$lib/firestore/plejer3';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 
 	// Faste maaltider. Se SPEC-3.0.md afsnit 26.10.
 	import {
@@ -145,11 +145,7 @@
 	import TilfoejArk from '$lib/components/ny/TilfoejArk.svelte';
 
 	// Hjertet paa en foedevare. Se SPEC-3.0.md afsnit 26.15.
-	import {
-		erHjertet,
-		skiftHjerte,
-		hjerterFra
-	} from '$lib/content/hjerteFodevare3';
+	import { erHjertet, skiftHjerte, hjerterFra } from '$lib/content/hjerteFodevare3';
 	import { saetHjerte3 } from '$lib/firestore/hjerteFodevare3';
 	// Mine favoritter: de tre grupper samlet til ét begreb, 26. august.
 	import { mineFavoritter, type FavoritRaekke } from '$lib/content/mineFavoritter3';
@@ -160,7 +156,13 @@
 	import { tilSoegning, hendesVarer } from '$lib/content/fodevareKilde3';
 	import { kendteVarerFra, husKendtVare } from '$lib/firestore/kendteVarer3';
 	import ScanArk from '$lib/components/ny/ScanArk.svelte';
-	import { hentScannedeVarer3, medScannede, delScanning, idFor, gemDeklarationsbillede } from '$lib/firestore/scannedeVarer3';
+	import {
+		hentScannedeVarer3,
+		medScannede,
+		delScanning,
+		idFor,
+		gemDeklarationsbillede
+	} from '$lib/firestore/scannedeVarer3';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -272,9 +274,7 @@
 	 * det spoergsmaalet om at huske maengderne haenger paa. Se D1 i
 	 * mockups-ret-maengde-i-opskrift.html.
 	 */
-	let spoergOmHusk = $state<{ opskriftId: string; titel: string; aendring: Aendring } | null>(
-		null
-	);
+	let spoergOmHusk = $state<{ opskriftId: string; titel: string; aendring: Aendring } | null>(null);
 	let egne = $state<Fodevare[]>([]);
 
 	// ── Faste maaltider ────────────────────────────────────────
@@ -1335,7 +1335,13 @@
 	async function gemScannetVare(v: {
 		navn: string;
 		barcode: string | null;
-		tal: { protein: number | null; fiber: number | null; kh: number | null; fedt: number | null; kcal: number | null };
+		tal: {
+			protein: number | null;
+			fiber: number | null;
+			kh: number | null;
+			fedt: number | null;
+			kcal: number | null;
+		};
 		rettet: boolean;
 		billede: Blob | null;
 	}) {
@@ -1361,7 +1367,9 @@
 				fedt: v.tal.fedt,
 				kcal: v.tal.kcal,
 				billedeUrl,
-				billedeSti: billedeUrl ? `${billedeSti}.${v.billede.type.includes('webp') ? 'webp' : 'jpg'}` : null
+				billedeSti: billedeUrl
+					? `${billedeSti}.${v.billede.type.includes('webp') ? 'webp' : 'jpg'}`
+					: null
 			});
 			// Sagde reglen nej, har en anden kunde scannet den samme
 			// stregkode foer hende. Saa bruger vi den der ligger.
@@ -1391,9 +1399,17 @@
 			...(v.rettet ? { rettetAfKunde: true } : {}),
 			...(v.barcode ? { barcode: v.barcode } : {})
 		} as never);
-		const vare = { id, name: v.navn, cat: 'andet', p: v.tal.protein ?? 0, f: v.tal.fiber ?? 0,
-			kh: v.tal.kh ?? undefined, fedt: v.tal.fedt ?? undefined, kcal: v.tal.kcal ?? undefined,
-			kilde: 'custom' } as Fodevare;
+		const vare = {
+			id,
+			name: v.navn,
+			cat: 'andet',
+			p: v.tal.protein ?? 0,
+			f: v.tal.fiber ?? 0,
+			kh: v.tal.kh ?? undefined,
+			fedt: v.tal.fedt ?? undefined,
+			kcal: v.tal.kcal ?? undefined,
+			kilde: 'custom'
+		} as Fodevare;
 		foods = new Map(foods).set(id, vare);
 		egne = [...egne, vare];
 		scanArk = false;
@@ -1596,7 +1612,7 @@
 	<div class="tm-k">I dette måltid</div>
 
 	{#if henter}
-		<div class="tt-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
+		<Venter tekst="Henter dit måltid" />
 	{:else if poster.length === 0}
 		<div class="kort rolig">Der er ikke noget her endnu.</div>
 	{:else}
@@ -1693,7 +1709,10 @@
 		onvaelg={vaelgTraef}
 		onhjerte={skiftHjertePaa}
 		onlavSelv={lavSelvFraArk}
-		onscan={() => { tilfoejArk = false; scanArk = true; }}
+		onscan={() => {
+			tilfoejArk = false;
+			scanArk = true;
+		}}
 		onkilde={aabnKildeFraArk}
 		onluk={() => (tilfoejArk = false)}
 	/>

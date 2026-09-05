@@ -207,120 +207,120 @@
 {#if !maaVaereHer}
 	<p class="fu-kun">Siden er kun for admin.</p>
 {:else}
-<div class="page">
-	<header class="page-header">
-		<a class="back" href="/ny/admin/forlob/{forlobId}">
-			<Icon name="arrow-l" size={14} color="var(--text2)" />
-			<span>{forlob?.navn ?? 'Forløb'}</span>
-		</a>
-		<div class="eyebrow">Admin · {forlob?.navn ?? forlobId} · Lektioner</div>
-		<h1>Lektioner</h1>
-		<p class="page-sub">
-			Klik på en dag for at redigere. Prikkerne viser hvad dagen indeholder: lektion, refleksion og
-			små skridt.
-		</p>
-	</header>
+	<div class="page">
+		<header class="page-header">
+			<a class="back" href="/ny/admin/forlob/{forlobId}">
+				<Icon name="arrow-l" size={14} color="var(--text2)" />
+				<span>{forlob?.navn ?? 'Forløb'}</span>
+			</a>
+			<div class="eyebrow">Admin · {forlob?.navn ?? forlobId} · Lektioner</div>
+			<h1>Lektioner</h1>
+			<p class="page-sub">
+				Klik på en dag for at redigere. Prikkerne viser hvad dagen indeholder: lektion, refleksion
+				og små skridt.
+			</p>
+		</header>
 
-	{#if loading}
-		<div class="status-besked">Henter...</div>
-	{:else if fejl}
-		<div class="status-besked fejl">{fejl}</div>
-	{:else if forlob}
-		<div class="vaerktoej">
-			<div class="tael">
-				<strong>{antalMedIndhold}</strong> af {forlob.antalDage} dage har indhold
-			</div>
-			<div class="vk-knapper">
-				{#if idagDag !== null}
-					<button class="vk-knap" onclick={scrollTilIdag}>I dag</button>
-				{/if}
-				<button class="vk-knap" class:aktiv={kunTomme} onclick={() => (kunTomme = !kunTomme)}>
-					{kunTomme ? 'Vis alle' : 'Vis kun tomme'}
-				</button>
-			</div>
-		</div>
-
-		{#if kunTomme}
-			{#if tommeDage.length === 0}
-				<div class="status-besked">Alle dage har indhold 🎉</div>
-			{:else}
-				<div class="tomme-liste">
-					{#each tommeDage as d (d.dagNummer)}
-						<a class="tom-chip" href="/ny/admin/forlob/{forlobId}/lektioner/{d.dagNummer}">
-							{d.dagNummer === 0 ? 'Baseline' : `Dag ${d.dagNummer}`}
-						</a>
-					{/each}
+		{#if loading}
+			<div class="status-besked">Henter...</div>
+		{:else if fejl}
+			<div class="status-besked fejl">{fejl}</div>
+		{:else if forlob}
+			<div class="vaerktoej">
+				<div class="tael">
+					<strong>{antalMedIndhold}</strong> af {forlob.antalDage} dage har indhold
 				</div>
-			{/if}
-		{:else}
-			{#if baselineDag}
-				<a
-					id="dag-0"
-					class="baseline-row"
-					class:idag={idagDag === 0}
-					href="/ny/admin/forlob/{forlobId}/lektioner/0"
-				>
-					<div class="celle stat-{dagState(baselineDag)} baseline-celle">0</div>
-					<div class="baseline-tekst">
-						<div class="baseline-titel">
-							Baseline <span class="baseline-dato">· {datoForDag(0)}</span>
-						</div>
-						<div class="baseline-sub">
-							{#if baselineDag.lektioner.length > 0}
-								{baselineDag.lektioner.length} lektion{baselineDag.lektioner.length === 1
-									? ''
-									: 'er'}
-							{:else if baselineDag.noteFraLinn}
-								Kun note fra Linn
-							{:else}
-								Intet indhold endnu
-							{/if}
-						</div>
-					</div>
-					<Icon name="chevron-r" size={14} color="var(--text3)" />
-				</a>
-			{/if}
-
-			<div class="grid-wrap">
-				<div class="grid-row grid-head">
-					<div class="uge-label"></div>
-					{#each ugedage as navn, i (i)}
-						<div class="ugedag-label">{navn}</div>
-					{/each}
+				<div class="vk-knapper">
+					{#if idagDag !== null}
+						<button class="vk-knap" onclick={scrollTilIdag}>I dag</button>
+					{/if}
+					<button class="vk-knap" class:aktiv={kunTomme} onclick={() => (kunTomme = !kunTomme)}>
+						{kunTomme ? 'Vis alle' : 'Vis kun tomme'}
+					</button>
 				</div>
-				{#each uger as u (u.uge)}
-					<div class="grid-row">
-						<div class="uge-label">Uge {u.uge}</div>
-						{#each u.dage as d (d.dagNummer)}
-							{@const t = dagPrikker(d)}
-							<a
-								id="dag-{d.dagNummer}"
-								class="celle"
-								class:tom={!t.lektion && !t.refleksion && !t.smaaskridt}
-								class:idag={d.dagNummer === idagDag}
-								href="/ny/admin/forlob/{forlobId}/lektioner/{d.dagNummer}"
-								title={celleTitel(d)}
-							>
-								<span class="nr">{d.dagNummer}</span>
-								<span class="prikker">
-									{#if t.lektion}<span class="prik lektion"></span>{/if}
-									{#if t.refleksion}<span class="prik refleksion"></span>{/if}
-									{#if t.smaaskridt}<span class="prik smaaskridt"></span>{/if}
-								</span>
+			</div>
+
+			{#if kunTomme}
+				{#if tommeDage.length === 0}
+					<div class="status-besked">Alle dage har indhold 🎉</div>
+				{:else}
+					<div class="tomme-liste">
+						{#each tommeDage as d (d.dagNummer)}
+							<a class="tom-chip" href="/ny/admin/forlob/{forlobId}/lektioner/{d.dagNummer}">
+								{d.dagNummer === 0 ? 'Baseline' : `Dag ${d.dagNummer}`}
 							</a>
 						{/each}
 					</div>
-				{/each}
-			</div>
+				{/if}
+			{:else}
+				{#if baselineDag}
+					<a
+						id="dag-0"
+						class="baseline-row"
+						class:idag={idagDag === 0}
+						href="/ny/admin/forlob/{forlobId}/lektioner/0"
+					>
+						<div class="celle stat-{dagState(baselineDag)} baseline-celle">0</div>
+						<div class="baseline-tekst">
+							<div class="baseline-titel">
+								Baseline <span class="baseline-dato">· {datoForDag(0)}</span>
+							</div>
+							<div class="baseline-sub">
+								{#if baselineDag.lektioner.length > 0}
+									{baselineDag.lektioner.length} lektion{baselineDag.lektioner.length === 1
+										? ''
+										: 'er'}
+								{:else if baselineDag.noteFraLinn}
+									Kun note fra Linn
+								{:else}
+									Intet indhold endnu
+								{/if}
+							</div>
+						</div>
+						<Icon name="chevron-r" size={14} color="var(--text3)" />
+					</a>
+				{/if}
 
-			<div class="legend">
-				<span class="legend-item"><span class="prik lektion"></span> Lektion</span>
-				<span class="legend-item"><span class="prik refleksion"></span> Refleksion</span>
-				<span class="legend-item"><span class="prik smaaskridt"></span> Små skridt</span>
-			</div>
+				<div class="grid-wrap">
+					<div class="grid-row grid-head">
+						<div class="uge-label"></div>
+						{#each ugedage as navn, i (i)}
+							<div class="ugedag-label">{navn}</div>
+						{/each}
+					</div>
+					{#each uger as u (u.uge)}
+						<div class="grid-row">
+							<div class="uge-label">Uge {u.uge}</div>
+							{#each u.dage as d (d.dagNummer)}
+								{@const t = dagPrikker(d)}
+								<a
+									id="dag-{d.dagNummer}"
+									class="celle"
+									class:tom={!t.lektion && !t.refleksion && !t.smaaskridt}
+									class:idag={d.dagNummer === idagDag}
+									href="/ny/admin/forlob/{forlobId}/lektioner/{d.dagNummer}"
+									title={celleTitel(d)}
+								>
+									<span class="nr">{d.dagNummer}</span>
+									<span class="prikker">
+										{#if t.lektion}<span class="prik lektion"></span>{/if}
+										{#if t.refleksion}<span class="prik refleksion"></span>{/if}
+										{#if t.smaaskridt}<span class="prik smaaskridt"></span>{/if}
+									</span>
+								</a>
+							{/each}
+						</div>
+					{/each}
+				</div>
+
+				<div class="legend">
+					<span class="legend-item"><span class="prik lektion"></span> Lektion</span>
+					<span class="legend-item"><span class="prik refleksion"></span> Refleksion</span>
+					<span class="legend-item"><span class="prik smaaskridt"></span> Små skridt</span>
+				</div>
+			{/if}
 		{/if}
-	{/if}
-</div>
+	</div>
 {/if}
 
 <style>

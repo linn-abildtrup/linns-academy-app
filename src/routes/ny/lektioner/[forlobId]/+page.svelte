@@ -41,7 +41,7 @@
 	import { hentNoterForForlob } from '$lib/firestore/lektionNoter';
 	import Fluebe from '$lib/components/ny/Fluebe.svelte';
 	import { erSet3 } from '$lib/content/lektionSet3';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
@@ -302,10 +302,7 @@
 			<a href="/ny/profil">Tilbage til din konto</a>
 		</div>
 	{:else if henter}
-		<div class="lektion-venter">
-			<Ventetegn variant="lille" />
-			<span>Henter lektionerne</span>
-		</div>
+		<Venter tekst="Henter lektionerne" />
 	{:else if liste.length === 0 && noteliste.length === 0}
 		<div class="kort rolig">
 			{#if lukket}

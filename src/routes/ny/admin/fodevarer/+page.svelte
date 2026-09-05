@@ -196,7 +196,9 @@
 							{f.verificeret ? 'Fjern godkendelsen' : 'Godkend varen'}
 						</AdmKnap>
 						{#if sletId === f.id}
-							<span class="fv-advarsel">Slettes permanent. Gamle registreringer beholder tallene.</span>
+							<span class="fv-advarsel"
+								>Slettes permanent. Gamle registreringer beholder tallene.</span
+							>
 							<AdmKnap slags="fare" disabled={arbejder === f.id} onclick={() => slet(f)}>
 								{arbejder === f.id ? 'Sletter…' : 'Ja, slet'}
 							</AdmKnap>

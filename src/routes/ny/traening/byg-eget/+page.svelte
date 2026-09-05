@@ -20,7 +20,7 @@
 	import { goto } from '$app/navigation';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import type { Adgangsbillede, ForlobKilde } from '$lib/content/adgang3';
 	import type { Exercise } from '$lib/content/mikrotraening';
 	import { genererProgramMedConfig } from '$lib/content/mikrotraening';
@@ -164,7 +164,7 @@
 	/>
 
 	{#if henter}
-		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
+		<Venter tekst="Henter øvelserne" />
 	{:else if !maaBygge}
 		<p class="kort rolig">Du kan ikke bygge dine egne programmer lige nu.</p>
 	{:else}

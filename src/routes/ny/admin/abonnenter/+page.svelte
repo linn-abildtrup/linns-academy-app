@@ -354,9 +354,7 @@
 			<AdmKort ro>
 				<div class="ab-kvit-h">Ny kode til {kodeTil}</div>
 				<div class="ab-kode">{kode}</div>
-				<p class="ab-advarsel">
-					Skriv den ned eller kopier den nu. Den kan ikke hentes frem igen.
-				</p>
+				<p class="ab-advarsel">Skriv den ned eller kopier den nu. Den kan ikke hentes frem igen.</p>
 				<div class="ab-besked-boks">{kodeBesked}</div>
 				<div class="ab-knapper">
 					<AdmKnap slags="primaer" onclick={kopier}>
@@ -421,9 +419,15 @@
 			</AdmTom>
 		{:else}
 			<div class="ab-tal">
-				<div class="ab-t-kort"><span class="v">{aktiveBasis}</span><span class="m">aktive basis</span></div>
-				<div class="ab-t-kort"><span class="v">{aktivePremium}</span><span class="m">aktive premium</span></div>
-				<div class="ab-t-kort"><span class="v">{raekker.length}</span><span class="m">i alt</span></div>
+				<div class="ab-t-kort">
+					<span class="v">{aktiveBasis}</span><span class="m">aktive basis</span>
+				</div>
+				<div class="ab-t-kort">
+					<span class="v">{aktivePremium}</span><span class="m">aktive premium</span>
+				</div>
+				<div class="ab-t-kort">
+					<span class="v">{raekker.length}</span><span class="m">i alt</span>
+				</div>
 			</div>
 
 			<div class="ab-filtre">
@@ -471,8 +475,8 @@
 
 								{#if udloebMail === r.allowed.email}
 									<div class="ab-advarsel-boks">
-										Du ændrer hvornår <b>{navnFor(r)}</b> mister adgangen. Sætter du en dato der er
-										gået, kan hun ikke komme ind.
+										Du ændrer hvornår <b>{navnFor(r)}</b> mister adgangen. Sætter du en dato der er gået,
+										kan hun ikke komme ind.
 									</div>
 									<div class="ab-raek">
 										<label class="ab-felt">
@@ -501,8 +505,8 @@
 									</div>
 								{:else if kodeBekraeft === r.allowed.email}
 									<div class="ab-advarsel-boks">
-										Du sætter en ny kode for <b>{navnFor(r)}</b>. Hendes nuværende kode holder op med
-										at virke med det samme.
+										Du sætter en ny kode for <b>{navnFor(r)}</b>. Hendes nuværende kode holder op
+										med at virke med det samme.
 									</div>
 									<div class="ab-knapper">
 										<AdmKnap slags="fare" disabled={kodeArbejder} onclick={() => nyKode(r)}>

@@ -426,7 +426,8 @@
 									</div>
 									{#if ai[q.id].skip}
 										<p class="sp-skip">
-											{ai[q.id].skipBegrundelse ?? 'AI en foreslår at du selv skriver det her svar.'}
+											{ai[q.id].skipBegrundelse ??
+												'AI en foreslår at du selv skriver det her svar.'}
 										</p>
 									{:else}
 										<p>{ai[q.id].udkast}</p>
@@ -497,7 +498,10 @@
 						<div class="sp-meta">{dato(s.oprettet)}</div>
 						<p class="sp-tekst">{s.spoergsmaal}</p>
 						{#if s.svar}
-							<div class="sp-svar"><span class="sp-svar-mrk">Dit svar</span><p>{s.svar}</p></div>
+							<div class="sp-svar">
+								<span class="sp-svar-mrk">Dit svar</span>
+								<p>{s.svar}</p>
+							</div>
 						{/if}
 					</div>
 				{/each}

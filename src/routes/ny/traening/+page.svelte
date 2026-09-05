@@ -31,7 +31,7 @@
 	import { husk, husket } from '$lib/content/sidehukommelse3';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import type { Adgangsbillede, ForlobKilde } from '$lib/content/adgang3';
 	import {
 		kategoriNavn3,
@@ -315,7 +315,7 @@
 	<Sidehoved titel="Træning" kant={false} />
 
 	{#if henter}
-		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter din træning</span></div>
+		<Venter tekst="Henter din træning" />
 	{:else if fejl}
 		<p class="kort rolig">{fejl}</p>
 	{:else if liste.length === 0}

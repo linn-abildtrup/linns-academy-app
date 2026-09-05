@@ -60,6 +60,10 @@
 	import { sikkerhedsLinje3 } from '$lib/content/aiSikkerhed3';
 	import { rullendeElement3 } from '$lib/utils/rulning3';
 	import { udenFormateringstegn } from '$lib/content/linnAi';
+	import Venter from '$lib/components/ny/Venter.svelte';
+	// Ventetegnet bruges stadig alene i "Taenker"-boblen: den er en besked i
+	// samtalen og ikke en vente-skaerm, saa den skal ikke have linjen om at
+	// det traekker ud.
 	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Lydbesked from '$lib/components/ny/Lydbesked.svelte';
 	import BilledeLag from '$lib/components/ny/BilledeLag.svelte';
@@ -649,10 +653,7 @@
 		     foerst. -->
 		<div class="bobler" bind:this={linnRulle}>
 			{#if henterTraade}
-				<div class="lektion-venter">
-					<Ventetegn variant="lille" />
-					<span>Henter</span>
-				</div>
+				<Venter tekst="Henter dine beskeder" />
 			{:else if chatTraade.length === 0}
 				<!-- Linns egen intro, ordret fra den gamle app. Det er det
 				     foerste en kunde moeder her, og det skal lyde som hende
@@ -788,10 +789,7 @@
 				{/if}
 
 				{#if henterSamtale}
-					<div class="lektion-venter">
-						<Ventetegn variant="lille" />
-						<span>Henter</span>
-					</div>
+					<Venter tekst="Henter dine beskeder" />
 				{:else if beskeder.length === 0}
 					<div class="forslag">
 						<p class="forslag-lab">Prøv for eksempel</p>

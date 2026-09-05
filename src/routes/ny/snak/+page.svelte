@@ -10,7 +10,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 
 	onMount(() => {
 		// Fanen foelger med, saa et gammelt link til fanen Linn stadig
@@ -23,6 +23,6 @@
 <svelte:head><title>Beskeder</title></svelte:head>
 
 <div class="ny-besked">
-	<Ventetegn variant="lille" />
+	<Venter tekst="Et øjeblik" visLaenge={false} />
 	<p class="vente-linje">Et øjeblik</p>
 </div>

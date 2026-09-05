@@ -38,7 +38,7 @@
 		type NotiTilstand3
 	} from '$lib/utils/notiTilmeld3';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -82,9 +82,7 @@
 	});
 
 	/** Kun dem Linn tillader for hende. Resten staar slet ikke. */
-	const synlige = $derived(
-		NOTI_SLAGS3.filter((s) => maaSende3(s, regler, null, forlobId))
-	);
+	const synlige = $derived(NOTI_SLAGS3.filter((s) => maaSende3(s, regler, null, forlobId)));
 
 	const slaaetTil = $derived((s: NotiValgSlags3) => valg[s] !== false);
 
@@ -127,10 +125,7 @@
 	/>
 
 	{#if henter}
-		<div class="lektion-venter">
-			<Ventetegn variant="lille" />
-			<span>Henter dine indstillinger</span>
-		</div>
+		<Venter tekst="Henter dine indstillinger" />
 	{:else}
 		{#if fejl}
 			<div class="kort rolig nm-fejl">{fejl}</div>
@@ -143,7 +138,9 @@
 		{:else if tilstand === 'ikke-hjemmeskaerm'}
 			<section class="kort">
 				<div class="nt-t">Læg appen på din hjemmeskærm først</div>
-				<div class="nt-s">Uden det kan telefonen ikke sige til, og det er ikke noget vi bestemmer.</div>
+				<div class="nt-s">
+					Uden det kan telefonen ikke sige til, og det er ikke noget vi bestemmer.
+				</div>
 				{#each hjemmeskaerm.trin as t, i (t)}
 					<div class="nt-trin"><b>{i + 1}</b><span>{t}</span></div>
 				{/each}
@@ -153,8 +150,8 @@
 			<section class="kort">
 				<div class="nt-t">Du har sagt nej til beskeder</div>
 				<div class="nt-s">
-					Det kan jeg ikke lave om herfra. Åbn telefonens indstillinger, find Linn's Academy, og
-					slå meddelelser til. Så virker det med det samme.
+					Det kan jeg ikke lave om herfra. Åbn telefonens indstillinger, find Linn's Academy, og slå
+					meddelelser til. Så virker det med det samme.
 				</div>
 			</section>
 		{:else if tilstand === 'ikke-spurgt'}

@@ -2677,6 +2677,9 @@ body:has(.ny-app) {
 	gap: 14px;
 }
 
+/* VENTE-SKAERMEN. ÉN i hele 3.0, se components/ny/Venter.svelte.
+   .lektion-venter beholder sit navn, fordi den staar i markup 22 steder
+   og et omdoeb ville vaere stoej i en diff der handler om noget andet. */
 .lektion-venter {
 	display: flex;
 	align-items: center;
@@ -2685,6 +2688,33 @@ body:has(.ny-app) {
 	font-size: calc(13px * var(--fs-scale, 1));
 	padding: 24px 0;
 	justify-content: center;
+}
+
+.venter {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	padding: 24px 0;
+}
+
+.venter-linje {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	color: var(--ink-3);
+	font-size: calc(13px * var(--fs-scale, 1));
+}
+
+/* Den blide linje naar det traekker ud. Dæmpet med vilje: den skal
+   berolige og ikke se ud som en fejl. */
+.venter-laenge {
+	margin: 0;
+	max-width: 240px;
+	text-align: center;
+	font-size: calc(12px * var(--fs-scale, 1));
+	line-height: 1.45;
+	color: var(--ink-3);
 }
 
 .lektion-t {

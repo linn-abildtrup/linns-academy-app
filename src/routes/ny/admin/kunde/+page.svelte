@@ -89,9 +89,7 @@
 						sidstAktiv: typeof x.sidstAktiv3 === 'number' ? x.sidstAktiv3 : null
 					};
 				})
-				.sort((a, b) =>
-					(a.fornavn || a.email).localeCompare(b.fornavn || b.email, 'da')
-				);
+				.sort((a, b) => (a.fornavn || a.email).localeCompare(b.fornavn || b.email, 'da'));
 		} catch (e) {
 			console.error('[admin] kunder', e);
 			fejl = 'Kunne ikke hente kunderne.';
@@ -102,9 +100,7 @@
 
 	const traeffer = $derived.by<Raekke[]>(() => {
 		if (soeg.trim().length < 2) return [];
-		return alle
-			.filter((r) => klientSoegeMatch(r.soeg, soeg))
-			.slice(0, 40);
+		return alle.filter((r) => klientSoegeMatch(r.soeg, soeg)).slice(0, 40);
 	});
 
 	function aktivTekst(r: Raekke): string {

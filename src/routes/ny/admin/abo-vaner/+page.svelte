@@ -160,17 +160,37 @@
 		{#if fejl}<div class="av-fejl">{fejl}</div>{/if}
 
 		<div class="av-faner">
-			<button type="button" class="av-chip" class:paa={slags === 'vaner'} onclick={() => (slags = 'vaner')}>
+			<button
+				type="button"
+				class="av-chip"
+				class:paa={slags === 'vaner'}
+				onclick={() => (slags = 'vaner')}
+			>
 				Skridt hun kan vælge
 			</button>
-			<button type="button" class="av-chip" class:paa={slags === 'bonus'} onclick={() => (slags = 'bonus')}>
+			<button
+				type="button"
+				class="av-chip"
+				class:paa={slags === 'bonus'}
+				onclick={() => (slags = 'bonus')}
+			>
 				Bonus-spørgsmål
 			</button>
 			<span class="av-skel"></span>
-			<button type="button" class="av-chip" class:paa={type === 'basis'} onclick={() => (type = 'basis')}>
+			<button
+				type="button"
+				class="av-chip"
+				class:paa={type === 'basis'}
+				onclick={() => (type = 'basis')}
+			>
 				Basis
 			</button>
-			<button type="button" class="av-chip" class:paa={type === 'premium'} onclick={() => (type = 'premium')}>
+			<button
+				type="button"
+				class="av-chip"
+				class:paa={type === 'premium'}
+				onclick={() => (type = 'premium')}
+			>
 				Premium
 			</button>
 		</div>
@@ -200,7 +220,8 @@
 							<input type="text" bind:value={v.kategori} disabled={gemmer} />
 						</label>
 						<div class="av-fjern">
-							<AdmKnap slags="fare" disabled={gemmer} onclick={() => fjernVane(v.id)}>Fjern</AdmKnap>
+							<AdmKnap slags="fare" disabled={gemmer} onclick={() => fjernVane(v.id)}>Fjern</AdmKnap
+							>
 						</div>
 					</div>
 				</AdmKort>
@@ -223,7 +244,9 @@
 							<input type="text" bind:value={b.kategori} disabled={gemmer} />
 						</label>
 						<div class="av-fjern">
-							<AdmKnap slags="fare" disabled={gemmer} onclick={() => fjernBonus(b.id)}>Fjern</AdmKnap>
+							<AdmKnap slags="fare" disabled={gemmer} onclick={() => fjernBonus(b.id)}
+								>Fjern</AdmKnap
+							>
 						</div>
 					</div>
 					<!-- TRE FELTER OG IKKE EN KOMMALISTE. Der SKAL vaere praecis

@@ -18,7 +18,7 @@
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import type { UserDoc } from '$lib/types';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import type { Adgangsbillede, ForlobKilde } from '$lib/content/adgang3';
 	import type { TrainingDay } from '$lib/content/mikrotraening';
 	import {
@@ -198,7 +198,7 @@
 	/>
 
 	{#if henter}
-		<div class="adm-venter"><Ventetegn variant="lille" /><span>Henter</span></div>
+		<Venter tekst="Henter programmet" />
 	{:else if fejl}
 		<p class="kort rolig">{fejl}</p>
 	{:else if !program || !maaSeDen}

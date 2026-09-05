@@ -69,7 +69,7 @@
 	import OpskriftArk from '$lib/components/ny/OpskriftArk.svelte';
 	import MinOpskriftArk from '$lib/components/ny/MinOpskriftArk.svelte';
 	import OpskriftFiltre from '$lib/components/ny/OpskriftFiltre.svelte';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
@@ -254,10 +254,7 @@
 	</div>
 
 	{#if henter}
-		<div class="lektion-venter">
-			<Ventetegn variant="lille" />
-			<span>Henter opskrifterne</span>
-		</div>
+		<Venter tekst="Henter opskrifterne" />
 	{:else}
 		<p class="ops-overskrift" aria-live="polite">{overskriftTekst}</p>
 

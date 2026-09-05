@@ -18,7 +18,7 @@
 	import { datoNoegle } from '$lib/firestore/forside3';
 	import { hentDagen } from '$lib/firestore/maaltider3';
 	import { pladsTal, TOM_TEKST, type DagsOpgoerelse } from '$lib/content/maaltider3';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUserDoc = getContext<() => UserDoc | null>('userDoc');
@@ -192,7 +192,7 @@
 	</div>
 
 	{#if henter}
-		<div class="tt-venter"><Ventetegn variant="lille" /><span>Henter dagen</span></div>
+		<Venter tekst="Henter dagen" />
 	{:else if dag}
 		{#each dag.pladser as plads (plads.type)}
 			<a class="tt-maaltid" href="/ny/30-30/{plads.type}?dato={dato}">

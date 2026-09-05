@@ -109,7 +109,14 @@
 		<div class="nb-sp">
 			<div class="nb-q">Hvor høj er du?</div>
 			<label class="nb-tal">
-				<input type="number" inputmode="numeric" min="100" max="220" value={hojde} oninput={(e) => (hojde = tal(e))} />
+				<input
+					type="number"
+					inputmode="numeric"
+					min="100"
+					max="220"
+					value={hojde}
+					oninput={(e) => (hojde = tal(e))}
+				/>
 				<span>cm</span>
 			</label>
 		</div>
@@ -117,7 +124,14 @@
 		<div class="nb-sp">
 			<div class="nb-q">Hvad vejer du?</div>
 			<label class="nb-tal">
-				<input type="number" inputmode="numeric" min="30" max="200" value={vaegt} oninput={(e) => (vaegt = tal(e))} />
+				<input
+					type="number"
+					inputmode="numeric"
+					min="30"
+					max="200"
+					value={vaegt}
+					oninput={(e) => (vaegt = tal(e))}
+				/>
 				<span>kg</span>
 			</label>
 		</div>
@@ -125,7 +139,14 @@
 		<div class="nb-sp">
 			<div class="nb-q">Hvor gammel er du?</div>
 			<label class="nb-tal">
-				<input type="number" inputmode="numeric" min="18" max="100" value={alder} oninput={(e) => (alder = tal(e))} />
+				<input
+					type="number"
+					inputmode="numeric"
+					min="18"
+					max="100"
+					value={alder}
+					oninput={(e) => (alder = tal(e))}
+				/>
 				<span>år</span>
 			</label>
 		</div>

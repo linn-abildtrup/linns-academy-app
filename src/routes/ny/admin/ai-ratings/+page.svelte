@@ -82,7 +82,12 @@
 		if (!ts || typeof ts !== 'object' || !('toDate' in ts)) return '';
 		return (ts as { toDate: () => Date })
 			.toDate()
-			.toLocaleDateString('da-DK', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+			.toLocaleDateString('da-DK', {
+				day: 'numeric',
+				month: 'short',
+				hour: '2-digit',
+				minute: '2-digit'
+			});
 	}
 
 	function stjerner(r: Rating): string {
@@ -115,7 +120,12 @@
 		</div>
 
 		<div class="ar-filtre">
-			<button type="button" class="ar-chip" class:paa={filterAi === 'alle'} onclick={() => (filterAi = 'alle')}>
+			<button
+				type="button"
+				class="ar-chip"
+				class:paa={filterAi === 'alle'}
+				onclick={() => (filterAi = 'alle')}
+			>
 				Begge
 			</button>
 			{#each Object.entries(AI_TYPE_LABELS) as [id, navn] (id)}
@@ -129,13 +139,28 @@
 				</button>
 			{/each}
 			<span class="ar-skel"></span>
-			<button type="button" class="ar-chip" class:paa={filterMaks === 'alle'} onclick={() => (filterMaks = 'alle')}>
+			<button
+				type="button"
+				class="ar-chip"
+				class:paa={filterMaks === 'alle'}
+				onclick={() => (filterMaks = 'alle')}
+			>
 				Alle stjerner
 			</button>
-			<button type="button" class="ar-chip" class:paa={filterMaks === 3} onclick={() => (filterMaks = 3)}>
+			<button
+				type="button"
+				class="ar-chip"
+				class:paa={filterMaks === 3}
+				onclick={() => (filterMaks = 3)}
+			>
 				3 og derunder
 			</button>
-			<button type="button" class="ar-chip" class:paa={filterMaks === 2} onclick={() => (filterMaks = 2)}>
+			<button
+				type="button"
+				class="ar-chip"
+				class:paa={filterMaks === 2}
+				onclick={() => (filterMaks = 2)}
+			>
 				2 og derunder
 			</button>
 		</div>

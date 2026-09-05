@@ -22,7 +22,16 @@
 	import { page } from '$app/state';
 	import type { User } from 'firebase/auth';
 	import { isAdmin } from '$lib/admin';
-	import { collection, doc, getDoc, getDocs, orderBy, query, where, limit } from 'firebase/firestore';
+	import {
+		collection,
+		doc,
+		getDoc,
+		getDocs,
+		orderBy,
+		query,
+		where,
+		limit
+	} from 'firebase/firestore';
 	import { hentAllowedEmail } from '$lib/firestore/forlob';
 	import { db } from '$lib/firebase';
 	import type { BrugerProfil, DagligeMaal, UserDoc } from '$lib/types';
@@ -109,7 +118,9 @@
 	// Hele maalingen, ikke kun totalen. Sliderne og de elleve svar ligger
 	// i den, og Linn skal kunne se dem uden at spoerge kunden.
 	let symptomer = $state<MrsScore[]>([]);
-	let spoergsmaal = $state<{ spoergsmaal: string; svar?: string; oprettet?: { toMillis?: () => number } }[]>([]);
+	let spoergsmaal = $state<
+		{ spoergsmaal: string; svar?: string; oprettet?: { toMillis?: () => number } }[]
+	>([]);
 	let vanedage = $state<Record<string, unknown>[]>([]);
 
 	onMount(() => void indlaesGrundlag());
@@ -266,7 +277,9 @@
 
 	const input = $derived<KundeInput>({
 		harAktivtForlob: !!aktivtForlob,
-		forlobNavn: aktivtForlob ? `${aktivtForlob.navn} · dag ${dagNummer} af ${aktivtForlob.antalDage}` : '',
+		forlobNavn: aktivtForlob
+			? `${aktivtForlob.navn} · dag ${dagNummer} af ${aktivtForlob.antalDage}`
+			: '',
 		holdHarTraening,
 		paaNyApp,
 		harSagtJaTilBeskeder: harNoti,
@@ -338,9 +351,18 @@
 					.map((d) => ({ id: d.id, ...(d.data() as Omit<MrsScore, 'id'>) }))
 					.sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
 			} else if (id === 'beskeder') {
-				const s = await getDocs(query(collection(db, 'klientspoergsmaal'), where('uid', '==', uid)));
+				const s = await getDocs(
+					query(collection(db, 'klientspoergsmaal'), where('uid', '==', uid))
+				);
 				spoergsmaal = s.docs
-					.map((d) => d.data() as { spoergsmaal: string; svar?: string; oprettet?: { toMillis?: () => number } })
+					.map(
+						(d) =>
+							d.data() as {
+								spoergsmaal: string;
+								svar?: string;
+								oprettet?: { toMillis?: () => number };
+							}
+					)
 					.sort((a, b) => (b.oprettet?.toMillis?.() ?? 0) - (a.oprettet?.toMillis?.() ?? 0));
 			} else if (id === 'forlob') {
 				const prod = await getDocs(collection(db, 'users', uid, 'products'));
@@ -360,7 +382,11 @@
 
 	function dato(ms?: number | null): string {
 		if (!ms) return '—';
-		return new Date(ms).toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' });
+		return new Date(ms).toLocaleDateString('da-DK', {
+			day: 'numeric',
+			month: 'short',
+			year: 'numeric'
+		});
 	}
 
 	// Fasen staar i databasen som et kodeord. Linn skal laese et ord.
@@ -382,7 +408,9 @@
 </script>
 
 <svelte:head>
-	<title>{kunde ? fuldtNavn(navn.fornavn, navn.efternavn, kunde.email ?? '') : 'Kunde'} · Admin</title>
+	<title
+		>{kunde ? fuldtNavn(navn.fornavn, navn.efternavn, kunde.email ?? '') : 'Kunde'} · Admin</title
+	>
 </svelte:head>
 
 {#if !maaVaereHer}
@@ -393,7 +421,9 @@
 	<AdmSide titel="Kunde">
 		<AdmTom tekst={fejl || 'Kunne ikke hente kunden.'} fejl>
 			{#snippet handling()}
-				<AdmKnap onclick={() => (window.location.href = '/ny/admin/kunde')}>Tilbage til søgning</AdmKnap>
+				<AdmKnap onclick={() => (window.location.href = '/ny/admin/kunde')}
+					>Tilbage til søgning</AdmKnap
+				>
 			{/snippet}
 		</AdmTom>
 	</AdmSide>
@@ -425,7 +455,12 @@
 
 		<nav class="ku-faner">
 			{#each FANER as f (f.id)}
-				<button type="button" class="ku-fane" class:paa={fane === f.id} onclick={() => aabnFane(f.id)}>
+				<button
+					type="button"
+					class="ku-fane"
+					class:paa={fane === f.id}
+					onclick={() => aabnFane(f.id)}
+				>
 					{f.navn}
 				</button>
 			{/each}
@@ -445,8 +480,8 @@
 						</span>
 						<span class="ku-u">
 							{#if !aktivitetKendt}
-								Hendes registreringer kunne ikke hentes. Det er ikke det samme som at der ikke
-								er nogen.
+								Hendes registreringer kunne ikke hentes. Det er ikke det samme som at der ikke er
+								nogen.
 							{:else}
 								Målt på hvornår hun sidst registrerede noget. Login-datoen lyver.
 							{/if}
@@ -456,7 +491,9 @@
 						<h3>Dag i forløbet</h3>
 						{#if aktivtForlob}
 							<span class="ku-stor">{dagNummer} <em>af {aktivtForlob.antalDage}</em></span>
-							<div class="ku-bar"><i style="width:{Math.round((dagNummer / aktivtForlob.antalDage) * 100)}%"></i></div>
+							<div class="ku-bar">
+								<i style="width:{Math.round((dagNummer / aktivtForlob.antalDage) * 100)}%"></i>
+							</div>
 						{:else}
 							<span class="ku-stor">—</span>
 							<span class="ku-u">Hun er ikke på et forløb lige nu</span>
@@ -465,7 +502,9 @@
 					<AdmKort>
 						<h3>Ubesvarede spørgsmål</h3>
 						<span class="ku-stor">{ubesvarede}</span>
-						<span class="ku-u">{ubesvarede === 0 ? 'Alt er besvaret' : 'Se dem under Beskeder'}</span>
+						<span class="ku-u"
+							>{ubesvarede === 0 ? 'Alt er besvaret' : 'Se dem under Beskeder'}</span
+						>
 					</AdmKort>
 				</div>
 
@@ -500,7 +539,9 @@
 							{#each soejler as d, i (i)}
 								<i
 									class:ramte={d?.ramteMaal}
-									style="height:{d ? Math.min(100, Math.round((d.protein / Math.max(1, maal.protein ?? 90)) * 100)) : 0}%"
+									style="height:{d
+										? Math.min(100, Math.round((d.protein / Math.max(1, maal.protein ?? 90)) * 100))
+										: 0}%"
 									title={d ? `${d.dato}: ${d.protein} g` : 'ingen registrering'}
 								></i>
 							{/each}
@@ -515,24 +556,43 @@
 						<div class="ku-l"><b>Fiber</b><span>{maal.fiber ?? 30} g</span></div>
 						{#if maal.kcal}<div class="ku-l"><b>Kalorier</b><span>{maal.kcal}</span></div>{/if}
 						{#if profil.hojde || profil.vaegt}
-							<div class="ku-l"><b>Højde og vægt</b><span>{profil.hojde ?? '—'} cm · {profil.vaegt ?? '—'} kg</span></div>
+							<div class="ku-l">
+								<b>Højde og vægt</b><span>{profil.hojde ?? '—'} cm · {profil.vaegt ?? '—'} kg</span>
+							</div>
 						{/if}
 						{#if profil.alder || profil.menopaus}
 							<div class="ku-l">
 								<b>Alder og fase</b>
-								<span>{profil.alder ?? '—'} år · {profil.menopaus ? (FASE[profil.menopaus] ?? profil.menopaus) : '—'}</span>
+								<span
+									>{profil.alder ?? '—'} år · {profil.menopaus
+										? (FASE[profil.menopaus] ?? profil.menopaus)
+										: '—'}</span
+								>
 							</div>
 						{/if}
 						{#if profil.aktivitet}
-							<div class="ku-l"><b>Aktivitet</b><span>{AKTIVITET[profil.aktivitet] ?? profil.aktivitet}</span></div>
+							<div class="ku-l">
+								<b>Aktivitet</b><span>{AKTIVITET[profil.aktivitet] ?? profil.aktivitet}</span>
+							</div>
 						{/if}
 					</AdmKort>
 				</div>
 
 				<div class="ku-rk">
-					<AdmKort><h3>Snit pr dag hun har tastet</h3><span class="ku-stor">{snit.protein} g</span><span class="ku-u">protein, målt på {snit.antal} dage</span></AdmKort>
-					<AdmKort><h3>Egne opskrifter</h3><span class="ku-stor">{egneOpskrifter}</span></AdmKort>
-					<AdmKort><h3>Faste måltider</h3><span class="ku-stor">{fasteMaaltider}</span></AdmKort>
+					<AdmKort
+						><h3>Snit pr dag hun har tastet</h3>
+						<span class="ku-stor">{snit.protein} g</span><span class="ku-u"
+							>protein, målt på {snit.antal} dage</span
+						></AdmKort
+					>
+					<AdmKort
+						><h3>Egne opskrifter</h3>
+						<span class="ku-stor">{egneOpskrifter}</span></AdmKort
+					>
+					<AdmKort
+						><h3>Faste måltider</h3>
+						<span class="ku-stor">{fasteMaaltider}</span></AdmKort
+					>
 				</div>
 			{:else if fane === 'traening'}
 				<AdmKort>
@@ -561,17 +621,39 @@
 						<AdmKort>
 							<h3>Symptomer over tid</h3>
 							<p class="ku-u">
-								Menopause Rating Scale, 0 til 44. <b>Et lavere tal er bedre</b>, altså færre
-								gener. En kurve der falder er et godt tegn.
+								Menopause Rating Scale, 0 til 44. <b>Et lavere tal er bedre</b>, altså færre gener.
+								En kurve der falder er et godt tegn.
 							</p>
 							<div class="ku-graf-r">
 								<div class="ku-y">
 									{#each yAkse(RAMME_TOTAL, 5) as v (v)}<span>{v}</span>{/each}
 								</div>
-								<svg class="ku-svg" viewBox="0 0 {RAMME_TOTAL.bredde} {RAMME_TOTAL.hoejde}" preserveAspectRatio="none">
-									<line x1={RAMME_TOTAL.kant} y1={RAMME_TOTAL.kant} x2={RAMME_TOTAL.kant} y2={RAMME_TOTAL.hoejde - RAMME_TOTAL.kant} stroke="var(--line)" />
-									<line x1={RAMME_TOTAL.kant} y1={RAMME_TOTAL.hoejde - RAMME_TOTAL.kant} x2={RAMME_TOTAL.bredde - RAMME_TOTAL.kant} y2={RAMME_TOTAL.hoejde - RAMME_TOTAL.kant} stroke="var(--line)" />
-									<path d={linje(totalPunkter)} fill="none" stroke="var(--plum)" stroke-width="2.5" stroke-linejoin="round" />
+								<svg
+									class="ku-svg"
+									viewBox="0 0 {RAMME_TOTAL.bredde} {RAMME_TOTAL.hoejde}"
+									preserveAspectRatio="none"
+								>
+									<line
+										x1={RAMME_TOTAL.kant}
+										y1={RAMME_TOTAL.kant}
+										x2={RAMME_TOTAL.kant}
+										y2={RAMME_TOTAL.hoejde - RAMME_TOTAL.kant}
+										stroke="var(--line)"
+									/>
+									<line
+										x1={RAMME_TOTAL.kant}
+										y1={RAMME_TOTAL.hoejde - RAMME_TOTAL.kant}
+										x2={RAMME_TOTAL.bredde - RAMME_TOTAL.kant}
+										y2={RAMME_TOTAL.hoejde - RAMME_TOTAL.kant}
+										stroke="var(--line)"
+									/>
+									<path
+										d={linje(totalPunkter)}
+										fill="none"
+										stroke="var(--plum)"
+										stroke-width="2.5"
+										stroke-linejoin="round"
+									/>
 									{#each totalPunkter as p (p.t)}
 										<circle cx={p.x} cy={p.y} r="4" fill="var(--plum)" />
 									{/each}
@@ -631,10 +713,32 @@
 										<div class="ku-y lille">
 											{#each yAkse(RAMME_SLIDER, 3) as v (v)}<span>{v}</span>{/each}
 										</div>
-										<svg class="ku-svg lille" viewBox="0 0 {RAMME_SLIDER.bredde} {RAMME_SLIDER.hoejde}" preserveAspectRatio="none">
-											<line x1={RAMME_SLIDER.kant} y1={RAMME_SLIDER.kant} x2={RAMME_SLIDER.kant} y2={RAMME_SLIDER.hoejde - RAMME_SLIDER.kant} stroke="var(--line)" />
-											<line x1={RAMME_SLIDER.kant} y1={RAMME_SLIDER.hoejde - RAMME_SLIDER.kant} x2={RAMME_SLIDER.bredde - RAMME_SLIDER.kant} y2={RAMME_SLIDER.hoejde - RAMME_SLIDER.kant} stroke="var(--line)" />
-											<path d={linje(p)} fill="none" stroke="var(--sage)" stroke-width="2" stroke-linejoin="round" />
+										<svg
+											class="ku-svg lille"
+											viewBox="0 0 {RAMME_SLIDER.bredde} {RAMME_SLIDER.hoejde}"
+											preserveAspectRatio="none"
+										>
+											<line
+												x1={RAMME_SLIDER.kant}
+												y1={RAMME_SLIDER.kant}
+												x2={RAMME_SLIDER.kant}
+												y2={RAMME_SLIDER.hoejde - RAMME_SLIDER.kant}
+												stroke="var(--line)"
+											/>
+											<line
+												x1={RAMME_SLIDER.kant}
+												y1={RAMME_SLIDER.hoejde - RAMME_SLIDER.kant}
+												x2={RAMME_SLIDER.bredde - RAMME_SLIDER.kant}
+												y2={RAMME_SLIDER.hoejde - RAMME_SLIDER.kant}
+												stroke="var(--line)"
+											/>
+											<path
+												d={linje(p)}
+												fill="none"
+												stroke="var(--sage)"
+												stroke-width="2"
+												stroke-linejoin="round"
+											/>
 											{#each p as q (q.t)}
 												<circle cx={q.x} cy={q.y} r="3" fill="var(--sage)" />
 											{/each}
@@ -679,7 +783,10 @@
 							<div class="ku-sp">
 								<div class="ku-sp-m">{dato(q.oprettet?.toMillis?.())}</div>
 								<p>{q.spoergsmaal}</p>
-								{#if q.svar}<div class="ku-sp-s"><b>Dit svar</b><p>{q.svar}</p></div>
+								{#if q.svar}<div class="ku-sp-s">
+										<b>Dit svar</b>
+										<p>{q.svar}</p>
+									</div>
 								{:else}<div class="ku-sp-venter">Venter på svar</div>{/if}
 							</div>
 						{/each}
@@ -692,7 +799,11 @@
 						<p class="ku-tom">Hun har aldrig været på et forløb.</p>
 					{:else}
 						{#each forlobIds as id (id)}
-							<div class="ku-l"><b>{navnPaaForlob(id)}</b><span>{aktivtForlob?.id === id ? 'kører nu' : 'på hendes konto'}</span></div>
+							<div class="ku-l">
+								<b>{navnPaaForlob(id)}</b><span
+									>{aktivtForlob?.id === id ? 'kører nu' : 'på hendes konto'}</span
+								>
+							</div>
 						{/each}
 						{#each afsluttede as id (id)}
 							<div class="ku-l"><b>{navnPaaForlob(id)}</b><span>afsluttet</span></div>
@@ -717,14 +828,38 @@
 				<AdmKort>
 					<h3>Adgang</h3>
 					<div class="ku-l"><b>Mail</b><span>{kunde.email}</span></div>
-					<div class="ku-l"><b>Produkt</b><span>{(kunde as unknown as { activeProduct?: string }).activeProduct ?? '—'}</span></div>
-					<div class="ku-l"><b>Niveau</b><span>{(kunde as unknown as { accessLevel?: string }).accessLevel ?? '—'}</span></div>
-					<div class="ku-l"><b>Adgang udløber</b><span>{udloeberOm === null ? 'Løbende, udløber ikke' : `om ${udloeberOm} dage`}</span></div>
+					<div class="ku-l">
+						<b>Produkt</b><span
+							>{(kunde as unknown as { activeProduct?: string }).activeProduct ?? '—'}</span
+						>
+					</div>
+					<div class="ku-l">
+						<b>Niveau</b><span
+							>{(kunde as unknown as { accessLevel?: string }).accessLevel ?? '—'}</span
+						>
+					</div>
+					<div class="ku-l">
+						<b>Adgang udløber</b><span
+							>{udloeberOm === null ? 'Løbende, udløber ikke' : `om ${udloeberOm} dage`}</span
+						>
+					</div>
 					<div class="ku-l"><b>På den nye app</b><span>{paaNyApp ? 'Ja' : 'Nej'}</span></div>
 					<div class="ku-l"><b>Kan nås på telefonen</b><span>{harNoti ? 'Ja' : 'Nej'}</span></div>
-					<div class="ku-l"><b>App-version</b><span>{(kunde as unknown as { appVersion?: string }).appVersion ?? '—'}</span></div>
-					<div class="ku-l"><b>Tekststørrelse</b><span>{(kunde as unknown as { tekstSkala3?: string }).tekstSkala3 ?? 'Normal'}</span></div>
-					<div class="ku-l"><b>Tester af</b><span>{((kunde.testerFeatures ?? []) as string[]).join(', ') || 'ingenting'}</span></div>
+					<div class="ku-l">
+						<b>App-version</b><span
+							>{(kunde as unknown as { appVersion?: string }).appVersion ?? '—'}</span
+						>
+					</div>
+					<div class="ku-l">
+						<b>Tekststørrelse</b><span
+							>{(kunde as unknown as { tekstSkala3?: string }).tekstSkala3 ?? 'Normal'}</span
+						>
+					</div>
+					<div class="ku-l">
+						<b>Tester af</b><span
+							>{((kunde.testerFeatures ?? []) as string[]).join(', ') || 'ingenting'}</span
+						>
+					</div>
 				</AdmKort>
 			{/if}
 		</div>

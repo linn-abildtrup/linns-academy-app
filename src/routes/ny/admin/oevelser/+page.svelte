@@ -263,7 +263,12 @@
 					</label>
 					<label class="ob-felt">
 						<span>Id{redigererId ? '' : ', kan ikke ændres senere'}</span>
-						<input type="text" placeholder="fx goblet_squat" bind:value={fId} disabled={gemmer || !!redigererId} />
+						<input
+							type="text"
+							placeholder="fx goblet_squat"
+							bind:value={fId}
+							disabled={gemmer || !!redigererId}
+						/>
 					</label>
 				</div>
 
@@ -299,7 +304,12 @@
 
 				<label class="ob-felt bred">
 					<span>Video</span>
-					<input type="text" placeholder="Stien til videofilen" bind:value={fVideo} disabled={gemmer} />
+					<input
+						type="text"
+						placeholder="Stien til videofilen"
+						bind:value={fVideo}
+						disabled={gemmer}
+					/>
 				</label>
 
 				<div class="ob-felt bred">
@@ -366,7 +376,12 @@
 		<AdmSoeg bind:vaerdi={soeg} placeholder="Søg efter navn, beskrivelse eller søgeord…" />
 
 		<div class="ob-filtre">
-			<button type="button" class="ob-chip" class:paa={kategori === 'alle'} onclick={() => (kategori = 'alle')}>
+			<button
+				type="button"
+				class="ob-chip"
+				class:paa={kategori === 'alle'}
+				onclick={() => (kategori = 'alle')}
+			>
 				Alle
 			</button>
 			{#each KATEGORIER as k (k.id)}

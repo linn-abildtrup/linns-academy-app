@@ -254,9 +254,9 @@
 			<AdmKort>
 				<h2 class="fo-h">Nyt forløb, den hurtige vej</h2>
 				<p class="fo-led">
-					Her oprettes holdet på ét skærmbillede. Guiden spørger derimod om alle ni ting der
-					skal være på plads, og spærrer for at udgive indtil de er det. Er det længe siden du
-					har bygget et hold, så tag guiden.
+					Her oprettes holdet på ét skærmbillede. Guiden spørger derimod om alle ni ting der skal
+					være på plads, og spærrer for at udgive indtil de er det. Er det længe siden du har bygget
+					et hold, så tag guiden.
 				</p>
 
 				<div class="fo-raek">
@@ -307,13 +307,31 @@
 					</div>
 
 					<div class="fo-chips">
-						<button type="button" class="fo-chip" class:paa={fTraening} disabled={opretter} onclick={() => (fTraening = !fTraening)}>
+						<button
+							type="button"
+							class="fo-chip"
+							class:paa={fTraening}
+							disabled={opretter}
+							onclick={() => (fTraening = !fTraening)}
+						>
 							Har træning
 						</button>
-						<button type="button" class="fo-chip" class:paa={fBuddy} disabled={opretter} onclick={() => (fBuddy = !fBuddy)}>
+						<button
+							type="button"
+							class="fo-chip"
+							class:paa={fBuddy}
+							disabled={opretter}
+							onclick={() => (fBuddy = !fBuddy)}
+						>
 							Har makker
 						</button>
-						<button type="button" class="fo-chip" class:paa={fFacebook} disabled={opretter} onclick={() => (fFacebook = !fFacebook)}>
+						<button
+							type="button"
+							class="fo-chip"
+							class:paa={fFacebook}
+							disabled={opretter}
+							onclick={() => (fFacebook = !fFacebook)}
+						>
 							Har Facebook-gruppe
 						</button>
 					</div>
@@ -400,10 +418,7 @@
 								Forløbet er låst, så indholdet ikke kan rettes ved et uheld.
 							</span>
 						{:else}
-							<AdmKnap
-								slags="primaer"
-								onclick={() => goto(`/ny/admin/forlob/${f.id}`)}
-							>
+							<AdmKnap slags="primaer" onclick={() => goto(`/ny/admin/forlob/${f.id}`)}>
 								Åbn forløbet
 							</AdmKnap>
 							<!-- Et hold der ikke er udgivet er som regel et man er midt
@@ -430,8 +445,6 @@
 				</AdmKort>
 			{/each}
 		{/if}
-
-
 	</AdmSide>
 {/if}
 
@@ -606,5 +619,4 @@
 		color: var(--ler-tekst, #8a5439);
 		font-weight: 600;
 	}
-
 </style>

@@ -249,9 +249,7 @@
 						</div>
 					{:else}
 						<div class="na-knapper">
-							<AdmKnap slags="primaer" onclick={() => (bekraefter = true)}>
-								Sæt en ny kode
-							</AdmKnap>
+							<AdmKnap slags="primaer" onclick={() => (bekraefter = true)}>Sæt en ny kode</AdmKnap>
 						</div>
 					{/if}
 				{:else if soeg.trim().length < 2}

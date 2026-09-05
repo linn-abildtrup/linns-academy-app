@@ -65,7 +65,7 @@
 	import { hentAlleMrsScores } from '$lib/firestore/mrs';
 	import { hentMaaltiderIPeriode } from '$lib/firestore/kost';
 	import { hentHistorikSidenDato } from '$lib/firestore/traeningHistorik';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentUser = getContext<() => User | null>('user');
@@ -308,10 +308,7 @@
 	<Sidehoved titel="Min udvikling" kant={false} />
 
 	{#if henter}
-		<div class="lektion-venter">
-			<Ventetegn variant="lille" />
-			<span>Henter dine målinger</span>
-		</div>
+		<Venter tekst="Henter dine målinger" />
 	{:else if tilstand === 'ingen'}
 		<div class="kort rolig">
 			Du har ikke lavet en måling endnu. Når du gør, kan du følge din energi, søvn, humør, mave og

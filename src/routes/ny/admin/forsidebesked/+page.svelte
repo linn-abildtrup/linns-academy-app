@@ -88,7 +88,8 @@
 
 	function erValgt(m: Modtager3): boolean {
 		if (m.slags !== modtager.slags) return false;
-		if (m.slags === 'forlob' && modtager.slags === 'forlob') return m.forlobId === modtager.forlobId;
+		if (m.slags === 'forlob' && modtager.slags === 'forlob')
+			return m.forlobId === modtager.forlobId;
 		return true;
 	}
 
@@ -252,10 +253,13 @@
 			</div>
 
 			<div class="fb-lbl" style="margin-top:12px">Overskrift</div>
-			<input class="na-soeg" type="text" placeholder="Fx: Live Q&A om søvn" bind:value={overskrift} />
-			<div class="fb-hjaelp">
-				Står kun i mailen. På forsiden i appen er der kun selve teksten.
-			</div>
+			<input
+				class="na-soeg"
+				type="text"
+				placeholder="Fx: Live Q&A om søvn"
+				bind:value={overskrift}
+			/>
+			<div class="fb-hjaelp">Står kun i mailen. På forsiden i appen er der kun selve teksten.</div>
 
 			<div class="fb-lbl" style="margin-top:12px">Mailen ser ud som</div>
 			<div class="fb-valg">
@@ -272,7 +276,13 @@
 			</div>
 
 			{#if mailForm === 'invitation'}
-				<input class="na-soeg" style="margin-top:9px" type="text" placeholder="Hvornår, fx: I aften kl. 19.00" bind:value={hvornaar} />
+				<input
+					class="na-soeg"
+					style="margin-top:9px"
+					type="text"
+					placeholder="Hvornår, fx: I aften kl. 19.00"
+					bind:value={hvornaar}
+				/>
 			{/if}
 
 			<div class="nk" style="border-top:1px solid var(--line);margin-top:11px">
@@ -280,8 +290,12 @@
 					<div class="nk-t">Sig også til på telefonen</div>
 					<div class="nk-s">De der har sagt ja bliver prikket</div>
 				</div>
-				<button class="nk-sw" class:on={prik} aria-pressed={prik} aria-label="Sig til på telefonen" onclick={() => (prik = !prik)}
-					><i></i></button
+				<button
+					class="nk-sw"
+					class:on={prik}
+					aria-pressed={prik}
+					aria-label="Sig til på telefonen"
+					onclick={() => (prik = !prik)}><i></i></button
 				>
 			</div>
 

@@ -57,7 +57,12 @@
 		if (!svar.id || svar.id === idAf(svar.navn.slice(0, -1))) svar.id = idAf(svar.navn);
 	}
 
-	const problem = $derived(validerOprettelse(svar, forlob.map((f) => f.id)));
+	const problem = $derived(
+		validerOprettelse(
+			svar,
+			forlob.map((f) => f.id)
+		)
+	);
 
 	// Tidligere hold af samme slags, nyeste foerst. To Kickstart-hold
 	// ligner hinanden paa naesten alt, saa kopiering er reglen og ikke
@@ -117,7 +122,12 @@
 
 				<label class="nf-l">
 					<span>Hvad hedder holdet?</span>
-					<input type="text" bind:value={svar.navn} oninput={navnSkiftet} placeholder="Kickstart oktober 2026" />
+					<input
+						type="text"
+						bind:value={svar.navn}
+						oninput={navnSkiftet}
+						placeholder="Kickstart oktober 2026"
+					/>
 					<small>Navnet ser kunderne. Skriv måneden med, ellers kan to hold ikke skelnes.</small>
 				</label>
 
@@ -130,9 +140,25 @@
 				<div class="nf-l">
 					<span>Hvilken slags hold?</span>
 					<div class="nf-valg">
-						<button type="button" class:paa={!svar.bygget && svar.type === 'kickstart'} onclick={() => { svar.bygget = false; svar.type = 'kickstart'; }}>Kickstart</button>
-						<button type="button" class:paa={!svar.bygget && svar.type === 'kropsro'} onclick={() => { svar.bygget = false; svar.type = 'kropsro'; }}>Kropsro</button>
-						<button type="button" class:paa={svar.bygget} onclick={() => (svar.bygget = true)}>Bygget selv</button>
+						<button
+							type="button"
+							class:paa={!svar.bygget && svar.type === 'kickstart'}
+							onclick={() => {
+								svar.bygget = false;
+								svar.type = 'kickstart';
+							}}>Kickstart</button
+						>
+						<button
+							type="button"
+							class:paa={!svar.bygget && svar.type === 'kropsro'}
+							onclick={() => {
+								svar.bygget = false;
+								svar.type = 'kropsro';
+							}}>Kropsro</button
+						>
+						<button type="button" class:paa={svar.bygget} onclick={() => (svar.bygget = true)}
+							>Bygget selv</button
+						>
 					</div>
 					<small>
 						{#if svar.bygget}

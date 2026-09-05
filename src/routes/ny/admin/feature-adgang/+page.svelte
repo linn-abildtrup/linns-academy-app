@@ -185,10 +185,20 @@
 		{#if fejl}<div class="fa-fejl">{fejl}</div>{/if}
 
 		<div class="fa-faner">
-			<button type="button" class="fa-chip" class:paa={fane === 'funktioner'} onclick={() => (fane = 'funktioner')}>
+			<button
+				type="button"
+				class="fa-chip"
+				class:paa={fane === 'funktioner'}
+				onclick={() => (fane = 'funktioner')}
+			>
 				Funktioner pr kundetype
 			</button>
-			<button type="button" class="fa-chip" class:paa={fane === 'fokus'} onclick={() => (fane = 'fokus')}>
+			<button
+				type="button"
+				class="fa-chip"
+				class:paa={fane === 'fokus'}
+				onclick={() => (fane = 'fokus')}
+			>
 				Måltids-fokus pr forløb
 			</button>
 		</div>

@@ -313,10 +313,20 @@
 		{#if fejl}<div class="vb-fejl">{fejl}</div>{/if}
 
 		<div class="vb-faner">
-			<button type="button" class="vb-chip" class:paa={fane === 'viden'} onclick={() => (fane = 'viden')}>
+			<button
+				type="button"
+				class="vb-chip"
+				class:paa={fane === 'viden'}
+				onclick={() => (fane = 'viden')}
+			>
 				Viden
 			</button>
-			<button type="button" class="vb-chip" class:paa={fane === 'prompt'} onclick={() => (fane = 'prompt')}>
+			<button
+				type="button"
+				class="vb-chip"
+				class:paa={fane === 'prompt'}
+				onclick={() => (fane = 'prompt')}
+			>
 				AI'ens stemme
 			</button>
 		</div>
@@ -329,7 +339,8 @@
 					Det her er den besked AI'en får med hver eneste gang, og den bestemmer hvordan den taler.
 					Den gælder begge apper. Lad den stå tom, og der bruges den indbyggede.
 				</p>
-				<textarea class="vb-prompt" rows="18" bind:value={prompt} disabled={promptGemmer}></textarea>
+				<textarea class="vb-prompt" rows="18" bind:value={prompt} disabled={promptGemmer}
+				></textarea>
 				<div class="vb-knapper">
 					<AdmKnap slags="primaer" disabled={promptGemmer} onclick={gemPrompt}>
 						{promptGemmer ? 'Gemmer…' : 'Gem'}

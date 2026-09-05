@@ -171,9 +171,7 @@
 	}
 
 	function udstyrTekst(p: TrainingProgram): string {
-		return (p.udstyr ?? [])
-			.map((u) => UDSTYR.find((x) => x.id === u)?.label ?? u)
-			.join(', ');
+		return (p.udstyr ?? []).map((u) => UDSTYR.find((x) => x.id === u)?.label ?? u).join(', ');
 	}
 </script>
 
@@ -296,7 +294,10 @@
 					{#if p.beskrivelse}<p class="pr-besk">{p.beskrivelse}</p>{/if}
 
 					<div class="pr-knapper">
-						<AdmKnap slags="primaer" onclick={() => (window.location.href = `/app/admin/programmer/${p.id}`)}>
+						<AdmKnap
+							slags="primaer"
+							onclick={() => (window.location.href = `/app/admin/programmer/${p.id}`)}
+						>
 							Ret dagene
 						</AdmKnap>
 						{#if sletId === p.id}

@@ -24,7 +24,7 @@
 	} from '$lib/content/bibliotek';
 	import { fletHjaelp, hjaelpKilder, visKildeNavn, type HjaelpGruppe } from '$lib/content/hjaelp3';
 	import { hentGuideItems, hentGuideKategorier } from '$lib/firestore/bibliotek';
-	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
+	import Venter from '$lib/components/ny/Venter.svelte';
 	import Sidehoved from '$lib/components/ny/Sidehoved.svelte';
 
 	const hentAdgang = getContext<() => Adgangsbillede>('adgang');
@@ -92,10 +92,7 @@
 	<Sidehoved titel="Links og guides" tilbage="/ny/hjaelp" tilbageTekst="Hjælp" kant={false} />
 
 	{#if henter}
-		<div class="lektion-venter">
-			<Ventetegn variant="lille" />
-			<span>Henter materialet</span>
-		</div>
+		<Venter tekst="Henter materialet" />
 	{:else if grupper.length === 0}
 		<div class="kort rolig">Der er ikke lagt links og guides ind endnu.</div>
 	{:else}
