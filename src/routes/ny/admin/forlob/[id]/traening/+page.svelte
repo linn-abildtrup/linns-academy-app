@@ -645,10 +645,14 @@
 		border-color: #f0d6cf;
 	}
 
+	/* FLERE SOEJLER NAAR DER ER PLADS. Én lang stribe paa en bred skaerm
+	   betoed, at man saa faa ad gangen og resten var tom plads til
+	   hoejre. Paa en smal skaerm bliver det én soejle igen af sig selv. */
 	.program-liste {
-		display: flex;
-		flex-direction: column;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
 		gap: 8px;
+		align-content: start;
 	}
 
 	.program-row {
