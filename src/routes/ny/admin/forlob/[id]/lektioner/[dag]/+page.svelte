@@ -1568,33 +1568,33 @@
 	}
 
 	.sp-liste {
-		width: 320px;
+		width: 280px;
 		flex: none;
 	}
 
 	.sp-felter {
 		flex: 1;
-		min-width: 380px;
+		min-width: 340px;
 	}
 
 	/* Teksten til venstre, filen og indstillingerne til hoejre. Bliver der
 	   for lidt plads, falder de under hinanden af sig selv. */
 	.felt-soejler {
 		display: flex;
-		gap: 18px;
+		gap: 14px;
 		align-items: flex-start;
 		flex-wrap: wrap;
 	}
 
 	.felt-soejle {
-		flex: 1 1 260px;
+		flex: 1 1 220px;
 		min-width: 0;
 	}
 
 	/* Kundens egen visning. Bredden er sat, saa raekkerne braekker som paa
 	   en telefon og ikke som paa en bred skaerm. */
 	.sp-vis {
-		width: 350px;
+		width: 320px;
 		flex: none;
 		background: var(--paper-2);
 	}
