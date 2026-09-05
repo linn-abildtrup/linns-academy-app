@@ -1491,8 +1491,7 @@
 		border: 1px solid var(--line);
 		border-radius: 15px;
 		padding: 16px;
-		max-height: calc(100vh - 415px);
-		min-height: 260px;
+		max-height: max(260px, calc(100vh - 415px));
 		overflow-y: auto;
 	}
 
@@ -2100,14 +2099,6 @@
 
 	/* Paa en smallere skaerm, fx en laptop, falder spalterne under
 	   hinanden i stedet for at blive klemt sammen. */
-	/* Er vinduet lavt, er der ikke plads til tre rullende spalter. Saa faar
-	   de deres fulde hoejde igen, og siden ruller som en almindelig side. */
-	@media (max-height: 700px) {
-		.sp {
-			max-height: none;
-		}
-	}
-
 	@media (max-width: 1120px) {
 		.krop {
 			flex-wrap: wrap;
