@@ -241,13 +241,17 @@
 			<button class="dok-luk" onclick={tilbage} aria-label="Luk dokumentet">✕</button>
 			<span class="dok-lag-titel">{lektion.titel}</span>
 		</header>
-		<!-- #view=Fit viser HELE siden i den plads der er. navpanes=0
-		     skjuler sidepanelet, som stjaeler bredde paa en telefon. -->
-		<iframe
-			class="dok-lag-ramme"
-			src={`${dokumentUrl3(lektion.url)}#view=Fit&navpanes=0`}
-			title={lektion.titel}
-		></iframe>
+		<!-- INGEN INSTRUKSER TIL LAESEREN. Foerste forsoeg satte #view=Fit
+		     for at faa hele siden til at passe, og navpanes=0 for at spare
+		     bredde. Begge dele gjorde det vaerre: siden blev stadig ikke
+		     vist helt, og Linn kunne ikke komme videre til side 2, fordi
+		     Fit laaser visningen til én side.
+
+		     Hun sagde selv at det var fint da hun aabnede dokumentet i fuld
+		     skaerm, og dét er browserens egen standard uden noget fragment.
+		     Saa den faar lov at bestemme. Den kan rulle, zoome og skifte
+		     side, og den kender telefonen bedre end vi goer. -->
+		<iframe class="dok-lag-ramme" src={dokumentUrl3(lektion.url)} title={lektion.titel}></iframe>
 	</div>
 {/if}
 

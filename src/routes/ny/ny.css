@@ -2799,8 +2799,12 @@ body:has(.ny-app) {
 	border: 0;
 	display: block;
 	background: #2b2724;
-	/* Telefonens sikkerhedszone forneden, saa dokumentet ikke ender under
-	   stregen paa en iPhone. */
+}
+
+/* Telefonens sikkerhedszone forneden ligger paa LAGET og ikke paa
+   rammen. Paa rammen aad den af den hoejde dokumentet havde at rulle i,
+   og en ramme kan ikke polstres indefra: indholdet er en anden side. */
+.dok-lag {
 	padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
