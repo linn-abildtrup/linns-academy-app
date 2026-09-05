@@ -599,19 +599,25 @@
 <svelte:head><title>Beskeder</title></svelte:head>
 
 <div class="hjaelp-side besk-fuld">
-	<Sidehoved
-		titel="Beskeder"
-		under={fane === 'linn'
-			? // Sagde 'Det du har sendt videre til Linn, og hendes svar'
-				// indtil 4. september. Det passede da fanen kun var en liste
-				// over det AI'en havde sendt videre. Nu kan hun skrive
-				// direkte, og saa beskrev den ikke laengere hvad siden goer.
-				'Skriv dit spørgsmål til mig.'
-			: 'Her kan du spørge om det der fylder. Jeg svarer ud fra Linns materialer, og jeg er ikke læge.'}
-	/>
+	<!-- HELE TOPPEN BLIVER STAAENDE, ikke kun fanerne. Linns oenske 5.
+	     september. Foer rullede titlen og linjen under den vaek, mens
+	     fanerne blev haengende alene, og saa saa toppen halv ud.
+	     Sidehovedet og fanerne er derfor pakket sammen i ét lag der
+	     klaeber. -->
+	<div class="besk-top-fast">
+		<Sidehoved
+			titel="Beskeder"
+			under={fane === 'linn'
+				? // Sagde 'Det du har sendt videre til Linn, og hendes svar'
+					// indtil 4. september. Det passede da fanen kun var en liste
+					// over det AI'en havde sendt videre. Nu kan hun skrive
+					// direkte, og saa beskrev den ikke laengere hvad siden goer.
+					'Skriv dit spørgsmål til mig.'
+				: 'Her kan du spørge om det der fylder. Jeg svarer ud fra Linns materialer, og jeg er ikke læge.'}
+		/>
 
-	{#if visFaner}
-		<!-- FANERNE BLIVER STAAENDE naar hun ruller. Linns oenske 4.
+		{#if visFaner}
+			<!-- FANERNE BLIVER STAAENDE naar hun ruller. Linns oenske 4.
 		     september: skiftet mellem Linn AI og Linn skal vaere ét tryk
 		     vaek, ogsaa midt i en lang samtale. Foer rullede de vaek med
 		     titlen, og saa skulle hun helt op i toppen foerst.
@@ -619,30 +625,31 @@
 		     Wrapperen findes fordi selve fane-pillen har luft i siderne.
 		     Uden den ville indholdet kunne ses glide forbi til hoejre og
 		     venstre for pillen, mens den klaeber. -->
-		<div class="besk-faner-fast">
-			<div class="besk-faner" role="tablist">
-				<button
-					type="button"
-					role="tab"
-					aria-selected={fane === 'ai'}
-					class:paa={fane === 'ai'}
-					onclick={() => skiftTil('ai')}
-				>
-					Linn AI
-				</button>
-				<button
-					type="button"
-					role="tab"
-					aria-selected={fane === 'linn'}
-					class:paa={fane === 'linn'}
-					onclick={() => skiftTil('linn')}
-				>
-					Linn
-					{#if nytSvar}<span class="besk-prik" aria-label="Nyt svar"></span>{/if}
-				</button>
+			<div class="besk-faner-fast">
+				<div class="besk-faner" role="tablist">
+					<button
+						type="button"
+						role="tab"
+						aria-selected={fane === 'ai'}
+						class:paa={fane === 'ai'}
+						onclick={() => skiftTil('ai')}
+					>
+						Linn AI
+					</button>
+					<button
+						type="button"
+						role="tab"
+						aria-selected={fane === 'linn'}
+						class:paa={fane === 'linn'}
+						onclick={() => skiftTil('linn')}
+					>
+						Linn
+						{#if nytSvar}<span class="besk-prik" aria-label="Nyt svar"></span>{/if}
+					</button>
+				</div>
 			</div>
-		</div>
-	{/if}
+		{/if}
+	</div>
 
 	{#if fane === 'linn'}
 		<!-- FANEN ER EN SAMTALE, ikke en liste med kort. Linns beslutning

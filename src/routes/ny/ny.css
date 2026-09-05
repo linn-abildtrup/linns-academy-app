@@ -10392,6 +10392,23 @@ a.ch-knap {
 /* Lagt sammen 16. august 2026. Samtalen med Linn AI og spoergsmaalene til Linn er
    én side med to faner, se routes/ny/beskeder/+page.svelte. */
 
+/* HELE TOPPEN BLIVER STAAENDE, altsaa titlen, linjen under den OG
+   fanerne. Linns oenske 5. september. Foer klaebede kun fanerne, og saa
+   rullede titlen vaek mens fanerne blev haengende alene: toppen saa halv
+   ud, og linjen der forklarer hvad fanen er til, forsvandt.
+
+   sticky maales mod det element der RULLER, og det er skallens
+   .ny-scroll. Se utils/rulning3.ts.
+
+   Baggrunden skal vaere ugennemsigtig i fuld bredde, ellers kan samtalen
+   ses rulle op bagved titlen. */
+.besk-top-fast {
+	position: sticky;
+	top: 0;
+	z-index: 6;
+	background: var(--oat);
+}
+
 /* FANERNE BLIVER STAAENDE naar hun ruller. Linns oenske 4. september:
    skiftet mellem Linn AI og Linn skal vaere ét tryk vaek, ogsaa midt i en
    lang samtale. Foer rullede de vaek sammen med titlen.
@@ -10418,9 +10435,9 @@ a.ch-knap {
 }
 
 .besk-faner-fast {
-	position: sticky;
-	top: 0;
-	z-index: 5;
+	/* Klaeber ikke laengere selv: hele toppen goer det nu, se
+	   .besk-top-fast ovenfor. Wrapperen bliver, fordi fane-pillen har luft
+	   i siderne og baggrunden skal naa helt ud til kanten. */
 	background: var(--oat);
 	padding: 4px 17px 10px;
 	flex-shrink: 0;
