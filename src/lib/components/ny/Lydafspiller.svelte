@@ -19,9 +19,16 @@
 		titel: string;
 		/** Kaldes naar lyden er spillet helt til ende. */
 		onfaerdig?: () => void;
+		/**
+		 * Skal det store billede staa over afspilleren.
+		 *
+		 * Falsk paa lektions-siden, hvor billedet er flyttet op ved siden af
+		 * titlen som en lille rund brik. Se Linns valg 5. september.
+		 */
+		visPlade?: boolean;
 	}
 
-	let { url, titel, onfaerdig }: Props = $props();
+	let { url, titel, onfaerdig, visPlade = true }: Props = $props();
 
 	let lyd = $state<HTMLAudioElement | null>(null);
 	let spiller = $state(false);
@@ -167,7 +174,13 @@
 ></audio>
 
 <section class="lyd-side">
-	<div class="lyd-plade" role="img" aria-label="Linn"></div>
+	<!-- PLADEN ER VALGFRI. Paa lektions-siden er billedet flyttet op ved
+	     siden af titlen som en lille rund brik, se Linns valg 5. september
+	     (forslag A). Den store plade fyldte 641 px, altsaa mere end hele
+	     skaermen, saa afspilleren og knappen laa under kanten. -->
+	{#if visPlade}
+		<div class="lyd-plade" role="img" aria-label="Linn"></div>
+	{/if}
 
 	<div class="lyd-spor">
 		<input

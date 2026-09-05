@@ -2732,6 +2732,39 @@ body:has(.ny-app) {
 	color: var(--ink-3);
 }
 
+/* LYD-LEKTIONENS HOVED. Billedet er en lille rund brik ved siden af
+   titlen i stedet for en flade over det hele. Linns valg 5. september,
+   forslag A i mockups-lydlektion.html.
+
+   Maalt foer: skaermen 572 px, siden 1161 px, og den store plade alene
+   641 px. Hun skulle rulle mere end en hel skaerm for at naa knappen, og
+   ogsaa for at trykke play. Paa en lyd-lektion er stemmen indholdet, og
+   billedet skal bare minde om hvem der taler. */
+.lektion-hoved {
+	display: flex;
+	align-items: center;
+	gap: 13px;
+	margin-bottom: 4px;
+}
+
+.lektion-brik {
+	flex-shrink: 0;
+	width: 62px;
+	height: 62px;
+	border-radius: 50%;
+	background-color: #6b5f85;
+	background-image: url('/linn-bred.jpg');
+	background-size: cover;
+	background-position: center;
+	box-shadow: var(--shadow-soft);
+}
+
+/* Titlen maa gerne bryde paa to linjer ved siden af brikken, men ikke
+   skubbe den ud af skaermen paa en smal telefon. */
+.lektion-hoved > div {
+	min-width: 0;
+}
+
 .lektion-t {
 	font-family: var(--serif);
 	font-size: calc(23px * var(--fs-scale, 1));

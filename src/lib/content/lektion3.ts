@@ -84,3 +84,23 @@ export function formaterVarighed(varighedMin: number | undefined): string {
 	if (!varighedMin || varighedMin <= 0) return '';
 	return `${varighedMin} min`;
 }
+
+/**
+ * Ordet paa knappen der markerer lektionen som klaret.
+ *
+ * ORDET FOELGER INDHOLDET. Linn 5. september: der stod "Markér som set"
+ * paa en lektion man LYTTER til. Man ser ikke en lydfil.
+ *
+ * Video ses, lyd hoeres, og en skreven lektion laeses. Tre ord i stedet
+ * for ét, og det koster ingenting: kunden laeser knappen hver gang, og
+ * et forkert ord faar appen til at virke skoedeslaas.
+ *
+ * `link` er en lektion der aabner i et nyt vindue. Den markeres naar hun
+ * trykker Åbn, se lektions-siden, og der er "set" det aerlige ord: vi
+ * ved kun at hun aabnede den.
+ */
+export function klaretOrd3(art: LektionsArt): { knap: string; klaret: string } {
+	if (art === 'lyd') return { knap: 'Markér som hørt', klaret: 'Hørt' };
+	if (art === 'side') return { knap: 'Markér som læst', klaret: 'Læst' };
+	return { knap: 'Markér som set', klaret: 'Set' };
+}

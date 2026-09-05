@@ -21,6 +21,7 @@
 	import type { LektionItem } from '$lib/content/forlob';
 	import {
 		artFor,
+		klaretOrd3,
 		indlejretUrl,
 		sekunderFoerKlaret,
 		formaterVarighed
@@ -90,6 +91,9 @@
 	let noteGemtLige = $state(false);
 
 	const art = $derived(lektion ? artFor(lektion.url) : 'link');
+	// Ordet paa knappen foelger indholdet: lyd hoeres, video ses, en
+	// skreven lektion laeses. Se content/lektion3.ts.
+	const ord = $derived(klaretOrd3(art));
 	const embed = $derived(lektion ? indlejretUrl(lektion.url) : null);
 
 	$effect(() => {
@@ -216,9 +220,28 @@
 			<a href="/ny">Tilbage til forsiden</a>
 		</div>
 	{:else}
-		<h1 class="lektion-t">{lektion.titel}</h1>
-		{#if lektion.varighedMin}
-			<div class="lektion-m">{formaterVarighed(lektion.varighedMin)}</div>
+		<!-- PAA EN LYD-LEKTION staar billedet som en lille rund brik ved
+		     siden af titlen. Linns valg 5. september, forslag A: den store
+		     plade fyldte 641 px, altsaa mere end hele skaermen, saa
+		     afspilleren og knappen laa under kanten og hun skulle rulle for
+		     at trykke play. Paa en lyd-lektion er stemmen indholdet, og
+		     billedet skal bare minde om hvem der taler. -->
+		{#if art === 'lyd'}
+			<div class="lektion-hoved">
+				<span class="lektion-brik" role="img" aria-label="Linn"></span>
+				<div>
+					<h1 class="lektion-t">{lektion.titel}</h1>
+					<div class="lektion-m">
+						Lyd{#if lektion.varighedMin}
+							· {formaterVarighed(lektion.varighedMin)}{/if}
+					</div>
+				</div>
+			</div>
+		{:else}
+			<h1 class="lektion-t">{lektion.titel}</h1>
+			{#if lektion.varighedMin}
+				<div class="lektion-m">{formaterVarighed(lektion.varighedMin)}</div>
+			{/if}
 		{/if}
 
 		{#if art === 'video' && embed}
@@ -235,7 +258,12 @@
 				<iframe src={embed} title={lektion.titel}></iframe>
 			</div>
 		{:else if art === 'lyd'}
-			<Lydafspiller url={lektion.url} titel={lektion.titel} onfaerdig={() => markerKlaret(true)} />
+			<Lydafspiller
+				url={lektion.url}
+				titel={lektion.titel}
+				visPlade={false}
+				onfaerdig={() => markerKlaret(true)}
+			/>
 		{:else}
 			<!--
 				GUIDEN MARKERES NAAR HUN AABNER DEN. Linns beslutning 25.
@@ -274,11 +302,11 @@
 			{#if erKlaret}
 				<button class="klar-chip" disabled={gemmer} onclick={() => markerKlaret(false)}>
 					<span class="rund-fluebe" aria-hidden="true"><Fluebe /></span>
-					Set
+					{ord.klaret}
 				</button>
 			{:else}
 				<button class="btn" disabled={gemmer} onclick={() => markerKlaret(true)}>
-					Markér som set
+					{ord.knap}
 				</button>
 			{/if}
 		</div>
