@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { maaHentes3, dokumentUrl3 } from './dokument3';
+import { maaHentes3, dokumentUrl3, laesUdsnit3 } from './dokument3';
 
 const SIMPLERO = 'https://us.simplerousercontent.net/uploads/asset/file/15162254/morgenmad.pdf';
 
@@ -60,5 +60,44 @@ describe('dokumentUrl3 · hvor filen ligger', () => {
 
 	it('sender kun udefra-filer gennem serveren', () => {
 		expect(dokumentUrl3(SIMPLERO).startsWith('/api/ny-dokument')).toBe(true);
+	});
+});
+
+describe('laesUdsnit3', () => {
+	it('laeser den almindelige form', () => {
+		expect(laesUdsnit3('bytes=0-1023', 5000)).toEqual({ fra: 0, til: 1023 });
+	});
+
+	it('laeser "fra og resten"', () => {
+		expect(laesUdsnit3('bytes=4000-', 5000)).toEqual({ fra: 4000, til: 4999 });
+	});
+
+	// PDF-laeseren spoerger tit om de sidste byte foerst: der staar
+	// indholdsfortegnelsen i en pdf.
+	it('laeser "de sidste N byte"', () => {
+		expect(laesUdsnit3('bytes=-500', 5000)).toEqual({ fra: 4500, til: 4999 });
+	});
+
+	it('klipper et for stort slut ned til filens ende', () => {
+		expect(laesUdsnit3('bytes=0-99999', 5000)).toEqual({ fra: 0, til: 4999 });
+	});
+
+	it('siger nej naar der ikke er nogen Range', () => {
+		expect(laesUdsnit3(null, 5000)).toBeNull();
+		expect(laesUdsnit3('', 5000)).toBeNull();
+	});
+
+	it('siger nej til noget vi ikke forstaar, saa den faar hele filen', () => {
+		expect(laesUdsnit3('bytes=0-10,20-30', 5000)).toBeNull();
+		expect(laesUdsnit3('sider=1-2', 5000)).toBeNull();
+		expect(laesUdsnit3('bytes=-', 5000)).toBeNull();
+	});
+
+	it('siger nej naar starten ligger uden for filen', () => {
+		expect(laesUdsnit3('bytes=9000-', 5000)).toBeNull();
+	});
+
+	it('siger nej naar slutningen ligger foer starten', () => {
+		expect(laesUdsnit3('bytes=400-100', 5000)).toBeNull();
 	});
 });

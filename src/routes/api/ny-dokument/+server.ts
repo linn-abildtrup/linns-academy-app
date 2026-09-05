@@ -27,12 +27,12 @@
 
 import type { RequestHandler } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
-import { maaHentes3, DOKUMENT_MAKS_BYTE } from '$lib/content/dokument3';
+import { maaHentes3, laesUdsnit3, DOKUMENT_MAKS_BYTE } from '$lib/content/dokument3';
 
 /** En time. Den samme PDF hentes af mange kunder paa den samme dag. */
 const CACHE_SEKUNDER = 3600;
 
-export const GET: RequestHandler = async ({ url, fetch }) => {
+export const GET: RequestHandler = async ({ url, fetch, request }) => {
 	const kilde = url.searchParams.get('url') ?? '';
 
 	const tjek = maaHentes3(kilde);
@@ -80,16 +80,41 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
 		throw error(413, 'Dokumentet er for stort til at vises her');
 	}
 
+	const faelles = {
+		'Content-Type': 'application/pdf',
+		// inline, saa den VISES i rammen i stedet for at blive hentet ned.
+		'Content-Disposition': 'inline',
+		'Cache-Control': `public, max-age=${CACHE_SEKUNDER}`,
+		// SIGER AT VI KAN SENDE ET UDSNIT. Uden den spoerger
+		// PDF-laeseren slet ikke, og saa tegner den ingenting.
+		'Accept-Ranges': 'bytes',
+		// Kun vores egen app maa laegge den i en ramme.
+		'X-Frame-Options': 'SAMEORIGIN',
+		'X-Content-Type-Options': 'nosniff'
+	};
+
+	// ET UDSNIT, HVIS DEN BEDER OM DET.
+	//
+	// Browserens PDF-laeser henter en pdf i bidder: foerst de sidste byte,
+	// hvor indholdsfortegnelsen staar, og saa en side ad gangen. Svarer vi
+	// altid med hele filen, kommer vaerktoejslinjen frem og siger "1 / 2",
+	// men siderne bliver sorte. Det var den rigtige aarsag, efter to
+	// forkerte gaet: foerst troede jeg det var hentningen, saa at det var
+	// den manglende stoerrelse.
+	const udsnit = laesUdsnit3(request.headers.get('range'), data.byteLength);
+	if (udsnit) {
+		const del = data.slice(udsnit.fra, udsnit.til + 1);
+		return new Response(del, {
+			status: 206,
+			headers: {
+				...faelles,
+				'Content-Length': String(del.byteLength),
+				'Content-Range': `bytes ${udsnit.fra}-${udsnit.til}/${data.byteLength}`
+			}
+		});
+	}
+
 	return new Response(data, {
-		headers: {
-			'Content-Type': 'application/pdf',
-			'Content-Length': String(data.byteLength),
-			// inline, saa den VISES i rammen i stedet for at blive hentet ned.
-			'Content-Disposition': 'inline',
-			'Cache-Control': `public, max-age=${CACHE_SEKUNDER}`,
-			// Kun vores egen app maa laegge den i en ramme.
-			'X-Frame-Options': 'SAMEORIGIN',
-			'X-Content-Type-Options': 'nosniff'
-		}
+		headers: { ...faelles, 'Content-Length': String(data.byteLength) }
 	});
 };

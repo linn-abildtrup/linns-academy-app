@@ -98,3 +98,47 @@ export function dokumentUrl3(kilde: string): string {
 	}
 	return `/api/ny-dokument?url=${encodeURIComponent(kilde)}`;
 }
+
+export interface Udsnit3 {
+	fra: number;
+	til: number;
+}
+
+/**
+ * Laeser en Range-linje, altsaa "hent kun de her byte".
+ *
+ * BROWSERENS PDF-LAESER BRUGER DEN til at hente en side ad gangen. Svarer
+ * serveren ikke paa den, kommer vaerktoejslinjen frem og siger "1 / 2",
+ * men siderne bliver sorte. Set i browseren 5. september, efter to
+ * forkerte gaet paa hvad der var galt.
+ *
+ * Vi understoetter kun den simple form, "bytes=fra-til" og "bytes=fra-",
+ * for det er den eneste PDF-laeseren bruger. Flere udsnit i samme linje
+ * afvises, og saa faar den hele filen, hvilket den kan leve med.
+ *
+ * Null betyder "ingen gyldig Range, send det hele".
+ */
+export function laesUdsnit3(linje: string | null, stoerrelse: number): Udsnit3 | null {
+	if (!linje || stoerrelse <= 0) return null;
+
+	const m = /^bytes=(\d*)-(\d*)$/.exec(linje.trim());
+	if (!m) return null;
+
+	const [, raaFra, raaTil] = m;
+	if (raaFra === '' && raaTil === '') return null;
+
+	// "bytes=-500" betyder de SIDSTE 500 byte.
+	if (raaFra === '') {
+		const antal = Number(raaTil);
+		if (!antal) return null;
+		return { fra: Math.max(0, stoerrelse - antal), til: stoerrelse - 1 };
+	}
+
+	const fra = Number(raaFra);
+	if (fra >= stoerrelse) return null;
+
+	const til = raaTil === '' ? stoerrelse - 1 : Math.min(Number(raaTil), stoerrelse - 1);
+	if (til < fra) return null;
+
+	return { fra, til };
+}
