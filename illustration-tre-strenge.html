@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3.0 — de tre strenge</title>
+<style>
+  :root{
+    --blaek:#1d2530; --daemp:#6b7683; --linje:#e2e6ea; --bund:#f6f7f8; --kort:#fff;
+    --a:#3f7d6e; --a-lys:#e8f2ef;
+    --b:#b5762f; --b-lys:#faf0e3;
+    --c:#5a5fa8; --c-lys:#ecedf7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bund);color:var(--blaek);
+       font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       padding:32px 20px 80px}
+  .side{max-width:1080px;margin:0 auto}
+  h1{font-size:30px;letter-spacing:-.02em;margin:0 0 6px}
+  .under{color:var(--daemp);margin:0 0 34px;max-width:62ch}
+  .kort{background:var(--kort);border:1px solid var(--linje);border-radius:14px;
+        padding:22px 24px 26px;margin-bottom:22px}
+  .hoved{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+  .maerke{display:inline-flex;align-items:center;justify-content:center;
+          width:26px;height:26px;border-radius:8px;font-size:13px;font-weight:700;color:#fff}
+  h2{font-size:19px;margin:0;letter-spacing:-.01em}
+  .ur{font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px}
+  .forklar{color:var(--daemp);margin:8px 0 20px;max-width:70ch}
+  .a .maerke{background:var(--a)} .a .ur{background:var(--a-lys);color:var(--a)}
+  .b .maerke{background:var(--b)} .b .ur{background:var(--b-lys);color:var(--b)}
+  .c .maerke{background:var(--c)} .c .ur{background:var(--c-lys);color:var(--c)}
+
+  .scroll{overflow-x:auto;padding-bottom:4px}
+  .bane{display:grid;grid-template-columns:150px 1fr;gap:10px 14px;align-items:center;min-width:640px}
+  .navn{font-size:13px;color:var(--daemp);text-align:right;line-height:1.3}
+  .navn b{display:block;color:var(--blaek);font-size:13.5px;font-weight:600}
+  .spor{display:grid;gap:6px;position:relative}
+  .celle{height:38px;border-radius:8px;border:1px solid var(--linje);background:#fbfcfc;
+         display:flex;align-items:center;justify-content:center;
+         font-size:12px;font-weight:600;color:#aeb6bd}
+  .celle.fyldt{color:#fff;border:none}
+  .a .celle.fyldt{background:var(--a)}
+  .b .celle.fyldt{background:var(--b)}
+  .c .celle.fyldt{background:var(--c)}
+  .celle.blank{background:repeating-linear-gradient(45deg,#f4f6f7,#f4f6f7 5px,#eef1f2 5px,#eef1f2 10px);color:#c3cace}
+  .akse{display:grid;gap:6px;font-size:12px;color:var(--daemp);text-align:center;margin-bottom:2px;font-weight:600}
+  .g6{grid-template-columns:repeat(6,1fr)}
+  .pil{font-size:12px;color:var(--daemp);margin-top:14px;display:flex;gap:8px;align-items:flex-start}
+  .pil span:first-child{font-size:14px;line-height:1.3}
+
+  .lag{display:grid;grid-template-columns:1fr;gap:10px;max-width:430px;margin:0 auto}
+  .lagkort{border-radius:12px;padding:14px 16px;color:#fff}
+  .lagkort small{display:block;opacity:.85;font-weight:500;font-size:12.5px;margin-top:2px}
+  .lagkort b{font-size:15px}
+  .skaerm{border:1px solid var(--linje);border-radius:16px;padding:16px;background:#fff}
+  .skaerm h3{margin:0 0 12px;font-size:14px;color:var(--daemp);font-weight:600;text-align:center}
+
+  .sp{background:#fff;border:1px solid var(--linje);border-left:4px solid var(--blaek);
+      border-radius:0 12px 12px 0;padding:18px 22px}
+  .sp h2{margin-bottom:12px}
+  .sp ol{margin:0;padding-left:20px}
+  .sp li{margin-bottom:11px}
+  .sp li b{display:block}
+  .sp li span{color:var(--daemp);font-size:14px}
+  @media (max-width:640px){ .bane{grid-template-columns:110px 1fr} .navn{font-size:12px} }
+</style>
+</head>
+<body>
+<div class="side">
+
+  <h1>De tre strenge i 3.0</h1>
+  <p class="under">Samme app, tre forskellige ure. Forskellen er ikke <em>hvad</em> kunden ser, men <em>hvad der afgør hvornår</em> hun ser det.</p>
+
+  <!-- STRENG A -->
+  <section class="kort a">
+    <div class="hoved">
+      <span class="maerke">A</span>
+      <h2>Appen — det løbende indhold</h2>
+      <span class="ur">Uret er kalenderen</span>
+    </div>
+    <p class="forklar">Du lægger noget op på en <b>dato</b>. Alle med adgang den dag ser det samme, uanset hvornår de har købt. Som et nyhedsbrev: det udkommer én gang, til alle på én gang.</p>
+    <div class="scroll">
+      <div class="bane">
+        <div></div>
+        <div class="akse g6"><div>1. jan</div><div>8. jan</div><div>15. jan</div><div>22. jan</div><div>29. jan</div><div>5. feb</div></div>
+
+        <div class="navn"><b>Mette</b>købte i november</div>
+        <div class="spor g6" style="display:grid">
+          <div class="celle fyldt">Uge 1</div><div class="celle fyldt">Uge 2</div><div class="celle fyldt">Uge 3</div><div class="celle fyldt">Uge 4</div><div class="celle fyldt">Uge 5</div><div class="celle fyldt">Uge 6</div>
+        </div>
+
+        <div class="navn"><b>Sofie</b>købte 1. januar</div>
+        <div class="spor g6" style="display:grid">
+          <div class="celle fyldt">Uge 1</div><div class="celle fyldt">Uge 2</div><div class="celle fyldt">Uge 3</div><div class="celle fyldt">Uge 4</div><div class="celle fyldt">Uge 5</div><div class="celle fyldt">Uge 6</div>
+        </div>
+
+        <div class="navn"><b>Anne</b>køber først i juli</div>
+        <div class="spor g6" style="display:grid">
+          <div class="celle blank">?</div><div class="celle blank">?</div><div class="celle blank">?</div><div class="celle blank">?</div><div class="celle blank">?</div><div class="celle blank">?</div>
+        </div>
+      </div>
+    </div>
+    <p class="pil"><span>↑</span><span><b>Åbent spørgsmål 1:</b> Anne køber i juli. Ser hun januar-indholdet i et arkiv, eller er det væk for hende?</span></p>
+  </section>
+
+  <!-- STRENG B -->
+  <section class="kort b">
+    <div class="hoved">
+      <span class="maerke">B</span>
+      <h2>Appens eget rejse-spor</h2>
+      <span class="ur">Uret starter ved hendes køb</span>
+    </div>
+    <p class="forklar">Du bygger én gang: dag 1, dag 2, dag 3 … Hver kunde starter på dag 1 den dag <b>hun</b> køber. To kunder er på dag 4 samtidig, selv om der er et halvt år mellem deres datoer.</p>
+    <div class="scroll">
+      <div class="bane">
+        <div></div>
+        <div class="akse g6"><div>Dag 1</div><div>Dag 2</div><div>Dag 3</div><div>Dag 4</div><div>Dag 5</div><div>Dag 6</div></div>
+
+        <div class="navn"><b>Sofie</b>startede 1. januar</div>
+        <div class="spor g6" style="display:grid">
+          <div class="celle fyldt">1. jan</div><div class="celle fyldt">2. jan</div><div class="celle fyldt">3. jan</div><div class="celle fyldt">4. jan</div><div class="celle fyldt">5. jan</div><div class="celle fyldt">6. jan</div>
+        </div>
+
+        <div class="navn"><b>Anne</b>startede 1. juli</div>
+        <div class="spor g6" style="display:grid">
+          <div class="celle fyldt">1. jul</div><div class="celle fyldt">2. jul</div><div class="celle fyldt">3. jul</div><div class="celle fyldt">4. jul</div><div class="celle fyldt">5. jul</div><div class="celle fyldt">6. jul</div>
+        </div>
+      </div>
+    </div>
+    <p class="pil"><span>↑</span><span><b>Åbent spørgsmål 2:</b> Hvad sker der, når hun når enden af rejsen? Starter den forfra, stopper den stille, eller glider hun over i streng A alene?</span></p>
+  </section>
+
+  <!-- STRENG C -->
+  <section class="kort c">
+    <div class="hoved">
+      <span class="maerke">C</span>
+      <h2>Det købte forløb — holdet</h2>
+      <span class="ur">Uret starter på holdets startdato</span>
+    </div>
+    <p class="forklar">Et forløb købes særskilt. Alle på holdet starter <b>samme dag</b> og følges ad gennem dag 1 til 21. Det er ligegyldigt, hvor længe de har haft appen, og hvor de er i streng A og B.</p>
+    <div class="scroll">
+      <div class="bane">
+        <div></div>
+        <div class="akse g6"><div>Dag 1</div><div>Dag 2</div><div>Dag 3</div><div>…</div><div>Dag 20</div><div>Dag 21</div></div>
+
+        <div class="navn"><b>Hele holdet</b>start 1. marts</div>
+        <div class="spor g6" style="display:grid">
+          <div class="celle fyldt">1. mar</div><div class="celle fyldt">2. mar</div><div class="celle fyldt">3. mar</div><div class="celle fyldt">…</div><div class="celle fyldt">20. mar</div><div class="celle fyldt">21. mar</div>
+        </div>
+      </div>
+    </div>
+    <p class="pil"><span>↑</span><span><b>Åbent spørgsmål 3:</b> Skal appens streng A og B køre videre <em>ved siden af</em> forløbet, eller skal forløbet fylde skærmen alene i de 21 dage?</span></p>
+  </section>
+
+  <!-- SAMLET -->
+  <section class="kort">
+    <div class="hoved"><h2>Sådan møder de hinanden på én skærm</h2></div>
+    <p class="forklar">Strengene konkurrerer ikke. De ligger oven på hinanden, og kunden ser kun de lag, hun har adgang til. Har hun ikke et forløb, er det lag der bare ikke.</p>
+    <div class="skaerm">
+      <h3>Sofies forside, 5. marts</h3>
+      <div class="lag">
+        <div class="lagkort" style="background:var(--c)"><b>C · Kropsro, dag 5 af 21</b><small>Fælles med holdet · fylder toppen mens forløbet kører</small></div>
+        <div class="lagkort" style="background:var(--b)"><b>B · Din rejse, dag 64</b><small>Regnet fra hendes eget køb 1. januar</small></div>
+        <div class="lagkort" style="background:var(--a)"><b>A · Nyt i appen denne uge</b><small>Samme for alle abonnenter i marts</small></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SPØRGSMÅL -->
+  <section class="sp">
+    <h2>Det jeg mangler svar på, før vi tegner videre</h2>
+    <ol>
+      <li><b>Findes streng B allerede i dit hoved som et rigtigt produkt?</b>
+        <span>Appen bygger i dag kun dag-numre inde i et forløb. Er B "en onboarding-rejse de første uger", eller er den ubegrænset og lige så lang som abonnementet?</span></li>
+      <li><b>Er A og B to ting, eller er de i virkeligheden én?</b>
+        <span>Det er den dyreste beslutning. To ure betyder to redskaber i admin og to steder du skal huske at lægge indhold op.</span></li>
+      <li><b>Kan man købe et forløb uden at have appen?</b>
+        <span>Eller følger appen altid med i forløbets pris, sådan som det reelt er i dag?</span></li>
+      <li><b>Hvad hvis to forløb overlapper?</b>
+        <span>Kropsro og Kickstart på samme tid — to gange dag 1 på samme skærm. Vinder ét, eller ligger de side om side?</span></li>
+      <li><b>Hvad sker der med de tre strenge, når abonnementet siges op?</b>
+        <span>Forsvinder det hele, eller bliver det gennemførte forløb stående som et arkiv?</span></li>
+    </ol>
+  </section>
+
+</div>
+</body>
+</html>

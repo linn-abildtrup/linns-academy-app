@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3.0 — kunderejsen og de tre ure</title>
+<style>
+  :root{
+    --blaek:#1d2530; --daemp:#6b7683; --linje:#e2e6ea; --bund:#f6f7f8; --kort:#fff;
+    --hold:#5a5fa8; --hold-lys:#ecedf7;
+    --eget:#b5762f; --eget-lys:#faf0e3;
+    --lob:#3f7d6e;  --lob-lys:#e8f2ef;
+    --advar:#a8443a; --advar-lys:#fbeeec;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bund);color:var(--blaek);
+       font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       padding:32px 20px 90px}
+  .side{max-width:1080px;margin:0 auto}
+  h1{font-size:30px;letter-spacing:-.02em;margin:0 0 6px}
+  .under{color:var(--daemp);margin:0 0 30px;max-width:66ch}
+  .kort{background:var(--kort);border:1px solid var(--linje);border-radius:14px;
+        padding:22px 24px 26px;margin-bottom:22px}
+  h2{font-size:19px;margin:0 0 6px;letter-spacing:-.01em}
+  .forklar{color:var(--daemp);margin:0 0 20px;max-width:72ch}
+
+  /* signaturforklaring */
+  .sig{display:flex;gap:22px;flex-wrap:wrap;margin:0 0 26px;font-size:13.5px}
+  .sig div{display:flex;align-items:center;gap:8px}
+  .prik{width:14px;height:14px;border-radius:4px;flex:none}
+
+  /* tidslinjer */
+  .scroll{overflow-x:auto;padding-bottom:6px}
+  .rejse{min-width:720px}
+  .maaneder{display:grid;grid-template-columns:170px repeat(8,1fr);gap:0 0;
+            font-size:11.5px;color:var(--daemp);font-weight:600;text-align:center;margin-bottom:6px}
+  .maaneder span{padding-bottom:4px;border-bottom:1px solid var(--linje)}
+  .maaneder span:first-child{border:none}
+  .raekke{display:grid;grid-template-columns:170px repeat(8,1fr);align-items:center;margin-bottom:8px}
+  .hvem{font-size:13px;color:var(--daemp);text-align:right;padding-right:16px;line-height:1.3}
+  .hvem b{display:block;color:var(--blaek);font-size:14px;font-weight:650}
+  .blok{height:44px;border-radius:9px;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;color:#fff;font-size:12.5px;font-weight:650;
+        margin:0 3px;padding:0 6px;text-align:center;line-height:1.2}
+  .blok small{font-weight:500;opacity:.85;font-size:11px}
+  .b-hold{background:var(--hold)}
+  .b-eget{background:var(--eget)}
+  .b-naeste{background:#7a7f45}
+  .b-tom{background:#eef1f2;border:1px dashed #d3d9dd}
+  .stribe{height:22px;border-radius:7px;background:var(--lob);color:#fff;
+          display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;margin:0 3px}
+  .stribe.tom{background:#eef1f2;border:1px dashed #d3d9dd}
+  .stribe.slukket{background:repeating-linear-gradient(45deg,#f0f2f3,#f0f2f3 5px,#e7ebec 5px,#e7ebec 10px);
+                  border:1px solid #dde2e4;color:#98a1a7;font-weight:600}
+  .molle{font-size:12px;color:var(--daemp);margin:2px 0 20px 170px;padding-left:4px}
+
+  /* kæde */
+  .kaede{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin-top:6px}
+  .led{flex:1;min-width:170px;border-radius:12px;padding:14px 14px 15px;color:#fff;margin:4px}
+  .led .nr{font-size:11px;opacity:.8;font-weight:700;letter-spacing:.08em}
+  .led b{display:block;font-size:15px;margin:3px 0 4px}
+  .led small{display:block;font-size:12px;opacity:.9;line-height:1.4}
+
+  /* udfordring */
+  .ud{background:var(--advar-lys);border:1px solid #eed9d6;border-left:4px solid var(--advar);
+      border-radius:0 12px 12px 0;padding:18px 22px;margin-bottom:22px}
+  .ud h2{color:var(--advar)}
+  .ud p{max-width:74ch}
+  .ud p:last-child{margin-bottom:0}
+
+  .sp{background:#fff;border:1px solid var(--linje);border-left:4px solid var(--blaek);
+      border-radius:0 12px 12px 0;padding:18px 22px}
+  .sp ol{margin:0;padding-left:20px}
+  .sp li{margin-bottom:12px}
+  .sp li b{display:block}
+  .sp li span{color:var(--daemp);font-size:14px}
+  @media (max-width:640px){ .maaneder,.raekke{grid-template-columns:110px repeat(8,1fr)} .molle{margin-left:110px} }
+</style>
+</head>
+<body>
+<div class="side">
+
+  <h1>Kunderejsen — og de tre ure</h1>
+  <p class="under"><b>Kapitlernes navne på denne tegning er interne.</b> Kunden ser aldrig et skift fra ét forløb til det næste — hun oplever én lang rejse.<br>To indgange, ét fælles spor. Uanset om kunden kommer ind via et rigtigt Kickstart-hold eller bare køber appen, ender hun det samme sted efter cirka to til tre måneder.</p>
+
+  <div class="sig">
+    <div><span class="prik" style="background:var(--hold)"></span> <b>Hold-ur</b> — alle starter samme dato</div>
+    <div><span class="prik" style="background:var(--eget)"></span> <b>Hendes eget ur</b> — dag 1 er den dag hun starter</div>
+    <div><span class="prik" style="background:#8d6b3f"></span> <b>Fundamentet</b> — én uge, kun for app-kunden</div>
+    <div><span class="prik" style="background:#7a7f45"></span> <b>Det næste spor (Kropsro)</b> — også eget ur</div>
+    <div><span class="prik" style="background:var(--lob)"></span> <b>Kalender-uret</b> — samme for alle, men slukket under et hold-forløb</div>
+  </div>
+
+  <!-- REJSERNE -->
+  <section class="kort">
+    <h2>De to veje ind</h2>
+    <p class="forklar">Det samme materiale, to forskellige indgange. Kun det første led er forskelligt.</p>
+
+    <div class="scroll">
+      <div class="rejse">
+        <div class="maaneder">
+          <span></span><span>Marts</span><span>April</span><span>Maj</span><span>Juni</span><span>Juli</span><span>August</span><span>Sept</span><span>Okt</span>
+        </div>
+
+        <!-- Maja: rigtig kickstarter -->
+        <div class="raekke">
+          <div class="hvem"><b>Maja</b>køber Kickstart-holdet, start 1. marts</div>
+          <div class="blok b-hold">Kickstart<small>dag 1–21 · med holdet</small></div>
+          <div class="blok b-eget" style="grid-column:span 2">Genkald<small>2 måneder · hendes eget ur</small></div>
+          <div class="blok b-naeste" style="grid-column:span 5">Det næste spor (Kropsro)<small>eget ur · fortsætter</small></div>
+        </div>
+        <div class="raekke">
+          <div class="hvem" style="font-size:12px">løbende app-indhold</div>
+          <div class="stribe slukket">slukket under forløbet</div>
+          <div class="stribe" style="grid-column:span 7">nyt i appen · samme dato for alle</div>
+        </div>
+        <p class="molle"><b>Låst:</b> holdet ser ikke det løbende app-indhold i de 21 dage. Kun forløbet. Derefter tændes kalender-sporet, og alt kører på hendes eget ur.</p>
+
+        <!-- Anne: kun appen -->
+        <div class="raekke">
+          <div class="hvem"><b>Anne</b>køber kun appen, 15. april</div>
+          <div class="blok b-tom"></div>
+          <div style="grid-column:span 2;display:flex">
+            <div class="blok" style="flex:0 0 30%;background:#8d6b3f">Uge 0<small>fundament</small></div>
+            <div class="blok b-eget" style="flex:1">Kickstart i appen<small>2 måneder · eget ur</small></div>
+          </div>
+          <div class="blok b-naeste" style="grid-column:span 5">Det næste spor (Kropsro)<small>eget ur · fortsætter</small></div>
+        </div>
+        <div class="raekke">
+          <div class="hvem" style="font-size:12px">løbende app-indhold</div>
+          <div class="stribe tom" style="color:#a9b1b6">før køb</div>
+          <div class="stribe" style="grid-column:span 7">nyt i appen · samme dato for alle</div>
+        </div>
+        <p class="molle">Anne rammer aldrig et hold. Hun får en uges fundament først, og kører derefter på sit eget ur.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- KÆDEN -->
+  <section class="kort">
+    <h2>Det du i virkeligheden bygger: én kæde</h2>
+    <p class="forklar"><b>Kun ét kapitel i hele kæden har et hold-ur:</b> selve Kickstart-holdet. Alt derefter — Genkald og Kropsro — kører på hendes eget ur.<br>Set fra kunden er der ikke tre systemer. Der er ét spor, der er delt i kapitler. Hvert kapitel har et <b>ur</b>, en <b>længde</b> og et <b>indhold</b> — og det eneste der skifter mellem de to veje ind, er det første kapitel.</p>
+    <div class="kaede">
+      <div class="led" style="background:var(--hold)">
+        <span class="nr">KAPITEL 1 · VEJ A</span>
+        <b>Kickstart, holdet</b>
+        <small>21 dage · hold-ur · købes særskilt · kun for dem der melder sig til et hold</small>
+      </div>
+      <div class="led" style="background:#8d6b3f">
+        <span class="nr">KAPITEL 0 · KUN VEJ B</span>
+        <b>Fundamentet</b>
+        <small>1 uge · eget ur · principperne og 30-30-3, for den der kommer helt frisk ind uden at have været på et hold</small>
+      </div>
+      <div class="led" style="background:var(--eget)">
+        <span class="nr">KAPITEL 1 · VEJ B</span>
+        <b>Kickstart i appen</b>
+        <small>2 måneder · eget ur · følger med app-købet · den afledte udgave</small>
+      </div>
+      <div class="led" style="background:var(--eget);opacity:.86">
+        <span class="nr">KAPITEL 2 · KUN VEJ A</span>
+        <b>Genkald</b>
+        <small>2 måneder · eget ur · eget spor, men bygget af meget af det samme materiale som vej B</small>
+      </div>
+      <div class="led" style="background:#7a7f45">
+        <span class="nr">KAPITEL 3 · BEGGE</span>
+        <b>Det næste spor (Kropsro)</b>
+        <small>eget ur · her mødes de to veje · følger med app-købet · udgår som betalt hold</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÉN REJSE -->
+  <section class="kort" style="border-left:4px solid var(--eget)">
+    <h2>Kunden ser aldrig kapitlerne</h2>
+    <p class="forklar">Fundamentet, Kickstart i appen, Genkald, Kropsro — det er jeres ord, ikke hendes. For Anne er der ingen dag, hvor noget slutter og noget andet begynder. Hun åbner appen, og der er noget nyt i dag. Sådan hver dag, i måneder.</p>
+    <p class="forklar"><b>Tælleren, låst:</b> rejsen begynder den dag hun første gang er med — på et forløb eller ved at købe appen — og tæller derefter uendeligt. Dag 214 er et helt gyldigt tal. Kapitlernes egne dag-numre bliver i admin og kommer aldrig på skærmen.</p>
+    <p class="forklar"><b>Den ene undtagelse:</b> hopper en app-bruger over på et rigtigt Kickstart-hold, starter hun på dag 1 <em>mens holdet kører</em> — hun står jo sammen med andre, der alle er på dag 1. Bagefter lægges holdets dage oveni det tal, hun havde med ind. Var hun på dag 214, er hun på dag 235, når de 21 dage er gået. Ingenting går tabt.</p>
+    <p class="forklar"><b>Og tælleren tæller alle dage, hun har adgang til appen.</b> Ikke dage hun har brugt den. Er hun væk i tre uger, er tallet løbet 21 dage videre, når hun kommer tilbage. <b>De 90 dages kigge-adgang tæller ikke med</b> — der står tallet stille, for hun kan alligevel ikke bruge appen.</p>
+    <p class="forklar" style="margin-bottom:0"><b>Og de interne navne må aldrig slippe ud.</b> Ikke i en overskrift, ikke i en påmindelse, ikke i en mail. Det er den slags, der lækker et halvt år senere, når nogen skriver en ny tekst og bruger det ord, alle bruger internt.</p>
+  </section>
+
+  <!-- DATOER -->
+  <section class="kort" style="border-left:4px solid var(--lob)">
+    <h2>Kunden ser datoer, ikke dagnumre</h2>
+    <p class="forklar">Det opløser hele spørgsmålet om, hvilket tal der skal stå på forsiden. Der står ikke noget tal. Der står en dato — <b>tirsdag den 14. april</b> — og under den er der noget nyt i dag.</p>
+    <p class="forklar"><b>Det er også det, der gør "én lang rejse" til mere end en hensigt.</b> Har hun aldrig set et dagnummer, findes der ikke et tal, der kan afsløre, at hun er blevet flyttet fra ét kapitel til det næste. Ingen dag 1, ingen dag 214, ingen nulstilling at skjule. Dagnumrene bliver noget, der kun findes i admin — ligesom kapitlernes navne.</p>
+    <p class="forklar"><b>Kickstart-holdet er den ene undtagelse, og den er additiv.</b> Datostriben er der stadig, præcis som for alle andre — dagnummeret ligger ved siden af. Holdet taler om "dag 5" i gruppen, så tallet skal findes for dem. Men det er lagt oveni, ikke i stedet for.</p>
+    <p class="forklar"><b>Og derfor er overgangen ud af holdet blød.</b> Når de 21 dage er gået, falder dagnummeret bare væk, og datostriben bliver tilbage. Hun mister ikke en position, og hun bliver ikke sat tilbage til noget. Der er bare ét element mindre på skærmen.</p>
+    <p class="forklar" style="margin-bottom:0"><b>Medlemstiden forsvinder ikke — den flytter bare.</b> "Du har været med i syv måneder" hører hjemme under profilen, hvor den allerede er, og hvor den er en anerkendelse i stedet for en position i et forløb.</p>
+  </section>
+
+  <!-- ENDEN -->
+  <section class="kort" style="border-left:4px solid var(--advar)">
+    <h2>Enden af kæden er en dato, ikke et spørgsmål</h2>
+    <p class="forklar">Der kommer noget efter Kropsro, men det er ikke skrevet endnu. Det betyder, at den første kunde, der starter, også er den første, der rammer enden — og det sker på en dato, du kan regne dig frem til.</p>
+    <p class="forklar"><b>Regnestykket for Anne:</b> en uges fundament, plus to måneder Kickstart i appen, plus Kropsro. Er Kropsro tre måneder, står hun ved kanten cirka fem en halv måned efter hun købte. Starter de første i januar, er kanten i juni. Det er ikke et åbent spørgsmål — det er en deadline.</p>
+    <p class="forklar" style="margin-bottom:0"><b>Derfor skal appen kunne tåle at nå enden, før du har skrevet videre.</b> Hun må ikke møde en tom skærm eller ordet "slut". Det behøver ikke være meget — men det skal være besluttet, hvad der står der, i stedet for at blive opdaget den dag det sker.</p>
+  </section>
+
+  <!-- FUNDAMENT -->
+  <section class="kort" style="border-left:4px solid #8d6b3f">
+    <h2>Fundamentet — og en navnefælde</h2>
+    <p class="forklar">Anne kommer ind uden at have mødt dig. Maja har haft 21 dage med et hold, hvor principperne og 30-30-3 er blevet forklaret hele vejen. Derfor giver det god mening, at kun Anne får en uges fundament først. Hun skal have det, holdet gav Maja gratis.</p>
+    <p class="forklar"><b>Men der findes allerede en "opstart" i 3.0.</b> Den er bygget: fire spørgsmål og en rundvisning i appen, og den møder alle første gang de logger ind. Den tager minutter og handler om <em>appen</em>. Det nye handler om <em>metoden</em> og tager en uge. Hvis de begge kommer til at hedde onboarding, bliver de blandet sammen — i samtaler, i admin og i det, kunden ser.</p>
+    <p class="forklar" style="margin-bottom:0"><b>Låst: Fundamentet er kun for Anne, og det kan ikke springes over.</b> Kommer man ind via appen, går man den vej.<br><br><b>Forslag:</b> den eksisterende beholder navnet <b>Opstarten</b>, som den allerede har i profilen. Den nye hedder noget helt andet — <b>Fundamentet</b> eller <b>Grundugen</b>. Og de ligger efter hinanden: hun logger ind, kommer igennem opstarten på få minutter, og lander så på dag 1 af Fundamentet.</p>
+  </section>
+
+  <!-- PRODUKT -->
+  <section class="kort" style="border-left:4px solid var(--eget)">
+    <h2>Hvad koster hvad</h2>
+    <p class="forklar">Der er ét abonnement og ét tilkøb. Alt andet ligger inde i abonnementet.</p>
+    <div class="kaede" style="margin-bottom:16px">
+      <div class="led" style="background:var(--eget)">
+        <span class="nr">ABONNEMENT · 299 KR/MD</span>
+        <b>Appen — hele kæden</b>
+        <small>Kickstart i appen, Genkald og Kropsro. Alt der kører på hendes eget ur. Mad, vaner, træning, udvikling.</small>
+      </div>
+      <div class="led" style="background:var(--hold)">
+        <span class="nr">KØBES SÆRSKILT · 1.497 KR</span>
+        <b>Kickstart-holdet</b>
+        <small>21 dage med et hold, en startdato og Linn tæt på. App-adgangen følger med i købet. Det eneste med hold-ur.</small>
+      </div>
+    </div>
+    <p class="forklar"><b>Kickstart er indgangen, ikke produktet.</b> Den sælger appen. Maja betaler for de 21 dage og opdager undervejs, at hun står i noget, der fortsætter bagefter.</p>
+    <p class="forklar" style="margin-bottom:0"><b>Og Genkald er det, der holder på hende.</b> Dagen efter et forløb slutter, er dér folk falder fra. At der ligger to måneder klar præcis dér, er kædens vigtigste forretningsmæssige træk — ikke bare en pædagogisk detalje.</p>
+  </section>
+
+  <!-- BETALING -->
+  <section class="kort" style="border-left:4px solid var(--hold)">
+    <h2>Valgt: appen sælges i forløbets sidste uge</h2>
+    <p class="forklar">Maja betaler 1.497 for Kickstart og har appen med i de 21 dage. I <b>uge 3</b> præsenteres appen, og hun skal aktivt vælge at fortsætte. Der starter ingen betaling af sig selv.</p>
+    <p class="forklar"><b>Salget automatiseres ikke.</b> Det er noget du gør — ikke en blok appen skruer op for på dag 15. Det betyder, at der ikke skal bygges noget til det, og at det står og falder med, at det faktisk bliver gjort hver gang et hold når uge 3.</p>
+
+    <div class="scroll" style="margin-bottom:18px">
+      <div class="rejse">
+        <div class="maaneder">
+          <span></span><span>Uge 1</span><span>Uge 2</span><span>Uge 3</span><span>Måned 2</span><span>Måned 3</span><span>Måned 4</span><span>Måned 5</span><span>Måned 6</span>
+        </div>
+        <div class="raekke">
+          <div class="hvem"><b>Maja siger ja</b>køber i uge 3</div>
+          <div class="blok b-hold" style="grid-column:span 2">Kickstart<small>holdet</small></div>
+          <div class="blok b-hold" style="outline:3px solid var(--eget);outline-offset:-3px">Uge 3<small>appen sælges</small></div>
+          <div class="blok b-eget" style="grid-column:span 2">Genkald<small>2 måneder</small></div>
+          <div class="blok b-naeste" style="grid-column:span 3">Kropsro<small>eget ur</small></div>
+        </div>
+        <div class="raekke">
+          <div class="hvem"><b>Maja siger nej</b>eller udskyder</div>
+          <div class="blok b-hold" style="grid-column:span 2">Kickstart<small>holdet</small></div>
+          <div class="blok b-hold" style="outline:3px solid var(--eget);outline-offset:-3px">Uge 3<small>appen sælges</small></div>
+          <div class="blok" style="grid-column:span 3;background:#eef1f2;border:1px solid #d3d9dd;color:#6b7683">Kigge-adgang · 90 dage<small style="opacity:1;color:#8a939a">under profilen · også hendes eget</small></div>
+          <div class="blok b-tom" style="grid-column:span 2;color:#98a1a7;font-weight:600">lukket</div>
+        </div>
+        <p class="molle" style="margin-bottom:0">Siger hun nej, beholder hun materialet i 90 dage. Genkald og Kropsro følger ikke med.</p>
+      </div>
+    </div>
+
+    <p class="forklar"><b>Det stærke ved valget:</b> hun sælges til, mens hun er inde i noget, der virker — ikke på en kold side før hun er begyndt. Og fordi kæden kører på hendes eget ur, kan hun starte Genkald på dag 1, uanset om hun køber i uge 3 eller først to måneder senere. Hun kommer aldrig bagud.</p>
+    <p class="forklar"><b>Maja er den ene undtagelse fra "én lang rejse".</b> Anne mærker aldrig en overgang. Maja gør — hun har betalt 1.497 for noget med en ende, og i uge 3 skal hun tage stilling. Det brud kan ikke skjules, og det skal det heller ikke. Men efter hun har sagt ja, skal hun ind i den samme ubrudte rejse som Anne: ingen ny dag 1, ingen fornemmelse af at være startet forfra.</p>
+    <p class="forklar" style="margin-bottom:0"><b>Risikoen:</b> et forløb der slutter, føles færdigt. Siger hun nej i uge 3, er der ingen app til at holde fast i hende, og næste kontakt er en mail til en der er gået videre. Derfor er det ikke ligegyldigt, hvad hun ser den 22. dag.</p>
+  </section>
+
+  <!-- EFTER NEJ -->
+  <section class="kort" style="border-left:4px solid var(--hold)">
+    <h2>Valgt: 90 dages kigge-adgang</h2>
+    <p class="forklar">Køber hun ikke i uge 3, lukker appen ikke bag hende. Hun beholder <b>adgang i 90 dage</b> til forløbets materiale <b>og til sit eget</b> — noter, udvikling og registreringer. Genkald og resten af kæden følger ikke med — det er dét, abonnementet er.</p>
+    <p class="forklar"><b>Hvorfor det er det rigtige valg:</b> hun har betalt 1.497 for de 21 dage, og det ville føles forkert at lukke dem inde dagen efter. Samtidig bliver appen liggende på hendes telefon i tre måneder med hendes eget indhold i — og hver gang hun åbner den, står hun et sted, hvor Genkald mangler. Du får tre måneders anledninger i stedet for én.</p>
+    <p class="forklar" style="margin-bottom:0"><b>Det, der skal passes på:</b> kigge-adgangen må ikke føles som en fortsættelse. Kan hun stadig registrere måltider, sætte flueben og bruge appen normalt i de 90 dage, har hun ingen grund til at købe før dag 89 — og de fleste når at glemme det. Skellet skal være tydeligt: hun kan <em>gense</em> sit forløb, ikke <em>bruge</em> appen.</p>
+    <p class="forklar" style="margin-bottom:0"><b>Og det løser skellet helt af sig selv:</b> materialet ligger <b>under hendes profil</b>, ikke på forsiden. Forløbet flytter fysisk væk fra det sted, hvor man bruger appen, og ind det sted, hvor man ser tilbage. Hun skal ikke have forklaret, at hun ikke længere er i gang — hun kan se det. Det passer også med den måde, gennemførte forløb allerede tænkes at ligge i 3.0.</p>
+  </section>
+
+  <!-- LUKNINGEN -->
+  <section class="kort" style="border-left:4px solid var(--hold)">
+    <h2>Hvad der sker, når vinduet lukker</h2>
+    <p class="forklar">Tre ting er besluttet: forsiden er tom med et høfligt tilbud, login lukker på dag 91, og data gemmes i fem år.</p>
+
+    <div class="kaede" style="margin-bottom:18px">
+      <div class="led" style="background:var(--eget)">
+        <span class="nr">DAG 22 TIL 90</span>
+        <b>Tom forside, arkiv under profilen</b>
+        <small>Ingen dagens lektion, ingen kæde. Et høfligt link til at købe appen. Alt hendes eget ligger under profilen — men hun kan kun læse. Intet kan registreres.</small>
+      </div>
+      <div class="led" style="background:#8a919a">
+        <span class="nr">DAG 91</span>
+        <b>Hun kan ikke længere logge ind</b>
+        <small>Døren lukker. Det tilbud, hun mødte på forsiden, skal derfor også stå på selve login-skærmen — ellers er hendes sidste oplevelse en afvisning.</small>
+      </div>
+      <div class="led" style="background:#8a919a;opacity:.85">
+        <span class="nr">ÅR 5</span>
+        <b>Data slettes</b>
+        <small>Indtil da står alt hendes klar. Køber hun sig ind igen, er hendes noter og udvikling der stadig.</small>
+      </div>
+    </div>
+
+    <p class="forklar"><b>Påmindelserne skal ligge, hvor hun er.</b> 90 dage er rigeligt til at glemme. Et forslag: en venlig besked omkring <b>dag 60</b>, en tydeligere omkring <b>dag 83</b>, og en sidste omkring <b>dag 89</b>. På mail, fordi hun sjældent åbner en app hun ikke bruger — og i appen, for dem der gør.</p>
+
+    <p class="forklar"><b>Låst: hun kan læse, ikke bruge.</b> I de 90 dage kan hun gense forløbet og se sine egne noter, sin udvikling og sine registreringer — men hun kan ikke tilføje noget nyt. Ikke et måltid, ikke et flueben. Det er dét, der gør arkivet til et arkiv, og det er dét, der gør, at hun ikke bare udskyder købet til dag 89.</p>
+    <p class="forklar"><b>Låst: hun får sine ting med.</b> Inden døren lukker, kan hun hente sine noter og sin udvikling ud som en fil, hun kan gemme. Hun kan ikke logge ind bagefter, så det skal kunne gøres mens hun er inde — og det bør nævnes i påmindelserne, ikke kun ligge gemt under profilen.</p>
+    <p class="forklar" style="margin-bottom:0"><b>Låst: hun kan bede om at få det slettet.</b> Data gemmes i fem år, men beder hun om at få dem væk før, sker det. Da hun ikke kan logge ind efter dag 90, skal det kunne gøres ved at skrive til dig — og det skal stå i den sidste påmindelse, mens hun stadig kan læse den.</p>
+  </section>
+
+  <!-- ØKONOMI -->
+  <section class="kort" style="border-left:4px solid var(--eget)">
+    <h2>Hvad tallene betyder</h2>
+    <p class="forklar">1.497 kr én gang, mod 299 kr om måneden. To ting falder ud af det forhold.</p>
+
+    <div class="kaede" style="margin-bottom:18px">
+      <div class="led" style="background:var(--eget)">
+        <span class="nr">FORHOLDET</span>
+        <b>5 måneder = ét forløb</b>
+        <small>En abonnent skal blive fem måneder for at være lige så meget værd som ét Kickstart-salg. Bliver hun et år, er hun værd mere end det dobbelte.</small>
+      </div>
+      <div class="led" style="background:var(--eget);opacity:.86">
+        <span class="nr">SALGET I UGE 3</span>
+        <b>299 lyder af meget lidt lige der</b>
+        <small>Hun har netop betalt 1.497. At fortsætte for en femtedel af det om måneden er det letteste ja, du nogensinde kommer til at bede om. Timingen er rigtig.</small>
+      </div>
+    </div>
+
+    <p class="forklar" style="font-size:14px"><b>Et regnestykke, kun for at vise størrelsesordenen</b> — tallene er antagelser, ikke jeres data. Sælger du 100 forløb à 1.497, er det 149.700 kr. Siger 40 af dem ja i uge 3 og bliver otte måneder, er det 95.680 kr oveni fra de samme mennesker. Abonnementet er altså ikke en lille hale på forretningen. Det er tæt på at fordoble den, uden ét nyt salg.</p>
+  </section>
+
+  <!-- SPÆNDINGEN -->
+  <section class="kort" style="border-left:4px solid var(--advar)">
+    <h2>Den spænding, modellen skal kunne bære</h2>
+    <p class="forklar">Anne betaler 299 og får "Kickstart i appen". Maja betaler 1.497 og får Kickstart med et hold. Materialet er i vidt omfang det samme. Før eller siden opdager nogen det — og siger det højt.</p>
+    <p class="forklar" style="margin-bottom:0"><b>Så svaret må ikke være materialet.</b> De 1.497 skal købe det, appen aldrig kan give: en startdato sammen med andre, et hold der går de samme 21 dage, beskeder direkte til dig, og en skærm hvor intet andet forstyrrer. Det er allerede sådan, I har tegnet det — men det skal siges lige så tydeligt i salget, som det er tegnet her. Ellers bliver 299-udgaven det billige alternativ til 1.497-udgaven i stedet for det, der kommer efter den.</p>
+  </section>
+
+  <!-- MATERIALE -->
+  <section class="kort" style="border-left:4px solid var(--eget)">
+    <h2>Genkald og Kickstart i appen: to spor, ét materiale</h2>
+    <p class="forklar">De er ikke det samme forløb, men de bygger på meget af det samme stof. Det betyder <b>ikke</b> to sæt lektioner, der skal holdes ens i to mapper — det er den slags, der stille driver fra hinanden, og hvor du ender med at rette samme tekst to gange og glemme den ene.</p>
+    <p class="forklar" style="margin-bottom:0">Det, det peger på, er <b>ét bibliotek af lektioner og to opsætninger, der plukker fra det</b>. Samme øvelse kan ligge på dag 4 i det ene spor og dag 19 i det andet, med hver sin indledning. Retter du øvelsen, er den rettet begge steder.</p>
+  </section>
+
+  <!-- LÅST -->
+  <section class="kort" style="border-left:4px solid var(--hold)">
+    <h2>Låst beslutning: forløbet har skærmen alene</h2>
+    <p class="forklar">Mens Kickstart-holdet kører, ser kunden ikke det løbende app-indhold. Der er ét sted at kigge hen, og det er dagens lektion. Det gør de 21 dage skarpe og fjerner konkurrencen om opmærksomheden.</p>
+    <p class="forklar"><b>Det gælder kun Kickstart-holdet.</b> Genkald, Kickstart i appen og Kropsro ser det løbende indhold som alle andre. Slukningen er en egenskab ved det købte hold, ikke ved kæden.</p>
+    <p class="forklar" style="margin-bottom:0"><b>Og forløbet har kun det, du har tildelt det.</b> Under de 21 dage er appen skåret ned til de moduler, Kickstart har fået. Du holder dem i hånden og har bestemt langt det meste for dem — resten af appen venter på den anden side.</p>
+  </section>
+
+  <!-- UDFORDRING -->
+  <section class="ud">
+    <h2>Her udfordrer jeg dig</h2>
+    <p><b>1. Det delte materiale skal have ét hjem.</b> Genkald og Kickstart i appen er to spor med meget fælles stof. Så længe det er to adskilte tekstsamlinger, skal du rette hver ændring to steder — og før eller siden bliver det kun rettet det ene. Beslutningen skal tages nu, mens intet er skrevet, ikke bagefter.</p>
+    <p><b>2. Maja får mere Kickstart end Anne.</b> Maja: 21 dage plus 2 måneder. Anne: 2 måneder. Er det med vilje — altså at det rigtige hold er en ekstra ting man betaler for oveni — eller skal de to veje ende samme sted til samme tid?</p>
+    <p><b>3. "Gennemført" skal have en definition.</b> Du siger at Genkald kommer <em>såfremt</em> hun har gennemført Kickstart. Hvad sker der med den, der faldt fra på dag 9? Får hun Genkald alligevel, får hun vej B's udgave, eller står hun stille? Det er den situation, der oftest opstår i praksis.</p>
+    <p><b>4. Kalender-sporet er nu presset yderligere.</b> Det er slukket for holdet i de 21 dage, og de to første måneder efter bæres af Genkald. Så det løbende indhold har reelt ingen kunder, der har brug for det, før tidligst måned tre. Det er samtidig den dyreste vane at holde i live, fordi det kræver noget fra dig hver uge for evigt. Overvej at bygge kæden først og lade kalender-sporet vente.</p>
+  </section>
+
+  <!-- BESVARET -->
+  <section class="kort" style="border-left:4px solid var(--lob)">
+    <h2>Besvaret 5. september</h2>
+    <div class="kaede">
+      <div class="led" style="background:var(--lob)">
+        <span class="nr">TILBAGEVENDEN</span>
+        <b>Hun vælger selv sin dag</b>
+        <small>En kunde der kommer tilbage, må altid starte fra en hvilken som helst dag, hun allerede har haft. Det gælder generelt, ikke kun efter en pause.</small>
+      </div>
+      <div class="led" style="background:var(--lob)">
+        <span class="nr">OPSIGELSE</span>
+        <b>Hun kører måneden færdig</b>
+        <small>Siger hun op midt i Genkald, lukker det ikke samme dag. Perioden hun har betalt for, får hun.</small>
+      </div>
+      <div class="led" style="background:var(--lob)">
+        <span class="nr">HOLD MIDT I DET HELE</span>
+        <b>Det rigtige forløb trumfer</b>
+        <small>Køber Anne et Kickstart-hold midt i sine to måneder, sætter holdet Kickstart i appen på pause og overtager skærmen.</small>
+      </div>
+      <div class="led" style="background:var(--lob)">
+        <span class="nr">EFTER ET HOLD</span>
+        <b>Anne fortsætter hvor hun slap</b>
+        <small>Holdet satte Kickstart i appen på pause. Bagefter genoptages det på præcis den dag, hun forlod det.</small>
+      </div>
+      <div class="led" style="background:var(--lob)">
+        <span class="nr">PÅMINDELSER</span>
+        <b>Automatiske</b>
+        <small>De tre beskeder i de 90 dage sendes af appen, ikke i hånden. Det er den eneste automatik i modellen — salget i uge 3 gør du selv.</small>
+      </div>
+      <div class="led" style="background:var(--lob)">
+        <span class="nr">DET HUN GIK GLIP AF</span>
+        <b>Er væk</b>
+        <small>Det løbende indhold, der blev lagt op mens Maja var på holdet, kan hun ikke se bagefter. Kun forløbets eget materiale ligger under profilen.</small>
+      </div>
+      <div class="led" style="background:var(--lob)">
+        <span class="nr">FILEN</span>
+        <b>En pæn PDF</b>
+        <small>Hendes forløb, noter og udvikling i noget hun kan gemme og printe. Ikke en rå datafil.</small>
+      </div>
+      <div class="led" style="background:var(--lob)">
+        <span class="nr">KROPSRO SOM HOLD</span>
+        <b>Udgår</b>
+        <small>Kropsro sælges ikke længere som et betalt hold ved siden af. De nuværende hold-kunder tages der stilling til senere.</small>
+      </div>
+      <div class="led" style="background:var(--lob)">
+        <span class="nr">MATERIALET</span>
+        <b>Genkald og Kickstart i appen findes ikke endnu</b>
+        <small>Begge skal skrives. Det er den største post i hele planen — og grunden til at det delte lektionsbibliotek skal besluttes nu.</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÅBENT -->
+  <section class="sp">
+    <h2>Det der stadig er åbent</h2>
+    <ol>
+      <li><b>Deler Genkald og Kickstart i appen ét lektionsbibliotek?</b>
+        <span>Udskudt. Værd at huske: ingen af dem er skrevet endnu, så det koster ingenting at beslutte nu — og det bliver dyrt at lave om, når begge findes som tekst.</span></li>
+      <li><b>Hvad ser hun den dag, hun har været igennem alt det, der findes?</b>
+        <span>Udskudt. Det haster ikke i dag, men det har en dato: cirka fem en halv måned efter den første kunde starter.</span></li>
+      <li><b>Møder Anne det samme stof to gange efter et hold?</b>
+        <span>Hun genoptager Kickstart i appen dér hvor hun slap, men har lige gået de 21 dage. Hun kan kun springe tilbage, ikke fremad. Noget at holde øje med, når materialet skrives.</span></li>
+    </ol>
+  </section>
+
+</div>
+</body>
+</html>
