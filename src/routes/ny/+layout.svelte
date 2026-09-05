@@ -10,7 +10,7 @@
 	// Ingen af dem er aendret.
 	// ============================================================
 
-	import { goto } from '$app/navigation';
+	import { goto, beforeNavigate } from '$app/navigation';
 	import { loginMedVidere3 } from '$lib/content/videreTil3';
 	import { onMount, setContext } from 'svelte';
 	import { page } from '$app/state';
@@ -123,11 +123,16 @@
 	});
 
 	// HVOR HUN KOM FRA, saa tilbage-knappen peger paa den side hun var paa
-	// og ikke et fast sted. Linns oenske 5. september. Registreringen sker
-	// HER, fordi skallen omgiver hver eneste side og derfor ser hver
-	// navigation. Se content/forrigeSide3.ts.
-	$effect(() => {
-		registrerSide3(page.url.pathname);
+	// og ikke et fast sted. Linns oenske 5. september.
+	//
+	// beforeNavigate og IKKE en $effect. Foerste forsoeg brugte en effect,
+	// og den koerer EFTER siden er tegnet: saa naaede tilbage-knappen at
+	// laese den gamle vaerdi, og der stod stadig "Forside". beforeNavigate
+	// koerer FOER den nye side, saa hukommelsen er paa plads naar hovedet
+	// tegnes. Se content/forrigeSide3.ts.
+	beforeNavigate(({ from, to }) => {
+		if (from?.url.pathname) registrerSide3(from.url.pathname);
+		if (to?.url.pathname) registrerSide3(to.url.pathname);
 	});
 
 	setContext('userDoc', () => userDoc);
