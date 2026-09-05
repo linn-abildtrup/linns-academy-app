@@ -883,7 +883,7 @@
 </script>
 
 {#if !maaVaereHer}
-	<div class="side"><div class="besked">Kun for admin.</div></div>
+	<p class="fu-kun">Siden er kun for admin.</p>
 {:else}
 	<div class="side">
 		<header class="side-hoved">
@@ -1438,6 +1438,13 @@
 		background: var(--white, #fff);
 		color: var(--text);
 		box-shadow: 0 1px 3px rgba(56, 44, 42, 0.08);
+	}
+
+	/* Ordret som paa lektions-oversigten, saa de to sider siger det ens. */
+	.fu-kun {
+		padding: 24px 18px;
+		color: var(--ink-2);
+		font-size: calc(14px * var(--fs-scale, 1));
 	}
 
 	.besked {
