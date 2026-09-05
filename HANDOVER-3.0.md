@@ -5654,3 +5654,66 @@ Før klæbede kun Linn AI og Linn, mens titlen og linjen under rullede væk. Så
 toppen halv ud, og linjen der forklarer hvad fanen er til, forsvandt præcis når
 hun var længst nede i en samtale. Sidehovedet og fanerne er pakket sammen i ét
 lag der klæber.
+
+---
+
+### 9.80 LEKTIONEN PÅ MAIL, 5. september
+
+Nogle kunder vil have en lektion på papir eller gemt. **Linns beslutning: den
+sendes til hendes egen mail som PDF. Ikke som en download til telefonen.**
+
+**Hvorfor ikke download.** Manifestet er `standalone`, så når appen ligger på
+hjemmeskærmen, findes browserens menu ikke. Der er hverken Del eller Print, og
+en almindelig download er upålidelig i den situation. Telefonens egen delemenu
+virker og har "Gem i Filer", men filen lander et sted mange aldrig finder igen.
+En mail kan hun søge frem på enhver telefon og enhver computer, og Linn kan
+sige "søg på lektionens navn i din indbakke" når hun ringer. **Delemenuen må
+lægges ved siden af senere, aldrig i stedet for, og først efter en test på en
+rigtig iPhone fra hjemmeskærmen.**
+
+**Kun to slags indhold kan sendes**, og det følger lektionens art:
+
+- `art === 'side'`, altså en `.html`-fil, sættes om til en PDF i Linns design
+- `art === 'pdf'` vedhæftes som den er, med det udseende Linn selv gav den
+
+Video, lyd og links har **ingen knap**. Videoen nævnes ikke i filen, heller
+ikke som et link. Det er samtidig svaret på "skjul knappen når der ikke er nok
+at sende": arten afgør det, så der er **ingen kontakt Linn skal huske pr
+lektion**. Viser en side sig at være næsten tom, når den er hentet, siger
+serveren det i stedet for at sende en PDF med en overskrift og ingenting under,
+se `MINDST_TEGN`.
+
+**Filerne:**
+
+| Fil | Hvad den gør |
+|---|---|
+| `content/lektionHtml3.ts` | HTML ned til blokke. Ren funktion, ingen DOM, fuldt testet |
+| `content/lektionMail3.ts` | Emne, brødtekst og filnavn |
+| `server/lektionPdf3.ts` | Bygger PDF'en med jsPDF |
+| `api/ny-lektion-mail/+server.ts` | Endpointet |
+
+**Tre ting der er værd at kende:**
+
+- **Det sker på serveren**, fordi lektionen ligger på et andet domæne og en
+  browser ikke må læse den. Serveren må.
+- **Adressen tages fra hendes login**, ikke fra det siden sender med. Ellers
+  kunne enhver sende en lektion til en fremmed. Adgangen til forløbet tjekkes
+  også her, for en skjult knap er ikke en lås.
+- **Sidens egen overskrift springes over**, når den bare gentager titlen. Uden
+  `udenDobbeltTitel` stod den samme sætning to gange lige under hinanden. Det
+  blev opdaget ved at se på en rigtig PDF, ikke i en test.
+
+**jsPDF kører på serveren.** Den behøver ingen DOM til ren tekst, og
+`lektionPdf3.test.ts` bygger en rigtig fil og tjekker at den starter med
+`%PDF-`. Bygget går igennem med cloudflare-adapteren.
+
+**DET DER MANGLER, og som ingen test kan erstatte:**
+
+- **Knappen er ikke prøvet mod en rigtig lektion i browseren.** Den er bygget,
+  typetjekket og testet, men ingen har trykket på den som kunde endnu.
+- **Mailgrænsen.** Resend sender 100 i døgnet på gratis-planen, og den deles
+  med morgen-beskederne. Trykker mange på knappen samme dag, bliver de sidste
+  afvist. Skal formentlig opgraderes til cirka 140 kr/md før det slippes løs,
+  se 9.47.
+
+Beslutningerne og tegningen står i `mockups-lektion-pdf.html`.
