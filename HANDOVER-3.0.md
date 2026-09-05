@@ -2,6 +2,26 @@
 
 Sidst opdateret 4. september 2026.
 
+**DEN 4. SEPTEMBER VAR EN STOR DAG I 3.0, OG DET DER SPÆRRER ER NU ÉN TING:
+de fire velkomstvideoer.** Tre beslutninger fra Linn lukkede resten, se 9.78.
+Læs NÆSTE SKRIDT i afsnit 9, som er skrevet helt om den dag.
+
+**Rører du noget der ruller, klæber eller tegnes i en graf, så læs 9.76 og 9.77
+FØRST.** Fire fejl i træk samme dag havde den samme årsag: det er skallens
+`.ny-scroll` der ruller, ikke listen indeni. Tre af dem gik på timing, mens
+fejlen lå i layoutet. Der er nu en `utils/rulning3.ts` der finder det rigtige
+element, og et afsnit om at et klæbende felt er i TO tilstande.
+
+**Beskeder er lavet om så det virker som den gamle app**, se 9.76: kunden kan
+skrive direkte til Linn igen, samtalen er en chat, og sikkerheds-procenten
+vises. Det omgør en regel der stod to steder i koden.
+
+**Test selv i Chrome før du melder noget færdigt.** Linns besked samme dag, og
+den kom af at hun brugte en time som min tester. Der er flere browsere
+forbundet, og den Claude åbner faner i er ikke nødvendigvis den hun sidder i:
+spørg, og vælg med `select_browser`. Jeg må ikke selv taste adgangskoder, så
+bed Linn logge ind ÉN gang i fanen, tidligt i sessionen.
+
 **3.0 SIGER IKKE FRA NÅR APPEN IKKE KAN KOMME IGENNEM. Det skal på plads
 inden det første hold flyttes over.** Et gem uden forbindelse melder ALDRIG
 fejl, og ændringen ser gemt ud på skærmen alligevel. Det kostede en kunde i
@@ -601,100 +621,103 @@ gang et sted at være.
 
 ### NÆSTE SKRIDT
 
-Opdateret 1. september. **Intet af det nedenstående flyttede sig den 1.
-september**, for dagen gik med admin-værktøj, med Linn AI og med at lave
-hele admin om. Se 9.61 og 9.62.
+**Opdateret 4. september, og hele afsnittet er skrevet om.** Tre beslutninger
+fra Linn den dag fjernede eller lukkede halvdelen af det der stod her. Se 9.78.
 
-**Det der spærrer for at flytte et hold har ikke flyttet sig siden 22. august,
-og det er stadig indhold og tildelinger fra Linn, ikke kode.**
+#### DET ENESTE DER SPÆRRER FOR AT FLYTTE ET HOLD
 
-**Nyt 4. september, og det er kode, ikke indhold: advarslen om manglende
-forbindelse findes ikke i 3.0.** Den gamle app fik den samme dag, efter at en
-kunde havde mistet to hele dage uden at få det at vide. Delene ligger i
-`src/lib/` og kan genbruges, men båndet skal have sin egen udgave med
-`ny.css`-tokens, og hvert gem i 3.0 skal igennem `gemMedVentetid`. Se
-konventionen i afsnit 6. **Det bør på plads før et hold flyttes**, for ellers
-arver de nye kunder den fælde vi lige har lukket for de gamle.
+**De fire velkomstvideoer.** Indhold fra Linn, ikke kode. Har stået øverst
+siden 16. august, og efter 4. september er det den eneste post tilbage.
 
-**De fire nye ting fra 26. august**, i den rækkefølge jeg ville tage dem, se
-9.60:
+De tre andre der stod her er væk:
 
-1. **"Nulstil appen på denne enhed"** i 3.0. Den gamle app har knappen, 3.0
-   har den ikke, og Linn sad fast uden den 26. august. Se 9.58 punkt 3
-2. **Onboardingens sidste udvej.** Fire linjer, og det er den første skærm
-   en ny kunde møder. Se 9.57
-3. **De to tekster i scanneren** der står forkert på et tomt skema. Se 9.57
-4. **Mine favoritter på en rigtig telefon.** Aldrig prøvet i en hånd
+- ~~**Programmerne skal tildeles**~~ **Klaret 4. september.** De to Kickstart-
+  programmer er tildelt Kickstart August fra dag 3, og det er verificeret som
+  kunden ser det. De to øvrige programmer er stadig kladder og kan ikke
+  tildeles. Fælden var reel: der lå nul tildelinger til et rigtigt hold indtil
+  den dag
+- ~~**Kalender eller selvbetjening**~~ **Besvaret 4. september: 3.0 venter på
+  kunden.** Kostede nul kode, se 9.78. Den gamle app beholder sin kalender, og
+  de to apper gør nu bevidst noget forskelligt
+- ~~**"Vælg dine små skridt" er en død vej**~~ Klaret 22. august, se 9.35
 
-Nyt fra 25. august, som venter på Linn:
+#### Kunden kan møde en halvfærdig app tre steder
 
-- **Søgeord-feltet på fødevarer.** Søgningen kender kun ét navn ad
-  gangen, så "isberg" giver ingenting nu hvor varen hedder Icebergsalat.
-  Det samme gælder brocolli mod broccoli og avocado mod avokado.
-  Slåfejls-slækket løser dem IKKE, se 9.53. Feltet findes ikke i data
-- **Om en scannet vare skal have et synligt hjerte.** Linn bad om det,
-  vi løste det i rækkefølgen i stedet, se 9.53. Beslutningen står ved
-  magt, men er værd at kende hvis nogen undrer sig
+Fundet 4. september ved at scanne for attrap og forældreløse sider. **Ingen af
+dem stod på nogen liste, og de to første ser en kunde uden at gøre noget
+forkert.**
 
-#### Spærrer for at flytte et hold
+1. **"Resten af din profil kommer her. Siden er ikke bygget færdig endnu."**
+   står på Din side, lige over Log ud, for alle kunder der ikke er i bonus.
+   **Det er det eneste sted i hele 3.0 hvor appen selv siger at den er
+   halvfærdig.** Væk eller erstattet inden et hold flyttes
+2. **`/ny/moduler` er en tom side** der siger "Siden er ikke bygget endnu".
+   Den blev lavet som en plads i skallen så bundmenuen ikke førte til en
+   fejlside, men **Moduler er ikke i bundmenuen længere**, så den har nul veje
+   ind. Rammes kun via et gammelt link eller browser-historik
+3. **`/ny/forlob` er også forældreløs**, siden 20. august hvor "Alle dage" blev
+   fjernet. Virker hvis man skriver adressen. Enten en vej ind eller sløjfes
 
-**1. De fire velkomstvideoer.** Indhold fra Linn, ikke kode. Skærmbillederne
-blev taget 16. august. Den her har stået øverst siden.
+Alt andet er rent: der er **ingen `skitse`-markering tilbage på nogen
+kundeside**, kun på admin-forsiden. `/ny/snak` er bevidst nedlagt og sender
+pænt videre.
 
-**2. Programmerne skal bygges færdige OG tildeles.** Den farligste, fordi
-den er usynlig indtil den rammer. Der lå **nul tildelinger** i hele den nye
-app indtil 19. august, hvor de to testkonti fik ét program. Et rigtigt hold
-har stadig ingenting, og af de fire programmer i `traeningsprogrammer3` er
-kun to sat til `klar`. Bliver det glemt, starter et helt hold uden træning
-og ser "Din træning er på vej".
+#### Kode der bør på plads før et hold flyttes
 
-**3. Kalender eller selvbetjening.** Ikke besvaret. I den gamle app følger
-Kickstart-træningen kalenderen: dag 5 er dag 5, og springes den over, er den
-væk. Den nye app venter på hende: næste træning er den laveste hun ikke har
-taget. **Første hold i 3.0 er et Kickstart-hold**, så reglen skifter under
-netop de kunder. Alt det byggede virker med begge, men overskriften skal
-skrives forskelligt: "I dag, tirsdag" kræver kalenderen, "Din næste træning"
-er sandt uanset.
+**Advarslen om manglende forbindelse findes ikke i 3.0.** Den gamle app fik den
+4. september, efter at en kunde havde mistet to hele dage uden at få det at
+vide. Delene ligger i `src/lib/` og kan genbruges, men båndet skal have sin
+egen udgave med `ny.css`-tokens, og hvert gem i 3.0 skal igennem
+`gemMedVentetid`. Se konventionen i afsnit 6. **Ellers arver de nye kunder den
+fælde vi lige har lukket for de gamle.**
 
-**4.** ~~**"Vælg dine små skridt" er en død vej.**~~ **Klaret 22. august**,
-se 9.35. Kortet fører nu til en rigtig side, og en forløbskunde får en
-anden tekst end et medlem.
+#### Mindre ting, ingen af dem blokerer
 
-Der står også stadig "Resten af din profil kommer her" nederst på Din side.
+- **Onboardingens sidste udvej.** Fire linjer, og det er den første skærm en ny
+  kunde møder. Se 9.57
+- **De to tekster i scanneren** der står forkert på et tomt skema. Se 9.57
+- **Mine favoritter på en rigtig telefon.** Aldrig prøvet i en hånd
+- **Bonus-skridtet** vises slet ikke i 3.0, og **de låste "Fra forløb"-vaner**
+  skal tjekkes på Kickstart-holdet, for de forsvinder lydløst. Hele listen over
+  hvad Små skridt mangler står i 9.36
+- **Søgeord-feltet på fødevarer.** Søgningen kender kun ét navn ad gangen, så
+  "isberg" giver ingenting nu hvor varen hedder Icebergsalat. Samme med
+  brocolli og avocado. Slåfejls-slækket løser dem IKKE, se 9.53. Feltet findes
+  ikke i data
+- ~~**"Nulstil appen på denne enhed"**~~ **Droppet 4. september.** Skal ikke i
+  3.0. Findes fortsat i den gamle app
 
-**5. `/ny/forlob` er forældreløs.** Siden 20. august, hvor "Alle dage" blev
-fjernet, linker ingen side til den. Den virker hvis man skriver adressen.
-Enten en vej ind eller sløjfes.
+#### Sat på pause af Linn
 
-#### Halvbygget lige nu
+- **Hensyn på øvelserne.** Admin-siden og reglen findes, men kunden kan ikke
+  bede om et hensyn, og **0 ud af 62 øvelser har et mærke**, så et hensyn ville
+  alligevel ikke filtrere noget fra. **Linns beslutning 4. september: det
+  venter.** Byg ikke videre uden et nyt go. Se 9.33
+- **Om en scannet vare skal have et synligt hjerte.** Løst i rækkefølgen i
+  stedet, se 9.53. Beslutningen står ved magt
 
-- **Hensyn på øvelserne.** Admin-siden blev bygget 21. august sent og 22.
-  august om formiddagen, og reglen er udgivet, men **kunden kan endnu ikke
-  bede om et hensyn.** Hverken "byg dit eget program" eller AI-værktøjet
-  spørger hende, og de filtrerer ikke på mærkerne. Den halvdel der virker er
-  den halvdel ingen kan se. Se 9.33
-- **Små skridt.** Hun kan nu vælge sine egne, se 9.35, men syv ting fra den
-  gamle app mangler stadig. **Hele listen står i 9.36**, så den ikke skal
-  findes forfra. De to der betyder mest inden et hold flyttes: **bonus-
-  skridtet** vises slet ikke i 3.0, og **de låste "Fra forløb"-vaner** skal
-  tjekkes på Kickstart-holdet, for de forsvinder lydløst
-- **Beskedsystemet er færdigt, men kun to konti kan nås.** Alt virker, og det
-  er afprøvet hele vejen. Men Linns egen regel er at der aldrig må sendes til
-  en kunde i den gamle app, og lige nu er alle på nær to dér. **Det skifter i
-  det sekund et hold får flaget `ny-app`** — der er ikke mere at bygge
+#### Færdigt, men venter på at et hold flyttes
 
+**Beskedsystemet.** Alt virker og er afprøvet hele vejen, men Linns egen regel
+er at der aldrig må sendes til en kunde i den gamle app, og lige nu er alle på
+nær Kimmie dér. **Det skifter i det sekund et hold får flaget `ny-app`** — der
+er ikke mere at bygge.
 #### Det Linn selv skal gøre, og som ingen kode kan erstatte
 
-Samlet her 22. august, fordi de lå spredt ud over fire afsnit.
+Opdateret 4. september. To af de fem er klaret, og én var forkert.
 
-1. **De fire velkomstvideoer.** Har stået øverst siden 16. august
-2. **Tildel de to Kickstart-programmer til et rigtigt hold.** Den farligste,
-   for der kommer ingen fejl når det glemmes. Der kommer bare ingenting
-3. **Sæt mærkerne på øvelserne** i admin under Hensyn. Forslaget ligger klar,
-   men indtil du trykker Gem står der ingen mærker, og et hensyn filtrerer
-   ingenting fra. Samme slags fælde som de manglende tildelinger
-4. **Slå fluebenet "Vises altid til alle" fra** på kategorien Uden redskaber.
-   Det er derfor kettlebell-kunder stadig ser kropsvægts-programmerne
+1. **De fire velkomstvideoer.** Har stået øverst siden 16. august, og er nu
+   det eneste der reelt spærrer for at flytte et hold
+2. ~~**Tildel de to Kickstart-programmer**~~ **Klaret 4. september**, og
+   verificeret som kunden ser det
+3. ~~**Sæt mærkerne på øvelserne** under Hensyn~~ **Sat på pause 4. september**
+   sammen med resten af Hensyn. 0 af 62 øvelser har et mærke
+4. ~~**Slå fluebenet "Vises altid til alle" fra** på Uden redskaber~~
+   **DET HER PUNKT ER NU FORKERT og må ikke udføres.** Efter udstyrsreglen 4.
+   september, se 9.75, ville det betyde at en kunde uden valgt udstyr slet
+   ikke ser noget. Fluebenet skal blive stående. Det er kun den modsatte vej,
+   at en kunde uden kettlebells fik tilbudt kettlebell-programmet, der var
+   forkert, og den er lukket
 5. **Optag en skulderøvelse uden vægt**, hvis den variant skal ramme
    skulderen. Banken har ingen
 
