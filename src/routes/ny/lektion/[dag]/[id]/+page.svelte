@@ -196,6 +196,24 @@
 
 	// Tilbage foerer derhen hun kom fra. Kom hun udefra (fx et link),
 	// falder vi tilbage til forsiden i stedet for at sende hende ud af appen.
+	/**
+	 * ET DOKUMENT MARKERES NAAR HUN AABNER DET. Linns beslutning 5.
+	 * september.
+	 *
+	 * Samme regel som guide-lektionerne fik 25. august, og af samme grund:
+	 * vi kan ikke se om hun laeser. Dokumentet vises i telefonens egen
+	 * laeser inde i rammen, og den fortaeller os ingenting om hvor langt
+	 * hun er naaet. At have aabnet det er det taetteste vi kommer.
+	 *
+	 * Hun kan altid fjerne fluebenet igen inde paa dagen.
+	 */
+	let harMarkeretDok = false;
+	$effect(() => {
+		if (art !== 'pdf' || !lektion || erKlaret || harMarkeretDok) return;
+		harMarkeretDok = true;
+		void markerKlaret(true);
+	});
+
 	function tilbage() {
 		if (typeof history !== 'undefined' && history.length > 1) {
 			history.back();
@@ -258,29 +276,6 @@
 			<div class="side-ramme">
 				<iframe src={embed} title={lektion.titel}></iframe>
 			</div>
-		{:else if art === 'pdf'}
-			<!-- DOKUMENTET VISES MED DET SAMME, uden mellemled. Linns oenske
-			     5. september. Foer var PDF den eneste lektionstype hvor siden
-			     ikke leverede sit indhold: den bad hende trykke igen og sendte
-			     hende ud af appen.
-
-			     Ligger filen hos os, vises den som den er. Ligger den paa
-			     Simplero, gaar den gennem api/ny-dokument, fordi Simplero
-			     ikke tillader at deres filer vises i en ramme. Se
-			     content/dokument3.ts. -->
-			<!-- #view=Fit beder laeseren om at vise HELE siden i rammen.
-			     Uden den aabner den i fuld stoerrelse, og saa saa Linn kun
-			     toppen af dokumentet, 5. september. navpanes=0 skjuler
-			     sidepanelet, som stjaeler bredde paa en telefon. -->
-			<div class="dok-ramme">
-				<iframe src={`${dokumentUrl3(lektion.url)}#view=Fit&navpanes=0`} title={lektion.titel}
-				></iframe>
-			</div>
-			<!-- En A4 er lille paa en telefon. Her aabner den i fuld skaerm,
-			     hvor telefonens egen laeser kan zoome. -->
-			<a class="dok-fuld" href={lektion.url} target="_blank" rel="noopener noreferrer">
-				Åbn i fuld skærm
-			</a>
 		{:else if art === 'lyd'}
 			<Lydafspiller
 				url={lektion.url}
