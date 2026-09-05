@@ -390,7 +390,6 @@
 				<Icon name="arrow-l" size={14} color="var(--text2)" />
 				<span>Forløb</span>
 			</a>
-			<div class="eyebrow">Admin · Forløb</div>
 			<h1>{forlob?.navn ?? forlobId}</h1>
 		</header>
 
@@ -939,14 +938,31 @@
 {/if}
 
 <style>
+	/* ============================================================
+	   Bygget om 5. september 2026 efter de principper dag-editoren blev
+	   proevet af paa.
+
+	   BREDT. Admin bruges paa en iMac. 520 punkter efterlod tre
+	   fjerdedele af skaermen tom.
+
+	   SLANK TOP. Tilbage-link, titel og undertekst staar paa én linje.
+	   Foer fyldte de fire linjer, og paa en bred, lav skaerm er hoejden
+	   det knappe. Den lille graa "Admin · et-eller-andet" er vaek: den
+	   sagde det samme som overskriften lige under, og menuen til venstre
+	   viser i forvejen hvor man staar.
+	   ============================================================ */
 	.page {
-		padding: 18px 18px 100px;
-		max-width: 520px;
+		padding: 16px 18px 40px;
+		max-width: 1240px;
 		margin: 0 auto;
 	}
 
 	.page-header {
-		margin-bottom: 18px;
+		display: flex;
+		align-items: baseline;
+		gap: 14px;
+		flex-wrap: wrap;
+		margin-bottom: 14px;
 	}
 
 	.back {
@@ -956,27 +972,20 @@
 		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		text-decoration: none;
-		margin-bottom: 12px;
+		white-space: nowrap;
 	}
 
 	.back:hover {
 		color: var(--text);
 	}
 
-	.eyebrow {
-		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
-		font-weight: 600;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		color: var(--text3);
-	}
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: calc(26px * var(--fs-scale, 1) * var(--adm-skala, 1));
+		font-size: calc(21px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
-		margin: 4px 0 0;
+		margin: 0;
 		line-height: 1.05;
 		color: var(--text);
 	}

@@ -105,7 +105,6 @@
 				<Icon name="arrow-l" size={14} color="var(--text2)" />
 				<span>{forlob?.navn ?? 'Forløb'}</span>
 			</a>
-			<div class="eyebrow">Admin · {forlob?.navn ?? forlobId} · Challenges</div>
 			<h1>Challenges</h1>
 			<p class="page-sub">
 				Tidsbegrænsede konkurrencer der vises på forsiden for klienterne i den valgte periode.
@@ -146,13 +145,30 @@
 {/if}
 
 <style>
+	/* ============================================================
+	   Bygget om 5. september 2026 efter de principper dag-editoren blev
+	   proevet af paa.
+
+	   BREDT. Admin bruges paa en iMac. 520 punkter efterlod tre
+	   fjerdedele af skaermen tom.
+
+	   SLANK TOP. Tilbage-link, titel og undertekst staar paa én linje.
+	   Foer fyldte de fire linjer, og paa en bred, lav skaerm er hoejden
+	   det knappe. Den lille graa "Admin · et-eller-andet" er vaek: den
+	   sagde det samme som overskriften lige under, og menuen til venstre
+	   viser i forvejen hvor man staar.
+	   ============================================================ */
 	.page {
-		padding: 18px 18px 100px;
-		max-width: 520px;
+		padding: 16px 18px 40px;
+		max-width: 1240px;
 		margin: 0 auto;
 	}
 
 	.page-header {
+		display: flex;
+		align-items: baseline;
+		gap: 14px;
+		flex-wrap: wrap;
 		margin-bottom: 14px;
 	}
 
@@ -163,30 +179,24 @@
 		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		text-decoration: none;
-		margin-bottom: 12px;
+		white-space: nowrap;
 	}
 
-	.eyebrow {
-		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
-		font-weight: 600;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		color: var(--text3);
-	}
 
 	h1 {
 		font-family: var(--ff-d);
 		font-size: calc(28px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
-		margin: 4px 0 0;
+		margin: 0;
 		color: var(--text);
 	}
 
 	.page-sub {
 		font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
-		margin: 6px 0 0;
+		margin: 0;
+		max-width: 70ch;
 		line-height: 1.4;
 	}
 

@@ -325,7 +325,6 @@
 			</a>
 			<div class="head-row">
 				<div>
-					<div class="eyebrow">Admin · {forlobNavn || 'Forløb'}</div>
 					<h1>Beskeder fra <em>klienter</em></h1>
 					<p class="page-sub">
 						{forlobSpoergsmaal.length} spørgsmål, {ubesvaretAntal} ubesvarede
@@ -588,13 +587,30 @@
 {/if}
 
 <style>
+	/* ============================================================
+	   Bygget om 5. september 2026 efter de principper dag-editoren blev
+	   proevet af paa.
+
+	   BREDT. Admin bruges paa en iMac. 520 punkter efterlod tre
+	   fjerdedele af skaermen tom.
+
+	   SLANK TOP. Tilbage-link, titel og undertekst staar paa én linje.
+	   Foer fyldte de fire linjer, og paa en bred, lav skaerm er hoejden
+	   det knappe. Den lille graa "Admin · et-eller-andet" er vaek: den
+	   sagde det samme som overskriften lige under, og menuen til venstre
+	   viser i forvejen hvor man staar.
+	   ============================================================ */
 	.page {
-		padding: 18px 18px 100px;
-		max-width: 600px;
+		padding: 16px 18px 40px;
+		max-width: 1240px;
 		margin: 0 auto;
 	}
 
 	.page-header {
+		display: flex;
+		align-items: baseline;
+		gap: 14px;
+		flex-wrap: wrap;
 		margin-bottom: 14px;
 	}
 
@@ -605,7 +621,7 @@
 		font-size: calc(12px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		color: var(--text2);
 		text-decoration: none;
-		margin-bottom: 12px;
+		white-space: nowrap;
 	}
 
 	.head-row {
@@ -615,17 +631,10 @@
 		gap: 12px;
 	}
 
-	.eyebrow {
-		font-size: calc(10px * var(--fs-scale, 1) * var(--adm-skala, 1));
-		font-weight: 600;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		color: var(--text3);
-	}
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: calc(26px * var(--fs-scale, 1) * var(--adm-skala, 1));
+		font-size: calc(21px * var(--fs-scale, 1) * var(--adm-skala, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		margin: 4px 0 4px;
