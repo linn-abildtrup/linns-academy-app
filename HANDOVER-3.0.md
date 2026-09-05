@@ -5620,3 +5620,37 @@ og ikke appens egen navigation. Alt der lever i hukommelsen bliver nulstillet,
 og så ser en rettelse ud til ikke at virke. Jeg troede tilbage-knappen var i
 stykker to gange af den grund. **Klik som en rigtig bruger når du afprøver
 noget der afhænger af navigation.**
+
+#### Datostrimlen: måneden ind, prikken ud
+
+Linn 5. september. Strimlen viste **31, 1, 2, 3, 4, 5, 6** uden at nogen
+fortalte at de 31 var august. Fire forslag i
+`mockups-datostrimmel-maaned.html`, og hun valgte D: **måneden på hver dag**,
+på den plads prikken havde.
+
+**Problemet var større end månedsskiftet.** Strimlen kan rulles otte uger
+tilbage, så spørgsmålet "hvilken måned er det her" opstår også midt i en måned,
+hvor et mærke ved skiftet ikke ville hjælpe.
+
+**PRIKKEN ER FJERNET, og det var Linns beslutning.** Den betød "du har svaret på
+mindst ét lille skridt den dag". To grunde til at den var dårlig:
+
+- **Den kunne læses som "jeg klarede dagen"**, men et NEJ tændte den præcis som
+  et ja. Svarene er ja, delvist og nej, og alle tre gav samme prik
+- **Den så kun på små skridt.** En dag med alle måltider tastet og en træning
+  gennemført stod tom, hvis vanerne ikke var rørt
+
+**ÉT DATABASEKALD MINDRE TO STEDER.** `aktiveDage` blev KUN brugt til prikken, så
+`hentAktiveDage` er ude af både forsiden og dag-siden. **Forsiden henter nu fem
+ting i stedet for seks.** Selve funktionen bliver stående i `forside3.ts`, så
+den kan tages frem igen hvis prikken skal tilbage.
+
+Måneden har samme højde som prikken havde, så dagene ikke bliver højere og
+strimlen ikke skifter form.
+
+#### Beskeder: hele toppen klæber, ikke kun fanerne
+
+Før klæbede kun Linn AI og Linn, mens titlen og linjen under rullede væk. Så så
+toppen halv ud, og linjen der forklarer hvad fanen er til, forsvandt præcis når
+hun var længst nede i en samtale. Sidehovedet og fanerne er pakket sammen i ét
+lag der klæber.
