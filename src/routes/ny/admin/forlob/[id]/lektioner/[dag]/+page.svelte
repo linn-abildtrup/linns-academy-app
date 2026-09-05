@@ -55,8 +55,8 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import VaelgDageDialog from '$lib/components/VaelgDageDialog.svelte';
 	import RedigerGruppeDialog from '$lib/components/RedigerGruppeDialog.svelte';
-	import ForlobRefleksionerFane from '$lib/components/ForlobRefleksionerFane.svelte';
-	import ForlobSmaaSkridtFane from '$lib/components/ForlobSmaaSkridtFane.svelte';
+	import ForlobRefleksionerFane3 from '$lib/components/ny/ForlobRefleksionerFane3.svelte';
+	import ForlobSmaaSkridtFane3 from '$lib/components/ny/ForlobSmaaSkridtFane3.svelte';
 
 	const hentAdminUser = getContext<() => User | null>('user');
 	const maaVaereHer = $derived(isAdmin(hentAdminUser()));
@@ -1334,9 +1334,9 @@
 				</div>
 			{/if}
 		{:else if aktivFane === 'refleksioner'}
-			<div class="enkelt-fane"><ForlobRefleksionerFane {forlobId} {dagNummer} /></div>
+			<div class="enkelt-fane"><ForlobRefleksionerFane3 {forlobId} {dagNummer} /></div>
 		{:else}
-			<div class="enkelt-fane"><ForlobSmaaSkridtFane {forlobId} {dagNummer} /></div>
+			<div class="enkelt-fane"><ForlobSmaaSkridtFane3 {forlobId} {dagNummer} /></div>
 		{/if}
 	</div>
 {/if}
