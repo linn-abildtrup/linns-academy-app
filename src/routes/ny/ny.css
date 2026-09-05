@@ -2216,13 +2216,34 @@ body:has(.ny-app) {
    Alt staar under .al, saa kunderne ser praecis det samme som foer.
    ============================================================ */
 
-/* En knap fylder det den skal, ikke det der er plads til. */
+/* En knap fylder det den skal, ikke det der er plads til. Ogsaa naar
+   den staar alene: uden inline-flex braeder et link sig ud over hele
+   linjen, og saa bliver "Byg med AI" 1300 punkter bred. */
 .al .ch-knap {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: auto;
 	flex: 0 0 auto;
 	min-height: 0;
 	padding: 9px 20px;
 	font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
 	border-radius: 11px;
+}
+
+/* ET FELT SKAL VAERE SAA BREDT SOM DET DER SKAL STAA I DET.
+   Et navnefelt paa 1300 punkter er ikke lettere at skrive i, bare
+   laengere at loebe oejnene hen over, og et flueben helt ude til
+   hoejre bliver vaek. Ligger felterne i en raekke ved siden af
+   hinanden, deler de bredden som foer. */
+.al .adm-felt {
+	max-width: 580px;
+}
+
+.al .adm-knapper .adm-felt,
+.al .felt-rad .adm-felt,
+.al .adm-raekke .adm-felt {
+	max-width: none;
 }
 
 .al .adm-knapper,
