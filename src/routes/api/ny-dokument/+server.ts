@@ -64,15 +64,26 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
 		throw error(415, 'Dokumentet kan ikke vises');
 	}
 
-	const laengde = Number(svar.headers.get('content-length') ?? 0);
-	if (laengde > DOKUMENT_MAKS_BYTE) {
-		console.warn('[ny-dokument] for stort:', laengde);
+	// HELE FILEN LAESES IND, og det er ikke af dovenskab.
+	//
+	// Simplero sender uden at oplyse hvor stor filen er. Browserens
+	// PDF-laeser henter et dokument i bidder, og uden en stoerrelse ved den
+	// ikke hvad den skal bede om: vaerktoejslinjen kom frem og sagde
+	// "1 / 2", men selve siden blev sort. Set i browseren 5. september,
+	// efter at have bekraeftet at filen kom korrekt igennem.
+	//
+	// Ved at laese hele filen ind kan vi selv oplyse stoerrelsen, og saa
+	// tegner laeseren den. 25 MB-graensen holder hukommelsen i skak.
+	const data = await svar.arrayBuffer();
+	if (data.byteLength > DOKUMENT_MAKS_BYTE) {
+		console.warn('[ny-dokument] for stort:', data.byteLength);
 		throw error(413, 'Dokumentet er for stort til at vises her');
 	}
 
-	return new Response(svar.body, {
+	return new Response(data, {
 		headers: {
 			'Content-Type': 'application/pdf',
+			'Content-Length': String(data.byteLength),
 			// inline, saa den VISES i rammen i stedet for at blive hentet ned.
 			'Content-Disposition': 'inline',
 			'Cache-Control': `public, max-age=${CACHE_SEKUNDER}`,
