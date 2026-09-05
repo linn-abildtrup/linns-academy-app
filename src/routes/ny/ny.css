@@ -2765,6 +2765,13 @@ body:has(.ny-app) {
 	min-width: 0;
 }
 
+/* Undertitlen har en negativ margin, fordi den under den GAMLE titel laa
+   under en h1 med luft under sig. Her staar de i en raekke uden luft, og
+   saa trak den de to ind i hinanden med 8 px. Set i browseren. */
+.lektion-hoved .lektion-m {
+	margin-top: 0;
+}
+
 .lektion-t {
 	font-family: var(--serif);
 	font-size: calc(23px * var(--fs-scale, 1));
@@ -2914,6 +2921,17 @@ body:has(.ny-app) {
 	min-height: 36px;
 }
 
+/* KNAPPEN LIGGER FAST FORNEDEN. Linns oenske 5. september: alle felter
+   og knapper skal kunne ses uden at rulle.
+
+   Det lille billede alene var ikke nok. Maalt efter: siden var stadig
+   727 px mod en skaerm paa 572, og selv med noten halveret manglede der
+   109 px. Noten er et skrivefelt og maa gerne kraeve lidt rulning, men
+   knappen skal vaere fremme.
+
+   Samme moenster som skrivefeltet i Beskeder, inklusive at den klaeber
+   UNDER rulleomraadets luft: ellers staar der en stribe paa 24 px hvor
+   indholdet ruller forbi. Se .besk-bund og utils/rulning3.ts. */
 .lektion-fod {
 	display: flex;
 	align-items: center;
@@ -2922,6 +2940,13 @@ body:has(.ny-app) {
 	border-top: 1px solid var(--line);
 	padding-top: 15px;
 	margin-top: 4px;
+
+	position: sticky;
+	bottom: calc(-1 * var(--scroll-bund));
+	margin-bottom: calc(-1 * var(--scroll-bund));
+	padding-bottom: var(--scroll-bund);
+	background: var(--oat);
+	z-index: 5;
 }
 
 .fod-tekst {
