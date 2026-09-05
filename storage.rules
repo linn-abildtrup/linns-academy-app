@@ -37,6 +37,19 @@ service firebase.storage {
 				&& request.resource.contentType.matches('text/html.*');
 		}
 
+		// Forløbs-dokumenter — admin-uploadede PDF'er pr lektion.
+		// /forlob/{forlobId}/dokumenter/{filename}
+		//
+		// Linn 5. september 2026: admin skal kunne smide pdf'en over i
+		// appen i stedet for at linke til Simplero. Kunden må LÆSE dem, kun
+		// admin må lægge op. Samme mønster som html-mappen ovenfor.
+		match /forlob/{forlobId}/dokumenter/{filename=**} {
+			allow read: if request.auth != null;
+			allow write: if isAdmin()
+				&& request.resource.size < 25 * 1024 * 1024
+				&& request.resource.contentType.matches('application/pdf');
+		}
+
 		// Forløbs-thumbnails — admin-uploaded thumbnail-billeder pr lektion.
 		// /forlob/{forlobId}/thumbnails/{filename}
 		match /forlob/{forlobId}/thumbnails/{filename=**} {

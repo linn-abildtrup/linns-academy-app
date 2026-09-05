@@ -108,6 +108,38 @@ export async function uploadHtmlFil(forlobId: string, fil: File): Promise<string
 }
 
 /**
+ * Uploader et dokument (PDF) og returnerer download-URL'en.
+ *
+ * HVORFOR DEN FINDES. Linn 5. september: admin skal bare kunne smide
+ * pdf'en over i appen i stedet for at linke til Simplero. Det er bedre af
+ * to grunde: filen ligger hos os og kan ikke forsvinde under os, og der
+ * er ingen omvej gennem en anden tjeneste.
+ *
+ * Gemmes paa /forlob/{forlobId}/dokumenter/{timestamp}-{filnavn}, saa to
+ * filer med samme navn ikke skriver oven i hinanden. Samme moenster som
+ * uploadHtmlFil ovenfor.
+ *
+ * Content-type saettes eksplicit, saa telefonen aabner den i sin egen
+ * pdf-laeser i stedet for at hente den ned.
+ */
+export async function uploadPdfFil(forlobId: string, fil: File): Promise<string> {
+	if (!forlobId) throw new Error('uploadPdfFil: forlobId er paakraevet');
+	if (!fil) throw new Error('uploadPdfFil: fil er paakraevet');
+	// Baade typen OG endelsen tjekkes. En browser kan sende en tom type,
+	// og en fil kan hedde .pdf uden at vaere det.
+	const erPdf = fil.type === 'application/pdf' || fil.name.toLowerCase().endsWith('.pdf');
+	if (!erPdf) throw new Error('Filen skal vaere en PDF.');
+	if (fil.size > 25 * 1024 * 1024) {
+		throw new Error('Dokumentet maa hoejst fylde 25 MB.');
+	}
+	const safe = fil.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+	const path = `forlob/${forlobId}/dokumenter/${Date.now()}-${safe}`;
+	const storageRef = ref(storage, path);
+	await uploadBytes(storageRef, fil, { contentType: 'application/pdf' });
+	return getDownloadURL(storageRef);
+}
+
+/**
  * Uploader et thumbnail-billede til Firebase Storage og returnerer URL'en.
  * Gemmes på /forlob/{forlobId}/thumbnails/{timestamp}-{filename} så vi
  * undgår navne-kollisioner. Content-type bevares fra File-objektet.
