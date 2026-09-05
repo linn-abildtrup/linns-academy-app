@@ -18,9 +18,20 @@
 	// laegge 17 til. Det er praecis det den gamle haandrettelse gjorde.
 	// ============================================================
 
+	import { page } from '$app/state';
+	import { forrigeSide3 } from '$lib/content/forrigeSide3';
+
 	interface Props {
 		titel: string;
-		/** Adressen bagud. Uden den tegnes ingen tilbage-raekke. */
+		/**
+		 * Adressen bagud, som RESERVE. Uden den tegnes ingen tilbage-raekke.
+		 *
+		 * Ved vi hvor hun faktisk kom fra, vinder det over den her. Se
+		 * content/forrigeSide3.ts og Linns oenske 5. september: knappen skal
+		 * pege paa den side hun var paa, ikke et fast sted. Reserven bruges
+		 * naar hun aabner siden fra en besked, et bogmaerke eller ved at
+		 * genindlaese, hvor der ikke ER en forrige side.
+		 */
 		tilbage?: string;
 		/** Ordet efter pilen. Staar der intet, skriver vi Tilbage. */
 		tilbageTekst?: string;
@@ -34,11 +45,17 @@
 	}
 
 	let { titel, tilbage, tilbageTekst, under, kant = true }: Props = $props();
+
+	// Hvor hun kom fra, hvis vi ved det. Aldrig siden selv: saa ville
+	// knappen pege paa sig selv og ikke goere noget.
+	const forrige = $derived(forrigeSide3(page.url.pathname));
+	const gaaTil = $derived(forrige?.sti ?? tilbage);
+	const ordet = $derived(forrige?.navn ?? tilbageTekst ?? 'Tilbage');
 </script>
 
 <header class="sh" class:sh-kant={kant}>
-	{#if tilbage}
-		<a class="sh-tilbage" href={tilbage}>‹ {tilbageTekst ?? 'Tilbage'}</a>
+	{#if gaaTil}
+		<a class="sh-tilbage" href={gaaTil}>‹ {ordet}</a>
 	{/if}
 	<div class="sh-raek">
 		<div class="sh-tekst">

@@ -27,6 +27,7 @@
 	import NotiStribe from '$lib/components/ny/NotiStribe.svelte';
 	import { stempleAktiv3 } from '$lib/firestore/notifikation3';
 	import { glemAlt } from '$lib/content/sidehukommelse3';
+	import { registrerSide3, glemForrige3 } from '$lib/content/forrigeSide3';
 	import { bonusBaandTekst, maaSeIBonus, naadeTekst, BONUS_START } from '$lib/content/spaerring3';
 	import { opstartsBillede, maaAabnePaaKopi3 } from '$lib/content/hurtigStart3';
 	import { hentOpstartFraCache } from '$lib/firestore/hurtigStart3';
@@ -121,6 +122,14 @@
 		gemScale(valgt);
 	});
 
+	// HVOR HUN KOM FRA, saa tilbage-knappen peger paa den side hun var paa
+	// og ikke et fast sted. Linns oenske 5. september. Registreringen sker
+	// HER, fordi skallen omgiver hver eneste side og derfor ser hver
+	// navigation. Se content/forrigeSide3.ts.
+	$effect(() => {
+		registrerSide3(page.url.pathname);
+	});
+
 	setContext('userDoc', () => userDoc);
 	setContext('user', () => user);
 	setContext('adgang', () => adgang);
@@ -165,6 +174,7 @@
 				// Der maa ikke ligge kundedata i hukommelsen paa en skaerm
 				// hvor der staar Log ind. Se content/sidehukommelse3.ts.
 				glemAlt();
+				glemForrige3();
 				// 3.0 har sin egen login-side. Den gamle /login er delt med den
 				// app der er i drift og bliver staaende uroert. Login-siden
 				// ligger BEVIDST uden for det her layout, se filnavnet
