@@ -268,8 +268,13 @@
 			     Simplero, gaar den gennem api/ny-dokument, fordi Simplero
 			     ikke tillader at deres filer vises i en ramme. Se
 			     content/dokument3.ts. -->
+			<!-- #view=Fit beder laeseren om at vise HELE siden i rammen.
+			     Uden den aabner den i fuld stoerrelse, og saa saa Linn kun
+			     toppen af dokumentet, 5. september. navpanes=0 skjuler
+			     sidepanelet, som stjaeler bredde paa en telefon. -->
 			<div class="dok-ramme">
-				<iframe src={dokumentUrl3(lektion.url)} title={lektion.titel}></iframe>
+				<iframe src={`${dokumentUrl3(lektion.url)}#view=Fit&navpanes=0`} title={lektion.titel}
+				></iframe>
 			</div>
 			<!-- En A4 er lille paa en telefon. Her aabner den i fuld skaerm,
 			     hvor telefonens egen laeser kan zoome. -->

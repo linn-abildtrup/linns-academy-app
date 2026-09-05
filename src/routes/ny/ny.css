@@ -2741,8 +2741,12 @@ body:has(.ny-app) {
    skaerm lige under. */
 .dok-ramme {
 	width: 100%;
-	height: 58vh;
-	min-height: 260px;
+	/* Hoejere end de 58vh den startede paa. Et dokument der er skaleret
+	   ned til at passe i rammen bliver hurtigt for lille at laese, og
+	   hoejden er det eneste vi kan give det. Knappen forneden er fast, saa
+	   den bliver staaende uanset. */
+	height: 66vh;
+	min-height: 300px;
 	border-radius: 16px;
 	overflow: hidden;
 	background: #fff;
