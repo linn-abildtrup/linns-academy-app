@@ -125,7 +125,7 @@
 					placeholder="Skriv spørgsmålet, som kunden ser det..."
 				></textarea>
 			</label>
-			<p class="mini">Står øverst på kundens udviklings-side den dag.</p>
+			<p class="de-hjaelp">Står øverst på kundens udviklings-side den dag.</p>
 		</div>
 
 		<div class="blok">
@@ -134,21 +134,21 @@
 				<input type="checkbox" bind:checked={formIsCheckin} disabled={gemmer} />
 				<span>
 					<span class="felt-navn">Check-in dag</span>
-					<span class="mini">Kunden svarer på de fem spørgsmål med skydeknapper.</span>
+					<span class="de-hjaelp">Kunden svarer på de fem spørgsmål med skydeknapper.</span>
 				</span>
 			</label>
 			<label class="afkrydsning">
 				<input type="checkbox" bind:checked={formIsBaseline} disabled={gemmer} />
 				<span>
 					<span class="felt-navn">Baseline-dag</span>
-					<span class="mini">Dagen før forløbet går i gang, altså dag 0.</span>
+					<span class="de-hjaelp">Dagen før forløbet går i gang, altså dag 0.</span>
 				</span>
 			</label>
 			<label class="afkrydsning">
 				<input type="checkbox" bind:checked={formIsWin} disabled={gemmer} />
 				<span>
 					<span class="felt-navn">Wins-dag</span>
-					<span class="mini">Kunden bliver bedt om at få øje på det, der gik godt.</span>
+					<span class="de-hjaelp">Kunden bliver bedt om at få øje på det, der gik godt.</span>
 				</span>
 			</label>
 
@@ -183,7 +183,7 @@
 						Fjern bonus
 					</button>
 				</div>
-				<p class="mini">
+				<p class="de-hjaelp">
 					Kendetegnet er det navn systemet husker svaret under. Lad det stå, medmindre du ved
 					hvorfor du ændrer det.
 				</p>
@@ -200,7 +200,7 @@
 			{gemmer ? 'Gemmer...' : 'Gem refleksionen'}
 		</button>
 		{#if gemFejl}<span class="gem-fejl">{gemFejl}</span>{/if}
-		{#if gemKvit}<span class="kvit">Gemt ✓</span>{/if}
+		{#if gemKvit}<span class="de-kvit">Gemt ✓</span>{/if}
 	</div>
 {/if}
 
@@ -283,7 +283,7 @@
 		opacity: 0.55;
 	}
 
-	.mini {
+	.de-hjaelp {
 		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--ink-3);
 		line-height: 1.5;
@@ -302,6 +302,12 @@
 	.afkrydsning input {
 		margin-top: 3px;
 		flex: none;
+	}
+
+	/* Teksten skal fylde resten af raekken. Uden det kryber den sammen. */
+	.afkrydsning > span {
+		flex: 1;
+		min-width: 0;
 	}
 
 	.bonus {
@@ -377,7 +383,7 @@
 		color: var(--ler-tekst);
 	}
 
-	.kvit {
+	.de-kvit {
 		font-size: calc(12.5px * var(--fs-scale, 1));
 		font-weight: 600;
 		color: var(--sage-tekst);

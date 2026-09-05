@@ -937,7 +937,7 @@
 					<!-- VENSTRE: alle dagene, saa man kan hoppe uden at gaa tilbage -->
 					<nav class="sp sp-dage" aria-label="Dagene i forløbet">
 						<div class="sp-t">Dagene</div>
-						<div class="dag-liste">
+						<div class="de-dagliste">
 							{#each dageIListen as d (d.dagNummer)}
 								{@const antal = antalPaa(d)}
 								<a
@@ -963,9 +963,9 @@
 							<span class="sp-tal">{dag.lektioner.length} stk.</span>
 						</div>
 						{#if dag.lektioner.length === 0}
-							<p class="mini">Ingen lektioner endnu. Tilføj den første.</p>
+							<p class="de-hjaelp">Ingen lektioner endnu. Tilføj den første.</p>
 						{:else}
-							<p class="mini">Rækkefølgen her er den, kunden ser i appen.</p>
+							<p class="de-hjaelp">Rækkefølgen her er den, kunden ser i appen.</p>
 							<div class="lekt-liste">
 								{#each dag.lektioner as l, i (l.id)}
 									{@const dageMed = l.grupperingId
@@ -1225,7 +1225,9 @@
 										</label>
 									{/if}
 								</div>
-								<p class="mini">Vises i stedet for video-tjenestens eget billede. Højst 3 MB.</p>
+								<p class="de-hjaelp">
+									Vises i stedet for video-tjenestens eget billede. Højst 3 MB.
+								</p>
 							</div>
 
 							<div class="felt tids">
@@ -1240,7 +1242,7 @@
 									<span class="spor" class:til={tidsAaben(l)}><span class="kugle"></span></span>
 									<span class="tids-tekst">
 										<span class="felt-navn">⏱ Tidsbegræns synlighed</span>
-										<span class="mini">
+										<span class="de-hjaelp">
 											{tidsAaben(l)
 												? 'Lektionen skjules automatisk uden for vinduet.'
 												: 'Lektionen er altid synlig, når dagen er åben.'}
@@ -1274,7 +1276,7 @@
 										{:else if tidsResume(l)}
 											<div class="tids-resume">ⓘ {tidsResume(l)}</div>
 										{/if}
-										<p class="mini">
+										<p class="de-hjaelp">
 											Kunder der er bagud, fordi de har holdt pause, når måske ikke at se den inden
 											fristen. Til live-møder er det som regel det rigtige. Datoen hører til dette
 											hold, så genbruger du lektionen, skal den sættes på ny.
@@ -1292,7 +1294,7 @@
 								/>
 								<span>
 									<span class="felt-navn">Kun dette hold</span>
-									<span class="mini">Bliver ikke kopieret med til nye hold.</span>
+									<span class="de-hjaelp">Bliver ikke kopieret med til nye hold.</span>
 								</span>
 							</label>
 
@@ -1330,7 +1332,7 @@
 							</button>
 						</span>
 					{/if}
-					{#if gemKvit}<span class="kvit">Gemt ✓</span>{/if}
+					{#if gemKvit}<span class="de-kvit">Gemt ✓</span>{/if}
 				</div>
 			{/if}
 		{:else if aktivFane === 'refleksioner'}
@@ -1523,7 +1525,7 @@
 		margin-top: 20px;
 	}
 
-	.mini {
+	.de-hjaelp {
 		font-size: calc(11.5px * var(--fs-scale, 1));
 		color: var(--ink-3);
 		line-height: 1.5;
@@ -1531,7 +1533,7 @@
 	}
 
 	/* ── Venstre: dagene ────────────────────────────────────────────── */
-	.dag-liste {
+	.de-dagliste {
 		max-height: calc(100vh - 210px);
 		overflow-y: auto;
 	}
@@ -1992,7 +1994,12 @@
 		transform: translateX(15px);
 	}
 
-	.tids-tekst .mini {
+	.tids-tekst {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.tids-tekst .de-hjaelp {
 		margin: 0;
 	}
 
@@ -2032,7 +2039,12 @@
 		flex: none;
 	}
 
-	.afkrydsning .mini {
+	.afkrydsning > span {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.afkrydsning .de-hjaelp {
 		margin: 0;
 	}
 
@@ -2068,7 +2080,7 @@
 		color: var(--ler-tekst);
 	}
 
-	.kvit {
+	.de-kvit {
 		margin-left: auto;
 		font-size: calc(12.5px * var(--fs-scale, 1));
 		font-weight: 600;
@@ -2094,7 +2106,7 @@
 			position: static;
 		}
 
-		.dag-liste {
+		.de-dagliste {
 			display: flex;
 			flex-wrap: wrap;
 			gap: 4px;

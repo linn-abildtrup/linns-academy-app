@@ -65,7 +65,7 @@
 	</div>
 
 	{#if dagensSkridt.length === 0}
-		<p class="mini">
+		<p class="de-hjaelp">
 			Ingen små skridt på denne dag. Du opretter og planlægger dem i oversigten over små skridt.
 		</p>
 	{:else}
@@ -119,7 +119,7 @@
 		background: var(--ler-tint);
 	}
 
-	.mini {
+	.de-hjaelp {
 		font-size: calc(13px * var(--fs-scale, 1));
 		color: var(--ink-3);
 		line-height: 1.55;
