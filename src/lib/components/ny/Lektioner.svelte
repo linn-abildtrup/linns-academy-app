@@ -27,9 +27,17 @@
 		 * allerede staar i raekken der folder.
 		 */
 		visTitel?: boolean;
+		/**
+		 * Kaldes naar hun aabner et dokument, saa det kan markeres som laest.
+		 *
+		 * Et dokument gaar uden om lektions-siden og aabner i telefonens
+		 * egen laeser, saa der er ingen side til at markere det. Uden det
+		 * her ville dagen aldrig folde sig sammen for hende.
+		 */
+		ondokument?: (l: LektionItem) => void;
 	}
 
-	let { titel, dagNummer, lektioner, klaret, visTitel = true }: Props = $props();
+	let { titel, dagNummer, lektioner, klaret, visTitel = true, ondokument }: Props = $props();
 
 	const alleKlaret = $derived(alleSet3(klaret, lektioner));
 
@@ -76,6 +84,12 @@
 		return art(l) === 'tekst' && !billede(l);
 	}
 
+	/** Er lektionen et dokument, altsaa en pdf. */
+	function erDokument(l: LektionItem): boolean {
+		const u = (l.url ?? '').toLowerCase();
+		return u.endsWith('.pdf') || u.includes('.pdf?');
+	}
+
 	// Titlen paa flisen ligger i content/lektionFlise3.ts, saa reglen om
 	// "Dag 5, " kan testes uden browser. Se testene der.
 </script>
@@ -98,7 +112,26 @@
 				{@const erKlaret = erSet3(klaret, l)}
 				<!-- Hele raekken aabner lektionen. Ingen knap, for hun trykker
 				     alligevel paa billedet eller titlen. -->
-				<a class="medie-raekke" class:set={erKlaret} href={`/ny/lektion/${dagNummer}/${l.id}`}>
+				<!-- ET DOKUMENT AABNER MED DET SAMME. Linns beslutning 5.
+				     september: pdf'en skal bare aabne naar hun trykker paa
+				     flisen, uden mellemled. Den gaar derfor UDEN OM
+				     lektions-siden og lander i telefonens egen laeser, som
+				     kan rulle, zoome og skifte side.
+				
+				     Den markeres i samme tryk. Vi kan ikke se om hun laeser,
+				     saa at have aabnet den er det taetteste vi kommer. Samme
+				     regel som guide-lektionerne fik 25. august, og hun kan
+				     fjerne fluebenet igen inde paa dagen. -->
+				<a
+					class="medie-raekke"
+					class:set={erKlaret}
+					href={erDokument(l) ? l.url : `/ny/lektion/${dagNummer}/${l.id}`}
+					target={erDokument(l) ? '_blank' : null}
+					rel={erDokument(l) ? 'noopener noreferrer' : null}
+					onclick={() => {
+						if (erDokument(l) && !erKlaret) ondokument?.(l);
+					}}
+				>
 					<span class="medie-thumb {art(l)}" class:side={erSide(l)}>
 						<!-- Billedet bliver staaende naar hun har set lektionen, og
 						     fluebenet laegger sig i hjoernet. Foer 22. august

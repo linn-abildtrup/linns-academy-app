@@ -18,8 +18,6 @@
 	import type { UserDoc } from '$lib/types';
 	import type { Adgangsbillede } from '$lib/content/adgang3';
 	import { forlobAdgang } from '$lib/content/lektionsliste3';
-	import { dokumentUrl3 } from '$lib/content/dokument3';
-	import { portal } from '$lib/actions/portal';
 	import type { LektionItem } from '$lib/content/forlob';
 	import {
 		artFor,
@@ -224,37 +222,6 @@
 	}
 </script>
 
-<!-- ET DOKUMENT FYLDER HELE SKAERMEN. Linns beslutning 5. september:
-     pdf'en skal bare aabne naar hun trykker paa flisen, uden mellemled,
-     og krydset skal foere hende tilbage.
-
-     Derfor er der ingen titel, note eller fod her: et dokument skal
-     laeses, og laesning har brug for plads. En A4 der deler skaermen med
-     tre andre ting bliver for lille at laese, og Linn kunne kun se
-     toppen af den.
-
-     Laget portales ud i body. Uden det ligger bundmenuen ovenpaa paa en
-     iPhone, se reglen om fuldskaerms-lag. -->
-{#if art === 'pdf' && lektion}
-	<div class="dok-lag" use:portal>
-		<header class="dok-lag-top">
-			<button class="dok-luk" onclick={tilbage} aria-label="Luk dokumentet">✕</button>
-			<span class="dok-lag-titel">{lektion.titel}</span>
-		</header>
-		<!-- INGEN INSTRUKSER TIL LAESEREN. Foerste forsoeg satte #view=Fit
-		     for at faa hele siden til at passe, og navpanes=0 for at spare
-		     bredde. Begge dele gjorde det vaerre: siden blev stadig ikke
-		     vist helt, og Linn kunne ikke komme videre til side 2, fordi
-		     Fit laaser visningen til én side.
-
-		     Hun sagde selv at det var fint da hun aabnede dokumentet i fuld
-		     skaerm, og dét er browserens egen standard uden noget fragment.
-		     Saa den faar lov at bestemme. Den kan rulle, zoome og skifte
-		     side, og den kender telefonen bedre end vi goer. -->
-		<iframe class="dok-lag-ramme" src={dokumentUrl3(lektion.url)} title={lektion.titel}></iframe>
-	</div>
-{/if}
-
 <div class="lektion-side">
 	<!-- Lektionen er en medie-side uden titel, saa den bruger IKKE det
 	     faelles sidehoved. Der er kun én vej ud, og et maerke ville vaere
@@ -308,6 +275,29 @@
 			<div class="side-ramme">
 				<iframe src={embed} title={lektion.titel}></iframe>
 			</div>
+		{:else if art === 'pdf'}
+			<!-- DOKUMENTET AABNER I TELEFONENS EGEN LAESER. Linns beslutning
+			     5. september, efter at en ramme inde i appen var proevet og
+			     forkastet: "tror ikke vi skal bygge noget nyt men bare bruge
+			     det som telefonen kan".
+			
+			     Hun har ret. En pdf i en ramme er daarligt understoettet paa
+			     iPhone: siden blev ikke vist helt, og der var ingen vej til
+			     side 2. Telefonens egen laeser kan rulle, zoome, skifte side
+			     og gemme, og hun kommer tilbage med telefonens egen knap.
+			
+			     Markeres naar hun aabner, se markerKlaret ovenfor. -->
+			<a
+				class="btn bred"
+				href={lektion.url}
+				target="_blank"
+				rel="noopener noreferrer"
+				onclick={() => {
+					if (!erKlaret) void markerKlaret(true);
+				}}
+			>
+				Åbn dokumentet
+			</a>
 		{:else if art === 'lyd'}
 			<Lydafspiller
 				url={lektion.url}

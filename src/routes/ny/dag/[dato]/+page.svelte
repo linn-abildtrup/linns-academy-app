@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { setNoegler3 } from '$lib/content/lektionSet3';
 	// ============================================================
 	// Én dag i kundens liv. SAMME opstilling som forsiden, bare for en
 	// anden dato: ugestrimmel, smaa skridt, lektioner, traening,
@@ -21,6 +22,7 @@
 	import {
 		hentDagensLektioner,
 		hentKlaret,
+		saetKlaret,
 		hentSmaaSkridtIDag,
 		saetSkridtSvar,
 		gemRefleksion,
@@ -219,6 +221,29 @@
 			gemmerNote = false;
 		}
 	}
+
+	/**
+	 * Hun har aabnet et dokument. Markér det som laest.
+	 *
+	 * Et dokument gaar uden om lektions-siden og aabner i telefonens egen
+	 * laeser, saa der er ingen side til at markere det. Uden det her ville
+	 * dagen aldrig folde sig sammen for hende. Linns beslutning 5.
+	 * september.
+	 *
+	 * Fejler skrivningen, sker der ingenting synligt: hun har faaet sit
+	 * dokument, og fluebenet kan saettes i haanden inde paa dagen.
+	 */
+	async function dokumentAabnet(l: LektionItem) {
+		const uid = user?.uid;
+		if (!uid) return;
+		const noegler = setNoegler3(l);
+		klaret = new Set([...klaret, ...noegler]);
+		try {
+			await saetKlaret(uid, noegler, true);
+		} catch (e) {
+			console.warn('[ny] kunne ikke markere dokumentet', e);
+		}
+	}
 </script>
 
 <header class="dawn">
@@ -266,6 +291,7 @@
 				{dagNummer}
 				{lektioner}
 				{klaret}
+				ondokument={dokumentAabnet}
 			/>
 		{/if}
 

@@ -59,7 +59,7 @@
 	import Venter from '$lib/components/ny/Venter.svelte';
 	import Ugestrimmel from '$lib/components/ny/Ugestrimmel.svelte';
 	import TilDig from '$lib/components/ny/TilDig.svelte';
-	import { alleSet3 } from '$lib/content/lektionSet3';
+	import { alleSet3, setNoegler3 } from '$lib/content/lektionSet3';
 	import { beskedTil3, type Forsidebesked3 } from '$lib/content/forsidebesked3';
 	import { hentForsidebeskeder3 } from '$lib/firestore/forsidebesked3';
 	import { visUdvidet3, type NaeringAdgang3 } from '$lib/content/naeringAdgang3';
@@ -389,6 +389,29 @@
 		return () => {
 			afbrudt = true;
 		};
+	}
+
+	/**
+	 * Hun har aabnet et dokument. Markér det som laest.
+	 *
+	 * Et dokument gaar uden om lektions-siden og aabner i telefonens egen
+	 * laeser, saa der er ingen side til at markere det. Uden det her ville
+	 * dagen aldrig folde sig sammen for hende. Linns beslutning 5.
+	 * september.
+	 *
+	 * Fejler skrivningen, sker der ingenting synligt: hun har faaet sit
+	 * dokument, og fluebenet kan saettes i haanden inde paa dagen.
+	 */
+	async function dokumentAabnet(l: LektionItem) {
+		const uid = user?.uid;
+		if (!uid) return;
+		const noegler = setNoegler3(l);
+		klaret = new Set([...klaret, ...noegler]);
+		try {
+			await saetKlaret(uid, noegler, true);
+		} catch (e) {
+			console.warn('[ny] kunne ikke markere dokumentet', e);
+		}
 	}
 
 	// ── Challenge ───────────────────────────────────────────────
@@ -800,6 +823,7 @@
 								{lektioner}
 								{klaret}
 								visTitel={false}
+								ondokument={dokumentAabnet}
 							/>
 						</div>
 					{/if}
@@ -810,6 +834,7 @@
 					dagNummer={aktivtForlob.dagNummer}
 					{lektioner}
 					{klaret}
+					ondokument={dokumentAabnet}
 				/>
 			{/if}
 		{/if}
