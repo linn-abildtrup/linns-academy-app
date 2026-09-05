@@ -312,10 +312,15 @@
 		line-height: 1.45;
 	}
 
+	/* FLERE SOEJLER NAAR DER ER PLADS. 130 opskrifter i én lang stribe
+	   paa en bred skaerm betoed, at man saa fem ad gangen og resten var
+	   tom plads til hoejre. Nu falder de i saa mange soejler der er
+	   plads til, og paa en smal skaerm bliver det én igen af sig selv. */
 	.op-liste {
-		display: flex;
-		flex-direction: column;
-		gap: 5px;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+		gap: 5px 10px;
+		align-content: start;
 	}
 
 	.op-raekke {
