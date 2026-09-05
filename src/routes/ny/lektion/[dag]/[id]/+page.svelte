@@ -19,6 +19,7 @@
 	import type { Adgangsbillede } from '$lib/content/adgang3';
 	import { forlobAdgang } from '$lib/content/lektionsliste3';
 	import { dokumentUrl3 } from '$lib/content/dokument3';
+	import { portal } from '$lib/actions/portal';
 	import type { LektionItem } from '$lib/content/forlob';
 	import {
 		artFor,
@@ -222,6 +223,33 @@
 		void goto('/ny');
 	}
 </script>
+
+<!-- ET DOKUMENT FYLDER HELE SKAERMEN. Linns beslutning 5. september:
+     pdf'en skal bare aabne naar hun trykker paa flisen, uden mellemled,
+     og krydset skal foere hende tilbage.
+
+     Derfor er der ingen titel, note eller fod her: et dokument skal
+     laeses, og laesning har brug for plads. En A4 der deler skaermen med
+     tre andre ting bliver for lille at laese, og Linn kunne kun se
+     toppen af den.
+
+     Laget portales ud i body. Uden det ligger bundmenuen ovenpaa paa en
+     iPhone, se reglen om fuldskaerms-lag. -->
+{#if art === 'pdf' && lektion}
+	<div class="dok-lag" use:portal>
+		<header class="dok-lag-top">
+			<button class="dok-luk" onclick={tilbage} aria-label="Luk dokumentet">✕</button>
+			<span class="dok-lag-titel">{lektion.titel}</span>
+		</header>
+		<!-- #view=Fit viser HELE siden i den plads der er. navpanes=0
+		     skjuler sidepanelet, som stjaeler bredde paa en telefon. -->
+		<iframe
+			class="dok-lag-ramme"
+			src={`${dokumentUrl3(lektion.url)}#view=Fit&navpanes=0`}
+			title={lektion.titel}
+		></iframe>
+	</div>
+{/if}
 
 <div class="lektion-side">
 	<!-- Lektionen er en medie-side uden titel, saa den bruger IKKE det
