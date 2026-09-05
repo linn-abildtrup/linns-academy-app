@@ -347,10 +347,6 @@
 		</section>
 	{/if}
 
-	{#if !erBonus}
-		<p class="kort rolig">Resten af din profil kommer her. Siden er ikke bygget færdig endnu.</p>
-	{/if}
-
 	<section>
 		<div class="lab"><h2>Konto</h2></div>
 		<button class="adm-raekke tr-raekke logud" disabled={logudGaar} onclick={logUd}>

@@ -119,13 +119,6 @@ const OPTAGELSER: Optagelse[] = [
 		hvad: 'Mikrotraening med programmerne'
 	},
 	{
-		fil: 'forlob',
-		konto: 'forlob',
-		sti: '/ny/forlob',
-		udsnit: 'skaerm',
-		hvad: 'Forloebets kalender'
-	},
-	{
 		fil: 'linn',
 		konto: 'forlob',
 		sti: '/ny/beskeder',
@@ -234,7 +227,6 @@ async function sikreOnboardet() {
 	}
 }
 
-
 /**
  * Venter til der ikke staar noget der henter paa skaermen.
  *
@@ -286,13 +278,19 @@ async function forberedSkridt(side: import('playwright').Page) {
  * Koster ét rigtigt AI-kald pr koersel. Linns ja 16. august.
  */
 async function forberedSamtale(side: import('playwright').Page) {
-	const alt = await side.locator('.boble').count().catch(() => 0);
+	const alt = await side
+		.locator('.boble')
+		.count()
+		.catch(() => 0);
 	if (alt > 0) return; // Der ligger allerede en samtale fra sidst.
 
 	const felt = side.locator('.skrivelinje textarea');
 	if ((await felt.count()) === 0) return;
 	await felt.fill('Hvor meget protein skal jeg have om morgenen?');
-	await side.locator('.skrivelinje .send').click().catch(() => {});
+	await side
+		.locator('.skrivelinje .send')
+		.click()
+		.catch(() => {});
 
 	// AI'en tager et par sekunder. Vi venter paa selve svaret.
 	await side
@@ -360,7 +358,11 @@ async function main() {
 		await side.getByRole('button', { name: 'Log ind' }).first().click();
 		await side.locator('.form input[type="email"]').fill(KONTI[konto].email);
 		await side.locator('.form input[type="password"]').fill(kode(konto));
-		await side.locator('.form').getByRole('button', { name: /log ind|vent/i }).first().click();
+		await side
+			.locator('.form')
+			.getByRole('button', { name: /log ind|vent/i })
+			.first()
+			.click();
 
 		await side.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 25_000 });
 		console.log('  logget ind');

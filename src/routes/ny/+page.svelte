@@ -57,7 +57,7 @@
 	import NaesteHoldKort from '$lib/components/ny/NaesteHold.svelte';
 	import Refleksion from '$lib/components/ny/Refleksion.svelte';
 	import FoldetRaekke from '$lib/components/ny/FoldetRaekke.svelte';
-	import Henter from '$lib/components/ny/Henter.svelte';
+	import Ventetegn from '$lib/components/ny/Ventetegn.svelte';
 	import Ugestrimmel from '$lib/components/ny/Ugestrimmel.svelte';
 	import TilDig from '$lib/components/ny/TilDig.svelte';
 	import { alleSet3 } from '$lib/content/lektionSet3';
@@ -219,19 +219,11 @@
 	let gemmerNote = $state(false);
 	let noteGemtLige = $state(false);
 
-	// Fremdrift: tallet paa vente-skaermen taeller RIGTIGE trin, ikke
-	// sekunder. Se Henter.svelte for hvorfor.
-	const TRIN = [
-		'Henter din udvikling',
-		'Henter dine små skridt',
-		'Henter din uge',
-		'Henter dit forløb',
-		'Henter din træning',
-		'Henter dine tal'
-	];
-	let hentet = $state(0);
+	// Trin-taelleren er fjernet 5. september sammen med procent-bjaelken,
+	// se vente-skaermen nedenfor. Den taalte rigtige trin og ikke sekunder,
+	// og det var en god idé, men den gjorde forsiden til det eneste sted i
+	// appen med sin egen vente-skaerm.
 	let henter = $state(true);
-	const trinTekst = $derived(TRIN[Math.min(hentet, TRIN.length - 1)]);
 
 	// ── Sikkerhedslinen ─────────────────────────────────────────
 	//
@@ -321,11 +313,7 @@
 			// Vente-skaermen maa ikke komme igen.
 			if (!harGivetOp && !gemt) {
 				henter = true;
-				hentet = 0;
 			}
-			const tael = () => {
-				if (!afbrudt) hentet += 1;
-			};
 
 			const forlobKontekst = aktivtForlob
 				? {
@@ -342,18 +330,16 @@
 			ugeStart.setDate(ugeStart.getDate() - 60);
 
 			const [o, s, dage, k, tr, t] = await Promise.all([
-				hentOverskud(uid).then((r) => (tael(), r)),
-				hentSmaaSkridtIDag(uid, forlobKontekst, iDag).then((r) => (tael(), r)),
+				hentOverskud(uid),
+				hentSmaaSkridtIDag(uid, forlobKontekst, iDag),
 				hentAktiveDage(
 					uid,
 					aktivtForlob ? { produkt: aktivtForlob.produkt, startMs: aktivtForlob.startMs } : null,
 					datoNoegle(ugeStart)
-				).then((r) => (tael(), r)),
-				hentKlaret(uid).then((r) => (tael(), r)),
-				hentDagensTraening3(uid, userDoc, forlobKilder(), adgang.aktiveForlob, nuMs).then(
-					(r) => (tael(), r)
 				),
-				hentDagensTal(uid, iDag, userDoc).then((r) => (tael(), r))
+				hentKlaret(uid),
+				hentDagensTraening3(uid, userDoc, forlobKilder(), adgang.aktiveForlob, nuMs),
+				hentDagensTal(uid, iDag, userDoc)
 			]);
 			if (afbrudt) return;
 
@@ -698,7 +684,16 @@
 </header>
 
 {#if henter}
-	<Henter ialt={TRIN.length} {hentet} tekst={trinTekst} />
+	<!-- SAMME VENTE-SKAERM SOM RESTEN AF APPEN. Linns oenske 5. september:
+	     de skal vaere ens. Forsiden var det eneste sted med en
+	     procent-bjaelke, de 21 oevrige sider har den rolige udgave.
+	     Bjaelken blev bygget dengang forsiden var langsom. Efter
+	     sidehukommelsen 4. september ses vente-skaermen kun FOERSTE gang i
+	     et besoeg, saa der er endnu mindre at holde oeje med. -->
+	<div class="lektion-venter">
+		<Ventetegn variant="lille" />
+		<span>Henter dine ting</span>
+	</div>
 {:else}
 	<div class="ny-pad" style="margin-top:16px">
 		<!-- Datostrimlen staar OEVERST og ALTID. Linns oenske 18. august.
