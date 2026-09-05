@@ -96,8 +96,24 @@ export function dokumentUrl3(kilde: string): string {
 	} catch {
 		// Ikke en adresse vi kan laese. Lad laasen i endpointet afvise den.
 	}
-	return `/api/ny-dokument?url=${encodeURIComponent(kilde)}`;
+	return `/api/ny-dokument?v=${DOKUMENT_VERSION}&url=${encodeURIComponent(kilde)}`;
 }
+
+/**
+ * Taelles op naar endpointets SVAR aendrer form.
+ *
+ * Cloudflare cacher svaret i en time, og cachen kigger paa adressen.
+ * Retter vi noget i endpointet, bliver det gamle svar ved med at blive
+ * serveret indtil timen er gaaet, uden at vores kode overhovedet koeres.
+ *
+ * Det kostede en fejlsoegning 5. september: Range-svaret var bygget og
+ * udrullet og virkede maalt med en frisk adresse, men den almindelige
+ * adresse blev ved med at give det gamle svar. Taeller du den her op,
+ * er cachen forbi med det samme.
+ *
+ * 2 = Range-svar, altsaa 206 og Accept-Ranges.
+ */
+const DOKUMENT_VERSION = 2;
 
 export interface Udsnit3 {
 	fra: number;

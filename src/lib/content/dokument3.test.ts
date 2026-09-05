@@ -46,7 +46,8 @@ describe('maaHentes3', () => {
 describe('dokumentUrl3', () => {
 	it('pakker adressen ind, saa tegn ikke gaar i stykker', () => {
 		const ud = dokumentUrl3('https://us.simplerousercontent.net/en fil&x.pdf');
-		expect(ud.startsWith('/api/ny-dokument?url=')).toBe(true);
+		expect(ud.startsWith('/api/ny-dokument?')).toBe(true);
+		expect(ud).toContain('url=');
 		expect(ud).not.toContain(' ');
 		expect(ud).not.toContain('&x.pdf');
 	});
@@ -60,6 +61,8 @@ describe('dokumentUrl3 · hvor filen ligger', () => {
 
 	it('sender kun udefra-filer gennem serveren', () => {
 		expect(dokumentUrl3(SIMPLERO).startsWith('/api/ny-dokument')).toBe(true);
+		// Versionen skal med, ellers spaerrer et gammelt cachet svar
+		expect(dokumentUrl3(SIMPLERO)).toContain('v=');
 	});
 });
 
