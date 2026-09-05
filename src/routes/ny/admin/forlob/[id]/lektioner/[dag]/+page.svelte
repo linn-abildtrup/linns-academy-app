@@ -55,6 +55,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import VaelgDageDialog from '$lib/components/VaelgDageDialog.svelte';
 	import RedigerGruppeDialog from '$lib/components/RedigerGruppeDialog.svelte';
+	import Lektioner from '$lib/components/ny/Lektioner.svelte';
 	import ForlobRefleksionerFane3 from '$lib/components/ny/ForlobRefleksionerFane3.svelte';
 	import ForlobSmaaSkridtFane3 from '$lib/components/ny/ForlobSmaaSkridtFane3.svelte';
 
@@ -135,6 +136,17 @@
 			console.error(e);
 		}
 	}
+
+	/**
+	 * Forhaandsvisningen til hoejre er den AEGTE kunde-visning, samme fil
+	 * som forsiden bruger. Den er ikke en tegning af hvordan det kommer til
+	 * at se ud: aendrer kunde-siden sig, aendrer den her sig med.
+	 *
+	 * Ingen lektioner er markeret som set. Vi viser dagen som en kunde
+	 * moeder den foerste gang, og det er den tilstand der er vaerd at
+	 * skrive efter.
+	 */
+	const ingenSet = new Set<string>();
 
 	// Faner: Lektioner / Refleksioner / Små skridt
 	let aktivFane = $state<'lektioner' | 'refleksioner' | 'smaaskridt'>('lektioner');
@@ -886,17 +898,21 @@
 	<p class="fu-kun">Siden er kun for admin.</p>
 {:else}
 	<div class="side">
+		<!-- ALT DET FASTE PAA ÉN LINJE. Foer fyldte tilbage-link,
+		     forloebsnavn, dag, dato og faner over en fjerdedel af hoejden,
+		     og der var kun omkring 320 punkter tilbage til arbejdet.
+		     Linns skaerm er bred, men lav. Gem staar med her, saa den
+		     bjaelke der laa i bunden og daekkede lektionerne er vaek. -->
 		<header class="side-hoved">
 			<a class="tilbage" href="/ny/admin/forlob/{forlobId}/lektioner">
 				<Icon name="arrow-l" size={14} color="var(--ink-2)" />
 				<span>Lektioner</span>
 			</a>
-			<div class="eyebrow">{forlob?.navn ?? 'Forløb'}</div>
 			<h1>{dagNummer === 0 ? 'Baseline' : `Dag ${dagNummer}`}</h1>
 			<p class="side-sub">
-				{#if dagNummer > 0}Uge {dag.uge}{#if dagDato}
-						·
-					{/if}{/if}{#if dagDato}{dagDato}{/if}
+				{forlob?.navn ?? ''}{#if dagNummer > 0}
+					· uge {dag.uge}{/if}{#if dagDato}
+					· {dagDato.toLowerCase()}{/if}
 			</p>
 			<div class="faner" role="tablist">
 				<button
@@ -924,6 +940,29 @@
 					onclick={() => (aktivFane = 'smaaskridt')}>Små skridt</button
 				>
 			</div>
+			{#if aktivFane === 'lektioner' && !loading && !fejl}
+				<div class="hoved-handling">
+					{#if gemKvit}<span class="de-kvit">Gemt ✓</span>{/if}
+					{#if !bekraefter}
+						<button class="knap lille" type="button" onclick={sletDag} disabled={gemmer}>
+							Slet dagen
+						</button>
+					{:else}
+						<span class="bekraeft">
+							<span>Alt indhold på dagen forsvinder.</span>
+							<button class="knap fare" type="button" onclick={sletDag} disabled={gemmer}>
+								Ja, slet
+							</button>
+							<button class="knap lille" type="button" onclick={() => (bekraefter = false)}>
+								Fortryd
+							</button>
+						</span>
+					{/if}
+					<button class="knap fyldt" type="button" onclick={gem} disabled={gemmer}>
+						{gemmer ? 'Gemmer...' : 'Gem'}
+					</button>
+				</div>
+			{/if}
 		</header>
 
 		{#if aktivFane === 'lektioner'}
@@ -1065,274 +1104,292 @@
 								<div class="besked fejl lille-besked">{uploadFejl}</div>
 							{/if}
 
-							<label class="felt">
-								<span class="felt-navn">Titel</span>
-								<input
-									type="text"
-									value={l.titel}
-									oninput={(e) => opdaterLektion(l.id, 'titel', e.currentTarget.value)}
-									maxlength="140"
-									disabled={gemmer}
-								/>
-							</label>
+							<!-- TO SOEJLER. Linns valg C, 5. september. Teksten til
+							     venstre, filen og indstillingerne til hoejre, saa hele
+							     lektionen er synlig paa én gang. Foer stod alt i én
+							     lang soejle, og hun rullede for at naa billedet. -->
+							<div class="felt-soejler">
+								<div class="felt-soejle">
+									<label class="felt">
+										<span class="felt-navn">Titel</span>
+										<input
+											type="text"
+											value={l.titel}
+											oninput={(e) => opdaterLektion(l.id, 'titel', e.currentTarget.value)}
+											maxlength="140"
+											disabled={gemmer}
+										/>
+									</label>
 
-							<label class="felt">
-								<span class="felt-navn">Beskrivelse</span>
-								<textarea
-									value={l.beskrivelse}
-									oninput={(e) => opdaterLektion(l.id, 'beskrivelse', e.currentTarget.value)}
-									rows="3"
-									maxlength="500"
-									disabled={gemmer}
-								></textarea>
-							</label>
+									<label class="felt">
+										<span class="felt-navn">Beskrivelse</span>
+										<textarea
+											value={l.beskrivelse}
+											oninput={(e) => opdaterLektion(l.id, 'beskrivelse', e.currentTarget.value)}
+											rows="3"
+											maxlength="500"
+											disabled={gemmer}
+										></textarea>
+									</label>
 
-							<div class="felt-rad">
-								<label class="felt">
-									<span class="felt-navn">Varighed (min)</span>
-									<input
-										type="number"
-										min="0"
-										max="600"
-										value={l.varighedMin}
-										oninput={(e) =>
-											opdaterLektion(l.id, 'varighedMin', parseInt(e.currentTarget.value, 10) || 0)}
-										disabled={gemmer}
-									/>
-								</label>
-								<label class="felt">
-									<span class="felt-navn">Format</span>
-									<input
-										type="text"
-										value={l.format}
-										oninput={(e) => opdaterLektion(l.id, 'format', e.currentTarget.value)}
-										placeholder="Video, lyd, tekst..."
-										maxlength="40"
-										disabled={gemmer}
-									/>
-								</label>
-							</div>
-
-							<!-- FIL ELLER ADRESSE. Hele feltet tager imod en fil der
-							     traekkes ind, Linns oenske 5. september. Knapperne
-							     bliver, for det er dem man leder efter naar filen ikke
-							     ligger lige ved musen. -->
-							<div class="felt">
-								<span class="felt-navn">Fil eller adresse</span>
-								<div
-									class="slip"
-									class:svaever={dragPdf === l.id}
-									class:arbejder={uploaderPdf === l.id ||
-										uploaderHtml === l.id ||
-										uploaderLyd === l.id}
-									ondrop={(e) => haandterPdfDrop(l.id, e)}
-									ondragover={(e) => haandterPdfDragOver(l.id, e)}
-									ondragleave={() => (dragPdf = null)}
-									role="region"
-									aria-label="Slip en PDF her"
-								>
-									{#if uploaderPdf === l.id}
-										<b>Lægger dokumentet op...</b>
-									{:else if uploaderHtml === l.id || uploaderLyd === l.id}
-										<b>Lægger filen op...</b>
-									{:else}
-										<b>Slip en PDF her</b>
-										<span class="slip-knapper">
-											<label class="fil-knap" class:slukket={gemmer}>
-												📄 PDF
-												<input
-													type="file"
-													accept=".pdf,application/pdf"
-													onchange={(e) => haandterPdfInput(l.id, e)}
-													disabled={gemmer}
-												/>
-											</label>
-											<label class="fil-knap" class:slukket={gemmer}>
-												🎵 Lydfil
-												<input
-													type="file"
-													accept=".mp3,.m4a,.wav,.aac,.ogg,audio/*"
-													onchange={(e) => haandterLydUpload(l.id, e)}
-													disabled={gemmer}
-												/>
-											</label>
-											<label class="fil-knap" class:slukket={gemmer}>
-												📎 HTML
-												<input
-													type="file"
-													accept=".html,.htm,text/html"
-													onchange={(e) => haandterHtmlUpload(l.id, e)}
-													disabled={gemmer}
-												/>
-											</label>
-										</span>
-									{/if}
-								</div>
-								<input
-									class="adresse"
-									type="url"
-									value={l.url}
-									oninput={(e) => opdaterLektion(l.id, 'url', e.currentTarget.value)}
-									placeholder="https://... hvis den ligger et andet sted"
-									disabled={gemmer}
-								/>
-							</div>
-
-							<div class="felt">
-								<span class="felt-navn">Billede på flisen (valgfri)</span>
-								<div
-									class="thumb"
-									class:har={!!l.thumbnailUrl}
-									class:svaever={dragOver === l.id}
-									ondrop={(e) => haandterDrop(l.id, e)}
-									ondragover={(e) => haandterDragOver(l.id, e)}
-									ondragleave={haandterDragLeave}
-									onpaste={(e) => haandterPaste(l.id, e)}
-									role="region"
-									aria-label="Slip eller indsæt et billede her"
-								>
-									{#if l.thumbnailUrl}
-										<img src={l.thumbnailUrl} alt="" class="thumb-billede" />
-										<div class="thumb-over">
-											<label class="fil-knap">
-												Skift
-												<input
-													type="file"
-													accept="image/*"
-													onchange={(e) => haandterThumbnailInput(l.id, e)}
-													disabled={gemmer || uploaderThumb === l.id}
-												/>
-											</label>
-											<button
-												class="fil-knap fare"
-												type="button"
-												onclick={() => fjernThumbnail(l.id)}
-												disabled={gemmer || uploaderThumb === l.id}>Fjern</button
-											>
-										</div>
-									{:else if uploaderThumb === l.id}
-										<div class="thumb-tom"><b>Lægger billedet op...</b></div>
-									{:else}
-										<label class="thumb-tom">
-											<b>Slip et billede her</b>
-											<span>eller klik for at vælge · indsæt med ⌘V</span>
+									<div class="felt-rad">
+										<label class="felt">
+											<span class="felt-navn">Varighed (min)</span>
 											<input
-												type="file"
-												accept="image/*"
-												onchange={(e) => haandterThumbnailInput(l.id, e)}
+												type="number"
+												min="0"
+												max="600"
+												value={l.varighedMin}
+												oninput={(e) =>
+													opdaterLektion(
+														l.id,
+														'varighedMin',
+														parseInt(e.currentTarget.value, 10) || 0
+													)}
 												disabled={gemmer}
 											/>
 										</label>
-									{/if}
-								</div>
-								<p class="de-hjaelp">
-									Vises i stedet for video-tjenestens eget billede. Højst 3 MB.
-								</p>
-							</div>
+										<label class="felt">
+											<span class="felt-navn">Format</span>
+											<input
+												type="text"
+												value={l.format}
+												oninput={(e) => opdaterLektion(l.id, 'format', e.currentTarget.value)}
+												placeholder="Video, lyd, tekst..."
+												maxlength="40"
+												disabled={gemmer}
+											/>
+										</label>
+									</div>
 
-							<div class="felt tids">
-								<button
-									class="tids-kontakt"
-									type="button"
-									role="switch"
-									aria-checked={tidsAaben(l)}
-									onclick={() => toggleTidsbegraens(l)}
-									disabled={gemmer}
-								>
-									<span class="spor" class:til={tidsAaben(l)}><span class="kugle"></span></span>
-									<span class="tids-tekst">
-										<span class="felt-navn">⏱ Tidsbegræns synlighed</span>
-										<span class="de-hjaelp">
-											{tidsAaben(l)
-												? 'Lektionen skjules automatisk uden for vinduet.'
-												: 'Lektionen er altid synlig, når dagen er åben.'}
-										</span>
-									</span>
-								</button>
-								{#if tidsAaben(l)}
-									<div class="tids-krop">
-										<div class="felt-rad">
-											<label class="felt">
-												<span class="felt-navn">Vis fra (valgfri)</span>
-												<input
-													type="datetime-local"
-													value={l.visFra ?? ''}
-													oninput={(e) => opdaterLektion(l.id, 'visFra', e.currentTarget.value)}
-													disabled={gemmer}
-												/>
-											</label>
-											<label class="felt">
-												<span class="felt-navn">Skjul efter</span>
-												<input
-													type="datetime-local"
-													value={l.skjulEfter ?? ''}
-													oninput={(e) => opdaterLektion(l.id, 'skjulEfter', e.currentTarget.value)}
-													disabled={gemmer}
-												/>
-											</label>
+									<!-- FIL ELLER ADRESSE. Hele feltet tager imod en fil der
+							     traekkes ind, Linns oenske 5. september. Knapperne
+							     bliver, for det er dem man leder efter naar filen ikke
+							     ligger lige ved musen. -->
+									<div class="felt">
+										<span class="felt-navn">Fil eller adresse</span>
+										<div
+											class="slip"
+											class:svaever={dragPdf === l.id}
+											class:arbejder={uploaderPdf === l.id ||
+												uploaderHtml === l.id ||
+												uploaderLyd === l.id}
+											ondrop={(e) => haandterPdfDrop(l.id, e)}
+											ondragover={(e) => haandterPdfDragOver(l.id, e)}
+											ondragleave={() => (dragPdf = null)}
+											role="region"
+											aria-label="Slip en PDF her"
+										>
+											{#if uploaderPdf === l.id}
+												<b>Lægger dokumentet op...</b>
+											{:else if uploaderHtml === l.id || uploaderLyd === l.id}
+												<b>Lægger filen op...</b>
+											{:else}
+												<b>Slip en PDF her</b>
+												<span class="slip-knapper">
+													<label class="fil-knap" class:slukket={gemmer}>
+														📄 PDF
+														<input
+															type="file"
+															accept=".pdf,application/pdf"
+															onchange={(e) => haandterPdfInput(l.id, e)}
+															disabled={gemmer}
+														/>
+													</label>
+													<label class="fil-knap" class:slukket={gemmer}>
+														🎵 Lydfil
+														<input
+															type="file"
+															accept=".mp3,.m4a,.wav,.aac,.ogg,audio/*"
+															onchange={(e) => haandterLydUpload(l.id, e)}
+															disabled={gemmer}
+														/>
+													</label>
+													<label class="fil-knap" class:slukket={gemmer}>
+														📎 HTML
+														<input
+															type="file"
+															accept=".html,.htm,text/html"
+															onchange={(e) => haandterHtmlUpload(l.id, e)}
+															disabled={gemmer}
+														/>
+													</label>
+												</span>
+											{/if}
 										</div>
-										{#if tidsFejl(l)}
-											<div class="tids-fejl">⚠ {tidsFejl(l)}</div>
-										{:else if tidsResume(l)}
-											<div class="tids-resume">ⓘ {tidsResume(l)}</div>
-										{/if}
+										<input
+											class="adresse"
+											type="url"
+											value={l.url}
+											oninput={(e) => opdaterLektion(l.id, 'url', e.currentTarget.value)}
+											placeholder="https://... hvis den ligger et andet sted"
+											disabled={gemmer}
+										/>
+									</div>
+								</div>
+
+								<div class="felt-soejle">
+									<div class="felt">
+										<span class="felt-navn">Billede på flisen (valgfri)</span>
+										<div
+											class="thumb"
+											class:har={!!l.thumbnailUrl}
+											class:svaever={dragOver === l.id}
+											ondrop={(e) => haandterDrop(l.id, e)}
+											ondragover={(e) => haandterDragOver(l.id, e)}
+											ondragleave={haandterDragLeave}
+											onpaste={(e) => haandterPaste(l.id, e)}
+											role="region"
+											aria-label="Slip eller indsæt et billede her"
+										>
+											{#if l.thumbnailUrl}
+												<img src={l.thumbnailUrl} alt="" class="thumb-billede" />
+												<div class="thumb-over">
+													<label class="fil-knap">
+														Skift
+														<input
+															type="file"
+															accept="image/*"
+															onchange={(e) => haandterThumbnailInput(l.id, e)}
+															disabled={gemmer || uploaderThumb === l.id}
+														/>
+													</label>
+													<button
+														class="fil-knap fare"
+														type="button"
+														onclick={() => fjernThumbnail(l.id)}
+														disabled={gemmer || uploaderThumb === l.id}>Fjern</button
+													>
+												</div>
+											{:else if uploaderThumb === l.id}
+												<div class="thumb-tom"><b>Lægger billedet op...</b></div>
+											{:else}
+												<label class="thumb-tom">
+													<b>Slip et billede her</b>
+													<span>eller klik for at vælge · indsæt med ⌘V</span>
+													<input
+														type="file"
+														accept="image/*"
+														onchange={(e) => haandterThumbnailInput(l.id, e)}
+														disabled={gemmer}
+													/>
+												</label>
+											{/if}
+										</div>
 										<p class="de-hjaelp">
-											Kunder der er bagud, fordi de har holdt pause, når måske ikke at se den inden
-											fristen. Til live-møder er det som regel det rigtige. Datoen hører til dette
-											hold, så genbruger du lektionen, skal den sættes på ny.
+											Vises i stedet for video-tjenestens eget billede. Højst 3 MB.
 										</p>
 									</div>
-								{/if}
+
+									<div class="felt tids">
+										<button
+											class="tids-kontakt"
+											type="button"
+											role="switch"
+											aria-checked={tidsAaben(l)}
+											onclick={() => toggleTidsbegraens(l)}
+											disabled={gemmer}
+										>
+											<span class="spor" class:til={tidsAaben(l)}><span class="kugle"></span></span>
+											<span class="tids-tekst">
+												<span class="felt-navn">⏱ Tidsbegræns synlighed</span>
+												<span class="de-hjaelp">
+													{tidsAaben(l)
+														? 'Lektionen skjules automatisk uden for vinduet.'
+														: 'Lektionen er altid synlig, når dagen er åben.'}
+												</span>
+											</span>
+										</button>
+										{#if tidsAaben(l)}
+											<div class="tids-krop">
+												<div class="felt-rad">
+													<label class="felt">
+														<span class="felt-navn">Vis fra (valgfri)</span>
+														<input
+															type="datetime-local"
+															value={l.visFra ?? ''}
+															oninput={(e) => opdaterLektion(l.id, 'visFra', e.currentTarget.value)}
+															disabled={gemmer}
+														/>
+													</label>
+													<label class="felt">
+														<span class="felt-navn">Skjul efter</span>
+														<input
+															type="datetime-local"
+															value={l.skjulEfter ?? ''}
+															oninput={(e) =>
+																opdaterLektion(l.id, 'skjulEfter', e.currentTarget.value)}
+															disabled={gemmer}
+														/>
+													</label>
+												</div>
+												{#if tidsFejl(l)}
+													<div class="tids-fejl">⚠ {tidsFejl(l)}</div>
+												{:else if tidsResume(l)}
+													<div class="tids-resume">ⓘ {tidsResume(l)}</div>
+												{/if}
+												<p class="de-hjaelp">
+													Kunder der er bagud, fordi de har holdt pause, når måske ikke at se den
+													inden fristen. Til live-møder er det som regel det rigtige. Datoen hører
+													til dette hold, så genbruger du lektionen, skal den sættes på ny.
+												</p>
+											</div>
+										{/if}
+									</div>
+
+									<label class="afkrydsning">
+										<input
+											type="checkbox"
+											checked={l.kopierIkke ?? false}
+											onchange={(e) => opdaterLektion(l.id, 'kopierIkke', e.currentTarget.checked)}
+											disabled={gemmer}
+										/>
+										<span>
+											<span class="felt-navn">Kun dette hold</span>
+											<span class="de-hjaelp">Bliver ikke kopieret med til nye hold.</span>
+										</span>
+									</label>
+
+									<button
+										class="knap lille"
+										type="button"
+										onclick={() => aabnVaelgDageDialog(`lektion:${l.id}`)}
+										disabled={gemmer || !l.titel.trim()}
+										title={!l.titel.trim() ? 'Skriv titel først' : ''}
+									>
+										Vis også på dage...
+									</button>
+								</div>
 							</div>
-
-							<label class="afkrydsning">
-								<input
-									type="checkbox"
-									checked={l.kopierIkke ?? false}
-									onchange={(e) => opdaterLektion(l.id, 'kopierIkke', e.currentTarget.checked)}
-									disabled={gemmer}
-								/>
-								<span>
-									<span class="felt-navn">Kun dette hold</span>
-									<span class="de-hjaelp">Bliver ikke kopieret med til nye hold.</span>
-								</span>
-							</label>
-
-							<button
-								class="knap lille"
-								type="button"
-								onclick={() => aabnVaelgDageDialog(`lektion:${l.id}`)}
-								disabled={gemmer || !l.titel.trim()}
-								title={!l.titel.trim() ? 'Skriv titel først' : ''}
-							>
-								Vis også på dage...
-							</button>
 						{:else}
 							<div class="tomt">Vælg en lektion i midten, eller tilføj en ny.</div>
 						{/if}
 					</div>
-				</div>
 
-				<div class="gem-bjaelke">
-					<button class="knap fyldt" type="button" onclick={gem} disabled={gemmer}>
-						{gemmer ? 'Gemmer...' : 'Gem'}
-					</button>
-					{#if !bekraefter}
-						<button class="knap lille" type="button" onclick={sletDag} disabled={gemmer}>
-							Slet alt indhold for denne dag
-						</button>
-					{:else}
-						<span class="bekraeft">
-							<span>Sikker? Alt indhold på dagen forsvinder.</span>
-							<button class="knap fare" type="button" onclick={sletDag} disabled={gemmer}>
-								Ja, slet dagen
-							</button>
-							<button class="knap lille" type="button" onclick={() => (bekraefter = false)}>
-								Fortryd
-							</button>
-						</span>
-					{/if}
-					{#if gemKvit}<span class="de-kvit">Gemt ✓</span>{/if}
+					<!-- YDERST: DAGEN SOM KUNDEN SER DEN.
+					     Ikke en tegning, men den samme visning som forsiden
+					     bruger. Aendrer kunde-siden sig, aendrer den her sig
+					     med, saa den aldrig kan komme til at lyve.
+
+					     Ingen er markeret som set: vi viser dagen som en kunde
+					     moeder den foerste gang. -->
+					<aside class="sp sp-vis" aria-label="Sådan ser kunden dagen">
+						<div class="sp-t">Sådan ser kunden dagen</div>
+						<div class="vis-ramme">
+							{#if dag.lektioner.length === 0}
+								<p class="de-hjaelp">Dagen er tom, så kunden ser ingen lektioner.</p>
+							{:else}
+								<Lektioner
+									titel={`Dag ${dagNummer}`}
+									{dagNummer}
+									lektioner={dag.lektioner}
+									klaret={ingenSet}
+									visTitel={false}
+								/>
+							{/if}
+						</div>
+						<p class="de-hjaelp">Følger med, mens du skriver. Gemmer ikke af sig selv.</p>
+					</aside>
 				</div>
 			{/if}
 		{:else if aktivFane === 'refleksioner'}
@@ -1378,8 +1435,14 @@
 		margin: 0 auto;
 	}
 
+	/* ALT DET FASTE PAA ÉN LINJE. Skaermen er bred og lav, saa hoejden er
+	   det knappe. Foer tog hovedet omkring 200 punkter, nu tager det 40. */
 	.side-hoved {
-		margin-bottom: 16px;
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		flex-wrap: wrap;
+		margin-bottom: 10px;
 	}
 
 	.tilbage {
@@ -1389,31 +1452,32 @@
 		font-size: calc(12px * var(--fs-scale, 1));
 		color: var(--ink-2);
 		text-decoration: none;
-		margin-bottom: 10px;
-	}
-
-	.eyebrow {
-		font-size: calc(10px * var(--fs-scale, 1));
-		font-weight: 600;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		color: var(--ink-3);
 	}
 
 	h1 {
 		font-family: var(--ff-d);
-		font-size: calc(28px * var(--fs-scale, 1));
+		font-size: calc(21px * var(--fs-scale, 1));
 		font-weight: 600;
 		letter-spacing: -0.02em;
-		margin: 4px 0 0;
+		margin: 0;
 		line-height: 1.05;
 		color: var(--text);
 	}
 
 	.side-sub {
-		font-size: calc(13px * var(--fs-scale, 1));
+		font-size: calc(12.5px * var(--fs-scale, 1));
 		color: var(--ink-2);
-		margin: 5px 0 14px;
+		margin: 0;
+	}
+
+	/* Gem og Slet skubbes helt ud til hoejre, vaek fra fanerne, saa de to
+	   slags knapper ikke kan forveksles. */
+	.hoved-handling {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+		margin-left: auto;
 	}
 
 	.faner {
@@ -1482,16 +1546,17 @@
 	   staaende. Foer rullede hele siden, og gem-bjaelken svaevede hen over
 	   lektionerne, fordi den hang fast i bunden af skaermen.
 
-	   De 415 punkter er det faste ovenover og nedenunder: appens egen top,
-	   bundmenuen, sidens hoved med faner, og gem-bjaelken. Mindstemaalet
-	   sikrer, at spalterne stadig kan bruges i et lavt vindue, hvor siden
-	   saa ruller som foer. */
+	   De 200 punkter er det faste ovenover og nedenunder: appens egen top,
+	   bundmenuen og sidens hoved. Tallet faldt fra 415, da hovedet blev
+	   lagt sammen til én linje og gem-bjaelken flyttede derop.
+	   Mindstemaalet sikrer, at spalterne stadig kan bruges i et lavt
+	   vindue, hvor siden saa ruller som foer. */
 	.sp {
 		background: var(--white, #fff);
 		border: 1px solid var(--line);
 		border-radius: 15px;
 		padding: 16px;
-		max-height: max(260px, calc(100vh - 415px));
+		max-height: max(260px, calc(100vh - 200px));
 		overflow-y: auto;
 	}
 
@@ -1509,7 +1574,37 @@
 
 	.sp-felter {
 		flex: 1;
-		min-width: 340px;
+		min-width: 380px;
+	}
+
+	/* Teksten til venstre, filen og indstillingerne til hoejre. Bliver der
+	   for lidt plads, falder de under hinanden af sig selv. */
+	.felt-soejler {
+		display: flex;
+		gap: 18px;
+		align-items: flex-start;
+		flex-wrap: wrap;
+	}
+
+	.felt-soejle {
+		flex: 1 1 260px;
+		min-width: 0;
+	}
+
+	/* Kundens egen visning. Bredden er sat, saa raekkerne braekker som paa
+	   en telefon og ikke som paa en bred skaerm. */
+	.sp-vis {
+		width: 350px;
+		flex: none;
+		background: var(--paper-2);
+	}
+
+	.vis-ramme {
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: 13px;
+		padding: 10px;
+		margin-bottom: 9px;
 	}
 
 	.sp-t {
@@ -2061,19 +2156,6 @@
 	}
 
 	/* ── Gem-bjaelken ───────────────────────────────────────────────── */
-	.gem-bjaelke {
-		display: flex;
-		align-items: center;
-		gap: 11px;
-		flex-wrap: wrap;
-		margin-top: 16px;
-		padding: 14px 16px;
-		background: var(--white, #fff);
-		border: 1px solid var(--line);
-		border-radius: 14px;
-		box-shadow: 0 6px 20px rgba(56, 44, 42, 0.08);
-	}
-
 	.bekraeft {
 		display: flex;
 		align-items: center;
@@ -2126,7 +2208,8 @@
 		}
 
 		.sp-liste,
-		.sp-felter {
+		.sp-felter,
+		.sp-vis {
 			width: 100%;
 			flex: 1 1 320px;
 			min-width: 0;
