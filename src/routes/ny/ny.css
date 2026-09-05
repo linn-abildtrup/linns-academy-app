@@ -2201,6 +2201,42 @@ body:has(.ny-app) {
 		white-space: normal;
 	}
 }
+
+/* ============================================================
+   KNAPPER OG LISTER INDE I ADMIN.
+
+   Samme begrundelse som sidehovedet ovenfor: de faelles klasser
+   deles med kunde-siderne, hvor en knap skal vaere stor nok til en
+   tommelfinger og en liste laeses paa en telefon i én soejle.
+
+   Paa Linns iMac er der en mus og 1300 punkters bredde. En knap der
+   fylder den halve skaerm er ikke lettere at ramme, bare stoerre, og
+   en liste i én soejle spilder to tredjedele af fladen.
+
+   Alt staar under .al, saa kunderne ser praecis det samme som foer.
+   ============================================================ */
+
+/* En knap fylder det den skal, ikke det der er plads til. */
+.al .ch-knap {
+	flex: 0 0 auto;
+	min-height: 0;
+	padding: 9px 20px;
+	font-size: calc(13px * var(--fs-scale, 1) * var(--adm-skala, 1));
+	border-radius: 11px;
+}
+
+.al .adm-knapper,
+.al .ch-knapper {
+	flex-wrap: wrap;
+}
+
+/* Lister falder i saa mange soejler der er plads til, og bliver til én
+   igen af sig selv naar skaermen er smal. */
+.al .adm-liste {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+	align-content: start;
+}
 /* Lektionens minimale top. Kun en vej ud, ingen titel og intet maerke.
    Se kommentaren i lektions-siden for hvorfor den ikke bruger Sidehoved. */
 .medie-top {
