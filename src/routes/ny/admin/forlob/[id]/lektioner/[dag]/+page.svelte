@@ -1478,11 +1478,22 @@
 		align-items: flex-start;
 	}
 
+	/* HVER SPALTE RULLER FOR SIG, saa hovedet og gem-bjaelken bliver
+	   staaende. Foer rullede hele siden, og gem-bjaelken svaevede hen over
+	   lektionerne, fordi den hang fast i bunden af skaermen.
+
+	   De 415 punkter er det faste ovenover og nedenunder: appens egen top,
+	   bundmenuen, sidens hoved med faner, og gem-bjaelken. Mindstemaalet
+	   sikrer, at spalterne stadig kan bruges i et lavt vindue, hvor siden
+	   saa ruller som foer. */
 	.sp {
 		background: var(--white, #fff);
 		border: 1px solid var(--line);
 		border-radius: 15px;
 		padding: 16px;
+		max-height: calc(100vh - 415px);
+		min-height: 260px;
+		overflow-y: auto;
 	}
 
 	.sp-dage {
@@ -1533,11 +1544,6 @@
 	}
 
 	/* ── Venstre: dagene ────────────────────────────────────────────── */
-	.de-dagliste {
-		max-height: calc(100vh - 210px);
-		overflow-y: auto;
-	}
-
 	.dag-li {
 		display: flex;
 		align-items: center;
@@ -2066,8 +2072,6 @@
 		background: var(--white, #fff);
 		border: 1px solid var(--line);
 		border-radius: 14px;
-		position: sticky;
-		bottom: 12px;
 		box-shadow: 0 6px 20px rgba(56, 44, 42, 0.08);
 	}
 
@@ -2096,9 +2100,21 @@
 
 	/* Paa en smallere skaerm, fx en laptop, falder spalterne under
 	   hinanden i stedet for at blive klemt sammen. */
+	/* Er vinduet lavt, er der ikke plads til tre rullende spalter. Saa faar
+	   de deres fulde hoejde igen, og siden ruller som en almindelig side. */
+	@media (max-height: 700px) {
+		.sp {
+			max-height: none;
+		}
+	}
+
 	@media (max-width: 1120px) {
 		.krop {
 			flex-wrap: wrap;
+		}
+
+		.sp {
+			max-height: none;
 		}
 
 		.sp-dage {
