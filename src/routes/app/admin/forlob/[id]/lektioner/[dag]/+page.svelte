@@ -18,7 +18,12 @@
 		sletLektionGruppe,
 		sletNoteGruppe
 	} from '$lib/firestore/forlob';
-	import { uploadHtmlFil, uploadLydFil, uploadThumbnailFil } from '$lib/utils/storage';
+	import {
+		uploadHtmlFil,
+		uploadLydFil,
+		uploadPdfFil,
+		uploadThumbnailFil
+	} from '$lib/utils/storage';
 	import Icon from '$lib/components/Icon.svelte';
 	import VaelgDageDialog from '$lib/components/VaelgDageDialog.svelte';
 	import RedigerGruppeDialog from '$lib/components/RedigerGruppeDialog.svelte';
@@ -38,6 +43,10 @@
 	let uploaderHtml = $state<string | null>(null);
 	let uploaderLyd = $state<string | null>(null);
 	let uploaderThumb = $state<string | null>(null);
+	/** Hvilken lektion der uploader en pdf lige nu. Linn 5. september. */
+	let uploaderPdf = $state<string | null>(null);
+	/** Hvilken lektions dokument-felt der har en fil svaevende over sig. */
+	let dragPdf = $state<string | null>(null);
 	let dragOver = $state<string | null>(null);
 	let uploadFejl = $state<string | null>(null);
 
@@ -384,6 +393,50 @@
 		const fil = input.files?.[0];
 		haandterThumbnailFil(lektionId, fil);
 		input.value = '';
+	}
+
+	/**
+	 * Hun har valgt eller trukket en PDF ind.
+	 *
+	 * Linn 5. september: admin skal bare kunne smide pdf'en over i appen i
+	 * stedet for at linke til Simplero. Filen lander hos os, og adressen
+	 * skrives i lektionens url-felt, praecis som en html-fil goer.
+	 */
+	async function haandterPdfFil(lektionId: string, fil: File | undefined | null) {
+		if (!fil) return;
+		const erPdf = fil.type === 'application/pdf' || /\.pdf$/i.test(fil.name);
+		if (!erPdf) {
+			uploadFejl = 'Vaelg en PDF-fil.';
+			return;
+		}
+		uploaderPdf = lektionId;
+		uploadFejl = null;
+		try {
+			const url = await uploadPdfFil(forlobId, fil);
+			opdaterLektion(lektionId, 'url', url);
+		} catch (err) {
+			console.error(err);
+			uploadFejl = err instanceof Error ? `Upload fejlede: ${err.message}` : 'Upload fejlede.';
+		} finally {
+			uploaderPdf = null;
+		}
+	}
+
+	function haandterPdfInput(lektionId: string, e: Event) {
+		const input = e.target as HTMLInputElement;
+		haandterPdfFil(lektionId, input.files?.[0]);
+		input.value = '';
+	}
+
+	function haandterPdfDrop(lektionId: string, e: DragEvent) {
+		e.preventDefault();
+		dragPdf = null;
+		haandterPdfFil(lektionId, e.dataTransfer?.files?.[0]);
+	}
+
+	function haandterPdfDragOver(lektionId: string, e: DragEvent) {
+		e.preventDefault();
+		dragPdf = lektionId;
 	}
 
 	function haandterDrop(lektionId: string, e: DragEvent) {
@@ -1035,7 +1088,19 @@
 									placeholder="https://..."
 									disabled={gemmer}
 								/>
-								<div class="html-upload-rad">
+								<!-- HELE RAEKKEN TAGER IMOD EN FIL DER TRAEKKES IND.
+								     Linns oenske 5. september: "smid pdf'en over i
+								     appen, drag and drop". Knapperne bliver, for det
+								     er dem man leder efter paa en computer uden mus i
+								     naerheden af filen. -->
+								<div
+									class="html-upload-rad"
+									class:pdf-drag={dragPdf === l.id}
+									ondrop={(e) => haandterPdfDrop(l.id, e)}
+									ondragover={(e) => haandterPdfDragOver(l.id, e)}
+									ondragleave={() => (dragPdf = null)}
+									role="presentation"
+								>
 									<label
 										class="html-upload-knap"
 										class:disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
@@ -1058,6 +1123,15 @@
 											accept=".mp3,.m4a,.wav,.aac,.ogg,audio/*"
 											onchange={(e) => haandterLydUpload(l.id, e)}
 											disabled={gemmer || uploaderHtml === l.id || uploaderLyd === l.id}
+										/>
+									</label>
+									<label class="html-upload-knap" class:disabled={gemmer || uploaderPdf === l.id}>
+										{uploaderPdf === l.id ? 'Uploader...' : '📄 PDF'}
+										<input
+											type="file"
+											accept=".pdf,application/pdf"
+											onchange={(e) => haandterPdfInput(l.id, e)}
+											disabled={gemmer || uploaderPdf === l.id}
 										/>
 									</label>
 									<span class="html-upload-hint">eller indsæt URL ovenfor</span>
@@ -2043,6 +2117,14 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 10px;
+	}
+
+	/* Naar en fil traekkes hen over raekken. Uden et synligt svar ved hun
+	   ikke om hun kan slippe. Linn 5. september. */
+	.html-upload-rad.pdf-drag {
+		outline: 2px dashed var(--terra, #b87b6e);
+		outline-offset: 4px;
+		border-radius: 10px;
 	}
 
 	.html-upload-rad {
