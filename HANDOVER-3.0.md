@@ -5537,3 +5537,86 @@ skrevet om.
 
 Begrundelsen står i koden ved siden af, så den ikke bliver rullet tilbage af en
 der kun kender den gamle regel.
+
+---
+
+### 9.79 OPRYDNING OG ENSRETNING, 5. september
+
+Linn bad om en gennemgang af hele 3.0 for uoverensstemmelser i design og
+funktion. Her er hvad der kom ud af den.
+
+#### Først det der VAR i orden
+
+Designet var mere konsistent end forventet. Samme titel-skrift og -størrelse,
+samme margen, samme palette. **Alle hentende sider har en fejl-udvej** — det var
+ikke tilfældet 25. august. Fuldskærms-billeder ligger korrekt over bundmenuen.
+De sider uden fælles `Sidehoved` har deres eget med vilje.
+
+#### Tre steder hvor kunden mødte en halvfærdig app. Alle fjernet
+
+1. **"Resten af din profil kommer her. Siden er ikke bygget færdig endnu."**
+   stod på Din side. Siden har **otte sektioner** — den var bygget. Linjen var
+   usand og det eneste sted i 3.0 hvor appen talte ned om sig selv
+2. **`/ny/moduler` slettet.** Linn: der kommer ikke noget der hedder moduler
+3. **`/ny/forlob` slettet.** Linn: der kommer ikke noget der har forløb
+
+Begge ruter blev tjekket for referencer først. De to træffere var kommentarer
+om at de IKKE længere peger derhen. `/ny/forlob` var også i
+`scripts/skaermbilleder.ts`.
+
+#### Vente-skærmen: ÉN i hele appen
+
+Forsiden var det eneste sted med en procent-bjælke, de 21 øvrige havde den
+rolige. **Ny `components/ny/Venter.svelte`**, brugt alle 22 steder — før stod
+den samme stump markup 22 gange, og så driver de fra hinanden igen.
+
+**Linns valg: forslag B.** Trækker det ud, kommer der efter fire sekunder en
+linje: *"Det tager længere end normalt. Din forbindelse er måske langsom lige
+nu."* **Fire sekunder er valgt så en normal hentning aldrig når at vise den** —
+kommer den for tidligt, lærer kunden at appen altid er langsom, og så betyder
+den ingenting den dag den er sand. `aria-live`, så en blind kunde ikke sidder i
+tavshed.
+
+**Otte sider sagde før bare "Henter" eller ingenting.** De siger nu hvad hun
+venter på. Velkomst-skærmen siger "Et øjeblik, jeg gør klar" — den er den
+allerførste skærm en ny kunde ser, og der stod ingenting.
+
+**To undtagelser, begge med vilje:** `/ny/snak` sender videre på et splitsekund
+og får ingen "trækker ud"-linje. Og "Tænker"-boblen i AI-chatten beholder det
+bare ventetegn — den er en besked i samtalen, ikke en vente-skærm.
+
+#### Tilbage-knappen peger nu hvor hun kom fra
+
+Linns eksempel: Dine egne små skridt sagde "Forside", også når hun kom fra Din
+side. **Fire sider nås fra flere steder** og havde problemet: små skridt,
+målingen, øvelserne og byg dit eget. De øvrige tolv nås kun ét sted fra.
+
+`content/forrigeSide3.ts` husker hvor hun kom fra. **Den faste adresse er
+beholdt som reserve**, så ingen side mister sin knap når den åbnes fra en besked
+eller et bogmærke.
+
+**Hvorfor ikke `history.back()`:** teksten skal sige HVOR hun lander. "‹
+Tilbage" er en dårligere knap end "‹ Din side". Derfor gemmes både adressen og
+navnet, og kun ruter med et kort navn huskes — en underside som
+`/ny/traening/abc/3` springes over, så et smut derind ikke ødelægger knappen.
+
+**REGISTRERINGEN SKAL LIGGE I `beforeNavigate`, IKKE I EN `$effect`.** Første
+forsøg brugte en effect, og den kører EFTER siden er tegnet: så nåede
+sidehovedet at læse den gamle værdi, og der stod stadig "Forside". **Det er
+tredje gang i to dage at en `$effect` har kørt på et andet tidspunkt end
+forventet**, se også 9.76 om rulningen.
+
+#### Bevidst uændret
+
+**Tallene i graferne skalerer IKKE med tekststørrelsen.** 711 af 723 font-size
+i `ny.css` bruger `--fs-scale`. De sidste 12 er SVG-tekst i kurverne. **Linns
+beslutning: lad det blive.** Skalerede de, ville de blive klippet af grafens
+kant, præcis den fejl der blev rettet 4. september. Ret det ikke i god tro.
+
+#### En fælde i at teste selv, som kostede tid
+
+**Et klik udført med kode (`element.click()`) udløser en FULD sideindlæsning**
+og ikke appens egen navigation. Alt der lever i hukommelsen bliver nulstillet,
+og så ser en rettelse ud til ikke at virke. Jeg troede tilbage-knappen var i
+stykker to gange af den grund. **Klik som en rigtig bruger når du afprøver
+noget der afhænger af navigation.**
