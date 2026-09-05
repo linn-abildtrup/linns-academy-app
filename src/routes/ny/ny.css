@@ -15698,3 +15698,53 @@ a.tr-felt:focus-visible {
 	font-size: calc(11px * var(--fs-scale, 1));
 	color: var(--ink-3);
 }
+
+/* ── Send lektionen til min mail ────────────────────────────
+   Linns beslutning 5. september. Knappen staar under indholdet og
+   skal ikke konkurrere med lektionen, saa den er tegnet med kant i
+   stedet for fyld. Kvitteringen viser hendes egen adresse, saa en
+   gammel mail opdages med det samme. */
+
+.send-mail {
+	margin: 18px 0 4px;
+}
+
+.btn.rolig-knap {
+	background: transparent;
+	color: var(--plum);
+	border: 1px solid var(--line);
+	box-shadow: none;
+	font-weight: 600;
+	width: 100%;
+	justify-content: center;
+	white-space: normal;
+	text-align: center;
+}
+
+.send-kvit {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	border: 1px solid var(--line);
+	border-radius: 16px;
+	padding: 13px 15px;
+	background: var(--paper);
+}
+
+.send-kvit strong {
+	font-size: calc(13.5px * var(--fs-scale, 1));
+	color: var(--espresso);
+}
+
+.send-adr {
+	font-size: calc(12px * var(--fs-scale, 1));
+	color: var(--ink-3);
+	margin-top: 2px;
+	word-break: break-all;
+}
+
+.send-fejl {
+	font-size: calc(12.5px * var(--fs-scale, 1));
+	color: var(--ink-2);
+	margin: 9px 2px 0;
+}

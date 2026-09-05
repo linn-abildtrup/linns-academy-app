@@ -33,6 +33,17 @@ export function mailOpsaetning3(
 	return { apiNoegle, fra: env.MAIL_FRA || 'Linn <linn@linnsacademy.dk>' };
 }
 
+/**
+ * En fil der foelger med mailen.
+ *
+ * Tilfoejet 5. september, da lektionen skulle kunne sendes som pdf.
+ * Indholdet er base64, som er den form Resend tager imod.
+ */
+export interface MailFil3 {
+	filnavn: string;
+	base64: string;
+}
+
 export interface MailResultat3 {
 	ok: boolean;
 	status: number;
@@ -42,7 +53,8 @@ export interface MailResultat3 {
 export async function sendMail3(
 	til: string,
 	mail: Mail3,
-	ops: MailOpsaetning3
+	ops: MailOpsaetning3,
+	filer?: MailFil3[]
 ): Promise<MailResultat3> {
 	if (!til.includes('@')) return { ok: false, status: 0 };
 	try {
@@ -57,7 +69,12 @@ export async function sendMail3(
 				to: [til],
 				subject: mail.emne,
 				text: mail.tekst,
-				html: mail.html
+				html: mail.html,
+				// Feltet udelades helt naar der ingen filer er, saa de
+				// mails der fandtes foer, sendes praecis som hidtil.
+				...(filer?.length
+					? { attachments: filer.map((f) => ({ filename: f.filnavn, content: f.base64 })) }
+					: {})
 			})
 		});
 		if (!res.ok) {

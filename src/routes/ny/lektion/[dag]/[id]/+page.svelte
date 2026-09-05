@@ -213,6 +213,67 @@
 		void markerKlaret(true);
 	});
 
+	// ── Send lektionen til min mail ──────────────────────────────
+	//
+	// LINNS BESLUTNING 5. september. Hun kan sende en skreven lektion
+	// eller et dokument til sin egen mail og faa det som pdf.
+	//
+	// KNAPPEN VISES KUN hvor der er noget at sende: en side skrevet som
+	// html, eller en fil der allerede er en pdf. Video, lyd og links har
+	// ingen knap. Det er reglen om at skjule den, naar der ikke er nok,
+	// og den afgoeres af lektionens art, saa der er ingen kontakt Linn
+	// skal huske at saette pr lektion.
+	//
+	// Adressen kommer fra hendes login og staar paa kvitteringen, saa en
+	// gammel mailadresse opdages med det samme i stedet for at hun leder
+	// i en indbakke hun ikke bruger.
+	const kanSendes = $derived(art === 'side' || art === 'pdf');
+	let sender = $state(false);
+	let sendtTil = $state('');
+	let sendFejl = $state('');
+
+	async function sendTilMail() {
+		const forlobId = valgtForlobId;
+		if (!user || !lektion || !forlobId || sender) return;
+		sender = true;
+		sendFejl = '';
+		try {
+			const token = await user.getIdToken();
+			const svar = await fetch('/api/ny-lektion-mail', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+				body: JSON.stringify({
+					forlobId,
+					dag: dagNummer,
+					lektionId,
+					dato: datoTekst
+				})
+			});
+			if (!svar.ok) {
+				const krop = (await svar.json().catch(() => null)) as { message?: string } | null;
+				sendFejl = krop?.message || 'Den kunne ikke sendes. Prøv igen om lidt.';
+				return;
+			}
+			const krop = (await svar.json()) as { til?: string };
+			sendtTil = krop.til || user.email || '';
+		} catch (e) {
+			console.error('[ny] kunne ikke sende lektionen', e);
+			sendFejl = 'Den kunne ikke sendes. Prøv igen om lidt.';
+		} finally {
+			sender = false;
+		}
+	}
+
+	// Datoen som hun ser den. Den staar under titlen i filen, saa hun kan
+	// se hvornaar lektionen hoerte til, naar hun aabner den om et aar.
+	const datoTekst = $derived(
+		new Date().toLocaleDateString('da-DK', {
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long'
+		})
+	);
+
 	function tilbage() {
 		if (typeof history !== 'undefined' && history.length > 1) {
 			history.back();
@@ -338,6 +399,30 @@
 		{/if}
 
 		<LektionNote {note} gemmer={gemmerNote} gemtLige={noteGemtLige} ongem={(t) => gemNote(t)} />
+
+		{#if kanSendes}
+			<!-- Knappen er rolig og staar under indholdet. Den skal ikke
+			     konkurrere med lektionen, og den siger hvad den goer i
+			     stedet for "eksportér". -->
+			<div class="send-mail">
+				{#if sendtTil}
+					<div class="send-kvit">
+						<span class="rund-fluebe" aria-hidden="true"><Fluebe /></span>
+						<div>
+							<strong>Den er sendt</strong>
+							<div class="send-adr">{sendtTil}</div>
+						</div>
+					</div>
+				{:else}
+					<button class="btn rolig-knap" disabled={sender} onclick={sendTilMail}>
+						{sender ? 'Sender...' : 'Send lektionen til min mail'}
+					</button>
+					{#if sendFejl}
+						<p class="send-fejl">{sendFejl}</p>
+					{/if}
+				{/if}
+			</div>
+		{/if}
 
 		<div class="lektion-fod">
 			{#if erKlaret}

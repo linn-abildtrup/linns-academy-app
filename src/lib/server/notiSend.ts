@@ -168,7 +168,7 @@ export function noeglerFra3(env: Record<string, string | undefined>): PushNoegle
 export async function hvemErDet3(
 	idToken: string,
 	apiKey: string
-): Promise<{ uid: string; erAdmin: boolean } | null> {
+): Promise<{ uid: string; erAdmin: boolean; email: string } | null> {
 	if (!apiKey) return null;
 	try {
 		const res = await fetch(
@@ -186,6 +186,10 @@ export async function hvemErDet3(
 		const email = bruger.email?.toLowerCase() ?? '';
 		return {
 			uid: bruger.localId,
+			// Adressen kommer med, saa en side der skal sende noget til
+			// kunden selv ikke behoever slaa den op et andet sted. Tilfoejet
+			// 5. september til lektionen paa mail.
+			email,
 			erAdmin: (ADMIN_EMAILS as readonly string[]).map((e) => e.toLowerCase()).includes(email)
 		};
 	} catch {
