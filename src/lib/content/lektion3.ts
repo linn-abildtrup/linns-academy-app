@@ -10,7 +10,7 @@
 
 import { detekterGuideType, erLydLektion, youtubeId, vimeoId } from './bibliotek';
 
-export type LektionsArt = 'video' | 'lyd' | 'side' | 'link';
+export type LektionsArt = 'video' | 'lyd' | 'side' | 'pdf' | 'link';
 
 export function artFor(url: string): LektionsArt {
 	if (!url) return 'link';
@@ -19,6 +19,10 @@ export function artFor(url: string): LektionsArt {
 	if (t === 'video') return 'video';
 	if (t === 'audio') return 'lyd';
 	if (t === 'html') return 'side';
+	// PDF var 'link' indtil 5. september, og faldt derfor ned i
+	// "Åbn lektionen"-grenen: siden bad hende trykke igen og sendte hende
+	// ud af appen. Nu er den sin egen art og vises paa siden.
+	if (t === 'pdf') return 'pdf';
 	return 'link';
 }
 
@@ -101,6 +105,6 @@ export function formaterVarighed(varighedMin: number | undefined): string {
  */
 export function klaretOrd3(art: LektionsArt): { knap: string; klaret: string } {
 	if (art === 'lyd') return { knap: 'Markér som hørt', klaret: 'Hørt' };
-	if (art === 'side') return { knap: 'Markér som læst', klaret: 'Læst' };
+	if (art === 'side' || art === 'pdf') return { knap: 'Markér som læst', klaret: 'Læst' };
 	return { knap: 'Markér som set', klaret: 'Set' };
 }

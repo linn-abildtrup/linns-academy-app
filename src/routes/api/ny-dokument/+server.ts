@@ -1,0 +1,84 @@
+// ============================================================
+// Henter et dokument udefra og serverer det fra VORES eget domaene, saa
+// det kan vises inde i appen.
+//
+// HVORFOR DET FINDES. En PDF-lektion var den eneste type hvor siden ikke
+// leverede sit indhold: kunden trykkede paa flisen, landede paa en side
+// der bad hende trykke igen, og forlod saa appen. Linn 5. september.
+// PDF'erne ligger paa Simplero og kan ikke vises i en ramme derfra, men
+// en fil fra vores eget domaene kan.
+//
+// LAASEN LIGGER I content/dokument3.ts, saa den kan testes uden en
+// server: kun https, kun kendte vaerter, kun .pdf.
+//
+// EN AERLIG AFVEJNING. Det her er en proxy, og en proxy kan misbruges til
+// at traekke paa vores baandbredde. Tre ting holder den i kort snor:
+//   1. Kun de faa vaerter Linns eget indhold ligger paa
+//   2. Kun .pdf, og der er en stoerrelsesgraense
+//   3. Svaret caches en time, saa den samme fil hentes én gang
+//
+// DER ER IKKE LOGIN PAA. En ramme kan ikke sende et login-bevis med, og
+// dokumenterne ligger i forvejen aabent paa Simplero: vi udstiller altsaa
+// ikke noget der var lukket foer. Skal det laases helt, er vejen at slaa
+// lektionen op i Firestore i stedet for at tage en adresse imod, se
+// server/firestoreRest.ts. Det er ikke gjort, fordi det koster et opslag
+// paa hver hentning og ikke beskytter noget hemmeligt.
+// ============================================================
+
+import type { RequestHandler } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
+import { maaHentes3, DOKUMENT_MAKS_BYTE } from '$lib/content/dokument3';
+
+/** En time. Den samme PDF hentes af mange kunder paa den samme dag. */
+const CACHE_SEKUNDER = 3600;
+
+export const GET: RequestHandler = async ({ url, fetch }) => {
+	const kilde = url.searchParams.get('url') ?? '';
+
+	const tjek = maaHentes3(kilde);
+	if (!tjek.ok) {
+		console.warn('[ny-dokument] afvist:', tjek.grund);
+		// Kunden faar ikke at vide HVORFOR. Et praecist svar ville hjaelpe
+		// den der proever sig frem.
+		throw error(400, 'Dokumentet kan ikke vises');
+	}
+
+	let svar: Response;
+	try {
+		svar = await fetch(kilde, { headers: { Accept: 'application/pdf' } });
+	} catch (e) {
+		console.error('[ny-dokument] kunne ikke hentes', e);
+		throw error(502, 'Dokumentet kunne ikke hentes lige nu');
+	}
+
+	if (!svar.ok) {
+		console.warn('[ny-dokument] kilden svarede', svar.status);
+		throw error(svar.status === 404 ? 404 : 502, 'Dokumentet kunne ikke hentes lige nu');
+	}
+
+	// Kilden skal ogsaa MENE at det er en pdf. Endelsen alene er ikke nok:
+	// en fil kan hedde .pdf og indeholde noget helt andet.
+	const type = svar.headers.get('content-type') ?? '';
+	if (!type.toLowerCase().includes('pdf')) {
+		console.warn('[ny-dokument] forkert type fra kilden:', type);
+		throw error(415, 'Dokumentet kan ikke vises');
+	}
+
+	const laengde = Number(svar.headers.get('content-length') ?? 0);
+	if (laengde > DOKUMENT_MAKS_BYTE) {
+		console.warn('[ny-dokument] for stort:', laengde);
+		throw error(413, 'Dokumentet er for stort til at vises her');
+	}
+
+	return new Response(svar.body, {
+		headers: {
+			'Content-Type': 'application/pdf',
+			// inline, saa den VISES i rammen i stedet for at blive hentet ned.
+			'Content-Disposition': 'inline',
+			'Cache-Control': `public, max-age=${CACHE_SEKUNDER}`,
+			// Kun vores egen app maa laegge den i en ramme.
+			'X-Frame-Options': 'SAMEORIGIN',
+			'X-Content-Type-Options': 'nosniff'
+		}
+	});
+};

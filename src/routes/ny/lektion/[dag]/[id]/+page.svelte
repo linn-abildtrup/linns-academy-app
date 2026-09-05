@@ -18,6 +18,7 @@
 	import type { UserDoc } from '$lib/types';
 	import type { Adgangsbillede } from '$lib/content/adgang3';
 	import { forlobAdgang } from '$lib/content/lektionsliste3';
+	import { dokumentUrl3 } from '$lib/content/dokument3';
 	import type { LektionItem } from '$lib/content/forlob';
 	import {
 		artFor,
@@ -257,6 +258,24 @@
 			<div class="side-ramme">
 				<iframe src={embed} title={lektion.titel}></iframe>
 			</div>
+		{:else if art === 'pdf'}
+			<!-- DOKUMENTET VISES MED DET SAMME, uden mellemled. Linns oenske
+			     5. september. Foer var PDF den eneste lektionstype hvor siden
+			     ikke leverede sit indhold: den bad hende trykke igen og sendte
+			     hende ud af appen.
+
+			     Ligger filen hos os, vises den som den er. Ligger den paa
+			     Simplero, gaar den gennem api/ny-dokument, fordi Simplero
+			     ikke tillader at deres filer vises i en ramme. Se
+			     content/dokument3.ts. -->
+			<div class="dok-ramme">
+				<iframe src={dokumentUrl3(lektion.url)} title={lektion.titel}></iframe>
+			</div>
+			<!-- En A4 er lille paa en telefon. Her aabner den i fuld skaerm,
+			     hvor telefonens egen laeser kan zoome. -->
+			<a class="dok-fuld" href={lektion.url} target="_blank" rel="noopener noreferrer">
+				Åbn i fuld skærm
+			</a>
 		{:else if art === 'lyd'}
 			<Lydafspiller
 				url={lektion.url}

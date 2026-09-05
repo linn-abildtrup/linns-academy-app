@@ -21,3 +21,9 @@ describe('klaretOrd3', () => {
 		expect(klaretOrd3('link')).toEqual({ knap: 'Markér som set', klaret: 'Set' });
 	});
 });
+
+describe('klaretOrd3 · pdf', () => {
+	it('et dokument laeses', () => {
+		expect(klaretOrd3('pdf')).toEqual({ knap: 'Markér som læst', klaret: 'Læst' });
+	});
+});
