@@ -677,9 +677,10 @@
 	}
 
 	.g-ramme {
-		max-width: 900px;
+		/* Var 900. Guiden staar godt bredere paa en iMac. */
+		max-width: 1240px;
 		margin: 0 auto;
-		padding: 22px 20px;
+		padding: 16px 18px 40px;
 	}
 
 	.g {

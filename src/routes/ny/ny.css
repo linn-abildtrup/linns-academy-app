@@ -2258,6 +2258,14 @@ body:has(.ny-app) {
 	grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
 	align-content: start;
 }
+
+/* To sider har deres egen smalle ramme fra dengang alt var bygget til
+   telefon. De laa som en soejle paa 640 punkter midt i en flade paa
+   1300, med tom plads paa begge sider. Begge bruges kun i admin. */
+.al .ing-side,
+.al .rm-side {
+	max-width: 1240px;
+}
 /* Lektionens minimale top. Kun en vej ud, ingen titel og intet maerke.
    Se kommentaren i lektions-siden for hvorfor den ikke bruger Sidehoved. */
 .medie-top {
