@@ -148,6 +148,40 @@
 	 */
 	const ingenSet = new Set<string>();
 
+	/**
+	 * KUNDENS SKAERM KAN SLAAS FRA.
+	 *
+	 * Maalt paa Linns eget vindue: der er 1150 punkter til de fire
+	 * spalter, og det er ikke nok til baade forhaandsvisningen og to
+	 * soejler af felter. Noget maatte vige, og det rigtige er at lade
+	 * hende vaelge fremfor at klemme begge dele.
+	 *
+	 * Til naar hun skriver og vil se resultatet. Fra naar hun retter
+	 * meget i én lektion og vil have felterne brede.
+	 *
+	 * Valget gemmes paa hendes egen maskine, saa hun ikke skal traeffe
+	 * det forfra hver gang. Gaar det galt, staar den bare til.
+	 */
+	let visKunde = $state(true);
+	const HUSK_NOEGLE = 'de-vis-kunde';
+
+	onMount(() => {
+		try {
+			visKunde = localStorage.getItem(HUSK_NOEGLE) !== 'fra';
+		} catch {
+			// Nogle browsere naegter at gemme. Saa staar den til, som den skal.
+		}
+	});
+
+	function skiftKundeVisning() {
+		visKunde = !visKunde;
+		try {
+			localStorage.setItem(HUSK_NOEGLE, visKunde ? 'til' : 'fra');
+		} catch {
+			// Valget gaelder stadig her og nu, det huskes bare ikke.
+		}
+	}
+
 	// Faner: Lektioner / Refleksioner / Små skridt
 	let aktivFane = $state<'lektioner' | 'refleksioner' | 'smaaskridt'>('lektioner');
 
@@ -943,6 +977,14 @@
 			{#if aktivFane === 'lektioner' && !loading && !fejl}
 				<div class="hoved-handling">
 					{#if gemKvit}<span class="de-kvit">Gemt ✓</span>{/if}
+					<button
+						class="knap lille"
+						type="button"
+						onclick={skiftKundeVisning}
+						aria-pressed={visKunde}
+					>
+						{visKunde ? 'Skjul kundens skærm' : 'Vis kundens skærm'}
+					</button>
 					{#if !bekraefter}
 						<button class="knap lille" type="button" onclick={sletDag} disabled={gemmer}>
 							Slet dagen
@@ -1373,23 +1415,25 @@
 
 					     Ingen er markeret som set: vi viser dagen som en kunde
 					     moeder den foerste gang. -->
-					<aside class="sp sp-vis" aria-label="Sådan ser kunden dagen">
-						<div class="sp-t">Sådan ser kunden dagen</div>
-						<div class="vis-ramme">
-							{#if dag.lektioner.length === 0}
-								<p class="de-hjaelp">Dagen er tom, så kunden ser ingen lektioner.</p>
-							{:else}
-								<Lektioner
-									titel={`Dag ${dagNummer}`}
-									{dagNummer}
-									lektioner={dag.lektioner}
-									klaret={ingenSet}
-									visTitel={false}
-								/>
-							{/if}
-						</div>
-						<p class="de-hjaelp">Følger med, mens du skriver. Gemmer ikke af sig selv.</p>
-					</aside>
+					{#if visKunde}
+						<aside class="sp sp-vis" aria-label="Sådan ser kunden dagen">
+							<div class="sp-t">Sådan ser kunden dagen</div>
+							<div class="vis-ramme">
+								{#if dag.lektioner.length === 0}
+									<p class="de-hjaelp">Dagen er tom, så kunden ser ingen lektioner.</p>
+								{:else}
+									<Lektioner
+										titel={`Dag ${dagNummer}`}
+										{dagNummer}
+										lektioner={dag.lektioner}
+										klaret={ingenSet}
+										visTitel={false}
+									/>
+								{/if}
+							</div>
+							<p class="de-hjaelp">Følger med, mens du skriver. Gemmer ikke af sig selv.</p>
+						</aside>
+					{/if}
 				</div>
 			{/if}
 		{:else if aktivFane === 'refleksioner'}
@@ -1430,7 +1474,7 @@
 	/* Bredt med vilje. Admin bruges paa en iMac, saa den smalle
 	   520px-ramme fra kunde-siderne gaelder ikke her. */
 	.side {
-		padding: 20px 24px 30px;
+		padding: 16px 18px 24px;
 		max-width: 1560px;
 		margin: 0 auto;
 	}
@@ -1538,7 +1582,7 @@
 	/* ── De tre spalter ─────────────────────────────────────────────── */
 	.krop {
 		display: flex;
-		gap: 18px;
+		gap: 14px;
 		align-items: flex-start;
 	}
 
@@ -1561,14 +1605,14 @@
 	}
 
 	.sp-dage {
-		width: 156px;
+		width: 138px;
 		flex: none;
 		position: sticky;
 		top: 16px;
 	}
 
 	.sp-liste {
-		width: 280px;
+		width: 262px;
 		flex: none;
 	}
 
@@ -1587,14 +1631,14 @@
 	}
 
 	.felt-soejle {
-		flex: 1 1 220px;
+		flex: 1 1 240px;
 		min-width: 0;
 	}
 
 	/* Kundens egen visning. Bredden er sat, saa raekkerne braekker som paa
 	   en telefon og ikke som paa en bred skaerm. */
 	.sp-vis {
-		width: 320px;
+		width: 330px;
 		flex: none;
 		background: var(--paper-2);
 	}
