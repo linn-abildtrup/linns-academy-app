@@ -36,7 +36,6 @@
 		hentSmaaSkridtIDag,
 		saetSkridtSvar,
 		gemRefleksion,
-		hentAktiveDage,
 		hentDagensProgram,
 		hentKlaret,
 		saetKlaret,
@@ -160,7 +159,6 @@
 	let kurve = $state<Kurve | null>(null);
 	let status = $state<MaalingStatus | null>(null);
 	let skridtData = $state<SmaaSkridtIDag | null>(null);
-	let aktiveDage = $state<Set<string>>(new Set());
 	let lektioner = $state<LektionItem[]>([]);
 	let noteFraLinn = $state('');
 
@@ -275,7 +273,6 @@
 		kurve: Kurve | null;
 		status: MaalingStatus | null;
 		skridtData: SmaaSkridtIDag | null;
-		aktiveDage: Set<string>;
 		klaret: Set<string>;
 		traening: DagensTraening3 | null;
 		tal: DagensTal | null;
@@ -297,7 +294,6 @@
 			kurve = gemt.kurve;
 			status = gemt.status;
 			skridtData = gemt.skridtData;
-			aktiveDage = gemt.aktiveDage;
 			klaret = gemt.klaret;
 			traening = gemt.traening;
 			tal = gemt.tal;
@@ -329,14 +325,9 @@
 			const ugeStart = new Date(nu);
 			ugeStart.setDate(ugeStart.getDate() - 60);
 
-			const [o, s, dage, k, tr, t] = await Promise.all([
+			const [o, s, k, tr, t] = await Promise.all([
 				hentOverskud(uid),
 				hentSmaaSkridtIDag(uid, forlobKontekst, iDag),
-				hentAktiveDage(
-					uid,
-					aktivtForlob ? { produkt: aktivtForlob.produkt, startMs: aktivtForlob.startMs } : null,
-					datoNoegle(ugeStart)
-				),
 				hentKlaret(uid),
 				hentDagensTraening3(uid, userDoc, forlobKilder(), adgang.aktiveForlob, nuMs),
 				hentDagensTal(uid, iDag, userDoc)
@@ -349,7 +340,6 @@
 			kurve = byggKurve(o.maalinger, adgangeFor(), nuMs, navne);
 			status = maalingStatus(o.sidsteMs, aktivtForlob?.produkt ?? null, nuMs);
 			skridtData = s;
-			aktiveDage = dage;
 			klaret = k;
 			traening = tr;
 			tal = t;
@@ -382,7 +372,6 @@
 					kurve,
 					status,
 					skridtData,
-					aktiveDage,
 					klaret,
 					traening,
 					tal,
@@ -632,7 +621,6 @@
 		};
 		try {
 			await saetSkridtSvar(uid, skridtData, id, tilKlaret ? 'ja' : null);
-			if (tilKlaret) aktiveDage = new Set([...aktiveDage, iDag]);
 		} catch (e) {
 			console.error('[ny] kunne ikke gemme skridt', e);
 			skridtData = { ...skridtData, skridt: foer };
@@ -700,7 +688,7 @@
 		     sig sammen, og den fandtes slet ikke for en kunde der endnu
 		     ikke havde valgt nogen skridt. Altsaa vaek netop naar det gik
 		     godt. Nu hoerer den til dagen og ikke til én sektion. -->
-		<Ugestrimmel aktivDato={iDag} {aktiveDage} {iDag} nulDage={adgang.nulDatoer} />
+		<Ugestrimmel aktivDato={iDag} {iDag} nulDage={adgang.nulDatoer} />
 
 		<TilDig {beskeder} />
 

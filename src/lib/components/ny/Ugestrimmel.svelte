@@ -17,8 +17,6 @@
 	interface Props {
 		/** Den dag der er fremhaevet. YYYY-MM-DD. */
 		aktivDato: string;
-		/** Datoer hvor hun har svaret paa noget. */
-		aktiveDage: Set<string>;
 		/** Dagens dato, saa fremtiden kan laases. */
 		iDag: string;
 		/**
@@ -29,9 +27,29 @@
 		nulDage?: Set<string>;
 	}
 
-	let { aktivDato, aktiveDage, iDag, nulDage = new Set<string>() }: Props = $props();
+	let { aktivDato, iDag, nulDage = new Set<string>() }: Props = $props();
 
 	const UGEDAGE = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
+
+	// MAANEDEN STAAR PAA HVER DAG. Linns valg 5. september, forslag D i
+	// mockups-datostrimmel-maaned.html. Foer stod der kun ugedag og dato,
+	// og saa laa "31" og "1" ved siden af hinanden uden at nogen fortalte
+	// at der gik en maaned imellem. Strimlen kan rulles otte uger tilbage,
+	// saa spoergsmaalet "hvilken maaned er det her" opstaar tit.
+	const MAANEDER = [
+		'jan',
+		'feb',
+		'mar',
+		'apr',
+		'maj',
+		'jun',
+		'jul',
+		'aug',
+		'sep',
+		'okt',
+		'nov',
+		'dec'
+	];
 
 	/** Hvor langt tilbage striben raekker. Otte uger daekker et forloeb. */
 	const DAGE_TILBAGE = 56;
@@ -58,7 +76,7 @@
 				erIDag: noegle === iDag,
 				erFremtid: noegle > iDag,
 				erPause: nulDage.has(noegle),
-				harData: aktiveDage.has(noegle)
+				maaned: MAANEDER[dt.getMonth()]
 			});
 		}
 		return liste;
@@ -89,17 +107,17 @@
 			<div class="dag senere">
 				<span class="u">{dag.navn}</span>
 				<span class="d">{dag.dato}</span>
+				<span class="m">{dag.maaned}</span>
 			</div>
 		{:else}
 			<!-- I dag foerer til forsiden. Det er dér dagen i dag bor. -->
-			<a
-				class="dag"
-				class:idag={dag.erValgt}
-				href={dag.erIDag ? '/ny' : `/ny/dag/${dag.noegle}`}
-			>
+			<a class="dag" class:idag={dag.erValgt} href={dag.erIDag ? '/ny' : `/ny/dag/${dag.noegle}`}>
 				<span class="u">{dag.navn}</span>
 				<span class="d">{dag.dato}</span>
-				{#if dag.harData}<span class="prik"></span>{/if}
+				<!-- Maaneden stod foer som en prik der betoed "du har svaret
+				     paa mindst ét lille skridt". Linn 5. september: prikken
+				     bruges ikke, maaneden er vigtigere paa den plads. -->
+				<span class="m">{dag.maaned}</span>
 			</a>
 		{/if}
 	{/each}

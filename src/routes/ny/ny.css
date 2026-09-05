@@ -776,18 +776,33 @@ body:has(.ny-app) {
 	color: var(--espresso);
 }
 
-.dag .prik {
+/* MAANEDEN, paa den plads prikken havde. Linns valg 5. september,
+   forslag D. Prikken betoed "du har svaret paa mindst ét lille skridt",
+   og den blev fravalgt: den kunne laeses som "jeg klarede dagen", selv om
+   et nej taendte den praecis som et ja.
+
+   Samme hoejde som prikken havde, saa dagene ikke bliver hoejere og
+   strimlen ikke skifter form. Daempet, fordi den skal kunne slaas op og
+   ikke laeses hoejt: det er datoen der er hovedsagen. */
+.dag .m {
 	display: block;
-	width: 4px;
-	height: 4px;
-	border-radius: 50%;
-	background: var(--sage);
-	margin: 3px auto 0;
+	font-size: calc(8.5px * var(--fs-scale, 1));
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	margin-top: 1px;
+	line-height: 1.2;
 }
 
 .dag.idag {
 	background: var(--plum);
 	box-shadow: 0 8px 18px rgba(124, 79, 99, 0.3);
+}
+
+/* Paa den valgte dag ligger maaneden paa en moerk flade og skal loeftes,
+   ellers forsvinder den. */
+.dag.idag .m {
+	color: rgba(251, 248, 242, 0.7);
 }
 .dag.idag .u {
 	color: rgba(255, 255, 255, 0.72);

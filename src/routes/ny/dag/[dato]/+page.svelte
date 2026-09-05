@@ -25,7 +25,6 @@
 		saetSkridtSvar,
 		gemRefleksion,
 		hentDagensTal,
-		hentAktiveDage,
 		datoNoegle,
 		type SmaaSkridtIDag,
 		type DagensTal
@@ -89,7 +88,6 @@
 	let skridtData = $state<SmaaSkridtIDag | null>(null);
 	let tal = $state<DagensTal | null>(null);
 	let traenede = $state(false);
-	let aktiveDage = $state<Set<string>>(new Set());
 	let henter = $state(true);
 	let gemmer = $state<string | null>(null);
 	let gemmerNote = $state(false);
@@ -107,10 +105,7 @@
 
 		(async () => {
 			henter = true;
-			const fra = new Date(d);
-			fra.setDate(fra.getDate() - 14);
-
-			const [skridt, t, historik, dage] = await Promise.all([
+			const [skridt, t, historik] = await Promise.all([
 				hentSmaaSkridtIDag(
 					uid,
 					forlob && nr !== null
@@ -119,18 +114,12 @@
 					d
 				),
 				hentDagensTal(uid, d, userDoc),
-				hentHistorikForDato(uid, d),
-				hentAktiveDage(
-					uid,
-					forlob ? { produkt: forlob.produkt, startMs: forlob.startMs } : null,
-					datoNoegle(fra)
-				)
+				hentHistorikForDato(uid, d)
 			]);
 			if (afbrudt) return;
 			skridtData = skridt;
 			tal = t;
 			traenede = historik.length > 0;
-			aktiveDage = dage;
 
 			if (forlob && nr !== null) {
 				const [dagDoc, synlige, k] = await Promise.all([
@@ -255,7 +244,7 @@
 	{:else if henter}
 		<Venter tekst="Henter dagen" />
 	{:else}
-		<Ugestrimmel aktivDato={dato} {aktiveDage} {iDag} nulDage={adgang.nulDatoer} />
+		<Ugestrimmel aktivDato={dato} {iDag} nulDage={adgang.nulDatoer} />
 
 		{#if note}
 			<section class="note-fra-linn">
